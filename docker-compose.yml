@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: wen_yuan_pg
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5434:5432"
+  #   environment:
+  #     POSTGRES_DB: wen_yuan
+  #     POSTGRES_USER: wen_yuan
+  #     POSTGRES_PASSWORD: wen_yuan
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U wen_yuan -d books_graph"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  neo4j:
+      image: neo4j:5.15-community
+      container_name: wen_yuan_neo4j
+      restart: always
+      ports:
+        - "7474:7474" # HTTP 控制台
+        - "7687:7687" # Bolt 协议
+      environment:
+        - NEO4J_AUTH=neo4j/neo4j_password_123
+        - NEO4J_PLUGINS=["apoc"] # 启用 APOC 插件，方便复杂路径查询
+      volumes:
+        - ./.volumes/neo4j/data:/data
+        - ./.volumes/neo4j/logs:/logs
+        - ./.volumes/neo4j/plugins:/plugins
+
+# volumes:
+#   postgres_data:
+#   neo4j:
+#     data:
+#     logs:
+#     plugins:

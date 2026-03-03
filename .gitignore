@@ -1,0 +1,8 @@
+node_modules
+.next
+.env
+dist
+coverage
+*.log
+.volumes
+.pnpm-store

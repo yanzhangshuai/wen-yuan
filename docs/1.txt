@@ -1,0 +1,34 @@
+你现在是一名资深全栈架构师。请为我初始化《儒林外史》人物关系分析系统的基础设施。要求如下：
+
+1. Docker Compose 配置：
+
+生成 docker-compose.yml。
+
+服务包含：PostgreSQL 16（用于元数据）、Neo4j 5.0（用于图关系，开启 APOC 插件）、Redis（用于 BullMQ 异步解析任务）。
+
+2. NestJS 项目初始化：
+
+创建 NestJS 项目并集成 Prisma ORM。
+
+配置 Prisma 以连接 PostgreSQL。
+
+安装依赖：@prisma/client, prisma, neo4j-driver, bullmq, @nestjs/bullmq, axios (用于调用 Gemini API)。
+
+3. Prisma Schema 设计：
+请在 schema.prisma 中定义以下核心模型：
+
+Character: 包含 id (String/UUID), name, aliases (String[]), hometown, summary (Text), ironyIndex (Float), status (Enum: DRAFT, VERIFIED)。
+
+Chapter: 包含 id, no (Int, 唯一), title, content (Text)。
+
+RawAnalysis: 用于存储 AI 解析后的原始 JSON 结果。
+
+4. Neo4j 连接逻辑：
+
+创建一个 Neo4jService，封装基础的连接配置（使用 neo4j-driver）。
+
+5. 项目结构：
+
+提供标准的 NestJS 目录结构，并生成对应的 .env 环境变量模板。
+
+请给出完整的文件代码和一键启动的步骤说明。

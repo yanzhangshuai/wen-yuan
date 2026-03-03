@@ -1,0 +1,224 @@
+// -----------------------------------------------------------------------------
+// 《万卷归宗：跨书籍通用文学知识图谱系统》核心数据库定义
+// -----------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- 枚举定义 (业务逻辑分类) ---
+
+enum ProcessingStatus {
+  DRAFT // AI 初步提取，待人工审核
+  VERIFIED // 已人工核准，正式入库
+  REJECTED // 噪音数据或错误识别
+
+  @@map("processing_status")
+}
+
+enum PersonaType {
+  PERSON // 人物
+  LOCATION // 地点（州县、官署、名胜）
+  ORGANIZATION // 组织（家族、帮派、学院）
+  CONCEPT // 关键概念/物件（如：严监生的两根灯草）
+
+  @@map("persona_type")
+}
+
+enum BioCategory {
+  BIRTH // 出生
+  EXAM // 科举/晋升（中举、落第、授职）
+  CAREER // 官职变动/职业生涯（升迁、罢官、调任）
+  TRAVEL // 游历/搬迁（进京、返乡）
+  SOCIAL // 重大社交（寿宴、雅集、结盟）
+  DEATH // 卒
+  EVENT // 普通重要情节
+
+  @@map("bio_category")
+}
+
+enum ChapterType {
+  /**
+   * 楔子/序幕：通常是总纲性质的章节，概括全书大义，介绍主要人物和背景。
+   */
+  PRELUDE // 楔子 / 序幕
+  /**
+   * 正文回目：书籍的核心章节，按照时间顺序展开故事情节和人物关系。
+   */
+  CHAPTER // 正文回目
+  /**
+   * 后记/尾声：总结全书内容，回顾人物命运，或提供作者的反思和评论。
+   */
+  POSTLUDE // 后记 / 尾声
+
+  @@map("chapter_type")
+}
+
+// --- 核心模型 ---
+
+/// @db.remark: 书籍/作品库。系统的顶层容器，支持跨作品的人物对比。
+model Book {
+  id          String  @id @default(uuid()) @db.Uuid
+  title       String // 书名，如《儒林外史》
+  author      String? // 作者，如“吴敬梓”
+  dynasty     String? // 背景朝代
+  description String? @db.Text // 作品简介
+  coverUrl    String? @map("cover_url") // 3D 看板所需的封面图
+  // PENDING (初始), PROCESSING (解析中), COMPLETED (完成), ERROR (失败)
+  status      String  @default("PENDING")
+  errorLog    String? @map("error_log") @db.Text // 如果解析失败，直接存入数据库
+
+  chapters  Chapter[]
+  profiles  Profile[] // 该书涉及的人物档案
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("books") // 数据库物理表名：复数
+}
+
+/// @db.remark: 章节/回目。时间轴的物理基石，所有事件必须挂载在回目上。
+model Chapter {
+  id      String      @id @default(uuid()) @db.Uuid
+  bookId  String      @map("book_id") @db.Uuid
+  type    ChapterType @default(CHAPTER) // 标注是楔子还是正文
+  no      Int // 章节序号（第几回），决定时间轴物理排序
+  unit    String      @default("回") // 称谓单位 (如: "回", "章", "节")
+  noText  String?     @map("no_text") // 自定义序号显示 (如: "第一回", "序章")
+  title   String // 章节名，如“范进中举”
+  content String      @db.Text // 章节原文（用于 AI 解析及前端高亮溯源）
+
+  // 针对文学作品的补充
+  isAbstract Boolean  @default(false) @map("is_abstract") // 是否为总纲/大义
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book        Book              @relation(fields: [bookId], references: [id])
+  mentions    Mention[]
+  biographies BiographyRecord[]
+  relations   Relationship[]
+
+  @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
+  @@map("chapters") // 数据库物理表名：复数
+}
+
+/// @db.remark: 全局角色本体。代表“这个人本身”，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
+model Persona {
+  id     String      @id @default(uuid()) @db.Uuid
+  name   String // 全局标准名（如“范进”）
+  type   PersonaType @default(PERSON) // 实体类型
+  gender String? // 性别
+
+  // 跨书共享的静态属性
+  birthYear  String?  @map("birth_year") // 生年（虚拟或公历）
+  deathYear  String?  @map("death_year") // 卒年
+  globalTags String[] @map("global_tags") // 全局标签，如 ["真名士", "官僚"]
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profiles    Profile[]
+  mentions    Mention[]
+  biographies BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
+
+  // 建立双向关系关联，方便 3D 图谱从 Persona 直接出发查询
+  sourceRels Relationship[] @relation("SourcePersona")
+  targetRels Relationship[] @relation("TargetPersona")
+
+  @@index([name], map: "persona_name_idx")
+  @@map("personas")
+}
+
+/// @db.remark: 角色书中档案。记录该 Persona 在特定书籍中的特有属性（如讽刺指数）。
+model Profile {
+  id        String @id @default(uuid()) @db.Uuid
+  personaId String @map("persona_id") @db.Uuid
+  bookId    String @map("book_id") @db.Uuid
+
+  localName    String  @map("local_name") // 书中称呼：如“范老爷”
+  localSummary String? @map("local_summary") @db.Text // AI 汇总的本书人物小传
+  ironyIndex   Float   @default(0) @map("irony_index") // 讽刺指数 (0-10)
+  moralTier    String? @map("moral_tier") // 人格档次，如“伪君子”
+
+  // 3D 视觉配置缓存：存储节点颜色、发光度、初始坐标建议等
+  visualConfig Json?    @map("visual_config")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  persona Persona @relation(fields: [personaId], references: [id])
+  book    Book    @relation(fields: [bookId], references: [id])
+
+  @@unique([personaId, bookId], map: "profile_persona_id_book_id_key")
+  @@map("profiles")
+}
+
+/// @db.remark: 履历记录表。时间轴的核心，记录职位、地点、状态的每一次跳动。
+model BiographyRecord {
+  id        String @id @default(uuid()) @db.Uuid
+  personaId String @map("persona_id") @db.Uuid
+  chapterId String @map("chapter_id") @db.Uuid // 事件发生的章节坐标
+  chapterNo Int    @map("chapter_no") // 冗余排序字段，极速生成 Timeline
+
+  category    BioCategory @default(EVENT) // 事件分类
+  title       String? // 当时的职位/身份，如“山东学道”
+  location    String? // 所在的地理位置
+  event       String      @db.Text // 事件具体描述
+  virtualYear String?     @map("virtual_year") // 书中提到的时间点
+
+  ironyNote String?          @map("irony_note") @db.Text // AI 的解析点评
+  status    ProcessingStatus @default(DRAFT)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  persona Persona @relation(fields: [personaId], references: [id])
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+
+  @@index([chapterNo], map: "biography_record_chapter_no_idx")
+  @@index([personaId], map: "biography_record_persona_id_idx")
+  @@map("biography_records")
+}
+
+/// @db.remark: 原文提及记录。记录“谁在什么时候出场了”，支持精准定位原文段落。
+model Mention {
+  id        String @id @default(uuid()) @db.Uuid
+  personaId String @map("persona_id") @db.Uuid
+  chapterId String @map("chapter_id") @db.Uuid
+
+  rawText   String   @map("raw_text") // 原文提及片段，如“那范老爷”
+  summary   String? // AI 提取的此次出场动态摘要
+  paraIndex Int?     @map("para_index") // 段落索引，用于定位原文
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  persona Persona @relation(fields: [personaId], references: [id])
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+
+  @@index([chapterId], map: "mentions_chapter_id_idx")
+  @@index([personaId, chapterId], map: "mention_persona_id_chapter_id_idx")
+  @@map("mentions")
+}
+
+/// @db.remark: 动态关系表。
+model Relationship {
+  id        String @id @default(uuid()) @db.Uuid
+  chapterId String @map("chapter_id") @db.Uuid // 关系确认的章节
+  sourceId  String @map("source_id") @db.Uuid // 发起者 ID
+  targetId  String @map("target_id") @db.Uuid // 接收者 ID
+
+  type        String // 关系类型，如“同年”、“师生”
+  weight      Float            @default(1.0) // 亲密度
+  description String?          @db.Text // 关系背景证据
+  status      ProcessingStatus @default(DRAFT)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+  source  Persona @relation("SourcePersona", fields: [sourceId], references: [id])
+  target  Persona @relation("TargetPersona", fields: [targetId], references: [id])
+
+  @@index([sourceId, targetId], map: "relationships_source_id_target_id_idx")
+  @@map("relationships")
+}
