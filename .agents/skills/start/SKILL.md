@@ -67,7 +67,7 @@ Briefly report context and ask: **"What would you like to work on?"**
 
 ```text
 /trellis:start
-/speckit.implement
+# Implement directly (no docs needed)
 $finish-work
 # Ask whether to run $record-session
 ```
@@ -81,7 +81,7 @@ $finish-work
 bash .trellis/scripts/flow_feature_init.sh --strategy fast "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]
 python3 ./.trellis/scripts/task.py flow-confirm --compact --preview 8
 # Wait for explicit user decision: 执行 / 修改：...
-/speckit.implement
+# Implement based on generated tasks
 # Essential checks: success + failure + boundary
 python3 ./.trellis/scripts/task.py flow-guard --verify
 $finish-work
@@ -93,13 +93,10 @@ $finish-work
 ```text
 /trellis:start
 bash .trellis/scripts/flow_feature_init.sh --strategy strict "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]
-/speckit.specify
-/speckit.clarify
-/speckit.plan
-/speckit.tasks
+# Complete OpenSpec docs: proposal.md, design.md, tasks.md, spec-delta.md
 python3 ./.trellis/scripts/task.py flow-confirm
 # Wait for explicit user decision: 执行 / 修改：...
-/speckit.implement
+# Implement based on OpenSpec docs
 python3 ./.trellis/scripts/task.py flow-guard --verify
 $finish-work
 # Ask whether to run $record-session
@@ -109,12 +106,10 @@ $finish-work
 
 ```text
 /trellis:start
-/speckit.specify
-/speckit.clarify
-/speckit.tasks
+# Create minimal OpenSpec docs for bug context
 python3 ./.trellis/scripts/task.py flow-confirm
 # Wait for explicit user decision: 执行 / 修改：...
-/speckit.implement
+# Implement bug fix
 /trellis:break-loop
 $finish-work
 # Ask whether to run $record-session
@@ -134,12 +129,9 @@ Upgrade template:
 
 ```text
 bash .trellis/scripts/flow_feature_upgrade_docs.sh [task-dir]
-/speckit.specify
-/speckit.clarify
-/speckit.plan
-/speckit.tasks
+# Complete OpenSpec docs: proposal.md, design.md, tasks.md, spec-delta.md
 python3 ./.trellis/scripts/task.py flow-confirm
-/speckit.implement
+# Implement based on complete docs
 ```
 
 ---

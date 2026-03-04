@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "scaffold:api": "node scripts/scaffold-api.mjs",
+    "openspec:init": "bash .trellis/scripts/flow_feature_init_openspec.sh",
+    "openspec:upgrade": "bash .trellis/scripts/flow_feature_upgrade_docs_openspec.sh",
+    "openspec:confirm": "python3 ./.trellis/scripts/task.py flow-confirm",
+    "openspec:check": "python3 ./.trellis/scripts/task.py flow-guard --verify",
+    "trellis:context": "python3 ./.trellis/scripts/get_context.py",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts"

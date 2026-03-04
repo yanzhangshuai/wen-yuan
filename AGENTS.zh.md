@@ -10,7 +10,8 @@
 
 使用 `@/.trellis/` 了解：
 - 开发工作流（`workflow.md`）
-- 项目结构与规范（`spec/`）
+- 项目执行思考指南（`spec/guides/`）
+- OpenSpec 工程规范（`openspec/specs/engineering-standards/`）
 - 开发者工作区（`workspace/`）
 
 请保留该受管区块，便于后续通过 `trellis update` 自动刷新说明。
@@ -30,20 +31,21 @@
 
 1. 开发前必须先执行 `/trellis:start`。
 2. 非 trivial 任务采用双策略模型：
-   - 严格策略（证明完整）：`/speckit.specify` -> `/speckit.clarify` -> `/speckit.plan` -> `/speckit.tasks` -> `/speckit.implement`。
-   - 速度策略（速度优先）：`/trellis:start` -> `ff-fast+n|ff-fast=c` -> `bash .trellis/scripts/flow_feature_fast_init.sh "<需求>" [task-dir] [--stack "<技术栈>"] [--req-doc <需求文档>] [--stack-doc <技术栈文档>]` -> `python3 ./.trellis/scripts/task.py flow-confirm --compact --preview 8` -> `/speckit.implement` -> `$finish-work`。
+   - 严格策略（证明完整）：`/trellis:start` -> `ff-full+n|ff-full=c` -> `bash .trellis/scripts/flow_feature_init_openspec.sh --strategy strict "<需求>" [task-dir] [--stack "<技术栈>"] [--req-doc <需求文档>] [--stack-doc <技术栈文档>]` -> 完成 OpenSpec 文档（`proposal.md/design.md/tasks.md/spec-delta.md`）-> `python3 ./.trellis/scripts/task.py flow-confirm` -> 执行实现 -> `python3 ./.trellis/scripts/task.py flow-guard --verify` -> `$finish-work`。
+   - 速度策略（速度优先）：`/trellis:start` -> `ff-fast+n|ff-fast=c` -> `bash .trellis/scripts/flow_feature_init_openspec.sh --strategy fast "<需求>" [task-dir] [--stack "<技术栈>"] [--req-doc <需求文档>] [--stack-doc <技术栈文档>]` -> `python3 ./.trellis/scripts/task.py flow-confirm --compact --preview 8` -> 执行实现 -> `python3 ./.trellis/scripts/task.py flow-guard --verify` -> `$finish-work`。
 3. 升级规则（强制）：一旦出现需求歧义、跨层契约变化（API/Action/DB 签名/载荷/env）或交付风险升高，必须从速度策略切回严格策略。
 4. 在实现之前，必须执行任务确认关卡：
    `python3 ./.trellis/scripts/task.py flow-confirm`，并等待明确确认。
 5. 对 `flow-feature`，在 finish/archive 前必须通过文档门禁：
-   `python3 ./.trellis/scripts/task.py flow-guard`。
+   `python3 ./.trellis/scripts/task.py flow-guard --verify`。
 6. 速度策略交付前仅做必要检查：
    - 一条成功路径验证
    - 一条失败路径验证（错误稳定且可读）
    - 一条边界/极端情况验证
-7. 在 `spec.md` / `plan.md` / `tasks.md` 中必须显式包含以下约束：
-   前端复用性/可读性/性能、props 类型、命名一致性、详细注释。
-8. Spec-Kit 任务是可迭代的：若实现中途需求/范围变化，必须先暂停编码，更新 `spec.md` / `clarify.md` / `plan.md` / `tasks.md`，再继续实现。
+7. 在 `openspec/changes/<change>/proposal.md` / `design.md` / `tasks.md` /
+   `spec-delta.md`（以及存在时同步的任务级 `spec.md` / `plan.md` / `tasks.md`）
+   中必须显式包含以下约束：前端复用性/可读性/性能、props 类型、命名一致性、详细注释。
+8. OpenSpec 任务是可迭代的：若实现中途需求/范围变化，必须先暂停编码，更新 `openspec/changes/<change>/proposal.md` / `design.md` / `tasks.md` / `spec-delta.md`，再继续实现。
 9. 开启 flow-feature 简写：
    - `ff+n: <requirement>` = flow-feature（新分支）
    - `ff=c: <requirement>` = flow-feature（当前分支）
@@ -68,9 +70,11 @@
    - 结构化编辑：`+` 新增 / `-` 删除 / `~` 改写 / `>` 重排 / `!` 重新打开
    - 结构化编辑命令：
      `python3 ./.trellis/scripts/task.py flow-edit-tasks "<ops>"`
-14. 对 `ff+n`（新分支），若 Spec-Kit 自动生成短分支名为空或非法，应优先回退为确定性合法短名（如 `feature-<hash>`），仅在必要时再让用户指定。
+14. 对 `ff+n`（新分支），若 OpenSpec 自动生成 change short-name 为空或非法，应优先回退为确定性合法短名（如 `feature-<hash>`），仅在必要时再让用户指定。
    推荐辅助命令：
    `bash .trellis/scripts/flow_feature_create.sh "<requirement>" [short-name]`
+
+15. 新任务必须写入 `openspec/changes/*`。
 
 ### 后端契约规则
 

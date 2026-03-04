@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
-- **Last Active**: 2026-03-03
+- **Total Sessions**: 0
+- **Last Active**: -
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~127 | Active |
+| `journal-1.md` | ~0 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,10 +29,6 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
-| 4 | 2026-03-03 | Refactor Trellis + Spec-Kit flow entry and gates | - |
-| 3 | 2026-03-03 | Workflow regression fixes: dual-strategy + two-step input | - |
-| 2 | 2026-03-03 | Spec-Kit/Trellis 6步快路径与升级规则优化 | - |
-| 1 | 2026-03-03 | 数据库迁移与种子录入（flow-feature） | - |
 <!-- @@@/auto:session-history -->
 
 ---

@@ -70,7 +70,7 @@
   - Base: 仅迁移成功且可查询空表。
   - Bad: 缺少 `DATABASE_URL` 或外键依赖不满足时失败并报错。
 
-## Required Team Constraints (Spec-Kit)
+## Required Team Constraints (OpenSpec)
 
 - 前端复用/可读性/性能：本需求以后端数据为主，不新增前端组件；若后续联动前端，需保持组件复用、可读性与列表渲染性能。
 - Props typing：本需求不新增 React 组件；若新增，必须提前定义 `<ComponentName>Props`。

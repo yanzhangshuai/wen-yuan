@@ -30,7 +30,7 @@
 - [x] T011 更新特性文档与执行记录，沉淀迁移+seed 复现步骤
 - [x] T012 运行 lint/typecheck（如受本次变更影响）并完成最终检查
 
-## Required Team Constraints (Spec-Kit)
+## Required Team Constraints (OpenSpec)
 
 - 前端复用/可读性/性能：本任务不新增前端代码；若后续联动需遵循该约束。
 - Props typing：若新增组件，必须先定义 `<ComponentName>Props`。

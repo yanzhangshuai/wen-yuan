@@ -6,3 +6,4 @@ coverage
 *.log
 .volumes
 .pnpm-store
+.archive/

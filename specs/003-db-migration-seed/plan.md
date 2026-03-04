@@ -61,7 +61,7 @@ src/generated/prisma/
    - failure：缺少 `DATABASE_URL` 时失败可读
    - boundary：重复 seed 后数据状态符合预期
 
-## Required Team Constraints (Spec-Kit)
+## Required Team Constraints (OpenSpec)
 
 - 前端复用/可读性/性能：本次不改前端；如后续联动，遵循组件复用与渲染性能规则。
 - Props typing：本次不新增组件；如新增，必须先定义 `<ComponentName>Props`。

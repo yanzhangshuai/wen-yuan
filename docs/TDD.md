@@ -214,7 +214,8 @@ model Relationship {
 * 文件分片: Next.js 将上传的书籍切分为 100KB 的 chunks 存入临时 Bucket。
 * 异步队列: 使用 QStash 发起延迟 Webhook，由独立的解析逻辑处理。
 * 流式反馈: 后端通过 Server-Sent Events (SSE) 向前端推送解析进度（如：“正在识别第 5 回...”）。
-* 模型熔断: 预设 Gemini -> DeepSeek -> GPT-4o 的降级链路，确保 API 超时时解析不中断。
+* 模型联邦：支持阿里、百度、字节、DeepSeek V3 (逻辑推理、古文理解)、文心一言、Gemini 等多个模型。抽象成一个统一的接口，支持动态切换模型。
+* 模型熔断: 预设模型降级链路，确保 API 超时时解析不中断。
 
 #### 3.2 3D 渲染性能优化 (GPU Acceleration)
 * 数据压缩: 前端请求图谱数据时，后端执行 拓扑剪枝，仅返回当前视距内的节点。

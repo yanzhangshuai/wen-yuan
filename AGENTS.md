@@ -10,7 +10,8 @@ Use the `/trellis:start` command when starting a new session to:
 
 Use `@/.trellis/` to learn:
 - Development workflow (`workflow.md`)
-- Project structure guidelines (`spec/`)
+- Project execution guides (`spec/guides/`)
+- OpenSpec standards (`openspec/specs/engineering-standards/`)
 - Developer workspace (`workspace/`)
 
 Keep this managed block so 'trellis update' can refresh the instructions.
@@ -30,8 +31,8 @@ Keep this managed block so 'trellis update' can refresh the instructions.
 
 1. Start session with `/trellis:start` before development.
 2. Non-trivial tasks use a dual-strategy model:
-   - Strict Strategy (prove completeness): `/speckit.specify` -> `/speckit.clarify` -> `/speckit.plan` -> `/speckit.tasks` -> `/speckit.implement`.
-   - Speed Strategy (speed-first): `/trellis:start` -> `ff-fast+n|ff-fast=c` -> `bash .trellis/scripts/flow_feature_init.sh --strategy fast "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]` -> `python3 ./.trellis/scripts/task.py flow-confirm --compact --preview 8` -> `/speckit.implement` -> `$finish-work`.
+   - Strict Strategy (prove completeness): `/trellis:start` -> `ff-full+n|ff-full=c` -> `bash .trellis/scripts/flow_feature_init.sh --strategy strict "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]` -> complete OpenSpec docs (`proposal.md/design.md/tasks.md/spec-delta.md`) -> `python3 ./.trellis/scripts/task.py flow-confirm` -> implement -> `python3 ./.trellis/scripts/task.py flow-guard --verify` -> `$finish-work`.
+   - Speed Strategy (speed-first): `/trellis:start` -> `ff-fast+n|ff-fast=c` -> `bash .trellis/scripts/flow_feature_init.sh --strategy fast "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]` -> `python3 ./.trellis/scripts/task.py flow-confirm --compact --preview 8` -> implement -> `python3 ./.trellis/scripts/task.py flow-guard --verify` -> `$finish-work`.
 3. Upgrade rule (mandatory): if ambiguity appears, cross-layer contracts change (API/Action/DB signature/payload/env), or delivery risk increases, immediately switch from Speed Strategy to Strict Strategy.
 4. Before implementation, run Trellis confirmation gate:
    `python3 ./.trellis/scripts/task.py flow-confirm` and wait for explicit approval.
@@ -41,12 +42,13 @@ Keep this managed block so 'trellis update' can refresh the instructions.
    - One success-path verification
    - One failure-path verification (readable stable error)
    - One boundary/edge verification
-7. In `spec.md` / `plan.md` / `tasks.md`, explicitly include constraints for:
-   frontend reuse/readability/performance, props typing, naming consistency, and
-   detailed comments.
-8. Spec-Kit tasks are iterative: if requirements/scope change mid-implementation,
-   you MUST pause coding and update `spec.md` / `clarify.md` / `plan.md` /
-   `tasks.md` first, then continue implementation.
+7. In `openspec/changes/<change>/proposal.md` / `design.md` / `tasks.md` / `spec-delta.md`
+   (and synchronized task-level `spec.md` / `plan.md` / `tasks.md` when present),
+   explicitly include constraints for frontend reuse/readability/performance,
+   props typing, naming consistency, and detailed comments.
+8. OpenSpec tasks are iterative: if requirements/scope change mid-implementation,
+   you MUST pause coding and update `openspec/changes/<change>/proposal.md` /
+   `design.md` / `tasks.md` / `spec-delta.md` first, then continue implementation.
 9. Flow-feature shorthand is enabled:
    - `ff+n: <requirement>` = flow-feature with new branch
    - `ff=c: <requirement>` = flow-feature on current branch
@@ -73,11 +75,17 @@ Keep this managed block so 'trellis update' can refresh the instructions.
    - Structured edits: `+` add / `-` remove / `~` rewrite / `>` reorder / `!` reopen
    - Structured edits should be applied via:
      `python3 ./.trellis/scripts/task.py flow-edit-tasks "<ops>"`
-14. For `ff+n` (new branch), if auto-generated Spec-Kit branch short-name is empty
+14. For `ff+n` (new branch), if auto-generated OpenSpec change short-name is empty
    or invalid, the assistant should fall back to a valid deterministic short-name
    (for example `feature-<hash>`), and ask user to override only when needed.
    Recommended helper:
    `bash .trellis/scripts/flow_feature_create.sh "<requirement>" [short-name]`
+
+15. New work MUST be written under `openspec/changes/*`.
+
+16. Engineering standards are maintained in `.trellis/spec/` (frontend, backend, guides).
+
+17. Business/feature specifications are maintained in `openspec/specs/` (domain, features, constraints).
 
 ### Backend Contract Rules
 

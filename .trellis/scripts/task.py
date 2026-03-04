@@ -190,6 +190,46 @@ def _detect_speckit_feature_dir(task_dir: Path, repo_root: Path, task_data: dict
     return None
 
 
+def _detect_openspec_change_dir(task_dir: Path, repo_root: Path, task_data: dict | None) -> Path | None:
+    """Detect OpenSpec change directory for a task."""
+    from_env = os.environ.get("FLOW_FEATURE_CHANGE_DIR")
+    if from_env:
+        candidate = repo_root / from_env
+        if candidate.is_dir():
+            return candidate
+
+    def _normalize(value: str) -> str:
+        text = value.strip().lower()
+        text = re.sub(r"^[0-9]{2}-[0-9]{2}-", "", text)
+        text = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", text)
+        text = re.sub(r"-+", "-", text).strip("-")
+        return text
+
+    task_basename = task_dir.name
+    stripped_name = re.sub(r"^[0-9]{2}-[0-9]{2}-", "", task_basename)
+
+    keys: list[str] = []
+    for value in (stripped_name, task_basename):
+        normalized = _normalize(value)
+        if normalized:
+            keys.append(normalized)
+
+    if task_data:
+        for key in ("id", "name", "title"):
+            value = str(task_data.get(key, "")).strip()
+            normalized = _normalize(value)
+            if normalized:
+                keys.append(normalized)
+
+    # Preserve order and de-duplicate.
+    unique_keys = list(dict.fromkeys(keys))
+    for change_key in unique_keys:
+        candidate = repo_root / "openspec" / "changes" / change_key
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
 def _validate_flow_feature_docs(task_dir: Path, repo_root: Path) -> list[str]:
     """Validate required docs for flow-feature tasks. Returns missing items."""
     task_json = _read_json_file(task_dir / FILE_TASK_JSON)
@@ -208,12 +248,12 @@ def _validate_flow_feature_docs(task_dir: Path, repo_root: Path) -> list[str]:
         if "Confirmed: YES" not in confirm_text:
             missing.append(f"{confirm_path.relative_to(repo_root)} (must include 'Confirmed: YES')")
 
-    feature_dir = _detect_speckit_feature_dir(task_dir, repo_root, task_json)
-    if not feature_dir:
-        missing.append(".specify/features/<feature>/ (directory)")
+    change_dir = _detect_openspec_change_dir(task_dir, repo_root, task_json)
+    if not change_dir:
+        missing.append("openspec/changes/<change>/ (directory)")
     else:
-        for file_name in ("spec.md", "clarify.md", "plan.md", "tasks.md"):
-            path = feature_dir / file_name
+        for file_name in ("proposal.md", "design.md", "tasks.md", "spec-delta.md"):
+            path = change_dir / file_name
             if not path.is_file() or not path.read_text(encoding="utf-8").strip():
                 missing.append(str(path.relative_to(repo_root)))
 
@@ -1040,7 +1080,7 @@ def cmd_flow_confirm(args: argparse.Namespace) -> int:
             encoding="utf-8",
         )
         print(colored(f"✓ Change request saved: {confirm_file}", Colors.YELLOW))
-        print("Next: update spec/clarify/plan/tasks, then run flow-confirm --approve.")
+        print("Next: update proposal/design/tasks/spec-delta, then run flow-confirm --approve.")
         return 0
 
     print()
