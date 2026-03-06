@@ -5,7 +5,7 @@ description: "Start Session"
 
 # Start Session
 
-Initialize your AI development session and route work into the Trellis + Spec-Kit flow.
+Initialize your AI development session and begin working on tasks.
 
 ---
 
@@ -13,18 +13,26 @@ Initialize your AI development session and route work into the Trellis + Spec-Ki
 
 | Marker | Meaning | Executor |
 |--------|---------|----------|
-| `[AI]` | Bash/scripts run by AI | You (AI) |
-| `[USER]` | Skills run by user | User |
+| `[AI]` | Bash scripts or tool calls executed by AI | You (AI) |
+| `[USER]` | Skills executed by user | User |
 
 ---
 
 ## Initialization `[AI]`
 
-### Step 1: Read Workflow
+### Step 1: Understand Development Workflow
+
+First, read the workflow guide to understand the development process:
 
 ```bash
 cat .trellis/workflow.md
 ```
+
+**Follow the instructions in workflow.md** - it contains:
+- Core principles (Read Before Write, Follow Standards, etc.)
+- File system structure
+- Development process
+- Best practices
 
 ### Step 2: Get Current Context
 
@@ -32,140 +40,303 @@ cat .trellis/workflow.md
 python3 ./.trellis/scripts/get_context.py
 ```
 
-### Step 3: Read Guideline Indexes
+This shows: developer identity, git status, current task (if any), active tasks.
+
+### Step 3: Read Guidelines Index
 
 ```bash
-cat .trellis/spec/frontend/index.md
-cat .trellis/spec/backend/index.md
-cat .trellis/spec/guides/index.md
+cat .trellis/spec/frontend/index.md  # Frontend guidelines
+cat .trellis/spec/backend/index.md   # Backend guidelines
+cat .trellis/spec/guides/index.md    # Thinking guides
+cat .trellis/spec/guides/comment-guidelines.md # Comment standard (including unit tests)
+cat .trellis/spec/meta/spec-quality-standard.md # Spec quality standard (when editing specs)
 ```
 
 ### Step 4: Report and Ask
 
-Briefly report context and ask: **"What would you like to work on?"**
+Report what you learned and ask: "What would you like to work on?"
 
 ---
 
 ## Task Classification
 
+When user describes a task, classify it:
+
 | Type | Criteria | Workflow |
 |------|----------|----------|
-| **Question** | User asks architecture/code understanding | Answer directly |
-| **Trivial Fix** | Tiny low-risk edit (<5 min) | flow-lite |
-| **Feature / Non-trivial** | Multi-file, risk, or requirement work | flow-feature (Speed default) |
-| **Known Bug** | Existing defect with clear reproduction | flow-bug |
+| **Question** | User asks about code, architecture, or how something works | Answer directly |
+| **Trivial Fix** | Typo fix, comment update, single-line change, < 5 minutes | Direct Edit |
+| **Simple Task** | Clear goal, 1-2 files, well-defined scope | Quick confirm → Task Workflow |
+| **Complex Task** | Vague goal, multiple files, architectural decisions | **Brainstorm → Task Workflow** |
 
 ### Decision Rule
 
-> If uncertain between speed and strict, start with **Speed Strategy** and apply the mandatory upgrade rule when risk appears.
+> **If in doubt, use Brainstorm + Task Workflow.**
+>
+> Task Workflow ensures code-specs are injected to the right context, resulting in higher quality code.
+> The overhead is minimal, but the benefit is significant.
+
+> **Subtask Decomposition**: If brainstorm reveals multiple independent work items,
+> consider creating subtasks using `--parent` flag or `add-subtask` command.
+> See the brainstorm skill's Step 8 for details.
 
 ---
 
-## Main Workflows
+## Question / Trivial Fix
 
-### 1) flow-lite (tiny low-risk)
+For questions or trivial fixes, work directly:
 
-```text
-/trellis:start
-# Implement directly (no docs needed)
-$finish-work
-# Ask whether to run $record-session
+1. Answer question or make the fix
+2. If code was changed, remind user to run `$finish-work`
+
+---
+
+## Simple Task
+
+For simple, well-defined tasks:
+
+1. Quick confirm: "I understand you want to [goal]. Ready to proceed?"
+2. If yes, proceed to **Task Workflow Phase 1 Path B** (create task, write PRD, then research)
+3. If no, clarify and confirm again
+
+---
+
+## Complex Task - Brainstorm First
+
+For complex or vague tasks, use the brainstorm process to clarify requirements.
+
+See `$brainstorm` for the full process. Summary:
+
+1. **Acknowledge and classify** - State your understanding
+2. **Create task directory** - Track evolving requirements in `prd.md`
+3. **Ask questions one at a time** - Update PRD after each answer
+4. **Propose approaches** - For architectural decisions
+5. **Confirm final requirements** - Get explicit approval
+6. **Proceed to Task Workflow** - With clear requirements in PRD
+
+---
+
+## Task Workflow (Development Tasks)
+
+**Why this workflow?**
+- Run a dedicated research pass before coding
+- Configure specs in jsonl context files
+- Implement using injected context
+- Verify with a separate check pass
+- Result: Code that follows project conventions automatically
+
+### Overview: Two Entry Points
+
+```
+From Brainstorm (Complex Task):
+  PRD confirmed → Research → Configure Context → Activate → Implement → Check → Complete
+
+From Simple Task:
+  Confirm → Create Task → Write PRD → Research → Configure Context → Activate → Implement → Check → Complete
 ```
 
-### 2) flow-feature (default for non-trivial)
+**Key principle: Research happens AFTER requirements are clear (PRD exists).**
 
-#### Speed Strategy (default)
+---
 
-```text
-/trellis:start
-bash .trellis/scripts/flow_feature_init.sh --strategy fast "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]
-python3 ./.trellis/scripts/task.py flow-confirm --compact --preview 8
-# Wait for explicit user decision: 执行 / 修改：...
-# Implement based on generated tasks
-# Essential checks: success + failure + boundary
-python3 ./.trellis/scripts/task.py flow-guard --verify
-$finish-work
-# Ask whether to run $record-session
+### Phase 1: Establish Requirements
+
+#### Path A: From Brainstorm (skip to Phase 2)
+
+PRD and task directory already exist from brainstorm. Skip directly to Phase 2.
+
+#### Path B: From Simple Task
+
+**Step 1: Confirm Understanding** `[AI]`
+
+Quick confirm:
+- What is the goal?
+- What type of development? (frontend / backend / fullstack)
+- Any specific requirements or constraints?
+
+If unclear, ask clarifying questions.
+
+**Step 2: Create Task Directory** `[AI]`
+
+```bash
+TASK_DIR=$(python3 ./.trellis/scripts/task.py create "<title>" --slug <name>)
 ```
 
-#### Strict Strategy
+**Step 3: Write PRD** `[AI]`
 
-```text
-/trellis:start
-bash .trellis/scripts/flow_feature_init.sh --strategy strict "<requirement>" [task-dir] [--stack "<tech-stack>"] [--req-doc <requirement-doc>] [--stack-doc <tech-stack-doc>]
-# Complete OpenSpec docs: proposal.md, design.md, tasks.md, spec-delta.md
-python3 ./.trellis/scripts/task.py flow-confirm
-# Wait for explicit user decision: 执行 / 修改：...
-# Implement based on OpenSpec docs
-python3 ./.trellis/scripts/task.py flow-guard --verify
-$finish-work
-# Ask whether to run $record-session
-```
+Create `prd.md` in the task directory with:
 
-### 3) flow-bug (known bug)
+```markdown
+# <Task Title>
 
-```text
-/trellis:start
-# Create minimal OpenSpec docs for bug context
-python3 ./.trellis/scripts/task.py flow-confirm
-# Wait for explicit user decision: 执行 / 修改：...
-# Implement bug fix
-/trellis:break-loop
-$finish-work
-# Ask whether to run $record-session
+## Goal
+<What we're trying to achieve>
+
+## Requirements
+- <Requirement 1>
+- <Requirement 2>
+
+## Acceptance Criteria
+- [ ] <Criterion 1>
+- [ ] <Criterion 2>
+
+## Technical Notes
+<Any technical decisions or constraints>
 ```
 
 ---
 
-## Mandatory Upgrade Rule (Fast -> Strict)
+### Phase 2: Prepare for Implementation (shared)
 
-Immediately switch to Strict Strategy when any appears:
+> Both paths converge here. PRD and task directory must exist before proceeding.
 
-1. Ambiguous requirement or acceptance criteria
-2. Cross-layer contract changes (API/Action/DB signature, payload, env)
-3. Elevated delivery risk (high impact / hard rollback / unknown dependency)
+**Step 4: Code-Spec Depth Check** `[AI]`
 
-Upgrade template:
+If the task touches infra or cross-layer contracts, do not start implementation until code-spec depth is defined.
 
-```text
-bash .trellis/scripts/flow_feature_upgrade_docs.sh [task-dir]
-# Complete OpenSpec docs: proposal.md, design.md, tasks.md, spec-delta.md
-python3 ./.trellis/scripts/task.py flow-confirm
-# Implement based on complete docs
+Trigger this requirement when the change includes any of:
+- New or changed command/API signatures
+- Database schema or migration changes
+- Infra integrations (storage, queue, cache, secrets, env contracts)
+- Cross-layer payload transformations
+
+Must-have before proceeding:
+- [ ] Target code-spec files to update are identified
+- [ ] Concrete contract is defined (signature, fields, env keys)
+- [ ] Validation and error matrix is defined
+- [ ] At least one Good/Base/Bad case is defined
+
+**Step 5: Research the Codebase** `[AI]`
+
+Based on the confirmed PRD, run a focused research pass and produce:
+
+1. Relevant spec files in `.trellis/spec/`
+2. Existing code patterns to follow (2-3 examples)
+3. Files that will likely need modification
+
+Use this output format:
+
+```markdown
+## Relevant Specs
+- <path>: <why it's relevant>
+
+## Code Patterns Found
+- <pattern>: <example file path>
+
+## Files to Modify
+- <path>: <what change>
 ```
 
+**Step 6: Configure Context** `[AI]`
+
+Initialize default context:
+
+```bash
+python3 ./.trellis/scripts/task.py init-context "$TASK_DIR" <type>
+# type: backend | frontend | fullstack
+```
+
+Add specs found in your research pass:
+
+```bash
+# For each relevant spec and code pattern:
+python3 ./.trellis/scripts/task.py add-context "$TASK_DIR" implement "<path>" "<reason>"
+python3 ./.trellis/scripts/task.py add-context "$TASK_DIR" check "<path>" "<reason>"
+```
+
+**Step 7: Activate Task** `[AI]`
+
+```bash
+python3 ./.trellis/scripts/task.py start "$TASK_DIR"
+```
+
+This sets `.current-task` so hooks can inject context.
+
 ---
 
-## Task Edit Inputs
+### Phase 3: Execute (shared)
 
-- Natural language: `修改：...`
-- Structured ops: `+ / - / ~ / > / !`
-- Command: `python3 ./.trellis/scripts/task.py flow-edit-tasks "<ops>"`
+**Step 8: Implement** `[AI]`
+
+Implement the task described in `prd.md`.
+
+- Follow all specs injected into implement context
+- Keep changes scoped to requirements
+- Run lint and typecheck before finishing
+- Add/Update unit tests for changed business logic
+- Follow project testing baseline: test effectiveness first, then coverage gate (mature team baseline)
+- Write detailed and complete comments for production code and unit tests per comment guidelines
+
+**Step 9: Check Quality** `[AI]`
+
+Run a quality pass against check context:
+
+- Review all code changes against the specs
+- Fix issues directly
+- Ensure lint and typecheck pass
+- Ensure unit tests cover success/failure/boundary logic for changed code
+- Ensure coverage evidence is recorded and meets baseline
+- Ensure code and unit test comments are complete, accurate, and aligned with implemented behavior
+
+**Step 10: Complete** `[AI]`
+
+1. Verify lint/typecheck/test checks pass, coverage baseline is met, and comment standard is satisfied
+2. Report what was implemented
+3. Remind user to:
+   - Test the changes
+   - Commit when ready
+   - Run `$record-session` to record this session
 
 ---
 
-## Skill Reference
+## Continuing Existing Task
+
+If `get_context.py` shows a current task:
+
+1. Read the task's `prd.md` to understand the goal
+2. Check `task.json` for current status and phase
+3. Ask user: "Continue working on <task-name>?"
+
+If yes, resume from the appropriate step (usually Step 7 or 8).
+
+---
+
+## Skills Reference
 
 ### User Skills `[USER]`
 
 | Skill | When to Use |
-|-------|-------------|
-| `$start` | Begin session |
-| `$finish-work` | Before commit |
-| `$record-session` | After completion |
+|---------|-------------|
+| `$start` | Begin a session (this skill) |
+| `$finish-work` | Before committing changes |
+| `$record-session` | After completing a task |
 
 ### AI Scripts `[AI]`
 
 | Script | Purpose |
 |--------|---------|
-| `python3 ./.trellis/scripts/get_context.py` | Session context |
-| `python3 ./.trellis/scripts/task.py flow-confirm` | Pre-implement confirmation gate |
-| `python3 ./.trellis/scripts/task.py flow-guard --verify` | Finish gate with verification evidence |
-| `python3 ./.trellis/scripts/task.py flow-edit-tasks` | Structured task edits |
+| `python3 ./.trellis/scripts/get_context.py` | Get session context |
+| `python3 ./.trellis/scripts/task.py create` | Create task directory |
+| `python3 ./.trellis/scripts/task.py init-context` | Initialize jsonl files |
+| `python3 ./.trellis/scripts/task.py add-context` | Add spec to jsonl |
+| `python3 ./.trellis/scripts/task.py start` | Set current task |
+| `python3 ./.trellis/scripts/task.py finish` | Clear current task |
+| `python3 ./.trellis/scripts/task.py archive` | Archive completed task |
+
+### Workflow Phases `[AI]`
+
+| Phase | Purpose | Context Source |
+|-------|---------|----------------|
+| research | Analyze codebase | direct repo inspection |
+| implement | Write code | `implement.jsonl` |
+| check | Review & fix | `check.jsonl` |
+| debug | Fix specific issues | `debug.jsonl` |
 
 ---
 
 ## Key Principle
 
-> Keep one primary path: `ff-fast` (default) and `ff-full` (upgrade/forced strict).
-> Reduce branchy process text; keep gates strict.
+> **Code-spec context is injected, not remembered.**
+>
+> The Task Workflow ensures agents receive relevant code-spec context automatically.
+> This is more reliable than hoping the AI "remembers" conventions.

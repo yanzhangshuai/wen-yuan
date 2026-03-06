@@ -1,6 +1,8 @@
 "use client";
 
-import { ThemeProvider as NextThemesProvider, ThemeProviderProps } from "next-themes";
+import { ThemeProvider as NextThemesProvider, type ThemeProviderProps as NextThemeProviderProps } from "next-themes";
+
+interface ThemeProviderProps extends NextThemeProviderProps {}
 
 /**
  * 功能：注入 next-themes 主题上下文。

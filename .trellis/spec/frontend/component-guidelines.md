@@ -1,119 +1,124 @@
-# Component Guidelines
+# 组件规范
 
-> [SYNC-NOTE]
-> Role: Source of truth (for agents)
-> Canonical: .trellis/spec/frontend/component-guidelines.md
-> Mirror: .trellis/spec/frontend/component-guidelines.zh.md
-> Last synced: 2026-03-03
-> Sync owner: codex
-
-
-> How components are built in this project.
+> 本项目组件的编写方式。
 
 ---
 
-## Overview
+## 概览
 
-Components follow a simple split:
-- Server Components for read-heavy pages.
-- Client Components only when hooks/browser events are needed.
-- Reusable UI primitives in `components/ui` with typed props.
-
----
-
-## Component Structure
-
-Standard order:
-1. Directive (`"use client"`) when needed.
-2. External imports.
-3. Internal imports.
-4. Props type/interface.
-5. Constants.
-6. Component implementation.
-
-Examples:
-- Client component with hooks: `src/components/ThemeToggle.tsx`
-- Server page component: `src/app/(admin)/analyze/page.tsx`
-- UI primitive: `src/components/ui/Button.tsx`
+组件策略是“server-first，client-when-needed”：
+- `src/app` 下的路由组件默认是 Server Components。
+- 只有交互叶子组件才添加 `"use client"`。
+- 可复用视觉基础组件统一放在 `src/components/ui`。
 
 ---
 
-## Props Conventions
+## 组件文件结构
 
-- Every component props type must be declared ahead of usage and named
-  `<ComponentName>Props` (for example `ButtonProps`, `AnalyzeButtonProps`).
-- Use explicit interfaces or type aliases, extending native HTML props when
-  appropriate.
-- Keep props small and focused.
-- Use discriminated unions for variant-like props.
+`.tsx` 文件推荐顺序：
+1. 按需添加客户端指令。
+2. 外部依赖导入。
+3. 内部模块导入（`@/...` 别名）。
+4. `<ComponentName>Props` interface。
+5. 常量定义。
+6. 组件实现。
 
-Examples:
-- HTML prop extension: `ButtonProps` in `src/components/ui/Button.tsx`
-- Small focused props: `AnalyzeButtonProps` in `src/app/(admin)/analyze/AnalyzeButton.tsx`
-- Variant union: `variant?: "outline" | "ghost"` in `src/components/ui/Button.tsx`
+真实示例：
+- 服务端路由组件：`src/app/page.tsx`
+- 使用 hooks 的客户端组件：`src/components/ThemeToggle.tsx`
+- 可复用基础组件：`src/components/ui/Button.tsx`
 
----
-
-## Reuse and Split Strategy
-
-- Prioritize reusable, composable components when logic or styling is shared
-  across 2+ places.
-- Avoid over-splitting into tiny components with weak semantic meaning.
-- Split a component only when one of these is true:
-  - There is a clear domain boundary.
-  - It is reused.
-  - It improves testability/readability significantly.
-- Keep one component responsible for one coherent UI concern.
+异步读取规则（强制）：
+- 组件渲染阶段的异步调用统一使用 `use()`。
+- 详细案例与边界约束见 `./react-guidelines.md`。
 
 ---
 
-## Readability and JSX Rules
+## Props 约定
 
-- Prefer early returns, named booleans, and helper render functions.
-- Avoid ternary operators in JSX whenever possible.
-- Nested ternary operators are forbidden.
-- If ternary is unavoidable, keep it single-level and very short.
+- 所有返回 JSX 的组件都必须声明 `interface <ComponentName>Props`。
+- 组件第一个参数必须使用该 interface 进行类型标注。
+- props interface 与组件同文件 colocate。
+- 包装型基础组件可按需扩展原生元素 props。
 
----
+真实示例：
+- 空 props interface 模式：`src/app/page.tsx` 中的 `HomePageProps`
+- 原生 props 扩展：`src/components/ui/Button.tsx` 中的 `ButtonProps`
+- 标准 props interface：`src/components/layout/Navbar.tsx` 中的 `NavbarProps`
 
-## Performance Baseline
-
-- Keep render trees stable: avoid recreating expensive objects/functions
-  unnecessarily in hot render paths.
-- Memoize only when profiling or clear render churn justifies it; readability
-  comes first.
-- Prefer moving heavy computation to server layer or dedicated hooks/utilities.
+校验入口：
+- 通过 `pnpm lint` + 代码评审检查 props interface 约定是否满足
 
 ---
 
-## Styling Patterns
+## 样式约定
 
-- Tailwind utility classes are the default.
-- Dark mode classes are paired with light mode classes in same element.
-- Conditional classes use template literals with clear boolean branches.
+- 默认使用 Tailwind utility classes。
+- 根 DOM 元素 className 必须包含语义化 class token（领域导向 kebab-case）。
+- 条件样式分支需保持可读，分支表达简短明确。
+- 涉及颜色时必须同时覆盖 light/dark mode。
 
-Examples:
-- Theme-aware layout shell: `src/app/layout.tsx`
-- Active/inactive nav styles: `src/components/layout/Navbar.tsx`
-- State-dependent button style: `src/app/(admin)/analyze/AnalyzeButton.tsx`
+真实示例：
+- 语义化根 class：`home-page`、`layout-navbar`、`ui-button`
+- 导航条件样式：`src/components/layout/Navbar.tsx`
+- 布局层 light/dark 配对：`src/app/layout.tsx`
 
----
-
-## Accessibility
-
-- Interactive icons must have text alternative (`aria-label` or visible text).
-- Buttons should define `type` explicitly.
-- Keep semantic structure (`main`, `header`, table elements) for screen readers.
-
-Examples:
-- Labeled icon button: `src/components/ThemeToggle.tsx`
-- Explicit button type: `src/components/ui/Button.tsx`
-- Semantic table markup: `src/components/ui/Table.tsx`
+校验入口：
+- 通过 `pnpm lint` + 代码评审检查语义化根 className 约定是否满足
 
 ---
 
-## Common Mistakes to Avoid
+## 可访问性
 
-- Marking large route trees as client components when only one child needs hooks.
-- Duplicating utility style logic instead of reusing `components/ui` primitives.
-- Passing untyped `any` props into shared components.
+- 图标交互控件必须提供 `aria-label`（或可见文本）。
+- `button` 必须显式声明 `type`。
+- 尽量使用语义化标签（`main`、`header`、`nav`、`section`、`table`），
+  避免无语义容器滥用。
+
+真实示例：
+- `aria-label` + `title`：`src/components/ThemeToggle.tsx`
+- 显式 `type="button"`：`src/components/ThemeToggle.tsx`
+- 语义化结构：`src/app/page.tsx`、`src/components/layout/Navbar.tsx`
+
+---
+
+## 常见错误（避免）
+
+- 路由文件没有真实 hooks/事件需求却添加 `"use client"`。
+- 省略 `<ComponentName>Props` interface。
+- 组件根节点缺少语义化 class，或使用 `container`、`wrapper` 等泛化命名。
+- 在业务组件重复实现基础样式，而不是复用 `src/components/ui/*`。
+
+---
+
+## 代码案例与原因
+
+反例：
+```tsx
+export function AnalyzeButton(props: any) {
+  return <button className="container">开始</button>;
+}
+```
+
+正例：
+```tsx
+interface AnalyzeButtonProps {
+  disabled?: boolean;
+}
+
+export function AnalyzeButton({ disabled = false }: AnalyzeButtonProps) {
+  return (
+    <button
+      type="button"
+      className="analyze-button ui-button rounded-md px-3 py-2"
+      disabled={disabled}
+    >
+      开始
+    </button>
+  );
+}
+```
+
+原因：
+- 显式 props + 语义化 className 让 lint、review、重构都有稳定锚点。
+- 统一组件骨架可降低 UI 行为漂移和样式重复实现。

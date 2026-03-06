@@ -1,7 +1,6 @@
 import neo4j, { Driver } from "neo4j-driver";
 
 declare global {
-  // eslint-disable-next-line no-var
   var neo4jDriver: Driver | undefined;
 }
 

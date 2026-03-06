@@ -13,7 +13,7 @@ export function Button({ variant = "outline", className = "", children, ...props
 
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-70 dark:text-slate-100 ${variantClass} ${className}`.trim()}
+      className={`ui-button inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-70 dark:text-slate-100 ${variantClass} ${className}`.trim()}
       {...props}
     >
       {children}

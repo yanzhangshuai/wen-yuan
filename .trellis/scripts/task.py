@@ -4,7 +4,7 @@
 Task Management Script for Multi-Agent Pipeline.
 
 Usage:
-    python3 task.py create "<title>" [--slug <name>] [--assignee <dev>] [--priority P0|P1|P2|P3]
+    python3 task.py create "<title>" [--slug <name>] [--assignee <dev>] [--priority P0|P1|P2|P3] [--parent <dir>]
     python3 task.py init-context <dir> <type>   # Initialize jsonl files
     python3 task.py add-context <dir> <file> <path> [reason] # Add jsonl entry
     python3 task.py validate <dir>              # Validate jsonl files
@@ -15,12 +15,11 @@ Usage:
     python3 task.py set-base-branch <dir> <branch>  # Set PR target branch
     python3 task.py set-scope <dir> <scope>     # Set scope for PR title
     python3 task.py create-pr [dir] [--dry-run] # Create PR from task
-    python3 task.py flow-guard [dir] [--verify] # Validate flow-feature docs
-    python3 task.py flow-confirm [dir]          # Confirm flow-feature tasks before implement
-    python3 task.py flow-edit-tasks "<ops>" [dir] # Apply structured task edits
     python3 task.py archive <task-name>         # Archive completed task
     python3 task.py list                        # List active tasks
     python3 task.py list-archive [month]        # List archived tasks
+    python3 task.py add-subtask <parent-dir> <child-dir>     # Link child to parent
+    python3 task.py remove-subtask <parent-dir> <child-dir>  # Unlink child from parent
 """
 
 from __future__ import annotations
@@ -38,7 +37,6 @@ if sys.platform == "win32":
 
 import argparse
 import json
-import os
 import re
 import sys
 from datetime import datetime
@@ -64,6 +62,7 @@ from common.task_utils import (
     find_task_by_name,
     archive_task_complete,
 )
+from common.config import get_hooks
 
 
 # =============================================================================
@@ -82,6 +81,53 @@ class Colors:
 def colored(text: str, color: str) -> str:
     """Apply color to text."""
     return f"{color}{text}{Colors.NC}"
+
+
+# =============================================================================
+# Lifecycle Hooks
+# =============================================================================
+
+def _run_hooks(event: str, task_json_path: Path, repo_root: Path) -> None:
+    """Run lifecycle hooks for an event.
+
+    Args:
+        event: Event name (e.g. "after_create").
+        task_json_path: Absolute path to the task's task.json.
+        repo_root: Repository root for cwd and config lookup.
+    """
+    import os
+    import subprocess
+
+    commands = get_hooks(event, repo_root)
+    if not commands:
+        return
+
+    env = {**os.environ, "TASK_JSON_PATH": str(task_json_path)}
+
+    for cmd in commands:
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                cwd=repo_root,
+                env=env,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if result.returncode != 0:
+                print(
+                    colored(f"[WARN] Hook failed ({event}): {cmd}", Colors.YELLOW),
+                    file=sys.stderr,
+                )
+                if result.stderr.strip():
+                    print(f"  {result.stderr.strip()}", file=sys.stderr)
+        except Exception as e:
+            print(
+                colored(f"[WARN] Hook error ({event}): {cmd} — {e}", Colors.YELLOW),
+                file=sys.stderr,
+            )
 
 
 # =============================================================================
@@ -141,265 +187,6 @@ def _resolve_task_dir(target_dir: str, repo_root: Path) -> Path:
 
     # Fallback to treating as relative path
     return repo_root / target_dir
-
-
-def _is_flow_feature_task(task_data: dict | None) -> bool:
-    """Check whether task metadata indicates a flow-feature task."""
-    if not task_data:
-        return False
-
-    workflow_type = str(task_data.get("workflow_type", "")).strip().lower()
-    if workflow_type in {"flow-feature", "flow_feature"}:
-        return True
-
-    workflow_name = str(task_data.get("workflow", "")).strip().lower()
-    if workflow_name == "flow-feature":
-        return True
-
-    text = " ".join(
-        str(task_data.get(k, "")) for k in ("title", "name", "description", "id")
-    ).lower()
-    return "flow-feature" in text
-
-
-def _detect_speckit_feature_dir(task_dir: Path, repo_root: Path, task_data: dict | None) -> Path | None:
-    """Detect Spec-Kit feature directory for a task."""
-    from_env = os.environ.get("FLOW_FEATURE_SPEC_DIR")
-    if from_env:
-        candidate = repo_root / from_env
-        if candidate.is_dir():
-            return candidate
-
-    task_basename = task_dir.name
-    stripped_name = re.sub(r"^[0-9]{2}-[0-9]{2}-", "", task_basename)
-    candidates: list[Path] = [
-        repo_root / ".specify" / "features" / stripped_name,
-        repo_root / ".specify" / "features" / task_basename,
-        repo_root / ".specify" / stripped_name,
-    ]
-
-    if task_data:
-        for key in ("id", "name"):
-            value = str(task_data.get(key, "")).strip()
-            if value:
-                candidates.append(repo_root / ".specify" / "features" / value)
-
-    for candidate in candidates:
-        if candidate.is_dir():
-            return candidate
-    return None
-
-
-def _detect_openspec_change_dir(task_dir: Path, repo_root: Path, task_data: dict | None) -> Path | None:
-    """Detect OpenSpec change directory for a task."""
-    from_env = os.environ.get("FLOW_FEATURE_CHANGE_DIR")
-    if from_env:
-        candidate = repo_root / from_env
-        if candidate.is_dir():
-            return candidate
-
-    def _normalize(value: str) -> str:
-        text = value.strip().lower()
-        text = re.sub(r"^[0-9]{2}-[0-9]{2}-", "", text)
-        text = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", text)
-        text = re.sub(r"-+", "-", text).strip("-")
-        return text
-
-    task_basename = task_dir.name
-    stripped_name = re.sub(r"^[0-9]{2}-[0-9]{2}-", "", task_basename)
-
-    keys: list[str] = []
-    for value in (stripped_name, task_basename):
-        normalized = _normalize(value)
-        if normalized:
-            keys.append(normalized)
-
-    if task_data:
-        for key in ("id", "name", "title"):
-            value = str(task_data.get(key, "")).strip()
-            normalized = _normalize(value)
-            if normalized:
-                keys.append(normalized)
-
-    # Preserve order and de-duplicate.
-    unique_keys = list(dict.fromkeys(keys))
-    for change_key in unique_keys:
-        candidate = repo_root / "openspec" / "changes" / change_key
-        if candidate.is_dir():
-            return candidate
-    return None
-
-
-def _validate_flow_feature_docs(task_dir: Path, repo_root: Path) -> list[str]:
-    """Validate required docs for flow-feature tasks. Returns missing items."""
-    task_json = _read_json_file(task_dir / FILE_TASK_JSON)
-    if not _is_flow_feature_task(task_json):
-        return []
-
-    missing: list[str] = []
-    for file_name in ("spec.md", "plan.md", "tasks.md", "check.md", "confirm.md"):
-        path = task_dir / file_name
-        if not path.is_file() or not path.read_text(encoding="utf-8").strip():
-            missing.append(str(path.relative_to(repo_root)))
-
-    confirm_path = task_dir / "confirm.md"
-    if confirm_path.is_file():
-        confirm_text = confirm_path.read_text(encoding="utf-8")
-        if "Confirmed: YES" not in confirm_text:
-            missing.append(f"{confirm_path.relative_to(repo_root)} (must include 'Confirmed: YES')")
-
-    change_dir = _detect_openspec_change_dir(task_dir, repo_root, task_json)
-    if not change_dir:
-        missing.append("openspec/changes/<change>/ (directory)")
-    else:
-        for file_name in ("proposal.md", "design.md", "tasks.md", "spec-delta.md"):
-            path = change_dir / file_name
-            if not path.is_file() or not path.read_text(encoding="utf-8").strip():
-                missing.append(str(path.relative_to(repo_root)))
-
-    return missing
-
-
-def _validate_flow_feature_verification(task_dir: Path, repo_root: Path) -> list[str]:
-    """Validate verification evidence in check.md for flow-feature tasks."""
-    check_path = task_dir / "check.md"
-    if not check_path.is_file():
-        return [str(check_path.relative_to(repo_root))]
-
-    checklist_pattern = re.compile(r"^\s*-\s*\[([ xX\-])\]\s*(.+?)\s*$")
-    checked_items: list[str] = []
-    unchecked_items: list[str] = []
-    for line in check_path.read_text(encoding="utf-8").splitlines():
-        match = checklist_pattern.match(line)
-        if not match:
-            continue
-        mark = match.group(1).strip().lower()
-        label = match.group(2).strip()
-        if mark == "x":
-            checked_items.append(label)
-        else:
-            unchecked_items.append(label)
-
-    issues: list[str] = []
-    if unchecked_items:
-        issues.append(f"{check_path.relative_to(repo_root)} has unchecked items")
-
-    required_labels = ("success", "failure", "boundary")
-    lowered_checked = [item.lower() for item in checked_items]
-    for required in required_labels:
-        if not any(required in item for item in lowered_checked):
-            issues.append(
-                f"{check_path.relative_to(repo_root)} missing checked '{required}' verification"
-            )
-
-    return issues
-
-
-def _parse_tasks_from_markdown(tasks_path: Path) -> list[str]:
-    """Parse checklist items from tasks.md."""
-    if not tasks_path.is_file():
-        return []
-
-    task_lines: list[str] = []
-    pattern = re.compile(r"^\s*-\s*\[[ xX\-]\]\s*(.+?)\s*$")
-    for line in tasks_path.read_text(encoding="utf-8").splitlines():
-        match = pattern.match(line)
-        if match:
-            task_lines.append(match.group(1))
-
-    return task_lines
-
-
-def _split_tasks_markdown_sections(tasks_path: Path) -> tuple[list[str], list[str], list[str]]:
-    """Split tasks.md into prefix/checklist/suffix sections."""
-    lines = tasks_path.read_text(encoding="utf-8").splitlines()
-    checklist_pattern = re.compile(r"^\s*-\s*\[[ xX\-]\]\s*(.+?)\s*$")
-
-    first = -1
-    last = -1
-    for idx, line in enumerate(lines):
-        if checklist_pattern.match(line):
-            if first == -1:
-                first = idx
-            last = idx
-
-    if first == -1:
-        return lines, [], []
-
-    return lines[:first], lines[first : last + 1], lines[last + 1 :]
-
-
-def _parse_task_items(checklist_lines: list[str]) -> list[dict]:
-    """Parse checklist lines into editable task items."""
-    pattern = re.compile(r"^\s*-\s*\[([ xX\-])\]\s*(.+?)\s*$")
-    id_pattern = re.compile(r"^(T\d+)\b")
-
-    items: list[dict] = []
-    for line in checklist_lines:
-        match = pattern.match(line)
-        if not match:
-            continue
-        status_char = match.group(1)
-        text = match.group(2)
-        id_match = id_pattern.match(text)
-        task_id = id_match.group(1) if id_match else None
-        items.append(
-            {
-                "id": task_id,
-                "done": status_char.lower() == "x",
-                "text": text,
-            }
-        )
-
-    # Backfill missing IDs to keep edit commands predictable.
-    next_num = 1
-    used_ids = {item["id"] for item in items if item["id"]}
-    for item in items:
-        if item["id"]:
-            continue
-        while f"T{next_num}" in used_ids:
-            next_num += 1
-        item["id"] = f"T{next_num}"
-        item["text"] = f"{item['id']} {item['text']}"
-        used_ids.add(item["id"])
-        next_num += 1
-
-    return items
-
-
-def _render_task_items(items: list[dict]) -> list[str]:
-    """Render task items back to markdown checklist lines."""
-    rendered: list[str] = []
-    for item in items:
-        mark = "x" if item["done"] else " "
-        rendered.append(f"- [{mark}] {item['text']}")
-    return rendered
-
-
-def _invalidate_flow_confirmation(task_dir: Path) -> None:
-    """Invalidate existing confirm.md after task list edits."""
-    confirm_file = task_dir / "confirm.md"
-    if not confirm_file.is_file():
-        return
-
-    content = confirm_file.read_text(encoding="utf-8")
-    if "Confirmed: YES" not in content:
-        return
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    confirm_file.write_text(
-        "\n".join(
-            [
-                "# Task Confirmation",
-                "",
-                f"Date: {now}",
-                "Confirmed: NO",
-                "Requested Changes: tasks.md changed after previous confirmation; reconfirm required.",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
 
 
 # =============================================================================
@@ -557,11 +344,36 @@ def cmd_create(args: argparse.Namespace) -> int:
         "commit": None,
         "pr_url": None,
         "subtasks": [],
+        "children": [],
+        "parent": None,
         "relatedFiles": [],
         "notes": "",
+        "meta": {},
     }
 
     _write_json_file(task_json_path, task_data)
+
+    # Handle --parent: establish bidirectional link
+    if args.parent:
+        parent_dir = _resolve_task_dir(args.parent, repo_root)
+        parent_json_path = parent_dir / FILE_TASK_JSON
+        if not parent_json_path.is_file():
+            print(colored(f"Warning: Parent task.json not found: {args.parent}", Colors.YELLOW), file=sys.stderr)
+        else:
+            parent_data = _read_json_file(parent_json_path)
+            if parent_data:
+                # Add child to parent's children list
+                parent_children = parent_data.get("children", [])
+                if dir_name not in parent_children:
+                    parent_children.append(dir_name)
+                    parent_data["children"] = parent_children
+                    _write_json_file(parent_json_path, parent_data)
+
+                # Set parent in child's task.json
+                task_data["parent"] = parent_dir.name
+                _write_json_file(task_json_path, task_data)
+
+                print(colored(f"Linked as child of: {parent_dir.name}", Colors.GREEN), file=sys.stderr)
 
     print(colored(f"Created task: {dir_name}", Colors.GREEN), file=sys.stderr)
     print("", file=sys.stderr)
@@ -573,6 +385,8 @@ def cmd_create(args: argparse.Namespace) -> int:
 
     # Output relative path for script chaining
     print(f"{DIR_WORKFLOW}/{DIR_TASKS}/{dir_name}")
+
+    _run_hooks("after_create", task_json_path, repo_root)
     return 0
 
 
@@ -854,6 +668,9 @@ def cmd_start(args: argparse.Namespace) -> int:
         print(colored(f"✓ Current task set to: {task_dir}", Colors.GREEN))
         print()
         print(colored("The hook will now inject context from this task's jsonl files.", Colors.BLUE))
+
+        task_json_path = full_path / FILE_TASK_JSON
+        _run_hooks("after_start", task_json_path, repo_root)
         return 0
     else:
         print(colored("Error: Failed to set current task", Colors.RED))
@@ -869,18 +686,14 @@ def cmd_finish(args: argparse.Namespace) -> int:
         print(colored("No current task set", Colors.YELLOW))
         return 0
 
-    task_dir = repo_root / current
-    if task_dir.is_dir():
-        missing = _validate_flow_feature_docs(task_dir, repo_root)
-        if missing:
-            print(colored("Error: flow-feature docs are incomplete; cannot finish task.", Colors.RED))
-            for item in missing:
-                print(f"  - {item}")
-            print("Hint: complete docs and run `python3 ./.trellis/scripts/task.py flow-guard --verify`.")
-            return 1
+    # Resolve task.json path before clearing
+    task_json_path = repo_root / current / FILE_TASK_JSON
 
     clear_current_task(repo_root)
     print(colored(f"✓ Cleared current task (was: {current})", Colors.GREEN))
+
+    if task_json_path.is_file():
+        _run_hooks("after_finish", task_json_path, repo_root)
     return 0
 
 
@@ -908,14 +721,6 @@ def cmd_archive(args: argparse.Namespace) -> int:
         cmd_list(argparse.Namespace(mine=False, status=None))
         return 1
 
-    missing = _validate_flow_feature_docs(task_dir, repo_root)
-    if missing:
-        print(colored("Error: flow-feature docs are incomplete; cannot archive task.", Colors.RED), file=sys.stderr)
-        for item in missing:
-            print(f"  - {item}", file=sys.stderr)
-        print("Hint: complete docs and run `python3 ./.trellis/scripts/task.py flow-guard --verify`.", file=sys.stderr)
-        return 1
-
     dir_name = task_dir.name
     task_json_path = task_dir / FILE_TASK_JSON
 
@@ -927,6 +732,36 @@ def cmd_archive(args: argparse.Namespace) -> int:
             data["status"] = "completed"
             data["completedAt"] = today
             _write_json_file(task_json_path, data)
+
+            # Handle subtask relationships on archive
+            task_parent = data.get("parent")
+            task_children = data.get("children", [])
+
+            # If this is a child, remove from parent's children list
+            if task_parent:
+                parent_dir = find_task_by_name(task_parent, tasks_dir)
+                if parent_dir:
+                    parent_json = parent_dir / FILE_TASK_JSON
+                    if parent_json.is_file():
+                        parent_data = _read_json_file(parent_json)
+                        if parent_data:
+                            parent_children = parent_data.get("children", [])
+                            if dir_name in parent_children:
+                                parent_children.remove(dir_name)
+                                parent_data["children"] = parent_children
+                                _write_json_file(parent_json, parent_data)
+
+            # If this is a parent, clear parent field in all children
+            if task_children:
+                for child_name in task_children:
+                    child_dir_path = find_task_by_name(child_name, tasks_dir)
+                    if child_dir_path:
+                        child_json = child_dir_path / FILE_TASK_JSON
+                        if child_json.is_file():
+                            child_data = _read_json_file(child_json)
+                            if child_data:
+                                child_data["parent"] = None
+                                _write_json_file(child_json, child_data)
 
     # Clear if current task
     current = get_current_task(repo_root)
@@ -940,299 +775,163 @@ def cmd_archive(args: argparse.Namespace) -> int:
         year_month = archive_dest.parent.name
         print(colored(f"Archived: {dir_name} -> archive/{year_month}/", Colors.GREEN), file=sys.stderr)
 
+        # Auto-commit unless --no-commit
+        if not getattr(args, "no_commit", False):
+            _auto_commit_archive(dir_name, repo_root)
+
         # Return the archive path
         print(f"{DIR_WORKFLOW}/{DIR_TASKS}/{DIR_ARCHIVE}/{year_month}/{dir_name}")
+
+        # Run hooks with the archived path
+        archived_json = archive_dest / FILE_TASK_JSON
+        _run_hooks("after_archive", archived_json, repo_root)
         return 0
 
     return 1
 
 
-def cmd_flow_guard(args: argparse.Namespace) -> int:
-    """Validate flow-feature required docs."""
-    repo_root = get_repo_root()
-    target = args.dir
+def _auto_commit_archive(task_name: str, repo_root: Path) -> None:
+    """Stage .trellis/tasks/ changes and commit after archive."""
+    tasks_rel = f"{DIR_WORKFLOW}/{DIR_TASKS}"
+    _run_git_command(["add", "-A", tasks_rel], cwd=repo_root)
 
-    if target:
-        task_dir = _resolve_task_dir(target, repo_root)
+    # Check if there are staged changes
+    rc, _, _ = _run_git_command(
+        ["diff", "--cached", "--quiet", "--", tasks_rel], cwd=repo_root
+    )
+    if rc == 0:
+        print("[OK] No task changes to commit.", file=sys.stderr)
+        return
+
+    commit_msg = f"chore(task): archive {task_name}"
+    rc, _, err = _run_git_command(["commit", "-m", commit_msg], cwd=repo_root)
+    if rc == 0:
+        print(f"[OK] Auto-committed: {commit_msg}", file=sys.stderr)
     else:
-        current = get_current_task(repo_root)
-        if not current:
-            print(colored("Error: no current task set (and no --dir provided).", Colors.RED))
-            return 1
-        task_dir = repo_root / current
+        print(f"[WARN] Auto-commit failed: {err.strip()}", file=sys.stderr)
 
-    if not task_dir.is_dir():
-        print(colored(f"Error: task directory not found: {task_dir}", Colors.RED))
+
+# =============================================================================
+# Command: add-subtask
+# =============================================================================
+
+def cmd_add_subtask(args: argparse.Namespace) -> int:
+    """Link a child task to a parent task."""
+    repo_root = get_repo_root()
+
+    parent_dir = _resolve_task_dir(args.parent_dir, repo_root)
+    child_dir = _resolve_task_dir(args.child_dir, repo_root)
+
+    parent_json_path = parent_dir / FILE_TASK_JSON
+    child_json_path = child_dir / FILE_TASK_JSON
+
+    if not parent_json_path.is_file():
+        print(colored(f"Error: Parent task.json not found: {args.parent_dir}", Colors.RED), file=sys.stderr)
         return 1
 
-    missing = _validate_flow_feature_docs(task_dir, repo_root)
-    if missing:
-        print(colored("FAILED: flow-feature docs are incomplete.", Colors.RED))
-        for item in missing:
-            print(f"  - {item}")
+    if not child_json_path.is_file():
+        print(colored(f"Error: Child task.json not found: {args.child_dir}", Colors.RED), file=sys.stderr)
         return 1
 
-    if args.verify:
-        verification_issues = _validate_flow_feature_verification(task_dir, repo_root)
-        if verification_issues:
-            print(colored("FAILED: flow-feature verification is incomplete.", Colors.RED))
-            for item in verification_issues:
-                print(f"  - {item}")
-            return 1
+    parent_data = _read_json_file(parent_json_path)
+    child_data = _read_json_file(child_json_path)
 
-    print(colored("OK: flow-feature required docs are present.", Colors.GREEN))
+    if not parent_data or not child_data:
+        print(colored("Error: Failed to read task.json", Colors.RED), file=sys.stderr)
+        return 1
+
+    # Check if child already has a parent
+    existing_parent = child_data.get("parent")
+    if existing_parent:
+        print(colored(f"Error: Child task already has a parent: {existing_parent}", Colors.RED), file=sys.stderr)
+        return 1
+
+    # Add child to parent's children list
+    parent_children = parent_data.get("children", [])
+    child_dir_name = child_dir.name
+    if child_dir_name not in parent_children:
+        parent_children.append(child_dir_name)
+        parent_data["children"] = parent_children
+
+    # Set parent in child's task.json
+    child_data["parent"] = parent_dir.name
+
+    # Write both
+    _write_json_file(parent_json_path, parent_data)
+    _write_json_file(child_json_path, child_data)
+
+    print(colored(f"Linked: {child_dir.name} -> {parent_dir.name}", Colors.GREEN), file=sys.stderr)
     return 0
 
 
-def cmd_flow_confirm(args: argparse.Namespace) -> int:
-    """Show task breakdown and record confirmation decision for flow-feature."""
+# =============================================================================
+# Command: remove-subtask
+# =============================================================================
+
+def cmd_remove_subtask(args: argparse.Namespace) -> int:
+    """Unlink a child task from a parent task."""
     repo_root = get_repo_root()
-    target = args.dir
 
-    if target:
-        task_dir = _resolve_task_dir(target, repo_root)
-    else:
-        current = get_current_task(repo_root)
-        if not current:
-            print(colored("Error: no current task set (and no --dir provided).", Colors.RED))
-            return 1
-        task_dir = repo_root / current
+    parent_dir = _resolve_task_dir(args.parent_dir, repo_root)
+    child_dir = _resolve_task_dir(args.child_dir, repo_root)
 
-    if not task_dir.is_dir():
-        print(colored(f"Error: task directory not found: {task_dir}", Colors.RED))
+    parent_json_path = parent_dir / FILE_TASK_JSON
+    child_json_path = child_dir / FILE_TASK_JSON
+
+    if not parent_json_path.is_file():
+        print(colored(f"Error: Parent task.json not found: {args.parent_dir}", Colors.RED), file=sys.stderr)
         return 1
 
-    task_data = _read_json_file(task_dir / FILE_TASK_JSON)
-    if not _is_flow_feature_task(task_data):
-        print(colored("Current task is not flow-feature; confirmation gate is optional.", Colors.YELLOW))
-        return 0
-
-    if args.approve and args.request_changes:
-        print(colored("Error: --approve and --request-changes cannot be used together.", Colors.RED))
+    if not child_json_path.is_file():
+        print(colored(f"Error: Child task.json not found: {args.child_dir}", Colors.RED), file=sys.stderr)
         return 1
 
-    tasks_path = task_dir / "tasks.md"
-    task_items = _parse_tasks_from_markdown(tasks_path)
+    parent_data = _read_json_file(parent_json_path)
+    child_data = _read_json_file(child_json_path)
 
-    print(colored("=== Flow-Feature Task Confirmation Gate ===", Colors.BLUE))
-    print(f"Task: {task_dir.name}")
-    if task_items:
-        total = len(task_items)
-        done_count = 0
-        tasks_path_text = tasks_path.read_text(encoding="utf-8").splitlines()
-        checkbox_pattern = re.compile(r"^\s*-\s*\[([ xX\-])\]\s*(.+?)\s*$")
-        for line in tasks_path_text:
-            match = checkbox_pattern.match(line)
-            if not match:
-                continue
-            if match.group(1).strip().lower() == "x":
-                done_count += 1
-        pending_count = total - done_count
-
-        print(f"Detected tasks: {total} (pending: {pending_count}, done: {done_count})")
-        if args.compact:
-            preview_limit = args.preview if args.preview and args.preview > 0 else 8
-            for idx, item in enumerate(task_items[:preview_limit], start=1):
-                print(f"  {idx}. {item}")
-            if total > preview_limit:
-                print(f"  ... ({total - preview_limit} more tasks hidden in compact mode)")
-                print("  Run without --compact to show the full task list.")
-        else:
-            for idx, item in enumerate(task_items, start=1):
-                print(f"  {idx}. {item}")
-    else:
-        print(colored("Warning: no checklist items found in tasks.md", Colors.YELLOW))
-
-    confirm_file = task_dir / "confirm.md"
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    if args.approve:
-        notes = args.notes.strip() if args.notes else "No change requested."
-        confirm_file.write_text(
-            "\n".join(
-                [
-                    "# Task Confirmation",
-                    "",
-                    f"Date: {now}",
-                    "Confirmed: YES",
-                    f"Notes: {notes}",
-                ]
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        print(colored(f"✓ Confirmed and saved: {confirm_file}", Colors.GREEN))
-        return 0
-
-    if args.request_changes:
-        notes = args.request_changes.strip()
-        confirm_file.write_text(
-            "\n".join(
-                [
-                    "# Task Confirmation",
-                    "",
-                    f"Date: {now}",
-                    "Confirmed: NO",
-                    f"Requested Changes: {notes}",
-                ]
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        print(colored(f"✓ Change request saved: {confirm_file}", Colors.YELLOW))
-        print("Next: update proposal/design/tasks/spec-delta, then run flow-confirm --approve.")
-        return 0
-
-    print()
-    print("Next step:")
-    print("  - Approve tasks: python3 ./.trellis/scripts/task.py flow-confirm --approve [--notes \"...\"]")
-    print("  - Request changes: python3 ./.trellis/scripts/task.py flow-confirm --request-changes \"...\"")
-    return 0
-
-
-def cmd_flow_edit_tasks(args: argparse.Namespace) -> int:
-    """Apply structured task edits (+/-/~/>/!)."""
-    repo_root = get_repo_root()
-    target = args.dir
-
-    if target:
-        task_dir = _resolve_task_dir(target, repo_root)
-    else:
-        current = get_current_task(repo_root)
-        if not current:
-            print(colored("Error: no current task set (and no --dir provided).", Colors.RED))
-            return 1
-        task_dir = repo_root / current
-
-    if not task_dir.is_dir():
-        print(colored(f"Error: task directory not found: {task_dir}", Colors.RED))
+    if not parent_data or not child_data:
+        print(colored("Error: Failed to read task.json", Colors.RED), file=sys.stderr)
         return 1
 
-    tasks_path = task_dir / "tasks.md"
-    if not tasks_path.is_file():
-        print(colored(f"Error: tasks.md not found: {tasks_path}", Colors.RED))
-        return 1
+    # Remove child from parent's children list
+    parent_children = parent_data.get("children", [])
+    child_dir_name = child_dir.name
+    if child_dir_name in parent_children:
+        parent_children.remove(child_dir_name)
+        parent_data["children"] = parent_children
 
-    prefix, checklist_lines, suffix = _split_tasks_markdown_sections(tasks_path)
-    items = _parse_task_items(checklist_lines)
-    if not items:
-        print(colored("Error: no checklist task items found in tasks.md", Colors.RED))
-        return 1
+    # Clear parent in child's task.json
+    child_data["parent"] = None
 
-    ops = [part.strip() for part in re.split(r"[;\n]+", args.operations) if part.strip()]
-    if not ops:
-        print(colored("Error: no operations provided", Colors.RED))
-        return 1
+    # Write both
+    _write_json_file(parent_json_path, parent_data)
+    _write_json_file(child_json_path, child_data)
 
-    def find_index(task_id: str) -> int:
-        for idx, item in enumerate(items):
-            if str(item["id"]).lower() == task_id.lower():
-                return idx
-        return -1
-
-    def next_task_id() -> str:
-        max_num = 0
-        for item in items:
-            match = re.match(r"^T(\d+)$", str(item["id"]))
-            if match:
-                max_num = max(max_num, int(match.group(1)))
-        return f"T{max_num + 1}"
-
-    for op in ops:
-        if op.startswith("+"):
-            text = op[1:].strip()
-            if not text:
-                print(colored(f"Error: invalid add operation: {op}", Colors.RED))
-                return 1
-            new_id = next_task_id()
-            if not re.match(r"^T\d+\b", text):
-                text = f"{new_id} {text}"
-            items.append({"id": new_id, "done": False, "text": text})
-            continue
-
-        if op.startswith("-"):
-            task_id = op[1:].strip()
-            if not re.match(r"^T\d+$", task_id, re.IGNORECASE):
-                print(colored(f"Error: invalid remove operation: {op}", Colors.RED))
-                return 1
-            idx = find_index(task_id)
-            if idx < 0:
-                print(colored(f"Error: task id not found: {task_id}", Colors.RED))
-                return 1
-            items.pop(idx)
-            continue
-
-        if op.startswith("~"):
-            match = re.match(r"^~\s*(T\d+)\s*=>\s*(.+)$", op, re.IGNORECASE)
-            if not match:
-                print(colored(f"Error: invalid rewrite operation: {op}", Colors.RED))
-                return 1
-            task_id, new_text = match.group(1), match.group(2).strip()
-            idx = find_index(task_id)
-            if idx < 0:
-                print(colored(f"Error: task id not found: {task_id}", Colors.RED))
-                return 1
-            if not re.match(r"^T\d+\b", new_text):
-                new_text = f"{items[idx]['id']} {new_text}"
-            items[idx]["text"] = new_text
-            continue
-
-        if op.startswith(">"):
-            match = re.match(r"^>\s*(T\d+)\s*(after|before)\s*(T\d+)\s*$", op, re.IGNORECASE)
-            if not match:
-                print(colored(f"Error: invalid reorder operation: {op}", Colors.RED))
-                return 1
-            moving_id = match.group(1)
-            relation = match.group(2).lower()
-            anchor_id = match.group(3)
-
-            from_idx = find_index(moving_id)
-            anchor_idx = find_index(anchor_id)
-            if from_idx < 0 or anchor_idx < 0:
-                print(colored(f"Error: task id not found in reorder: {op}", Colors.RED))
-                return 1
-
-            moving_item = items.pop(from_idx)
-            if from_idx < anchor_idx:
-                anchor_idx -= 1
-            insert_at = anchor_idx + 1 if relation == "after" else anchor_idx
-            items.insert(insert_at, moving_item)
-            continue
-
-        if op.startswith("!"):
-            task_id = op[1:].strip()
-            if not re.match(r"^T\d+$", task_id, re.IGNORECASE):
-                print(colored(f"Error: invalid reopen operation: {op}", Colors.RED))
-                return 1
-            idx = find_index(task_id)
-            if idx < 0:
-                print(colored(f"Error: task id not found: {task_id}", Colors.RED))
-                return 1
-            items[idx]["done"] = False
-            continue
-
-        print(colored(f"Error: unsupported operation: {op}", Colors.RED))
-        return 1
-
-    new_lines = prefix + _render_task_items(items) + suffix
-    tasks_path.write_text("\n".join(new_lines).rstrip() + "\n", encoding="utf-8")
-
-    task_json = _read_json_file(task_dir / FILE_TASK_JSON)
-    if _is_flow_feature_task(task_json):
-        _invalidate_flow_confirmation(task_dir)
-
-    print(colored(f"✓ Updated task list: {tasks_path}", Colors.GREEN))
-    print("Updated order:")
-    for idx, item in enumerate(items, start=1):
-        mark = "x" if item["done"] else " "
-        print(f"  {idx}. [{mark}] {item['text']}")
-
+    print(colored(f"Unlinked: {child_dir.name} from {parent_dir.name}", Colors.GREEN), file=sys.stderr)
     return 0
 
 
 # =============================================================================
 # Command: list
 # =============================================================================
+
+def _get_children_progress(children: list[str], tasks_dir: Path) -> str:
+    """Get children progress summary like '[2/3 done]'."""
+    if not children:
+        return ""
+    done_count = 0
+    total = len(children)
+    for child_name in children:
+        child_dir = tasks_dir / child_name
+        child_json = child_dir / FILE_TASK_JSON
+        if child_json.is_file():
+            data = _read_json_file(child_json)
+            if data:
+                status = data.get("status", "")
+                if status in ("completed", "done"):
+                    done_count += 1
+    return f" [{done_count}/{total} done]"
+
 
 def cmd_list(args: argparse.Namespace) -> int:
     """List active tasks."""
@@ -1252,7 +951,8 @@ def cmd_list(args: argparse.Namespace) -> int:
         print(colored("All active tasks:", Colors.BLUE))
     print()
 
-    count = 0
+    # First pass: collect all task data and identify parent/child relationships
+    all_tasks: dict[str, dict] = {}
     if tasks_dir.is_dir():
         for d in sorted(tasks_dir.iterdir()):
             if not d.is_dir() or d.name == "archive":
@@ -1262,31 +962,68 @@ def cmd_list(args: argparse.Namespace) -> int:
             task_json = d / FILE_TASK_JSON
             status = "unknown"
             assignee = "-"
-            relative_path = f"{DIR_WORKFLOW}/{DIR_TASKS}/{dir_name}"
+            children: list[str] = []
+            parent: str | None = None
 
             if task_json.is_file():
                 data = _read_json_file(task_json)
                 if data:
                     status = data.get("status", "unknown")
                     assignee = data.get("assignee", "-")
+                    children = data.get("children", [])
+                    parent = data.get("parent")
 
-            # Apply --mine filter
-            if filter_mine and assignee != developer:
-                continue
+            all_tasks[dir_name] = {
+                "status": status,
+                "assignee": assignee,
+                "children": children,
+                "parent": parent,
+            }
 
-            # Apply --status filter
-            if filter_status and status != filter_status:
-                continue
+    # Second pass: display tasks hierarchically
+    count = 0
 
-            marker = ""
-            if relative_path == current_task:
-                marker = f" {colored('<- current', Colors.GREEN)}"
+    def _print_task(dir_name: str, indent: int = 0) -> None:
+        nonlocal count
+        info = all_tasks[dir_name]
+        status = info["status"]
+        assignee = info["assignee"]
+        children = info["children"]
 
-            if filter_mine:
-                print(f"  - {dir_name}/ ({status}){marker}")
-            else:
-                print(f"  - {dir_name}/ ({status}) [{colored(assignee, Colors.CYAN)}]{marker}")
-            count += 1
+        # Apply --mine filter
+        if filter_mine and assignee != developer:
+            return
+
+        # Apply --status filter
+        if filter_status and status != filter_status:
+            return
+
+        relative_path = f"{DIR_WORKFLOW}/{DIR_TASKS}/{dir_name}"
+        marker = ""
+        if relative_path == current_task:
+            marker = f" {colored('<- current', Colors.GREEN)}"
+
+        # Children progress
+        progress = _get_children_progress(children, tasks_dir) if children else ""
+
+        prefix = "  " * indent + "  - "
+
+        if filter_mine:
+            print(f"{prefix}{dir_name}/ ({status}){progress}{marker}")
+        else:
+            print(f"{prefix}{dir_name}/ ({status}){progress} [{colored(assignee, Colors.CYAN)}]{marker}")
+        count += 1
+
+        # Print children indented
+        for child_name in children:
+            if child_name in all_tasks:
+                _print_task(child_name, indent + 1)
+
+    # Display only top-level tasks (those without a parent)
+    for dir_name in sorted(all_tasks.keys()):
+        info = all_tasks[dir_name]
+        if not info["parent"]:
+            _print_task(dir_name)
 
     if count == 0:
         if filter_mine:
@@ -1463,6 +1200,7 @@ def show_usage() -> None:
 
 Usage:
   python3 task.py create <title>                     Create new task directory
+  python3 task.py create <title> --parent <dir>      Create task as child of parent
   python3 task.py init-context <dir> <dev_type>      Initialize jsonl files
   python3 task.py add-context <dir> <jsonl> <path> [reason]  Add entry to jsonl
   python3 task.py validate <dir>                     Validate jsonl files
@@ -1472,10 +1210,9 @@ Usage:
   python3 task.py set-branch <dir> <branch>          Set git branch for multi-agent
   python3 task.py set-scope <dir> <scope>            Set scope for PR title
   python3 task.py create-pr [dir] [--dry-run]        Create PR from task
-  python3 task.py flow-guard [dir] [--verify]        Validate flow-feature docs
-  python3 task.py flow-confirm [dir] [--approve|--request-changes "..."]  Confirm flow-feature tasks
-  python3 task.py flow-edit-tasks "<ops>" [dir]      Apply task edits (+/-/~/>/!)
   python3 task.py archive <task-name>                Archive completed task
+  python3 task.py add-subtask <parent> <child>       Link child task to parent
+  python3 task.py remove-subtask <parent> <child>    Unlink child from parent
   python3 task.py list [--mine] [--status <status>]  List tasks
   python3 task.py list-archive [YYYY-MM]             List archived tasks
 
@@ -1488,6 +1225,7 @@ List options:
 
 Examples:
   python3 task.py create "Add login feature" --slug add-login
+  python3 task.py create "Child task" --slug child --parent .trellis/tasks/01-21-parent
   python3 task.py init-context .trellis/tasks/01-21-add-login backend
   python3 task.py add-context <dir> implement .trellis/spec/backend/auth.md "Auth guidelines"
   python3 task.py set-branch <dir> task/add-login
@@ -1496,6 +1234,8 @@ Examples:
   python3 task.py create-pr <dir> --dry-run          # Preview without changes
   python3 task.py finish
   python3 task.py archive add-login
+  python3 task.py add-subtask parent-task child-task  # Link existing tasks
+  python3 task.py remove-subtask parent-task child-task
   python3 task.py list                               # List all active tasks
   python3 task.py list --mine                        # List my tasks only
   python3 task.py list --mine --status in_progress   # List my in-progress tasks
@@ -1521,6 +1261,7 @@ def main() -> int:
     p_create.add_argument("--assignee", "-a", help="Assignee developer")
     p_create.add_argument("--priority", "-p", default="P2", help="Priority (P0-P3)")
     p_create.add_argument("--description", "-d", help="Task description")
+    p_create.add_argument("--parent", help="Parent task directory (establishes subtask link)")
 
     # init-context
     p_init = subparsers.add_parser("init-context", help="Initialize context files")
@@ -1569,37 +1310,25 @@ def main() -> int:
     p_pr.add_argument("dir", nargs="?", help="Task directory")
     p_pr.add_argument("--dry-run", action="store_true", help="Dry run mode")
 
-    # flow-guard
-    p_guard = subparsers.add_parser("flow-guard", help="Validate flow-feature docs")
-    p_guard.add_argument("dir", nargs="?", help="Task directory (defaults to current task)")
-    p_guard.add_argument(
-        "--verify",
-        action="store_true",
-        help="Also validate check.md has checked success/failure/boundary verification",
-    )
-
-    # flow-confirm
-    p_confirm = subparsers.add_parser("flow-confirm", help="Confirm flow-feature tasks before implement")
-    p_confirm.add_argument("dir", nargs="?", help="Task directory (defaults to current task)")
-    p_confirm.add_argument("--approve", action="store_true", help="Approve current task breakdown")
-    p_confirm.add_argument("--notes", help="Optional notes when approving")
-    p_confirm.add_argument("--request-changes", help="Request task changes and record rationale")
-    p_confirm.add_argument("--compact", action="store_true", help="Show compact task preview to reduce output noise")
-    p_confirm.add_argument("--preview", type=int, default=8, help="Number of tasks to show in compact mode")
-
-    # flow-edit-tasks
-    p_edit = subparsers.add_parser("flow-edit-tasks", help="Apply structured task edits")
-    p_edit.add_argument("operations", help='Operations string, e.g. "+ T6 docs; ~ T2 => new text; > T4 after T2"')
-    p_edit.add_argument("dir", nargs="?", help="Task directory (defaults to current task)")
-
     # archive
     p_archive = subparsers.add_parser("archive", help="Archive task")
     p_archive.add_argument("name", help="Task name")
+    p_archive.add_argument("--no-commit", action="store_true", help="Skip auto git commit after archive")
 
     # list
     p_list = subparsers.add_parser("list", help="List tasks")
     p_list.add_argument("--mine", "-m", action="store_true", help="My tasks only")
     p_list.add_argument("--status", "-s", help="Filter by status")
+
+    # add-subtask
+    p_addsub = subparsers.add_parser("add-subtask", help="Link child task to parent")
+    p_addsub.add_argument("parent_dir", help="Parent task directory")
+    p_addsub.add_argument("child_dir", help="Child task directory")
+
+    # remove-subtask
+    p_rmsub = subparsers.add_parser("remove-subtask", help="Unlink child task from parent")
+    p_rmsub.add_argument("parent_dir", help="Parent task directory")
+    p_rmsub.add_argument("child_dir", help="Child task directory")
 
     # list-archive
     p_listarch = subparsers.add_parser("list-archive", help="List archived tasks")
@@ -1623,10 +1352,9 @@ def main() -> int:
         "set-base-branch": cmd_set_base_branch,
         "set-scope": cmd_set_scope,
         "create-pr": cmd_create_pr,
-        "flow-guard": cmd_flow_guard,
-        "flow-confirm": cmd_flow_confirm,
-        "flow-edit-tasks": cmd_flow_edit_tasks,
         "archive": cmd_archive,
+        "add-subtask": cmd_add_subtask,
+        "remove-subtask": cmd_remove_subtask,
         "list": cmd_list,
         "list-archive": cmd_list_archive,
     }

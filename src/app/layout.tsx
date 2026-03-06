@@ -10,13 +10,15 @@ export const metadata: Metadata = {
   description: "基于 Next.js + Prisma + Neo4j 的人物关系图谱项目"
 };
 
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
 export default function RootLayout({
   children
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: RootLayoutProps) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="zh-CN" className="root-layout" suppressHydrationWarning>
       <body className="bg-slate-50 text-slate-900 antialiased dark:bg-[#020617] dark:text-slate-100">
         <ThemeProvider>
           <Navbar />

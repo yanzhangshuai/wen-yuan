@@ -1,42 +1,69 @@
-# Bilingual Document Naming & Sync Template
+# 双语文档命名与同步模板
 
-## 1) Naming Convention
+## 1）命名约定
 
-- Primary document: `<name>.md` (source of truth for agents)
-- Mirror document: `<name>.zh.md` (human-readable Chinese mirror)
-- Optional snapshot: `<name>.en.md` (migration/archive use only)
+- 主文档：`<name>.md`（agents 的事实基准）
+- 中文镜像：`<name>.zh.md`（供人阅读的中文镜像）
+- 可选快照：`<name>.en.md`（仅用于迁移/归档）
 
-Examples:
+示例：
 
 - `AGENTS.md` + `AGENTS.zh.md`
 - `GEMINI.md` + `GEMINI.zh.md`
 
-## 2) Language Policy
+## 2）语言策略
 
-- Team may choose English or Chinese for the primary `.md`, but the choice must be explicit and stable.
-- The mirror file must remain semantically aligned with the primary file.
+- 团队可选择英文或中文作为主 `.md`，但必须明确且保持稳定。
+- 镜像文件必须与主文档保持语义一致。
 
-## 3) Sync Workflow
+## 3）同步流程
 
-1. Update the primary document first.
-2. Sync changes to the mirror document.
-3. Update sync metadata blocks in both files.
-4. Run a quick diff review to ensure no key section is missing.
+1. 先更新主文档。
+2. 再同步到镜像文档。
+3. 同步更新两侧的元信息块。
+4. 做一次快速 diff，确认无关键章节遗漏。
 
-## 4) Minimal Metadata Block
+## 4）最小元信息块
 
-Primary (`.md`) should include:
-
-- Role
-- Canonical path
-- Mirror path
-- Last synced date
-- Sync owner
-
-Mirror (`.zh.md`) should include:
+主文档（`.md`）应包含：
 
 - 角色
 - 主文档路径
 - 镜像文档路径
-- 最后同步日期
-- 同步人
+- 最近同步日期
+- 同步负责人
+
+镜像文档（`.zh.md`）应包含：
+
+- 角色
+- 主文档路径
+- 镜像文档路径
+- 最近同步日期
+- 同步负责人
+
+## 代码示例
+
+主文档头：
+```md
+> [SYNC-NOTE]
+> 角色：事实基准（供 agents 使用）
+> 主文档：.trellis/spec/frontend/index.md
+> 镜像文档：.trellis/spec/frontend/index.zh.md
+> 最近同步：2026-03-07
+> 同步负责人：codex
+```
+
+镜像文档头：
+```md
+> [同步说明]
+> 角色：中文镜像（供人阅读）
+> 主文档：.trellis/spec/frontend/index.md
+> 镜像文档：.trellis/spec/frontend/index.zh.md
+> 最近同步：2026-03-07
+> 同步负责人：codex
+```
+
+## 原因
+
+- 统一元信息可让“谁是主文档、何时同步、谁负责”一眼可见。
+- 长期维护双语文档时，元信息是避免内容漂移的低成本保护机制。

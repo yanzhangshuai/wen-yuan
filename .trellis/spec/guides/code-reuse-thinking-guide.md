@@ -1,113 +1,121 @@
-# Code Reuse Thinking Guide
+# 代码复用思考指南
 
-> [SYNC-NOTE]
-> Role: Source of truth (for agents)
-> Canonical: .trellis/spec/guides/code-reuse-thinking-guide.md
-> Mirror: .trellis/spec/guides/code-reuse-thinking-guide.zh.md
-> Last synced: 2026-03-03
-> Sync owner: codex
-
-
-> **Purpose**: Stop and think before creating new code - does it already exist?
+> **目的**：写新代码前先停下来判断，仓库里是否已经有可复用实现。
 
 ---
 
-## The Problem
+## 问题本质
 
-**Duplicated code is the #1 source of inconsistency bugs.**
+**重复代码是“不一致性 bug”的头号来源。**
 
-When you copy-paste or rewrite existing logic:
-- Bug fixes don't propagate
-- Behavior diverges over time
-- Codebase becomes harder to understand
+当你复制粘贴或重写已有逻辑时：
+- bug 修复无法同步传播
+- 行为会随时间逐步漂移
+- 代码库理解成本持续上升
 
 ---
 
-## Before Writing New Code
+## 写新代码前
 
-### Step 1: Search First
+### 第一步：先搜索
 
 ```bash
-# Search for similar function names
+# 搜索相似函数名
 grep -r "functionName" .
 
-# Search for similar logic
+# 搜索相似逻辑
 grep -r "keyword" .
 ```
 
-### Step 2: Ask These Questions
+### 第二步：问自己这些问题
 
-| Question | If Yes... |
+| 问题 | 如果是 |
 |----------|-----------|
-| Does a similar function exist? | Use or extend it |
-| Is this pattern used elsewhere? | Follow the existing pattern |
-| Could this be a shared utility? | Create it in the right place |
-| Am I copying code from another file? | **STOP** - extract to shared |
+| 是否已有相似函数？ | 复用或扩展它 |
+| 这个模式在别处是否已使用？ | 跟随现有模式 |
+| 是否应抽成共享 utility？ | 放到正确的共享位置 |
+| 我是否正从别的文件复制代码？ | **停止**，先提取为共享实现 |
 
 ---
 
-## Common Duplication Patterns
+## 常见重复模式
 
-### Pattern 1: Copy-Paste Functions
+### 模式 1：复制粘贴函数
 
-**Bad**: Copying a validation function to another file
+**反例**：把校验函数复制到另一个文件
 
-**Good**: Extract to shared utilities, import where needed
+**正例**：提取为共享 utilities，按需导入
 
-### Pattern 2: Similar Components
+### 模式 2：高度相似组件
 
-**Bad**: Creating a new component that's 80% similar to existing
+**反例**：新建一个与已有组件 80% 相似的组件
 
-**Good**: Extend existing component with props/variants
+**正例**：通过 props/variants 扩展已有组件
 
-### Pattern 3: Repeated Constants
+### 模式 3：重复定义常量
 
-**Bad**: Defining the same constant in multiple files
+**反例**：同一常量在多个文件重复定义
 
-**Good**: Single source of truth, import everywhere
+**正例**：单一事实来源（single source of truth），统一导入
 
----
+代码示例：
+```ts
+// 反例
+export const MAX_RETRY = 3; // 文件 A
+export const MAX_RETRY = 5; // 文件 B
 
-## When to Abstract
+// 正例
+// constants/retry.ts
+export const MAX_RETRY = 3;
+// 其他模块：import { MAX_RETRY } from "@/constants/retry";
+```
 
-**Abstract when**:
-- Same code appears 3+ times
-- Logic is complex enough to have bugs
-- Multiple people might need this
-
-**Don't abstract when**:
-- Only used once
-- Trivial one-liner
-- Abstraction would be more complex than duplication
-
----
-
-## After Batch Modifications
-
-When you've made similar changes to multiple files:
-
-1. **Review**: Did you catch all instances?
-2. **Search**: Run grep to find any missed
-3. **Consider**: Should this be abstracted?
+原因：
+- 常量多点定义会引发行为漂移，尤其在重试、限流、超时等策略上风险最高。
+- 单一来源可显著降低回归风险与全局改动成本。
 
 ---
 
-## Gotcha: Asymmetric Mechanisms Producing Same Output
+## 何时抽象
 
-**Problem**: When two different mechanisms must produce the same file set (e.g., recursive directory copy for init vs. manual `files.set()` for update), structural changes (renaming, moving, adding subdirectories) only propagate through the automatic mechanism. The manual one silently drifts.
+**适合抽象**：
+- 同一逻辑出现 3 次以上
+- 逻辑复杂度足以产生 bug
+- 多人都可能需要复用
 
-**Symptom**: Init works perfectly, but update creates files at wrong paths or misses files entirely.
-
-**Prevention checklist**:
-- [ ] When migrating directory structures, search for ALL code paths that reference the old structure
-- [ ] If one path is auto-derived (glob/copy) and another is manually listed, the manual one needs updating
-- [ ] Add a regression test that compares outputs from both mechanisms
+**不适合抽象**：
+- 只使用一次
+- 非常简单的一行逻辑
+- 抽象成本高于重复成本
 
 ---
 
-## Checklist Before Commit
+## 批量修改之后
 
-- [ ] Searched for existing similar code
-- [ ] No copy-pasted logic that should be shared
-- [ ] Constants defined in one place
-- [ ] Similar patterns follow same structure
+当你在多个文件做了相似改动后：
+
+1. **复查**：是否覆盖了所有实例？
+2. **复搜**：再跑一次 grep，看是否有遗漏。
+3. **评估**：现在是否应该抽象？
+
+---
+
+## 易错点：不同机制产出同一结果
+
+**问题**：如果两个不同机制都要生成同一批文件（例如 init 走递归目录拷贝，update 走手写 `files.set()`），目录结构变更（重命名、移动、新增子目录）通常只会被自动机制覆盖，手写机制会静默漂移。
+
+**现象**：init 正常，update 却写错路径或漏文件。
+
+**预防清单**：
+- [ ] 迁移目录结构时，搜索所有仍引用旧结构的代码路径
+- [ ] 若一路是自动推导（glob/copy），另一路是手写列表，必须同步更新手写列表
+- [ ] 增加 regression test，对比两种机制的输出是否一致
+
+---
+
+## 提交前检查
+
+- [ ] 已搜索仓库中现有相似实现
+- [ ] 没有本应共享却仍在复制粘贴的逻辑
+- [ ] 常量仅在一个来源定义
+- [ ] 相似模式保持一致结构

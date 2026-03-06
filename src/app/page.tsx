@@ -1,8 +1,10 @@
 import { Network } from "lucide-react";
 
-export default function HomePage() {
+interface HomePageProps {}
+
+export default function HomePage({}: HomePageProps) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-6 py-16 text-center">
+    <main className="home-page mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-6 py-16 text-center">
       <div className="mb-6 rounded-full bg-slate-900 p-4 text-white">
         <Network className="h-8 w-8" />
       </div>

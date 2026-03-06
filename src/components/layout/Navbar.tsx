@@ -13,11 +13,13 @@ const NAV_ITEMS = [
   { href: "/settings", label: "设置", icon: Settings }
 ];
 
-export function Navbar() {
+interface NavbarProps {}
+
+export function Navbar({}: NavbarProps) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/70 dark:bg-[#020617]/80">
+    <header className="layout-navbar sticky top-0 z-40 border-b border-slate-200/70 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/70 dark:bg-[#020617]/80">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-2 text-slate-900 dark:text-slate-100">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-amber-600/90 text-xs font-semibold text-white">文</span>

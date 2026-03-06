@@ -1,29 +1,22 @@
-# Directory Structure
+# 目录结构
 
-> [SYNC-NOTE]
-> Role: Source of truth (for agents)
-> Canonical: .trellis/spec/frontend/directory-structure.md
-> Mirror: .trellis/spec/frontend/directory-structure.zh.md
-> Last synced: 2026-03-03
-> Sync owner: codex
-
-
-> How frontend code is organized in this project.
+> 本项目前端代码的组织方式。
 
 ---
 
-## Overview
+## 概览
 
-The project uses App Router with clear layer boundaries:
-- `app` for routes and route-local UI.
-- `components` for reusable UI/layout building blocks.
-- `features` for feature-level composition and re-export boundaries.
-- `providers` for global React providers.
-- `types` for shared frontend/backend-safe contracts.
+前端采用轻量分层结构：
+- `app`：路由入口与路由级样式。
+- `components`：可复用 UI、布局组件、客户端交互组件。
+- `providers`：全局 React providers。
+- `types`：前端可安全消费的共享契约类型。
+
+`src/server/**` 仅限服务端使用，Client Components 禁止直接导入。
 
 ---
 
-## Directory Layout
+## 目录布局
 
 ```text
 src/
@@ -31,45 +24,76 @@ src/
 |  |- layout.tsx
 |  |- page.tsx
 |  |- globals.css
-|  |- (admin)/analyze/
-|  |  |- page.tsx
-|  |  |- AnalyzeButton.tsx
 |  \- api/analyze/route.ts
 |- components/
 |  |- layout/Navbar.tsx
-|  |- ui/{Button,Card,Badge,Table}.tsx
 |  |- ThemeToggle.tsx
-|  \- system/ThemeToggle.tsx
-|- features/
-|  \- analyze/components/AnalyzeButton.tsx
+|  |- system/ThemeToggle.tsx
+|  \- ui/{Button,Card,Badge,Table}.tsx
 |- providers/ThemeProvider.tsx
-\- types/{analysis,api}.ts
+|- types/{analysis,api}.ts
+\- server/...
 ```
 
 ---
 
-## Module Organization Rules
+## 模块组织规则
 
-1. Route entry files stay in `src/app/**/page.tsx` and default to Server
-   Components.
-2. Route-specific interactive pieces are colocated under the route folder first.
-3. Shared primitives belong in `src/components/ui`.
-4. If a route component must be imported outside `app`, add a re-export under
-   `src/features/**`.
-
----
-
-## Naming Conventions
-
-- React component files: PascalCase (`AnalyzeButton.tsx`, `ThemeProvider.tsx`).
-- Route files: Next.js convention (`page.tsx`, `layout.tsx`, `route.ts`).
-- Utility/type files: lower kebab or concise noun (`analysis.ts`, `api.ts`).
-- One exported component per file for `components/ui` and route action widgets.
+1. 路由入口文件统一放在 `src/app/**`，遵循 Next.js 命名约定
+   （`page.tsx`、`layout.tsx`、`route.ts`）。
+2. 可复用基础组件放在 `src/components/ui`，在业务位置组合使用。
+3. 布局层公共模块放在 `src/components/layout`。
+4. `src/components/system` 仅用于系统级封装或 re-export。
+5. 全局 provider 统一放在 `src/providers`。
+6. 跨层共享 TypeScript 契约放在 `src/types`，不要散落在组件文件中。
 
 ---
 
-## Real Examples
+## 命名约定
 
-- Server route page with DB read: `src/app/(admin)/analyze/page.tsx`
-- Reusable layout component: `src/components/layout/Navbar.tsx`
-- Feature re-export boundary: `src/features/analyze/components/AnalyzeButton.tsx`
+- 组件文件名：PascalCase（`ThemeToggle.tsx`、`Navbar.tsx`）。
+- Next.js 路由文件：框架约定名（`page.tsx`、`layout.tsx`、`route.ts`）。
+- 类型模块：简洁名词（`analysis.ts`、`api.ts`）。
+- 组件根 DOM 的 className 必须使用语义化 kebab-case
+  （`home-page`、`layout-navbar`、`ui-button`），不要使用
+  `wrapper`、`container` 这类泛化名称。
+
+---
+
+## 真实示例
+
+- 路由外壳与 provider 注入：`src/app/layout.tsx`
+- 首页路由入口：`src/app/page.tsx`
+- 可复用导航模块：`src/components/layout/Navbar.tsx`
+- 可复用 UI 基础组件：`src/components/ui/Button.tsx`
+
+---
+
+## 代码案例与原因
+
+反例：
+```tsx
+"use client";
+
+import { prisma } from "@/server/db/prisma";
+
+export function BookClientPanel() {
+  // 客户端组件直接触达 server/db 层（错误）
+  void prisma.book.findMany();
+  return <section>...</section>;
+}
+```
+
+正例：
+```tsx
+import { getBooks } from "@/server/modules/project/services/project-service";
+
+export default function Page() {
+  const booksPromise = getBooks();
+  return <main>{/* Promise 交给子组件按规范消费 */}</main>;
+}
+```
+
+原因：
+- 目录边界清晰后，依赖方向稳定，避免 client 直接依赖 server。
+- 结构稳定时，后续重构（拆模块、迁移文件）成本显著降低。

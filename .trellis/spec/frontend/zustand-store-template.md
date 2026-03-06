@@ -1,20 +1,20 @@
-# Zustand Store Template
+# Zustand Store 模板
 
 > [SYNC-NOTE]
-> Role: Source of truth (for agents)
-> Canonical: .trellis/spec/frontend/zustand-store-template.md
-> Mirror: .trellis/spec/frontend/zustand-store-template.zh.md
-> Last synced: 2026-03-03
-> Sync owner: codex
+> 角色：事实基准（供 agents 使用）
+> 主文档：.trellis/spec/frontend/zustand-store-template.md
+> 镜像文档：.trellis/spec/frontend/zustand-store-template.zh.md
+> 最近同步：2026-03-03
+> 同步负责人：codex
 
 
-> Project-standard template for directory layout, naming, selectors, and actions.
+> 项目标准模板：目录布局、命名、selector 与 action 约定。
 
 ---
 
-## Directory Layout
+## 目录布局
 
-Use feature-scoped store files:
+使用 feature 作用域的 store 文件：
 
 ```text
 src/features/<feature>/store/
@@ -24,7 +24,7 @@ src/features/<feature>/store/
 \- index.ts
 ```
 
-Example:
+示例：
 
 ```text
 src/features/analyze/store/
@@ -36,18 +36,18 @@ src/features/analyze/store/
 
 ---
 
-## Naming Rules
+## 命名规则
 
-- Store hook: `use<Feature>Store` (e.g. `useAnalyzeStore`).
-- State type: `<Feature>StoreState`.
-- Actions type: `<Feature>StoreActions`.
-- Store type: `<Feature>Store = <Feature>StoreState & <Feature>StoreActions`.
-- Selector helpers: `use<Feature><Field>` or `use<Feature><Domain>`.
-- Action names use clear verbs: `setXxx`, `toggleXxx`, `resetXxx`, `openXxx`.
+- Store hook：`use<Feature>Store`（例如 `useAnalyzeStore`）。
+- State type：`<Feature>StoreState`。
+- Actions type：`<Feature>StoreActions`。
+- Store type：`<Feature>Store = <Feature>StoreState & <Feature>StoreActions`。
+- Selector helpers：`use<Feature><Field>` 或 `use<Feature><Domain>`。
+- Action 命名使用清晰动词：`setXxx`、`toggleXxx`、`resetXxx`、`openXxx`。
 
 ---
 
-## File Template
+## 文件模板
 
 ### 1) `<feature>-store.types.ts`
 
@@ -139,10 +139,18 @@ export {
 
 ---
 
-## Usage Rules
+## 使用规则
 
-- Components should consume selectors instead of reading the whole store.
-- Keep store actions synchronous and predictable; keep network effects in
-  server actions/services.
-- Store only UI/app interaction state, not long-lived server entity caches.
-- Keep one store focused on one feature domain.
+- 组件应消费 selectors，而不是直接读取整个 store。
+- store actions 保持同步且可预测；网络副作用放在
+  server actions/services。
+- store 仅保存 UI/交互状态，不保存长期服务端实体缓存。
+- 一个 store 聚焦一个 feature 领域。
+
+---
+
+## 原因说明
+
+- 选择 selector 读取可降低无关 rerender，避免全量订阅造成性能抖动。
+- action 保持同步可预测，便于排查状态来源并减少副作用分散。
+- store 仅保存 UI 状态可避免与服务端状态形成双写缓存。

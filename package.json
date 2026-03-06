@@ -7,11 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "openspec:init": "bash .trellis/scripts/flow_feature_init_openspec.sh",
-    "openspec:upgrade": "bash .trellis/scripts/flow_feature_upgrade_docs_openspec.sh",
-    "openspec:confirm": "python3 ./.trellis/scripts/task.py flow-confirm",
-    "openspec:check": "python3 ./.trellis/scripts/task.py flow-guard --verify",
+    "lint": "eslint src",
+    "test:unit": "vitest run --coverage",
+    "test:unit:watch": "vitest",
     "trellis:context": "python3 ./.trellis/scripts/get_context.py",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -34,14 +32,19 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.12",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.19.13",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@vitest/coverage-v8": "^4.0.18",
     "dotenv": "^17.3.1",
     "eslint": "^9.22.0",
     "eslint-config-next": "^16.0.0",
+    "jsdom": "^28.1.0",
     "tailwindcss": "^4.0.12",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }

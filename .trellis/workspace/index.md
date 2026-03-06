@@ -1,21 +1,123 @@
-# Workspace Index
+# 工作区索引
 
-> Records of AI agent workspaces.
+> 记录项目中所有开发者的 AI Agent 工作会话
 
 ---
 
-## Active Developers
+## 概览
 
-| Developer | Last Active | Sessions | Active File |
+该目录用于跟踪所有开发者在本项目中的 AI Agent 协作记录。
+
+### 文件结构
+
+```text
+workspace/
+|-- index.md              # 本文件：主索引
++-- {developer}/          # 每位开发者目录
+    |-- index.md          # 个人索引（含会话历史）
+    |-- tasks/            # 任务文件
+    |   |-- *.json        # 活跃任务
+    |   +-- archive/      # 按月份归档任务
+    +-- journal-N.md      # 会话日志文件（按序号递增）
+```
+
+---
+
+## 活跃开发者
+
+| 开发者 | 最近活跃 | 会话数 | 当前文件 |
 |-----------|-------------|----------|-------------|
-| - | - | - | - |
+| (暂无) | - | - | - |
 
 ---
 
-## Getting Started
+## 快速开始
 
-Initialize developer identity:
+### 新开发者
+
+执行初始化脚本：
 
 ```bash
 python3 ./.trellis/scripts/init_developer.py <your-name>
 ```
+
+该脚本会：
+1. 创建身份文件（gitignore）
+2. 创建进度目录
+3. 创建个人索引
+4. 创建初始 journal 文件
+
+### 回访开发者
+
+1. 获取当前开发者名：
+   ```bash
+   python3 ./.trellis/scripts/get_developer.py
+   ```
+
+2. 阅读个人索引：
+   ```bash
+   cat .trellis/workspace/$(python3 ./.trellis/scripts/get_developer.py)/index.md
+   ```
+
+---
+
+## 记录规范
+
+### 日志文件规则
+
+- 单个 journal 文件**最多 2000 行**
+- 达到上限后创建 `journal-{N+1}.md`
+- 创建新文件后同步更新个人 `index.md`
+
+### 会话记录格式
+
+每次会话建议包含：
+- 摘要：一句话说明本次目标
+- 主要改动：本次修改了什么
+- Git 提交：提交哈希与信息
+- 下一步：后续待办
+
+---
+
+## 会话模板
+
+记录会话时可使用：
+
+```markdown
+## 会话 {N}: {标题}
+
+**日期**: YYYY-MM-DD
+**任务**: {task-name}
+
+### 摘要
+
+{一句话摘要}
+
+### 主要改动
+
+- {改动 1}
+- {改动 2}
+
+### Git 提交
+
+| 哈希 | 信息 |
+|------|---------|
+| `abc1234` | {提交信息} |
+
+### 测试
+
+- [OK] {测试结果}
+
+### 状态
+
+[OK] **已完成** / # **进行中** / [P] **阻塞**
+
+### 下一步
+
+- {下一步 1}
+- {下一步 2}
+```
+
+---
+
+**语言约定**：说明性内容优先使用中文；技术术语与命令保持英文。

@@ -7,3 +7,4 @@ coverage
 .volumes
 .pnpm-store
 .archive/
+.trellis.bak

@@ -1,69 +1,110 @@
-# Hook Guidelines
+# Hook 规范
 
-> [SYNC-NOTE]
-> Role: Source of truth (for agents)
-> Canonical: .trellis/spec/frontend/hook-guidelines.md
-> Mirror: .trellis/spec/frontend/hook-guidelines.zh.md
-> Last synced: 2026-03-03
-> Sync owner: codex
-
-
-> How hooks are used in this project.
+> 本项目 hooks 的使用方式。
 
 ---
 
-## Overview
+## 概览
 
-Current codebase has no shared custom hooks yet. Built-in hooks are used inside
-small client components.
+当前 hooks 使用保持精简，主要聚焦在 UI 交互行为。
+目前仓库中还没有共享的自定义 hooks。
 
-Default rule: prefer Server Components first, then introduce client hooks only
-for browser interactivity.
-
----
-
-## Current Hook Usage Patterns
-
-- Routing state hook in nav: `usePathname` in `src/components/layout/Navbar.tsx`
-- Theme state hook: `useTheme` in `src/components/ThemeToggle.tsx`
-- Mount guard with `useEffect` + `useState`: `src/components/ThemeToggle.tsx`
-- Server action hook: `useActionState` in `src/app/(admin)/analyze/AnalyzeButton.tsx`
+默认规则：
+- 服务端数据逻辑放在服务端路由或 server actions。
+- 客户端 hooks 只用于浏览器侧交互。
 
 ---
 
-## When to Create a Custom Hook
+## 当前 Hook 模式
 
-Create `useXxx` only when logic is reused by 2 or more components and includes
-state/effects, not just pure formatting.
-
-Suggested location when introduced:
-- Feature-specific hooks: `src/features/<feature>/hooks/`
-- Generic hooks: `src/components/hooks/` or `src/lib/hooks/` (choose one and keep consistent)
+- 主题状态与切换：`src/components/ThemeToggle.tsx` 中的 `useTheme`
+- 挂载安全渲染：`src/components/ThemeToggle.tsx` 中的
+  `useState` + `useEffect`
+- 导航路由感知：`src/components/layout/Navbar.tsx` 中的 `usePathname`
 
 ---
 
-## Data Fetching Guidance
+## 自定义 Hook 规则
 
-- Prefer server-side data fetching in `page.tsx` and pass data down as props.
-- Use hooks for mutation/status handling in client components.
-- Keep network contract parsing in server/action layer, not directly in UI hooks.
+仅在以下条件都满足时创建自定义 hook：
+1. 至少被两个组件复用。
+2. 包含 state/effect/event 编排（不是纯格式化函数）。
+3. 相比组件内联逻辑，能明显提升可读性。
 
-Examples:
-- Server fetch with Prisma: `src/app/(admin)/analyze/page.tsx`
-- Client mutation state: `src/app/(admin)/analyze/AnalyzeButton.tsx`
+引入后的建议位置：
+- 功能域 hooks：`src/features/<feature>/hooks/useXxx.ts`
+- 通用 hooks：`src/components/hooks/useXxx.ts`
 
----
-
-## Naming Conventions
-
-- Custom hooks must start with `use`.
-- Hook names should describe domain action/state (`useAnalyzeChapter`, not `useData`).
-- Keep hook return values typed and stable.
+如果不存在复用价值，逻辑保持在组件内部。
 
 ---
 
-## Common Mistakes to Avoid
+## 数据读取与变更建议
 
-- Calling hooks conditionally.
-- Pushing server-only logic into client hooks.
-- Creating one-off custom hooks for single component usage without reuse value.
+- 优先在 route handlers、server actions 或 Server Components 中访问服务端数据。
+- 组件渲染期异步读取统一通过 `use()`，不要用 `useEffect + setState` 做首屏拉数。
+- 请求校验与数据归一化不要放在 UI hooks 中。
+- 涉及变更流程时，在 UI 中明确表达 pending/success/error 状态。
+
+真实示例：
+- API 请求校验边界：`src/app/api/analyze/route.ts`
+- Server Action 边界：`src/server/actions/analysis.ts`
+
+---
+
+## 命名约定
+
+- hook 名称必须以 `use` 开头。
+- 名称应体现领域意图（如 `useThemePreference`，避免 `useData`）。
+- 返回结构应保持稳定且有明确类型。
+
+---
+
+## 常见错误（避免）
+
+- 条件调用 hooks。
+- 在 Client Component hooks 中处理仅服务端可做的逻辑。
+- 为单文件一次性逻辑创建“只用一次”的自定义 hook。
+
+---
+
+## 代码案例与原因
+
+反例：
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+
+export function ChapterPanel() {
+  const [chapter, setChapter] = useState<{ title: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/analyze")
+      .then((res) => res.json())
+      .then((data) => setChapter(data));
+  }, []);
+
+  return <section>{chapter?.title}</section>;
+}
+```
+
+正例：
+```tsx
+"use client";
+
+import { use } from "react";
+
+interface ChapterPanelProps {
+  chapterPromise: Promise<{ title: string }>;
+}
+
+export function ChapterPanel({ chapterPromise }: ChapterPanelProps) {
+  const chapter = use(chapterPromise);
+  return <section>{chapter.title}</section>;
+}
+```
+
+原因：
+- 渲染期读取统一使用 `use()`，由 Suspense 处理 loading，避免首屏闪烁。
+- 减少 `useEffect` 拉数引发的竞态与重复请求风险。

@@ -6,11 +6,14 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 
-export function ThemeToggle() {
+interface ThemeToggleProps {}
+
+export function ThemeToggle({}: ThemeToggleProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -20,7 +23,7 @@ export function ThemeToggle() {
     <Button
       type="button"
       onClick={() => (mounted ? setTheme(isDark ? "light" : "dark") : null)}
-      className="h-9 w-9 p-0"
+      className="theme-toggle h-9 w-9 p-0"
       aria-label="切换主题"
       title="切换亮暗色"
     >
