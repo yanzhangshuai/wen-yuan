@@ -1,3 +1,7 @@
+---
+stage: growth
+---
+
 # Hook 规范
 
 > 本项目 hooks 的使用方式。

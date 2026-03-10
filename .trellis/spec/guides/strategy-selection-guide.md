@@ -1,3 +1,7 @@
+---
+stage: growth
+---
+
 # 策略选择指南
 
 > [SYNC-NOTE]

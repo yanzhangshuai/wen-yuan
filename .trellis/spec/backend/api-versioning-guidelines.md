@@ -1,3 +1,7 @@
+---
+stage: mature
+---
+
 # API 版本与兼容规范
 
 > 管理 API/Action contract 演进，避免前后端同步失败。

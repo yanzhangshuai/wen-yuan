@@ -1,3 +1,7 @@
+---
+stage: growth
+---
+
 # Zustand Store 模板
 
 > [SYNC-NOTE]

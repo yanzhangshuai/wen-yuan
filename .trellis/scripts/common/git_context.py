@@ -28,6 +28,7 @@ from .paths import (
     get_repo_root,
     get_tasks_dir,
 )
+from .stage import get_spec_summary, list_specs
 
 # =============================================================================
 # Helper Functions
@@ -148,6 +149,7 @@ def get_context_json(repo_root: Path | None = None) -> dict:
             "lines": journal_lines,
             "nearLimit": journal_lines > 1800,
         },
+        "specs": get_spec_summary(repo_root),
     }
 
 
@@ -358,6 +360,27 @@ def get_context_text(repo_root: Path | None = None) -> str:
             lines.append("[!] WARNING: Approaching 2000 line limit!")
     else:
         lines.append("No journal file found")
+    lines.append("")
+
+    # Spec activation
+    summary = get_spec_summary(repo_root)
+    stage = summary["stage"]
+    active_count = summary["active_count"]
+    total_count = summary["total_count"]
+
+    lines.append(f"## ACTIVE SPECS (stage: {stage}, {active_count}/{total_count})")
+    specs = list_specs(repo_root, stage=stage)
+    if specs["active"]:
+        for item in specs["active"]:
+            lines.append(f"  - {item['path']}")
+    else:
+        lines.append("  (none)")
+
+    if specs["dormant"]:
+        lines.append("")
+        lines.append(f"## DORMANT SPECS ({len(specs['dormant'])} files, run `set_stage.py` to unlock)")
+        for item in specs["dormant"]:
+            lines.append(f"  ○ {item['path']} [requires: {item['stage']}]")
     lines.append("")
 
     # Paths

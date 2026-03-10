@@ -71,60 +71,50 @@ def main():
 
     project_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
     trellis_dir = project_dir / ".trellis"
-    claude_dir = project_dir / ".claude"
 
     output = StringIO()
 
-    output.write("""<session-context>
-You are starting a new session in a Trellis-managed project.
-Read and follow all instructions below carefully.
-</session-context>
-
-""")
-
+    # Inject current state (lightweight, from get_context.py)
     output.write("<current-state>\n")
     context_script = trellis_dir / "scripts" / "get_context.py"
     output.write(run_script(context_script))
     output.write("\n</current-state>\n\n")
 
-    output.write("<workflow>\n")
-    workflow_content = read_file(trellis_dir / "workflow.md", "No workflow.md found")
-    output.write(workflow_content)
-    output.write("\n</workflow>\n\n")
+    # Inject slim guide instead of full workflow + guidelines + instructions
+    output.write("""<instructions>
+You are an AI dev assistant in a Trellis-managed project.
 
-    output.write("<guidelines>\n")
+## Core Rules
+- Run `python3 .trellis/scripts/get_context.py` to understand project state.
+- Only read specs listed under ACTIVE SPECS in the context output above.
+- Before coding, read the relevant spec files with `cat .trellis/spec/<type>/<file>.md`.
+- Do NOT execute `git commit` — leave that to the human.
+- Use `python3 .trellis/scripts/task.py list` to manage tasks.
 
-    output.write("## Frontend\n")
-    frontend_index = read_file(
-        trellis_dir / "spec" / "frontend" / "index.md", "Not configured"
-    )
-    output.write(frontend_index)
-    output.write("\n\n")
+## Stage System
+This project uses stage-based spec activation (mvp → growth → mature).
+- View stage: `python3 .trellis/scripts/get_stage.py`
+- List active specs: `python3 .trellis/scripts/list_specs.py`
+- Change stage: `python3 .trellis/scripts/set_stage.py <stage>`
 
-    output.write("## Backend\n")
-    backend_index = read_file(
-        trellis_dir / "spec" / "backend" / "index.md", "Not configured"
-    )
-    output.write(backend_index)
-    output.write("\n\n")
+## On-Demand References (read when needed, not preloaded)
+- Full workflow: `cat .trellis/workflow.md`
+- Frontend specs: `cat .trellis/spec/frontend/index.md`
+- Backend specs: `cat .trellis/spec/backend/index.md`
+- Thinking guides: `cat .trellis/spec/guides/index.md`
+- Task workflow: `/trellis:start`
 
-    output.write("## Guides\n")
-    guides_index = read_file(
-        trellis_dir / "spec" / "guides" / "index.md", "Not configured"
-    )
-    output.write(guides_index)
+## Slash Commands
+- `/trellis:start` — Full start session workflow
+- `/trellis:brainstorm` — Requirements discovery
+- `/trellis:finish-work` — Pre-commit checklist
+- `/trellis:record-session` — Record completed session
+- `/trellis:check-frontend` / `/trellis:check-backend` — Code quality check
+</instructions>
 
-    output.write("\n</guidelines>\n\n")
-
-    output.write("<instructions>\n")
-    start_md = read_file(
-        claude_dir / "commands" / "trellis" / "start.md", "No start.md found"
-    )
-    output.write(start_md)
-    output.write("\n</instructions>\n\n")
-
-    output.write("""<ready>
-Context loaded. Wait for user's first message, then follow <instructions> to handle their request.
+<ready>
+Context loaded. Wait for user's first message, then handle their request.
+Read specs on-demand — they are NOT preloaded into context.
 </ready>""")
 
     result = {

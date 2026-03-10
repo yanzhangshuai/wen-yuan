@@ -1,3 +1,7 @@
+---
+stage: growth
+---
+
 # 验证检查清单
 
 > [SYNC-NOTE]

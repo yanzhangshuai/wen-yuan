@@ -1,3 +1,7 @@
+---
+stage: growth
+---
+
 # 后端质量规范
 
 > [SYNC-NOTE]

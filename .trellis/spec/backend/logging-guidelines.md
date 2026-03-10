@@ -1,3 +1,7 @@
+---
+stage: growth
+---
+
 # 日志规范
 
 > [SYNC-NOTE]
