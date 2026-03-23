@@ -1,5 +1,5 @@
 ---
-stage: growth
+stage: mvp
 ---
 
 # 跨层思考指南

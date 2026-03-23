@@ -1,5 +1,5 @@
 ---
-stage: growth
+stage: mvp
 ---
 
 # 日志规范

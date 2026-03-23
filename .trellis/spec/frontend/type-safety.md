@@ -2,18 +2,9 @@
 stage: mvp
 ---
 
-# 类型安全
+# 前端类型安全
 
 > 本项目的类型安全实践规则。
-
----
-
-## 概览
-
-项目启用 TypeScript `strict` 模式，并在以下场景保持显式类型：
-- 组件 props；
-- 跨层共享 API/领域契约；
-- 外部不可信输入的解析与校验。
 
 ---
 
@@ -32,63 +23,37 @@ stage: mvp
 
 ---
 
-## 运行时校验规则
+## 外部数据校验
 
-- 外部输入在完成校验前一律视为 `unknown`。
-- 对 AI/HTTP 结构化 payload 先解析、再归一化、再使用。
-- 校验后返回稳定一致的 success/error 响应结构。
+**外部输入（AI 输出、HTTP 请求体、URL 参数）一律用 Zod 校验，禁止裸 `as` 断言。**
 
-真实示例：
-- `src/types/analysis.ts` 中的 `parseChapterAnalysisResponse`
-- `src/app/api/analyze/route.ts` 中的 `POST` 请求体校验
+详见 [shared/zod-typescript.md](../shared/zod-typescript.md)。
+
+```typescript
+// 禁止
+const body = (await request.json()) as { chapterId: string };
+
+// 正确：Zod 校验后类型自动收窄
+const schema = z.object({ chapterId: z.string().cuid() });
+const parsed = schema.safeParse(await request.json());
+if (!parsed.success) return errorResponse(...);
+const { chapterId } = parsed.data;
+```
 
 ---
 
 ## 常用模式
 
-- 使用 `as const` 数组定义窄类型联合。
-- 使用本地 predicate guards（如 `isRecord`、分类判断）处理 unknown 值。
-- 使用泛型 API 响应联合保证返回结构一致。
+- 使用 `as const` 数组定义窄类型联合（适用于 Prisma enum 等值集合）。
+- 组件 props 使用 TypeScript interface，不需要 Zod（props 来自内部，不是外部输入）。
+- 跨层 API 响应使用泛型 `ApiResponse<T>` 保证结构一致。
 
 真实示例：
 - `src/types/analysis.ts` 中的 `BIO_CATEGORY_VALUES as const`
-- `src/types/analysis.ts` 中的 `isRecord` 与 `isBioCategory`
 - `src/types/api.ts` 中的 `ApiResponse<T>`
 
 ---
 
 ## 禁用模式
 
-- 在共享契约和组件 props 中使用 `any`。
-- 对 unknown 请求/模型输出做无校验 `as` 断言。
-- 返回绕过 `ApiResponse<T>` 的临时拼接响应结构。
-
----
-
-## 代码案例与原因
-
-反例：
-```ts
-export function parsePayload(payload: unknown) {
-  return payload as { chapterId: string };
-}
-```
-
-正例：
-```ts
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-export function parsePayload(payload: unknown): { chapterId: string } {
-  if (!isRecord(payload) || typeof payload.chapterId !== "string") {
-    throw new Error("Invalid payload");
-  }
-
-  return { chapterId: payload.chapterId };
-}
-```
-
-原因：
-- 运行时校验能拦截外部脏数据，避免类型系统“静态正确、运行时崩溃”。
-- 解析边界前置后，下游逻辑可直接依赖稳定类型，减少 defensive code。
+参见 [shared/code-quality.md](../shared/code-quality.md)。核心：禁止 `any`、禁止无校验 `as` 断言、禁止 `!` 断言。

@@ -1,5 +1,5 @@
 ---
-stage: growth
+stage: mvp
 ---
 
 # 模块边界规范

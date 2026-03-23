@@ -4,85 +4,107 @@ stage: mvp
 
 # 注释规范（含单元测试）
 
-> 目标：保证新增/修改代码都具备可维护、可复现、可排障的注释信息。
+> 目标：让注释提供代码本身无法传达的信息——**为什么**，而不是**做了什么**。
 
 ---
 
-## 必须遵守
+## 核心原则
 
-- 新增或修改的导出函数/类/复杂私有方法，必须补充结构化注释。
-- 结构化注释至少覆盖：功能、输入约束、输出、异常/失败条件、副作用。
-- 复杂分支（权限、事务、重试、边界处理）必须有“为什么这么做”的注释，不仅描述“做了什么”。
-- 单元测试必须包含可读场景说明；复杂测试用例必须显式标注 Arrange / Act / Assert。
-- 涉及错误码、契约字段、边界行为的断言，注释需说明“业务意义”，而不只是断言语句本身。
-- 注释必须与代码同步更新；过期注释视为缺陷。
-- 禁止噪声注释：明显一行语句不写无信息量注释。
+**只在真正需要的地方写注释。** 代码已经说清楚的事不要重复描述。
+
+注释要写：
+
+- **复杂业务逻辑**：非显而易见的分支、算法、权衡
+- **"为什么这么做"**：背后的约束或决策，而不是解释读者能看懂的逻辑
+- **已知陷阱**：绕过某个 bug、特殊兼容处理、外部 API 限制
+
+注释不要写：
+
+- interface 字段和简单属性（`id: string` 不需要注释"唯一标识符"）
+- 显而易见的单行函数（`return items.length === 0` 不需要注释"返回是否为空"）
+- 参数名已经说清楚的内容（`chunkIndex: number` 不需要注释"分段索引"）
 
 ---
 
-## 生产代码模板
+## 生产代码：何时写，写什么
+
+**必须注释**的场景：
 
 ```ts
+// 1. 非显而易见的业务规则（为什么，不是做了什么）
+// ironyNote 过滤泛化标签（"批判社会"之类），避免无信息量内容污染数据库
+private sanitizeIronyNote(note?: string): string | undefined {
+  if (!note) return undefined;
+  const clean = note.replace(/\s+/g, " ").trim();
+  return clean.length < 5 ? undefined : clean.slice(0, 300);
+}
+
+// 2. 关键约束（函数签名无法表达时）
 /**
- * 功能：一句话说明本函数的业务目的。
- * 输入：参数及关键约束（必填、范围、格式、来源）。
- * 输出：返回值结构与关键字段语义。
- * 异常：抛错条件或失败分支（含错误码/错误类型）。
- * 副作用：数据库写入、网络调用、缓存、日志、事件发布等。
+ * 执行章节分析主流程并写入结构化文学数据。
+ * chapterId 不存在时直接抛错，不静默降级（避免写入空数据）。
  */
+async analyzeChapter(chapterId: string): Promise<ChapterAnalysisResult>
+
+// 3. 为什么不用更简单的方案
+// Set 去重而非 filter，避免大章节场景下的 O(n²) 性能问题
+const mentionKeys = new Set<string>();
+```
+
+**不需要注释**的场景（当前代码库里的过度注释示例）：
+
+```ts
+// 禁止：重复代码已表达的内容
+/**
+ * 功能：合并多个分段分析结果。
+ * 输入：results - 各分段的 ChapterAnalysisResponse。
+ * 输出：单一 ChapterAnalysisResponse。
+ * 异常：无。
+ * 副作用：无。
+ */
+private mergeChunkResults(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse
+
+// 正确：函数名 + 类型签名已足够，删掉注释
+private mergeChunkResults(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse
 ```
 
 ---
 
-## 单元测试模板
+## 单元测试：必须写场景说明
+
+测试名要清楚说明**在什么条件下期望什么行为**。
 
 ```ts
-/**
- * 被测对象：<module/function/class>
- * 测试目标：本文件要覆盖的关键行为。
- * 覆盖范围：success / failure / boundary。
- */
-describe("<module>", () => {
-  it("returns xxx when yyy", () => {
-    // Arrange: 构造输入、mock 依赖、准备前置状态
-    // Act: 执行被测逻辑
-    // Assert: 校验业务结果、错误码或边界行为
-  });
-});
-```
+// 禁止
+it("works", () => { ... });
+it("test 1", () => { ... });
 
----
-
-## 代码案例与原因
-
-反例：
-```ts
-// 测试一下
-it("works", () => {
-  const result = run(input);
-  expect(result).toBeTruthy();
-});
-```
-
-正例：
-```ts
-/**
- * 被测对象：parsePagination
- * 测试目标：分页参数归一化行为稳定。
- * 覆盖范围：默认值、非法值、上限截断。
- */
+// 正确：条件 + 预期结果
 describe("parsePagination", () => {
-  it("falls back to defaults on invalid inputs", () => {
+  it("falls back to page=1 when page param is negative", () => {
     // Arrange
-    const searchParams = new URLSearchParams({ page: "-1", page_size: "0" });
+    const params = new URLSearchParams({ page: "-1" });
     // Act
-    const result = parsePagination(searchParams);
+    const result = parsePagination(params);
     // Assert
-    expect(result).toEqual({ page: 1, pageSize: 20 });
+    expect(result.page).toBe(1);
   });
 });
 ```
 
-原因：
-- 结构化注释可让评审者快速判断覆盖是否充分。
-- 对错误码和边界行为写清测试意图，可显著降低回归排障成本。
+复杂测试用例标注 `// Arrange / Act / Assert`，简单的不必强制。
+
+---
+
+## 禁止噪声注释
+
+```ts
+// 禁止：比代码还啰嗦
+i++; // i 自增
+
+// 禁止：被注释掉的旧代码
+// const old = char.name.toLowerCase();
+
+// 禁止：空泛的 TODO
+// TODO: fix this
+```

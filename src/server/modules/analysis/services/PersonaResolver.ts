@@ -47,8 +47,70 @@ interface CandidatePersona {
   aliases: string[];
 }
 
-export class PersonaResolver {
-  constructor(private readonly prisma: PrismaClient) {}
+/**
+ * 功能：创建实体对齐服务，将 AI 抽取姓名对齐到已有 Persona。
+ * 输入：prisma - 数据库客户端（可注入，便于测试）。
+ * 输出：包含 resolve 方法的服务对象。
+ * 异常：数据库操作失败时抛错。
+ * 副作用：可能新增 persona/profile，或 upsert profile。
+ */
+export function createPersonaResolver(prisma: PrismaClient) {
+  async function loadCandidates(client: TxLike, bookId: string, extracted: string): Promise<CandidatePersona[]> {
+    // 第一层：精确/半精确召回（名字、别名、书内称呼）。
+    const directMatches = await client.persona.findMany({
+      where: {
+        OR: [
+          { name: { contains: extracted, mode: "insensitive" } },
+          { globalTags: { has: extracted } },
+          {
+            profiles: {
+              some: {
+                bookId,
+                localName: { contains: extracted, mode: "insensitive" }
+              }
+            }
+          }
+        ]
+      },
+      include: {
+        profiles: {
+          where: { bookId },
+          select: { localName: true }
+        }
+      },
+      take: 40
+    });
+
+    if (directMatches.length > 0) {
+      return directMatches.map((item) => ({
+        id: item.id,
+        name: item.name,
+        aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
+      }));
+    }
+
+    // 第二层回退：召回当前书已出现的全部 persona，再由相似度筛选。
+    const fallbackBookMatches = await client.persona.findMany({
+      where: {
+        profiles: {
+          some: { bookId }
+        }
+      },
+      include: {
+        profiles: {
+          where: { bookId },
+          select: { localName: true }
+        }
+      },
+      take: 200
+    });
+
+    return fallbackBookMatches.map((item) => ({
+      id: item.id,
+      name: item.name,
+      aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
+    }));
+  }
 
   /**
    * 功能：将 AI 抽取姓名对齐到已有 Persona，必要时创建新 Persona。
@@ -57,8 +119,8 @@ export class PersonaResolver {
    * 异常：数据库操作失败时抛错。
    * 副作用：可能新增 persona/profile，或 upsert profile。
    */
-  async resolve(input: ResolveInput, tx?: TxLike): Promise<ResolveResult> {
-    const client = tx ?? this.prisma;
+  async function resolve(input: ResolveInput, tx?: TxLike): Promise<ResolveResult> {
+    const client = tx ?? prisma;
     const extracted = normalizeName(input.extractedName);
 
     // 空名字直接标记为幻觉，避免写入脏数据。
@@ -70,7 +132,7 @@ export class PersonaResolver {
       };
     }
 
-    const candidates = await this.loadCandidates(client, input.bookId, extracted);
+    const candidates = await loadCandidates(client, input.bookId, extracted);
 
     const scored = candidates
       .map((candidate) => ({
@@ -81,7 +143,7 @@ export class PersonaResolver {
 
     const winner = scored[0];
 
-    // 达到阈值则优先合并到已有 Persona，符合“尽量复用实体”的原则。
+    // 达到阈值则优先合并到已有 Persona，符合"尽量复用实体"的原则。
     if (winner && winner.score >= 0.62) {
       // 确保该 persona 在当前书有 profile（幂等 upsert）。
       await client.profile.upsert({
@@ -142,62 +204,7 @@ export class PersonaResolver {
     };
   }
 
-  private async loadCandidates(client: TxLike, bookId: string, extracted: string): Promise<CandidatePersona[]> {
-    // 第一层：精确/半精确召回（名字、别名、书内称呼）。
-    const directMatches = await client.persona.findMany({
-      where: {
-        OR: [
-          { name: { contains: extracted, mode: "insensitive" } },
-          { globalTags: { has: extracted } },
-          {
-            profiles: {
-              some: {
-                bookId,
-                localName: { contains: extracted, mode: "insensitive" }
-              }
-            }
-          }
-        ]
-      },
-      include: {
-        profiles: {
-          where: { bookId },
-          select: { localName: true }
-        }
-      },
-      take: 40
-    });
-
-    if (directMatches.length > 0) {
-      return directMatches.map((item) => ({
-        id: item.id,
-        name: item.name,
-        aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
-      }));
-    }
-
-    // 第二层回退：召回当前书已出现的全部 persona，再由相似度筛选。
-    const fallbackBookMatches = await client.persona.findMany({
-      where: {
-        profiles: {
-          some: { bookId }
-        }
-      },
-      include: {
-        profiles: {
-          where: { bookId },
-          select: { localName: true }
-        }
-      },
-      take: 200
-    });
-
-    return fallbackBookMatches.map((item) => ({
-      id: item.id,
-      name: item.name,
-      aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
-    }));
-  }
+  return { resolve };
 }
 
 /**

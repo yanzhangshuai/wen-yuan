@@ -1,5 +1,5 @@
 ---
-stage: growth
+stage: mvp
 ---
 
 # 安全规范

@@ -130,7 +130,7 @@ def list_specs(
     if not spec_dir.is_dir():
         return {"active": [], "dormant": []}
 
-    subdirs = [spec_type] if spec_type else ["frontend", "backend", "guides", "meta"]
+    subdirs = [spec_type] if spec_type else ["frontend", "backend", "guides", "meta", "shared", "big-question"]
     active: list[dict[str, str]] = []
     dormant: list[dict[str, str]] = []
 

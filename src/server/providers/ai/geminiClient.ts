@@ -1,17 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-import { buildChapterAnalysisPrompt } from "@/server/modules/analysis/ai/prompts";
-import type { AiAnalysisClient, AnalyzeChunkInput } from "@/server/modules/analysis/ai/types";
-import { type ChapterAnalysisResponse, parseChapterAnalysisResponse } from "@/types/analysis";
+import type { AiProviderClient } from "@/server/providers/ai";
 
 /**
- * 功能：实现 Gemini Provider，按统一接口输出结构化结果。
- * 输入：构造参数（apiKey、modelName）与 analyzeChapterChunk 参数。
- * 输出：ChapterAnalysisResponse。
+ * 功能：实现 Gemini Provider，按统一接口生成 JSON 文本。
+ * 输入：构造参数（apiKey、modelName）与 generateJson 参数。
+ * 输出：模型返回的 JSON 文本。
  * 异常：缺少 API Key、空响应或解析失败时抛错。
  * 副作用：发起外部网络请求到 Gemini 服务。
  */
-export class GeminiClient implements AiAnalysisClient {
+export class GeminiClient implements AiProviderClient {
   private readonly client: GoogleGenerativeAI;
   private readonly modelName: string;
 
@@ -32,24 +30,13 @@ export class GeminiClient implements AiAnalysisClient {
   }
 
   /**
-   * 功能：调用 Gemini 分析单分段文本并返回结构化结果。
-   * 输入：input - 分段文本与人物上下文。
-   * 输出：ChapterAnalysisResponse。
-   * 异常：接口调用失败、空响应或 JSON 解析失败时抛错。
+   * 功能：调用 Gemini 生成 JSON 文本。
+   * 输入：prompt - 业务层构建的 Prompt 文本。
+   * 输出：模型返回的 JSON 文本。
+   * 异常：接口调用失败或空响应时抛错。
    * 副作用：发起外部 API 请求。
    */
-  async analyzeChapterChunk(input: AnalyzeChunkInput): Promise<ChapterAnalysisResponse> {
-    // 先构建高约束 Prompt，降低输出格式漂移概率。
-    const prompt = buildChapterAnalysisPrompt({
-      bookTitle: input.bookTitle,
-      chapterNo: input.chapterNo,
-      chapterTitle: input.chapterTitle,
-      content: input.content,
-      profiles: input.profiles,
-      chunkIndex: input.chunkIndex,
-      chunkCount: input.chunkCount
-    });
-
+  async generateJson(prompt: string): Promise<string> {
     // 按当前配置加载模型（默认 gemini-3.1-flash）。
     const model = this.client.getGenerativeModel({ model: this.modelName });
 
@@ -69,7 +56,6 @@ export class GeminiClient implements AiAnalysisClient {
       throw new Error("Gemini returned an empty response");
     }
 
-    // 执行二次结构校验与归一化。
-    return parseChapterAnalysisResponse(raw);
+    return raw;
   }
 }

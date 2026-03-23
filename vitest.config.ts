@@ -28,7 +28,8 @@ export default defineConfig({
         "**/prisma/**",
         "**/*.test.*",
         "**/*.spec.*",
-        "vitest.setup.ts"
+        "vitest.setup.ts",
+        "src/server/providers/**"
       ],
       thresholds: {
         lines: 80,

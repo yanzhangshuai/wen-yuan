@@ -92,6 +92,7 @@ stage: mvp
 - 省略 `<ComponentName>Props` interface。
 - 组件根节点缺少语义化 class，或使用 `container`、`wrapper` 等泛化命名。
 - 在业务组件重复实现基础样式，而不是复用 `src/components/ui/*`。
+- `any` / `!` / `@ts-ignore` 等类型违规——见 [shared/code-quality.md](../shared/code-quality.md)。
 
 ---
 

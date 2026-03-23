@@ -23,6 +23,8 @@ stage: mvp
 | [API 响应规范](./api-response-standard.md) | 统一 API/Action payload 契约 | 迁移自 `.codex/skills/api-response-standard` |
 | [注释模板](./comment-template.md) | backend/services 的中文 JSDoc 模板 | 迁移自 `.codex/skills/zh-comment-template` |
 | [数据库规范](./database-guidelines.md) | Prisma 事务与生成代码规则 | 代码库既有模式 |
+| [Neo4j 使用规范](./neo4j-guidelines.md) | Session 生命周期、参数化查询、与 Prisma 的边界 | 新增 |
+| [AI 输出契约规范](./ai-output-contract.md) | Zod 校验、多模型一致性、幻觉处理、重试策略 | 新增 |
 | [类型安全](./type-safety.md) | 跨层类型约束与禁用模式 | 代码库既有模式 |
 | [日志规范](./logging-guidelines.md) | 结构化日志规范 | 服务层既有模式 |
 | [安全规范](./security-guidelines.md) | 鉴权、输入校验、敏感信息保护 | 项目安全基线 |

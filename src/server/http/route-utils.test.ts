@@ -21,7 +21,7 @@ describe("parsePagination", () => {
 
     expect(pagination).toEqual({ page: 1, pageSize: 20 });
   });
-E
+
   it("clamps page_size to 100 and floors numbers", () => {
     const pagination = parsePagination(
       new URLSearchParams({

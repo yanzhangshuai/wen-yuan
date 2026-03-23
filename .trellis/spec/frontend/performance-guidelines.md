@@ -1,5 +1,5 @@
 ---
-stage: mature
+stage: mvp
 ---
 
 # 前端性能规范

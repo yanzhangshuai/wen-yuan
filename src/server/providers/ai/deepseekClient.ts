@@ -1,6 +1,4 @@
-import { buildChapterAnalysisPrompt } from "@/server/modules/analysis/ai/prompts";
-import type { AiAnalysisClient, AnalyzeChunkInput } from "@/server/modules/analysis/ai/types";
-import { type ChapterAnalysisResponse, parseChapterAnalysisResponse } from "@/types/analysis";
+import type { AiProviderClient } from "@/server/providers/ai";
 
 interface DeepSeekChatResponse {
   choices?: Array<{
@@ -14,13 +12,13 @@ interface DeepSeekChatResponse {
 }
 
 /**
- * 功能：实现 DeepSeek Provider，按统一接口输出结构化结果。
- * 输入：构造参数（apiKey、baseUrl、modelName）与 analyzeChapterChunk 参数。
- * 输出：ChapterAnalysisResponse。
+ * 功能：实现 DeepSeek Provider，按统一接口生成 JSON 文本。
+ * 输入：构造参数（apiKey、baseUrl、modelName）与 generateJson 参数。
+ * 输出：模型返回的 JSON 文本。
  * 异常：缺少 API Key、接口失败、空响应或解析失败时抛错。
  * 副作用：发起外部网络请求到 DeepSeek 服务。
  */
-export class DeepSeekClient implements AiAnalysisClient {
+export class DeepSeekClient implements AiProviderClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly modelName: string;
@@ -47,23 +45,13 @@ export class DeepSeekClient implements AiAnalysisClient {
   }
 
   /**
-   * 功能：调用 DeepSeek 分析单分段文本并返回结构化结果。
-   * 输入：input - 分段文本与人物上下文。
-   * 输出：ChapterAnalysisResponse。
-   * 异常：接口调用失败、空响应或 JSON 解析失败时抛错。
+   * 功能：调用 DeepSeek 生成 JSON 文本。
+   * 输入：prompt - 业务层构建的 Prompt 文本。
+   * 输出：模型返回的 JSON 文本。
+   * 异常：接口调用失败或空响应时抛错。
    * 副作用：发起外部 API 请求。
    */
-  async analyzeChapterChunk(input: AnalyzeChunkInput): Promise<ChapterAnalysisResponse> {
-    const prompt = buildChapterAnalysisPrompt({
-      bookTitle: input.bookTitle,
-      chapterNo: input.chapterNo,
-      chapterTitle: input.chapterTitle,
-      content: input.content,
-      profiles: input.profiles,
-      chunkIndex: input.chunkIndex,
-      chunkCount: input.chunkCount
-    });
-
+  async generateJson(prompt: string): Promise<string> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -91,6 +79,6 @@ export class DeepSeekClient implements AiAnalysisClient {
       throw new Error("DeepSeek returned an empty response");
     }
 
-    return parseChapterAnalysisResponse(raw);
+    return raw;
   }
 }
