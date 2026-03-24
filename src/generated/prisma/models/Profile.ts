@@ -40,8 +40,10 @@ export type ProfileMinAggregateOutputType = {
   bookId: string | null
   localName: string | null
   localSummary: string | null
+  officialTitle: string | null
   ironyIndex: number | null
   moralTier: string | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,8 +54,10 @@ export type ProfileMaxAggregateOutputType = {
   bookId: string | null
   localName: string | null
   localSummary: string | null
+  officialTitle: string | null
   ironyIndex: number | null
   moralTier: string | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,9 +68,12 @@ export type ProfileCountAggregateOutputType = {
   bookId: number
   localName: number
   localSummary: number
+  officialTitle: number
+  localTags: number
   ironyIndex: number
   moralTier: number
   visualConfig: number
+  deletedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -87,8 +94,10 @@ export type ProfileMinAggregateInputType = {
   bookId?: true
   localName?: true
   localSummary?: true
+  officialTitle?: true
   ironyIndex?: true
   moralTier?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -99,8 +108,10 @@ export type ProfileMaxAggregateInputType = {
   bookId?: true
   localName?: true
   localSummary?: true
+  officialTitle?: true
   ironyIndex?: true
   moralTier?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -111,9 +122,12 @@ export type ProfileCountAggregateInputType = {
   bookId?: true
   localName?: true
   localSummary?: true
+  officialTitle?: true
+  localTags?: true
   ironyIndex?: true
   moralTier?: true
   visualConfig?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -211,9 +225,12 @@ export type ProfileGroupByOutputType = {
   bookId: string
   localName: string
   localSummary: string | null
+  officialTitle: string | null
+  localTags: string[]
   ironyIndex: number
   moralTier: string | null
   visualConfig: runtime.JsonValue | null
+  deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: ProfileCountAggregateOutputType | null
@@ -247,9 +264,12 @@ export type ProfileWhereInput = {
   bookId?: Prisma.UuidFilter<"Profile"> | string
   localName?: Prisma.StringFilter<"Profile"> | string
   localSummary?: Prisma.StringNullableFilter<"Profile"> | string | null
+  officialTitle?: Prisma.StringNullableFilter<"Profile"> | string | null
+  localTags?: Prisma.StringNullableListFilter<"Profile">
   ironyIndex?: Prisma.FloatFilter<"Profile"> | number
   moralTier?: Prisma.StringNullableFilter<"Profile"> | string | null
   visualConfig?: Prisma.JsonNullableFilter<"Profile">
+  deletedAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
@@ -262,9 +282,12 @@ export type ProfileOrderByWithRelationInput = {
   bookId?: Prisma.SortOrder
   localName?: Prisma.SortOrder
   localSummary?: Prisma.SortOrderInput | Prisma.SortOrder
+  officialTitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  localTags?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
   moralTier?: Prisma.SortOrderInput | Prisma.SortOrder
   visualConfig?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   persona?: Prisma.PersonaOrderByWithRelationInput
@@ -281,9 +304,12 @@ export type ProfileWhereUniqueInput = Prisma.AtLeast<{
   bookId?: Prisma.UuidFilter<"Profile"> | string
   localName?: Prisma.StringFilter<"Profile"> | string
   localSummary?: Prisma.StringNullableFilter<"Profile"> | string | null
+  officialTitle?: Prisma.StringNullableFilter<"Profile"> | string | null
+  localTags?: Prisma.StringNullableListFilter<"Profile">
   ironyIndex?: Prisma.FloatFilter<"Profile"> | number
   moralTier?: Prisma.StringNullableFilter<"Profile"> | string | null
   visualConfig?: Prisma.JsonNullableFilter<"Profile">
+  deletedAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
@@ -296,9 +322,12 @@ export type ProfileOrderByWithAggregationInput = {
   bookId?: Prisma.SortOrder
   localName?: Prisma.SortOrder
   localSummary?: Prisma.SortOrderInput | Prisma.SortOrder
+  officialTitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  localTags?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
   moralTier?: Prisma.SortOrderInput | Prisma.SortOrder
   visualConfig?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProfileCountOrderByAggregateInput
@@ -317,9 +346,12 @@ export type ProfileScalarWhereWithAggregatesInput = {
   bookId?: Prisma.UuidWithAggregatesFilter<"Profile"> | string
   localName?: Prisma.StringWithAggregatesFilter<"Profile"> | string
   localSummary?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  officialTitle?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  localTags?: Prisma.StringNullableListFilter<"Profile">
   ironyIndex?: Prisma.FloatWithAggregatesFilter<"Profile"> | number
   moralTier?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
   visualConfig?: Prisma.JsonNullableWithAggregatesFilter<"Profile">
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
 }
@@ -328,9 +360,12 @@ export type ProfileCreateInput = {
   id?: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   persona: Prisma.PersonaCreateNestedOneWithoutProfilesInput
@@ -343,9 +378,12 @@ export type ProfileUncheckedCreateInput = {
   bookId: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -354,9 +392,12 @@ export type ProfileUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutProfilesNestedInput
@@ -369,9 +410,12 @@ export type ProfileUncheckedUpdateInput = {
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -382,9 +426,12 @@ export type ProfileCreateManyInput = {
   bookId: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -393,9 +440,12 @@ export type ProfileUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -406,9 +456,12 @@ export type ProfileUncheckedUpdateManyInput = {
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -434,9 +487,12 @@ export type ProfileCountOrderByAggregateInput = {
   bookId?: Prisma.SortOrder
   localName?: Prisma.SortOrder
   localSummary?: Prisma.SortOrder
+  officialTitle?: Prisma.SortOrder
+  localTags?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
   moralTier?: Prisma.SortOrder
   visualConfig?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -451,8 +507,10 @@ export type ProfileMaxOrderByAggregateInput = {
   bookId?: Prisma.SortOrder
   localName?: Prisma.SortOrder
   localSummary?: Prisma.SortOrder
+  officialTitle?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
   moralTier?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -463,8 +521,10 @@ export type ProfileMinOrderByAggregateInput = {
   bookId?: Prisma.SortOrder
   localName?: Prisma.SortOrder
   localSummary?: Prisma.SortOrder
+  officialTitle?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
   moralTier?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -557,21 +617,25 @@ export type ProfileUncheckedUpdateManyWithoutPersonaNestedInput = {
   deleteMany?: Prisma.ProfileScalarWhereInput | Prisma.ProfileScalarWhereInput[]
 }
 
-export type FloatFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
+export type ProfileCreatelocalTagsInput = {
+  set: string[]
+}
+
+export type ProfileUpdatelocalTagsInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 export type ProfileCreateWithoutBookInput = {
   id?: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   persona: Prisma.PersonaCreateNestedOneWithoutProfilesInput
@@ -582,9 +646,12 @@ export type ProfileUncheckedCreateWithoutBookInput = {
   personaId: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -624,9 +691,12 @@ export type ProfileScalarWhereInput = {
   bookId?: Prisma.UuidFilter<"Profile"> | string
   localName?: Prisma.StringFilter<"Profile"> | string
   localSummary?: Prisma.StringNullableFilter<"Profile"> | string | null
+  officialTitle?: Prisma.StringNullableFilter<"Profile"> | string | null
+  localTags?: Prisma.StringNullableListFilter<"Profile">
   ironyIndex?: Prisma.FloatFilter<"Profile"> | number
   moralTier?: Prisma.StringNullableFilter<"Profile"> | string | null
   visualConfig?: Prisma.JsonNullableFilter<"Profile">
+  deletedAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
 }
@@ -635,9 +705,12 @@ export type ProfileCreateWithoutPersonaInput = {
   id?: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutProfilesInput
@@ -648,9 +721,12 @@ export type ProfileUncheckedCreateWithoutPersonaInput = {
   bookId: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -686,9 +762,12 @@ export type ProfileCreateManyBookInput = {
   personaId: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -697,9 +776,12 @@ export type ProfileUpdateWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutProfilesNestedInput
@@ -710,9 +792,12 @@ export type ProfileUncheckedUpdateWithoutBookInput = {
   personaId?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -722,9 +807,12 @@ export type ProfileUncheckedUpdateManyWithoutBookInput = {
   personaId?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -734,9 +822,12 @@ export type ProfileCreateManyPersonaInput = {
   bookId: string
   localName: string
   localSummary?: string | null
+  officialTitle?: string | null
+  localTags?: Prisma.ProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
   moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -745,9 +836,12 @@ export type ProfileUpdateWithoutPersonaInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutProfilesNestedInput
@@ -758,9 +852,12 @@ export type ProfileUncheckedUpdateWithoutPersonaInput = {
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -770,9 +867,12 @@ export type ProfileUncheckedUpdateManyWithoutPersonaInput = {
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   localName?: Prisma.StringFieldUpdateOperationsInput | string
   localSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  localTags?: Prisma.ProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
   moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -785,9 +885,12 @@ export type ProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   bookId?: boolean
   localName?: boolean
   localSummary?: boolean
+  officialTitle?: boolean
+  localTags?: boolean
   ironyIndex?: boolean
   moralTier?: boolean
   visualConfig?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -800,9 +903,12 @@ export type ProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   bookId?: boolean
   localName?: boolean
   localSummary?: boolean
+  officialTitle?: boolean
+  localTags?: boolean
   ironyIndex?: boolean
   moralTier?: boolean
   visualConfig?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -815,9 +921,12 @@ export type ProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   bookId?: boolean
   localName?: boolean
   localSummary?: boolean
+  officialTitle?: boolean
+  localTags?: boolean
   ironyIndex?: boolean
   moralTier?: boolean
   visualConfig?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -830,14 +939,17 @@ export type ProfileSelectScalar = {
   bookId?: boolean
   localName?: boolean
   localSummary?: boolean
+  officialTitle?: boolean
+  localTags?: boolean
   ironyIndex?: boolean
   moralTier?: boolean
   visualConfig?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "bookId" | "localName" | "localSummary" | "ironyIndex" | "moralTier" | "visualConfig" | "createdAt" | "updatedAt", ExtArgs["result"]["profile"]>
+export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "bookId" | "localName" | "localSummary" | "officialTitle" | "localTags" | "ironyIndex" | "moralTier" | "visualConfig" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["profile"]>
 export type ProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -863,9 +975,12 @@ export type $ProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     bookId: string
     localName: string
     localSummary: string | null
+    officialTitle: string | null
+    localTags: string[]
     ironyIndex: number
     moralTier: string | null
     visualConfig: runtime.JsonValue | null
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["profile"]>
@@ -1298,9 +1413,12 @@ export interface ProfileFieldRefs {
   readonly bookId: Prisma.FieldRef<"Profile", 'String'>
   readonly localName: Prisma.FieldRef<"Profile", 'String'>
   readonly localSummary: Prisma.FieldRef<"Profile", 'String'>
+  readonly officialTitle: Prisma.FieldRef<"Profile", 'String'>
+  readonly localTags: Prisma.FieldRef<"Profile", 'String[]'>
   readonly ironyIndex: Prisma.FieldRef<"Profile", 'Float'>
   readonly moralTier: Prisma.FieldRef<"Profile", 'String'>
   readonly visualConfig: Prisma.FieldRef<"Profile", 'Json'>
+  readonly deletedAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Profile", 'DateTime'>
 }

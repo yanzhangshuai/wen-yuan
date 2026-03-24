@@ -89,7 +89,7 @@ cat .trellis/spec/backend/type-safety.md           # 类型规范
 cat .trellis/spec/backend/logging-guidelines.md    # 日志规范
 ```
 
-**涉及复杂逻辑或新增单元测试**：
+**任何代码改动都必须阅读**：
 ```bash
 cat .trellis/spec/guides/comment-guidelines.md     # 详细注释规范（含单元测试）
 ```

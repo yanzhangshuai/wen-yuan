@@ -13,12 +13,43 @@ datasource db {
 
 // --- 枚举定义 (业务逻辑分类) ---
 
+enum NameType {
+  NAMED // 有名有姓的人物（默认）
+  TITLE_ONLY // 仅有称号/官职/绰号，无名字
+
+  @@map("name_type")
+}
+
+enum RecordSource {
+  AI // AI 解析产出（默认）
+  MANUAL // 用户手动录入
+
+  @@map("record_source")
+}
+
+enum AppRole {
+  ADMIN // 管理员：拥有系统配置与审核权限
+  VIEWER // 只读用户：仅可查看数据
+
+  @@map("app_role")
+}
+
 enum ProcessingStatus {
   DRAFT // AI 初步提取，待人工审核
   VERIFIED // 已人工核准，正式入库
   REJECTED // 噪音数据或错误识别
 
   @@map("processing_status")
+}
+
+enum AnalysisJobStatus {
+  QUEUED // 已入队，等待调度
+  RUNNING // 执行中
+  SUCCEEDED // 执行成功
+  FAILED // 执行失败
+  CANCELED // 人工或系统取消
+
+  @@map("analysis_job_status")
 }
 
 enum PersonaType {
@@ -61,164 +92,258 @@ enum ChapterType {
 
 // --- 核心模型 ---
 
+/// @db.remark: 系统用户。仅存 admin / viewer 账号，初始管理员由 seed 从 env 写入。
+model User {
+  id          String    @id @default(uuid()) @db.Uuid // 用户主键
+  username    String    @unique // 系统内用户名/标识（唯一），不作为主登录凭证
+  email       String    @unique // 登录邮箱（唯一）
+  name        String    @default("管理员") // 展示名
+  password    String    @map("password") // Argon2id 密码哈希，不存明文
+  role        AppRole   @default(VIEWER) // 系统角色
+  isActive    Boolean   @default(true) @map("is_active") // 账号启用状态
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(6) // 最近登录时间
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+
+  @@index([isActive], map: "users_is_active_idx") // 账号启用状态筛选索引
+  @@map("users")
+}
+
+/// @db.remark: AI 模型配置表。存储各模型的 Key、BaseURL 及启用状态，由设置页管理。
+model AiModel {
+  id        String     @id @default(uuid()) @db.Uuid // 模型配置主键
+  provider  String // 推荐值: "deepseek" | "qwen" | "doubao" | "gemini"
+  name      String // 显示名称，如 "DeepSeek V3"
+  modelId   String     @map("model_id") // API 调用标识，如 "deepseek-chat"
+  baseUrl   String     @map("base_url") // 可自定义，支持私有部署
+  apiKey    String?    @map("api_key") // 前端只展示脱敏版
+  isEnabled Boolean    @default(false) @map("is_enabled") // Key 配置后才可启用
+  isDefault Boolean    @default(false) @map("is_default") // 导入向导默认选中
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+
+  books        Book[] // 被该模型配置关联的书籍
+  analysisJobs AnalysisJob[] // 使用该模型执行的解析任务
+
+  @@index([provider, isEnabled], map: "ai_models_provider_enabled_idx")
+  @@map("ai_models")
+}
+
 /// @db.remark: 书籍/作品库。系统的顶层容器，支持跨作品的人物对比。
 model Book {
-  id          String  @id @default(uuid()) @db.Uuid
-  title       String // 书名，如《儒林外史》
-  author      String? // 作者，如“吴敬梓”
-  dynasty     String? // 背景朝代
-  description String? @db.Text // 作品简介
-  coverUrl    String? @map("cover_url") // 3D 看板所需的封面图
+  id            String  @id @default(uuid()) @db.Uuid // 书籍主键
+  title         String // 书名，如《儒林外史》
+  author        String? // 作者，如"吴敬梓"
+  dynasty       String? // 背景朝代
+  description   String? @db.Text // 作品简介
+  coverUrl      String? @map("cover_url") // 3D 看板所需的封面图
   // PENDING (初始), PROCESSING (解析中), COMPLETED (完成), ERROR (失败)
-  status      String  @default("PENDING")
-  errorLog    String? @map("error_log") @db.Text // 如果解析失败，直接存入数据库
+  status        String  @default("PENDING") // 当前处理状态
+  errorLog      String? @map("error_log") @db.Text // 最近失败日志
+  parseProgress Int     @default(0) @map("parse_progress") // 解析进度 0-100
+  parseStage    String? @map("parse_stage") // 当前阶段文本，如"实体提取"
+  rawContent    String? @map("raw_content") @db.Text // 原始上传文本，章节切分前保留
 
-  chapters  Chapter[]
-  profiles  Profile[] // 该书涉及的人物档案
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  // 解析时选用的 AI 模型（FK）
+  aiModelId String?  @map("ai_model_id") @db.Uuid
+  aiModel   AiModel? @relation(fields: [aiModelId], references: [id])
 
-  @@map("books") // 数据库物理表名：复数
+  chapters     Chapter[] // 章节列表
+  profiles     Profile[] // 本书角色档案
+  analysisJobs AnalysisJob[] // 解析任务记录
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+
+  @@map("books")
 }
 
 /// @db.remark: 章节/回目。时间轴的物理基石，所有事件必须挂载在回目上。
 model Chapter {
-  id      String      @id @default(uuid()) @db.Uuid
-  bookId  String      @map("book_id") @db.Uuid
+  id      String      @id @default(uuid()) @db.Uuid // 章节主键
+  bookId  String      @map("book_id") @db.Uuid // 所属书籍 ID
   type    ChapterType @default(CHAPTER) // 标注是楔子还是正文
   no      Int // 章节序号（第几回），决定时间轴物理排序
   unit    String      @default("回") // 称谓单位 (如: "回", "章", "节")
   noText  String?     @map("no_text") // 自定义序号显示 (如: "第一回", "序章")
-  title   String // 章节名，如“范进中举”
+  title   String // 章节名，如"范进中举"
   content String      @db.Text // 章节原文（用于 AI 解析及前端高亮溯源）
 
   // 针对文学作品的补充
   isAbstract Boolean  @default(false) @map("is_abstract") // 是否为总纲/大义
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  book        Book              @relation(fields: [bookId], references: [id])
-  mentions    Mention[]
-  biographies BiographyRecord[]
-  relations   Relationship[]
+  book        Book              @relation(fields: [bookId], references: [id]) // 所属书籍
+  mentions    Mention[] // 本章提及记录
+  biographies BiographyRecord[] // 本章履历事件
+  relations   Relationship[] // 本章关系边
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
 }
 
-/// @db.remark: 全局角色本体。代表“这个人本身”，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
+/// @db.remark: 全局角色本体。代表"这个人本身"，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
 model Persona {
-  id     String      @id @default(uuid()) @db.Uuid
-  name   String // 全局标准名（如“范进”）
+  id     String      @id @default(uuid()) @db.Uuid // 角色本体主键
+  name   String // 全局标准名（如"范进"）
   type   PersonaType @default(PERSON) // 实体类型
   gender String? // 性别
 
-  // 跨书共享的静态属性
-  birthYear  String?  @map("birth_year") // 生年（虚拟或公历）
-  deathYear  String?  @map("death_year") // 卒年
-  globalTags String[] @map("global_tags") // 全局标签，如 ["真名士", "官僚"]
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  // 人名类型与数据来源
+  nameType     NameType     @default(NAMED) @map("name_type") // 人名类型
+  recordSource RecordSource @default(AI) @map("record_source") // 记录来源
+  confidence   Float        @default(1.0) // AI 置信度 0.0-1.0，低于 0.7 标记待核对
 
-  profiles    Profile[]
-  mentions    Mention[]
+  // 跨书共享的静态属性
+  aliases    String[]  @default([]) // 别名列表，如 ["周学道","周大人"]
+  hometown   String? // 籍贯
+  birthYear  String?   @map("birth_year") // 生年（虚拟或公历）
+  deathYear  String?   @map("death_year") // 卒年
+  globalTags String[]  @default([]) @map("global_tags") // 全局标签，如 ["真名士", "官僚"]
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6) // 软删除时间
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+
+  profiles    Profile[] // 各书籍维度档案
+  mentions    Mention[] // 角色提及集合
   biographies BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
 
   // 建立双向关系关联，方便 3D 图谱从 Persona 直接出发查询
   sourceRels Relationship[] @relation("SourcePersona")
   targetRels Relationship[] @relation("TargetPersona")
 
-  @@index([name], map: "persona_name_idx")
+  @@index([name], map: "persona_name_idx") // 人名检索索引
+  @@index([deletedAt], map: "persona_deleted_at_idx") // 软删除清理索引
   @@map("personas")
 }
 
 /// @db.remark: 角色书中档案。记录该 Persona 在特定书籍中的特有属性（如讽刺指数）。
 model Profile {
-  id        String @id @default(uuid()) @db.Uuid
-  personaId String @map("persona_id") @db.Uuid
-  bookId    String @map("book_id") @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid // 档案主键
+  personaId String @map("persona_id") @db.Uuid // 关联角色 ID
+  bookId    String @map("book_id") @db.Uuid // 关联书籍 ID
 
-  localName    String  @map("local_name") // 书中称呼：如“范老爷”
-  localSummary String? @map("local_summary") @db.Text // AI 汇总的本书人物小传
-  ironyIndex   Float   @default(0) @map("irony_index") // 讽刺指数 (0-10)
-  moralTier    String? @map("moral_tier") // 人格档次，如“伪君子”
+  localName     String   @map("local_name") // 书中称呼：如"范老爷"
+  localSummary  String?  @map("local_summary") @db.Text // AI 汇总的本书人物小传
+  officialTitle String?  @map("official_title") // 书中官职（最终职位）
+  localTags     String[] @default([]) @map("local_tags") // 性格/社会角色标签，如 ["伪君子","官僚"]
+  ironyIndex    Float    @default(0) @map("irony_index") // 讽刺指数 (0-10)
+  moralTier     String?  @map("moral_tier") // 人格档次，如"伪君子"
 
   // 3D 视觉配置缓存：存储节点颜色、发光度、初始坐标建议等
-  visualConfig Json?    @map("visual_config")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  visualConfig Json?     @map("visual_config") // 前端可视化配置缓存
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6) // 软删除时间
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  persona Persona @relation(fields: [personaId], references: [id])
-  book    Book    @relation(fields: [bookId], references: [id])
+  persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
+  book    Book    @relation(fields: [bookId], references: [id]) // 关联书籍
 
-  @@unique([personaId, bookId], map: "profile_persona_id_book_id_key")
+  @@unique([personaId, bookId], map: "profile_persona_id_book_id_key") // 一角色在同一本书仅一条档案
+  @@index([bookId, deletedAt], map: "profiles_book_id_deleted_at_idx") // 书籍维度的有效档案筛选索引
   @@map("profiles")
 }
 
 /// @db.remark: 履历记录表。时间轴的核心，记录职位、地点、状态的每一次跳动。
 model BiographyRecord {
-  id        String @id @default(uuid()) @db.Uuid
-  personaId String @map("persona_id") @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid // 履历主键
+  personaId String @map("persona_id") @db.Uuid // 关联角色 ID
   chapterId String @map("chapter_id") @db.Uuid // 事件发生的章节坐标
   chapterNo Int    @map("chapter_no") // 冗余排序字段，极速生成 Timeline
 
   category    BioCategory @default(EVENT) // 事件分类
-  title       String? // 当时的职位/身份，如“山东学道”
+  title       String? // 当时的职位/身份，如"山东学道"
   location    String? // 所在的地理位置
   event       String      @db.Text // 事件具体描述
   virtualYear String?     @map("virtual_year") // 书中提到的时间点
 
-  ironyNote String?          @map("irony_note") @db.Text // AI 的解析点评
-  status    ProcessingStatus @default(DRAFT)
-  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ironyNote    String?          @map("irony_note") @db.Text // AI 的解析点评
+  recordSource RecordSource     @default(AI) @map("record_source") // 数据来源
+  status       ProcessingStatus @default(DRAFT) // 审核状态
+  deletedAt    DateTime?        @map("deleted_at") @db.Timestamptz(6) // 软删除时间
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  persona Persona @relation(fields: [personaId], references: [id])
-  chapter Chapter @relation(fields: [chapterId], references: [id])
+  persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
+  chapter Chapter @relation(fields: [chapterId], references: [id]) // 关联章节
 
-  @@index([chapterNo], map: "biography_record_chapter_no_idx")
-  @@index([personaId], map: "biography_record_persona_id_idx")
+  @@index([chapterNo], map: "biography_record_chapter_no_idx") // 时间轴排序索引
+  @@index([personaId], map: "biography_record_persona_id_idx") // 角色维度查询索引
+  @@index([status, recordSource, chapterId], map: "biography_record_review_query_idx") // 审核列表查询索引
   @@map("biography_records")
 }
 
-/// @db.remark: 原文提及记录。记录“谁在什么时候出场了”，支持精准定位原文段落。
+/// @db.remark: 原文提及记录。记录"谁在什么时候出场了"，支持精准定位原文段落。
 model Mention {
-  id        String @id @default(uuid()) @db.Uuid
-  personaId String @map("persona_id") @db.Uuid
-  chapterId String @map("chapter_id") @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid // 提及主键
+  personaId String @map("persona_id") @db.Uuid // 关联角色 ID
+  chapterId String @map("chapter_id") @db.Uuid // 关联章节 ID
 
-  rawText   String   @map("raw_text") // 原文提及片段，如“那范老爷”
+  rawText   String    @map("raw_text") // 原文提及片段，如"那范老爷"
   summary   String? // AI 提取的此次出场动态摘要
-  paraIndex Int?     @map("para_index") // 段落索引，用于定位原文
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  paraIndex Int?      @map("para_index") // 段落索引，用于定位原文
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6) // 软删除时间
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  persona Persona @relation(fields: [personaId], references: [id])
-  chapter Chapter @relation(fields: [chapterId], references: [id])
+  persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
+  chapter Chapter @relation(fields: [chapterId], references: [id]) // 关联章节
 
-  @@index([chapterId], map: "mentions_chapter_id_idx")
-  @@index([personaId, chapterId], map: "mention_persona_id_chapter_id_idx")
+  @@index([chapterId], map: "mentions_chapter_id_idx") // 按章节查询索引
+  @@index([personaId, chapterId], map: "mention_persona_id_chapter_id_idx") // 人物章节联合查询索引
+  @@index([chapterId, deletedAt], map: "mentions_chapter_deleted_at_idx") // 章节有效提及筛选索引
   @@map("mentions")
 }
 
 /// @db.remark: 动态关系表。
 model Relationship {
-  id        String @id @default(uuid()) @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid // 关系主键
   chapterId String @map("chapter_id") @db.Uuid // 关系确认的章节
   sourceId  String @map("source_id") @db.Uuid // 发起者 ID
   targetId  String @map("target_id") @db.Uuid // 接收者 ID
 
-  type        String // 关系类型，如“同年”、“师生”
-  weight      Float            @default(1.0) // 亲密度
-  description String?          @db.Text // 关系背景证据
-  status      ProcessingStatus @default(DRAFT)
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  type         String // 关系类型，如"同年"、"师生"
+  weight       Float            @default(1.0) // 亲密度
+  description  String?          @db.Text // 关系背景描述
+  evidence     String?          @db.Text // 原文证据片段
+  recordSource RecordSource     @default(AI) @map("record_source") // 数据来源
+  confidence   Float            @default(1.0) // AI 置信度 0.0-1.0
+  status       ProcessingStatus @default(DRAFT) // 审核状态
+  deletedAt    DateTime?        @map("deleted_at") @db.Timestamptz(6) // 软删除时间
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  chapter Chapter @relation(fields: [chapterId], references: [id])
-  source  Persona @relation("SourcePersona", fields: [sourceId], references: [id])
-  target  Persona @relation("TargetPersona", fields: [targetId], references: [id])
+  chapter Chapter @relation(fields: [chapterId], references: [id]) // 关系确认章节
+  source  Persona @relation("SourcePersona", fields: [sourceId], references: [id]) // 关系发起方
+  target  Persona @relation("TargetPersona", fields: [targetId], references: [id]) // 关系接收方
 
-  @@index([sourceId, targetId], map: "relationships_source_id_target_id_idx")
+  @@unique([chapterId, sourceId, targetId, type, recordSource], map: "relationships_dedup_key") // 防止重复关系边
+  @@index([sourceId, targetId], map: "relationships_source_id_target_id_idx") // 双点关系查询索引
+  @@index([status, recordSource, chapterId], map: "relationships_review_query_idx") // 审核列表查询索引
   @@map("relationships")
+}
+
+/// @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。
+model AnalysisJob {
+  id           String            @id @default(uuid()) @db.Uuid // 任务主键
+  bookId       String            @map("book_id") @db.Uuid // 目标书籍 ID
+  aiModelId    String?           @map("ai_model_id") @db.Uuid // 本次任务模型 ID
+  status       AnalysisJobStatus @default(QUEUED) // 任务状态
+  scope        String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE
+  chapterStart Int?              @map("chapter_start") // 章节起点（范围任务）
+  chapterEnd   Int?              @map("chapter_end") // 章节终点（范围任务）
+  attempt      Int               @default(1) // 当前重试次数
+  errorLog     String?           @map("error_log") @db.Text // 失败摘要
+  startedAt    DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
+  finishedAt   DateTime?         @map("finished_at") @db.Timestamptz(6) // 完成时间
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+
+  book    Book     @relation(fields: [bookId], references: [id]) // 关联书籍
+  aiModel AiModel? @relation(fields: [aiModelId], references: [id], onDelete: SetNull) // 关联模型（删除后置空）
+
+  @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
+  @@index([status, createdAt], map: "analysis_jobs_status_created_at_idx") // 状态队列查询索引
+  @@map("analysis_jobs")
 }

@@ -45,7 +45,9 @@ export type BiographyRecordMinAggregateOutputType = {
   event: string | null
   virtualYear: string | null
   ironyNote: string | null
+  recordSource: $Enums.RecordSource | null
   status: $Enums.ProcessingStatus | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -61,7 +63,9 @@ export type BiographyRecordMaxAggregateOutputType = {
   event: string | null
   virtualYear: string | null
   ironyNote: string | null
+  recordSource: $Enums.RecordSource | null
   status: $Enums.ProcessingStatus | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -77,7 +81,9 @@ export type BiographyRecordCountAggregateOutputType = {
   event: number
   virtualYear: number
   ironyNote: number
+  recordSource: number
   status: number
+  deletedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -103,7 +109,9 @@ export type BiographyRecordMinAggregateInputType = {
   event?: true
   virtualYear?: true
   ironyNote?: true
+  recordSource?: true
   status?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -119,7 +127,9 @@ export type BiographyRecordMaxAggregateInputType = {
   event?: true
   virtualYear?: true
   ironyNote?: true
+  recordSource?: true
   status?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -135,7 +145,9 @@ export type BiographyRecordCountAggregateInputType = {
   event?: true
   virtualYear?: true
   ironyNote?: true
+  recordSource?: true
   status?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -238,7 +250,9 @@ export type BiographyRecordGroupByOutputType = {
   event: string
   virtualYear: string | null
   ironyNote: string | null
+  recordSource: $Enums.RecordSource
   status: $Enums.ProcessingStatus
+  deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: BiographyRecordCountAggregateOutputType | null
@@ -277,7 +291,9 @@ export type BiographyRecordWhereInput = {
   event?: Prisma.StringFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   ironyNote?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"BiographyRecord"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
@@ -295,7 +311,9 @@ export type BiographyRecordOrderByWithRelationInput = {
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrderInput | Prisma.SortOrder
   ironyNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   persona?: Prisma.PersonaOrderByWithRelationInput
@@ -316,7 +334,9 @@ export type BiographyRecordWhereUniqueInput = Prisma.AtLeast<{
   event?: Prisma.StringFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   ironyNote?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"BiographyRecord"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
@@ -334,7 +354,9 @@ export type BiographyRecordOrderByWithAggregationInput = {
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrderInput | Prisma.SortOrder
   ironyNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.BiographyRecordCountOrderByAggregateInput
@@ -358,7 +380,9 @@ export type BiographyRecordScalarWhereWithAggregatesInput = {
   event?: Prisma.StringWithAggregatesFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
   ironyNote?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
+  recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusWithAggregatesFilter<"BiographyRecord"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BiographyRecord"> | Date | string
 }
@@ -372,7 +396,9 @@ export type BiographyRecordCreateInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   persona: Prisma.PersonaCreateNestedOneWithoutBiographiesInput
@@ -390,7 +416,9 @@ export type BiographyRecordUncheckedCreateInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -404,7 +432,9 @@ export type BiographyRecordUpdateInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutBiographiesNestedInput
@@ -422,7 +452,9 @@ export type BiographyRecordUncheckedUpdateInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -438,7 +470,9 @@ export type BiographyRecordCreateManyInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -452,7 +486,9 @@ export type BiographyRecordUpdateManyMutationInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -468,7 +504,9 @@ export type BiographyRecordUncheckedUpdateManyInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -494,7 +532,9 @@ export type BiographyRecordCountOrderByAggregateInput = {
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrder
   ironyNote?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -514,7 +554,9 @@ export type BiographyRecordMaxOrderByAggregateInput = {
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrder
   ironyNote?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -530,7 +572,9 @@ export type BiographyRecordMinOrderByAggregateInput = {
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrder
   ironyNote?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -640,7 +684,9 @@ export type BiographyRecordCreateWithoutChapterInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   persona: Prisma.PersonaCreateNestedOneWithoutBiographiesInput
@@ -656,7 +702,9 @@ export type BiographyRecordUncheckedCreateWithoutChapterInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -701,7 +749,9 @@ export type BiographyRecordScalarWhereInput = {
   event?: Prisma.StringFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   ironyNote?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"BiographyRecord"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
 }
@@ -715,7 +765,9 @@ export type BiographyRecordCreateWithoutPersonaInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapter: Prisma.ChapterCreateNestedOneWithoutBiographiesInput
@@ -731,7 +783,9 @@ export type BiographyRecordUncheckedCreateWithoutPersonaInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -772,7 +826,9 @@ export type BiographyRecordCreateManyChapterInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -786,7 +842,9 @@ export type BiographyRecordUpdateWithoutChapterInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutBiographiesNestedInput
@@ -802,7 +860,9 @@ export type BiographyRecordUncheckedUpdateWithoutChapterInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -817,7 +877,9 @@ export type BiographyRecordUncheckedUpdateManyWithoutChapterInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -832,7 +894,9 @@ export type BiographyRecordCreateManyPersonaInput = {
   event: string
   virtualYear?: string | null
   ironyNote?: string | null
+  recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -846,7 +910,9 @@ export type BiographyRecordUpdateWithoutPersonaInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutBiographiesNestedInput
@@ -862,7 +928,9 @@ export type BiographyRecordUncheckedUpdateWithoutPersonaInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -877,7 +945,9 @@ export type BiographyRecordUncheckedUpdateManyWithoutPersonaInput = {
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -895,7 +965,9 @@ export type BiographyRecordSelect<ExtArgs extends runtime.Types.Extensions.Inter
   event?: boolean
   virtualYear?: boolean
   ironyNote?: boolean
+  recordSource?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -913,7 +985,9 @@ export type BiographyRecordSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   event?: boolean
   virtualYear?: boolean
   ironyNote?: boolean
+  recordSource?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -931,7 +1005,9 @@ export type BiographyRecordSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   event?: boolean
   virtualYear?: boolean
   ironyNote?: boolean
+  recordSource?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -949,12 +1025,14 @@ export type BiographyRecordSelectScalar = {
   event?: boolean
   virtualYear?: boolean
   ironyNote?: boolean
+  recordSource?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["biographyRecord"]>
+export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["biographyRecord"]>
 export type BiographyRecordInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -985,7 +1063,9 @@ export type $BiographyRecordPayload<ExtArgs extends runtime.Types.Extensions.Int
     event: string
     virtualYear: string | null
     ironyNote: string | null
+    recordSource: $Enums.RecordSource
     status: $Enums.ProcessingStatus
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["biographyRecord"]>
@@ -1423,7 +1503,9 @@ export interface BiographyRecordFieldRefs {
   readonly event: Prisma.FieldRef<"BiographyRecord", 'String'>
   readonly virtualYear: Prisma.FieldRef<"BiographyRecord", 'String'>
   readonly ironyNote: Prisma.FieldRef<"BiographyRecord", 'String'>
+  readonly recordSource: Prisma.FieldRef<"BiographyRecord", 'RecordSource'>
   readonly status: Prisma.FieldRef<"BiographyRecord", 'ProcessingStatus'>
+  readonly deletedAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
 }

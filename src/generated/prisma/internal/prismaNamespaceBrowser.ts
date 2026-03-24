@@ -51,13 +51,16 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  User: 'User',
+  AiModel: 'AiModel',
   Book: 'Book',
   Chapter: 'Chapter',
   Persona: 'Persona',
   Profile: 'Profile',
   BiographyRecord: 'BiographyRecord',
   Mention: 'Mention',
-  Relationship: 'Relationship'
+  Relationship: 'Relationship',
+  AnalysisJob: 'AnalysisJob'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -76,6 +79,38 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const UserScalarFieldEnum = {
+  id: 'id',
+  username: 'username',
+  email: 'email',
+  name: 'name',
+  password: 'password',
+  role: 'role',
+  isActive: 'isActive',
+  lastLoginAt: 'lastLoginAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const AiModelScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  name: 'name',
+  modelId: 'modelId',
+  baseUrl: 'baseUrl',
+  apiKey: 'apiKey',
+  isEnabled: 'isEnabled',
+  isDefault: 'isDefault',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AiModelScalarFieldEnum = (typeof AiModelScalarFieldEnum)[keyof typeof AiModelScalarFieldEnum]
+
+
 export const BookScalarFieldEnum = {
   id: 'id',
   title: 'title',
@@ -85,6 +120,10 @@ export const BookScalarFieldEnum = {
   coverUrl: 'coverUrl',
   status: 'status',
   errorLog: 'errorLog',
+  parseProgress: 'parseProgress',
+  parseStage: 'parseStage',
+  rawContent: 'rawContent',
+  aiModelId: 'aiModelId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -114,9 +153,15 @@ export const PersonaScalarFieldEnum = {
   name: 'name',
   type: 'type',
   gender: 'gender',
+  nameType: 'nameType',
+  recordSource: 'recordSource',
+  confidence: 'confidence',
+  aliases: 'aliases',
+  hometown: 'hometown',
   birthYear: 'birthYear',
   deathYear: 'deathYear',
   globalTags: 'globalTags',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -130,9 +175,12 @@ export const ProfileScalarFieldEnum = {
   bookId: 'bookId',
   localName: 'localName',
   localSummary: 'localSummary',
+  officialTitle: 'officialTitle',
+  localTags: 'localTags',
   ironyIndex: 'ironyIndex',
   moralTier: 'moralTier',
   visualConfig: 'visualConfig',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -151,7 +199,9 @@ export const BiographyRecordScalarFieldEnum = {
   event: 'event',
   virtualYear: 'virtualYear',
   ironyNote: 'ironyNote',
+  recordSource: 'recordSource',
   status: 'status',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -166,6 +216,7 @@ export const MentionScalarFieldEnum = {
   rawText: 'rawText',
   summary: 'summary',
   paraIndex: 'paraIndex',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -181,12 +232,35 @@ export const RelationshipScalarFieldEnum = {
   type: 'type',
   weight: 'weight',
   description: 'description',
+  evidence: 'evidence',
+  recordSource: 'recordSource',
+  confidence: 'confidence',
   status: 'status',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
+
+
+export const AnalysisJobScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  aiModelId: 'aiModelId',
+  status: 'status',
+  scope: 'scope',
+  chapterStart: 'chapterStart',
+  chapterEnd: 'chapterEnd',
+  attempt: 'attempt',
+  errorLog: 'errorLog',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
 
 
 export const SortOrder = {

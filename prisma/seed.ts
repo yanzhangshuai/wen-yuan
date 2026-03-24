@@ -1,9 +1,13 @@
 import { PrismaPg } from '@prisma/adapter-pg';
+import argon2 from 'argon2';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient, PersonaType, ChapterType } from '../src/generated/prisma/client.ts';
 
-
+/**
+ * Prisma CLI 直接执行 seed 脚本时不会自动注入 dotenv。
+ * 这里手动兜底加载 `.env`，保证本地重建数据库时的行为可预测。
+ */
 function loadEnvFromDotenv() {
   const envPath = resolve(process.cwd(), '.env');
   if (!existsSync(envPath)) return;
@@ -30,16 +34,99 @@ function loadEnvFromDotenv() {
 loadEnvFromDotenv();
 
 const connectionString = process.env.DATABASE_URL;
+const adminUsername = process.env.ADMIN_USERNAME;
+const adminEmail = process.env.ADMIN_EMAIL;
+const adminName = process.env.ADMIN_NAME ?? '管理员';
+const adminPassword = process.env.ADMIN_PASSWORD;
 
 if (!connectionString) {
   throw new Error('Missing DATABASE_URL in .env');
 }
 
+if (!adminUsername) {
+  throw new Error('Missing ADMIN_USERNAME in .env');
+}
+
+if (!adminEmail) {
+  throw new Error('Missing ADMIN_EMAIL in .env');
+}
+
+if (!adminPassword) {
+  throw new Error('Missing ADMIN_PASSWORD in .env');
+}
+
+const adminUsernameValue = adminUsername;
+const adminEmailValue = adminEmail;
+const adminPasswordValue = adminPassword;
+
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * 与登录模块保持一致，统一使用 argon2id 存储种子管理员密码。
+ */
+async function hashPassword(password: string): Promise<string> {
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 19456,
+    timeCost: 2,
+    parallelism: 1
+  });
+}
+
+const defaultAiModels = [
+  {
+    provider: 'deepseek',
+    name: 'DeepSeek V3',
+    modelId: 'deepseek-chat',
+    baseUrl: 'https://api.deepseek.com',
+    isDefault: true,
+  },
+  {
+    provider: 'deepseek',
+    name: 'DeepSeek R1',
+    modelId: 'deepseek-reasoner',
+    baseUrl: 'https://api.deepseek.com',
+    isDefault: false,
+  },
+  {
+    provider: 'qwen',
+    name: '通义千问 Max',
+    modelId: 'qwen-max',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    isDefault: false,
+  },
+  {
+    provider: 'qwen',
+    name: '通义千问 Plus',
+    modelId: 'qwen-plus',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    isDefault: false,
+  },
+  {
+    provider: 'doubao',
+    name: '豆包 Pro',
+    modelId: 'doubao-pro',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    isDefault: false,
+  },
+  {
+    provider: 'gemini',
+    name: 'Gemini Flash',
+    modelId: 'gemini-3.1-flash',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    isDefault: false,
+  },
+] as const;
+
+/**
+ * 重建本地开发数据库的基础数据。
+ * 当前策略会先清空业务表，再写入管理员、默认模型和示例书籍，用于全量初始化场景。
+ */
 async function main() {
   console.log('🌱 开始录入种子数据...');
+  const adminPasswordHash = await hashPassword(adminPasswordValue);
+
   // 多实体写入使用交互式事务，确保任一步失败时整体回滚。
   const result = await prisma.$transaction(async (tx) => {
     // 1. 清理旧数据（开发环境用于保证 seed 可重复执行）
@@ -48,9 +135,43 @@ async function main() {
     await tx.biographyRecord.deleteMany();
     await tx.relationship.deleteMany();
     await tx.profile.deleteMany();
+    await tx.analysisJob.deleteMany();
     await tx.chapter.deleteMany();
     await tx.persona.deleteMany();
     await tx.book.deleteMany();
+    await tx.aiModel.deleteMany();
+
+    // 1.1 初始化管理员账号（可重复执行）
+    await tx.user.upsert({
+      where: { email: adminEmailValue },
+      update: {
+        username: adminUsernameValue,
+        email: adminEmailValue,
+        name: adminName,
+        password: adminPasswordHash,
+        role: 'ADMIN',
+      },
+      create: {
+        username: adminUsernameValue,
+        email: adminEmailValue,
+        name: adminName,
+        password: adminPasswordHash,
+        role: 'ADMIN',
+      },
+    });
+
+    // 1.2 预置 6 条默认模型配置，用户在设置页补充 API Key 后启用
+    await tx.aiModel.createMany({
+      data: defaultAiModels.map((item) => ({
+        provider: item.provider,
+        name: item.name,
+        modelId: item.modelId,
+        baseUrl: item.baseUrl,
+        apiKey: null,
+        isEnabled: false,
+        isDefault: item.isDefault,
+      })),
+    });
 
     // 2. 创建书籍：《儒林外史》
     const rulin = await tx.book.create({
@@ -95,11 +216,13 @@ async function main() {
     await tx.chapter.create({
     data: {
       bookId: rulin.id,
-      type: ChapterType.CHAPTER, // 
+      type: ChapterType.CHAPTER,
       no: 1,
       unit: "回",
-      noText: "楔子",            // 前端显示用
-      isAbstract: true,           // 标注这是总纲性质的章节
+      // `楔子` 不是标准数字章节，单独保留原文编号文本给前端展示。
+      noText: "楔子",
+      // 首回承担全书提纲作用，后续分析和前端展示都需要知道它是总纲章节。
+      isAbstract: true,
       title: '说楔子敷陈大义 借名流隐括全文',
        content: `人生南北多歧路，将相神仙，也要凡人做。百代兴亡朝复暮，江风吹倒前朝树。
 
@@ -222,12 +345,14 @@ async function main() {
     return {
       bookTitle: rulin.title,
       presetPersonas: ['范进', '周进'],
+      adminUsername,
     };
   });
 
   console.log('✅ 种子数据录入成功！');
   console.log(`- 已创建书籍: ${result.bookTitle}`);
   console.log(`- 已预设人物: ${result.presetPersonas.join(', ')}`);
+  console.log(`- 已初始化管理员: ${result.adminUsername}`);
 }
 
 main()

@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "UI base components live in src/components/ui and follow server-first patterns"}
+{"file": ".trellis/spec/frontend/react-guidelines.md", "reason": "React 19 rendering patterns and client leaf rules"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend type constraints for component props and shared utilities"}

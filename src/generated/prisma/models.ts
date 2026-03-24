@@ -8,6 +8,8 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/User.ts'
+export type * from './models/AiModel.ts'
 export type * from './models/Book.ts'
 export type * from './models/Chapter.ts'
 export type * from './models/Persona.ts'
@@ -15,4 +17,5 @@ export type * from './models/Profile.ts'
 export type * from './models/BiographyRecord.ts'
 export type * from './models/Mention.ts'
 export type * from './models/Relationship.ts'
+export type * from './models/AnalysisJob.ts'
 export type * from './commonInputTypes.ts'

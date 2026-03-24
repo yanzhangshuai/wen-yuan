@@ -1,5 +1,7 @@
+import { NextResponse } from "next/server";
+
 import { createApiMeta, errorResponse, successResponse, toNextJson } from "@/server/http/api-response";
-import { AuthError } from "@/server/modules/auth/rbac";
+import { AuthError } from "@/server/modules/auth";
 import { ERROR_CODES, type ApiResponse } from "@/types/api";
 
 export interface PaginationParams {
@@ -44,7 +46,7 @@ export function okJson<T>(args: {
     total: number;
   };
   status?: number;
-}): Response {
+}): NextResponse<ApiResponse<T>> {
   const meta = createApiMeta(args.path, args.requestId, args.startedAt);
   if (args.pagination) {
     meta.pagination = args.pagination;
@@ -68,7 +70,8 @@ export function failJson(args: {
   error: unknown;
   fallbackCode?: string;
   fallbackMessage?: string;
-}): Response {
+  status?: number;
+}): NextResponse<ApiResponse<null>> {
   const meta = createApiMeta(args.path, args.requestId, args.startedAt);
 
   if (args.error instanceof AuthError) {
@@ -88,6 +91,6 @@ export function failJson(args: {
       { type: "InternalError", detail: message },
       meta
     ),
-    500
+    args.status ?? 500
   );
 }

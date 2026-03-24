@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model Mention
- * @db.remark: 原文提及记录。记录“谁在什么时候出场了”，支持精准定位原文段落。
+ * @db.remark: 原文提及记录。记录"谁在什么时候出场了"，支持精准定位原文段落。
  */
 export type MentionModel = runtime.Types.Result.DefaultSelection<Prisma.$MentionPayload>
 
@@ -41,6 +41,7 @@ export type MentionMinAggregateOutputType = {
   rawText: string | null
   summary: string | null
   paraIndex: number | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +53,7 @@ export type MentionMaxAggregateOutputType = {
   rawText: string | null
   summary: string | null
   paraIndex: number | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -63,6 +65,7 @@ export type MentionCountAggregateOutputType = {
   rawText: number
   summary: number
   paraIndex: number
+  deletedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -84,6 +87,7 @@ export type MentionMinAggregateInputType = {
   rawText?: true
   summary?: true
   paraIndex?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -95,6 +99,7 @@ export type MentionMaxAggregateInputType = {
   rawText?: true
   summary?: true
   paraIndex?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -106,6 +111,7 @@ export type MentionCountAggregateInputType = {
   rawText?: true
   summary?: true
   paraIndex?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -204,6 +210,7 @@ export type MentionGroupByOutputType = {
   rawText: string
   summary: string | null
   paraIndex: number | null
+  deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: MentionCountAggregateOutputType | null
@@ -238,6 +245,7 @@ export type MentionWhereInput = {
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
@@ -251,6 +259,7 @@ export type MentionOrderByWithRelationInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   persona?: Prisma.PersonaOrderByWithRelationInput
@@ -267,6 +276,7 @@ export type MentionWhereUniqueInput = Prisma.AtLeast<{
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
@@ -280,6 +290,7 @@ export type MentionOrderByWithAggregationInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.MentionCountOrderByAggregateInput
@@ -299,6 +310,7 @@ export type MentionScalarWhereWithAggregatesInput = {
   rawText?: Prisma.StringWithAggregatesFilter<"Mention"> | string
   summary?: Prisma.StringNullableWithAggregatesFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableWithAggregatesFilter<"Mention"> | number | null
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Mention"> | Date | string
 }
@@ -308,6 +320,7 @@ export type MentionCreateInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   persona: Prisma.PersonaCreateNestedOneWithoutMentionsInput
@@ -321,6 +334,7 @@ export type MentionUncheckedCreateInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -330,6 +344,7 @@ export type MentionUpdateInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutMentionsNestedInput
@@ -343,6 +358,7 @@ export type MentionUncheckedUpdateInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -354,6 +370,7 @@ export type MentionCreateManyInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -363,6 +380,7 @@ export type MentionUpdateManyMutationInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -374,6 +392,7 @@ export type MentionUncheckedUpdateManyInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -395,6 +414,7 @@ export type MentionCountOrderByAggregateInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -410,6 +430,7 @@ export type MentionMaxOrderByAggregateInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -421,6 +442,7 @@ export type MentionMinOrderByAggregateInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -526,6 +548,7 @@ export type MentionCreateWithoutChapterInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   persona: Prisma.PersonaCreateNestedOneWithoutMentionsInput
@@ -537,6 +560,7 @@ export type MentionUncheckedCreateWithoutChapterInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -577,6 +601,7 @@ export type MentionScalarWhereInput = {
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
 }
@@ -586,6 +611,7 @@ export type MentionCreateWithoutPersonaInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapter: Prisma.ChapterCreateNestedOneWithoutMentionsInput
@@ -597,6 +623,7 @@ export type MentionUncheckedCreateWithoutPersonaInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -633,6 +660,7 @@ export type MentionCreateManyChapterInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -642,6 +670,7 @@ export type MentionUpdateWithoutChapterInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutMentionsNestedInput
@@ -653,6 +682,7 @@ export type MentionUncheckedUpdateWithoutChapterInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -663,6 +693,7 @@ export type MentionUncheckedUpdateManyWithoutChapterInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -673,6 +704,7 @@ export type MentionCreateManyPersonaInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -682,6 +714,7 @@ export type MentionUpdateWithoutPersonaInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutMentionsNestedInput
@@ -693,6 +726,7 @@ export type MentionUncheckedUpdateWithoutPersonaInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -703,6 +737,7 @@ export type MentionUncheckedUpdateManyWithoutPersonaInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -716,6 +751,7 @@ export type MentionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -729,6 +765,7 @@ export type MentionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -742,6 +779,7 @@ export type MentionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -755,11 +793,12 @@ export type MentionSelectScalar = {
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
+export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
 export type MentionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -786,6 +825,7 @@ export type $MentionPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     rawText: string
     summary: string | null
     paraIndex: number | null
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["mention"]>
@@ -1219,6 +1259,7 @@ export interface MentionFieldRefs {
   readonly rawText: Prisma.FieldRef<"Mention", 'String'>
   readonly summary: Prisma.FieldRef<"Mention", 'String'>
   readonly paraIndex: Prisma.FieldRef<"Mention", 'Int'>
+  readonly deletedAt: Prisma.FieldRef<"Mention", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Mention", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Mention", 'DateTime'>
 }

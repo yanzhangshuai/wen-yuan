@@ -18,6 +18,16 @@ export { Prisma }
 export * as $Enums from './enums.ts'
 export * from './enums.ts';
 /**
+ * Model User
+ * @db.remark: 系统用户。仅存 admin / viewer 账号，初始管理员由 seed 从 env 写入。
+ */
+export type User = Prisma.UserModel
+/**
+ * Model AiModel
+ * @db.remark: AI 模型配置表。存储各模型的 Key、BaseURL 及启用状态，由设置页管理。
+ */
+export type AiModel = Prisma.AiModelModel
+/**
  * Model Book
  * @db.remark: 书籍/作品库。系统的顶层容器，支持跨作品的人物对比。
  */
@@ -29,7 +39,7 @@ export type Book = Prisma.BookModel
 export type Chapter = Prisma.ChapterModel
 /**
  * Model Persona
- * @db.remark: 全局角色本体。代表“这个人本身”，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
+ * @db.remark: 全局角色本体。代表"这个人本身"，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
  */
 export type Persona = Prisma.PersonaModel
 /**
@@ -44,7 +54,7 @@ export type Profile = Prisma.ProfileModel
 export type BiographyRecord = Prisma.BiographyRecordModel
 /**
  * Model Mention
- * @db.remark: 原文提及记录。记录“谁在什么时候出场了”，支持精准定位原文段落。
+ * @db.remark: 原文提及记录。记录"谁在什么时候出场了"，支持精准定位原文段落。
  */
 export type Mention = Prisma.MentionModel
 /**
@@ -52,3 +62,8 @@ export type Mention = Prisma.MentionModel
  * @db.remark: 动态关系表。
  */
 export type Relationship = Prisma.RelationshipModel
+/**
+ * Model AnalysisJob
+ * @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。
+ */
+export type AnalysisJob = Prisma.AnalysisJobModel

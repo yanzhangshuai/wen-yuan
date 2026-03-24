@@ -28,10 +28,12 @@ export type AggregateRelationship = {
 
 export type RelationshipAvgAggregateOutputType = {
   weight: number | null
+  confidence: number | null
 }
 
 export type RelationshipSumAggregateOutputType = {
   weight: number | null
+  confidence: number | null
 }
 
 export type RelationshipMinAggregateOutputType = {
@@ -42,7 +44,11 @@ export type RelationshipMinAggregateOutputType = {
   type: string | null
   weight: number | null
   description: string | null
+  evidence: string | null
+  recordSource: $Enums.RecordSource | null
+  confidence: number | null
   status: $Enums.ProcessingStatus | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -55,7 +61,11 @@ export type RelationshipMaxAggregateOutputType = {
   type: string | null
   weight: number | null
   description: string | null
+  evidence: string | null
+  recordSource: $Enums.RecordSource | null
+  confidence: number | null
   status: $Enums.ProcessingStatus | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -68,7 +78,11 @@ export type RelationshipCountAggregateOutputType = {
   type: number
   weight: number
   description: number
+  evidence: number
+  recordSource: number
+  confidence: number
   status: number
+  deletedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -77,10 +91,12 @@ export type RelationshipCountAggregateOutputType = {
 
 export type RelationshipAvgAggregateInputType = {
   weight?: true
+  confidence?: true
 }
 
 export type RelationshipSumAggregateInputType = {
   weight?: true
+  confidence?: true
 }
 
 export type RelationshipMinAggregateInputType = {
@@ -91,7 +107,11 @@ export type RelationshipMinAggregateInputType = {
   type?: true
   weight?: true
   description?: true
+  evidence?: true
+  recordSource?: true
+  confidence?: true
   status?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -104,7 +124,11 @@ export type RelationshipMaxAggregateInputType = {
   type?: true
   weight?: true
   description?: true
+  evidence?: true
+  recordSource?: true
+  confidence?: true
   status?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -117,7 +141,11 @@ export type RelationshipCountAggregateInputType = {
   type?: true
   weight?: true
   description?: true
+  evidence?: true
+  recordSource?: true
+  confidence?: true
   status?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -217,7 +245,11 @@ export type RelationshipGroupByOutputType = {
   type: string
   weight: number
   description: string | null
+  evidence: string | null
+  recordSource: $Enums.RecordSource
+  confidence: number
   status: $Enums.ProcessingStatus
+  deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: RelationshipCountAggregateOutputType | null
@@ -253,7 +285,11 @@ export type RelationshipWhereInput = {
   type?: Prisma.StringFilter<"Relationship"> | string
   weight?: Prisma.FloatFilter<"Relationship"> | number
   description?: Prisma.StringNullableFilter<"Relationship"> | string | null
+  evidence?: Prisma.StringNullableFilter<"Relationship"> | string | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"Relationship"> | $Enums.RecordSource
+  confidence?: Prisma.FloatFilter<"Relationship"> | number
   status?: Prisma.EnumProcessingStatusFilter<"Relationship"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"Relationship"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Relationship"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Relationship"> | Date | string
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
@@ -269,7 +305,11 @@ export type RelationshipOrderByWithRelationInput = {
   type?: Prisma.SortOrder
   weight?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  evidence?: Prisma.SortOrderInput | Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   chapter?: Prisma.ChapterOrderByWithRelationInput
@@ -279,6 +319,7 @@ export type RelationshipOrderByWithRelationInput = {
 
 export type RelationshipWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  chapterId_sourceId_targetId_type_recordSource?: Prisma.RelationshipChapterIdSourceIdTargetIdTypeRecordSourceCompoundUniqueInput
   AND?: Prisma.RelationshipWhereInput | Prisma.RelationshipWhereInput[]
   OR?: Prisma.RelationshipWhereInput[]
   NOT?: Prisma.RelationshipWhereInput | Prisma.RelationshipWhereInput[]
@@ -288,13 +329,17 @@ export type RelationshipWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.StringFilter<"Relationship"> | string
   weight?: Prisma.FloatFilter<"Relationship"> | number
   description?: Prisma.StringNullableFilter<"Relationship"> | string | null
+  evidence?: Prisma.StringNullableFilter<"Relationship"> | string | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"Relationship"> | $Enums.RecordSource
+  confidence?: Prisma.FloatFilter<"Relationship"> | number
   status?: Prisma.EnumProcessingStatusFilter<"Relationship"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"Relationship"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Relationship"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Relationship"> | Date | string
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
   source?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   target?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
-}, "id">
+}, "id" | "chapterId_sourceId_targetId_type_recordSource">
 
 export type RelationshipOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -304,7 +349,11 @@ export type RelationshipOrderByWithAggregationInput = {
   type?: Prisma.SortOrder
   weight?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  evidence?: Prisma.SortOrderInput | Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.RelationshipCountOrderByAggregateInput
@@ -325,7 +374,11 @@ export type RelationshipScalarWhereWithAggregatesInput = {
   type?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
   weight?: Prisma.FloatWithAggregatesFilter<"Relationship"> | number
   description?: Prisma.StringNullableWithAggregatesFilter<"Relationship"> | string | null
+  evidence?: Prisma.StringNullableWithAggregatesFilter<"Relationship"> | string | null
+  recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"Relationship"> | $Enums.RecordSource
+  confidence?: Prisma.FloatWithAggregatesFilter<"Relationship"> | number
   status?: Prisma.EnumProcessingStatusWithAggregatesFilter<"Relationship"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Relationship"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Relationship"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Relationship"> | Date | string
 }
@@ -335,7 +388,11 @@ export type RelationshipCreateInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapter: Prisma.ChapterCreateNestedOneWithoutRelationsInput
@@ -351,7 +408,11 @@ export type RelationshipUncheckedCreateInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -361,7 +422,11 @@ export type RelationshipUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutRelationsNestedInput
@@ -377,7 +442,11 @@ export type RelationshipUncheckedUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -390,7 +459,11 @@ export type RelationshipCreateManyInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -400,7 +473,11 @@ export type RelationshipUpdateManyMutationInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -413,7 +490,11 @@ export type RelationshipUncheckedUpdateManyInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -428,6 +509,14 @@ export type RelationshipOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type RelationshipChapterIdSourceIdTargetIdTypeRecordSourceCompoundUniqueInput = {
+  chapterId: string
+  sourceId: string
+  targetId: string
+  type: string
+  recordSource: $Enums.RecordSource
+}
+
 export type RelationshipCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
@@ -436,13 +525,18 @@ export type RelationshipCountOrderByAggregateInput = {
   type?: Prisma.SortOrder
   weight?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  evidence?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type RelationshipAvgOrderByAggregateInput = {
   weight?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
 }
 
 export type RelationshipMaxOrderByAggregateInput = {
@@ -453,7 +547,11 @@ export type RelationshipMaxOrderByAggregateInput = {
   type?: Prisma.SortOrder
   weight?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  evidence?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -466,13 +564,18 @@ export type RelationshipMinOrderByAggregateInput = {
   type?: Prisma.SortOrder
   weight?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  evidence?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type RelationshipSumOrderByAggregateInput = {
   weight?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
 }
 
 export type RelationshipCreateNestedManyWithoutChapterInput = {
@@ -606,7 +709,11 @@ export type RelationshipCreateWithoutChapterInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   source: Prisma.PersonaCreateNestedOneWithoutSourceRelsInput
@@ -620,7 +727,11 @@ export type RelationshipUncheckedCreateWithoutChapterInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -662,7 +773,11 @@ export type RelationshipScalarWhereInput = {
   type?: Prisma.StringFilter<"Relationship"> | string
   weight?: Prisma.FloatFilter<"Relationship"> | number
   description?: Prisma.StringNullableFilter<"Relationship"> | string | null
+  evidence?: Prisma.StringNullableFilter<"Relationship"> | string | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"Relationship"> | $Enums.RecordSource
+  confidence?: Prisma.FloatFilter<"Relationship"> | number
   status?: Prisma.EnumProcessingStatusFilter<"Relationship"> | $Enums.ProcessingStatus
+  deletedAt?: Prisma.DateTimeNullableFilter<"Relationship"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Relationship"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Relationship"> | Date | string
 }
@@ -672,7 +787,11 @@ export type RelationshipCreateWithoutSourceInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapter: Prisma.ChapterCreateNestedOneWithoutRelationsInput
@@ -686,7 +805,11 @@ export type RelationshipUncheckedCreateWithoutSourceInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -706,7 +829,11 @@ export type RelationshipCreateWithoutTargetInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapter: Prisma.ChapterCreateNestedOneWithoutRelationsInput
@@ -720,7 +847,11 @@ export type RelationshipUncheckedCreateWithoutTargetInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -774,7 +905,11 @@ export type RelationshipCreateManyChapterInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -784,7 +919,11 @@ export type RelationshipUpdateWithoutChapterInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   source?: Prisma.PersonaUpdateOneRequiredWithoutSourceRelsNestedInput
@@ -798,7 +937,11 @@ export type RelationshipUncheckedUpdateWithoutChapterInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -810,7 +953,11 @@ export type RelationshipUncheckedUpdateManyWithoutChapterInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -822,7 +969,11 @@ export type RelationshipCreateManySourceInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -834,7 +985,11 @@ export type RelationshipCreateManyTargetInput = {
   type: string
   weight?: number
   description?: string | null
+  evidence?: string | null
+  recordSource?: $Enums.RecordSource
+  confidence?: number
   status?: $Enums.ProcessingStatus
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -844,7 +999,11 @@ export type RelationshipUpdateWithoutSourceInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutRelationsNestedInput
@@ -858,7 +1017,11 @@ export type RelationshipUncheckedUpdateWithoutSourceInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -870,7 +1033,11 @@ export type RelationshipUncheckedUpdateManyWithoutSourceInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -880,7 +1047,11 @@ export type RelationshipUpdateWithoutTargetInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutRelationsNestedInput
@@ -894,7 +1065,11 @@ export type RelationshipUncheckedUpdateWithoutTargetInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -906,7 +1081,11 @@ export type RelationshipUncheckedUpdateManyWithoutTargetInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.FloatFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -921,7 +1100,11 @@ export type RelationshipSelect<ExtArgs extends runtime.Types.Extensions.Internal
   type?: boolean
   weight?: boolean
   description?: boolean
+  evidence?: boolean
+  recordSource?: boolean
+  confidence?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -937,7 +1120,11 @@ export type RelationshipSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   type?: boolean
   weight?: boolean
   description?: boolean
+  evidence?: boolean
+  recordSource?: boolean
+  confidence?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -953,7 +1140,11 @@ export type RelationshipSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   type?: boolean
   weight?: boolean
   description?: boolean
+  evidence?: boolean
+  recordSource?: boolean
+  confidence?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -969,12 +1160,16 @@ export type RelationshipSelectScalar = {
   type?: boolean
   weight?: boolean
   description?: boolean
+  evidence?: boolean
+  recordSource?: boolean
+  confidence?: boolean
   status?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type RelationshipOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "chapterId" | "sourceId" | "targetId" | "type" | "weight" | "description" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["relationship"]>
+export type RelationshipOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "chapterId" | "sourceId" | "targetId" | "type" | "weight" | "description" | "evidence" | "recordSource" | "confidence" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["relationship"]>
 export type RelationshipInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -1006,7 +1201,11 @@ export type $RelationshipPayload<ExtArgs extends runtime.Types.Extensions.Intern
     type: string
     weight: number
     description: string | null
+    evidence: string | null
+    recordSource: $Enums.RecordSource
+    confidence: number
     status: $Enums.ProcessingStatus
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["relationship"]>
@@ -1442,7 +1641,11 @@ export interface RelationshipFieldRefs {
   readonly type: Prisma.FieldRef<"Relationship", 'String'>
   readonly weight: Prisma.FieldRef<"Relationship", 'Float'>
   readonly description: Prisma.FieldRef<"Relationship", 'String'>
+  readonly evidence: Prisma.FieldRef<"Relationship", 'String'>
+  readonly recordSource: Prisma.FieldRef<"Relationship", 'RecordSource'>
+  readonly confidence: Prisma.FieldRef<"Relationship", 'Float'>
   readonly status: Prisma.FieldRef<"Relationship", 'ProcessingStatus'>
+  readonly deletedAt: Prisma.FieldRef<"Relationship", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Relationship", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Relationship", 'DateTime'>
 }

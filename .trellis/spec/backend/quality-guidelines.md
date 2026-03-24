@@ -20,6 +20,7 @@ stage: growth
 - 多表写入具备明确事务边界。
 - 对外 service/action 函数包含团队 JSDoc 模板。
 - 注释必须遵循 `comment-template.md` 与 `../guides/comment-guidelines.md`，确保信息完整且可复现。
+- 新增或修改的后端代码、测试代码，如未按注释规范补齐，视为未完成，不得交付。
 - 新增或变更的 env 契约已文档化。
 - 命名简洁、可读，并与 frontend/domain 术语一致。
 - 复杂业务逻辑应有足够注释，说明意图、约束、错误分支与副作用。

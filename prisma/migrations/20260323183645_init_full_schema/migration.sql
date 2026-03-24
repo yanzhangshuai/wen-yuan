@@ -1,5 +1,20 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
+-- CreateEnum
+CREATE TYPE "name_type" AS ENUM ('NAMED', 'TITLE_ONLY');
+
+-- CreateEnum
+CREATE TYPE "record_source" AS ENUM ('AI', 'MANUAL');
+
+-- CreateEnum
+CREATE TYPE "app_role" AS ENUM ('ADMIN', 'VIEWER');
+
 -- CreateEnum
 CREATE TYPE "processing_status" AS ENUM ('DRAFT', 'VERIFIED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "analysis_job_status" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELED');
 
 -- CreateEnum
 CREATE TYPE "persona_type" AS ENUM ('PERSON', 'LOCATION', 'ORGANIZATION', 'CONCEPT');
@@ -11,6 +26,38 @@ CREATE TYPE "bio_category" AS ENUM ('BIRTH', 'EXAM', 'CAREER', 'TRAVEL', 'SOCIAL
 CREATE TYPE "chapter_type" AS ENUM ('PRELUDE', 'CHAPTER', 'POSTLUDE');
 
 -- CreateTable
+CREATE TABLE "users" (
+    "id" UUID NOT NULL,
+    "username" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL DEFAULT '管理员',
+    "password" TEXT NOT NULL,
+    "role" "app_role" NOT NULL DEFAULT 'VIEWER',
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "last_login_at" TIMESTAMPTZ(6),
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ai_models" (
+    "id" UUID NOT NULL,
+    "provider" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "model_id" TEXT NOT NULL,
+    "base_url" TEXT NOT NULL,
+    "api_key" TEXT,
+    "is_enabled" BOOLEAN NOT NULL DEFAULT false,
+    "is_default" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "ai_models_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "books" (
     "id" UUID NOT NULL,
     "title" TEXT NOT NULL,
@@ -20,6 +67,10 @@ CREATE TABLE "books" (
     "cover_url" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "error_log" TEXT,
+    "parse_progress" INTEGER NOT NULL DEFAULT 0,
+    "parse_stage" TEXT,
+    "raw_content" TEXT,
+    "ai_model_id" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -49,9 +100,15 @@ CREATE TABLE "personas" (
     "name" TEXT NOT NULL,
     "type" "persona_type" NOT NULL DEFAULT 'PERSON',
     "gender" TEXT,
+    "name_type" "name_type" NOT NULL DEFAULT 'NAMED',
+    "record_source" "record_source" NOT NULL DEFAULT 'AI',
+    "confidence" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+    "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "hometown" TEXT,
     "birth_year" TEXT,
     "death_year" TEXT,
-    "global_tags" TEXT[],
+    "global_tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -65,9 +122,12 @@ CREATE TABLE "profiles" (
     "book_id" UUID NOT NULL,
     "local_name" TEXT NOT NULL,
     "local_summary" TEXT,
+    "official_title" TEXT,
+    "local_tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "irony_index" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "moral_tier" TEXT,
     "visual_config" JSONB,
+    "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -86,7 +146,9 @@ CREATE TABLE "biography_records" (
     "event" TEXT NOT NULL,
     "virtual_year" TEXT,
     "irony_note" TEXT,
+    "record_source" "record_source" NOT NULL DEFAULT 'AI',
     "status" "processing_status" NOT NULL DEFAULT 'DRAFT',
+    "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -101,6 +163,7 @@ CREATE TABLE "mentions" (
     "raw_text" TEXT NOT NULL,
     "summary" TEXT,
     "para_index" INTEGER,
+    "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -116,18 +179,59 @@ CREATE TABLE "relationships" (
     "type" TEXT NOT NULL,
     "weight" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "description" TEXT,
+    "evidence" TEXT,
+    "record_source" "record_source" NOT NULL DEFAULT 'AI',
+    "confidence" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "status" "processing_status" NOT NULL DEFAULT 'DRAFT',
+    "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "relationships_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "analysis_jobs" (
+    "id" UUID NOT NULL,
+    "book_id" UUID NOT NULL,
+    "ai_model_id" UUID,
+    "status" "analysis_job_status" NOT NULL DEFAULT 'QUEUED',
+    "scope" TEXT NOT NULL DEFAULT 'FULL_BOOK',
+    "chapter_start" INTEGER,
+    "chapter_end" INTEGER,
+    "attempt" INTEGER NOT NULL DEFAULT 1,
+    "error_log" TEXT,
+    "started_at" TIMESTAMPTZ(6),
+    "finished_at" TIMESTAMPTZ(6),
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "analysis_jobs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE INDEX "users_is_active_idx" ON "users"("is_active");
+
+-- CreateIndex
+CREATE INDEX "ai_models_provider_enabled_idx" ON "ai_models"("provider", "is_enabled");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "chapter_book_type_no_key" ON "chapters"("book_id", "type", "no");
 
 -- CreateIndex
 CREATE INDEX "persona_name_idx" ON "personas"("name");
+
+-- CreateIndex
+CREATE INDEX "persona_deleted_at_idx" ON "personas"("deleted_at");
+
+-- CreateIndex
+CREATE INDEX "profiles_book_id_deleted_at_idx" ON "profiles"("book_id", "deleted_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "profile_persona_id_book_id_key" ON "profiles"("persona_id", "book_id");
@@ -139,13 +243,34 @@ CREATE INDEX "biography_record_chapter_no_idx" ON "biography_records"("chapter_n
 CREATE INDEX "biography_record_persona_id_idx" ON "biography_records"("persona_id");
 
 -- CreateIndex
+CREATE INDEX "biography_record_review_query_idx" ON "biography_records"("status", "record_source", "chapter_id");
+
+-- CreateIndex
 CREATE INDEX "mentions_chapter_id_idx" ON "mentions"("chapter_id");
 
 -- CreateIndex
 CREATE INDEX "mention_persona_id_chapter_id_idx" ON "mentions"("persona_id", "chapter_id");
 
 -- CreateIndex
+CREATE INDEX "mentions_chapter_deleted_at_idx" ON "mentions"("chapter_id", "deleted_at");
+
+-- CreateIndex
 CREATE INDEX "relationships_source_id_target_id_idx" ON "relationships"("source_id", "target_id");
+
+-- CreateIndex
+CREATE INDEX "relationships_review_query_idx" ON "relationships"("status", "record_source", "chapter_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "relationships_dedup_key" ON "relationships"("chapter_id", "source_id", "target_id", "type", "record_source");
+
+-- CreateIndex
+CREATE INDEX "analysis_jobs_book_created_at_idx" ON "analysis_jobs"("book_id", "created_at");
+
+-- CreateIndex
+CREATE INDEX "analysis_jobs_status_created_at_idx" ON "analysis_jobs"("status", "created_at");
+
+-- AddForeignKey
+ALTER TABLE "books" ADD CONSTRAINT "books_ai_model_id_fkey" FOREIGN KEY ("ai_model_id") REFERENCES "ai_models"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "chapters" ADD CONSTRAINT "chapters_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -176,3 +301,10 @@ ALTER TABLE "relationships" ADD CONSTRAINT "relationships_source_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_target_id_fkey" FOREIGN KEY ("target_id") REFERENCES "personas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "analysis_jobs" ADD CONSTRAINT "analysis_jobs_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "analysis_jobs" ADD CONSTRAINT "analysis_jobs_ai_model_id_fkey" FOREIGN KEY ("ai_model_id") REFERENCES "ai_models"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+

@@ -9,6 +9,30 @@
 * 🟢 You can import this file directly.
 */
 
+export const NameType = {
+  NAMED: 'NAMED',
+  TITLE_ONLY: 'TITLE_ONLY'
+} as const
+
+export type NameType = (typeof NameType)[keyof typeof NameType]
+
+
+export const RecordSource = {
+  AI: 'AI',
+  MANUAL: 'MANUAL'
+} as const
+
+export type RecordSource = (typeof RecordSource)[keyof typeof RecordSource]
+
+
+export const AppRole = {
+  ADMIN: 'ADMIN',
+  VIEWER: 'VIEWER'
+} as const
+
+export type AppRole = (typeof AppRole)[keyof typeof AppRole]
+
+
 export const ProcessingStatus = {
   DRAFT: 'DRAFT',
   VERIFIED: 'VERIFIED',
@@ -16,6 +40,17 @@ export const ProcessingStatus = {
 } as const
 
 export type ProcessingStatus = (typeof ProcessingStatus)[keyof typeof ProcessingStatus]
+
+
+export const AnalysisJobStatus = {
+  QUEUED: 'QUEUED',
+  RUNNING: 'RUNNING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  CANCELED: 'CANCELED'
+} as const
+
+export type AnalysisJobStatus = (typeof AnalysisJobStatus)[keyof typeof AnalysisJobStatus]
 
 
 export const PersonaType = {

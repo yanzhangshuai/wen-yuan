@@ -14,14 +14,24 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model Persona
- * @db.remark: 全局角色本体。代表“这个人本身”，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
+ * @db.remark: 全局角色本体。代表"这个人本身"，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
  */
 export type PersonaModel = runtime.Types.Result.DefaultSelection<Prisma.$PersonaPayload>
 
 export type AggregatePersona = {
   _count: PersonaCountAggregateOutputType | null
+  _avg: PersonaAvgAggregateOutputType | null
+  _sum: PersonaSumAggregateOutputType | null
   _min: PersonaMinAggregateOutputType | null
   _max: PersonaMaxAggregateOutputType | null
+}
+
+export type PersonaAvgAggregateOutputType = {
+  confidence: number | null
+}
+
+export type PersonaSumAggregateOutputType = {
+  confidence: number | null
 }
 
 export type PersonaMinAggregateOutputType = {
@@ -29,8 +39,13 @@ export type PersonaMinAggregateOutputType = {
   name: string | null
   type: $Enums.PersonaType | null
   gender: string | null
+  nameType: $Enums.NameType | null
+  recordSource: $Enums.RecordSource | null
+  confidence: number | null
+  hometown: string | null
   birthYear: string | null
   deathYear: string | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,8 +55,13 @@ export type PersonaMaxAggregateOutputType = {
   name: string | null
   type: $Enums.PersonaType | null
   gender: string | null
+  nameType: $Enums.NameType | null
+  recordSource: $Enums.RecordSource | null
+  confidence: number | null
+  hometown: string | null
   birthYear: string | null
   deathYear: string | null
+  deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -51,22 +71,41 @@ export type PersonaCountAggregateOutputType = {
   name: number
   type: number
   gender: number
+  nameType: number
+  recordSource: number
+  confidence: number
+  aliases: number
+  hometown: number
   birthYear: number
   deathYear: number
   globalTags: number
+  deletedAt: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type PersonaAvgAggregateInputType = {
+  confidence?: true
+}
+
+export type PersonaSumAggregateInputType = {
+  confidence?: true
+}
+
 export type PersonaMinAggregateInputType = {
   id?: true
   name?: true
   type?: true
   gender?: true
+  nameType?: true
+  recordSource?: true
+  confidence?: true
+  hometown?: true
   birthYear?: true
   deathYear?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -76,8 +115,13 @@ export type PersonaMaxAggregateInputType = {
   name?: true
   type?: true
   gender?: true
+  nameType?: true
+  recordSource?: true
+  confidence?: true
+  hometown?: true
   birthYear?: true
   deathYear?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -87,9 +131,15 @@ export type PersonaCountAggregateInputType = {
   name?: true
   type?: true
   gender?: true
+  nameType?: true
+  recordSource?: true
+  confidence?: true
+  aliases?: true
+  hometown?: true
   birthYear?: true
   deathYear?: true
   globalTags?: true
+  deletedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -133,6 +183,18 @@ export type PersonaAggregateArgs<ExtArgs extends runtime.Types.Extensions.Intern
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: PersonaAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: PersonaSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: PersonaMinAggregateInputType
@@ -163,6 +225,8 @@ export type PersonaGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   _count?: PersonaCountAggregateInputType | true
+  _avg?: PersonaAvgAggregateInputType
+  _sum?: PersonaSumAggregateInputType
   _min?: PersonaMinAggregateInputType
   _max?: PersonaMaxAggregateInputType
 }
@@ -172,12 +236,20 @@ export type PersonaGroupByOutputType = {
   name: string
   type: $Enums.PersonaType
   gender: string | null
+  nameType: $Enums.NameType
+  recordSource: $Enums.RecordSource
+  confidence: number
+  aliases: string[]
+  hometown: string | null
   birthYear: string | null
   deathYear: string | null
   globalTags: string[]
+  deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: PersonaCountAggregateOutputType | null
+  _avg: PersonaAvgAggregateOutputType | null
+  _sum: PersonaSumAggregateOutputType | null
   _min: PersonaMinAggregateOutputType | null
   _max: PersonaMaxAggregateOutputType | null
 }
@@ -205,9 +277,15 @@ export type PersonaWhereInput = {
   name?: Prisma.StringFilter<"Persona"> | string
   type?: Prisma.EnumPersonaTypeFilter<"Persona"> | $Enums.PersonaType
   gender?: Prisma.StringNullableFilter<"Persona"> | string | null
+  nameType?: Prisma.EnumNameTypeFilter<"Persona"> | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFilter<"Persona"> | $Enums.RecordSource
+  confidence?: Prisma.FloatFilter<"Persona"> | number
+  aliases?: Prisma.StringNullableListFilter<"Persona">
+  hometown?: Prisma.StringNullableFilter<"Persona"> | string | null
   birthYear?: Prisma.StringNullableFilter<"Persona"> | string | null
   deathYear?: Prisma.StringNullableFilter<"Persona"> | string | null
   globalTags?: Prisma.StringNullableListFilter<"Persona">
+  deletedAt?: Prisma.DateTimeNullableFilter<"Persona"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
   profiles?: Prisma.ProfileListRelationFilter
@@ -222,9 +300,15 @@ export type PersonaOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   gender?: Prisma.SortOrderInput | Prisma.SortOrder
+  nameType?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
+  aliases?: Prisma.SortOrder
+  hometown?: Prisma.SortOrderInput | Prisma.SortOrder
   birthYear?: Prisma.SortOrderInput | Prisma.SortOrder
   deathYear?: Prisma.SortOrderInput | Prisma.SortOrder
   globalTags?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   profiles?: Prisma.ProfileOrderByRelationAggregateInput
@@ -242,9 +326,15 @@ export type PersonaWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Persona"> | string
   type?: Prisma.EnumPersonaTypeFilter<"Persona"> | $Enums.PersonaType
   gender?: Prisma.StringNullableFilter<"Persona"> | string | null
+  nameType?: Prisma.EnumNameTypeFilter<"Persona"> | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFilter<"Persona"> | $Enums.RecordSource
+  confidence?: Prisma.FloatFilter<"Persona"> | number
+  aliases?: Prisma.StringNullableListFilter<"Persona">
+  hometown?: Prisma.StringNullableFilter<"Persona"> | string | null
   birthYear?: Prisma.StringNullableFilter<"Persona"> | string | null
   deathYear?: Prisma.StringNullableFilter<"Persona"> | string | null
   globalTags?: Prisma.StringNullableListFilter<"Persona">
+  deletedAt?: Prisma.DateTimeNullableFilter<"Persona"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
   profiles?: Prisma.ProfileListRelationFilter
@@ -259,14 +349,22 @@ export type PersonaOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   gender?: Prisma.SortOrderInput | Prisma.SortOrder
+  nameType?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
+  aliases?: Prisma.SortOrder
+  hometown?: Prisma.SortOrderInput | Prisma.SortOrder
   birthYear?: Prisma.SortOrderInput | Prisma.SortOrder
   deathYear?: Prisma.SortOrderInput | Prisma.SortOrder
   globalTags?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PersonaCountOrderByAggregateInput
+  _avg?: Prisma.PersonaAvgOrderByAggregateInput
   _max?: Prisma.PersonaMaxOrderByAggregateInput
   _min?: Prisma.PersonaMinOrderByAggregateInput
+  _sum?: Prisma.PersonaSumOrderByAggregateInput
 }
 
 export type PersonaScalarWhereWithAggregatesInput = {
@@ -277,9 +375,15 @@ export type PersonaScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Persona"> | string
   type?: Prisma.EnumPersonaTypeWithAggregatesFilter<"Persona"> | $Enums.PersonaType
   gender?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
+  nameType?: Prisma.EnumNameTypeWithAggregatesFilter<"Persona"> | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"Persona"> | $Enums.RecordSource
+  confidence?: Prisma.FloatWithAggregatesFilter<"Persona"> | number
+  aliases?: Prisma.StringNullableListFilter<"Persona">
+  hometown?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
   birthYear?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
   deathYear?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
   globalTags?: Prisma.StringNullableListFilter<"Persona">
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Persona"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Persona"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Persona"> | Date | string
 }
@@ -289,9 +393,15 @@ export type PersonaCreateInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
@@ -306,9 +416,15 @@ export type PersonaUncheckedCreateInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
@@ -323,9 +439,15 @@ export type PersonaUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
@@ -340,9 +462,15 @@ export type PersonaUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
@@ -357,9 +485,15 @@ export type PersonaCreateManyInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -369,9 +503,15 @@ export type PersonaUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -381,9 +521,15 @@ export type PersonaUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -401,11 +547,21 @@ export type PersonaCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   gender?: Prisma.SortOrder
+  nameType?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
+  aliases?: Prisma.SortOrder
+  hometown?: Prisma.SortOrder
   birthYear?: Prisma.SortOrder
   deathYear?: Prisma.SortOrder
   globalTags?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type PersonaAvgOrderByAggregateInput = {
+  confidence?: Prisma.SortOrder
 }
 
 export type PersonaMaxOrderByAggregateInput = {
@@ -413,8 +569,13 @@ export type PersonaMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   gender?: Prisma.SortOrder
+  nameType?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
+  hometown?: Prisma.SortOrder
   birthYear?: Prisma.SortOrder
   deathYear?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -424,15 +585,28 @@ export type PersonaMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   gender?: Prisma.SortOrder
+  nameType?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
+  hometown?: Prisma.SortOrder
   birthYear?: Prisma.SortOrder
   deathYear?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type PersonaSumOrderByAggregateInput = {
+  confidence?: Prisma.SortOrder
 }
 
 export type PersonaScalarRelationFilter = {
   is?: Prisma.PersonaWhereInput
   isNot?: Prisma.PersonaWhereInput
+}
+
+export type PersonaCreatealiasesInput = {
+  set: string[]
 }
 
 export type PersonaCreateglobalTagsInput = {
@@ -441,6 +615,27 @@ export type PersonaCreateglobalTagsInput = {
 
 export type EnumPersonaTypeFieldUpdateOperationsInput = {
   set?: $Enums.PersonaType
+}
+
+export type EnumNameTypeFieldUpdateOperationsInput = {
+  set?: $Enums.NameType
+}
+
+export type EnumRecordSourceFieldUpdateOperationsInput = {
+  set?: $Enums.RecordSource
+}
+
+export type FloatFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type PersonaUpdatealiasesInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 export type PersonaUpdateglobalTagsInput = {
@@ -523,9 +718,15 @@ export type PersonaCreateWithoutProfilesInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
@@ -539,9 +740,15 @@ export type PersonaUncheckedCreateWithoutProfilesInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
@@ -571,9 +778,15 @@ export type PersonaUpdateWithoutProfilesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
@@ -587,9 +800,15 @@ export type PersonaUncheckedUpdateWithoutProfilesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
@@ -603,9 +822,15 @@ export type PersonaCreateWithoutBiographiesInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
@@ -619,9 +844,15 @@ export type PersonaUncheckedCreateWithoutBiographiesInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
@@ -651,9 +882,15 @@ export type PersonaUpdateWithoutBiographiesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
@@ -667,9 +904,15 @@ export type PersonaUncheckedUpdateWithoutBiographiesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
@@ -683,9 +926,15 @@ export type PersonaCreateWithoutMentionsInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
@@ -699,9 +948,15 @@ export type PersonaUncheckedCreateWithoutMentionsInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
@@ -731,9 +986,15 @@ export type PersonaUpdateWithoutMentionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
@@ -747,9 +1008,15 @@ export type PersonaUncheckedUpdateWithoutMentionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
@@ -763,9 +1030,15 @@ export type PersonaCreateWithoutSourceRelsInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
@@ -779,9 +1052,15 @@ export type PersonaUncheckedCreateWithoutSourceRelsInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
@@ -800,9 +1079,15 @@ export type PersonaCreateWithoutTargetRelsInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
@@ -816,9 +1101,15 @@ export type PersonaUncheckedCreateWithoutTargetRelsInput = {
   name: string
   type?: $Enums.PersonaType
   gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
   birthYear?: string | null
   deathYear?: string | null
   globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
@@ -848,9 +1139,15 @@ export type PersonaUpdateWithoutSourceRelsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
@@ -864,9 +1161,15 @@ export type PersonaUncheckedUpdateWithoutSourceRelsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
@@ -891,9 +1194,15 @@ export type PersonaUpdateWithoutTargetRelsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
@@ -907,9 +1216,15 @@ export type PersonaUncheckedUpdateWithoutTargetRelsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
@@ -990,9 +1305,15 @@ export type PersonaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name?: boolean
   type?: boolean
   gender?: boolean
+  nameType?: boolean
+  recordSource?: boolean
+  confidence?: boolean
+  aliases?: boolean
+  hometown?: boolean
   birthYear?: boolean
   deathYear?: boolean
   globalTags?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   profiles?: boolean | Prisma.Persona$profilesArgs<ExtArgs>
@@ -1008,9 +1329,15 @@ export type PersonaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   type?: boolean
   gender?: boolean
+  nameType?: boolean
+  recordSource?: boolean
+  confidence?: boolean
+  aliases?: boolean
+  hometown?: boolean
   birthYear?: boolean
   deathYear?: boolean
   globalTags?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["persona"]>
@@ -1020,9 +1347,15 @@ export type PersonaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   type?: boolean
   gender?: boolean
+  nameType?: boolean
+  recordSource?: boolean
+  confidence?: boolean
+  aliases?: boolean
+  hometown?: boolean
   birthYear?: boolean
   deathYear?: boolean
   globalTags?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["persona"]>
@@ -1032,14 +1365,20 @@ export type PersonaSelectScalar = {
   name?: boolean
   type?: boolean
   gender?: boolean
+  nameType?: boolean
+  recordSource?: boolean
+  confidence?: boolean
+  aliases?: boolean
+  hometown?: boolean
   birthYear?: boolean
   deathYear?: boolean
   globalTags?: boolean
+  deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PersonaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "gender" | "birthYear" | "deathYear" | "globalTags" | "createdAt" | "updatedAt", ExtArgs["result"]["persona"]>
+export type PersonaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "gender" | "nameType" | "recordSource" | "confidence" | "aliases" | "hometown" | "birthYear" | "deathYear" | "globalTags" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["persona"]>
 export type PersonaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   profiles?: boolean | Prisma.Persona$profilesArgs<ExtArgs>
   mentions?: boolean | Prisma.Persona$mentionsArgs<ExtArgs>
@@ -1065,9 +1404,15 @@ export type $PersonaPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     name: string
     type: $Enums.PersonaType
     gender: string | null
+    nameType: $Enums.NameType
+    recordSource: $Enums.RecordSource
+    confidence: number
+    aliases: string[]
+    hometown: string | null
     birthYear: string | null
     deathYear: string | null
     globalTags: string[]
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["persona"]>
@@ -1502,9 +1847,15 @@ export interface PersonaFieldRefs {
   readonly name: Prisma.FieldRef<"Persona", 'String'>
   readonly type: Prisma.FieldRef<"Persona", 'PersonaType'>
   readonly gender: Prisma.FieldRef<"Persona", 'String'>
+  readonly nameType: Prisma.FieldRef<"Persona", 'NameType'>
+  readonly recordSource: Prisma.FieldRef<"Persona", 'RecordSource'>
+  readonly confidence: Prisma.FieldRef<"Persona", 'Float'>
+  readonly aliases: Prisma.FieldRef<"Persona", 'String[]'>
+  readonly hometown: Prisma.FieldRef<"Persona", 'String'>
   readonly birthYear: Prisma.FieldRef<"Persona", 'String'>
   readonly deathYear: Prisma.FieldRef<"Persona", 'String'>
   readonly globalTags: Prisma.FieldRef<"Persona", 'String[]'>
+  readonly deletedAt: Prisma.FieldRef<"Persona", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Persona", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Persona", 'DateTime'>
 }

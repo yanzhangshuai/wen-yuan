@@ -265,7 +265,7 @@ Implement the task described in `prd.md`.
 - Run lint and typecheck before finishing
 - Add/Update unit tests for changed business logic
 - Follow project testing baseline: test effectiveness first, then coverage gate (mature team baseline)
-- Write detailed and complete comments for production code and unit tests per comment guidelines
+- Write detailed and complete comments for production code and unit tests per comment guidelines; treat missing required comments as incomplete work
 
 **Step 9: Check Quality** `[AI]`
 
@@ -276,11 +276,11 @@ Run a quality pass against check context:
 - Ensure lint and typecheck pass
 - Ensure unit tests cover success/failure/boundary logic for changed code
 - Ensure coverage evidence is recorded and meets baseline
-- Ensure code and unit test comments are complete, accurate, and aligned with implemented behavior
+- Ensure code and unit test comments are complete, accurate, aligned with implemented behavior, and added before considering the task done
 
 **Step 10: Complete** `[AI]`
 
-1. Verify lint/typecheck/test checks pass, coverage baseline is met, and comment standard is satisfied
+1. Verify lint/typecheck/test checks pass, coverage baseline is met, and required comments are fully added before marking the task complete
 2. Report what was implemented
 3. Remind user to:
    - Test the changes

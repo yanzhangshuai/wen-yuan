@@ -1,5 +1,7 @@
 import { DeepSeekClient } from "@/server/providers/ai/deepseekClient";
+import { DoubaoClient } from "@/server/providers/ai/doubaoClient";
 import { GeminiClient } from "@/server/providers/ai/geminiClient";
+import { QwenClient } from "@/server/providers/ai/qwenClient";
 
 /**
  * 功能：定义通用 AI Provider 抽象接口。
@@ -28,11 +30,13 @@ export type AiClientFactory = () => AiProviderClient;
  * 异常：无。
  * 副作用：无。
  */
-export type AiProviderName = "gemini" | "deepseek";
+export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao";
 
 const defaultAiFactories: Record<AiProviderName, AiClientFactory> = {
   gemini: () => new GeminiClient(),
-  deepseek: () => new DeepSeekClient()
+  deepseek: () => new DeepSeekClient(),
+  qwen: () => new QwenClient(),
+  doubao: () => new DoubaoClient()
 };
 
 /**

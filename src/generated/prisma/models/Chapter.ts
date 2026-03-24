@@ -572,18 +572,6 @@ export type EnumChapterTypeFieldUpdateOperationsInput = {
   set?: $Enums.ChapterType
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type ChapterCreateNestedOneWithoutBiographiesInput = {
   create?: Prisma.XOR<Prisma.ChapterCreateWithoutBiographiesInput, Prisma.ChapterUncheckedCreateWithoutBiographiesInput>
   connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutBiographiesInput
