@@ -4,16 +4,16 @@ import type { AiProviderClient } from "@/server/providers/ai";
 import { createChapterAnalysisAiClient } from "@/server/modules/analysis/services/aiClient";
 
 const sampleInput = {
-  bookTitle: "儒林外史",
-  chapterNo: 1,
+  bookTitle   : "儒林外史",
+  chapterNo   : 1,
   chapterTitle: "说楔子敷陈大义 借名流隐括全文",
-  content: "范进见中举，众人态度大变。",
-  profiles: [
+  content     : "范进见中举，众人态度大变。",
+  profiles    : [
     {
-      personaId: "p1",
+      personaId    : "p1",
       canonicalName: "范进",
-      aliases: ["范老爷"],
-      localSummary: "晚年中举"
+      aliases      : ["范老爷"],
+      localSummary : "晚年中举"
     }
   ],
   chunkIndex: 0,
@@ -27,14 +27,14 @@ describe("ChapterAnalysisAiClient", () => {
         biographies: [
           {
             personaName: "范进",
-            category: "CAREER",
-            event: "中举后仕途起步"
+            category   : "CAREER",
+            event      : "中举后仕途起步"
           }
         ],
         mentions: [
           {
             personaName: "范进",
-            rawText: "范进见中举，众人态度大变。"
+            rawText    : "范进见中举，众人态度大变。"
           }
         ],
         relationships: []

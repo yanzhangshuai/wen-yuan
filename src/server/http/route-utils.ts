@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 
 import { createApiMeta, errorResponse, successResponse, toNextJson } from "@/server/http/api-response";
 import { AuthError } from "@/server/modules/auth";
 import { ERROR_CODES, type ApiResponse } from "@/types/api";
 
 export interface PaginationParams {
-  page: number;
+  page    : number;
   pageSize: number;
 }
 
@@ -21,7 +21,7 @@ export function parsePagination(searchParams: URLSearchParams): PaginationParams
   const pageSize = Number(searchParams.get("page_size") ?? "20");
 
   return {
-    page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
+    page    : Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
     pageSize: Number.isFinite(pageSize) && pageSize > 0 ? Math.min(Math.floor(pageSize), 100) : 20
   };
 }
@@ -34,16 +34,16 @@ export function parsePagination(searchParams: URLSearchParams): PaginationParams
  * 副作用：HTTP 响应写出。
  */
 export function okJson<T>(args: {
-  path: string;
-  requestId: string;
-  startedAt: number;
-  code: string;
-  message: string;
-  data: T;
+  path       : string;
+  requestId  : string;
+  startedAt  : number;
+  code       : string;
+  message    : string;
+  data       : T;
   pagination?: {
-    page: number;
+    page    : number;
     pageSize: number;
-    total: number;
+    total   : number;
   };
   status?: number;
 }): NextResponse<ApiResponse<T>> {
@@ -64,13 +64,13 @@ export function okJson<T>(args: {
  * 副作用：HTTP 响应写出。
  */
 export function failJson(args: {
-  path: string;
-  requestId: string;
-  startedAt: number;
-  error: unknown;
-  fallbackCode?: string;
+  path            : string;
+  requestId       : string;
+  startedAt       : number;
+  error           : unknown;
+  fallbackCode?   : string;
   fallbackMessage?: string;
-  status?: number;
+  status?         : number;
 }): NextResponse<ApiResponse<null>> {
   const meta = createApiMeta(args.path, args.requestId, args.startedAt);
 

@@ -24,10 +24,10 @@ describe("provideAi", () => {
     const qwenFactory = vi.fn(createFakeClient);
     const doubaoFactory = vi.fn(createFakeClient);
     const factories: Record<string, AiClientFactory> = {
-      gemini: geminiFactory,
+      gemini  : geminiFactory,
       deepseek: deepseekFactory,
-      qwen: qwenFactory,
-      doubao: doubaoFactory
+      qwen    : qwenFactory,
+      doubao  : doubaoFactory
     };
 
     // Act
@@ -47,10 +47,10 @@ describe("provideAi", () => {
     const qwenFactory = vi.fn(createFakeClient);
     const doubaoFactory = vi.fn(createFakeClient);
     const factories: Record<string, AiClientFactory> = {
-      gemini: geminiFactory,
+      gemini  : geminiFactory,
       deepseek: deepseekFactory,
-      qwen: qwenFactory,
-      doubao: doubaoFactory
+      qwen    : qwenFactory,
+      doubao  : doubaoFactory
     };
 
     // Act
@@ -67,10 +67,10 @@ describe("provideAi", () => {
     // Arrange
     const qwenFactory = vi.fn(createFakeClient);
     const factories: Record<string, AiClientFactory> = {
-      gemini: createFakeClient,
+      gemini  : createFakeClient,
       deepseek: createFakeClient,
-      qwen: qwenFactory,
-      doubao: createFakeClient
+      qwen    : qwenFactory,
+      doubao  : createFakeClient
     };
 
     // Act
@@ -84,10 +84,10 @@ describe("provideAi", () => {
     // Arrange
     const doubaoFactory = vi.fn(createFakeClient);
     const factories: Record<string, AiClientFactory> = {
-      gemini: createFakeClient,
+      gemini  : createFakeClient,
       deepseek: createFakeClient,
-      qwen: createFakeClient,
-      doubao: doubaoFactory
+      qwen    : createFakeClient,
+      doubao  : doubaoFactory
     };
 
     // Act

@@ -23,13 +23,13 @@ const AI_RETRY_BASE_MS = 600;
  * 副作用：无。
  */
 export interface ChapterAnalysisResult {
-  chapterId: string;
-  chunkCount: number;
+  chapterId         : string;
+  chunkCount        : number;
   hallucinationCount: number;
   created: {
-    personas: number;
-    mentions: number;
-    biographies: number;
+    personas     : number;
+    mentions     : number;
+    biographies  : number;
     relationships: number;
   };
 }
@@ -58,7 +58,7 @@ export function createChapterAnalysisService(
     log("analysis.start", { chapterId });
 
     const chapter = await prismaClient.chapter.findUnique({
-      where: { id: chapterId },
+      where  : { id: chapterId },
       include: {
         book: {
           include: {
@@ -71,9 +71,11 @@ export function createChapterAnalysisService(
     if (!chapter) throw new Error(`Chapter [${chapterId}] 不存在`);
 
     const profiles: AnalysisProfileContext[] = chapter.book.profiles.map(p => ({
-      personaId: p.personaId,
+      personaId    : p.personaId,
       canonicalName: p.persona.name,
-      aliases: Array.from(new Set([p.localName, ...p.persona.globalTags])).filter(Boolean) as string[],
+      aliases      : Array.from(new Set([p.localName, ...p.persona.globalTags]))
+        .filter((alias): alias is string => Boolean(alias)
+      ),
       localSummary: p.localSummary
     }));
 
@@ -84,13 +86,13 @@ export function createChapterAnalysisService(
       const batch = chunks.slice(i, i + AI_CONCURRENCY);
       const batchPromises = batch.map((chunk, idx) =>
         analyzeChunkWithRetry({
-          bookTitle: chapter.book.title,
-          chapterNo: chapter.no,
+          bookTitle   : chapter.book.title,
+          chapterNo   : chapter.no,
           chapterTitle: chapter.title,
-          content: chunk,
+          content     : chunk,
           profiles,
-          chunkIndex: i + idx,
-          chunkCount: chunks.length
+          chunkIndex  : i + idx,
+          chunkCount  : chunks.length
         })
       );
       const results = await Promise.all(batchPromises);
@@ -101,9 +103,9 @@ export function createChapterAnalysisService(
 
     const stats = await prismaClient.$transaction(async (tx) => {
       return await persistResult(tx, {
-        chapterId: chapter.id,
-        chapterNo: chapter.no,
-        bookId: chapter.bookId,
+        chapterId     : chapter.id,
+        chapterNo     : chapter.no,
+        bookId        : chapter.bookId,
         chapterContent: chapter.content,
         merged
       });
@@ -130,11 +132,11 @@ export function createChapterAnalysisService(
   async function persistResult(
     tx: Prisma.TransactionClient,
     input: {
-      chapterId: string;
-      chapterNo: number;
-      bookId: string;
+      chapterId     : string;
+      chapterNo     : number;
+      bookId        : string;
       chapterContent: string;
-      merged: ChapterAnalysisResponse;
+      merged        : ChapterAnalysisResponse;
     }
   ): Promise<Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">> {
     await tx.mention.deleteMany({ where: { chapterId: input.chapterId } });
@@ -153,8 +155,8 @@ export function createChapterAnalysisService(
     const resolve = async (name: string) => {
       if (!cache.has(name)) {
         const res = await personaResolver.resolve({
-          bookId: input.bookId,
-          extractedName: name,
+          bookId        : input.bookId,
+          extractedName : name,
           chapterContent: input.chapterContent
         }, tx);
         cache.set(name, res);
@@ -162,15 +164,20 @@ export function createChapterAnalysisService(
         if (res.status === "hallucinated" && !hallucinatedNamesLogged.has(name)) {
           hallucinatedNamesLogged.add(name);
           log("analysis.hallucination", {
-            chapterId: input.chapterId,
+            chapterId  : input.chapterId,
             name,
-            confidence: res.confidence,
-            reason: res.reason ?? "unknown",
+            confidence : res.confidence,
+            reason     : res.reason ?? "unknown",
             matchedName: res.matchedName ?? null
           });
         }
       }
-      return cache.get(name)!;
+      const cached = cache.get(name);
+      if (!cached) {
+        throw new Error(`resolve cache missing for persona: ${name}`);
+      }
+
+      return cached;
     };
 
     const mentionData: Prisma.MentionCreateManyInput[] = [];
@@ -195,8 +202,8 @@ export function createChapterAnalysisService(
         mentionData.push({
           chapterId: input.chapterId,
           personaId: res.personaId,
-          rawText: m.rawText,
-          summary: m.summary,
+          rawText  : m.rawText,
+          summary  : m.summary,
           paraIndex: m.paraIndex
         });
       }
@@ -226,16 +233,16 @@ export function createChapterAnalysisService(
         bioKeys.add(key);
 
         bioData.push({
-          chapterId: input.chapterId,
-          chapterNo: input.chapterNo,
-          personaId: res.personaId,
-          category: normalizedCategory,
-          event: b.event,
-          title: b.title,
-          location: b.location,
+          chapterId  : input.chapterId,
+          chapterNo  : input.chapterNo,
+          personaId  : res.personaId,
+          category   : normalizedCategory,
+          event      : b.event,
+          title      : b.title,
+          location   : b.location,
           virtualYear: b.virtualYear,
-          ironyNote: sanitizedIrony,
-          status: ProcessingStatus.DRAFT
+          ironyNote  : sanitizedIrony,
+          status     : ProcessingStatus.DRAFT
         });
       }
     }
@@ -263,13 +270,13 @@ export function createChapterAnalysisService(
         relationKeys.add(key);
 
         relationData.push({
-          chapterId: input.chapterId,
-          sourceId: s.personaId,
-          targetId: t.personaId,
-          type: r.type,
-          weight: r.weight ?? 1,
+          chapterId  : input.chapterId,
+          sourceId   : s.personaId,
+          targetId   : t.personaId,
+          type       : r.type,
+          weight     : r.weight ?? 1,
           description: r.description,
-          status: ProcessingStatus.DRAFT
+          status     : ProcessingStatus.DRAFT
         });
       }
     }
@@ -287,9 +294,9 @@ export function createChapterAnalysisService(
     return {
       hallucinationCount,
       created: {
-        personas: personaCreated,
-        mentions: mentionData.length,
-        biographies: bioData.length,
+        personas     : personaCreated,
+        mentions     : mentionData.length,
+        biographies  : bioData.length,
         relationships: relationData.length
       }
     };
@@ -338,20 +345,20 @@ export function createChapterAnalysisService(
    */
   function mergeChunkResults(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse {
     return {
-      biographies: results.flatMap(r => r.biographies),
-      mentions: results.flatMap(r => r.mentions),
+      biographies  : results.flatMap(r => r.biographies),
+      mentions     : results.flatMap(r => r.mentions),
       relationships: results.flatMap(r => r.relationships)
     };
   }
 
   function normalizeCategory(val: BioCategoryValue): BioCategory {
     const map: Record<string, BioCategory> = {
-      BIRTH: BioCategory.BIRTH,
-      EXAM: BioCategory.EXAM,
+      BIRTH : BioCategory.BIRTH,
+      EXAM  : BioCategory.EXAM,
       CAREER: BioCategory.CAREER,
       TRAVEL: BioCategory.TRAVEL,
       SOCIAL: BioCategory.SOCIAL,
-      DEATH: BioCategory.DEATH
+      DEATH : BioCategory.DEATH
     };
     return map[val] ?? BioCategory.EVENT;
   }
@@ -383,9 +390,9 @@ export function createChapterAnalysisService(
         const waitMs = AI_RETRY_BASE_MS * (attempt + 1);
         log("analysis.ai_retry", {
           chunkIndex: input.chunkIndex,
-          attempt: attempt + 1,
+          attempt   : attempt + 1,
           waitMs,
-          reason: error instanceof Error ? error.message : String(error)
+          reason    : error instanceof Error ? error.message : String(error)
         });
         await new Promise((resolve) => setTimeout(resolve, waitMs));
         attempt += 1;

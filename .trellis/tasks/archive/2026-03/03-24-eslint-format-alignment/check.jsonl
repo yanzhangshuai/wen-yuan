@@ -1,0 +1,5 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check-frontend.md", "reason": "Frontend check spec"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend lint baseline and scope"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "Comment completeness remains part of done"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "ESLint entrypoint and quality expectations"}

@@ -6,7 +6,7 @@ import { chapterAnalysisService } from "@/server/modules/analysis/services/Chapt
 import type { ChapterAnalysisResult } from "@/server/modules/analysis/services/ChapterAnalysisService";
 
 export interface AnalysisActionState {
-  ok: boolean;
+  ok     : boolean;
   message: string;
   result?: ChapterAnalysisResult;
 }
@@ -43,7 +43,7 @@ export async function runChapterAnalysisAction(
 
   if (typeof chapterId !== "string" || !chapterId) {
     return {
-      ok: false,
+      ok     : false,
       message: "缺少章节 ID，无法发起解析"
     };
   }
@@ -51,13 +51,13 @@ export async function runChapterAnalysisAction(
   try {
     const result = await startChapterAnalysis(chapterId);
     return {
-      ok: true,
+      ok     : true,
       message: `完成：新增 ${result.created.biographies} 条生平，${result.created.mentions} 条提及，${result.created.relationships} 条关系。`,
       result
     };
   } catch (error) {
     return {
-      ok: false,
+      ok     : false,
       message: error instanceof Error ? error.message : "解析失败"
     };
   }

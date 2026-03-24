@@ -12,7 +12,7 @@ import type { ApiErrorDetail, ApiErrorResponse, ApiMeta, ApiResponse, ApiSuccess
 export function createApiMeta(path: string, requestId: string, startedAt: number): ApiMeta {
   return {
     requestId,
-    timestamp: new Date().toISOString(),
+    timestamp : new Date().toISOString(),
     path,
     durationMs: Date.now() - startedAt
   };

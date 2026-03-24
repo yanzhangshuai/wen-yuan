@@ -6,9 +6,9 @@
  * 副作用：无。
  */
 export interface ApiMeta {
-  requestId: string;
-  timestamp: string;
-  path: string;
+  requestId  : string;
+  timestamp  : string;
+  path       : string;
   durationMs?: number;
   pagination?: ApiPagination;
 }
@@ -21,9 +21,9 @@ export interface ApiMeta {
  * 副作用：无。
  */
 export interface ApiPagination {
-  page: number;
+  page    : number;
   pageSize: number;
-  total: number;
+  total   : number;
 }
 
 /**
@@ -34,9 +34,9 @@ export interface ApiPagination {
  * 副作用：无。
  */
 export interface ApiErrorDetail {
-  type: string;
+  type   : string;
   detail?: string;
-  field?: string;
+  field? : string;
 }
 
 /**
@@ -48,10 +48,10 @@ export interface ApiErrorDetail {
  */
 export interface ApiSuccessResponse<T> {
   success: true;
-  code: string;
+  code   : string;
   message: string;
-  data: T;
-  meta: ApiMeta;
+  data   : T;
+  meta   : ApiMeta;
 }
 
 /**
@@ -63,10 +63,10 @@ export interface ApiSuccessResponse<T> {
  */
 export interface ApiErrorResponse {
   success: false;
-  code: string;
+  code   : string;
   message: string;
-  error: ApiErrorDetail;
-  meta: ApiMeta;
+  error  : ApiErrorDetail;
+  meta   : ApiMeta;
 }
 
 /**
@@ -86,19 +86,19 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
  * 副作用：无。
  */
 export const ERROR_CODES = {
-  COMMON_BAD_REQUEST: "COMMON_BAD_REQUEST",
-  COMMON_NOT_FOUND: "COMMON_NOT_FOUND",
-  COMMON_INTERNAL_ERROR: "COMMON_INTERNAL_ERROR",
-  COMMON_RATE_LIMITED: "COMMON_RATE_LIMITED",
-  AUTH_UNAUTHORIZED: "AUTH_UNAUTHORIZED",
-  AUTH_FORBIDDEN: "AUTH_FORBIDDEN",
-  AUTH_INVALID_SCOPE: "AUTH_INVALID_SCOPE",
-  PROJECT_DUPLICATED_CODE: "PROJECT_DUPLICATED_CODE",
-  PROJECT_NOT_FOUND: "PROJECT_NOT_FOUND",
-  WORK_DUPLICATED_TITLE: "WORK_DUPLICATED_TITLE",
-  WORK_NOT_FOUND: "WORK_NOT_FOUND",
+  COMMON_BAD_REQUEST           : "COMMON_BAD_REQUEST",
+  COMMON_NOT_FOUND             : "COMMON_NOT_FOUND",
+  COMMON_INTERNAL_ERROR        : "COMMON_INTERNAL_ERROR",
+  COMMON_RATE_LIMITED          : "COMMON_RATE_LIMITED",
+  AUTH_UNAUTHORIZED            : "AUTH_UNAUTHORIZED",
+  AUTH_FORBIDDEN               : "AUTH_FORBIDDEN",
+  AUTH_INVALID_SCOPE           : "AUTH_INVALID_SCOPE",
+  PROJECT_DUPLICATED_CODE      : "PROJECT_DUPLICATED_CODE",
+  PROJECT_NOT_FOUND            : "PROJECT_NOT_FOUND",
+  WORK_DUPLICATED_TITLE        : "WORK_DUPLICATED_TITLE",
+  WORK_NOT_FOUND               : "WORK_NOT_FOUND",
   WORK_VERSION_DUPLICATED_LABEL: "WORK_VERSION_DUPLICATED_LABEL",
-  WORK_VERSION_NOT_FOUND: "WORK_VERSION_NOT_FOUND"
+  WORK_VERSION_NOT_FOUND       : "WORK_VERSION_NOT_FOUND"
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

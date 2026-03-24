@@ -1,4 +1,4 @@
-import neo4j, { Driver } from "neo4j-driver";
+import neo4j, { type Driver } from "neo4j-driver";
 
 declare global {
   var neo4jDriver: Driver | undefined;

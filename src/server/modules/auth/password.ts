@@ -2,9 +2,9 @@ import argon2 from "argon2";
 
 // 与 PRD 保持一致，统一使用 Argon2id 基线参数，避免不同入口出现多套哈希策略。
 const PASSWORD_HASH_OPTIONS = {
-  type: argon2.argon2id,
-  memoryCost: 19456,
-  timeCost: 2,
+  type       : argon2.argon2id,
+  memoryCost : 19456,
+  timeCost   : 2,
   parallelism: 1
 } as const;
 

@@ -8,13 +8,13 @@ import type { AnalysisProfileContext } from "@/types/analysis";
  * 副作用：无。
  */
 export interface BuildPromptInput {
-  bookTitle: string;
-  chapterNo: number;
+  bookTitle   : string;
+  chapterNo   : number;
   chapterTitle: string;
-  content: string;
-  profiles: AnalysisProfileContext[];
-  chunkIndex: number;
-  chunkCount: number;
+  content     : string;
+  profiles    : AnalysisProfileContext[];
+  chunkIndex  : number;
+  chunkCount  : number;
 }
 
 /**
@@ -53,28 +53,28 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
       biographies: [
         {
           personaName: "实体标准名",
-          category: "枚举值",
-          event: "简述发生的关键行为或状态变更",
-          title: "当时的头衔/身份/职业",
-          location: "发生的具体地理位置",
+          category   : "枚举值",
+          event      : "简述发生的关键行为或状态变更",
+          title      : "当时的头衔/身份/职业",
+          location   : "发生的具体地理位置",
           virtualYear: "文中提到的时间点（如: 万历三十年, 2077年, 秋天）",
-          traitNote: "对此事件在该章节背景下的简短解析（如: 动机、性格闪光点、或叙事功能）"
+          traitNote  : "对此事件在该章节背景下的简短解析（如: 动机、性格闪光点、或叙事功能）"
         }
       ],
       mentions: [
         {
           personaName: "实体标准名",
-          rawText: "原文片段",
-          summary: "此段落中实体的状态描述",
-          paraIndex: 0
+          rawText    : "原文片段",
+          summary    : "此段落中实体的状态描述",
+          paraIndex  : 0
         }
       ],
       relationships: [
         {
-          sourceName: "发起者名",
-          targetName: "接收者名",
-          type: "关系类型（如: 师生, 敌对, 盟友, 家属）",
-          weight: 0.5, // 0-1 之间的权重，代表互动强度
+          sourceName : "发起者名",
+          targetName : "接收者名",
+          type       : "关系类型（如: 师生, 敌对, 盟友, 家属）",
+          weight     : 0.5, // 0-1 之间的权重，代表互动强度
           description: "建立或改变关系的文本证据"
         }
       ]

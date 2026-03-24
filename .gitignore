@@ -3,6 +3,7 @@ node_modules
 .env
 dist
 coverage
+tsconfig.tsbuildinfo
 *.log
 .volumes
 .pnpm-store

@@ -19,8 +19,8 @@ interface DeepSeekChatResponse {
  * 副作用：发起外部网络请求到 DeepSeek 服务。
  */
 export class DeepSeekClient implements AiProviderClient {
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
+  private readonly apiKey   : string;
+  private readonly baseUrl  : string;
   private readonly modelName: string;
 
   /**
@@ -53,16 +53,16 @@ export class DeepSeekClient implements AiProviderClient {
    */
   async generateJson(prompt: string): Promise<string> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
+      method : "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`
+        Authorization : `Bearer ${this.apiKey}`
       },
       body: JSON.stringify({
-        model: this.modelName,
-        temperature: 0.2,
+        model          : this.modelName,
+        temperature    : 0.2,
         response_format: { type: "json_object" },
-        messages: [{ role: "user", content: prompt }]
+        messages       : [{ role: "user", content: prompt }]
       })
     });
 

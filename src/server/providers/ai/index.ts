@@ -33,10 +33,10 @@ export type AiClientFactory = () => AiProviderClient;
 export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao";
 
 const defaultAiFactories: Record<AiProviderName, AiClientFactory> = {
-  gemini: () => new GeminiClient(),
+  gemini  : () => new GeminiClient(),
   deepseek: () => new DeepSeekClient(),
-  qwen: () => new QwenClient(),
-  doubao: () => new DoubaoClient()
+  qwen    : () => new QwenClient(),
+  doubao  : () => new DoubaoClient()
 };
 
 /**

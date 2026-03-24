@@ -21,9 +21,9 @@ interface OpenAiLikeResponse {
  */
 export interface OpenAiCompatibleConfig {
   providerName: string;
-  apiKey: string | undefined;
-  baseUrl: string;
-  modelName: string;
+  apiKey      : string | undefined;
+  baseUrl     : string;
+  modelName   : string;
 }
 
 /**
@@ -32,9 +32,9 @@ export interface OpenAiCompatibleConfig {
  */
 export class OpenAiCompatibleClient implements AiProviderClient {
   private readonly providerName: string;
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
-  private readonly modelName: string;
+  private readonly apiKey      : string;
+  private readonly baseUrl     : string;
+  private readonly modelName   : string;
 
   constructor(config: OpenAiCompatibleConfig) {
     if (!config.apiKey) {
@@ -53,16 +53,16 @@ export class OpenAiCompatibleClient implements AiProviderClient {
    */
   async generateJson(prompt: string): Promise<string> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
+      method : "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`
+        Authorization : `Bearer ${this.apiKey}`
       },
       body: JSON.stringify({
-        model: this.modelName,
-        temperature: 0.2,
+        model          : this.modelName,
+        temperature    : 0.2,
         response_format: { type: "json_object" },
-        messages: [{ role: "user", content: prompt }]
+        messages       : [{ role: "user", content: prompt }]
       })
     });
 

@@ -8,13 +8,13 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface DialogProps {
-  open: boolean;
+  open        : boolean;
   onOpenChange: (open: boolean) => void;
-  children: ReactNode;
+  children    : ReactNode;
 }
 
 export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
-  open: boolean;
+  open        : boolean;
   onOpenChange: (open: boolean) => void;
 }
 

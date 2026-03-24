@@ -32,9 +32,9 @@ export interface AnalysisProfileContext {
    * 异常：无。
    * 副作用：无。
    */
-  personaId: string;
+  personaId    : string;
   canonicalName: string;
-  aliases: string[];
+  aliases      : string[];
   localSummary?: string | null;
 }
 
@@ -47,9 +47,9 @@ export interface AnalysisProfileContext {
  */
 export interface AiMention {
   personaName: string;
-  rawText: string;
-  summary?: string;
-  paraIndex?: number;
+  rawText    : string;
+  summary?   : string;
+  paraIndex? : number;
 }
 
 /**
@@ -60,13 +60,13 @@ export interface AiMention {
  * 副作用：无。
  */
 export interface AiBiographyRecord {
-  personaName: string;
-  category: BioCategoryValue;
-  event: string;
-  title?: string;
-  location?: string;
+  personaName : string;
+  category    : BioCategoryValue;
+  event       : string;
+  title?      : string;
+  location?   : string;
   virtualYear?: string;
-  ironyNote?: string;
+  ironyNote?  : string;
 }
 
 /**
@@ -77,10 +77,10 @@ export interface AiBiographyRecord {
  * 副作用：无。
  */
 export interface AiRelationship {
-  sourceName: string;
-  targetName: string;
-  type: string;
-  weight?: number;
+  sourceName  : string;
+  targetName  : string;
+  type        : string;
+  weight?     : number;
   description?: string;
 }
 
@@ -92,13 +92,13 @@ export interface AiRelationship {
  * 副作用：无。
  */
 export interface ChapterAnalysisResponse {
-  biographies: AiBiographyRecord[];
-  mentions: AiMention[];
+  biographies  : AiBiographyRecord[];
+  mentions     : AiMention[];
   relationships: AiRelationship[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isBioCategory(value: unknown): value is BioCategoryValue {
@@ -128,12 +128,12 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
     .filter((item) => typeof item.personaName === "string" && typeof item.event === "string" && isBioCategory(item.category))
     .map((item) => ({
       personaName: item.personaName as string,
-      category: item.category as BioCategoryValue,
-      event: item.event as string,
-      title: typeof item.title === "string" ? item.title : undefined,
-      location: typeof item.location === "string" ? item.location : undefined,
+      category   : item.category as BioCategoryValue,
+      event      : item.event as string,
+      title      : typeof item.title === "string" ? item.title : undefined,
+      location   : typeof item.location === "string" ? item.location : undefined,
       virtualYear: typeof item.virtualYear === "string" ? item.virtualYear : undefined,
-      ironyNote: typeof item.ironyNote === "string" ? item.ironyNote : undefined
+      ironyNote  : typeof item.ironyNote === "string" ? item.ironyNote : undefined
     }));
 
   const normalizedMentions: AiMention[] = mentions
@@ -141,9 +141,9 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
     .filter((item) => typeof item.personaName === "string" && typeof item.rawText === "string")
     .map((item) => ({
       personaName: item.personaName as string,
-      rawText: item.rawText as string,
-      summary: typeof item.summary === "string" ? item.summary : undefined,
-      paraIndex: typeof item.paraIndex === "number" ? item.paraIndex : undefined
+      rawText    : item.rawText as string,
+      summary    : typeof item.summary === "string" ? item.summary : undefined,
+      paraIndex  : typeof item.paraIndex === "number" ? item.paraIndex : undefined
     }));
 
   const normalizedRelationships: AiRelationship[] = relationships
@@ -155,16 +155,16 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
         typeof item.type === "string"
     )
     .map((item) => ({
-      sourceName: item.sourceName as string,
-      targetName: item.targetName as string,
-      type: item.type as string,
-      weight: typeof item.weight === "number" ? item.weight : undefined,
+      sourceName : item.sourceName as string,
+      targetName : item.targetName as string,
+      type       : item.type as string,
+      weight     : typeof item.weight === "number" ? item.weight : undefined,
       description: typeof item.description === "string" ? item.description : undefined
     }));
 
   return {
-    biographies: normalizedBiographies,
-    mentions: normalizedMentions,
+    biographies  : normalizedBiographies,
+    mentions     : normalizedMentions,
     relationships: normalizedRelationships
   };
 }

@@ -24,7 +24,7 @@ describe("parsePagination", () => {
   it("normalizes invalid values and floors decimals", () => {
     // Arrange
     const params = new URLSearchParams({
-      page: "-2",
+      page     : "-2",
       page_size: "0"
     });
 
@@ -38,7 +38,7 @@ describe("parsePagination", () => {
   it("clamps page_size to 100 and floors numbers", () => {
     // Arrange
     const params = new URLSearchParams({
-      page: "2.8",
+      page     : "2.8",
       page_size: "200.9"
     });
 
@@ -52,7 +52,7 @@ describe("parsePagination", () => {
 
 describe("failJson", () => {
   const commonArgs = {
-    path: "/api/analyze",
+    path     : "/api/analyze",
     requestId: "req-1",
     startedAt: Date.now() - 12
   };
@@ -76,8 +76,8 @@ describe("failJson", () => {
     // Act
     const response = failJson({
       ...commonArgs,
-      error: new Error("boom"),
-      fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR,
+      error          : new Error("boom"),
+      fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
       fallbackMessage: "internal"
     });
 

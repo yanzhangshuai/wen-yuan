@@ -10,7 +10,7 @@ import type { AiProviderClient } from "@/server/providers/ai";
  * 副作用：发起外部网络请求到 Gemini 服务。
  */
 export class GeminiClient implements AiProviderClient {
-  private readonly client: GoogleGenerativeAI;
+  private readonly client   : GoogleGenerativeAI;
   private readonly modelName: string;
 
   /**
@@ -41,12 +41,12 @@ export class GeminiClient implements AiProviderClient {
     const model = this.client.getGenerativeModel({ model: this.modelName });
 
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents        : [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         // 强制模型直接返回 JSON 文本，便于后端解析。
         responseMimeType: "application/json",
         // 温度偏低，优先稳定输出而非创造性发挥。
-        temperature: 0.2
+        temperature     : 0.2
       }
     });
 

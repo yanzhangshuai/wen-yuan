@@ -9,8 +9,8 @@ import { PersonaType } from "@/generated/prisma/enums";
  * 副作用：无。
  */
 interface ResolveInput {
-  bookId: string;
-  extractedName: string;
+  bookId        : string;
+  extractedName : string;
   chapterContent: string;
 }
 
@@ -22,11 +22,11 @@ interface ResolveInput {
  * 副作用：无。
  */
 export interface ResolveResult {
-  status: "resolved" | "created" | "hallucinated";
-  personaId?: string;
-  confidence: number;
+  status      : "resolved" | "created" | "hallucinated";
+  personaId?  : string;
+  confidence  : number;
   matchedName?: string;
-  reason?: string;
+  reason?     : string;
 }
 
 type TxLike = Pick<
@@ -42,8 +42,8 @@ type TxLike = Pick<
  * 副作用：无。
  */
 interface CandidatePersona {
-  id: string;
-  name: string;
+  id     : string;
+  name   : string;
   aliases: string[];
 }
 
@@ -74,7 +74,7 @@ export function createPersonaResolver(prisma: PrismaClient) {
       },
       include: {
         profiles: {
-          where: { bookId },
+          where : { bookId },
           select: { localName: true }
         }
       },
@@ -83,8 +83,8 @@ export function createPersonaResolver(prisma: PrismaClient) {
 
     if (directMatches.length > 0) {
       return directMatches.map((item) => ({
-        id: item.id,
-        name: item.name,
+        id     : item.id,
+        name   : item.name,
         aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
       }));
     }
@@ -98,7 +98,7 @@ export function createPersonaResolver(prisma: PrismaClient) {
       },
       include: {
         profiles: {
-          where: { bookId },
+          where : { bookId },
           select: { localName: true }
         }
       },
@@ -106,8 +106,8 @@ export function createPersonaResolver(prisma: PrismaClient) {
     });
 
     return fallbackBookMatches.map((item) => ({
-      id: item.id,
-      name: item.name,
+      id     : item.id,
+      name   : item.name,
       aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
     }));
   }
@@ -126,9 +126,9 @@ export function createPersonaResolver(prisma: PrismaClient) {
     // 空名字直接标记为幻觉，避免写入脏数据。
     if (!extracted) {
       return {
-        status: "hallucinated",
+        status    : "hallucinated",
         confidence: 0,
-        reason: "empty_name"
+        reason    : "empty_name"
       };
     }
 
@@ -150,21 +150,21 @@ export function createPersonaResolver(prisma: PrismaClient) {
         where: {
           personaId_bookId: {
             personaId: winner.candidate.id,
-            bookId: input.bookId
+            bookId   : input.bookId
           }
         },
         update: {},
         create: {
           personaId: winner.candidate.id,
-          bookId: input.bookId,
+          bookId   : input.bookId,
           localName: input.extractedName
         }
       });
 
       return {
-        status: "resolved",
-        personaId: winner.candidate.id,
-        confidence: winner.score,
+        status     : "resolved",
+        personaId  : winner.candidate.id,
+        confidence : winner.score,
         matchedName: winner.candidate.name
       };
     }
@@ -172,18 +172,18 @@ export function createPersonaResolver(prisma: PrismaClient) {
     // 名字不在原文中出现，倾向判断为模型幻觉。
     if (!input.chapterContent.includes(input.extractedName)) {
       return {
-        status: "hallucinated",
-        confidence: winner?.score ?? 0,
+        status     : "hallucinated",
+        confidence : winner?.score ?? 0,
         matchedName: winner?.candidate.name,
-        reason: "name_not_in_chapter"
+        reason     : "name_not_in_chapter"
       };
     }
 
     // 低置信且确实在原文出现，才创建新 Persona。
     const created = await client.persona.create({
       data: {
-        name: input.extractedName,
-        type: PersonaType.PERSON,
+        name      : input.extractedName,
+        type      : PersonaType.PERSON,
         globalTags: [input.extractedName]
       }
     });
@@ -191,15 +191,15 @@ export function createPersonaResolver(prisma: PrismaClient) {
     await client.profile.create({
       data: {
         personaId: created.id,
-        bookId: input.bookId,
+        bookId   : input.bookId,
         localName: input.extractedName
       }
     });
 
     return {
-      status: "created",
-      personaId: created.id,
-      confidence: winner?.score ?? 0.35,
+      status     : "created",
+      personaId  : created.id,
+      confidence : winner?.score ?? 0.35,
       matchedName: created.name
     };
   }
