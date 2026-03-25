@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { AppRole } from "@/generated/prisma/enums";
 import { ERROR_CODES } from "@/types/api";
 
 import {
   AuthError,
+  AUTH_ADMIN_ROLE,
   AUTH_TOKEN_TTL_SECONDS,
+  AUTH_VIEWER_ROLE,
   authenticateAdmin,
   getAuthContext,
   issueAuthToken,
@@ -13,36 +16,99 @@ import {
   verifyAuthToken
 } from "./index";
 
+describe("auth role constants", () => {
+  it("keeps auth role constants aligned with prisma enum values", () => {
+    expect(AUTH_ADMIN_ROLE).toBe(AppRole.ADMIN);
+    expect(AUTH_VIEWER_ROLE).toBe(AppRole.VIEWER);
+  });
+});
+
 describe("getAuthContext", () => {
+  const originalSecret = process.env.JWT_SECRET;
+
+  afterEach(() => {
+    process.env.JWT_SECRET = originalSecret;
+  });
+
   it("maps injected admin headers to admin context", () => {
     const headers = new Headers({
-      "x-auth-role"   : "admin",
+      "x-auth-role"   : AppRole.ADMIN,
       "x-auth-user-id": "user-1"
     });
 
     expect(getAuthContext(headers)).toEqual({
       userId: "user-1",
-      role  : "admin"
+      role  : AppRole.ADMIN
     });
   });
 
   it("falls back to viewer when role header is missing", () => {
     expect(getAuthContext(new Headers())).toEqual({
       userId: null,
-      role  : "viewer"
+      role  : AppRole.VIEWER
+    });
+  });
+
+  it("resolves admin from cookie token when middleware headers are missing", () => {
+    process.env.JWT_SECRET = "unit-test-secret";
+    const now = Math.floor(Date.now() / 1000);
+    const token = issueAuthToken(now);
+    const headers = new Headers({
+      cookie: `token=${token}`
+    });
+
+    expect(getAuthContext(headers)).toEqual({
+      userId: null,
+      role  : AppRole.ADMIN
+    });
+  });
+
+  it("prefers valid cookie token when middleware role header is viewer", () => {
+    process.env.JWT_SECRET = "unit-test-secret";
+    const now = Math.floor(Date.now() / 1000);
+    const token = issueAuthToken(now);
+    const headers = new Headers({
+      "x-auth-role": AppRole.VIEWER,
+      cookie       : `token=${token}`
+    });
+
+    expect(getAuthContext(headers)).toEqual({
+      userId: null,
+      role  : AppRole.ADMIN
+    });
+  });
+
+  it("keeps viewer when cookie token is invalid", () => {
+    process.env.JWT_SECRET = "unit-test-secret";
+    const headers = new Headers({
+      cookie: "token=bad-token"
+    });
+
+    expect(getAuthContext(headers)).toEqual({
+      userId: null,
+      role  : AppRole.VIEWER
     });
   });
 });
 
 describe("requireAdmin", () => {
+  it("allows admin role without throwing", () => {
+    expect(() => requireAdmin({ userId: "user-1", role: AppRole.ADMIN })).not.toThrow();
+  });
+
   it("throws forbidden when current role is viewer", () => {
-    expect(() => requireAdmin({ userId: null, role: "viewer" })).toThrowError(
+    expect(() => requireAdmin({ userId: null, role: AppRole.VIEWER })).toThrowError(
       new AuthError(ERROR_CODES.AUTH_FORBIDDEN, "当前用户没有管理员权限")
     );
   });
 });
 
 describe("sanitizeRedirectPath", () => {
+  it("falls back to root when redirect is nullish", () => {
+    expect(sanitizeRedirectPath(null)).toBe("/");
+    expect(sanitizeRedirectPath(undefined)).toBe("/");
+  });
+
   it("keeps in-site path and query", () => {
     expect(sanitizeRedirectPath("/admin/model?tab=keys")).toBe("/admin/model?tab=keys");
   });
@@ -67,7 +133,7 @@ describe("auth token", () => {
     const payload = verifyAuthToken(token, 1_700_000_100);
 
     expect(payload).toEqual({
-      role: "admin",
+      role: AppRole.ADMIN,
       iat : 1_700_000_000,
       exp : 1_700_000_000 + AUTH_TOKEN_TTL_SECONDS
     });
@@ -95,7 +161,7 @@ describe("authenticateAdmin", () => {
           email   : "admin@example.com",
           name    : "管理员",
           password: await (await import("./password")).hashPassword("secret-123"),
-          role    : "ADMIN",
+          role    : AppRole.ADMIN,
           isActive: true
         }),
         update
@@ -112,7 +178,7 @@ describe("authenticateAdmin", () => {
       username: "admin",
       email   : "admin@example.com",
       name    : "管理员",
-      role    : "admin"
+      role    : AppRole.ADMIN
     });
     expect(update).toHaveBeenCalledOnce();
   });
@@ -126,7 +192,7 @@ describe("authenticateAdmin", () => {
           email   : "admin@example.com",
           name    : "管理员",
           password: await (await import("./password")).hashPassword("secret-123"),
-          role    : "ADMIN",
+          role    : AppRole.ADMIN,
           isActive: true
         }),
         update: vi.fn()
@@ -135,6 +201,30 @@ describe("authenticateAdmin", () => {
 
     await expect(
       authenticateAdmin({ identifier: "admin@example.com", password: "wrong-password" }, prismaClient)
+    ).rejects.toMatchObject({
+      code   : ERROR_CODES.AUTH_UNAUTHORIZED,
+      message: "账号或密码错误"
+    });
+  });
+
+  it("throws unified unauthorized error when user is not admin role", async () => {
+    const prismaClient = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          id      : "user-2",
+          username: "viewer-user",
+          email   : "viewer@example.com",
+          name    : "只读用户",
+          password: await (await import("./password")).hashPassword("secret-123"),
+          role    : AppRole.VIEWER,
+          isActive: true
+        }),
+        update: vi.fn()
+      }
+    } as never;
+
+    await expect(
+      authenticateAdmin({ identifier: "viewer@example.com", password: "secret-123" }, prismaClient)
     ).rejects.toMatchObject({
       code   : ERROR_CODES.AUTH_UNAUTHORIZED,
       message: "账号或密码错误"

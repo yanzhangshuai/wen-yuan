@@ -1,10 +1,10 @@
-# 文渊开发任务清单 v1.0
+# 文渊开发任务清单 v1.1
 
 > 目标：把主 PRD v1.1 拆成一份可直接开工、可逐项勾选、可映射到代码目录的开发任务文档。  
 > 来源文档：  
 > - [主 PRD](/home/mwjz/code/wen-yuan/.trellis/tasks/03-23-wen-yuan-prd/prd.md)  
 > - [PRD 与代码对齐分析](/home/mwjz/code/wen-yuan/.trellis/tasks/03-24-prd-code-alignment/prd.md)  
-> 日期：2026-03-24
+> 日期：2026-03-25
 
 ---
 
@@ -46,6 +46,7 @@
 - 书籍导入主链路
 - 全书解析任务编排
 - 审核页与原文阅读页能力
+- `src/server/providers/storage/*` 统一静态资源抽象层
 
 ---
 
@@ -56,6 +57,7 @@
 3. 页面、接口、数据、任务编排必须同步推进，避免只做 UI 壳或只做底层服务。
 4. 任何涉及证据链、审核、原文跳转的能力，必须先定义数据锚点。
 5. 所有管理员能力统一走 `/admin/*` 与 `requireAdmin(auth)` 口径。
+6. 原始书籍文件、封面图与后续图片资源统一走 Storage Provider，不允许业务模块直接操作物理路径。
 
 ---
 
@@ -82,6 +84,7 @@ src/app/
   api/books/[id]/personas/route.ts
   api/books/[id]/relationships/route.ts
   api/books/[id]/chapters/[chapterId]/read/route.ts
+  api/assets/[...key]/route.ts
   api/personas/[id]/route.ts
   api/personas/[id]/biography/route.ts
   api/personas/merge/route.ts
@@ -107,11 +110,13 @@ src/server/
   modules/reader/
   modules/auth/
   modules/analysis/
+  providers/storage/
 ```
 
 说明：
 
 - `src/server/modules/auth/` 与 `src/server/modules/analysis/` 继续复用现有实现
+- `src/server/providers/storage/` 参照 `src/server/providers/ai/` 的组织方式，先做 `local`，后续扩展 `oss`
 - 本轮新增模块优先按“领域模块”组织，而不是把业务写进 Route Handler
 - Route Handler 只负责参数校验、鉴权、调用模块、统一响应
 
@@ -127,10 +132,32 @@ src/server/
 
 - 图谱内联校对
 - 手动人物管理
-- 重解析粒度
+- 重解析冲突仲裁与模型对比
+- 阿里云 OSS Provider
 - Neo4j 路径查找
 - 3D 与沉浸式视觉精修
 - Canvas / 语义缩放 / Worker
+
+### 5.3 MVP v1.1 冻结范围（本轮默认）
+
+以下能力按“必须交付”执行，除非另有明确变更指令：
+
+1. `.txt` 导入
+2. 元数据确认
+3. 章节切分预览
+4. 全书解析任务
+5. 书库列表
+6. 单书图谱浏览
+7. 管理员审核队列
+8. 原文阅读 / 高亮回跳
+9. 合并建议队列
+10. 重解析粒度（单章 / 整书 / 指定模型 / 覆盖策略 / 版本策略）
+11. 模型设置联通性测试与 API Key 脱敏展示
+12. 书库卡片数据来源说明
+
+说明：
+
+- 3D、Neo4j、沉浸式图谱仍是正式需求，不删除，只放在增强阶段按顺序交付
 
 ---
 
@@ -147,6 +174,11 @@ src/server/
   - `User`
   - `AiModel`
   - `AnalysisJob`
+  - `Book.sourceFileUrl`
+  - `Book.sourceFileKey`
+  - `Book.sourceFileName`
+  - `Book.sourceFileMime`
+  - `Book.sourceFileSize`
   - `Persona.nameType`
   - `Persona.recordSource`
   - `Persona.aliases`
@@ -161,6 +193,18 @@ src/server/
   - 初始管理员 seed
   - 默认模型 seed
   - 基础演示数据 seed
+- [ ] 新建 `src/server/providers/storage/`
+  - `index.ts`
+  - `storage.types.ts`
+  - `localStorageProvider.ts`
+  - `index.test.ts`
+- [ ] 新建资源访问路由
+  - `GET /api/assets/:key*` 通过 Storage Provider 返回文件流
+  - 不暴露服务器绝对路径
+- [ ] 约定环境变量
+  - `STORAGE_PROVIDER`
+  - `STORAGE_LOCAL_ROOT`
+  - `STORAGE_PUBLIC_BASE_URL`
 
 **鉴权任务**
 
@@ -263,6 +307,8 @@ src/server/
 
 - [ ] 新建 `src/server/modules/books/`
 - [ ] 实现上传入库服务
+  - 调用 Storage Provider 保存原始 `.txt`
+  - 回填 `Book.sourceFileUrl`、`sourceFileKey`、`sourceFileName`、`sourceFileMime`、`sourceFileSize`
 - [ ] 实现元数据识别服务
 - [ ] 实现章节切分服务
   - 正则切分
@@ -270,6 +316,10 @@ src/server/
   - 手动修正结构
 - [ ] 实现书籍列表查询服务
 - [ ] 实现书籍详情查询服务
+- [ ] 约定本地对象路径
+  - `storage/books/<bookId>/source/...`
+  - `storage/books/<bookId>/cover/...`
+  - `storage/books/<bookId>/images/...`
 
 **API 任务**
 
@@ -282,6 +332,7 @@ src/server/
 
 - [ ] 首页能展示真实书库数据
 - [ ] `.txt` 能上传并入库
+- [ ] 原始 `.txt` 已写入统一存储位置，而不是只存在数据库
 - [ ] 书名 AI 识别失败时回退文件名
 - [ ] 用户能在预览表格中修正章节切分
 
@@ -606,6 +657,8 @@ src/server/
 - [ ] API Key 全链路脱敏
 - [ ] JWT 只包含最小字段
 - [ ] `redirect` 参数校验为站内路径
+- [ ] 资源接口与日志不暴露服务器物理路径
+- [ ] 存储主键以 `sourceFileKey` 为准，URL 视为可派生字段
 
 ---
 
@@ -613,7 +666,7 @@ src/server/
 
 1. 没有 Phase 1，就无法安全推进 `/admin/*`、模型设置和审核页。
 2. 没有 Phase 2，就无法让导入流程真正可运行。
-3. 没有 Phase 3，就没有稳定的书籍入库基础。
+3. 没有 Phase 3，就没有稳定的书籍入库基础，也没有统一静态资源存储落点。
 4. 没有 Phase 4，就无法形成“整书解析任务 + 书库状态联动”闭环。
 5. 没有 Phase 5，就无法支撑原文阅读 / 高亮回跳 / 审核证据链。
 6. 没有 Phase 6 和 7，AI 质量无法形成可维护闭环。
@@ -638,24 +691,53 @@ src/server/
 
 ---
 
-## 十、首批开工包（建议本周）
+## 十、中断续跑机制（支持跨天继续）
 
-如果要立刻开始开发，建议先开这 10 个子任务：
+为了适配“随时可能因 token 限额或时间中断”的开发节奏，执行时统一遵循：
+
+1. 一个 ticket 最多连续推进 90 分钟；超时就先做检查点并暂停
+2. 每次暂停前必须更新 ticket 状态：`[ ]` / `[~]` / `[x]`
+3. 每次暂停前必须写 4 条检查点：
+   - 已改文件
+   - 已完成验收项
+   - 未完成验收项
+   - 下一步第一条命令或第一步动作
+4. 恢复时先读上次检查点，再继续，不重做已验证内容
+5. 涉及迁移或数据脚本时，检查点必须补“当前数据库状态”（已迁移到哪一步、是否已 seed）
+
+建议固定使用 5 票一组的批次节奏：
+
+- Batch A：`T001`-`T005`
+- Batch B：`T006`-`T010`
+- Batch C：`T011`-`T015`
+- Batch D：`T016`-`T020`
+- Batch E：`T021`-`T025`
+- Batch F：`T026`-`T030`
+- Batch G：`T031`-`T035`
+- Batch H：`T036`-`T040`
+- Batch I：`T041`-`T042` + 回归补票
+
+---
+
+## 十一、首批开工包（建议本周）
+
+如果要立刻开始开发，建议先开这 11 个子任务：
 
 1. `prisma/schema.prisma` 与 `prisma/seed.ts` 对齐 PRD
 2. `middleware.ts` + `/login` + `/api/auth/login`
 3. `/admin/layout.tsx` + `/admin/page.tsx`
 4. `/admin/model` 页面与模型 API
 5. 首页书库列表替换 `src/app/page.tsx`
-6. `POST /api/books` 与 `.txt` 导入
-7. 章节切分预览服务
-8. `POST /api/books/:id/analyze` 全书任务编排
-9. `/books/[id]/graph` 页面骨架 + `/api/books/:id/graph`
-10. `/admin/review` 页面骨架 + `/api/admin/drafts`
+6. `src/server/providers/storage/*` 与本地文件系统 Provider
+7. `POST /api/books` 与 `.txt` 导入
+8. 章节切分预览服务
+9. `POST /api/books/:id/analyze` 全书任务编排
+10. `/books/[id]/graph` 页面骨架 + `/api/books/:id/graph`
+11. `/admin/review` 页面骨架 + `/api/admin/drafts`
 
 ---
 
-## 十一、完成标记规则
+## 十二、完成标记规则
 
 任务勾选规则建议统一为：
 
@@ -667,4 +749,3 @@ src/server/
 
 - 只有“代码 + 页面 / API + 基本测试 + 手动验收”都完成后，才允许改成 `[x]`
 - 单纯建了文件壳、写了假数据页面，不算完成
-

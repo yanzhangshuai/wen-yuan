@@ -50,9 +50,7 @@ stage: mvp
 - 请求校验与数据归一化不要放在 UI hooks 中。
 - 涉及变更流程时，在 UI 中明确表达 pending/success/error 状态。
 
-真实示例：
-- API 请求校验边界：`src/app/api/analyze/route.ts`
-- Server Action 边界：`src/server/actions/analysis.ts`
+> 数据请求策略（`use()` / SWR 轮询 / Server Actions）的完整规则见 `.trellis/spec/frontend/react-guidelines.md`。
 
 ---
 

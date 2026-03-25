@@ -1,13 +1,19 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import type { PrismaClient } from "@/generated/prisma/client";
+import { AppRole } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { ERROR_CODES, type ErrorCode } from "@/types/api";
 
+import {
+  AUTH_ADMIN_ROLE,
+  AUTH_COOKIE_NAME,
+  AUTH_TOKEN_TTL_SECONDS,
+  AUTH_VIEWER_ROLE,
+  type AuthRole,
+  type AuthTokenPayload
+} from "./constants";
 import { verifyPassword } from "./password";
-
-export const AUTH_COOKIE_NAME = "token";
-export const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const JWT_HEADER = {
   alg: "HS256",
@@ -16,13 +22,7 @@ const JWT_HEADER = {
 
 export interface AuthContext {
   userId: string | null;
-  role  : "admin" | "viewer";
-}
-
-export interface AuthTokenPayload {
-  role: "admin";
-  iat : number;
-  exp : number;
+  role  : AuthRole;
 }
 
 export interface LoginInput {
@@ -35,7 +35,7 @@ export interface AuthenticatedAdminUser {
   username: string;
   email   : string;
   name    : string;
-  role    : "admin";
+  role    : typeof AUTH_ADMIN_ROLE;
 }
 
 export class AuthError extends Error {
@@ -66,15 +66,38 @@ export function sanitizeRedirectPath(redirect: string | null | undefined): strin
 export function getAuthContext(headers: Headers): AuthContext {
   const roleHeader = headers.get("x-auth-role");
   const userIdHeader = headers.get("x-auth-user-id");
+  const token = readCookieValue(headers.get("cookie"), AUTH_COOKIE_NAME);
+  const payload = token ? verifyAuthToken(token) : null;
+
+  if (roleHeader === AUTH_ADMIN_ROLE) {
+    return {
+      userId: userIdHeader,
+      role  : AUTH_ADMIN_ROLE
+    };
+  }
+
+  if (payload?.role === AUTH_ADMIN_ROLE) {
+    return {
+      userId: userIdHeader,
+      role  : AUTH_ADMIN_ROLE
+    };
+  }
+
+  if (roleHeader === AUTH_VIEWER_ROLE) {
+    return {
+      userId: userIdHeader,
+      role  : AUTH_VIEWER_ROLE
+    };
+  }
 
   return {
     userId: userIdHeader,
-    role  : roleHeader === "admin" ? "admin" : "viewer"
+    role  : AUTH_VIEWER_ROLE
   };
 }
 
 export function requireAdmin(auth: AuthContext): void {
-  if (auth.role !== "admin") {
+  if (auth.role !== AUTH_ADMIN_ROLE) {
     throw new AuthError(ERROR_CODES.AUTH_FORBIDDEN, "当前用户没有管理员权限");
   }
 }
@@ -92,7 +115,7 @@ export async function authenticateAdmin(
     }
   });
 
-  if (!user || !user.isActive || user.role !== "ADMIN") {
+  if (!user || !user.isActive || user.role !== AppRole.ADMIN) {
     throw new AuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误");
   }
 
@@ -111,13 +134,13 @@ export async function authenticateAdmin(
     username: user.username,
     email   : user.email,
     name    : user.name,
-    role    : "admin"
+    role    : AUTH_ADMIN_ROLE
   };
 }
 
 export function issueAuthToken(now = Math.floor(Date.now() / 1000)): string {
   const payload: AuthTokenPayload = {
-    role: "admin",
+    role: AUTH_ADMIN_ROLE,
     iat : now,
     exp : now + AUTH_TOKEN_TTL_SECONDS
   };
@@ -138,7 +161,7 @@ export function verifyAuthToken(token: string, now = Math.floor(Date.now() / 100
   }
 
   const payload = decodeSegment<AuthTokenPayload>(encodedPayload);
-  if (!payload || payload.role !== "admin") {
+  if (!payload || payload.role !== AUTH_ADMIN_ROLE) {
     return null;
   }
 
@@ -194,4 +217,39 @@ function safeEqual(left: string, right: string): boolean {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+function readCookieValue(cookieHeader: string | null, cookieName: string): string | null {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const items = cookieHeader.split(";");
+  for (const item of items) {
+    const [namePart, ...valueParts] = item.split("=");
+    const name = namePart?.trim();
+    if (name !== cookieName) {
+      continue;
+    }
+
+    const rawValue = valueParts.join("=").trim();
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      return decodeURIComponent(rawValue);
+    } catch {
+      return rawValue;
+    }
+  }
+
+  return null;
+}
+
+export {
+  AUTH_ADMIN_ROLE,
+  AUTH_COOKIE_NAME,
+  AUTH_TOKEN_TTL_SECONDS,
+  AUTH_VIEWER_ROLE
+} from "./constants";
+export type { AuthRole, AuthTokenPayload } from "./constants";
 export { hashPassword, verifyPassword } from "./password";

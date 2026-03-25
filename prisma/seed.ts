@@ -2,7 +2,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import argon2 from 'argon2';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { PrismaClient, PersonaType, ChapterType } from '../src/generated/prisma/client.ts';
+import { PrismaClient, PersonaType, ChapterType, AppRole } from '../src/generated/prisma/client.ts';
 
 /**
  * Prisma CLI 直接执行 seed 脚本时不会自动注入 dotenv。
@@ -149,14 +149,14 @@ async function main() {
         email: adminEmailValue,
         name: adminName,
         password: adminPasswordHash,
-        role: 'ADMIN',
+        role: AppRole.ADMIN,
       },
       create: {
         username: adminUsernameValue,
         email: adminEmailValue,
         name: adminName,
         password: adminPasswordHash,
-        role: 'ADMIN',
+        role: AppRole.ADMIN,
       },
     });
 

@@ -67,7 +67,8 @@ export function decryptValue(cipherText: string): string {
     return cipherText;
   }
 
-  const [prefix, ivEncoded, tagEncoded, payloadEncoded] = cipherText.split(":");
+  const [prefixHead, prefixVersion, ivEncoded, tagEncoded, payloadEncoded] = cipherText.split(":");
+  const prefix = prefixHead && prefixVersion ? `${prefixHead}:${prefixVersion}` : "";
   if (prefix !== ENCRYPTED_VALUE_PREFIX || !ivEncoded || !tagEncoded || !payloadEncoded) {
     throw new Error("Invalid encrypted payload format");
   }

@@ -121,6 +121,34 @@ export default function DashboardPage() {
 - 在组件渲染期使用 `useEffect + setState` 做首次数据拉取。
 - 在 Client Component 渲染函数内创建不稳定 Promise 再传给 `use()`。
 - 同一功能中混用 `await` 渲染读取和 `use()` 渲染读取。
+- 使用 SWR（`useSWR`）做首屏渲染数据加载（该场景已由 `use()` + Suspense 覆盖）。
+
+---
+
+## 客户端轮询（SWR）
+
+**轮询不属于渲染期数据读取**——状态变化驱动（如解析进度）属于客户端事件，使用 SWR `refreshInterval`。
+
+SWR 使用范围严格限定：
+- ✅ `refreshInterval` 条件轮询（回调返回 `0` 停止）
+- ❌ 首屏数据加载（改用 `use()` + Suspense）
+
+```tsx
+"use client";
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data);
+
+export function AnalysisProgress({ bookId }: { bookId: string }) {
+  const { data } = useSWR(`/api/books/${bookId}/status`, fetcher, {
+    refreshInterval: (data) =>
+      data?.status === "COMPLETED" || data?.status === "ERROR" ? 0 : 2000,
+  });
+  return <span>{data?.status ?? "PROCESSING"}</span>;
+}
+```
+
+不引入 TanStack Query。
 
 ---
 

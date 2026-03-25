@@ -27,10 +27,12 @@ export type AggregateBook = {
 }
 
 export type BookAvgAggregateOutputType = {
+  sourceFileSize: number | null
   parseProgress: number | null
 }
 
 export type BookSumAggregateOutputType = {
+  sourceFileSize: number | null
   parseProgress: number | null
 }
 
@@ -41,6 +43,11 @@ export type BookMinAggregateOutputType = {
   dynasty: string | null
   description: string | null
   coverUrl: string | null
+  sourceFileKey: string | null
+  sourceFileUrl: string | null
+  sourceFileName: string | null
+  sourceFileMime: string | null
+  sourceFileSize: number | null
   status: string | null
   errorLog: string | null
   parseProgress: number | null
@@ -58,6 +65,11 @@ export type BookMaxAggregateOutputType = {
   dynasty: string | null
   description: string | null
   coverUrl: string | null
+  sourceFileKey: string | null
+  sourceFileUrl: string | null
+  sourceFileName: string | null
+  sourceFileMime: string | null
+  sourceFileSize: number | null
   status: string | null
   errorLog: string | null
   parseProgress: number | null
@@ -75,6 +87,11 @@ export type BookCountAggregateOutputType = {
   dynasty: number
   description: number
   coverUrl: number
+  sourceFileKey: number
+  sourceFileUrl: number
+  sourceFileName: number
+  sourceFileMime: number
+  sourceFileSize: number
   status: number
   errorLog: number
   parseProgress: number
@@ -88,10 +105,12 @@ export type BookCountAggregateOutputType = {
 
 
 export type BookAvgAggregateInputType = {
+  sourceFileSize?: true
   parseProgress?: true
 }
 
 export type BookSumAggregateInputType = {
+  sourceFileSize?: true
   parseProgress?: true
 }
 
@@ -102,6 +121,11 @@ export type BookMinAggregateInputType = {
   dynasty?: true
   description?: true
   coverUrl?: true
+  sourceFileKey?: true
+  sourceFileUrl?: true
+  sourceFileName?: true
+  sourceFileMime?: true
+  sourceFileSize?: true
   status?: true
   errorLog?: true
   parseProgress?: true
@@ -119,6 +143,11 @@ export type BookMaxAggregateInputType = {
   dynasty?: true
   description?: true
   coverUrl?: true
+  sourceFileKey?: true
+  sourceFileUrl?: true
+  sourceFileName?: true
+  sourceFileMime?: true
+  sourceFileSize?: true
   status?: true
   errorLog?: true
   parseProgress?: true
@@ -136,6 +165,11 @@ export type BookCountAggregateInputType = {
   dynasty?: true
   description?: true
   coverUrl?: true
+  sourceFileKey?: true
+  sourceFileUrl?: true
+  sourceFileName?: true
+  sourceFileMime?: true
+  sourceFileSize?: true
   status?: true
   errorLog?: true
   parseProgress?: true
@@ -240,6 +274,11 @@ export type BookGroupByOutputType = {
   dynasty: string | null
   description: string | null
   coverUrl: string | null
+  sourceFileKey: string | null
+  sourceFileUrl: string | null
+  sourceFileName: string | null
+  sourceFileMime: string | null
+  sourceFileSize: number | null
   status: string
   errorLog: string | null
   parseProgress: number
@@ -280,6 +319,11 @@ export type BookWhereInput = {
   dynasty?: Prisma.StringNullableFilter<"Book"> | string | null
   description?: Prisma.StringNullableFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileKey?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileName?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileMime?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileSize?: Prisma.IntNullableFilter<"Book"> | number | null
   status?: Prisma.StringFilter<"Book"> | string
   errorLog?: Prisma.StringNullableFilter<"Book"> | string | null
   parseProgress?: Prisma.IntFilter<"Book"> | number
@@ -301,6 +345,11 @@ export type BookOrderByWithRelationInput = {
   dynasty?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileName?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileMime?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileSize?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
@@ -325,6 +374,11 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   dynasty?: Prisma.StringNullableFilter<"Book"> | string | null
   description?: Prisma.StringNullableFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileKey?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileName?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileMime?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileSize?: Prisma.IntNullableFilter<"Book"> | number | null
   status?: Prisma.StringFilter<"Book"> | string
   errorLog?: Prisma.StringNullableFilter<"Book"> | string | null
   parseProgress?: Prisma.IntFilter<"Book"> | number
@@ -346,6 +400,11 @@ export type BookOrderByWithAggregationInput = {
   dynasty?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileName?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileMime?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFileSize?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
@@ -371,6 +430,11 @@ export type BookScalarWhereWithAggregatesInput = {
   dynasty?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  sourceFileKey?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  sourceFileUrl?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  sourceFileName?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  sourceFileMime?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  sourceFileSize?: Prisma.IntNullableWithAggregatesFilter<"Book"> | number | null
   status?: Prisma.StringWithAggregatesFilter<"Book"> | string
   errorLog?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   parseProgress?: Prisma.IntWithAggregatesFilter<"Book"> | number
@@ -388,6 +452,11 @@ export type BookCreateInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -408,6 +477,11 @@ export type BookUncheckedCreateInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -428,6 +502,11 @@ export type BookUpdateInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -448,6 +527,11 @@ export type BookUncheckedUpdateInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -468,6 +552,11 @@ export type BookCreateManyInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -485,6 +574,11 @@ export type BookUpdateManyMutationInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -501,6 +595,11 @@ export type BookUncheckedUpdateManyInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -528,6 +627,11 @@ export type BookCountOrderByAggregateInput = {
   dynasty?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
+  sourceFileKey?: Prisma.SortOrder
+  sourceFileUrl?: Prisma.SortOrder
+  sourceFileName?: Prisma.SortOrder
+  sourceFileMime?: Prisma.SortOrder
+  sourceFileSize?: Prisma.SortOrder
   status?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
@@ -539,6 +643,7 @@ export type BookCountOrderByAggregateInput = {
 }
 
 export type BookAvgOrderByAggregateInput = {
+  sourceFileSize?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
 }
 
@@ -549,6 +654,11 @@ export type BookMaxOrderByAggregateInput = {
   dynasty?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
+  sourceFileKey?: Prisma.SortOrder
+  sourceFileUrl?: Prisma.SortOrder
+  sourceFileName?: Prisma.SortOrder
+  sourceFileMime?: Prisma.SortOrder
+  sourceFileSize?: Prisma.SortOrder
   status?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
@@ -566,6 +676,11 @@ export type BookMinOrderByAggregateInput = {
   dynasty?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
+  sourceFileKey?: Prisma.SortOrder
+  sourceFileUrl?: Prisma.SortOrder
+  sourceFileName?: Prisma.SortOrder
+  sourceFileMime?: Prisma.SortOrder
+  sourceFileSize?: Prisma.SortOrder
   status?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
@@ -577,6 +692,7 @@ export type BookMinOrderByAggregateInput = {
 }
 
 export type BookSumOrderByAggregateInput = {
+  sourceFileSize?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
 }
 
@@ -625,6 +741,14 @@ export type BookUncheckedUpdateManyWithoutAiModelNestedInput = {
   update?: Prisma.BookUpdateWithWhereUniqueWithoutAiModelInput | Prisma.BookUpdateWithWhereUniqueWithoutAiModelInput[]
   updateMany?: Prisma.BookUpdateManyWithWhereWithoutAiModelInput | Prisma.BookUpdateManyWithWhereWithoutAiModelInput[]
   deleteMany?: Prisma.BookScalarWhereInput | Prisma.BookScalarWhereInput[]
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -684,6 +808,11 @@ export type BookCreateWithoutAiModelInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -703,6 +832,11 @@ export type BookUncheckedCreateWithoutAiModelInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -751,6 +885,11 @@ export type BookScalarWhereInput = {
   dynasty?: Prisma.StringNullableFilter<"Book"> | string | null
   description?: Prisma.StringNullableFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileKey?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileName?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileMime?: Prisma.StringNullableFilter<"Book"> | string | null
+  sourceFileSize?: Prisma.IntNullableFilter<"Book"> | number | null
   status?: Prisma.StringFilter<"Book"> | string
   errorLog?: Prisma.StringNullableFilter<"Book"> | string | null
   parseProgress?: Prisma.IntFilter<"Book"> | number
@@ -768,6 +907,11 @@ export type BookCreateWithoutChaptersInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -787,6 +931,11 @@ export type BookUncheckedCreateWithoutChaptersInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -822,6 +971,11 @@ export type BookUpdateWithoutChaptersInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -841,6 +995,11 @@ export type BookUncheckedUpdateWithoutChaptersInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -860,6 +1019,11 @@ export type BookCreateWithoutProfilesInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -879,6 +1043,11 @@ export type BookUncheckedCreateWithoutProfilesInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -914,6 +1083,11 @@ export type BookUpdateWithoutProfilesInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -933,6 +1107,11 @@ export type BookUncheckedUpdateWithoutProfilesInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -952,6 +1131,11 @@ export type BookCreateWithoutAnalysisJobsInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -971,6 +1155,11 @@ export type BookUncheckedCreateWithoutAnalysisJobsInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -1006,6 +1195,11 @@ export type BookUpdateWithoutAnalysisJobsInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1025,6 +1219,11 @@ export type BookUncheckedUpdateWithoutAnalysisJobsInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1044,6 +1243,11 @@ export type BookCreateManyAiModelInput = {
   dynasty?: string | null
   description?: string | null
   coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
   status?: string
   errorLog?: string | null
   parseProgress?: number
@@ -1060,6 +1264,11 @@ export type BookUpdateWithoutAiModelInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1079,6 +1288,11 @@ export type BookUncheckedUpdateWithoutAiModelInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1098,6 +1312,11 @@ export type BookUncheckedUpdateManyWithoutAiModelInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1163,6 +1382,11 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   dynasty?: boolean
   description?: boolean
   coverUrl?: boolean
+  sourceFileKey?: boolean
+  sourceFileUrl?: boolean
+  sourceFileName?: boolean
+  sourceFileMime?: boolean
+  sourceFileSize?: boolean
   status?: boolean
   errorLog?: boolean
   parseProgress?: boolean
@@ -1185,6 +1409,11 @@ export type BookSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   dynasty?: boolean
   description?: boolean
   coverUrl?: boolean
+  sourceFileKey?: boolean
+  sourceFileUrl?: boolean
+  sourceFileName?: boolean
+  sourceFileMime?: boolean
+  sourceFileSize?: boolean
   status?: boolean
   errorLog?: boolean
   parseProgress?: boolean
@@ -1203,6 +1432,11 @@ export type BookSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   dynasty?: boolean
   description?: boolean
   coverUrl?: boolean
+  sourceFileKey?: boolean
+  sourceFileUrl?: boolean
+  sourceFileName?: boolean
+  sourceFileMime?: boolean
+  sourceFileSize?: boolean
   status?: boolean
   errorLog?: boolean
   parseProgress?: boolean
@@ -1221,6 +1455,11 @@ export type BookSelectScalar = {
   dynasty?: boolean
   description?: boolean
   coverUrl?: boolean
+  sourceFileKey?: boolean
+  sourceFileUrl?: boolean
+  sourceFileName?: boolean
+  sourceFileMime?: boolean
+  sourceFileSize?: boolean
   status?: boolean
   errorLog?: boolean
   parseProgress?: boolean
@@ -1231,7 +1470,7 @@ export type BookSelectScalar = {
   updatedAt?: boolean
 }
 
-export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "description" | "coverUrl" | "status" | "errorLog" | "parseProgress" | "parseStage" | "rawContent" | "aiModelId" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
+export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "description" | "coverUrl" | "sourceFileKey" | "sourceFileUrl" | "sourceFileName" | "sourceFileMime" | "sourceFileSize" | "status" | "errorLog" | "parseProgress" | "parseStage" | "rawContent" | "aiModelId" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
 export type BookInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   aiModel?: boolean | Prisma.Book$aiModelArgs<ExtArgs>
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
@@ -1261,6 +1500,11 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     dynasty: string | null
     description: string | null
     coverUrl: string | null
+    sourceFileKey: string | null
+    sourceFileUrl: string | null
+    sourceFileName: string | null
+    sourceFileMime: string | null
+    sourceFileSize: number | null
     status: string
     errorLog: string | null
     parseProgress: number
@@ -1702,6 +1946,11 @@ export interface BookFieldRefs {
   readonly dynasty: Prisma.FieldRef<"Book", 'String'>
   readonly description: Prisma.FieldRef<"Book", 'String'>
   readonly coverUrl: Prisma.FieldRef<"Book", 'String'>
+  readonly sourceFileKey: Prisma.FieldRef<"Book", 'String'>
+  readonly sourceFileUrl: Prisma.FieldRef<"Book", 'String'>
+  readonly sourceFileName: Prisma.FieldRef<"Book", 'String'>
+  readonly sourceFileMime: Prisma.FieldRef<"Book", 'String'>
+  readonly sourceFileSize: Prisma.FieldRef<"Book", 'Int'>
   readonly status: Prisma.FieldRef<"Book", 'String'>
   readonly errorLog: Prisma.FieldRef<"Book", 'String'>
   readonly parseProgress: Prisma.FieldRef<"Book", 'Int'>

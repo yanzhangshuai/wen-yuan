@@ -535,14 +535,6 @@ export type MentionUncheckedUpdateManyWithoutPersonaNestedInput = {
   deleteMany?: Prisma.MentionScalarWhereInput | Prisma.MentionScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type MentionCreateWithoutChapterInput = {
   id?: string
   rawText: string

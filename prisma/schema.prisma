@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// 《万卷归宗：跨书籍通用文学知识图谱系统》核心数据库定义
+// 《通用文学知识图谱系统》核心数据库定义
 // -----------------------------------------------------------------------------
 
 generator client {
@@ -132,12 +132,17 @@ model AiModel {
 
 /// @db.remark: 书籍/作品库。系统的顶层容器，支持跨作品的人物对比。
 model Book {
-  id            String  @id @default(uuid()) @db.Uuid // 书籍主键
-  title         String // 书名，如《儒林外史》
-  author        String? // 作者，如"吴敬梓"
-  dynasty       String? // 背景朝代
-  description   String? @db.Text // 作品简介
-  coverUrl      String? @map("cover_url") // 3D 看板所需的封面图
+  id             String  @id @default(uuid()) @db.Uuid // 书籍主键
+  title          String // 书名，如《儒林外史》
+  author         String? // 作者，如"吴敬梓"
+  dynasty        String? // 背景朝代
+  description    String? @db.Text // 作品简介
+  coverUrl       String? @map("cover_url") // 3D 看板所需的封面图
+  sourceFileKey  String? @map("source_file_key") // 原始导入文件的对象存储 key
+  sourceFileUrl  String? @map("source_file_url") // 原始导入文件的可访问链接
+  sourceFileName String? @map("source_file_name") // 用户上传时的原始文件名
+  sourceFileMime String? @map("source_file_mime") // 原始文件 MIME 类型
+  sourceFileSize Int?    @map("source_file_size") // 原始文件字节数
   // PENDING (初始), PROCESSING (解析中), COMPLETED (完成), ERROR (失败)
   status        String  @default("PENDING") // 当前处理状态
   errorLog      String? @map("error_log") @db.Text // 最近失败日志
