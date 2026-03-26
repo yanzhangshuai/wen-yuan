@@ -9,9 +9,9 @@ import { OpenAiCompatibleClient } from "@/server/providers/ai/openaiCompatibleCl
  */
 export class DoubaoClient extends OpenAiCompatibleClient {
   constructor(
-    apiKey = process.env.DOUBAO_API_KEY,
-    baseUrl = process.env.DOUBAO_BASE_URL ?? "https://ark.cn-beijing.volces.com/api/v3",
-    modelName = process.env.DOUBAO_MODEL ?? "doubao-pro"
+    apiKey: string,
+    baseUrl = "https://ark.cn-beijing.volces.com/api/v3",
+    modelName = "doubao-pro"
   ) {
     super({
       providerName: "Doubao",

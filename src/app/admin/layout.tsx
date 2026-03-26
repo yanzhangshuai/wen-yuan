@@ -1,50 +1,35 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { AdminHeader } from "@/components/layout/admin-header";
+import { AUTH_ADMIN_ROLE, getAuthContext, sanitizeRedirectPath } from "@/server/modules/auth";
 
-import {
-  AUTH_ADMIN_ROLE,
-  getAuthContext,
-  sanitizeRedirectPath
-} from "@/server/modules/auth";
-
-interface AdminLayoutProps {
-  children: React.ReactNode;
-}
+export const metadata: Metadata = {
+  title: {
+    default : "管理后台",
+    template: "%s — 文渊管理"
+  },
+  robots: { index: false, follow: false }
+};
 
 export default async function AdminLayout({
   children
-}: AdminLayoutProps) {
+}: {
+  children: React.ReactNode;
+}) {
   const requestHeaders = await headers();
-  const auth = getAuthContext(requestHeaders);
-  const currentPath = sanitizeRedirectPath(
-    requestHeaders.get("x-auth-current-path") ?? "/admin"
-  );
-  const loginRedirectTarget = `/login?redirect=${encodeURIComponent(currentPath)}`;
+  const auth = await getAuthContext(requestHeaders);
 
   if (auth.role !== AUTH_ADMIN_ROLE) {
-    redirect(loginRedirectTarget);
+    const headerPath = requestHeaders.get("x-auth-current-path");
+    const currentPath = sanitizeRedirectPath(headerPath) || "/admin";
+    redirect(`/login?redirect=${encodeURIComponent(currentPath)}`);
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a" }}>
-      <header style={{
-        display       : "flex",
-        alignItems    : "center",
-        justifyContent: "space-between",
-        padding       : "16px 24px",
-        borderBottom  : "1px solid #e2e8f0",
-        background    : "#ffffff"
-      }}
-      >
-        <div style={{ fontSize: 18, fontWeight: 700 }}>管理后台</div>
-        <nav style={{ display: "flex", gap: 16 }}>
-          <Link href="/admin">管理中心</Link>
-          <Link href="/admin/review">审核队列</Link>
-          <Link href="/admin/model">模型设置</Link>
-        </nav>
-      </header>
-      <main style={{ padding: 24 }}>
+    <div className="flex flex-col min-h-screen bg-(--color-admin-content-bg)">
+      <AdminHeader />
+      <main className="flex-1 w-full max-w-360 mx-auto px-6 py-6 pt-18">
         {children}
       </main>
     </div>

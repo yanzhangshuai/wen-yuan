@@ -7,7 +7,7 @@ import { POST } from "./route";
 describe("POST /api/auth/logout", () => {
   it("returns success payload and clears auth cookie", async () => {
     // Act
-    const response = await POST();
+    const response = POST();
     const payload = await response.json();
     const setCookie = response.headers.get("set-cookie");
 
@@ -21,6 +21,6 @@ describe("POST /api/auth/logout", () => {
     expect(setCookie).toContain("Max-Age=0");
     expect(setCookie).toContain("Path=/");
     expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toMatch(/samesite=lax/i);
+    expect(setCookie).toMatch(/samesite=strict/i);
   });
 });

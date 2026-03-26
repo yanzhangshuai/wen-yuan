@@ -7,12 +7,18 @@ import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { listAdminModels } from "@/server/modules/models";
 import { ERROR_CODES } from "@/types/api";
 
+/**
+ * GET `/api/admin/models`
+ * 功能：查询运营端模型配置列表（管理员鉴权）。
+ * 入参：无（从请求头读取登录态）。
+ * 返回：模型列表标准成功响应。
+ */
 export async function GET(): Promise<Response> {
   const startedAt = Date.now();
   const requestId = randomUUID();
 
   try {
-    const auth = getAuthContext(await headers());
+    const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
     const data = await listAdminModels();

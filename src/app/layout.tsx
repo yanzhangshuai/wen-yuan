@@ -1,98 +1,49 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { headers } from "next/headers";
-import Script from "next/script";
-
-import {
-  AUTH_ADMIN_ROLE,
-  getAuthContext,
-  sanitizeRedirectPath
-} from "@/server/modules/auth";
+import { ThemeProvider, DecorativeLayer, THEME_IDS } from "@/theme";
 import "./globals.css";
 
-
 export const metadata: Metadata = {
-  title      : "儒林外史人物关系图谱",
-  description: "基于 Next.js + Prisma + Neo4j 的人物关系图谱项目"
+  title: {
+    default : "文渊 — AI 古典文学人物关系图谱",
+    template: "%s — 文渊"
+  },
+  description: "探索中国古典文学作品中的人物关系网络",
+  openGraph  : {
+    title      : "文渊 — AI 古典文学人物关系图谱",
+    description: "探索中国古典文学作品中的人物关系网络",
+    siteName   : "文渊",
+    type       : "website"
+  }
 };
 
-interface RootLayoutProps {
-  children: React.ReactNode;
-}
-
-function resolveCurrentPath(requestHeaders: Headers): string {
-  const headerPath = requestHeaders.get("x-auth-current-path");
-  return sanitizeRedirectPath(headerPath);
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children
-}: RootLayoutProps) {
-  const requestHeaders = await headers();
-  const auth = getAuthContext(requestHeaders);
-  const currentPath = resolveCurrentPath(requestHeaders);
-  const loginRedirectHref = `/login?redirect=${encodeURIComponent(currentPath)}`;
-
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="zh-CN" className="root-layout" suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        {/* Noto Serif SC（theme-01 / theme-03 共用，古风 + 典藏气质）*/}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&display=swap" />
+        {/* Inter（theme-02 / theme-04 共用，简约 + 科技感）*/}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+        {/* JetBrains Mono（代码）*/}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" />
+      </head>
       <body>
-        <header style={{
-          height        : 56,
-          display       : "flex",
-          alignItems    : "center",
-          justifyContent: "space-between",
-          borderBottom  : "1px solid #e2e8f0",
-          padding       : "0 16px",
-          background    : "#ffffff"
-        }}
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="theme-01"
+          themes={[...THEME_IDS]}
+          enableSystem={false}
+          storageKey="wen-yuan-theme"
         >
-          <Link href="/" style={{ color: "#0f172a", textDecoration: "none", fontWeight: 700 }}>
-            文渊
-          </Link>
-          {auth.role === AUTH_ADMIN_ROLE ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ color: "#334155", fontSize: 14 }}>管理员</span>
-              <button
-                id="logout-button"
-                data-redirect={currentPath}
-                type="button"
-                style={{
-                  border      : "1px solid #cbd5e1",
-                  background  : "#ffffff",
-                  borderRadius: 8,
-                  padding     : "6px 10px",
-                  cursor      : "pointer"
-                }}
-              >
-                退出登录
-              </button>
-            </div>
-          ) : (
-            <Link href={loginRedirectHref} style={{ color: "#2563eb", textDecoration: "none", fontSize: 14 }}>
-              管理员登录
-            </Link>
-          )}
-        </header>
-        <main>
+          <DecorativeLayer />
           {children}
-        </main>
-        <Script id="layout-logout-handler" strategy="afterInteractive">
-          {`
-            (() => {
-              const button = document.getElementById("logout-button");
-              if (!button) return;
-
-              button.addEventListener("click", async () => {
-                try {
-                  await fetch("/api/auth/logout", { method: "POST" });
-                } finally {
-                  const redirectPath = button.getAttribute("data-redirect") || "/";
-                  window.location.assign(redirectPath);
-                }
-              });
-            })();
-          `}
-        </Script>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -12,8 +12,8 @@ import {
 describe("startBookAnalysis", () => {
   it("creates analysis job and updates book processing status", async () => {
     // Arrange
-    const bookFindUnique = vi.fn().mockResolvedValue({
-      id      : "book-1",
+    const bookFindFirst = vi.fn().mockResolvedValue({
+      id       : "book-1",
       aiModelId: "model-1"
     });
     const modelFindUnique = vi.fn().mockResolvedValue({
@@ -21,11 +21,13 @@ describe("startBookAnalysis", () => {
       isEnabled: true
     });
     const analysisJobCreate = vi.fn().mockResolvedValue({
-      id          : "job-1",
-      status      : AnalysisJobStatus.QUEUED,
-      scope       : "FULL_BOOK",
-      chapterStart: null,
-      chapterEnd  : null
+      id              : "job-1",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
     });
     const bookUpdate = vi.fn().mockResolvedValue({
       status       : "PROCESSING",
@@ -34,9 +36,9 @@ describe("startBookAnalysis", () => {
     });
     const transaction = vi.fn(async (operations) => Promise.all(operations));
     const service = createStartBookAnalysisService({
-      book       : { findUnique: bookFindUnique, update: bookUpdate },
-      aiModel    : { findUnique: modelFindUnique },
-      analysisJob: { create: analysisJobCreate },
+      book        : { findFirst: bookFindFirst, update: bookUpdate },
+      aiModel     : { findUnique: modelFindUnique },
+      analysisJob : { create: analysisJobCreate },
       $transaction: transaction
     } as never);
 
@@ -44,8 +46,11 @@ describe("startBookAnalysis", () => {
     const result = await service.startBookAnalysis("book-1");
 
     // Assert
-    expect(bookFindUnique).toHaveBeenCalledWith({
-      where : { id: "book-1" },
+    expect(bookFindFirst).toHaveBeenCalledWith({
+      where: {
+        id       : "book-1",
+        deletedAt: null
+      },
       select: { id: true, aiModelId: true }
     });
     expect(modelFindUnique).toHaveBeenCalledWith({
@@ -53,6 +58,12 @@ describe("startBookAnalysis", () => {
       select: { id: true, isEnabled: true }
     });
     expect(analysisJobCreate).toHaveBeenCalled();
+    expect(analysisJobCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        overrideStrategy: "DRAFT_ONLY",
+        keepHistory     : false
+      })
+    }));
     expect(bookUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "book-1" },
       data : expect.objectContaining({
@@ -62,25 +73,27 @@ describe("startBookAnalysis", () => {
       })
     }));
     expect(result).toEqual({
-      bookId       : "book-1",
-      jobId        : "job-1",
-      status       : AnalysisJobStatus.QUEUED,
-      scope        : "FULL_BOOK",
-      chapterStart : null,
-      chapterEnd   : null,
-      aiModelId    : "model-1",
-      bookStatus   : "PROCESSING",
-      parseProgress: 0,
-      parseStage   : "文本清洗"
+      bookId          : "book-1",
+      jobId           : "job-1",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false,
+      aiModelId       : "model-1",
+      bookStatus      : "PROCESSING",
+      parseProgress   : 0,
+      parseStage      : "文本清洗"
     });
   });
 
   it("throws BookNotFoundError when book does not exist", async () => {
     // Arrange
     const service = createStartBookAnalysisService({
-      book       : { findUnique: vi.fn().mockResolvedValue(null) },
-      aiModel    : { findUnique: vi.fn() },
-      analysisJob: { create: vi.fn() },
+      book        : { findFirst: vi.fn().mockResolvedValue(null) },
+      aiModel     : { findUnique: vi.fn() },
+      analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
 
@@ -91,9 +104,9 @@ describe("startBookAnalysis", () => {
   it("throws AnalysisModelNotFoundError when selected model does not exist", async () => {
     // Arrange
     const service = createStartBookAnalysisService({
-      book       : { findUnique: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel    : { findUnique: vi.fn().mockResolvedValue(null) },
-      analysisJob: { create: vi.fn() },
+      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
+      aiModel     : { findUnique: vi.fn().mockResolvedValue(null) },
+      analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
 
@@ -106,9 +119,9 @@ describe("startBookAnalysis", () => {
   it("throws AnalysisModelDisabledError when selected model is disabled", async () => {
     // Arrange
     const service = createStartBookAnalysisService({
-      book       : { findUnique: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel    : { findUnique: vi.fn().mockResolvedValue({ id: "model-1", isEnabled: false }) },
-      analysisJob: { create: vi.fn() },
+      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
+      aiModel     : { findUnique: vi.fn().mockResolvedValue({ id: "model-1", isEnabled: false }) },
+      analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
 
@@ -121,9 +134,9 @@ describe("startBookAnalysis", () => {
   it("throws AnalysisScopeInvalidError for invalid chapter range", async () => {
     // Arrange
     const service = createStartBookAnalysisService({
-      book       : { findUnique: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel    : { findUnique: vi.fn() },
-      analysisJob: { create: vi.fn() },
+      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
+      aiModel     : { findUnique: vi.fn() },
+      analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
 
@@ -137,4 +150,3 @@ describe("startBookAnalysis", () => {
     ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
   });
 });
-

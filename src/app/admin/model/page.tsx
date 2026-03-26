@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { readApiErrorMessage, readApiSuccessResponse } from "@/lib/api-client";
 
 type RequestStatus = "idle" | "loading" | "success" | "error";
 
@@ -24,26 +25,20 @@ interface AdminModelItem {
 }
 
 interface ModelDraftState {
-  baseUrl   : string;
-  apiKey    : string;
+  baseUrl    : string;
+  apiKey     : string;
   clearApiKey: boolean;
-  isEnabled : boolean;
+  isEnabled  : boolean;
 }
 
 interface ModelActionState {
-  saveStatus      : RequestStatus;
-  saveMessage     : string | null;
-  defaultStatus   : RequestStatus;
-  defaultMessage  : string | null;
-  testStatus      : RequestStatus;
-  testMessage     : string | null;
-  testLatencyMs   : number | null;
-}
-
-interface ApiEnvelope<T> {
-  success?: boolean;
-  message?: string;
-  data?: T;
+  saveStatus    : RequestStatus;
+  saveMessage   : string | null;
+  defaultStatus : RequestStatus;
+  defaultMessage: string | null;
+  testStatus    : RequestStatus;
+  testMessage   : string | null;
+  testLatencyMs : number | null;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -75,23 +70,6 @@ function buildInitialDraft(model: AdminModelItem): ModelDraftState {
   };
 }
 
-function readApiPayload<T>(payload: unknown): T {
-  if (typeof payload !== "object" || payload === null) {
-    throw new Error("接口返回格式不正确");
-  }
-
-  const envelope = payload as ApiEnvelope<T>;
-  if ("success" in envelope && envelope.success === false) {
-    throw new Error(envelope.message || "请求失败");
-  }
-
-  if ("data" in envelope && envelope.data !== undefined) {
-    return envelope.data;
-  }
-
-  return payload as T;
-}
-
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
@@ -100,50 +78,32 @@ function readBoolean(value: unknown, fallback = false): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function normalizeModel(input: unknown, fallback?: AdminModelItem): AdminModelItem {
+function normalizeModel(input: unknown): AdminModelItem {
   if (typeof input !== "object" || input === null) {
-    if (fallback) {
-      return fallback;
-    }
-
     throw new Error("模型数据格式不正确");
   }
 
   const record = input as Record<string, unknown>;
-  const id = readString(record.id, fallback?.id ?? "");
+  const id = readString(record.id, "");
   if (!id) {
     throw new Error("模型缺少 id");
   }
 
-  const apiKeyMasked = readString(
-    record.apiKeyMasked ?? record.apiKeyPreview ?? record.apiKey ?? fallback?.apiKeyMasked ?? null,
-    ""
-  );
-  const configuredFromFlag = record.isConfigured ?? record.hasApiKey ?? record.configured;
+  const apiKeyMasked = readString(record.apiKeyMasked ?? null, "");
+  const isConfigured = readBoolean(record.isConfigured, false);
 
   return {
     id,
-    provider    : readString(record.provider, fallback?.provider ?? ""),
-    name        : readString(record.name, fallback?.name ?? ""),
-    modelId     : readString(record.modelId, fallback?.modelId ?? ""),
-    baseUrl     : readString(record.baseUrl, fallback?.baseUrl ?? ""),
+    provider    : readString(record.provider, ""),
+    name        : readString(record.name, ""),
+    modelId     : readString(record.modelId, ""),
+    baseUrl     : readString(record.baseUrl, ""),
     apiKeyMasked: apiKeyMasked || null,
-    isConfigured: typeof configuredFromFlag === "boolean"
-      ? configuredFromFlag
-      : (fallback?.isConfigured ?? Boolean(apiKeyMasked)),
-    isEnabled : readBoolean(record.isEnabled, fallback?.isEnabled ?? false),
-    isDefault : readBoolean(record.isDefault, fallback?.isDefault ?? false),
-    updatedAt : readString(record.updatedAt, fallback?.updatedAt ?? "")
+    isConfigured,
+    isEnabled   : readBoolean(record.isEnabled, false),
+    isDefault   : readBoolean(record.isDefault, false),
+    updatedAt   : readString(record.updatedAt, "")
   };
-}
-
-function normalizeModels(payload: unknown): AdminModelItem[] {
-  const data = readApiPayload<unknown>(payload);
-  if (!Array.isArray(data)) {
-    throw new Error("模型列表格式不正确");
-  }
-
-  return data.map((item) => normalizeModel(item));
 }
 
 function formatUpdatedAt(value: string): string {
@@ -175,26 +135,58 @@ function resolveCanEnable(model: AdminModelItem, draft: ModelDraftState): boolea
   return model.isConfigured || draft.apiKey.trim().length > 0;
 }
 
-async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    }
-  });
+interface ModelTestResult {
+  message  : string;
+  latencyMs: number | null;
+}
 
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    if (payload && typeof payload === "object" && "message" in payload) {
-      throw new Error(readString((payload as { message?: unknown }).message, "请求失败"));
-    }
-
-    throw new Error(`请求失败 (${response.status})`);
+function normalizeModelList(input: unknown): AdminModelItem[] {
+  if (!Array.isArray(input)) {
+    throw new Error("模型列表格式不正确");
   }
 
-  return readApiPayload<T>(payload);
+  return input.map((item) => normalizeModel(item));
+}
+
+function normalizeModelTestResult(input: unknown): ModelTestResult {
+  if (typeof input !== "object" || input === null) {
+    throw new Error("连通性测试返回格式不正确");
+  }
+
+  const record = input as Record<string, unknown>;
+  return {
+    message  : readString(record.message, "连通性测试成功"),
+    latencyMs: typeof record.latencyMs === "number" ? record.latencyMs : null
+  };
+}
+
+async function requestJson<T>(
+  input: RequestInfo,
+  parser: (data: unknown) => T,
+  init?: RequestInit
+): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (init?.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    headers
+  });
+
+  const payload: unknown = await response.json().catch((): unknown => null);
+
+  if (!response.ok) {
+    throw new Error(readApiErrorMessage(payload, `请求失败 (${response.status})`));
+  }
+
+  const successResponse = readApiSuccessResponse(payload);
+  if (successResponse === null) {
+    throw new Error("接口返回格式不正确");
+  }
+
+  return parser(successResponse.data);
 }
 
 export default function AdminModelPage() {
@@ -212,18 +204,11 @@ export default function AdminModelPage() {
       setPageMessage(null);
 
       try {
-        const response = await fetch("/api/admin/models", { cache: "no-store" });
-        const payload = await response.json().catch(() => null);
-
-        if (!response.ok) {
-          if (payload && typeof payload === "object" && "message" in payload) {
-            throw new Error(readString((payload as { message?: unknown }).message, "模型列表加载失败"));
-          }
-
-          throw new Error(`模型列表加载失败 (${response.status})`);
-        }
-
-        const nextModels = normalizeModels(payload);
+        const nextModels = await requestJson(
+          "/api/admin/models",
+          (data) => normalizeModelList(data),
+          { cache: "no-store" }
+        );
 
         if (cancelled) {
           return;
@@ -318,17 +303,14 @@ export default function AdminModelPage() {
     }
 
     try {
-      const updated = await requestJson<unknown>(`/api/admin/models/${model.id}`, {
-        method: "PATCH",
-        body  : JSON.stringify(body)
-      });
-      const normalizedModel = normalizeModel(updated, {
-        ...model,
-        baseUrl     : draft.baseUrl.trim(),
-        isEnabled   : draft.isEnabled,
-        isConfigured: draft.clearApiKey ? false : (model.isConfigured || draft.apiKey.trim().length > 0),
-        apiKeyMasked: draft.clearApiKey ? null : model.apiKeyMasked
-      });
+      const normalizedModel = await requestJson(
+        `/api/admin/models/${model.id}`,
+        (data) => normalizeModel(data),
+        {
+          method: "PATCH",
+          body  : JSON.stringify(body)
+        }
+      );
 
       replaceModel(normalizedModel);
       updateAction(model.id, (currentAction) => ({
@@ -353,14 +335,13 @@ export default function AdminModelPage() {
     }));
 
     try {
-      const updated = await requestJson<unknown>(`/api/admin/models/${modelId}/set-default`, {
-        method: "POST"
-      });
-      const currentModel = models.find((model) => model.id === modelId);
-      const normalizedModel = normalizeModel(updated, currentModel ? {
-        ...currentModel,
-        isDefault: true
-      } : undefined);
+      const normalizedModel = await requestJson(
+        `/api/admin/models/${modelId}/set-default`,
+        (data) => normalizeModel(data),
+        {
+          method: "POST"
+        }
+      );
 
       setModels((currentModels) => currentModels.map((model) => ({
         ...model,
@@ -393,11 +374,15 @@ export default function AdminModelPage() {
     }));
 
     try {
-      const result = await requestJson<Record<string, unknown>>(`/api/admin/models/${modelId}/test`, {
-        method: "POST"
-      });
-      const latencyMs = typeof result.latencyMs === "number" ? result.latencyMs : null;
-      const message = readString(result.message, "连通性测试成功");
+      const result = await requestJson(
+        `/api/admin/models/${modelId}/test`,
+        (data) => normalizeModelTestResult(data),
+        {
+          method: "POST"
+        }
+      );
+      const latencyMs = result.latencyMs;
+      const message = result.message;
 
       updateAction(modelId, (currentAction) => ({
         ...currentAction,

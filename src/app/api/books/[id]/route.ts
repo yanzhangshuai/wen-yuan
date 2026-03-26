@@ -3,12 +3,20 @@ import { randomUUID } from "node:crypto";
 import { parseBookIdFromRoute, type BookRouteParamsContext } from "@/app/api/books/[id]/_shared";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { failJson, okJson } from "@/server/http/route-utils";
+import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { deleteBook, type DeleteBookResult } from "@/server/modules/books/deleteBook";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { getBookById } from "@/server/modules/books/getBookById";
 import { type BookLibraryListItem } from "@/types/book";
 import { ERROR_CODES } from "@/types/api";
 
+/**
+ * 功能：构造“书籍不存在”的标准错误响应。
+ * 输入：requestId、startedAt、bookId。
+ * 输出：HTTP 404 响应。
+ * 异常：无。
+ * 副作用：无。
+ */
 function notFoundJson(
   requestId: string,
   startedAt: number,
@@ -29,6 +37,13 @@ function notFoundJson(
   );
 }
 
+/**
+ * GET `/api/books/:id`
+ * 功能：获取单本书籍详情（供书库详情/图谱入口等页面使用）。
+ * 入参：
+ * - `context.params.id`：书籍 ID（UUID）。
+ * 返回：`BookLibraryListItem` 标准成功响应。
+ */
 export async function GET(
   _request: Request,
   context: BookRouteParamsContext
@@ -67,14 +82,25 @@ export async function GET(
   }
 }
 
+/**
+ * DELETE `/api/books/:id`
+ * 功能：删除书籍（管理员操作，软删除策略由服务层实现）。
+ * 入参：
+ * - 请求头登录态（需 `admin`）；
+ * - `context.params.id`：书籍 ID（UUID）。
+ * 返回：`DeleteBookResult` 标准成功响应。
+ */
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: BookRouteParamsContext
 ): Promise<Response> {
   const startedAt = Date.now();
   const requestId = randomUUID();
 
   try {
+    const auth = await getAuthContext(request.headers);
+    requireAdmin(auth);
+
     const parsed = await parseBookIdFromRoute(context, "/api/books/:id", requestId, startedAt);
     if ("response" in parsed) {
       return parsed.response;

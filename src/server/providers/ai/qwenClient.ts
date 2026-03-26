@@ -9,9 +9,9 @@ import { OpenAiCompatibleClient } from "@/server/providers/ai/openaiCompatibleCl
  */
 export class QwenClient extends OpenAiCompatibleClient {
   constructor(
-    apiKey = process.env.QWEN_API_KEY,
-    baseUrl = process.env.QWEN_BASE_URL ?? "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    modelName = process.env.QWEN_MODEL ?? "qwen-plus"
+    apiKey: string,
+    baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    modelName = "qwen-plus"
   ) {
     super({
       providerName: "Qwen",

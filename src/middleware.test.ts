@@ -16,6 +16,7 @@ import {
 
 describe("middleware helpers", () => {
   const originalSecret = process.env.JWT_SECRET;
+  const testJwtSecret = "unit-test-secret-1234567890-abcdef";
 
   afterEach(() => {
     process.env.JWT_SECRET = originalSecret;
@@ -33,9 +34,9 @@ describe("middleware helpers", () => {
     expect(buildRedirectTarget("/admin/model?tab=keys")).toBe("/login?redirect=%2Fadmin%2Fmodel%3Ftab%3Dkeys");
   });
 
-  it("resolves valid token to admin and invalid token to viewer", () => {
-    process.env.JWT_SECRET = "unit-test-secret";
-    const token = issueAuthToken(Math.floor(Date.now() / 1000));
+  it("resolves valid token to admin and invalid token to viewer", async () => {
+    process.env.JWT_SECRET = testJwtSecret;
+    const token = await issueAuthToken(Math.floor(Date.now() / 1000));
 
     return Promise.all([
       expect(resolveAuthRole(token)).resolves.toBe(AppRole.ADMIN),
@@ -47,6 +48,7 @@ describe("middleware helpers", () => {
 
 describe("middleware", () => {
   const originalSecret = process.env.JWT_SECRET;
+  const testJwtSecret = "unit-test-secret-1234567890-abcdef";
 
   afterEach(() => {
     process.env.JWT_SECRET = originalSecret;
@@ -73,8 +75,8 @@ describe("middleware", () => {
   });
 
   it("allows authenticated admin access to /admin/model and injects admin role header", async () => {
-    process.env.JWT_SECRET = "unit-test-secret";
-    const token = issueAuthToken(Math.floor(Date.now() / 1000));
+    process.env.JWT_SECRET = testJwtSecret;
+    const token = await issueAuthToken(Math.floor(Date.now() / 1000));
     const request = new NextRequest("http://localhost/admin/model?tab=keys", {
       headers: {
         cookie: `${AUTH_COOKIE_NAME}=${token}`

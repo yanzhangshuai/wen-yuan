@@ -1,4 +1,4 @@
-import { provideAi, type AiProviderClient } from "@/server/providers/ai";
+import type { AiProviderClient } from "@/server/providers/ai";
 import { buildChapterAnalysisPrompt, type BuildPromptInput } from "@/server/modules/analysis/services/prompts";
 import { type ChapterAnalysisResponse, parseChapterAnalysisResponse } from "@/types/analysis";
 
@@ -24,13 +24,13 @@ export interface AiAnalysisClient {
 
 /**
  * 功能：创建章节分析 AI 客户端（Prompt 构建 + 结果解析）。
- * 输入：providerClient - 底层 AI provider（默认取环境变量）。
+ * 输入：providerClient - 底层 AI provider（由上层按数据库模型配置注入）。
  * 输出：AiAnalysisClient 实例。
  * 异常：由 provider 调用或 JSON 解析失败触发。
  * 副作用：发起外部 AI 请求（调用时）。
  */
 export function createChapterAnalysisAiClient(
-  providerClient: AiProviderClient = provideAi()
+  providerClient: AiProviderClient
 ): AiAnalysisClient {
   return {
     async analyzeChapterChunk(input: AnalyzeChunkInput): Promise<ChapterAnalysisResponse> {
@@ -40,4 +40,3 @@ export function createChapterAnalysisAiClient(
     }
   };
 }
-

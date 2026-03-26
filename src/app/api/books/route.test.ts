@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { AppRole } from "@/generated/prisma/enums";
 
 const createBookMock = vi.fn();
 const listBooksMock = vi.fn();
@@ -43,8 +44,11 @@ describe("POST /api/books", () => {
 
     // Act
     const response = await POST(new Request("http://localhost/api/books", {
-      method: "POST",
-      body  : formData
+      method : "POST",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      },
+      body: formData
     }));
 
     // Assert
@@ -68,8 +72,11 @@ describe("POST /api/books", () => {
 
     // Act
     const response = await POST(new Request("http://localhost/api/books", {
-      method: "POST",
-      body  : formData
+      method : "POST",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      },
+      body: formData
     }));
 
     // Assert
@@ -100,10 +107,8 @@ describe("GET /api/books", () => {
         chapterCount    : 56,
         personaCount    : 132,
         lastAnalyzedAt  : "2026-03-24T10:08:00.000Z",
-        currentModelName: "DeepSeek V3",
-        failureSummary  : null,
-        parseProgress   : 100,
-        parseStage      : "完成",
+        currentModel    : "DeepSeek V3",
+        lastErrorSummary: null,
         createdAt       : "2026-03-24T09:10:00.000Z",
         updatedAt       : "2026-03-24T10:10:00.000Z",
         sourceFile      : {

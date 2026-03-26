@@ -57,10 +57,17 @@ function buildBook(partial: Partial<LibraryBookCardData>): LibraryBookCardData {
     chapterCount    : partial.chapterCount ?? 10,
     personaCount    : partial.personaCount ?? 100,
     lastAnalyzedAt  : partial.lastAnalyzedAt ?? "2026-03-24T10:00:00.000Z",
-    currentModelName: partial.currentModelName ?? "DeepSeek V3",
-    failureSummary  : partial.failureSummary ?? null,
-    parseProgress   : partial.parseProgress ?? null,
-    parseStage      : partial.parseStage ?? null
+    currentModel    : partial.currentModel ?? "DeepSeek V3",
+    lastErrorSummary: partial.lastErrorSummary ?? null,
+    createdAt       : partial.createdAt ?? "2026-03-24T08:00:00.000Z",
+    updatedAt       : partial.updatedAt ?? "2026-03-24T10:00:00.000Z",
+    sourceFile      : partial.sourceFile ?? {
+      key : null,
+      url : null,
+      name: null,
+      mime: null,
+      size: null
+    }
   };
 }
 
@@ -68,22 +75,21 @@ describe("LibraryHome", () => {
   it("allows navigation to graph when book is completed", () => {
     render(<LibraryHome books={[buildBook({ id: "book-completed", status: "COMPLETED" })]} />);
 
-    const graphLink = screen.getByRole("link", { name: "进入《儒林外史》人物图谱" });
+    const graphLink = screen.getByRole("link", { name: "查看「儒林外史」人物图谱" });
     expect(graphLink).toHaveAttribute("href", "/books/book-completed/graph");
-    expect(screen.getByText("点击封面进入图谱")).toBeInTheDocument();
   });
 
   it("does not render graph link for non-completed book", () => {
-    render(<LibraryHome books={[buildBook({ status: "PROCESSING", parseProgress: 35, parseStage: "实体提取" })]} />);
+    render(<LibraryHome books={[buildBook({ status: "PROCESSING" })]} />);
 
-    expect(screen.queryByRole("link", { name: "进入《儒林外史》人物图谱" })).toBeNull();
-    expect(screen.getByText("解析完成后可进入图谱")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "查看「儒林外史」人物图谱" })).toBeNull();
+    expect(screen.getByText("解析中")).toBeInTheDocument();
   });
 
-  it("keeps metadata in collapsed details area", () => {
-    render(<LibraryHome books={[buildBook({ status: "ERROR", failureSummary: "模型超时" })]} />);
+  it("displays book count and section header", () => {
+    render(<LibraryHome books={[buildBook({ status: "COMPLETED" }), buildBook({ id: "book-2", status: "COMPLETED" })]} />);
 
-    expect(screen.getByText("展开书籍信息")).toBeInTheDocument();
-    expect(screen.getByText("数据来源：章节/人物统计来自结构化表")).toBeInTheDocument();
+    expect(screen.getByText("藏書閣")).toBeInTheDocument();
+    expect(screen.getByText("2 部典藏")).toBeInTheDocument();
   });
 });

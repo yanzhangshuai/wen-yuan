@@ -36,11 +36,9 @@ describe("POST /api/admin/models/:id/test", () => {
 
   it("tests model connectivity with 200", async () => {
     testAdminModelConnectionMock.mockResolvedValue({
-      ok         : true,
-      latencyMs  : 128,
-      provider   : "deepseek",
-      modelId    : "deepseek-chat",
-      maskedApiKey: "sk-***abcd"
+      success  : true,
+      latencyMs: 128,
+      detail   : "连接成功"
     });
     const { POST } = await import("./route");
 

@@ -61,7 +61,7 @@ export function createPersonaResolver(prisma: PrismaClient) {
       where: {
         OR: [
           { name: { contains: extracted, mode: "insensitive" } },
-          { globalTags: { has: extracted } },
+          { aliases: { has: extracted } },
           {
             profiles: {
               some: {
@@ -85,7 +85,10 @@ export function createPersonaResolver(prisma: PrismaClient) {
       return directMatches.map((item) => ({
         id     : item.id,
         name   : item.name,
-        aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
+        aliases: Array.from(new Set([
+          ...item.aliases,
+          ...item.profiles.map((profile) => profile.localName)
+        ]))
       }));
     }
 
@@ -108,7 +111,10 @@ export function createPersonaResolver(prisma: PrismaClient) {
     return fallbackBookMatches.map((item) => ({
       id     : item.id,
       name   : item.name,
-      aliases: [...item.globalTags, ...item.profiles.map((profile) => profile.localName)]
+      aliases: Array.from(new Set([
+        ...item.aliases,
+        ...item.profiles.map((profile) => profile.localName)
+      ]))
     }));
   }
 
@@ -161,6 +167,14 @@ export function createPersonaResolver(prisma: PrismaClient) {
         }
       });
 
+      // 将本次抽取称谓补齐到 aliases（去重后追加），提升后续章节别名召回率。
+      if (!winner.candidate.aliases.includes(input.extractedName) && winner.candidate.name !== input.extractedName) {
+        await client.persona.update({
+          where: { id: winner.candidate.id },
+          data : { aliases: { push: input.extractedName } }
+        });
+      }
+
       return {
         status     : "resolved",
         personaId  : winner.candidate.id,
@@ -170,7 +184,7 @@ export function createPersonaResolver(prisma: PrismaClient) {
     }
 
     // 名字不在原文中出现，倾向判断为模型幻觉。
-    if (!input.chapterContent.includes(input.extractedName)) {
+    if (!containsNormalizedName(input.chapterContent, input.extractedName)) {
       return {
         status     : "hallucinated",
         confidence : winner?.score ?? 0,
@@ -182,9 +196,9 @@ export function createPersonaResolver(prisma: PrismaClient) {
     // 低置信且确实在原文出现，才创建新 Persona。
     const created = await client.persona.create({
       data: {
-        name      : input.extractedName,
-        type      : PersonaType.PERSON,
-        globalTags: [input.extractedName]
+        name   : input.extractedName,
+        type   : PersonaType.PERSON,
+        aliases: [input.extractedName]
       }
     });
 
@@ -239,6 +253,22 @@ function scoreCandidate(extractedName: string, candidate: CandidatePersona): num
 function normalizeName(name: string): string {
   // 清理中文标点、空格、连接符并统一小写，降低格式噪声影响。
   return name.replace(/[\s·•,，。！？\-—]/g, "").toLowerCase();
+}
+
+/**
+ * 功能：在归一化后判断“候选名字是否出现在原文”。
+ * 输入：chapterContent - 章节原文；candidateName - 候选人名/称谓。
+ * 输出：是否命中。
+ * 异常：无。
+ * 副作用：无。
+ */
+function containsNormalizedName(chapterContent: string, candidateName: string): boolean {
+  const normalizedCandidate = normalizeName(candidateName);
+  if (!normalizedCandidate) {
+    return false;
+  }
+
+  return normalizeName(chapterContent).includes(normalizedCandidate);
 }
 
 /**

@@ -17,12 +17,12 @@ class MockAuthError extends Error {
 }
 
 vi.mock("@/server/modules/auth", () => ({
-  AuthError               : MockAuthError,
-  AUTH_COOKIE_NAME       : "token",
-  AUTH_TOKEN_TTL_SECONDS : 604800,
-  authenticateAdmin      : authenticateAdminMock,
-  issueAuthToken         : issueAuthTokenMock,
-  sanitizeRedirectPath   : sanitizeRedirectPathMock
+  AuthError             : MockAuthError,
+  AUTH_COOKIE_NAME      : "token",
+  AUTH_TOKEN_TTL_SECONDS: 604800,
+  authenticateAdmin     : authenticateAdminMock,
+  issueAuthToken        : issueAuthTokenMock,
+  sanitizeRedirectPath  : sanitizeRedirectPathMock
 }));
 
 describe("POST /api/auth/login", () => {
@@ -62,7 +62,8 @@ describe("POST /api/auth/login", () => {
         redirect  : "/admin/model?tab=models"
       }),
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        origin        : "http://localhost"
       }
     }));
 
@@ -93,38 +94,7 @@ describe("POST /api/auth/login", () => {
     expect(setCookie).toContain("HttpOnly");
     expect(setCookie).toContain("Max-Age=604800");
     expect(setCookie).toContain("Path=/");
-    expect(setCookie).toMatch(/samesite=lax/i);
-  });
-
-  it("accepts legacy identity field for backward compatibility", async () => {
-    authenticateAdminMock.mockResolvedValue({
-      id      : "user-1",
-      username: "admin",
-      email   : "admin@example.com",
-      name    : "管理员",
-      role    : AppRole.ADMIN
-    });
-    issueAuthTokenMock.mockReturnValue("signed-token");
-    sanitizeRedirectPathMock.mockReturnValue("/admin/model");
-
-    const { POST } = await import("@/app/api/auth/login/route");
-    const response = await POST(new Request("http://localhost/api/auth/login", {
-      method: "POST",
-      body  : JSON.stringify({
-        identity: "admin@example.com",
-        password: "secret-123",
-        redirect: "/admin/model"
-      }),
-      headers: {
-        "content-type": "application/json"
-      }
-    }));
-
-    expect(response.status).toBe(200);
-    expect(authenticateAdminMock).toHaveBeenCalledWith({
-      identifier: "admin@example.com",
-      password  : "secret-123"
-    });
+    expect(setCookie).toMatch(/samesite=strict/i);
   });
 
   it("returns 400 when request body validation fails", async () => {
@@ -136,7 +106,8 @@ describe("POST /api/auth/login", () => {
         password  : ""
       }),
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        origin        : "http://localhost"
       }
     }));
 
@@ -162,7 +133,8 @@ describe("POST /api/auth/login", () => {
         password  : "wrong-password"
       }),
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        origin        : "http://localhost"
       }
     }));
 
@@ -194,7 +166,8 @@ describe("POST /api/auth/login", () => {
         redirect  : "https://evil.example"
       }),
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        origin        : "http://localhost"
       }
     }));
 

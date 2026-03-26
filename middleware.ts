@@ -100,8 +100,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const role = await resolveAuthRole(token);
   const requestHeaders = buildInjectedHeaders(request.headers, role, currentPath);
+  const pathname = request.nextUrl.pathname;
 
-  if (request.nextUrl.pathname === "/admin" || request.nextUrl.pathname.startsWith("/admin/")) {
+  if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/")) {
     if (role === AUTH_VIEWER_ROLE) {
       const redirectUrl = new URL(buildRedirectTarget(currentPath), request.url);
       return NextResponse.redirect(redirectUrl);
@@ -116,7 +117,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)"
-  ]
+  matcher: ["/admin/:path*", "/api/admin/:path*"]
 };

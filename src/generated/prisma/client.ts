@@ -91,3 +91,8 @@ export type Relationship = Prisma.RelationshipModel
  * @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。
  */
 export type AnalysisJob = Prisma.AnalysisJobModel
+/**
+ * Model MergeSuggestion
+ * @db.remark: 人物别名消歧建议。用于管理员审核同名/别名归并。
+ */
+export type MergeSuggestion = Prisma.MergeSuggestionModel

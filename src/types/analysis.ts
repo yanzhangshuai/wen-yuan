@@ -15,6 +15,13 @@ export const BIO_CATEGORY_VALUES = [
   "EVENT"
 ] as const;
 
+/**
+ * 功能：从 BIO_CATEGORY_VALUES 推导生平事件类型联合值。
+ * 输入：无。
+ * 输出：类型约束 BioCategoryValue。
+ * 异常：无。
+ * 副作用：无。
+ */
 export type BioCategoryValue = (typeof BIO_CATEGORY_VALUES)[number];
 
 /**
@@ -82,6 +89,7 @@ export interface AiRelationship {
   type        : string;
   weight?     : number;
   description?: string;
+  evidence?   : string;
 }
 
 /**
@@ -103,6 +111,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isBioCategory(value: unknown): value is BioCategoryValue {
   return typeof value === "string" && (BIO_CATEGORY_VALUES as readonly string[]).includes(value);
+}
+
+function normalizeRelationWeight(weight: unknown): number | undefined {
+  if (typeof weight !== "number" || Number.isNaN(weight)) {
+    return undefined;
+  }
+
+  if (weight < 0) {
+    return 0;
+  }
+
+  if (weight > 1) {
+    return 1;
+  }
+
+  return weight;
 }
 
 /**
@@ -158,8 +182,9 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
       sourceName : item.sourceName as string,
       targetName : item.targetName as string,
       type       : item.type as string,
-      weight     : typeof item.weight === "number" ? item.weight : undefined,
-      description: typeof item.description === "string" ? item.description : undefined
+      weight     : normalizeRelationWeight(item.weight),
+      description: typeof item.description === "string" ? item.description : undefined,
+      evidence   : typeof item.evidence === "string" ? item.evidence : undefined
     }));
 
   return {

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { headers } from "next/headers";
 
+import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { updateAdminModel } from "@/server/modules/models";
@@ -9,6 +10,14 @@ import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, modelRouteParamsSchema, updateModelBodySchema } from "../_shared";
 
+/**
+ * PATCH `/api/admin/models/:id`
+ * 功能：更新单个模型配置（API Key / BaseURL / 启用状态）。
+ * 入参：
+ * - 路由参数：`id`（模型 UUID）；
+ * - 请求体：`apiKey | baseUrl | isEnabled`（至少一个字段）。
+ * 返回：更新后的模型配置快照。
+ */
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -17,7 +26,7 @@ export async function PATCH(
   const requestId = randomUUID();
 
   try {
-    const auth = getAuthContext(await headers());
+    const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
     const parsedParams = modelRouteParamsSchema.safeParse(await context.params);
@@ -30,7 +39,7 @@ export async function PATCH(
       );
     }
 
-    const parsedBody = updateModelBodySchema.safeParse(await request.json());
+    const parsedBody = updateModelBodySchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       return badRequestJson(
         `/api/admin/models/${parsedParams.data.id}`,

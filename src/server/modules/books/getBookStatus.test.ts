@@ -5,53 +5,49 @@ import { BookNotFoundError, createGetBookStatusService } from "@/server/modules/
 describe("getBookStatus", () => {
   it("returns status snapshot for polling", async () => {
     // Arrange
-    const bookUpdatedAt = new Date("2026-03-24T09:10:00.000Z");
-    const jobUpdatedAt = new Date("2026-03-24T10:10:00.000Z");
-    const findUnique = vi.fn().mockResolvedValue({
-      id           : "book-1",
+    const findFirst = vi.fn().mockResolvedValue({
       status       : "PROCESSING",
       parseProgress: 70,
       parseStage   : "实体提取",
       errorLog     : null,
-      updatedAt    : bookUpdatedAt,
       analysisJobs : [
         {
-          updatedAt: jobUpdatedAt,
+          updatedAt: new Date("2026-03-24T10:10:00.000Z"),
           errorLog : "第 9 章解析失败"
         }
       ]
     });
-    const service = createGetBookStatusService({ book: { findUnique } } as never);
+    const service = createGetBookStatusService({ book: { findFirst } } as never);
 
     // Act
     const result = await service.getBookStatus("book-1");
 
     // Assert
-    expect(findUnique).toHaveBeenCalledOnce();
-    expect(findUnique).toHaveBeenCalledWith({
-      where : { id: "book-1" },
+    expect(findFirst).toHaveBeenCalledOnce();
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        id       : "book-1",
+        deletedAt: null
+      },
       select: expect.objectContaining({
         status       : true,
         parseProgress: true,
         parseStage   : true,
-        errorLog     : true,
-        updatedAt    : true
+        errorLog     : true
       })
     });
     expect(result).toEqual({
-      id            : "book-1",
-      status        : "PROCESSING",
-      parseProgress : 70,
-      parseStage    : "实体提取",
-      failureSummary: "第 9 章解析失败",
-      updatedAt     : "2026-03-24T10:10:00.000Z"
+      status  : "PROCESSING",
+      progress: 70,
+      stage   : "实体提取",
+      errorLog: "第 9 章解析失败"
     });
   });
 
   it("throws BookNotFoundError when book does not exist", async () => {
     // Arrange
-    const findUnique = vi.fn().mockResolvedValue(null);
-    const service = createGetBookStatusService({ book: { findUnique } } as never);
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const service = createGetBookStatusService({ book: { findFirst } } as never);
 
     // Act + Assert
     await expect(service.getBookStatus("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);

@@ -4,10 +4,17 @@ import { cn } from "@/lib/utils";
 
 const BADGE_VARIANT_CLASS_MAP = {
   default:
-    "bg-[var(--secondary)] text-[var(--secondary-foreground)] border-transparent",
-  outline: "border-[var(--border)] text-[var(--foreground)]",
-  success: "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-  warning: "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+    "bg-[var(--color-primary)] text-white border-transparent shadow hover:bg-[var(--color-primary-hover)]",
+  secondary:
+    "bg-[var(--color-muted)] text-white border-transparent hover:bg-[var(--color-muted)]/80",
+  destructive:
+    "bg-[var(--color-danger)] text-white border-transparent shadow hover:bg-[var(--color-danger)]/80",
+  outline: 
+    "text-[var(--color-fg)] border-[var(--color-border)]",
+  success: 
+    "bg-[var(--color-success)] text-white border-transparent shadow",
+  warning: 
+    "bg-[var(--color-warning)] text-white border-transparent shadow"
 } as const;
 
 type BadgeVariant = keyof typeof BADGE_VARIANT_CLASS_MAP;

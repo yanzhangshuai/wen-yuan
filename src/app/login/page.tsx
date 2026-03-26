@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,6 +21,14 @@ interface LoginSuccessData {
 
 const LOGIN_ERROR_MESSAGE = "账号或密码错误";
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
 /**
  * 仅允许站内相对路径，避免把登录后的跳转目标交给任意外部地址。
  */
@@ -37,21 +45,23 @@ function normalizeRedirect(value: string | null): string {
 }
 
 function hasRedirectData(value: unknown): value is LoginSuccessData {
-  if (typeof value !== "object" || value === null) {
+  const record = asRecord(value);
+  if (!record) {
     return false;
   }
 
-  const redirectValue = Reflect.get(value, "redirect");
+  const redirectValue = record.redirect;
   return typeof redirectValue === "undefined" || typeof redirectValue === "string";
 }
 
 function extractRedirectFromPayload(payload: unknown): string | null {
-  if (typeof payload !== "object" || payload === null) {
+  const record = asRecord(payload);
+  if (!record) {
     return null;
   }
 
-  const successValue = Reflect.get(payload, "success");
-  const dataValue = Reflect.get(payload, "data");
+  const successValue = record.success;
+  const dataValue = record.data;
 
   if (successValue !== true || !hasRedirectData(dataValue)) {
     return null;
@@ -61,6 +71,22 @@ function extractRedirectFromPayload(payload: unknown): string | null {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginSkeleton />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginSkeleton() {
+  return (
+    <main className="login-page flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md h-96 animate-pulse rounded-lg bg-[var(--color-muted)]/20" />
+    </main>
+  );
+}
+
+function LoginForm() {
   const searchParams = useSearchParams();
   const redirect = normalizeRedirect(searchParams.get("redirect"));
 
@@ -88,7 +114,7 @@ export default function LoginPage() {
         })
       });
 
-      const payload = await response.json();
+      const payload: unknown = await response.json().catch((): unknown => null);
       const nextRedirect = extractRedirectFromPayload(payload);
 
       if (!response.ok || nextRedirect === null) {
@@ -128,7 +154,7 @@ export default function LoginPage() {
               </Alert>
             ) : null}
 
-            <form className="login-page-form space-y-5" onSubmit={handleSubmit}>
+            <form className="login-page-form space-y-5" onSubmit={(event) => { void handleSubmit(event); }}>
               <input type="hidden" name="redirect" value={redirect} />
 
               <FormItem>

@@ -20,9 +20,9 @@ export class GeminiClient implements AiProviderClient {
    * 异常：apiKey 缺失时抛错。
    * 副作用：无。
    */
-  constructor(apiKey = process.env.GEMINI_API_KEY, modelName = process.env.GEMINI_MODEL ?? "gemini-3.1-flash") {
+  constructor(apiKey: string, modelName = "gemini-3.1-flash") {
     if (!apiKey) {
-      throw new Error("Missing Gemini API key: GEMINI_API_KEY");
+      throw new Error("Missing Gemini API key");
     }
 
     this.client = new GoogleGenerativeAI(apiKey);

@@ -6,7 +6,7 @@ import { createGetBookByIdService } from "@/server/modules/books/getBookById";
 describe("getBookById", () => {
   it("returns one book in library detail shape", async () => {
     // Arrange
-    const findUnique = vi.fn().mockResolvedValue({
+    const findFirst = vi.fn().mockResolvedValue({
       id            : "book-1",
       title         : "儒林外史",
       author        : "吴敬梓",
@@ -14,8 +14,6 @@ describe("getBookById", () => {
       description   : "群像小说",
       coverUrl      : "/api/assets/books/book-1/cover/cover.png",
       status        : "COMPLETED",
-      parseProgress : 100,
-      parseStage    : "完成",
       errorLog      : null,
       createdAt     : new Date("2026-03-24T09:10:00.000Z"),
       updatedAt     : new Date("2026-03-24T10:10:00.000Z"),
@@ -27,8 +25,8 @@ describe("getBookById", () => {
       aiModel       : {
         name: "DeepSeek V3"
       },
-      chapters: [{ id: "chapter-1" }, { id: "chapter-2" }],
-      profiles: [{ id: "profile-1" }],
+      chapters    : [{ id: "chapter-1" }, { id: "chapter-2" }],
+      profiles    : [{ id: "profile-1" }],
       analysisJobs: [
         {
           updatedAt : new Date("2026-03-24T10:09:00.000Z"),
@@ -40,14 +38,17 @@ describe("getBookById", () => {
         }
       ]
     });
-    const service = createGetBookByIdService({ book: { findUnique } } as never);
+    const service = createGetBookByIdService({ book: { findFirst } } as never);
 
     // Act
     const result = await service.getBookById("book-1");
 
     // Assert
-    expect(findUnique).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "book-1" }
+    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        id       : "book-1",
+        deletedAt: null
+      }
     }));
     expect(result).toEqual({
       id              : "book-1",
@@ -59,10 +60,8 @@ describe("getBookById", () => {
       chapterCount    : 2,
       personaCount    : 1,
       lastAnalyzedAt  : "2026-03-24T10:09:30.000Z",
-      currentModelName: "DeepSeek V3",
-      failureSummary  : null,
-      parseProgress   : 100,
-      parseStage      : "完成",
+      currentModel    : "DeepSeek V3",
+      lastErrorSummary: null,
       createdAt       : "2026-03-24T09:10:00.000Z",
       updatedAt       : "2026-03-24T10:10:00.000Z",
       sourceFile      : {
@@ -77,11 +76,10 @@ describe("getBookById", () => {
 
   it("throws BookNotFoundError when id does not exist", async () => {
     // Arrange
-    const findUnique = vi.fn().mockResolvedValue(null);
-    const service = createGetBookByIdService({ book: { findUnique } } as never);
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const service = createGetBookByIdService({ book: { findFirst } } as never);
 
     // Act + Assert
     await expect(service.getBookById("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);
   });
 });
-

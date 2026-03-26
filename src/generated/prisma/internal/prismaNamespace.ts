@@ -393,7 +393,8 @@ export const ModelName = {
   BiographyRecord: 'BiographyRecord',
   Mention: 'Mention',
   Relationship: 'Relationship',
-  AnalysisJob: 'AnalysisJob'
+  AnalysisJob: 'AnalysisJob',
+  MergeSuggestion: 'MergeSuggestion'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -409,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "mergeSuggestion"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1153,6 +1154,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    MergeSuggestion: {
+      payload: Prisma.$MergeSuggestionPayload<ExtArgs>
+      fields: Prisma.MergeSuggestionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MergeSuggestionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MergeSuggestionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>
+        }
+        findFirst: {
+          args: Prisma.MergeSuggestionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MergeSuggestionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>
+        }
+        findMany: {
+          args: Prisma.MergeSuggestionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>[]
+        }
+        create: {
+          args: Prisma.MergeSuggestionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>
+        }
+        createMany: {
+          args: Prisma.MergeSuggestionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MergeSuggestionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>[]
+        }
+        delete: {
+          args: Prisma.MergeSuggestionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>
+        }
+        update: {
+          args: Prisma.MergeSuggestionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>
+        }
+        deleteMany: {
+          args: Prisma.MergeSuggestionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MergeSuggestionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MergeSuggestionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>[]
+        }
+        upsert: {
+          args: Prisma.MergeSuggestionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MergeSuggestionPayload>
+        }
+        aggregate: {
+          args: Prisma.MergeSuggestionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMergeSuggestion>
+        }
+        groupBy: {
+          args: Prisma.MergeSuggestionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MergeSuggestionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MergeSuggestionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MergeSuggestionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1236,6 +1311,7 @@ export const BookScalarFieldEnum = {
   sourceFileName: 'sourceFileName',
   sourceFileMime: 'sourceFileMime',
   sourceFileSize: 'sourceFileSize',
+  deletedAt: 'deletedAt',
   status: 'status',
   errorLog: 'errorLog',
   parseProgress: 'parseProgress',
@@ -1334,6 +1410,7 @@ export const MentionScalarFieldEnum = {
   rawText: 'rawText',
   summary: 'summary',
   paraIndex: 'paraIndex',
+  recordSource: 'recordSource',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1372,6 +1449,8 @@ export const AnalysisJobScalarFieldEnum = {
   chapterEnd: 'chapterEnd',
   attempt: 'attempt',
   errorLog: 'errorLog',
+  overrideStrategy: 'overrideStrategy',
+  keepHistory: 'keepHistory',
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   createdAt: 'createdAt',
@@ -1379,6 +1458,22 @@ export const AnalysisJobScalarFieldEnum = {
 } as const
 
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
+
+
+export const MergeSuggestionScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  sourcePersonaId: 'sourcePersonaId',
+  targetPersonaId: 'targetPersonaId',
+  reason: 'reason',
+  confidence: 'confidence',
+  evidenceRefs: 'evidenceRefs',
+  status: 'status',
+  createdAt: 'createdAt',
+  resolvedAt: 'resolvedAt'
+} as const
+
+export type MergeSuggestionScalarFieldEnum = (typeof MergeSuggestionScalarFieldEnum)[keyof typeof MergeSuggestionScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1721,6 +1816,7 @@ export type GlobalOmitConfig = {
   mention?: Prisma.MentionOmit
   relationship?: Prisma.RelationshipOmit
   analysisJob?: Prisma.AnalysisJobOmit
+  mergeSuggestion?: Prisma.MergeSuggestionOmit
 }
 
 /* Types for Logging */

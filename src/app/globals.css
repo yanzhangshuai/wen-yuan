@@ -1,60 +1,321 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
-  --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.235 0.015 264);
-  --card: oklch(0.998 0.002 95);
-  --card-foreground: oklch(0.235 0.015 264);
-  --primary: oklch(0.47 0.11 250);
-  --primary-strong: oklch(0.41 0.11 250);
-  --primary-foreground: oklch(0.985 0.003 95);
-  --secondary: oklch(0.93 0.015 88);
-  --secondary-foreground: oklch(0.28 0.015 264);
-  --muted: oklch(0.95 0.01 95);
-  --muted-foreground: oklch(0.5 0.015 264);
-  --accent: oklch(0.94 0.02 78);
-  --border: oklch(0.88 0.01 95);
-  --input: oklch(0.86 0.01 95);
-  --ring: oklch(0.62 0.12 250);
-  --destructive: oklch(0.57 0.21 27);
-  --radius: 0.75rem;
+  --radius-base: 4px;
+  --decorative-enabled: 0;
 }
 
-.dark {
-  color-scheme: dark;
-  --background: oklch(0.19 0.015 264);
-  --foreground: oklch(0.96 0.005 95);
-  --card: oklch(0.24 0.015 264);
-  --card-foreground: oklch(0.96 0.005 95);
-  --primary: oklch(0.72 0.12 250);
-  --primary-strong: oklch(0.66 0.12 250);
-  --primary-foreground: oklch(0.18 0.015 264);
-  --secondary: oklch(0.31 0.014 264);
-  --secondary-foreground: oklch(0.96 0.005 95);
-  --muted: oklch(0.28 0.015 264);
-  --muted-foreground: oklch(0.72 0.012 95);
-  --accent: oklch(0.31 0.018 264);
-  --border: oklch(0.35 0.012 264);
-  --input: oklch(0.36 0.012 264);
-  --ring: oklch(0.77 0.11 250);
-  --destructive: oklch(0.64 0.22 28);
+@theme {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-fg);
+
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-fg, #FFFFFF);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-active: var(--color-primary-active);
+  --color-primary-subtle: var(--color-primary-subtle);
+
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-fg);
+
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  --color-card: var(--color-card-bg);
+  --color-card-foreground: var(--color-fg);
+  --color-card-border: var(--color-card-border);
+
+  --color-popover: var(--color-card-bg);
+  --color-popover-foreground: var(--color-fg);
+
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: #FFFFFF;
+
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-info: var(--color-info);
+
+  /* Admin Colors */
+  --color-admin-sidebar: var(--color-admin-sidebar-bg);
+  --color-admin-sidebar-foreground: var(--color-admin-sidebar-fg);
+  --color-admin-sidebar-active: var(--color-admin-sidebar-active);
+  --color-admin-header: var(--color-admin-header-bg);
+  --color-admin-content: var(--color-admin-content-bg);
+
+  /* Shadows */
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+
+  /* Radius */
+  --radius-sm: calc(var(--radius-base) + 2px);
+  --radius-md: calc(var(--radius-base) + 4px);
+  --radius-lg: calc(var(--radius-base) + 6px);
+  --radius-xl: calc(var(--radius-base) + 10px);
+
+  /* Font families */
+  --font-serif: "Noto Serif SC", "Songti SC", "SimSun", "STSong", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
 }
 
-* {
-  box-sizing: border-box;
-  border-color: var(--border);
+/* =========================================
+   主题 1 — 古朴国风·深色 (theme-01)
+   ========================================= */
+[data-theme='theme-01'] {
+  --color-bg: #1C1612;
+  --color-fg: #E5D9C8;
+  --color-primary: #D95445;
+  --color-primary-hover: #C04438;
+  --color-primary-active: #A83830;
+  --color-primary-subtle: rgba(217, 84, 69, 0.12);
+  --color-primary-fg: #FFFFFF;
+  --color-muted: #2E241C;
+  --color-muted-fg: #A0917E;
+  --color-border: #3A2E24;
+  --color-border-strong: #4A3C30;
+
+  --color-card-bg: #241E18;
+  --color-card-border: rgba(217, 84, 69, 0.15);
+  --shadow-card: 0 2px 16px rgba(40, 20, 10, 0.30);
+  --shadow-card-hover: 0 8px 32px rgba(40, 20, 10, 0.45);
+
+  --color-success: #4A9E5C;
+  --color-warning: #D4A050;
+  --color-danger: #C44030;
+  --color-info: #5A8DB8;
+
+  --color-graph-bg: #15110D;
+  --color-graph-node-default: #D95445;
+  --color-graph-edge-positive: #5A8DB8;
+  --color-graph-edge-negative: #C44030;
+  --color-graph-draft: rgba(160, 120, 80, 0.5);
+  --color-graph-verified-glow: rgba(74, 158, 92, 0.35);
+  --color-graph-focus-dim: rgba(28, 22, 18, 0.25);
+
+  --radius-base: 2px;
+  --decorative-enabled: 1;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #D95445;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #FAFAF9;
+
+  font-family: "Noto Serif SC", "Songti SC", "SimSun", "STSong", serif;
 }
 
-html {
-  background: var(--background);
+/* =========================================
+   主题 2 — 简约风 (theme-02)
+   ========================================= */
+[data-theme='theme-02'] {
+  --color-bg: #FAFAFA;
+  --color-fg: #18181B;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-active: #1E40AF;
+  --color-primary-subtle: rgba(37, 99, 235, 0.10);
+  --color-muted: #A1A1AA;
+  --color-muted-fg: #71717A;
+  --color-border: #E4E4E7;
+  --color-border-strong: #D4D4D8;
+
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #E4E4E7;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  --color-success: #16A34A;
+  --color-warning: #CA8A04;
+  --color-danger: #DC2626;
+  --color-info: #2563EB;
+
+  --color-graph-bg: #F4F4F5;
+  --color-graph-node-default: #3B82F6;
+  --color-graph-edge-positive: #22C55E;
+  --color-graph-edge-negative: #EF4444;
+  --color-graph-draft: rgba(113, 113, 122, 0.5);
+  --color-graph-verified-glow: rgba(34, 197, 94, 0.35);
+  --color-graph-focus-dim: rgba(24, 24, 27, 0.15);
+
+  --radius-base: 4px;
+  --decorative-enabled: 0;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #C0392B;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #FAFAF9;
+
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top, color-mix(in srgb, var(--accent) 45%, transparent), transparent 36%),
-    linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, white) 0%, var(--background) 100%);
-  color: var(--foreground);
+/* =========================================
+   主题 3 — 博物馆典藏暗色 (theme-03)
+   ========================================= */
+[data-theme='theme-03'] {
+  --color-bg: #1A1714;
+  --color-fg: #E8E0D4;
+  --color-primary: #C8A86E;
+  --color-primary-hover: #B8983E;
+  --color-primary-active: #A08530;
+  --color-primary-subtle: rgba(200, 168, 110, 0.12);
+  --color-primary-fg: #1A1714;
+  --color-muted: #352F29;
+  --color-muted-fg: #A09488;
+  --color-border: #3A3228;
+  --color-border-strong: #4A4030;
+
+  --color-card-bg: #221F1A;
+  --color-card-border: rgba(200, 168, 110, 0.20);
+  --shadow-card: 0 2px 16px rgba(200, 168, 110, 0.10);
+  --shadow-card-hover: 0 8px 32px rgba(200, 168, 110, 0.18);
+
+  --color-success: #5A9E6F;
+  --color-warning: #D4A855;
+  --color-danger: #C95D4F;
+  --color-info: #7AACCB;
+
+  --color-graph-bg: #12100D;
+  --color-graph-node-default: #C8A86E;
+  --color-graph-edge-positive: #7AACCB;
+  --color-graph-edge-negative: #C95D4F;
+  --color-graph-draft: rgba(200, 168, 110, 0.4);
+  --color-graph-verified-glow: rgba(200, 168, 110, 0.50);
+  --color-graph-focus-dim: rgba(26, 23, 20, 0.25);
+
+  --radius-base: 3px;
+  --decorative-enabled: 1;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #C0392B;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #FAFAF9;
+
+  font-family: "Noto Serif SC", "Songti SC", "SimSun", "STSong", serif;
+}
+
+/* =========================================
+   主题 4 — 星空模式 (theme-04)
+   ========================================= */
+[data-theme='theme-04'] {
+  --color-bg: #08090F;
+  --color-fg: #C8CED8;
+  --color-primary: #7B90AF;
+  --color-primary-hover: #8EA3C2;
+  --color-primary-active: #6A7D9A;
+  --color-primary-subtle: rgba(123, 144, 175, 0.10);
+  --color-primary-fg: #08090F;
+  --color-muted: #161B28;
+  --color-muted-fg: #7A8494;
+  --color-border: #181D2A;
+  --color-border-strong: #252C3C;
+
+  --color-card-bg: #0E1018;
+  --color-card-border: rgba(123, 144, 175, 0.08);
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.40);
+  --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.55);
+
+  --color-success: #22C55E;
+  --color-warning: #EAB308;
+  --color-danger: #EF4444;
+  --color-info: #38BDF8;
+
+  --color-graph-bg: #050710;
+  --color-graph-node-default: #7B90AF;
+  --color-graph-edge-positive: #5AACB4;
+  --color-graph-edge-negative: #C46A5A;
+  --color-graph-draft: rgba(123, 144, 175, 0.40);
+  --color-graph-verified-glow: rgba(123, 144, 175, 0.55);
+  --color-graph-focus-dim: rgba(8, 9, 15, 0.25);
+
+  --radius-base: 4px;
+  --decorative-enabled: 1;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #7B90AF;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #FAFAF9;
+
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+/* =========================================
+   Base layer
+   ========================================= */
+@layer base {
+  * {
+    border-color: var(--color-border);
+    transition: color 300ms ease, background-color 300ms ease;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+  }
+}
+
+/* =========================================
+   Shimmer animation for skeleton screens
+   ========================================= */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-card-bg) 25%,
+    var(--color-border) 50%,
+    var(--color-card-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* =========================================
+   Library ambient backgrounds per theme
+   ========================================= */
+[data-theme='theme-01'] .library-ambient {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse at 30% 0%, rgba(217, 84, 69, 0.05) 0%, transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 38px,
+      rgba(58, 46, 36, 0.18) 38px,
+      rgba(58, 46, 36, 0.18) 39px,
+      transparent 39px,
+      transparent 42px
+    ),
+    url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' type='fractalNoise'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+[data-theme='theme-02'] .library-ambient {
+  background-color: var(--color-bg);
+}
+
+[data-theme='theme-03'] .library-ambient {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse at 40% 0%, rgba(200, 168, 110, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(200, 168, 110, 0.03) 0%, transparent 40%),
+    url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.7' numOctaves='4' type='fractalNoise'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+[data-theme='theme-04'] .library-ambient {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(600px circle at 50% 5%, rgba(123, 144, 175, 0.05) 0%, transparent 100%),
+    radial-gradient(300px circle at 80% 95%, rgba(123, 144, 175, 0.02) 0%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
 }

@@ -27,12 +27,9 @@ describe("GET /api/books/:id/status", () => {
     // Arrange
     const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
     getBookStatusMock.mockResolvedValue({
-      id            : bookId,
-      status        : "PROCESSING",
-      parseProgress : 80,
-      parseStage    : "关系建模",
-      failureSummary: null,
-      updatedAt     : "2026-03-24T10:10:00.000Z"
+      status  : "PROCESSING",
+      progress: 80,
+      stage   : "关系建模"
     });
     const { GET } = await import("@/app/api/books/[id]/status/route");
 
@@ -48,8 +45,7 @@ describe("GET /api/books/:id/status", () => {
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("BOOK_STATUS_FETCHED");
     expect(payload.data).toEqual(expect.objectContaining({
-      id           : bookId,
-      parseProgress: 80
+      progress: 80
     }));
     expect(getBookStatusMock).toHaveBeenCalledWith(bookId);
   });

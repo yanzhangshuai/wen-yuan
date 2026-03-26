@@ -101,4 +101,11 @@ export const ERROR_CODES = {
   WORK_VERSION_NOT_FOUND       : "WORK_VERSION_NOT_FOUND"
 } as const;
 
+/**
+ * 功能：从 ERROR_CODES 推导统一错误码联合类型。
+ * 输入：无。
+ * 输出：ErrorCode 类型。
+ * 异常：无。
+ * 副作用：无。
+ */
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

@@ -47,7 +47,8 @@ describe("parseChapterAnalysisResponse", () => {
             targetName : "范进",
             type       : "姻亲",
             weight     : 0.8,
-            description: "态度明显转变"
+            description: "态度明显转变",
+            evidence   : "胡屠户在范进中举后态度骤变"
           },
           {
             sourceName : "张静斋",
@@ -96,14 +97,16 @@ describe("parseChapterAnalysisResponse", () => {
           targetName : "范进",
           type       : "姻亲",
           weight     : 0.8,
-          description: "态度明显转变"
+          description: "态度明显转变",
+          evidence   : "胡屠户在范进中举后态度骤变"
         },
         {
           sourceName : "张静斋",
           targetName : "范进",
           type       : "结交",
           weight     : undefined,
-          description: undefined
+          description: undefined,
+          evidence   : undefined
         }
       ]
     });

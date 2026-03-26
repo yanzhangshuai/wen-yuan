@@ -5,10 +5,13 @@ const LOGOUT_PATH = "/api/auth/logout";
 const LOGOUT_SUCCESS_CODE = "AUTH_LOGGED_OUT";
 
 /**
- * 登出只需要清理认证 Cookie，不依赖请求体或当前登录态。
- * 统一返回成功响应，保证前端可以幂等调用该接口完成本地状态收口。
+ * 功能：注销当前管理员会话。
+ * 输入：无请求体，无需已登录上下文（幂等接口）。
+ * 输出：统一成功响应，`data` 固定为 `null`。
+ * 异常：无（接口始终返回成功，便于前端收敛状态）。
+ * 副作用：清空 `AUTH_COOKIE_NAME` 对应的 httpOnly 鉴权 Cookie。
  */
-export async function POST() {
+export function POST() {
   const response = okJson({
     path     : LOGOUT_PATH,
     requestId: crypto.randomUUID(),
@@ -22,7 +25,7 @@ export async function POST() {
     name    : AUTH_COOKIE_NAME,
     value   : "",
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     path    : "/",
     maxAge  : 0
   });

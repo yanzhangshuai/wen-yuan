@@ -6,6 +6,13 @@ import { failJson, okJson } from "@/server/http/route-utils";
 import { BookNotFoundError, getBookStatus, type BookStatusSnapshot } from "@/server/modules/books/getBookStatus";
 import { ERROR_CODES } from "@/types/api";
 
+/**
+ * 功能：构造“书籍不存在”错误响应（状态查询专用）。
+ * 输入：requestId、startedAt、bookId。
+ * 输出：HTTP 404 响应。
+ * 异常：无。
+ * 副作用：无。
+ */
 function notFoundJson(
   requestId: string,
   startedAt: number,
@@ -26,6 +33,12 @@ function notFoundJson(
   );
 }
 
+/**
+ * GET `/api/books/:id/status`
+ * 功能：获取书籍解析状态快照（状态、进度、阶段、错误摘要）。
+ * 入参：`context.params.id` 书籍 ID（UUID）。
+ * 返回：`BookStatusSnapshot` 标准成功响应。
+ */
 export async function GET(
   _request: Request,
   context: BookRouteParamsContext

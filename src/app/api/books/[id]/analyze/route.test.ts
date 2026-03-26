@@ -1,7 +1,8 @@
-import { AnalysisJobStatus } from "@/generated/prisma/enums";
+import { AnalysisJobStatus, AppRole } from "@/generated/prisma/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const startBookAnalysisMock = vi.fn();
+const runAnalysisJobByIdMock = vi.fn(async () => undefined);
 
 vi.mock("@/server/modules/books/startBookAnalysis", () => {
   class BookNotFoundError extends Error {
@@ -28,8 +29,9 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   class AnalysisScopeInvalidError extends Error {}
 
   return {
-    ANALYSIS_SCOPE_VALUES: ["FULL_BOOK", "CHAPTER_RANGE"] as const,
-    startBookAnalysis    : startBookAnalysisMock,
+    ANALYSIS_SCOPE_VALUES            : ["FULL_BOOK", "CHAPTER_RANGE"] as const,
+    ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
+    startBookAnalysis                : startBookAnalysisMock,
     BookNotFoundError,
     AnalysisModelNotFoundError,
     AnalysisModelDisabledError,
@@ -37,9 +39,17 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   };
 });
 
+vi.mock("@/server/modules/analysis/jobs/runAnalysisJob", () => {
+  return {
+    runAnalysisJobById: runAnalysisJobByIdMock
+  };
+});
+
 describe("POST /api/books/:id/analyze", () => {
   afterEach(() => {
     startBookAnalysisMock.mockReset();
+    runAnalysisJobByIdMock.mockReset();
+    runAnalysisJobByIdMock.mockImplementation(async () => undefined);
   });
 
   it("creates analysis job and returns 202", async () => {
@@ -47,15 +57,17 @@ describe("POST /api/books/:id/analyze", () => {
     const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
     startBookAnalysisMock.mockResolvedValue({
       bookId,
-      jobId        : "job-1",
-      status       : AnalysisJobStatus.QUEUED,
-      scope        : "FULL_BOOK",
-      chapterStart : null,
-      chapterEnd   : null,
-      aiModelId    : "model-1",
-      bookStatus   : "PROCESSING",
-      parseProgress: 0,
-      parseStage   : "文本清洗"
+      jobId           : "job-1",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false,
+      aiModelId       : "model-1",
+      bookStatus      : "PROCESSING",
+      parseProgress   : 0,
+      parseStage      : "文本清洗"
     });
     const { POST } = await import("@/app/api/books/[id]/analyze/route");
 
@@ -63,8 +75,11 @@ describe("POST /api/books/:id/analyze", () => {
     const response = await POST(
       new Request(`http://localhost/api/books/${bookId}/analyze`, {
         method : "POST",
-        headers: { "Content-Type": "application/json" },
-        body   : JSON.stringify({ aiModelId: "cc06e3e5-8728-4de8-b76c-3ff40eb57ef8" })
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-role" : AppRole.ADMIN
+        },
+        body: JSON.stringify({ aiModelId: "cc06e3e5-8728-4de8-b76c-3ff40eb57ef8" })
       }),
       { params: Promise.resolve({ id: bookId }) }
     );
@@ -75,11 +90,14 @@ describe("POST /api/books/:id/analyze", () => {
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("BOOK_ANALYSIS_STARTED");
     expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {
-      aiModelId   : "cc06e3e5-8728-4de8-b76c-3ff40eb57ef8",
-      chapterEnd  : undefined,
-      chapterStart: undefined,
-      scope       : undefined
+      aiModelId       : "cc06e3e5-8728-4de8-b76c-3ff40eb57ef8",
+      chapterEnd      : undefined,
+      chapterStart    : undefined,
+      scope           : undefined,
+      overrideStrategy: undefined,
+      keepHistory     : undefined
     });
+    expect(runAnalysisJobByIdMock).toHaveBeenCalledWith("job-1");
   });
 
   it("returns 400 for invalid route id", async () => {
@@ -89,7 +107,10 @@ describe("POST /api/books/:id/analyze", () => {
     // Act
     const response = await POST(
       new Request("http://localhost/api/books/invalid/analyze", {
-        method: "POST"
+        method : "POST",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
       }),
       { params: Promise.resolve({ id: "invalid" }) }
     );
@@ -108,8 +129,11 @@ describe("POST /api/books/:id/analyze", () => {
     const response = await POST(
       new Request(`http://localhost/api/books/${bookId}/analyze`, {
         method : "POST",
-        headers: { "Content-Type": "application/json" },
-        body   : JSON.stringify({ aiModelId: "not-uuid" })
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-role" : AppRole.ADMIN
+        },
+        body: JSON.stringify({ aiModelId: "not-uuid" })
       }),
       { params: Promise.resolve({ id: bookId }) }
     );
@@ -128,7 +152,12 @@ describe("POST /api/books/:id/analyze", () => {
 
     // Act
     const response = await POST(
-      new Request(`http://localhost/api/books/${bookId}/analyze`, { method: "POST" }),
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
       { params: Promise.resolve({ id: bookId }) }
     );
 
@@ -136,4 +165,3 @@ describe("POST /api/books/:id/analyze", () => {
     expect(response.status).toBe(404);
   });
 });
-

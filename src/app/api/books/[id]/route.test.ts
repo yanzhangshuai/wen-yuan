@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { AppRole } from "@/generated/prisma/enums";
 
 const getBookByIdMock = vi.fn();
 const deleteBookMock = vi.fn();
@@ -43,10 +44,8 @@ describe("GET /api/books/:id", () => {
       chapterCount    : 0,
       personaCount    : 0,
       lastAnalyzedAt  : null,
-      currentModelName: null,
-      failureSummary  : null,
-      parseProgress   : 0,
-      parseStage      : null,
+      currentModel    : null,
+      lastErrorSummary: null,
       createdAt       : "2026-03-24T00:00:00.000Z",
       updatedAt       : "2026-03-24T00:00:00.000Z",
       sourceFile      : {
@@ -126,7 +125,12 @@ describe("DELETE /api/books/:id", () => {
 
     // Act
     const response = await DELETE(
-      new Request(`http://localhost/api/books/${bookId}`),
+      new Request(`http://localhost/api/books/${bookId}`, {
+        method : "DELETE",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
       { params: Promise.resolve({ id: bookId }) }
     );
 
@@ -147,7 +151,12 @@ describe("DELETE /api/books/:id", () => {
 
     // Act
     const response = await DELETE(
-      new Request(`http://localhost/api/books/${bookId}`),
+      new Request(`http://localhost/api/books/${bookId}`, {
+        method : "DELETE",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
       { params: Promise.resolve({ id: bookId }) }
     );
 
@@ -158,4 +167,3 @@ describe("DELETE /api/books/:id", () => {
     expect(payload.message).toBe("书籍不存在");
   });
 });
-

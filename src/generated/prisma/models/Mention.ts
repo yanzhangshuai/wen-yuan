@@ -41,6 +41,7 @@ export type MentionMinAggregateOutputType = {
   rawText: string | null
   summary: string | null
   paraIndex: number | null
+  recordSource: $Enums.RecordSource | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -53,6 +54,7 @@ export type MentionMaxAggregateOutputType = {
   rawText: string | null
   summary: string | null
   paraIndex: number | null
+  recordSource: $Enums.RecordSource | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -65,6 +67,7 @@ export type MentionCountAggregateOutputType = {
   rawText: number
   summary: number
   paraIndex: number
+  recordSource: number
   deletedAt: number
   createdAt: number
   updatedAt: number
@@ -87,6 +90,7 @@ export type MentionMinAggregateInputType = {
   rawText?: true
   summary?: true
   paraIndex?: true
+  recordSource?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -99,6 +103,7 @@ export type MentionMaxAggregateInputType = {
   rawText?: true
   summary?: true
   paraIndex?: true
+  recordSource?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -111,6 +116,7 @@ export type MentionCountAggregateInputType = {
   rawText?: true
   summary?: true
   paraIndex?: true
+  recordSource?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -210,6 +216,7 @@ export type MentionGroupByOutputType = {
   rawText: string
   summary: string | null
   paraIndex: number | null
+  recordSource: $Enums.RecordSource
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -245,6 +252,7 @@ export type MentionWhereInput = {
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
   deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
@@ -259,6 +267,7 @@ export type MentionOrderByWithRelationInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -276,6 +285,7 @@ export type MentionWhereUniqueInput = Prisma.AtLeast<{
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
   deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
@@ -290,6 +300,7 @@ export type MentionOrderByWithAggregationInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -310,6 +321,7 @@ export type MentionScalarWhereWithAggregatesInput = {
   rawText?: Prisma.StringWithAggregatesFilter<"Mention"> | string
   summary?: Prisma.StringNullableWithAggregatesFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableWithAggregatesFilter<"Mention"> | number | null
+  recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"Mention"> | $Enums.RecordSource
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Mention"> | Date | string
@@ -320,6 +332,7 @@ export type MentionCreateInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -334,6 +347,7 @@ export type MentionUncheckedCreateInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -344,6 +358,7 @@ export type MentionUpdateInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -358,6 +373,7 @@ export type MentionUncheckedUpdateInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -370,6 +386,7 @@ export type MentionCreateManyInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -380,6 +397,7 @@ export type MentionUpdateManyMutationInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -392,6 +410,7 @@ export type MentionUncheckedUpdateManyInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -414,6 +433,7 @@ export type MentionCountOrderByAggregateInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -430,6 +450,7 @@ export type MentionMaxOrderByAggregateInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -442,6 +463,7 @@ export type MentionMinOrderByAggregateInput = {
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
+  recordSource?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -540,6 +562,7 @@ export type MentionCreateWithoutChapterInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -552,6 +575,7 @@ export type MentionUncheckedCreateWithoutChapterInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -593,6 +617,7 @@ export type MentionScalarWhereInput = {
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
+  recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
   deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
@@ -603,6 +628,7 @@ export type MentionCreateWithoutPersonaInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -615,6 +641,7 @@ export type MentionUncheckedCreateWithoutPersonaInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -652,6 +679,7 @@ export type MentionCreateManyChapterInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -662,6 +690,7 @@ export type MentionUpdateWithoutChapterInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -674,6 +703,7 @@ export type MentionUncheckedUpdateWithoutChapterInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -685,6 +715,7 @@ export type MentionUncheckedUpdateManyWithoutChapterInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -696,6 +727,7 @@ export type MentionCreateManyPersonaInput = {
   rawText: string
   summary?: string | null
   paraIndex?: number | null
+  recordSource?: $Enums.RecordSource
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -706,6 +738,7 @@ export type MentionUpdateWithoutPersonaInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -718,6 +751,7 @@ export type MentionUncheckedUpdateWithoutPersonaInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -729,6 +763,7 @@ export type MentionUncheckedUpdateManyWithoutPersonaInput = {
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -743,6 +778,7 @@ export type MentionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  recordSource?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -757,6 +793,7 @@ export type MentionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  recordSource?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -771,6 +808,7 @@ export type MentionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  recordSource?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -785,12 +823,13 @@ export type MentionSelectScalar = {
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
+  recordSource?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
+export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "recordSource" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
 export type MentionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -817,6 +856,7 @@ export type $MentionPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     rawText: string
     summary: string | null
     paraIndex: number | null
+    recordSource: $Enums.RecordSource
     deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1251,6 +1291,7 @@ export interface MentionFieldRefs {
   readonly rawText: Prisma.FieldRef<"Mention", 'String'>
   readonly summary: Prisma.FieldRef<"Mention", 'String'>
   readonly paraIndex: Prisma.FieldRef<"Mention", 'Int'>
+  readonly recordSource: Prisma.FieldRef<"Mention", 'RecordSource'>
   readonly deletedAt: Prisma.FieldRef<"Mention", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Mention", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Mention", 'DateTime'>

@@ -5,12 +5,12 @@ import { decryptValue, encryptValue } from "@/server/security/encryption";
 import { createModelsModule } from "./index";
 
 function createAiModelRecord(overrides: Partial<{
-  id: string;
-  provider: string;
-  name: string;
-  modelId: string;
-  baseUrl: string;
-  apiKey: string | null;
+  id       : string;
+  provider : string;
+  name     : string;
+  modelId  : string;
+  baseUrl  : string;
+  apiKey   : string | null;
   isEnabled: boolean;
   isDefault: boolean;
   updatedAt: Date;
@@ -31,13 +31,15 @@ function createAiModelRecord(overrides: Partial<{
 
 describe("models module", () => {
   const originalEncryptionKey = process.env.APP_ENCRYPTION_KEY;
+  const originalModelTestAllowedHosts = process.env.MODEL_TEST_ALLOWED_HOSTS;
 
   afterEach(() => {
     process.env.APP_ENCRYPTION_KEY = originalEncryptionKey;
+    process.env.MODEL_TEST_ALLOWED_HOSTS = originalModelTestAllowedHosts;
     vi.restoreAllMocks();
   });
 
-  it("lists models with masked api key and hasApiKey flag", async () => {
+  it("lists models with masked api key and isConfigured flag", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const prismaClient = {
@@ -58,22 +60,22 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient);
-    const result = await module.listModels();
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.listModels();
 
     expect(result).toEqual([
       expect.objectContaining({
         id          : "model-1",
         provider    : "deepseek",
         apiKeyMasked: "abcd********5678",
-        hasApiKey   : true,
+        isConfigured: true,
         isDefault   : true
       }),
       expect.objectContaining({
         id          : "model-2",
         provider    : "gemini",
         apiKeyMasked: null,
-        hasApiKey   : false
+        isConfigured: false
       })
     ]);
   });
@@ -93,8 +95,8 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient);
-    const result = await module.updateModel({
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.updateModel({
       id       : "model-1",
       baseUrl  : "https://api.example.com/",
       isEnabled: true,
@@ -116,7 +118,7 @@ describe("models module", () => {
     const persistedApiKey = updateMock.mock.calls[0][0].data.apiKey as string;
     expect(persistedApiKey).not.toBe("secret-api-key");
     expect(decryptValue(persistedApiKey)).toBe("secret-api-key");
-    expect(result.hasApiKey).toBe(true);
+    expect(result.isConfigured).toBe(true);
     expect(result.apiKeyMasked).toBe("secr******-key");
   });
 
@@ -130,9 +132,9 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient);
+    const modelsModule = createModelsModule(prismaClient);
 
-    await expect(module.updateModel({
+    await expect(modelsModule.updateModel({
       id       : "model-1",
       isEnabled: true,
       apiKey   : { action: "unchanged" }
@@ -156,8 +158,8 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient);
-    const result = await module.updateModel({
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.updateModel({
       id       : "model-1",
       isEnabled: false,
       apiKey   : { action: "clear" }
@@ -169,7 +171,7 @@ describe("models module", () => {
         apiKey   : null
       })
     }));
-    expect(result.hasApiKey).toBe(false);
+    expect(result.isConfigured).toBe(false);
     expect(result.apiKeyMasked).toBeNull();
   });
 
@@ -193,8 +195,8 @@ describe("models module", () => {
       })
     } as never;
 
-    const module = createModelsModule(prismaClient);
-    const result = await module.setDefaultModel("model-2");
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.setDefaultModel("model-2");
 
     expect(updateManyMock).toHaveBeenCalledWith({
       where: { isDefault: true },
@@ -227,8 +229,8 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient, fetchMock);
-    const result = await module.testModelConnectivity("model-1");
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.deepseek.com/chat/completions",
@@ -239,8 +241,9 @@ describe("models module", () => {
         })
       })
     );
-    expect(result.ok).toBe(true);
+    expect(result.success).toBe(true);
     expect(result.detail).toBe("连接成功");
+    expect(result.errorType).toBeUndefined();
   });
 
   it("tests gemini model connectivity with generateContent endpoint", async () => {
@@ -267,8 +270,8 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient, fetchMock);
-    const result = await module.testModelConnectivity("model-1");
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=gemini-secret",
@@ -276,8 +279,10 @@ describe("models module", () => {
         method: "POST"
       })
     );
-    expect(result.ok).toBe(false);
+    expect(result.success).toBe(false);
     expect(result.detail).toBe("quota exceeded");
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+    expect(result.errorMessage).toBe("quota exceeded");
   });
 
   it("throws a readable error when api key is missing during connectivity test", async () => {
@@ -289,8 +294,56 @@ describe("models module", () => {
       }
     } as never;
 
-    const module = createModelsModule(prismaClient);
+    const modelsModule = createModelsModule(prismaClient);
 
-    await expect(module.testModelConnectivity("model-1")).rejects.toThrow("模型未配置 API Key");
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("模型未配置 API Key");
+  });
+
+  it("rejects connectivity test when base url host is not in allowlist", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn();
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          baseUrl: "https://internal.example.com",
+          apiKey : encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试地址不在白名单内");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("classifies auth failures as AUTH_ERROR", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: {
+        message: "invalid api key"
+      }
+    }), {
+      status : 401,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("invalid-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("AUTH_ERROR");
+    expect(result.errorMessage).toBe("invalid api key");
   });
 });

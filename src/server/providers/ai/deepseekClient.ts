@@ -31,12 +31,12 @@ export class DeepSeekClient implements AiProviderClient {
    * 副作用：无。
    */
   constructor(
-    apiKey = process.env.DEEPSEEK_API_KEY,
-    baseUrl = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
-    modelName = process.env.DEEPSEEK_MODEL ?? "deepseek-chat"
+    apiKey: string,
+    baseUrl = "https://api.deepseek.com",
+    modelName = "deepseek-chat"
   ) {
     if (!apiKey) {
-      throw new Error("Missing DeepSeek API key: DEEPSEEK_API_KEY");
+      throw new Error("Missing DeepSeek API key");
     }
 
     this.apiKey = apiKey;

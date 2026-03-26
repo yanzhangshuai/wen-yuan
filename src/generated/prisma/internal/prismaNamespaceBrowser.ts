@@ -60,7 +60,8 @@ export const ModelName = {
   BiographyRecord: 'BiographyRecord',
   Mention: 'Mention',
   Relationship: 'Relationship',
-  AnalysisJob: 'AnalysisJob'
+  AnalysisJob: 'AnalysisJob',
+  MergeSuggestion: 'MergeSuggestion'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -123,6 +124,7 @@ export const BookScalarFieldEnum = {
   sourceFileName: 'sourceFileName',
   sourceFileMime: 'sourceFileMime',
   sourceFileSize: 'sourceFileSize',
+  deletedAt: 'deletedAt',
   status: 'status',
   errorLog: 'errorLog',
   parseProgress: 'parseProgress',
@@ -221,6 +223,7 @@ export const MentionScalarFieldEnum = {
   rawText: 'rawText',
   summary: 'summary',
   paraIndex: 'paraIndex',
+  recordSource: 'recordSource',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -259,6 +262,8 @@ export const AnalysisJobScalarFieldEnum = {
   chapterEnd: 'chapterEnd',
   attempt: 'attempt',
   errorLog: 'errorLog',
+  overrideStrategy: 'overrideStrategy',
+  keepHistory: 'keepHistory',
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   createdAt: 'createdAt',
@@ -266,6 +271,22 @@ export const AnalysisJobScalarFieldEnum = {
 } as const
 
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
+
+
+export const MergeSuggestionScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  sourcePersonaId: 'sourcePersonaId',
+  targetPersonaId: 'targetPersonaId',
+  reason: 'reason',
+  confidence: 'confidence',
+  evidenceRefs: 'evidenceRefs',
+  status: 'status',
+  createdAt: 'createdAt',
+  resolvedAt: 'resolvedAt'
+} as const
+
+export type MergeSuggestionScalarFieldEnum = (typeof MergeSuggestionScalarFieldEnum)[keyof typeof MergeSuggestionScalarFieldEnum]
 
 
 export const SortOrder = {

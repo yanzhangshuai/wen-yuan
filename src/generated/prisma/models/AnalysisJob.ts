@@ -48,6 +48,8 @@ export type AnalysisJobMinAggregateOutputType = {
   chapterEnd: number | null
   attempt: number | null
   errorLog: string | null
+  overrideStrategy: string | null
+  keepHistory: boolean | null
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date | null
@@ -64,6 +66,8 @@ export type AnalysisJobMaxAggregateOutputType = {
   chapterEnd: number | null
   attempt: number | null
   errorLog: string | null
+  overrideStrategy: string | null
+  keepHistory: boolean | null
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date | null
@@ -80,6 +84,8 @@ export type AnalysisJobCountAggregateOutputType = {
   chapterEnd: number
   attempt: number
   errorLog: number
+  overrideStrategy: number
+  keepHistory: number
   startedAt: number
   finishedAt: number
   createdAt: number
@@ -110,6 +116,8 @@ export type AnalysisJobMinAggregateInputType = {
   chapterEnd?: true
   attempt?: true
   errorLog?: true
+  overrideStrategy?: true
+  keepHistory?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -126,6 +134,8 @@ export type AnalysisJobMaxAggregateInputType = {
   chapterEnd?: true
   attempt?: true
   errorLog?: true
+  overrideStrategy?: true
+  keepHistory?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -142,6 +152,8 @@ export type AnalysisJobCountAggregateInputType = {
   chapterEnd?: true
   attempt?: true
   errorLog?: true
+  overrideStrategy?: true
+  keepHistory?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -245,6 +257,8 @@ export type AnalysisJobGroupByOutputType = {
   chapterEnd: number | null
   attempt: number
   errorLog: string | null
+  overrideStrategy: string | null
+  keepHistory: boolean
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date
@@ -284,6 +298,8 @@ export type AnalysisJobWhereInput = {
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
@@ -302,6 +318,8 @@ export type AnalysisJobOrderByWithRelationInput = {
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
+  overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
+  keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -323,6 +341,8 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
@@ -341,6 +361,8 @@ export type AnalysisJobOrderByWithAggregationInput = {
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
+  overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
+  keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -365,6 +387,8 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
   chapterEnd?: Prisma.IntNullableWithAggregatesFilter<"AnalysisJob"> | number | null
   attempt?: Prisma.IntWithAggregatesFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
+  overrideStrategy?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
+  keepHistory?: Prisma.BoolWithAggregatesFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisJob"> | Date | string
@@ -379,6 +403,8 @@ export type AnalysisJobCreateInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -397,6 +423,8 @@ export type AnalysisJobUncheckedCreateInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -411,6 +439,8 @@ export type AnalysisJobUpdateInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -429,6 +459,8 @@ export type AnalysisJobUncheckedUpdateInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -445,6 +477,8 @@ export type AnalysisJobCreateManyInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -459,6 +493,8 @@ export type AnalysisJobUpdateManyMutationInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -475,6 +511,8 @@ export type AnalysisJobUncheckedUpdateManyInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -501,6 +539,8 @@ export type AnalysisJobCountOrderByAggregateInput = {
   chapterEnd?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
+  overrideStrategy?: Prisma.SortOrder
+  keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -523,6 +563,8 @@ export type AnalysisJobMaxOrderByAggregateInput = {
   chapterEnd?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
+  overrideStrategy?: Prisma.SortOrder
+  keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -539,6 +581,8 @@ export type AnalysisJobMinOrderByAggregateInput = {
   chapterEnd?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
+  overrideStrategy?: Prisma.SortOrder
+  keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -647,6 +691,8 @@ export type AnalysisJobCreateWithoutAiModelInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -663,6 +709,8 @@ export type AnalysisJobUncheckedCreateWithoutAiModelInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -708,6 +756,8 @@ export type AnalysisJobScalarWhereInput = {
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
@@ -722,6 +772,8 @@ export type AnalysisJobCreateWithoutBookInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -738,6 +790,8 @@ export type AnalysisJobUncheckedCreateWithoutBookInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -779,6 +833,8 @@ export type AnalysisJobCreateManyAiModelInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -793,6 +849,8 @@ export type AnalysisJobUpdateWithoutAiModelInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -809,6 +867,8 @@ export type AnalysisJobUncheckedUpdateWithoutAiModelInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -824,6 +884,8 @@ export type AnalysisJobUncheckedUpdateManyWithoutAiModelInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -839,6 +901,8 @@ export type AnalysisJobCreateManyBookInput = {
   chapterEnd?: number | null
   attempt?: number
   errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -853,6 +917,8 @@ export type AnalysisJobUpdateWithoutBookInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -869,6 +935,8 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -884,6 +952,8 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -902,6 +972,8 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   chapterEnd?: boolean
   attempt?: boolean
   errorLog?: boolean
+  overrideStrategy?: boolean
+  keepHistory?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -920,6 +992,8 @@ export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   chapterEnd?: boolean
   attempt?: boolean
   errorLog?: boolean
+  overrideStrategy?: boolean
+  keepHistory?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -938,6 +1012,8 @@ export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   chapterEnd?: boolean
   attempt?: boolean
   errorLog?: boolean
+  overrideStrategy?: boolean
+  keepHistory?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -956,13 +1032,15 @@ export type AnalysisJobSelectScalar = {
   chapterEnd?: boolean
   attempt?: boolean
   errorLog?: boolean
+  overrideStrategy?: boolean
+  keepHistory?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "aiModelId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "attempt" | "errorLog" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
+export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "aiModelId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "attempt" | "errorLog" | "overrideStrategy" | "keepHistory" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
 export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
@@ -992,6 +1070,8 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
     chapterEnd: number | null
     attempt: number
     errorLog: string | null
+    overrideStrategy: string | null
+    keepHistory: boolean
     startedAt: Date | null
     finishedAt: Date | null
     createdAt: Date
@@ -1430,6 +1510,8 @@ export interface AnalysisJobFieldRefs {
   readonly chapterEnd: Prisma.FieldRef<"AnalysisJob", 'Int'>
   readonly attempt: Prisma.FieldRef<"AnalysisJob", 'Int'>
   readonly errorLog: Prisma.FieldRef<"AnalysisJob", 'String'>
+  readonly overrideStrategy: Prisma.FieldRef<"AnalysisJob", 'String'>
+  readonly keepHistory: Prisma.FieldRef<"AnalysisJob", 'Boolean'>
   readonly startedAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>
   readonly finishedAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>

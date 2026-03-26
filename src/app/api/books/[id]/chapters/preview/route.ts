@@ -11,6 +11,13 @@ import {
 } from "@/server/modules/books/getChapterPreview";
 import { ERROR_CODES } from "@/types/api";
 
+/**
+ * 功能：构造“书籍不存在”错误响应（章节预览专用）。
+ * 输入：requestId、startedAt、bookId。
+ * 输出：HTTP 404 响应。
+ * 异常：无。
+ * 副作用：无。
+ */
 function notFoundJson(
   requestId: string,
   startedAt: number,
@@ -31,6 +38,13 @@ function notFoundJson(
   );
 }
 
+/**
+ * 功能：构造“章节预览请求不合法”错误响应。
+ * 输入：requestId、startedAt、bookId、错误详情。
+ * 输出：HTTP 400 响应。
+ * 异常：无。
+ * 副作用：无。
+ */
 function badRequestJson(
   requestId: string,
   startedAt: number,
@@ -52,6 +66,12 @@ function badRequestJson(
   );
 }
 
+/**
+ * GET `/api/books/:id/chapters/preview`
+ * 功能：基于书籍原文生成章节切分预览（不落库，仅预览）。
+ * 入参：`context.params.id`（书籍 UUID）。
+ * 返回：`ChapterPreviewResult` 标准成功响应。
+ */
 export async function GET(
   _request: Request,
   context: BookRouteParamsContext
@@ -93,4 +113,3 @@ export async function GET(
     });
   }
 }
-

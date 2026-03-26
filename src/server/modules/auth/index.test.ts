@@ -25,66 +25,67 @@ describe("auth role constants", () => {
 
 describe("getAuthContext", () => {
   const originalSecret = process.env.JWT_SECRET;
+  const testSecret = "unit-test-secret-at-least-32-bytes!!";
 
   afterEach(() => {
     process.env.JWT_SECRET = originalSecret;
   });
 
-  it("maps injected admin headers to admin context", () => {
+  it("maps injected admin headers to admin context", async () => {
     const headers = new Headers({
       "x-auth-role"   : AppRole.ADMIN,
       "x-auth-user-id": "user-1"
     });
 
-    expect(getAuthContext(headers)).toEqual({
+    await expect(getAuthContext(headers)).resolves.toEqual({
       userId: "user-1",
       role  : AppRole.ADMIN
     });
   });
 
-  it("falls back to viewer when role header is missing", () => {
-    expect(getAuthContext(new Headers())).toEqual({
+  it("falls back to viewer when role header is missing", async () => {
+    await expect(getAuthContext(new Headers())).resolves.toEqual({
       userId: null,
       role  : AppRole.VIEWER
     });
   });
 
-  it("resolves admin from cookie token when middleware headers are missing", () => {
-    process.env.JWT_SECRET = "unit-test-secret";
+  it("resolves admin from cookie token when middleware headers are missing", async () => {
+    process.env.JWT_SECRET = testSecret;
     const now = Math.floor(Date.now() / 1000);
-    const token = issueAuthToken(now);
+    const token = await issueAuthToken(now);
     const headers = new Headers({
       cookie: `token=${token}`
     });
 
-    expect(getAuthContext(headers)).toEqual({
+    await expect(getAuthContext(headers)).resolves.toEqual({
       userId: null,
       role  : AppRole.ADMIN
     });
   });
 
-  it("prefers valid cookie token when middleware role header is viewer", () => {
-    process.env.JWT_SECRET = "unit-test-secret";
+  it("prefers valid cookie token when middleware role header is viewer", async () => {
+    process.env.JWT_SECRET = testSecret;
     const now = Math.floor(Date.now() / 1000);
-    const token = issueAuthToken(now);
+    const token = await issueAuthToken(now);
     const headers = new Headers({
       "x-auth-role": AppRole.VIEWER,
       cookie       : `token=${token}`
     });
 
-    expect(getAuthContext(headers)).toEqual({
+    await expect(getAuthContext(headers)).resolves.toEqual({
       userId: null,
       role  : AppRole.ADMIN
     });
   });
 
-  it("keeps viewer when cookie token is invalid", () => {
-    process.env.JWT_SECRET = "unit-test-secret";
+  it("keeps viewer when cookie token is invalid", async () => {
+    process.env.JWT_SECRET = testSecret;
     const headers = new Headers({
       cookie: "token=bad-token"
     });
 
-    expect(getAuthContext(headers)).toEqual({
+    await expect(getAuthContext(headers)).resolves.toEqual({
       userId: null,
       role  : AppRole.VIEWER
     });
@@ -121,16 +122,17 @@ describe("sanitizeRedirectPath", () => {
 
 describe("auth token", () => {
   const originalSecret = process.env.JWT_SECRET;
+  const testSecret = "unit-test-secret-at-least-32-bytes!!";
 
   afterEach(() => {
     process.env.JWT_SECRET = originalSecret;
   });
 
-  it("issues a signed admin token with 7 day ttl", () => {
-    process.env.JWT_SECRET = "unit-test-secret";
+  it("issues a signed admin token with 7 day ttl", async () => {
+    process.env.JWT_SECRET = testSecret;
 
-    const token = issueAuthToken(1_700_000_000);
-    const payload = verifyAuthToken(token, 1_700_000_100);
+    const token = await issueAuthToken(1_700_000_000);
+    const payload = await verifyAuthToken(token, 1_700_000_100);
 
     expect(payload).toEqual({
       role: AppRole.ADMIN,
@@ -139,14 +141,16 @@ describe("auth token", () => {
     });
   });
 
-  it("rejects tampered or expired tokens", () => {
-    process.env.JWT_SECRET = "unit-test-secret";
+  it("rejects tampered or expired tokens", async () => {
+    process.env.JWT_SECRET = testSecret;
 
-    const token = issueAuthToken(1_700_000_000);
+    const token = await issueAuthToken(1_700_000_000);
     const tampered = `${token.slice(0, -1)}x`;
 
-    expect(verifyAuthToken(tampered, 1_700_000_100)).toBeNull();
-    expect(verifyAuthToken(token, 1_700_000_000 + AUTH_TOKEN_TTL_SECONDS + 1)).toBeNull();
+    await expect(verifyAuthToken(tampered, 1_700_000_100)).resolves.toBeNull();
+    await expect(
+      verifyAuthToken(token, 1_700_000_000 + AUTH_TOKEN_TTL_SECONDS + 1)
+    ).resolves.toBeNull();
   });
 });
 

@@ -9,6 +9,12 @@ import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, modelRouteParamsSchema } from "../../_shared";
 
+/**
+ * POST `/api/admin/models/:id/test`
+ * 功能：触发模型联通性测试（管理员操作）。
+ * 入参：路由参数 `id`（模型 UUID）。
+ * 返回：测试结果（成功/失败与耗时信息）。
+ */
 export async function POST(
   _request: Request,
   context: { params: Promise<{ id: string }> }
@@ -17,7 +23,7 @@ export async function POST(
   const requestId = randomUUID();
 
   try {
-    const auth = getAuthContext(await headers());
+    const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
     const parsedParams = modelRouteParamsSchema.safeParse(await context.params);
