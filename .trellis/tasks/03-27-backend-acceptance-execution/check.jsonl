@@ -1,0 +1,12 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check-backend.md", "reason": "Backend check spec"}
+{"file": "docs/v1/prd.md", "reason": "项目需求基线，验收范围需与PRD一致"}
+{"file": "docs/v1/backend/TDD.md", "reason": "后端验收权威标准与DoD"}
+{"file": "docs/v1/backend/TDD-steps.md", "reason": "后端验收执行步骤与命令顺序"}
+{"file": ".trellis/tasks/03-27-backend-acceptance-execution/prd.md", "reason": "本次任务目标与边界"}
+{"file": ".trellis/tasks/03-27-backend-acceptance-execution/acceptance-execution-checklist.md", "reason": "执行勾选清单与失败回退规则"}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引"}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "统一API响应契约验收"}
+{"file": ".trellis/spec/backend/security-guidelines.md", "reason": "安全基线与敏感数据规范"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "类型安全与TS约束"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "生产代码和测试注释门槛"}

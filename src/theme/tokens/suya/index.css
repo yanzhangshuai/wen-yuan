@@ -1,0 +1,54 @@
+/* =========================================
+   主题 2 — 素雅·暖调浅色 (suya)
+   暖象牙底 + 竹青绿强调 + Noto Serif SC
+   ========================================= */
+[data-theme='suya'] {
+  --color-bg: #F7F5F0;
+  --color-fg: #33312C;
+  --color-primary: #5E7452;
+  --color-primary-hover: #4E6444;
+  --color-primary-active: #405438;
+  --color-primary-subtle: rgba(94, 116, 82, 0.08);
+  --color-primary-fg: #FFFFFF;
+  --color-muted: #C4BFB5;
+  --color-muted-fg: #8A8478;
+  --color-border: #E0DCD4;
+  --color-border-strong: #D0CCC2;
+
+  --color-card-bg: #FEFDFB;
+  --color-card-border: rgba(94, 116, 82, 0.12);
+  --shadow-card: 0 2px 12px rgba(50, 45, 35, 0.06);
+  --shadow-card-hover: 0 8px 24px rgba(50, 45, 35, 0.12);
+
+  --color-success: #4A8C5C;
+  --color-warning: #B89840;
+  --color-danger: #C45040;
+  --color-info: #5A82A8;
+
+  --color-graph-bg: #F0EDE7;
+  --color-graph-node-default: #5E7452;
+  --color-graph-edge-positive: #5A82A8;
+  --color-graph-edge-negative: #C45040;
+  --color-graph-draft: rgba(138, 132, 120, 0.5);
+  --color-graph-verified-glow: rgba(74, 140, 92, 0.35);
+  --color-graph-focus-dim: rgba(51, 49, 44, 0.12);
+
+  --radius-base: 3px;
+  --decorative-enabled: 0;
+
+  --color-shelf-surface: #E0D8CA;
+  --color-shelf-edge: #D0C8BA;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #5E7452;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #F7F5F0;
+
+  font-family: var(--font-serif);
+}
+
+/* Library ambient — 素雅 */
+[data-theme='suya'] .library-ambient {
+  background-color: var(--color-bg);
+}

@@ -80,7 +80,7 @@ const defaultAiModels = [
     name: 'DeepSeek V3',
     modelId: 'deepseek-chat',
     baseUrl: 'https://api.deepseek.com',
-    isDefault: true,
+    isDefault: false,
   },
   {
     provider: 'deepseek',

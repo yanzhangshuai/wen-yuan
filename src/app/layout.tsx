@@ -1,6 +1,22 @@
 import type { Metadata } from "next";
-import { ThemeProvider, DecorativeLayer, THEME_IDS } from "@/theme";
+import localFont from "next/font/local";
+import { THEME_IDS } from "@/theme";
+import { ThemeProvider, DecorativeLayer } from "@/components/theme";
 import "./globals.css";
+
+const sansFont = localFont({
+  src     : "../assets/fonts/inter/InterVariable.woff2",
+  variable: "--font-sans-local",
+  display : "swap",
+  fallback: ["sans-serif"]
+});
+
+const monoFont = localFont({
+  src     : "../assets/fonts/jetbrains-mono/JetBrainsMono-Variable.woff2",
+  variable: "--font-mono-local",
+  display : "swap",
+  fallback: ["monospace"]
+});
 
 export const metadata: Metadata = {
   title: {
@@ -22,21 +38,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
-      <head>
-        {/* Noto Serif SC（theme-01 / theme-03 共用，古风 + 典藏气质）*/}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&display=swap" />
-        {/* Inter（theme-02 / theme-04 共用，简约 + 科技感）*/}
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
-        {/* JetBrains Mono（代码）*/}
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" />
-      </head>
+    <html
+      lang="zh-CN"
+      suppressHydrationWarning
+      className={`${sansFont.variable} ${monoFont.variable}`}
+    >
       <body>
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="theme-01"
+          defaultTheme="danqing"
           themes={[...THEME_IDS]}
           enableSystem={false}
           storageKey="wen-yuan-theme"

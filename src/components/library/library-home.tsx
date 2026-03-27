@@ -69,9 +69,10 @@ export function LibraryHome({ books }: LibraryHomeProps) {
         </div>
       </section>
 
-      {/* Shelf ledge — horizontal line that grounds the books */}
-      <div className="mx-6 lg:mx-12 xl:mx-16 h-px bg-(--color-border-strong)" aria-hidden="true" />
-      <div className="mx-6 lg:mx-12 xl:mx-16 h-1.5 bg-linear-to-b from-black/[0.06] to-transparent" aria-hidden="true" />
+      {/* Shelf ledge — full-width horizontal bar grounding the grid */}
+      <div className="mx-6 lg:mx-12 xl:mx-16 h-1 rounded-[1px]" style={{ backgroundColor: "var(--color-shelf-surface)" }} aria-hidden="true" />
+      <div className="mx-5 lg:mx-11 xl:mx-15 h-0.75 rounded-b-xs" style={{ backgroundColor: "var(--color-shelf-edge)" }} aria-hidden="true" />
+      <div className="mx-6 lg:mx-12 xl:mx-16 h-2 bg-black/6 blur-[2px] -mt-0.5" aria-hidden="true" />
 
       {/* Bottom ornament */}
       <footer className="pt-8 pb-10 flex justify-center" aria-hidden="true">

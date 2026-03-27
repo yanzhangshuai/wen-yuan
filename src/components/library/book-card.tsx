@@ -51,16 +51,22 @@ export function BookCard({ book }: BookCardProps) {
           </div>
         )}
 
-        {/* Hover details panel */}
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/60 to-transparent p-4 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-30 rounded-b flex flex-col justify-end min-h-[55%]">
-          <h3 className="text-white font-bold text-lg leading-tight mb-1 drop-shadow-md line-clamp-2">
+        {/* Hover details panel — gradient fades in, children stagger up */}
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30 rounded-b flex flex-col justify-end min-h-[55%]">
+          <h3 className="text-white font-bold text-lg leading-tight mb-1 drop-shadow-md line-clamp-2
+            translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100
+            transition-all duration-300 delay-0 group-hover:delay-75">
             {book.title}
           </h3>
-          <p className="text-white/80 text-sm mb-3 font-medium">
+          <p className="text-white/80 text-sm mb-3 font-medium
+            translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100
+            transition-all duration-300 delay-0 group-hover:delay-100">
             {book.author || "佚名"} {book.dynasty && `· ${book.dynasty}`}
           </p>
 
-          <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
+          <div className="grid grid-cols-2 gap-2 text-xs text-white/70
+            translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100
+            transition-all duration-300 delay-0 group-hover:delay-150">
             <div className="flex items-center gap-1" title="章节数">
               <FileText size={12} aria-hidden="true" />
               <span>{book.chapterCount ?? 0} 章</span>
@@ -84,8 +90,12 @@ export function BookCard({ book }: BookCardProps) {
           </div>
         </div>
       </div>
-      {/* Shelf shadow — book resting on surface */}
-      <div className="h-2 mx-[8%] -mt-0.5 rounded-[50%] bg-black/10 blur-[4px]" aria-hidden="true" />
+      {/* 3D Shelf — book resting on wooden ledge */}
+      <div className="relative" aria-hidden="true">
+        <div className="w-[115%] -ml-[7.5%] h-1.25 rounded-[1px]" style={{ backgroundColor: "var(--color-shelf-surface)" }} />
+        <div className="w-[118%] -ml-[9%] h-0.75 rounded-b-xs" style={{ backgroundColor: "var(--color-shelf-edge)" }} />
+        <div className="w-[110%] -ml-[5%] h-2 rounded-[50%] bg-black/8 blur-[3px] -mt-0.5" />
+      </div>
     </motion.div>
   );
 

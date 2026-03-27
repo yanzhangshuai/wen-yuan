@@ -26,15 +26,10 @@ describe("listBooks", () => {
         aiModel       : {
           name: "DeepSeek V3"
         },
-        chapters: [
-          { id: "chapter-1" },
-          { id: "chapter-2" }
-        ],
-        profiles: [
-          { id: "profile-1" },
-          { id: "profile-2" },
-          { id: "profile-3" }
-        ],
+        _count: {
+          chapters: 2,
+          profiles: 3
+        },
         analysisJobs: [
           {
             updatedAt : new Date("2026-03-24T10:00:00.000Z"),
@@ -63,10 +58,13 @@ describe("listBooks", () => {
         coverUrl     : true,
         errorLog     : true,
         sourceFileKey: true,
-        chapters     : { select: { id: true } },
-        profiles     : {
-          where : { deletedAt: null },
-          select: { id: true }
+        _count       : {
+          select: {
+            chapters: true,
+            profiles: {
+              where: { deletedAt: null }
+            }
+          }
         }
       })
     });

@@ -1,0 +1,57 @@
+/* =========================================
+   主题 4 — 星空·深邃宇宙 (xingkong)
+   深邃宇宙黑底 + 星辉银蓝强调 + Inter
+   ========================================= */
+[data-theme='xingkong'] {
+  --color-bg: #08090F;
+  --color-fg: #C8CED8;
+  --color-primary: #7B90AF;
+  --color-primary-hover: #8EA3C2;
+  --color-primary-active: #6A7D9A;
+  --color-primary-subtle: rgba(123, 144, 175, 0.10);
+  --color-primary-fg: #08090F;
+  --color-muted: #161B28;
+  --color-muted-fg: #7A8494;
+  --color-border: #181D2A;
+  --color-border-strong: #252C3C;
+
+  --color-card-bg: #0E1018;
+  --color-card-border: rgba(123, 144, 175, 0.08);
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.40);
+  --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.55);
+
+  --color-success: #22C55E;
+  --color-warning: #EAB308;
+  --color-danger: #EF4444;
+  --color-info: #38BDF8;
+
+  --color-graph-bg: #050710;
+  --color-graph-node-default: #7B90AF;
+  --color-graph-edge-positive: #5AACB4;
+  --color-graph-edge-negative: #C46A5A;
+  --color-graph-draft: rgba(123, 144, 175, 0.40);
+  --color-graph-verified-glow: rgba(123, 144, 175, 0.55);
+  --color-graph-focus-dim: rgba(8, 9, 15, 0.25);
+
+  --radius-base: 4px;
+  --decorative-enabled: 1;
+
+  --color-shelf-surface: #12141C;
+  --color-shelf-edge: #0A0C14;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #7B90AF;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #FAFAF9;
+
+  font-family: var(--font-sans);
+}
+
+/* Library ambient — 星空 */
+[data-theme='xingkong'] .library-ambient {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(600px circle at 50% 5%, rgba(123, 144, 175, 0.05) 0%, transparent 100%),
+    radial-gradient(300px circle at 80% 95%, rgba(123, 144, 175, 0.02) 0%, transparent 100%);
+}

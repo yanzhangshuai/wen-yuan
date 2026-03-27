@@ -1,0 +1,66 @@
+/* =========================================
+   主题 1 — 丹青·深色 (danqing)
+   紫檀深褐底 + 朱砂红强调 + Noto Serif SC
+   ========================================= */
+[data-theme='danqing'] {
+  --color-bg: #1C1612;
+  --color-fg: #E5D9C8;
+  --color-primary: #D95445;
+  --color-primary-hover: #C04438;
+  --color-primary-active: #A83830;
+  --color-primary-subtle: rgba(217, 84, 69, 0.12);
+  --color-primary-fg: #FFFFFF;
+  --color-muted: #2E241C;
+  --color-muted-fg: #A0917E;
+  --color-border: #3A2E24;
+  --color-border-strong: #4A3C30;
+
+  --color-card-bg: #241E18;
+  --color-card-border: rgba(217, 84, 69, 0.15);
+  --shadow-card: 0 2px 16px rgba(40, 20, 10, 0.30);
+  --shadow-card-hover: 0 8px 32px rgba(40, 20, 10, 0.45);
+
+  --color-success: #4A9E5C;
+  --color-warning: #D4A050;
+  --color-danger: #C44030;
+  --color-info: #5A8DB8;
+
+  --color-graph-bg: #15110D;
+  --color-graph-node-default: #D95445;
+  --color-graph-edge-positive: #5A8DB8;
+  --color-graph-edge-negative: #C44030;
+  --color-graph-draft: rgba(160, 120, 80, 0.5);
+  --color-graph-verified-glow: rgba(74, 158, 92, 0.35);
+  --color-graph-focus-dim: rgba(28, 22, 18, 0.25);
+
+  --radius-base: 2px;
+  --decorative-enabled: 1;
+
+  --color-shelf-surface: #3A2E22;
+  --color-shelf-edge: #2E2218;
+
+  --color-admin-sidebar-bg: #1C1917;
+  --color-admin-sidebar-fg: #D6D3D1;
+  --color-admin-sidebar-active: #D95445;
+  --color-admin-header-bg: #292524;
+  --color-admin-content-bg: #FAFAF9;
+
+  font-family: var(--font-serif);
+}
+
+/* Library ambient — 丹青 */
+[data-theme='danqing'] .library-ambient {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse at 30% 0%, rgba(217, 84, 69, 0.05) 0%, transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 38px,
+      rgba(58, 46, 36, 0.18) 38px,
+      rgba(58, 46, 36, 0.18) 39px,
+      transparent 39px,
+      transparent 42px
+    ),
+    url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' type='fractalNoise'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}

@@ -28,10 +28,13 @@ interface BookListRow {
   aiModel      : {
     name: string;
   } | null;
-  /** 章节占位数组（用于计数）。 */
-  chapters    : Array<{ id: string }>;
-  /** 人物档案占位数组（用于计数）。 */
-  profiles    : Array<{ id: string }>;
+  /** 关系计数字段（用于统计章节与人物数量）。 */
+  _count      : {
+    /** 章节计数。 */
+    chapters: number;
+    /** 有效人物档案计数（已过滤 deletedAt）。 */
+    profiles: number;
+  };
   /** 最近一次解析任务快照（取 latest 1 条）。 */
   analysisJobs: Array<{
     updatedAt : Date;
@@ -69,15 +72,12 @@ const BOOK_LIST_SELECT = {
       name: true
     }
   },
-  chapters: {
+  _count: {
     select: {
-      id: true
-    }
-  },
-  profiles: {
-    where : { deletedAt: null },
-    select: {
-      id: true
+      chapters: true,
+      profiles: {
+        where: { deletedAt: null }
+      }
     }
   },
   analysisJobs: {
@@ -130,8 +130,8 @@ function mapBook(book: BookListRow): BookLibraryListItem {
     dynasty       : book.dynasty,
     coverUrl      : book.coverUrl,
     status,
-    chapterCount  : book.chapters.length,
-    personaCount  : book.profiles.length,
+    chapterCount  : book._count.chapters,
+    personaCount  : book._count.profiles,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastErrorSummary,

@@ -20,19 +20,22 @@ services:
   #     retries: 5
 
   neo4j:
-      image: neo4j:5.15-community
-      container_name: wen_yuan_neo4j
-      restart: always
-      ports:
-        - "7474:7474" # HTTP 控制台
-        - "7687:7687" # Bolt 协议
-      environment:
-        - NEO4J_AUTH=neo4j/neo4j_password_123
-        - NEO4J_PLUGINS=["apoc"] # 启用 APOC 插件，方便复杂路径查询
-      volumes:
-        - ./.volumes/neo4j/data:/data
-        - ./.volumes/neo4j/logs:/logs
-        - ./.volumes/neo4j/plugins:/plugins
+    image: neo4j:5.15-community
+    container_name: wen_yuan_neo4j
+    hostname: wen-yuan-neo4j
+    extra_hosts:
+      - "wen-yuan-neo4j:127.0.0.1"
+    restart: always
+    ports:
+      - "7474:7474" # HTTP 控制台
+      - "7687:7687" # Bolt 协议
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j_password_123
+      - NEO4J_PLUGINS=["apoc"] # 启用 APOC 插件，方便复杂路径查询
+    volumes:
+      - ./.volumes/neo4j/data:/data
+      - ./.volumes/neo4j/logs:/logs
+      - ./.volumes/neo4j/plugins:/plugins
 
 # volumes:
 #   postgres_data:

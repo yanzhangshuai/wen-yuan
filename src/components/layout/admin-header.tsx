@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Library, ClipboardCheck, Settings2, LogOut } from "lucide-react";
-import { ThemeToggle } from "@/theme";
+import { ThemeToggle } from "@/components/theme";
 
 export function AdminHeader() {
   const pathname = usePathname();

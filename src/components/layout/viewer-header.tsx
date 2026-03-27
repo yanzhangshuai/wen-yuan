@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Library, LogOut } from "lucide-react";
-import { ThemeToggle } from "@/theme";
+import { ThemeToggle } from "@/components/theme";
 import { cn } from "@/lib/utils";
 
 export interface ViewerHeaderProps {
@@ -12,7 +12,7 @@ export interface ViewerHeaderProps {
   user?       : { name?: string | null; image?: string | null };
 }
 
-export function ViewerHeader({ isAdmin, currentPath = "/", user }: ViewerHeaderProps) {
+export function ViewerHeader({ isAdmin, currentPath = "/", user: _user }: ViewerHeaderProps) {
   const pathname = usePathname();
 
   const handleLogout = () => {
