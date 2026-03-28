@@ -19,21 +19,41 @@ export class BookNotFoundError extends Error {
 }
 
 /**
- * 功能：表示书籍缺失原始文本。
+ * 功能：表示书籍源文件不存在（sourceFileKey 为空）。
  * 输入：`bookId`（书籍主键 ID）。
- * 输出：`BookRawContentMissingError` 错误实例。
+ * 输出：`BookSourceFileMissingError` 错误实例。
  * 异常：无。
  * 副作用：无。
  */
-export class BookRawContentMissingError extends Error {
-  /** 缺失原文的书籍 ID。 */
+export class BookSourceFileMissingError extends Error {
+  /** 缺失源文件的书籍 ID。 */
   readonly bookId: string;
 
   /**
    * @param bookId 书籍主键 ID。
    */
   constructor(bookId: string) {
-    super(`Book raw content is empty: ${bookId}`);
+    super(`Book source file is missing: ${bookId}`);
+    this.bookId = bookId;
+  }
+}
+
+/**
+ * 功能：表示书籍尚无可用章节数据。
+ * 输入：`bookId`（书籍主键 ID）。
+ * 输出：`BookRawContentMissingError` 错误实例。
+ * 异常：无。
+ * 副作用：无。
+ */
+export class BookRawContentMissingError extends Error {
+  /** 缺失章节数据的书籍 ID。 */
+  readonly bookId: string;
+
+  /**
+   * @param bookId 书籍主键 ID。
+   */
+  constructor(bookId: string) {
+    super(`Book chapters are empty: ${bookId}`);
     this.bookId = bookId;
   }
 }

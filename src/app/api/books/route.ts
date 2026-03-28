@@ -97,8 +97,11 @@ function badRequestJson(
 }
 
 /**
- * 导入链路后续会扩展章节切分、任务启动等步骤。
- * 当前先保证 `.txt -> 存储原文件 -> 创建 Book` 这条最小闭环可独立工作。
+ * 导入链路：
+ * 1) `.txt` 上传并统一解码；
+ * 2) 保存源文件到存储；
+ * 3) 创建 Book；
+ * 4) 同步切分章节并写入 `chapters`。
  */
 export async function POST(request: Request): Promise<Response> {
   const startedAt = Date.now();
@@ -122,7 +125,7 @@ export async function POST(request: Request): Promise<Response> {
       return badRequestJson(requestId, startedAt, parsedResult.error.issues[0]?.message ?? "请求参数不合法");
     }
 
-    // 上传文件统一转 UTF-8 文本，后续章节切分/解析服务直接复用该原文。
+    // 上传文件统一解码验证后，保留原始 Buffer 传给 createBook 存储，不落库文本。
     const fileBuffer = Buffer.from(await parsedResult.data.file.arrayBuffer());
     const createdBook = await createBook({
       title      : parsedResult.data.title,
@@ -131,7 +134,7 @@ export async function POST(request: Request): Promise<Response> {
       description: parsedResult.data.description,
       fileName   : parsedResult.data.file.name,
       fileMime   : parsedResult.data.file.type,
-      rawContent : fileBuffer.toString("utf8")
+      fileContent: fileBuffer
     });
 
     return okJson<CreateBookResponseData>({

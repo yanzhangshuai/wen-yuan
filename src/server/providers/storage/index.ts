@@ -1,4 +1,5 @@
 import { LocalStorageProvider } from "@/server/providers/storage/localStorageProvider";
+import { OssStorageProvider } from "@/server/providers/storage/ossStorageProvider";
 import type {
   StorageClientFactory,
   StorageProviderClient,
@@ -6,6 +7,7 @@ import type {
 } from "@/server/providers/storage/storage.types";
 
 export { LocalStorageProvider } from "@/server/providers/storage/localStorageProvider";
+export { OssStorageProvider } from "@/server/providers/storage/ossStorageProvider";
 
 export type {
   PutObjectInput,
@@ -18,9 +20,7 @@ export type {
 
 const defaultStorageFactories: Record<StorageProviderName, StorageClientFactory> = {
   local: () => new LocalStorageProvider(),
-  oss  : () => {
-    throw new Error("OSS storage provider is not implemented yet");
-  }
+  oss  : () => new OssStorageProvider()
 };
 
 /**

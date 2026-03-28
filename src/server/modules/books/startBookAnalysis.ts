@@ -9,7 +9,7 @@ import {
 } from "@/server/modules/books/errors";
 
 /** 允许的解析范围枚举值。 */
-export const ANALYSIS_SCOPE_VALUES = ["FULL_BOOK", "CHAPTER_RANGE"] as const;
+export const ANALYSIS_SCOPE_VALUES = ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const;
 /** 解析范围类型。 */
 export type AnalysisScope = (typeof ANALYSIS_SCOPE_VALUES)[number];
 /** 允许的重解析覆盖策略枚举值。 */
@@ -29,6 +29,8 @@ export interface StartBookAnalysisInput {
   chapterStart     ?: number | null;
   /** 章节区间终点（仅 CHAPTER_RANGE 时必填）。 */
   chapterEnd       ?: number | null;
+  /** 指定章节编号列表（仅 CHAPTER_LIST 时必填）。 */
+  chapterIndices   ?: number[];
   /** 覆盖策略。 */
   overrideStrategy ?: AnalysisOverrideStrategy;
   /** 是否保留历史版本。 */
@@ -51,6 +53,8 @@ export interface StartBookAnalysisResult {
   chapterStart    : number | null;
   /** 实际生效区间终点。 */
   chapterEnd      : number | null;
+  /** 实际生效章节局列表（CHAPTER_LIST 时）。 */
+  chapterIndices  : number[];
   /** 实际生效覆盖策略。 */
   overrideStrategy: AnalysisOverrideStrategy;
   /** 是否保留历史。 */
@@ -105,6 +109,30 @@ function resolveKeepHistory(keepHistory: boolean | undefined): boolean {
 }
 
 /**
+ * 校验并标准化指定章节列表。
+ */
+function resolveChapterList(
+  scope: AnalysisScope,
+  chapterIndices: number[] | undefined
+): number[] {
+  if (scope !== "CHAPTER_LIST") {
+    return [];
+  }
+
+  if (!chapterIndices || chapterIndices.length === 0) {
+    throw new AnalysisScopeInvalidError("指定章节解析需要提供至少一个章节编号");
+  }
+
+  for (const idx of chapterIndices) {
+    if (!Number.isInteger(idx) || idx < 0) {
+      throw new AnalysisScopeInvalidError("章节编号必须为非负整数");
+    }
+  }
+
+  return [...new Set(chapterIndices)].sort((a, b) => a - b);
+}
+
+/**
  * 校验并标准化章节范围。
  */
 function resolveChapterRange(
@@ -112,7 +140,7 @@ function resolveChapterRange(
   chapterStart: number | null | undefined,
   chapterEnd: number | null | undefined
 ): { chapterStart: number | null; chapterEnd: number | null } {
-  if (scope === "FULL_BOOK") {
+  if (scope === "FULL_BOOK" || scope === "CHAPTER_LIST") {
     return {
       chapterStart: null,
       chapterEnd  : null
@@ -179,6 +207,7 @@ export function createStartBookAnalysisService(
     const overrideStrategy = resolveOverrideStrategy(input.overrideStrategy);
     const keepHistory = resolveKeepHistory(input.keepHistory);
     const range = resolveChapterRange(scope, input.chapterStart, input.chapterEnd);
+    const chapterIndices = resolveChapterList(scope, input.chapterIndices);
     const selectedModelId = input.aiModelId ?? book.aiModelId ?? null;
 
     if (selectedModelId) {
@@ -199,6 +228,26 @@ export function createStartBookAnalysisService(
       }
     }
 
+    const chapterCount = await prismaClient.chapter.count({
+      where: scope === "CHAPTER_RANGE"
+        ? {
+          bookId: book.id,
+          no    : {
+            gte: range.chapterStart ?? 1,
+            lte: range.chapterEnd ?? Number.MAX_SAFE_INTEGER
+          }
+        }
+        : scope === "CHAPTER_LIST"
+          ? {
+            bookId: book.id,
+            no    : { in: chapterIndices }
+          }
+          : { bookId: book.id }
+    });
+    if (chapterCount === 0) {
+      throw new AnalysisScopeInvalidError("请先确认章节后再启动解析");
+    }
+
     const [job, updatedBook] = await prismaClient.$transaction([
       prismaClient.analysisJob.create({
         data: {
@@ -208,6 +257,7 @@ export function createStartBookAnalysisService(
           scope,
           chapterStart: range.chapterStart,
           chapterEnd  : range.chapterEnd,
+          chapterIndices,
           overrideStrategy,
           keepHistory
         },
@@ -217,6 +267,7 @@ export function createStartBookAnalysisService(
           scope           : true,
           chapterStart    : true,
           chapterEnd      : true,
+          chapterIndices  : true,
           overrideStrategy: true,
           keepHistory     : true
         }
@@ -245,6 +296,7 @@ export function createStartBookAnalysisService(
       scope           : scope,
       chapterStart    : job.chapterStart,
       chapterEnd      : job.chapterEnd,
+      chapterIndices  : job.chapterIndices,
       overrideStrategy: (job.overrideStrategy ?? "DRAFT_ONLY") as AnalysisOverrideStrategy,
       keepHistory     : job.keepHistory,
       aiModelId       : selectedModelId,

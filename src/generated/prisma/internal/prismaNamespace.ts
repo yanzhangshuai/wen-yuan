@@ -1316,7 +1316,6 @@ export const BookScalarFieldEnum = {
   errorLog: 'errorLog',
   parseProgress: 'parseProgress',
   parseStage: 'parseStage',
-  rawContent: 'rawContent',
   aiModelId: 'aiModelId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1447,6 +1446,7 @@ export const AnalysisJobScalarFieldEnum = {
   scope: 'scope',
   chapterStart: 'chapterStart',
   chapterEnd: 'chapterEnd',
+  chapterIndices: 'chapterIndices',
   attempt: 'attempt',
   errorLog: 'errorLog',
   overrideStrategy: 'overrideStrategy',

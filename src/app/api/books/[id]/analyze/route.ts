@@ -41,6 +41,8 @@ const startAnalysisBodySchema = z.object({
   chapterStart    : z.number().int().positive().nullable().optional(),
   // 范围任务结束章节号（仅 CHAPTER_RANGE 有效）。
   chapterEnd      : z.number().int().positive().nullable().optional(),
+  // 指定章节编号列表（仅 CHAPTER_LIST 有效）。
+  chapterIndices  : z.array(z.number().int().min(0)).optional(),
   // 冲突覆盖策略：保留旧草稿/覆盖旧草稿/新建版本等。
   overrideStrategy: z.enum(ANALYSIS_OVERRIDE_STRATEGY_VALUES).optional(),
   // 是否保留历史任务记录（供审计与回溯）。

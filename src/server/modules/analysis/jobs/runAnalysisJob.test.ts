@@ -214,8 +214,15 @@ describe("analysis job runner", () => {
     await expect(runner.runAnalysisJobById("job-range-invalid")).rejects.toThrow("章节范围无效");
   });
 
-  it("throws when no chapters can be loaded", async () => {
-    const { runner, analysisJobFindUnique, chapterFindMany } = createRunnerContext();
+  it("marks job and book as failed when no chapters can be loaded", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      analysisJobUpdate,
+      bookUpdate,
+      transaction
+    } = createRunnerContext();
     analysisJobFindUnique
       .mockResolvedValueOnce({
         id          : "job-empty-chapters",
@@ -236,6 +243,21 @@ describe("analysis job runner", () => {
     chapterFindMany.mockResolvedValueOnce([]);
 
     await expect(runner.runAnalysisJobById("job-empty-chapters")).rejects.toThrow("未找到可执行章节");
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-empty-chapters" },
+      data : expect.objectContaining({
+        status: AnalysisJobStatus.FAILED
+      })
+    });
+    expect(bookUpdate).toHaveBeenCalledWith({
+      where: { id: "book-1" },
+      data : expect.objectContaining({
+        status       : "ERROR",
+        parseProgress: 0,
+        parseStage   : "解析失败"
+      })
+    });
   });
 
   it("marks job and book as failed when chapter analyzer throws", async () => {

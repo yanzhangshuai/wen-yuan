@@ -36,7 +36,11 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "03-28-admin-books-status-progress",
+    "03-28-storage-aliyun-oss",
+    "03-28-book-import-refactor"
+  ],
   "parent": null,
   "relatedFiles": [],
   "notes": "",

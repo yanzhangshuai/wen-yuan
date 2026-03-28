@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type {
@@ -80,6 +80,19 @@ export class LocalStorageProvider implements StorageProviderClient {
   getObjectUrl(key: string): string {
     const normalizedKey = normalizeStorageKey(key);
     return this.buildObjectUrl(normalizedKey);
+  }
+
+  /**
+   * 功能：从本地文件系统读取对象内容。
+   * 输入：key，对象存储键值。
+   * 输出：原始二进制 Buffer。
+   * 异常：文件不存在时抛 ENOENT 错误。
+   * 副作用：磁盘 I/O。
+   */
+  async getObject(key: string): Promise<Buffer> {
+    const normalizedKey = normalizeStorageKey(key);
+    const targetPath = this.resolveFilePath(normalizedKey);
+    return readFile(targetPath);
   }
 
   private resolveFilePath(key: string): string {

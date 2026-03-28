@@ -196,13 +196,14 @@ export function createAnalysisJobRunner(
       return;
     }
 
-    const chapters = await loadChaptersForJob(prismaClient, job);
-    if (chapters.length === 0) {
-      throw new Error(`解析任务 ${job.id} 未找到可执行章节`);
-    }
-
+    let chapters: ChapterTask[] = [];
     let completed = 0;
     try {
+      chapters = await loadChaptersForJob(prismaClient, job);
+      if (chapters.length === 0) {
+        throw new Error(`解析任务 ${job.id} 未找到可执行章节`);
+      }
+
       // 初始化书籍解析状态，后续在章节循环中持续刷新进度与阶段文本。
       await prismaClient.book.update({
         where: { id: job.bookId },
@@ -259,7 +260,9 @@ export function createAnalysisJobRunner(
       ]);
     } catch (error) {
       const errorMessage = toErrorMessage(error);
-      const failedProgress = Math.floor((completed / chapters.length) * 100);
+      const failedProgress = chapters.length === 0
+        ? 0
+        : Math.floor((completed / chapters.length) * 100);
 
       // 失败时同步回写任务与书籍状态，便于前台/后台展示一致的错误上下文。
       await prismaClient.$transaction([

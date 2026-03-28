@@ -29,7 +29,7 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   class AnalysisScopeInvalidError extends Error {}
 
   return {
-    ANALYSIS_SCOPE_VALUES            : ["FULL_BOOK", "CHAPTER_RANGE"] as const,
+    ANALYSIS_SCOPE_VALUES            : ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const,
     ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
     startBookAnalysis                : startBookAnalysisMock,
     BookNotFoundError,

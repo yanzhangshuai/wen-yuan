@@ -4,7 +4,11 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { LocalStorageProvider, provideStorage } from "@/server/providers/storage";
+import {
+  LocalStorageProvider,
+  OssStorageProvider,
+  provideStorage
+} from "@/server/providers/storage";
 import type {
   StorageClientFactory,
   StorageProviderClient
@@ -17,7 +21,8 @@ function createFakeClient(): StorageProviderClient {
   return {
     putObject   : async () => ({ key: "books/demo.txt", url: "/api/assets/books/demo.txt", contentType: "text/plain", size: 4 }),
     deleteObject: async () => undefined,
-    getObjectUrl: (key) => `/api/assets/${key}`
+    getObjectUrl: (key) => `/api/assets/${key}`,
+    getObject   : async () => Buffer.from("")
   };
 }
 
@@ -66,9 +71,21 @@ describe("provideStorage", () => {
     expect(() => provideStorage("unknown", factories)).toThrowError("Unsupported STORAGE_PROVIDER: unknown");
   });
 
-  it("throws explicit error when oss provider is selected before implementation", () => {
-    // Act / Assert
-    expect(() => provideStorage("oss")).toThrowError("OSS storage provider is not implemented yet");
+  it("routes to oss provider factory when oss provider is selected", () => {
+    // Arrange
+    const localFactory = vi.fn(createFakeClient);
+    const ossFactory = vi.fn(createFakeClient);
+    const factories: Record<string, StorageClientFactory> = {
+      local: localFactory,
+      oss  : ossFactory
+    };
+
+    // Act
+    provideStorage("oss", factories);
+
+    // Assert
+    expect(ossFactory).toHaveBeenCalledTimes(1);
+    expect(localFactory).not.toHaveBeenCalled();
   });
 });
 
@@ -145,5 +162,72 @@ describe("LocalStorageProvider", () => {
     await expect(provider.putObject({ key: "../escape.txt", body: "x" })).rejects.toThrowError(
       "Invalid storage object key: ../escape.txt"
     );
+  });
+});
+
+describe("OssStorageProvider", () => {
+  it("uploads object and returns derived metadata", async () => {
+    // Arrange
+    const put = vi.fn().mockResolvedValue(undefined);
+    const remove = vi.fn().mockResolvedValue(undefined);
+    const provider = new OssStorageProvider({
+      endpoint       : "oss-cn-beijing.aliyuncs.com",
+      bucket         : "demo-bucket",
+      region         : "oss-cn-beijing",
+      accessKeyId    : "ak",
+      accessKeySecret: "sk",
+      publicBaseUrl  : "https://cdn.example.com/assets/",
+      client         : { put, delete: remove, get: vi.fn() }
+    });
+
+    // Act
+    const result = await provider.putObject({
+      key        : "books/20260328/demo.txt",
+      body       : "hello",
+      contentType: "text/plain; charset=utf-8"
+    });
+
+    // Assert
+    expect(put).toHaveBeenCalledWith(
+      "books/20260328/demo.txt",
+      expect.any(Buffer),
+      {
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      }
+    );
+    expect(result).toEqual({
+      key        : "books/20260328/demo.txt",
+      url        : "https://cdn.example.com/assets/books/20260328/demo.txt",
+      contentType: "text/plain; charset=utf-8",
+      size       : 5
+    });
+  });
+
+  it("ignores delete for missing object", async () => {
+    // Arrange
+    const provider = new OssStorageProvider({
+      endpoint       : "oss-cn-beijing.aliyuncs.com",
+      bucket         : "demo-bucket",
+      region         : "oss-cn-beijing",
+      accessKeyId    : "ak",
+      accessKeySecret: "sk",
+      client         : {
+        put   : vi.fn(),
+        delete: vi.fn().mockRejectedValue({ code: "NoSuchKey" }),
+        get   : vi.fn()
+      }
+    });
+
+    // Act / Assert
+    await expect(provider.deleteObject("books/20260328/missing.txt")).resolves.toBeUndefined();
+  });
+
+  it("throws when mandatory OSS config is missing", () => {
+    // Arrange / Act / Assert
+    expect(() => new OssStorageProvider({
+      bucket         : "",
+      accessKeyId    : "ak",
+      accessKeySecret: "sk"
+    })).toThrowError("OSS_BUCKET is required");
   });
 });

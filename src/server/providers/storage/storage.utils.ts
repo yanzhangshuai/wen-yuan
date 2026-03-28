@@ -3,6 +3,8 @@ import path from "node:path";
 export const DEFAULT_STORAGE_ROOT = "storage";
 export const DEFAULT_STORAGE_PUBLIC_BASE_URL = "/api/assets";
 
+export type StorageDatedDirectory = "books" | "images";
+
 /**
  * 功能：将逻辑对象 key 规范化为可安全落盘和拼接 URL 的路径。
  * 输入：key，为业务层传入的对象标识。
@@ -93,6 +95,55 @@ export function buildStorageObjectUrl(
   const normalizedPublicBaseUrl = normalizeStoragePublicBaseUrl(publicBaseUrl);
 
   return `${normalizedPublicBaseUrl}/${normalizedKey}`;
+}
+
+/**
+ * 功能：将日期格式化为 `YYYYMMDD`，用于对象存储的按日分桶目录。
+ * 输入：date，可选，默认当前时间。
+ * 输出：8 位日期字符串，如 `20260328`。
+ * 异常：无。
+ * 副作用：无。
+ */
+export function formatStorageDateSegment(date = new Date()): string {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}${month}${day}`;
+}
+
+/**
+ * 功能：清理文件名中的路径片段，避免文件名被解释为嵌套目录。
+ * 输入：fileName，上传侧传入的原始文件名。
+ * 输出：可用于 key 尾段的安全文件名。
+ * 异常：无。
+ * 副作用：无。
+ */
+export function sanitizeStorageFileName(fileName: string): string {
+  const baseName = path.posix.basename(fileName.trim().replaceAll("\\", "/"));
+  return baseName || "unnamed";
+}
+
+/**
+ * 功能：构造“目录/日期/文件”格式的对象 key。
+ * 输入：directory（books/images）、fileName、可选 date 与 uniquePrefix。
+ * 输出：规范化后的对象 key。
+ * 异常：当参数非法或 key 非法时抛错。
+ * 副作用：无。
+ */
+export function buildDatedStorageKey(input: {
+  directory    : StorageDatedDirectory;
+  fileName     : string;
+  date?        : Date;
+  uniquePrefix?: string;
+}): string {
+  const dateSegment = formatStorageDateSegment(input.date);
+  const normalizedFileName = sanitizeStorageFileName(input.fileName);
+  const fileNameWithPrefix = input.uniquePrefix
+    ? `${input.uniquePrefix}-${normalizedFileName}`
+    : normalizedFileName;
+
+  return normalizeStorageKey(`${input.directory}/${dateSegment}/${fileNameWithPrefix}`);
 }
 
 /**

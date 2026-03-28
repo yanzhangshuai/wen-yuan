@@ -53,7 +53,6 @@ export type BookMinAggregateOutputType = {
   errorLog: string | null
   parseProgress: number | null
   parseStage: string | null
-  rawContent: string | null
   aiModelId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -76,7 +75,6 @@ export type BookMaxAggregateOutputType = {
   errorLog: string | null
   parseProgress: number | null
   parseStage: string | null
-  rawContent: string | null
   aiModelId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -99,7 +97,6 @@ export type BookCountAggregateOutputType = {
   errorLog: number
   parseProgress: number
   parseStage: number
-  rawContent: number
   aiModelId: number
   createdAt: number
   updatedAt: number
@@ -134,7 +131,6 @@ export type BookMinAggregateInputType = {
   errorLog?: true
   parseProgress?: true
   parseStage?: true
-  rawContent?: true
   aiModelId?: true
   createdAt?: true
   updatedAt?: true
@@ -157,7 +153,6 @@ export type BookMaxAggregateInputType = {
   errorLog?: true
   parseProgress?: true
   parseStage?: true
-  rawContent?: true
   aiModelId?: true
   createdAt?: true
   updatedAt?: true
@@ -180,7 +175,6 @@ export type BookCountAggregateInputType = {
   errorLog?: true
   parseProgress?: true
   parseStage?: true
-  rawContent?: true
   aiModelId?: true
   createdAt?: true
   updatedAt?: true
@@ -290,7 +284,6 @@ export type BookGroupByOutputType = {
   errorLog: string | null
   parseProgress: number
   parseStage: string | null
-  rawContent: string | null
   aiModelId: string | null
   createdAt: Date
   updatedAt: Date
@@ -336,7 +329,6 @@ export type BookWhereInput = {
   errorLog?: Prisma.StringNullableFilter<"Book"> | string | null
   parseProgress?: Prisma.IntFilter<"Book"> | number
   parseStage?: Prisma.StringNullableFilter<"Book"> | string | null
-  rawContent?: Prisma.StringNullableFilter<"Book"> | string | null
   aiModelId?: Prisma.UuidNullableFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
@@ -364,7 +356,6 @@ export type BookOrderByWithRelationInput = {
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
   parseStage?: Prisma.SortOrderInput | Prisma.SortOrder
-  rawContent?: Prisma.SortOrderInput | Prisma.SortOrder
   aiModelId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -395,7 +386,6 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   errorLog?: Prisma.StringNullableFilter<"Book"> | string | null
   parseProgress?: Prisma.IntFilter<"Book"> | number
   parseStage?: Prisma.StringNullableFilter<"Book"> | string | null
-  rawContent?: Prisma.StringNullableFilter<"Book"> | string | null
   aiModelId?: Prisma.UuidNullableFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
@@ -423,7 +413,6 @@ export type BookOrderByWithAggregationInput = {
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
   parseStage?: Prisma.SortOrderInput | Prisma.SortOrder
-  rawContent?: Prisma.SortOrderInput | Prisma.SortOrder
   aiModelId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -454,7 +443,6 @@ export type BookScalarWhereWithAggregatesInput = {
   errorLog?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   parseProgress?: Prisma.IntWithAggregatesFilter<"Book"> | number
   parseStage?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
-  rawContent?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   aiModelId?: Prisma.UuidNullableWithAggregatesFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Book"> | Date | string
@@ -477,7 +465,6 @@ export type BookCreateInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
@@ -504,7 +491,6 @@ export type BookUncheckedCreateInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   aiModelId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -531,7 +517,6 @@ export type BookUpdateInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
@@ -558,7 +543,6 @@ export type BookUncheckedUpdateInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -585,7 +569,6 @@ export type BookCreateManyInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   aiModelId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -608,7 +591,6 @@ export type BookUpdateManyMutationInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -630,7 +612,6 @@ export type BookUncheckedUpdateManyInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -663,7 +644,6 @@ export type BookCountOrderByAggregateInput = {
   errorLog?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
   parseStage?: Prisma.SortOrder
-  rawContent?: Prisma.SortOrder
   aiModelId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -691,7 +671,6 @@ export type BookMaxOrderByAggregateInput = {
   errorLog?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
   parseStage?: Prisma.SortOrder
-  rawContent?: Prisma.SortOrder
   aiModelId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -714,7 +693,6 @@ export type BookMinOrderByAggregateInput = {
   errorLog?: Prisma.SortOrder
   parseProgress?: Prisma.SortOrder
   parseStage?: Prisma.SortOrder
-  rawContent?: Prisma.SortOrder
   aiModelId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -861,7 +839,6 @@ export type BookCreateWithoutAiModelInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
@@ -887,7 +864,6 @@ export type BookUncheckedCreateWithoutAiModelInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
@@ -942,7 +918,6 @@ export type BookScalarWhereInput = {
   errorLog?: Prisma.StringNullableFilter<"Book"> | string | null
   parseProgress?: Prisma.IntFilter<"Book"> | number
   parseStage?: Prisma.StringNullableFilter<"Book"> | string | null
-  rawContent?: Prisma.StringNullableFilter<"Book"> | string | null
   aiModelId?: Prisma.UuidNullableFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
@@ -965,7 +940,6 @@ export type BookCreateWithoutChaptersInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
@@ -991,7 +965,6 @@ export type BookUncheckedCreateWithoutChaptersInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   aiModelId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1033,7 +1006,6 @@ export type BookUpdateWithoutChaptersInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
@@ -1059,7 +1031,6 @@ export type BookUncheckedUpdateWithoutChaptersInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1085,7 +1056,6 @@ export type BookCreateWithoutProfilesInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
@@ -1111,7 +1081,6 @@ export type BookUncheckedCreateWithoutProfilesInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   aiModelId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1153,7 +1122,6 @@ export type BookUpdateWithoutProfilesInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
@@ -1179,7 +1147,6 @@ export type BookUncheckedUpdateWithoutProfilesInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1205,7 +1172,6 @@ export type BookCreateWithoutAnalysisJobsInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
@@ -1231,7 +1197,6 @@ export type BookUncheckedCreateWithoutAnalysisJobsInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   aiModelId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1273,7 +1238,6 @@ export type BookUpdateWithoutAnalysisJobsInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
@@ -1299,7 +1263,6 @@ export type BookUncheckedUpdateWithoutAnalysisJobsInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1325,7 +1288,6 @@ export type BookCreateWithoutMergeSuggestionsInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
@@ -1351,7 +1313,6 @@ export type BookUncheckedCreateWithoutMergeSuggestionsInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   aiModelId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1393,7 +1354,6 @@ export type BookUpdateWithoutMergeSuggestionsInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
@@ -1419,7 +1379,6 @@ export type BookUncheckedUpdateWithoutMergeSuggestionsInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1445,7 +1404,6 @@ export type BookCreateManyAiModelInput = {
   errorLog?: string | null
   parseProgress?: number
   parseStage?: string | null
-  rawContent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1467,7 +1425,6 @@ export type BookUpdateWithoutAiModelInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
@@ -1493,7 +1450,6 @@ export type BookUncheckedUpdateWithoutAiModelInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
@@ -1519,7 +1475,6 @@ export type BookUncheckedUpdateManyWithoutAiModelInput = {
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  rawContent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1599,7 +1554,6 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   errorLog?: boolean
   parseProgress?: boolean
   parseStage?: boolean
-  rawContent?: boolean
   aiModelId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1628,7 +1582,6 @@ export type BookSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   errorLog?: boolean
   parseProgress?: boolean
   parseStage?: boolean
-  rawContent?: boolean
   aiModelId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1652,7 +1605,6 @@ export type BookSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   errorLog?: boolean
   parseProgress?: boolean
   parseStage?: boolean
-  rawContent?: boolean
   aiModelId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1676,13 +1628,12 @@ export type BookSelectScalar = {
   errorLog?: boolean
   parseProgress?: boolean
   parseStage?: boolean
-  rawContent?: boolean
   aiModelId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "description" | "coverUrl" | "sourceFileKey" | "sourceFileUrl" | "sourceFileName" | "sourceFileMime" | "sourceFileSize" | "deletedAt" | "status" | "errorLog" | "parseProgress" | "parseStage" | "rawContent" | "aiModelId" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
+export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "description" | "coverUrl" | "sourceFileKey" | "sourceFileUrl" | "sourceFileName" | "sourceFileMime" | "sourceFileSize" | "deletedAt" | "status" | "errorLog" | "parseProgress" | "parseStage" | "aiModelId" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
 export type BookInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   aiModel?: boolean | Prisma.Book$aiModelArgs<ExtArgs>
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
@@ -1724,7 +1675,6 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     errorLog: string | null
     parseProgress: number
     parseStage: string | null
-    rawContent: string | null
     aiModelId: string | null
     createdAt: Date
     updatedAt: Date
@@ -2172,7 +2122,6 @@ export interface BookFieldRefs {
   readonly errorLog: Prisma.FieldRef<"Book", 'String'>
   readonly parseProgress: Prisma.FieldRef<"Book", 'Int'>
   readonly parseStage: Prisma.FieldRef<"Book", 'String'>
-  readonly rawContent: Prisma.FieldRef<"Book", 'String'>
   readonly aiModelId: Prisma.FieldRef<"Book", 'String'>
   readonly createdAt: Prisma.FieldRef<"Book", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Book", 'DateTime'>

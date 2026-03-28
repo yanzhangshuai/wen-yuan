@@ -14,11 +14,11 @@ vi.mock("@/server/modules/books/confirmBookChapters", () => {
     }
   }
 
-  class BookRawContentMissingError extends Error {
+  class BookSourceFileMissingError extends Error {
     readonly bookId: string;
 
     constructor(bookId: string) {
-      super(`Book raw content is empty: ${bookId}`);
+      super(`Book source file is missing: ${bookId}`);
       this.bookId = bookId;
     }
   }
@@ -32,7 +32,7 @@ vi.mock("@/server/modules/books/confirmBookChapters", () => {
   return {
     confirmBookChapters: confirmBookChaptersMock,
     BookNotFoundError,
-    BookRawContentMissingError,
+    BookSourceFileMissingError,
     ChapterConfirmPayloadError
   };
 });
@@ -187,10 +187,10 @@ describe("POST /api/books/:id/chapters/confirm", () => {
     expect(payload.code).toBe("COMMON_NOT_FOUND");
   });
 
-  it("maps raw content missing to 400", async () => {
+  it("maps source file missing to 400", async () => {
     const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
-    const { BookRawContentMissingError } = await import("@/server/modules/books/confirmBookChapters");
-    confirmBookChaptersMock.mockRejectedValue(new BookRawContentMissingError(bookId));
+    const { BookSourceFileMissingError } = await import("@/server/modules/books/confirmBookChapters");
+    confirmBookChaptersMock.mockRejectedValue(new BookSourceFileMissingError(bookId));
     const { POST } = await import("@/app/api/books/[id]/chapters/confirm/route");
 
     const response = await POST(

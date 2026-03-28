@@ -29,12 +29,14 @@ export type AggregateAnalysisJob = {
 export type AnalysisJobAvgAggregateOutputType = {
   chapterStart: number | null
   chapterEnd: number | null
+  chapterIndices: number | null
   attempt: number | null
 }
 
 export type AnalysisJobSumAggregateOutputType = {
   chapterStart: number | null
   chapterEnd: number | null
+  chapterIndices: number[]
   attempt: number | null
 }
 
@@ -82,6 +84,7 @@ export type AnalysisJobCountAggregateOutputType = {
   scope: number
   chapterStart: number
   chapterEnd: number
+  chapterIndices: number
   attempt: number
   errorLog: number
   overrideStrategy: number
@@ -97,12 +100,14 @@ export type AnalysisJobCountAggregateOutputType = {
 export type AnalysisJobAvgAggregateInputType = {
   chapterStart?: true
   chapterEnd?: true
+  chapterIndices?: true
   attempt?: true
 }
 
 export type AnalysisJobSumAggregateInputType = {
   chapterStart?: true
   chapterEnd?: true
+  chapterIndices?: true
   attempt?: true
 }
 
@@ -150,6 +155,7 @@ export type AnalysisJobCountAggregateInputType = {
   scope?: true
   chapterStart?: true
   chapterEnd?: true
+  chapterIndices?: true
   attempt?: true
   errorLog?: true
   overrideStrategy?: true
@@ -255,6 +261,7 @@ export type AnalysisJobGroupByOutputType = {
   scope: string
   chapterStart: number | null
   chapterEnd: number | null
+  chapterIndices: number[]
   attempt: number
   errorLog: string | null
   overrideStrategy: string | null
@@ -296,6 +303,7 @@ export type AnalysisJobWhereInput = {
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
+  chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
@@ -316,6 +324,7 @@ export type AnalysisJobOrderByWithRelationInput = {
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -339,6 +348,7 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
+  chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
@@ -359,6 +369,7 @@ export type AnalysisJobOrderByWithAggregationInput = {
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -385,6 +396,7 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
   scope?: Prisma.StringWithAggregatesFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableWithAggregatesFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableWithAggregatesFilter<"AnalysisJob"> | number | null
+  chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntWithAggregatesFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
@@ -401,6 +413,7 @@ export type AnalysisJobCreateInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -421,6 +434,7 @@ export type AnalysisJobUncheckedCreateInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -437,6 +451,7 @@ export type AnalysisJobUpdateInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -457,6 +472,7 @@ export type AnalysisJobUncheckedUpdateInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -475,6 +491,7 @@ export type AnalysisJobCreateManyInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -491,6 +508,7 @@ export type AnalysisJobUpdateManyMutationInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -509,6 +527,7 @@ export type AnalysisJobUncheckedUpdateManyInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -529,6 +548,14 @@ export type AnalysisJobOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type IntNullableListFilter<$PrismaModel = never> = {
+  equals?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  has?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
+  hasEvery?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  hasSome?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type AnalysisJobCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
@@ -537,6 +564,7 @@ export type AnalysisJobCountOrderByAggregateInput = {
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
+  chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrder
@@ -550,6 +578,7 @@ export type AnalysisJobCountOrderByAggregateInput = {
 export type AnalysisJobAvgOrderByAggregateInput = {
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
+  chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
 }
 
@@ -592,6 +621,7 @@ export type AnalysisJobMinOrderByAggregateInput = {
 export type AnalysisJobSumOrderByAggregateInput = {
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
+  chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
 }
 
@@ -679,8 +709,17 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookNestedInput = {
   deleteMany?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
 }
 
+export type AnalysisJobCreatechapterIndicesInput = {
+  set: number[]
+}
+
 export type EnumAnalysisJobStatusFieldUpdateOperationsInput = {
   set?: $Enums.AnalysisJobStatus
+}
+
+export type AnalysisJobUpdatechapterIndicesInput = {
+  set?: number[]
+  push?: number | number[]
 }
 
 export type AnalysisJobCreateWithoutAiModelInput = {
@@ -689,6 +728,7 @@ export type AnalysisJobCreateWithoutAiModelInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -707,6 +747,7 @@ export type AnalysisJobUncheckedCreateWithoutAiModelInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -754,6 +795,7 @@ export type AnalysisJobScalarWhereInput = {
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
+  chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
@@ -770,6 +812,7 @@ export type AnalysisJobCreateWithoutBookInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -788,6 +831,7 @@ export type AnalysisJobUncheckedCreateWithoutBookInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -831,6 +875,7 @@ export type AnalysisJobCreateManyAiModelInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -847,6 +892,7 @@ export type AnalysisJobUpdateWithoutAiModelInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -865,6 +911,7 @@ export type AnalysisJobUncheckedUpdateWithoutAiModelInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -882,6 +929,7 @@ export type AnalysisJobUncheckedUpdateManyWithoutAiModelInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -899,6 +947,7 @@ export type AnalysisJobCreateManyBookInput = {
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
   overrideStrategy?: string | null
@@ -915,6 +964,7 @@ export type AnalysisJobUpdateWithoutBookInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -933,6 +983,7 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -950,6 +1001,7 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -970,6 +1022,7 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
+  chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
   overrideStrategy?: boolean
@@ -990,6 +1043,7 @@ export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
+  chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
   overrideStrategy?: boolean
@@ -1010,6 +1064,7 @@ export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
+  chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
   overrideStrategy?: boolean
@@ -1030,6 +1085,7 @@ export type AnalysisJobSelectScalar = {
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
+  chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
   overrideStrategy?: boolean
@@ -1040,7 +1096,7 @@ export type AnalysisJobSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "aiModelId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "attempt" | "errorLog" | "overrideStrategy" | "keepHistory" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
+export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "aiModelId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "overrideStrategy" | "keepHistory" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
 export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
@@ -1068,6 +1124,7 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
     scope: string
     chapterStart: number | null
     chapterEnd: number | null
+    chapterIndices: number[]
     attempt: number
     errorLog: string | null
     overrideStrategy: string | null
@@ -1508,6 +1565,7 @@ export interface AnalysisJobFieldRefs {
   readonly scope: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly chapterStart: Prisma.FieldRef<"AnalysisJob", 'Int'>
   readonly chapterEnd: Prisma.FieldRef<"AnalysisJob", 'Int'>
+  readonly chapterIndices: Prisma.FieldRef<"AnalysisJob", 'Int[]'>
   readonly attempt: Prisma.FieldRef<"AnalysisJob", 'Int'>
   readonly errorLog: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly overrideStrategy: Prisma.FieldRef<"AnalysisJob", 'String'>

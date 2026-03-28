@@ -1,8 +1,10 @@
 import { ChapterType } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { BookNotFoundError, BookRawContentMissingError } from "@/server/modules/books/errors";
-import { splitRawContentToChapterPreview } from "@/server/modules/books/getChapterPreview";
+import { countWordLikeChars, splitRawContentToChapterDrafts } from "@/server/modules/books/chapterSplit";
+import { BookNotFoundError, BookSourceFileMissingError } from "@/server/modules/books/errors";
+import { decodeBookText } from "@/server/modules/books/getChapterPreview";
+import { provideStorage, type StorageProviderClient } from "@/server/providers/storage";
 
 export interface ConfirmBookChapterInputItem {
   /** 章节序号（从 1 开始，需唯一）。 */
@@ -47,17 +49,6 @@ export class ChapterConfirmPayloadError extends Error {
 }
 
 /**
- * 功能：统计文本字数（忽略空白字符）。
- * 输入：`value` 文本。
- * 输出：字符数。
- * 异常：无。
- * 副作用：无。
- */
-function countWordLikeChars(value: string): number {
-  return value.replace(/\s+/g, "").length;
-}
-
-/**
  * 功能：标准化并校验章节数组（按序排序 + 去重校验）。
  * 输入：`items` 章节输入列表。
  * 输出：按 `index` 升序的新数组。
@@ -79,72 +70,42 @@ function normalizeChapterItems(items: ConfirmBookChapterInputItem[]): ConfirmBoo
 }
 
 /**
- * 功能：为确认后的章节生成最终正文内容。
- * 输入：`rawContent` 原文、`confirmedItems` 用户确认章节。
+ * 功能：根据 storage 切分结果与用户覆盖内容，生成确认后的正文数组。
+ * 输入：`draftContentByIndex` 从 storage 切分的内容 Map，`confirmedItems` 用户确认章节。
  * 输出：与 `confirmedItems` 一一对应的正文字符串数组。
  * 异常：无。
  * 副作用：无。
  */
 function resolveChapterContents(
-  rawContent: string,
+  draftContentByIndex: Map<number, string>,
   confirmedItems: ConfirmBookChapterInputItem[]
 ): string[] {
-  const previewItems = splitRawContentToChapterPreview(rawContent);
-  const fallbackContents = previewItems.map((item) => item.title);
-
-  const lines = rawContent.split(/\r?\n/);
-  const titleLineIndexes: number[] = [];
-  lines.forEach((line, lineIndex) => {
-    const normalizedLine = line.trim();
-    if (!normalizedLine) {
-      return;
-    }
-
-    if (fallbackContents.includes(normalizedLine)) {
-      titleLineIndexes.push(lineIndex);
-    }
-  });
-
-  const autoContents = previewItems.map((_item, index) => {
-    const startLine = titleLineIndexes[index];
-    const nextStartLine = titleLineIndexes[index + 1] ?? lines.length;
-    if (startLine === undefined) {
-      return "";
-    }
-
-    return lines.slice(startLine + 1, nextStartLine).join("\n");
-  });
-
-  return confirmedItems.map((item, index) => {
+  return confirmedItems.map((item) => {
     const explicitContent = item.content?.trim();
     if (explicitContent) {
       return explicitContent;
     }
 
-    const isLastItem = index === confirmedItems.length - 1;
-    if (isLastItem && index < autoContents.length) {
-      return autoContents.slice(index).join("\n\n");
-    }
-
-    return autoContents[index] ?? "";
+    return draftContentByIndex.get(item.index) ?? "";
   });
 }
 
 /**
  * 功能：创建章节确认服务（覆盖写入章节表）。
- * 输入：可注入 `prismaClient`。
+ * 输入：可注入 `prismaClient` 与 `storageClient`（便于测试替换）。
  * 输出：`{ confirmBookChapters }`。
  * 异常：由内部 `confirmBookChapters` 抛出。
  * 副作用：无（仅返回闭包函数）。
  */
 export function createConfirmBookChaptersService(
-  prismaClient: PrismaClient = prisma
+  prismaClient: PrismaClient = prisma,
+  storageClient: StorageProviderClient = provideStorage()
 ) {
   /**
    * 功能：落库用户确认后的章节切分结果。
    * 输入：`bookId` 与确认后的章节数组。
    * 输出：`ConfirmBookChaptersResult`。
-   * 异常：无章节输入、书籍不存在、原文缺失时抛业务错误。
+   * 异常：无章节输入、书籍不存在、章节为空时抛业务错误。
    * 副作用：删除旧章节并批量写入新章节。
    */
   async function confirmBookChapters(
@@ -161,8 +122,8 @@ export function createConfirmBookChaptersService(
         deletedAt: null
       },
       select: {
-        id        : true,
-        rawContent: true
+        id           : true,
+        sourceFileKey: true
       }
     });
 
@@ -170,12 +131,18 @@ export function createConfirmBookChaptersService(
       throw new BookNotFoundError(bookId);
     }
 
-    if (!book.rawContent?.trim()) {
-      throw new BookRawContentMissingError(bookId);
+    if (!book.sourceFileKey) {
+      throw new BookSourceFileMissingError(bookId);
     }
 
+    // 从 storage 读取源文件并切分，作为章节内容的 fallback（user override 优先）。
+    const fileBuffer = await storageClient.getObject(book.sourceFileKey);
+    const rawContent = decodeBookText(fileBuffer);
+    const drafts = splitRawContentToChapterDrafts(rawContent);
+    const draftContentByIndex = new Map(drafts.map((d) => [d.index, d.content]));
+
     const normalizedItems = normalizeChapterItems(items);
-    const contents = resolveChapterContents(book.rawContent, normalizedItems);
+    const contents = resolveChapterContents(draftContentByIndex, normalizedItems);
     const now = new Date();
 
     await prismaClient.$transaction(async (tx) => {
@@ -215,4 +182,4 @@ export function createConfirmBookChaptersService(
 }
 
 export const { confirmBookChapters } = createConfirmBookChaptersService();
-export { BookNotFoundError, BookRawContentMissingError } from "@/server/modules/books/errors";
+export { BookNotFoundError, BookSourceFileMissingError } from "@/server/modules/books/errors";

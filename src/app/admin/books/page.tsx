@@ -1,8 +1,7 @@
 import { listBooks } from "@/server/modules/books/listBooks";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Trash2, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Plus, FileText } from "lucide-react";
 import { 
   Table, 
   TableBody, 
@@ -11,6 +10,8 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"; 
+import { BookRowActions } from "./_components/book-row-actions";
+import { BookStatusCell } from "./_components/book-status-cell";
 
 /* Server Component for Page */
 export default async function AdminBooksPage() {
@@ -60,29 +61,16 @@ export default async function AdminBooksPage() {
                   </TableCell>
                   <TableCell>{book.author || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant={
-                      book.status === "COMPLETED" ? "success" : 
-                      book.status === "PROCESSING" ? "warning" : 
-                      book.status === "ERROR" ? "destructive" : "secondary"
-                    }>
-                      {book.status === "COMPLETED" ? "已完成" :
-                       book.status === "PROCESSING" ? "解析中" :
-                       book.status === "ERROR" ? "失败" : "待处理"}
-                    </Badge>
+                    <BookStatusCell
+                      bookId={book.id}
+                      initialStatus={book.status}
+                    />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {book.chapterCount}章 / {book.personaCount}人
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                       {/* Mock Actions for MVP */}
-                       <Button variant="ghost" size="icon" title="重新解析">
-                         <RefreshCw size={16} />
-                       </Button>
-                       <Button variant="ghost" size="icon" className="text-destructive" title="删除">
-                         <Trash2 size={16} />
-                       </Button>
-                    </div>
+                    <BookRowActions bookId={book.id} bookTitle={book.title} />
                   </TableCell>
                 </TableRow>
               ))

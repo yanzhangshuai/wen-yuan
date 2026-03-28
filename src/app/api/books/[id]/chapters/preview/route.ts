@@ -5,7 +5,7 @@ import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-resp
 import { failJson, okJson } from "@/server/http/route-utils";
 import {
   BookNotFoundError,
-  BookRawContentMissingError,
+  BookSourceFileMissingError,
   getChapterPreview,
   type ChapterPreviewResult
 } from "@/server/modules/books/getChapterPreview";
@@ -68,7 +68,7 @@ function badRequestJson(
 
 /**
  * GET `/api/books/:id/chapters/preview`
- * 功能：基于书籍原文生成章节切分预览（不落库，仅预览）。
+ * 功能：读取书籍已落库章节并返回预览。
  * 入参：`context.params.id`（书籍 UUID）。
  * 返回：`ChapterPreviewResult` 标准成功响应。
  */
@@ -99,8 +99,8 @@ export async function GET(
       return notFoundJson(requestId, startedAt, error.bookId);
     }
 
-    if (error instanceof BookRawContentMissingError) {
-      return badRequestJson(requestId, startedAt, error.bookId, "书籍原文为空，无法生成章节预览");
+    if (error instanceof BookSourceFileMissingError) {
+      return badRequestJson(requestId, startedAt, error.bookId, "书籍源文件不存在，无法生成章节预览");
     }
 
     return failJson({

@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type DragEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { 
@@ -16,27 +16,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input"; // Assuming simple input exists
 import {
+  confirmBookChapters,
   createBook,
   fetchChapterPreview,
   startAnalysis,
   type CreatedBookData,
   type ChapterPreviewItem,
+  type ChapterType,
   type AnalyzeScope,
   type StartAnalysisBody
 } from "@/lib/services/books";
+import { fetchModels, type AdminModelItem } from "@/lib/services/models";
 import { cn } from "@/lib/utils";
 
 type ImportStep = 1 | 2 | 3 | 4;
-
-const MODELS = [
-  { id: "deepseek-v3", name: "DeepSeek V3", provider: "DeepSeek", speed: "Fast", desc: "Balanced performance" },
-  { id: "qwen-max", name: "通义千问 Max", provider: "Alibaba", speed: "Medium", desc: "Strong in ancient text" },
-  { id: "doubao-pro", name: "豆包 Pro", provider: "ByteDance", speed: "Fast", desc: "Good context window" }
-];
+const MAX_BOOK_FILE_SIZE = 50 * 1024 * 1024;
 
 function parseScope(value: string): AnalyzeScope {
   if (value === "CHAPTER_RANGE") {
     return "CHAPTER_RANGE";
+  }
+
+  if (value === "CHAPTER_LIST") {
+    return "CHAPTER_LIST";
   }
 
   return "FULL_BOOK";
@@ -55,9 +57,18 @@ function parsePositiveInteger(value: string): number | null {
   return numericValue;
 }
 
+function parseChapterType(value: string): ChapterType | null {
+  if (value === "PRELUDE" || value === "CHAPTER" || value === "POSTLUDE") {
+    return value;
+  }
+
+  return null;
+}
+
 export default function AdminImportPage() {
   const [step, setStep] = useState<ImportStep>(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   
   // Form State
   const [title, setTitle] = useState("");
@@ -72,23 +83,105 @@ export default function AdminImportPage() {
   const [scope, setScope] = useState<AnalyzeScope>("FULL_BOOK");
   const [chapterStart, setChapterStart] = useState("");
   const [chapterEnd, setChapterEnd] = useState("");
-  const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
+  const [selectedChapterIndices, setSelectedChapterIndices] = useState<Set<number>>(new Set());
+  const [selectedModel, setSelectedModel] = useState("");
+  const [models, setModels] = useState<AdminModelItem[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [modelsLoadError, setModelsLoadError] = useState<string | null>(null);
   
   // UI State
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadModels() {
+      setModelsLoading(true);
+      setModelsLoadError(null);
+
+      try {
+        const allModels = await fetchModels();
+        const enabledModels = allModels.filter(model => model.isEnabled);
+        if (cancelled) {
+          return;
+        }
+
+        setModels(enabledModels);
+        setSelectedModel(current => {
+          if (current && enabledModels.some(model => model.id === current)) {
+            return current;
+          }
+
+          const defaultModel = enabledModels.find(model => model.isDefault);
+          return defaultModel?.id ?? enabledModels[0]?.id ?? "";
+        });
+
+        if (enabledModels.length === 0) {
+          setModelsLoadError("暂无可用模型，请先到模型设置页面启用模型。");
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setModels([]);
+        setModelsLoadError(error instanceof Error ? error.message : "模型列表加载失败");
+      } finally {
+        if (!cancelled) {
+          setModelsLoading(false);
+        }
+      }
+    }
+
+    void loadModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Handlers
+  function validateImportFile(file: File | null): string | null {
+    if (!file) {
+      return "请先选择 .txt 文件";
+    }
+
+    if (!/\.txt$/i.test(file.name)) {
+      return "仅支持 .txt 文件";
+    }
+
+    if (file.size > MAX_BOOK_FILE_SIZE) {
+      return "文件大小不能超过 50MB";
+    }
+
+    return null;
+  }
+
+  function selectImportFile(file: File | null) {
+    setSelectedFile(file);
+    setFileError(validateImportFile(file));
+  }
+
+  function handleDropFile(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0] ?? null;
+    selectImportFile(file);
+  }
+
   async function handleCreateBook(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedFile) {
-        toast.error("请先选择 .txt 文件");
-        return;
+    const currentFileError = validateImportFile(selectedFile);
+    if (currentFileError) {
+      setFileError(currentFileError);
+      toast.error(currentFileError);
+      return;
     }
+
     setIsSubmitting(true);
     
     try {
       const formData = new FormData();
-      formData.set("file", selectedFile);
+      formData.set("file", selectedFile!);
       if(title) formData.set("title", title);
       if(author) formData.set("author", author);
       if(dynasty) formData.set("dynasty", dynasty);
@@ -123,6 +216,16 @@ export default function AdminImportPage() {
 
   async function handleStartAnalysis() {
     if (!createdBook) return;
+    if (previewItems.length === 0) {
+      toast.error("请先生成并确认章节");
+      return;
+    }
+
+    if (!selectedModel) {
+      toast.error("请先选择可用模型");
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
@@ -143,8 +246,39 @@ export default function AdminImportPage() {
           chapterStart: parsedChapterStart,
           chapterEnd  : parsedChapterEnd
         };
+      } else if (scope === "CHAPTER_LIST") {
+        if (selectedChapterIndices.size === 0) {
+          toast.error("请至少勾选一个章节");
+          setIsSubmitting(false);
+          return;
+        }
+
+        body = {
+          scope         : "CHAPTER_LIST",
+          aiModelId     : selectedModel,
+          chapterIndices: [...selectedChapterIndices].sort((a, b) => a - b)
+        };
       } else {
         body = { scope: "FULL_BOOK", aiModelId: selectedModel };
+      }
+
+      const confirmItems = previewItems.map((item) => {
+        const chapterType = parseChapterType(item.chapterType);
+        if (!chapterType) {
+          throw new Error(`存在不支持的章节类型：${item.chapterType}`);
+        }
+
+        return {
+          index: item.index,
+          chapterType,
+          title: item.title
+        };
+      });
+
+      try {
+        await confirmBookChapters(createdBook.id, confirmItems);
+      } catch (error) {
+        throw new Error(`章节确认失败：${error instanceof Error ? error.message : "请稍后重试"}`);
       }
 
       await startAnalysis(createdBook.id, body);
@@ -183,7 +317,7 @@ export default function AdminImportPage() {
                {step > s ? <CheckCircle2 size={16} /> : s}
              </div>
              <span className="text-xs mt-2 font-medium text-muted-foreground">
-               {s === 1 ? "上传/元数据" : s === 2 ? "章节预览" : s === 3 ? "模型配置" : "完成"}
+               {s === 1 ? "上传/元数据" : s === 2 ? "预览&确认" : s === 3 ? "模型配置" : "完成"}
              </span>
           </div>
         ))}
@@ -209,13 +343,20 @@ export default function AdminImportPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={(event) => { void handleCreateBook(event); }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="md:col-span-2 space-y-2">
+                  <div className="md:col-span-2 space-y-2">
                       <label className="text-sm font-medium">文件上传 *</label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center justify-center text-center hover:border-primary transition-colors cursor-pointer bg-background/50">
+                      <div
+                        className={cn(
+                          "border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center justify-center text-center hover:border-primary transition-colors cursor-pointer bg-background/50",
+                          fileError ? "border-destructive" : undefined
+                        )}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={handleDropFile}
+                      >
                          <input 
                            type="file" 
                            accept=".txt"
-                           onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                           onChange={(event) => selectImportFile(event.target.files?.[0] ?? null)}
                            className="hidden" 
                            id="file-upload"
                          />
@@ -227,6 +368,9 @@ export default function AdminImportPage() {
                             <span className="text-xs text-muted-foreground mt-1">最大 50MB</span>
                          </label>
                       </div>
+                      {fileError && (
+                        <p className="text-sm text-destructive">{fileError}</p>
+                      )}
                    </div>
                    
                    <div className="space-y-2">
@@ -249,7 +393,7 @@ export default function AdminImportPage() {
                    </div>
                    
                    <div className="md:col-span-2 flex justify-end">
-                      <Button type="submit" disabled={isSubmitting}>
+                      <Button type="submit" disabled={isSubmitting || !selectedFile}>
                          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                          下一步：生成章节预览
                       </Button>
@@ -298,6 +442,22 @@ export default function AdminImportPage() {
                        <table className="w-full text-sm">
                           <thead className="bg-muted/10 sticky top-0 backdrop-blur">
                              <tr>
+                               {scope === "CHAPTER_LIST" && (
+                                 <th className="px-3 py-2 w-8">
+                                   <input
+                                     type="checkbox"
+                                     aria-label="全选"
+                                     checked={selectedChapterIndices.size === previewItems.length}
+                                     onChange={(e) => {
+                                       if (e.target.checked) {
+                                         setSelectedChapterIndices(new Set(previewItems.map(i => i.index)));
+                                       } else {
+                                         setSelectedChapterIndices(new Set());
+                                       }
+                                     }}
+                                   />
+                                 </th>
+                               )}
                                <th className="px-4 py-2 text-left">序</th>
                                <th className="px-4 py-2 text-left">标题</th>
                                <th className="px-4 py-2 text-right">字数</th>
@@ -305,7 +465,35 @@ export default function AdminImportPage() {
                           </thead>
                           <tbody>
                              {previewItems.map((item, idx) => (
-                               <tr key={idx} className="border-t border-border">
+                               <tr
+                                 key={idx}
+                                 className={cn(
+                                   "border-t border-border",
+                                   scope === "CHAPTER_LIST" && selectedChapterIndices.has(item.index)
+                                     ? "bg-primary/5"
+                                     : undefined
+                                 )}
+                               >
+                                  {scope === "CHAPTER_LIST" && (
+                                    <td className="px-3 py-2">
+                                      <input
+                                        type="checkbox"
+                                        aria-label={`选择 ${item.title}`}
+                                        checked={selectedChapterIndices.has(item.index)}
+                                        onChange={(e) => {
+                                          setSelectedChapterIndices(prev => {
+                                            const next = new Set(prev);
+                                            if (e.target.checked) {
+                                              next.add(item.index);
+                                            } else {
+                                              next.delete(item.index);
+                                            }
+                                            return next;
+                                          });
+                                        }}
+                                      />
+                                    </td>
+                                  )}
                                   <td className="px-4 py-2">{item.index}</td>
                                   <td className="px-4 py-2 font-medium">{item.title}</td>
                                   <td className="px-4 py-2 text-right opacity-70">{item.wordCount}</td>
@@ -314,6 +502,11 @@ export default function AdminImportPage() {
                           </tbody>
                        </table>
                     </div>
+                    {scope === "CHAPTER_LIST" && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        已选 {selectedChapterIndices.size} / {previewItems.length} 个章节
+                      </p>
+                    )}
                  </CardContent>
                </Card>
 
@@ -326,26 +519,37 @@ export default function AdminImportPage() {
                     {/* Model Selection Cards */}
                     <div>
                        <label className="text-sm font-medium mb-3 block">选择模型</label>
-                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          {MODELS.map(model => (
-                             <div 
-                               key={model.id}
-                               onClick={() => setSelectedModel(model.id)}
-                               className={cn(
-                                 "cursor-pointer border-2 rounded-lg p-4 transition-all hover:bg-primary-subtle/10",
-                                 selectedModel === model.id 
-                                   ? "border-primary bg-primary-subtle/20" 
-                                   : "border-border"
-                               )}
-                             >
-                                <div className="font-bold text-sm mb-1">{model.name}</div>
-                                <div className="text-xs text-muted-foreground mb-2">{model.provider}</div>
-                                <div className="flex items-center justify-between mt-2">
-                                   <Badge variant="outline" className="text-[10px] h-5">{model.speed}</Badge>
+                       {modelsLoading ? (
+                          <div className="rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                            模型列表加载中...
+                          </div>
+                       ) : models.length === 0 ? (
+                          <div className="rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                            {modelsLoadError ?? "当前暂无可用模型，将使用系统默认模型。"}
+                          </div>
+                       ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                             {models.map(model => (
+                                <div 
+                                  key={model.id}
+                                  onClick={() => setSelectedModel(model.id)}
+                                  className={cn(
+                                    "cursor-pointer border-2 rounded-lg p-4 transition-all hover:bg-primary-subtle/10",
+                                    selectedModel === model.id 
+                                      ? "border-primary bg-primary-subtle/20" 
+                                      : "border-border"
+                                  )}
+                                >
+                                   <div className="font-bold text-sm mb-1">{model.name}</div>
+                                   <div className="text-xs text-muted-foreground mb-2">{model.provider}</div>
+                                   <div className="flex items-center justify-between mt-2 gap-2">
+                                      <Badge variant="outline" className="text-[10px] h-5">{model.modelId}</Badge>
+                                      {model.isDefault ? <Badge className="text-[10px] h-5">默认</Badge> : null}
+                                   </div>
                                 </div>
-                             </div>
-                          ))}
-                       </div>
+                             ))}
+                          </div>
+                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -354,10 +558,14 @@ export default function AdminImportPage() {
                           <select 
                             className="w-full h-10 rounded-md border border-border bg-transparent px-3 text-sm"
                             value={scope}
-                            onChange={(event) => setScope(parseScope(event.target.value))}
+                            onChange={(event) => {
+                              setScope(parseScope(event.target.value));
+                              setSelectedChapterIndices(new Set());
+                            }}
                           >
                              <option value="FULL_BOOK">全书解析</option>
-                             <option value="CHAPTER_RANGE">指定章节范围</option>
+                             <option value="CHAPTER_LIST">多选指定章节</option>
+                             <option value="CHAPTER_RANGE">指定范围</option>
                           </select>
                        </div>
                        {scope === "CHAPTER_RANGE" && (
@@ -372,12 +580,23 @@ export default function AdminImportPage() {
                              </div>
                           </div>
                        )}
+                       {scope === "CHAPTER_LIST" && (
+                          <div className="flex items-end">
+                             <p className="text-sm text-muted-foreground pb-1">
+                               在上方章节列表中勾选需解析的章节
+                             </p>
+                          </div>
+                       )}
                     </div>
                  </CardContent>
                </Card>
                
                <div className="flex justify-end pt-4">
-                  <Button size="lg" onClick={() => { void handleStartAnalysis(); }} disabled={isSubmitting}>
+                  <Button
+                    size="lg"
+                    onClick={() => { void handleStartAnalysis(); }}
+                    disabled={isSubmitting || modelsLoading || !selectedModel}
+                  >
                      {isSubmitting ? "启动中..." : "启动解析任务"}
                      <Play className="ml-2 w-4 h-4" />
                   </Button>

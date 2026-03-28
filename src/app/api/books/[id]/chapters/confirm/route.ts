@@ -10,7 +10,7 @@ import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import {
   BookNotFoundError,
-  BookRawContentMissingError,
+  BookSourceFileMissingError,
   ChapterConfirmPayloadError,
   confirmBookChapters,
   type ConfirmBookChaptersResult
@@ -30,7 +30,7 @@ import { ERROR_CODES } from "@/types/api";
 const chapterConfirmBodySchema = z.object({
   items: z.array(
     z.object({
-      index      : z.number().int().positive("章节序号必须为正整数"),
+      index      : z.number().int().min(0, "章节序号必须为非负整数"),
       chapterType: z.nativeEnum(ChapterType),
       title      : z.string().trim().min(1, "章节标题不能为空"),
       content    : z.string().optional().nullable()
@@ -129,8 +129,8 @@ export async function POST(
       return notFoundJson(requestId, startedAt, error.bookId);
     }
 
-    if (error instanceof BookRawContentMissingError) {
-      return badRequestJson(requestId, startedAt, error.bookId, error.message);
+    if (error instanceof BookSourceFileMissingError) {
+      return badRequestJson(requestId, startedAt, error.bookId, "书籍源文件不存在，无法确认章节");
     }
 
     if (error instanceof ChapterConfirmPayloadError) {

@@ -63,6 +63,48 @@ describe("POST /api/books", () => {
     }));
   });
 
+  it("falls back to GB18030 decoding when UTF-8 decoding fails", async () => {
+    // Arrange: "中文" 的 GBK/GB18030 字节
+    createBookMock.mockResolvedValue({
+      id         : "book-2",
+      title      : "测试",
+      author     : null,
+      dynasty    : null,
+      description: null,
+      status     : "PENDING",
+      sourceFile : {
+        key : "books/book-2/source/original.txt",
+        url : "/api/assets/books/book-2/source/original.txt",
+        name: "gbk.txt",
+        mime: "text/plain; charset=utf-8",
+        size: 4
+      }
+    });
+
+    const gbkBytes = new Uint8Array([0xD6, 0xD0, 0xCE, 0xC4]);
+    const formData = new FormData();
+    formData.set("title", "测试");
+    formData.set("file", new File([gbkBytes], "gbk.txt", { type: "text/plain" }));
+
+    const { POST } = await import("@/app/api/books/route");
+
+    // Act
+    const response = await POST(new Request("http://localhost/api/books", {
+      method : "POST",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      },
+      body: formData
+    }));
+
+    // Assert
+    expect(response.status).toBe(201);
+    expect(createBookMock).toHaveBeenCalledWith(expect.objectContaining({
+      fileName   : "gbk.txt",
+      fileContent: expect.any(Buffer)
+    }));
+  });
+
   it("rejects non-txt uploads with 400", async () => {
     // Arrange
     const formData = new FormData();

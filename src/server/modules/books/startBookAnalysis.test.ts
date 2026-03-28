@@ -26,6 +26,7 @@ describe("startBookAnalysis", () => {
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
+      chapterIndices  : [],
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false
     });
@@ -34,10 +35,12 @@ describe("startBookAnalysis", () => {
       parseProgress: 0,
       parseStage   : "文本清洗"
     });
+    const chapterCount = vi.fn().mockResolvedValue(12);
     const transaction = vi.fn(async (operations) => Promise.all(operations));
     const service = createStartBookAnalysisService({
       book        : { findFirst: bookFindFirst, update: bookUpdate },
       aiModel     : { findUnique: modelFindUnique },
+      chapter     : { count: chapterCount },
       analysisJob : { create: analysisJobCreate },
       $transaction: transaction
     } as never);
@@ -79,6 +82,7 @@ describe("startBookAnalysis", () => {
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
+      chapterIndices  : [],
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false,
       aiModelId       : "model-1",
@@ -93,6 +97,7 @@ describe("startBookAnalysis", () => {
     const service = createStartBookAnalysisService({
       book        : { findFirst: vi.fn().mockResolvedValue(null) },
       aiModel     : { findUnique: vi.fn() },
+      chapter     : { count: vi.fn() },
       analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
@@ -106,6 +111,7 @@ describe("startBookAnalysis", () => {
     const service = createStartBookAnalysisService({
       book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
       aiModel     : { findUnique: vi.fn().mockResolvedValue(null) },
+      chapter     : { count: vi.fn() },
       analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
@@ -121,6 +127,7 @@ describe("startBookAnalysis", () => {
     const service = createStartBookAnalysisService({
       book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
       aiModel     : { findUnique: vi.fn().mockResolvedValue({ id: "model-1", isEnabled: false }) },
+      chapter     : { count: vi.fn() },
       analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
@@ -136,6 +143,7 @@ describe("startBookAnalysis", () => {
     const service = createStartBookAnalysisService({
       book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
       aiModel     : { findUnique: vi.fn() },
+      chapter     : { count: vi.fn() },
       analysisJob : { create: vi.fn() },
       $transaction: vi.fn()
     } as never);
@@ -147,6 +155,77 @@ describe("startBookAnalysis", () => {
         chapterStart: 20,
         chapterEnd  : 10
       })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+  });
+
+  it("throws AnalysisScopeInvalidError when no chapters are confirmed", async () => {
+    const service = createStartBookAnalysisService({
+      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: "model-1" }) },
+      aiModel     : { findUnique: vi.fn().mockResolvedValue({ id: "model-1", isEnabled: true }) },
+      chapter     : { count: vi.fn().mockResolvedValue(0) },
+      analysisJob : { create: vi.fn() },
+      $transaction: vi.fn()
+    } as never);
+
+    await expect(service.startBookAnalysis("book-1")).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+  });
+
+  it("creates CHAPTER_LIST analysis job with specified chapter indices", async () => {
+    // Arrange
+    const analysisJobCreate = vi.fn().mockResolvedValue({
+      id              : "job-2",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "CHAPTER_LIST",
+      chapterStart    : null,
+      chapterEnd      : null,
+      chapterIndices  : [1, 3, 5],
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
+    });
+    const bookUpdate = vi.fn().mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
+    const transaction = vi.fn(async (operations) => Promise.all(operations));
+    const service = createStartBookAnalysisService({
+      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }), update: bookUpdate },
+      aiModel     : { findUnique: vi.fn() },
+      chapter     : { count: vi.fn().mockResolvedValue(3) },
+      analysisJob : { create: analysisJobCreate },
+      $transaction: transaction
+    } as never);
+
+    // Act
+    const result = await service.startBookAnalysis("book-1", {
+      scope         : "CHAPTER_LIST",
+      chapterIndices: [5, 1, 3]
+    });
+
+    // Assert: indices are deduplicated and sorted
+    expect(analysisJobCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        scope         : "CHAPTER_LIST",
+        chapterIndices: [1, 3, 5],
+        chapterStart  : null,
+        chapterEnd    : null
+      })
+    }));
+    expect(result.chapterIndices).toEqual([1, 3, 5]);
+    expect(result.scope).toBe("CHAPTER_LIST");
+  });
+
+  it("throws AnalysisScopeInvalidError for CHAPTER_LIST with empty indices", async () => {
+    const service = createStartBookAnalysisService({
+      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
+      aiModel     : { findUnique: vi.fn() },
+      chapter     : { count: vi.fn() },
+      analysisJob : { create: vi.fn() },
+      $transaction: vi.fn()
+    } as never);
+
+    await expect(
+      service.startBookAnalysis("book-1", { scope: "CHAPTER_LIST", chapterIndices: [] })
     ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
   });
 });

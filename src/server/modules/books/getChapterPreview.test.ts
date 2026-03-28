@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   BookNotFoundError,
-  BookRawContentMissingError,
+  BookSourceFileMissingError,
   createGetChapterPreviewService,
   splitRawContentToChapterPreview
 } from "@/server/modules/books/getChapterPreview";
@@ -24,16 +24,20 @@ describe("splitRawContentToChapterPreview", () => {
     const result = splitRawContentToChapterPreview(content);
 
     expect(result).toHaveLength(4);
+    // 楔子是 PRELUDE，从 index 0 开始
     expect(result[0]).toEqual(expect.objectContaining({
-      index      : 1,
+      index      : 0,
       chapterType: ChapterType.PRELUDE,
       title      : "楔子"
     }));
+    // 第一正文章节 index 为 1
     expect(result[1]).toEqual(expect.objectContaining({
+      index      : 1,
       chapterType: ChapterType.CHAPTER,
       title      : "第1回 范进中举"
     }));
     expect(result[3]).toEqual(expect.objectContaining({
+      index      : 3,
       chapterType: ChapterType.POSTLUDE,
       title      : "后记"
     }));
@@ -54,46 +58,64 @@ describe("splitRawContentToChapterPreview", () => {
 });
 
 describe("getChapterPreview", () => {
-  it("returns preview from book raw content", async () => {
+  it("reads source file from storage, splits and returns preview", async () => {
     // Arrange
-    const findUnique = vi.fn().mockResolvedValue({
-      id        : "book-1",
-      rawContent: "第1回\n正文"
+    const rawContent = [
+      "第1回 范进中举",
+      "正文一"
+    ].join("\n");
+    const findFirst = vi.fn().mockResolvedValue({
+      id           : "book-1",
+      sourceFileKey: "books/20260328/rulin.txt"
     });
-    const service = createGetChapterPreviewService({
-      book: { findUnique }
-    } as never);
+    const getObject = vi.fn().mockResolvedValue(Buffer.from(rawContent));
+    const service = createGetChapterPreviewService(
+      { book: { findFirst } } as never,
+      { getObject } as never
+    );
 
     // Act
     const result = await service.getChapterPreview("book-1");
 
     // Assert
-    expect(findUnique).toHaveBeenCalledWith({
-      where : { id: "book-1" },
-      select: { id: true, rawContent: true }
+    expect(findFirst).toHaveBeenCalledWith({
+      where : { id: "book-1", deletedAt: null },
+      select: { id: true, sourceFileKey: true }
     });
+    expect(getObject).toHaveBeenCalledWith("books/20260328/rulin.txt");
     expect(result.bookId).toBe("book-1");
     expect(result.chapterCount).toBe(1);
+    expect(result.items[0]).toEqual(expect.objectContaining({
+      index      : 1,
+      chapterType: ChapterType.CHAPTER,
+      title      : "第1回 范进中举"
+    }));
   });
 
   it("throws BookNotFoundError when book is missing", async () => {
     // Arrange
-    const findUnique = vi.fn().mockResolvedValue(null);
-    const service = createGetChapterPreviewService({ book: { findUnique } } as never);
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const service = createGetChapterPreviewService(
+      { book: { findFirst } } as never,
+      { getObject: vi.fn() } as never
+    );
 
     // Act + Assert
     await expect(service.getChapterPreview("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);
   });
 
-  it("throws BookRawContentMissingError when raw content is empty", async () => {
+  it("throws BookSourceFileMissingError when sourceFileKey is null", async () => {
     // Arrange
-    const findUnique = vi.fn().mockResolvedValue({
-      id        : "book-1",
-      rawContent: "   "
+    const findFirst = vi.fn().mockResolvedValue({
+      id           : "book-1",
+      sourceFileKey: null
     });
-    const service = createGetChapterPreviewService({ book: { findUnique } } as never);
+    const service = createGetChapterPreviewService(
+      { book: { findFirst } } as never,
+      { getObject: vi.fn() } as never
+    );
 
     // Act + Assert
-    await expect(service.getChapterPreview("book-1")).rejects.toBeInstanceOf(BookRawContentMissingError);
+    await expect(service.getChapterPreview("book-1")).rejects.toBeInstanceOf(BookSourceFileMissingError);
   });
 });
