@@ -102,8 +102,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const requestHeaders = buildInjectedHeaders(request.headers, role, currentPath);
   const pathname = request.nextUrl.pathname;
 
-  if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/")) {
-    if (role === AUTH_VIEWER_ROLE) {
+  if (role === AUTH_VIEWER_ROLE) {
+    if (pathname.startsWith("/api/admin/")) {
+      // 统一重定向到登录页，保持与 TDD 的未登录访问行为一致。
+      const redirectUrl = new URL(buildRedirectTarget(currentPath), request.url);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+      // 页面路由重定向到登录页。
       const redirectUrl = new URL(buildRedirectTarget(currentPath), request.url);
       return NextResponse.redirect(redirectUrl);
     }

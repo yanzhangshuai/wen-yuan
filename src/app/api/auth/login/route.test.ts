@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppRole } from "@/generated/prisma/enums";
 import { ERROR_CODES } from "@/types/api";
@@ -6,6 +6,10 @@ import { ERROR_CODES } from "@/types/api";
 const authenticateAdminMock = vi.fn();
 const issueAuthTokenMock = vi.fn();
 const sanitizeRedirectPathMock = vi.fn();
+const resolveClientIpMock = vi.fn();
+const getLoginLockRetryAfterSecondsMock = vi.fn();
+const recordLoginFailureMock = vi.fn();
+const clearLoginFailuresMock = vi.fn();
 class MockAuthError extends Error {
   readonly code: string;
 
@@ -25,13 +29,33 @@ vi.mock("@/server/modules/auth", () => ({
   sanitizeRedirectPath  : sanitizeRedirectPathMock
 }));
 
+vi.mock("@/server/modules/auth/login-rate-limit", () => ({
+  resolveClientIp              : resolveClientIpMock,
+  getLoginLockRetryAfterSeconds: getLoginLockRetryAfterSecondsMock,
+  recordLoginFailure           : recordLoginFailureMock,
+  clearLoginFailures           : clearLoginFailuresMock
+}));
+
 describe("POST /api/auth/login", () => {
   const originalNodeEnv = process.env.NODE_ENV;
+
+  beforeEach(() => {
+    resolveClientIpMock.mockReturnValue("203.0.113.1");
+    getLoginLockRetryAfterSecondsMock.mockReturnValue(null);
+    recordLoginFailureMock.mockReturnValue({
+      locked           : false,
+      retryAfterSeconds: null
+    });
+  });
 
   afterEach(() => {
     authenticateAdminMock.mockReset();
     issueAuthTokenMock.mockReset();
     sanitizeRedirectPathMock.mockReset();
+    resolveClientIpMock.mockReset();
+    getLoginLockRetryAfterSecondsMock.mockReset();
+    recordLoginFailureMock.mockReset();
+    clearLoginFailuresMock.mockReset();
     vi.resetModules();
 
     if (typeof originalNodeEnv === "undefined") {
@@ -88,6 +112,9 @@ describe("POST /api/auth/login", () => {
       identifier: "admin@example.com",
       password  : "secret-123"
     });
+    expect(issueAuthTokenMock).toHaveBeenCalledWith("管理员");
+    expect(clearLoginFailuresMock).toHaveBeenCalledWith("203.0.113.1");
+    expect(resolveClientIpMock).toHaveBeenCalledOnce();
 
     const setCookie = response.headers.get("set-cookie");
     expect(setCookie).toContain("token=signed-token");
@@ -144,6 +171,7 @@ describe("POST /api/auth/login", () => {
     expect(payload.success).toBe(false);
     expect(payload.code).toBe(ERROR_CODES.AUTH_UNAUTHORIZED);
     expect(payload.message).toBe("账号或密码错误");
+    expect(recordLoginFailureMock).toHaveBeenCalledWith("203.0.113.1");
   });
 
   it("falls back to root when redirect is not an in-site path", async () => {
@@ -176,5 +204,245 @@ describe("POST /api/auth/login", () => {
     const payload = await response.json();
     expect(payload.data.redirect).toBe("/");
     expect(sanitizeRedirectPathMock).toHaveBeenCalledWith("https://evil.example");
+  });
+
+  it("returns 403 when origin header is missing", async () => {
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+
+    expect(response.status).toBe(403);
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.AUTH_FORBIDDEN);
+    expect(authenticateAdminMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when origin host mismatches request host", async () => {
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://evil.example"
+      }
+    }));
+
+    expect(response.status).toBe(403);
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.AUTH_FORBIDDEN);
+    expect(payload.message).toBe("非法请求来源");
+  });
+
+  it("returns 403 when origin is malformed", async () => {
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "://bad-origin"
+      }
+    }));
+
+    expect(response.status).toBe(403);
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.AUTH_FORBIDDEN);
+  });
+
+  it("returns 429 immediately when ip is already locked", async () => {
+    getLoginLockRetryAfterSecondsMock.mockReturnValue(321);
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("321");
+    expect(authenticateAdminMock).not.toHaveBeenCalled();
+  });
+
+  it("applies pre-lock before origin checks", async () => {
+    getLoginLockRetryAfterSecondsMock.mockReturnValue(120);
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("120");
+    expect(authenticateAdminMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when unauthorized attempt triggers lock", async () => {
+    authenticateAdminMock.mockRejectedValue(
+      new MockAuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误")
+    );
+    recordLoginFailureMock.mockReturnValue({
+      locked           : true,
+      retryAfterSeconds: 900
+    });
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "wrong" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("900");
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.COMMON_RATE_LIMITED);
+  });
+
+  it("returns 500 for unexpected auth errors", async () => {
+    authenticateAdminMock.mockRejectedValue(new Error("db unavailable"));
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.COMMON_INTERNAL_ERROR);
+    expect(payload.message).toBe("登录失败");
+    expect(payload.error.type).toBe("InternalError");
+  });
+
+  it("returns 403 for non-unauthorized auth errors and does not count failures", async () => {
+    authenticateAdminMock.mockRejectedValue(
+      new MockAuthError(ERROR_CODES.AUTH_FORBIDDEN, "forbidden")
+    );
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "x" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(403);
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.AUTH_FORBIDDEN);
+    expect(recordLoginFailureMock).not.toHaveBeenCalled();
+  });
+
+  it("marks cookie as secure in production", async () => {
+    Reflect.set(process.env, "NODE_ENV", "production");
+    authenticateAdminMock.mockResolvedValue({
+      id      : "user-1",
+      username: "admin",
+      email   : "admin@example.com",
+      name    : "管理员",
+      role    : AppRole.ADMIN
+    });
+    issueAuthTokenMock.mockReturnValue("signed-token");
+    sanitizeRedirectPathMock.mockReturnValue("/admin");
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "secret-123" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("Secure");
+  });
+
+  it("passes undefined redirect through sanitizer when not provided", async () => {
+    authenticateAdminMock.mockResolvedValue({
+      id      : "user-1",
+      username: "admin",
+      email   : "admin@example.com",
+      name    : "管理员",
+      role    : AppRole.ADMIN
+    });
+    issueAuthTokenMock.mockReturnValue("signed-token");
+    sanitizeRedirectPathMock.mockReturnValue("/");
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin@example.com", password: "secret-123" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(200);
+    expect(sanitizeRedirectPathMock).toHaveBeenCalledWith(undefined);
+  });
+
+  it("returns 400 when body is invalid JSON", async () => {
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : "{broken-json",
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe(ERROR_CODES.COMMON_BAD_REQUEST);
+  });
+
+  it("does not set Retry-After header for plain 401 unauthorized", async () => {
+    authenticateAdminMock.mockRejectedValue(
+      new MockAuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误")
+    );
+    recordLoginFailureMock.mockReturnValue({
+      locked           : false,
+      retryAfterSeconds: null
+    });
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const response = await POST(new Request("http://localhost/api/auth/login", {
+      method : "POST",
+      body   : JSON.stringify({ identifier: "admin", password: "wrong" }),
+      headers: {
+        "content-type": "application/json",
+        origin        : "http://localhost"
+      }
+    }));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Retry-After")).toBeNull();
   });
 });

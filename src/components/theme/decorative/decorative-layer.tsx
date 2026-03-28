@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useTheme } from "next-themes";
 import { PaperTexture } from "./paper-texture";
 import { MuseumGlow } from "./museum-glow";
@@ -14,7 +15,13 @@ import { StarDust } from "./star-dust";
  */
 export function DecorativeLayer() {
   const { resolvedTheme } = useTheme();
-  if (!resolvedTheme) return null;
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !resolvedTheme) return null;
 
   switch (resolvedTheme) {
     case "danqing":

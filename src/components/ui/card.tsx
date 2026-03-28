@@ -14,7 +14,7 @@ export function Card({ className, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "ui-card rounded-2xl border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] shadow-sm",
+        "ui-card rounded-2xl border border-border bg-card text-card-foreground shadow-sm",
         className
       )}
       {...props}
@@ -38,7 +38,7 @@ export function CardDescription({
 }: CardDescriptionProps) {
   return (
     <p
-      className={cn("ui-card-description text-sm text-[var(--muted-foreground)]", className)}
+      className={cn("ui-card-description text-sm text-muted-foreground", className)}
       {...props}
     />
   );

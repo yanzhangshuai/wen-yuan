@@ -14,20 +14,9 @@ import {
 } from "@/components/ui/card";
 import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
-interface LoginSuccessData {
-  redirect?: string;
-}
+import { login } from "@/lib/services/auth";
 
 const LOGIN_ERROR_MESSAGE = "账号或密码错误";
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null) {
-    return null;
-  }
-
-  return value as Record<string, unknown>;
-}
 
 /**
  * 仅允许站内相对路径，避免把登录后的跳转目标交给任意外部地址。
@@ -44,32 +33,6 @@ function normalizeRedirect(value: string | null): string {
   return value;
 }
 
-function hasRedirectData(value: unknown): value is LoginSuccessData {
-  const record = asRecord(value);
-  if (!record) {
-    return false;
-  }
-
-  const redirectValue = record.redirect;
-  return typeof redirectValue === "undefined" || typeof redirectValue === "string";
-}
-
-function extractRedirectFromPayload(payload: unknown): string | null {
-  const record = asRecord(payload);
-  if (!record) {
-    return null;
-  }
-
-  const successValue = record.success;
-  const dataValue = record.data;
-
-  if (successValue !== true || !hasRedirectData(dataValue)) {
-    return null;
-  }
-
-  return dataValue.redirect ?? null;
-}
-
 export default function LoginPage() {
   return (
     <Suspense fallback={<LoginSkeleton />}>
@@ -81,7 +44,7 @@ export default function LoginPage() {
 function LoginSkeleton() {
   return (
     <main className="login-page flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md h-96 animate-pulse rounded-lg bg-[var(--color-muted)]/20" />
+      <div className="w-full max-w-md h-96 animate-pulse rounded-lg bg-muted/20" />
     </main>
   );
 }
@@ -102,27 +65,8 @@ function LoginForm() {
     setErrorMessage("");
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method : "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          identifier,
-          password,
-          redirect
-        })
-      });
-
-      const payload: unknown = await response.json().catch((): unknown => null);
-      const nextRedirect = extractRedirectFromPayload(payload);
-
-      if (!response.ok || nextRedirect === null) {
-        setErrorMessage(LOGIN_ERROR_MESSAGE);
-        return;
-      }
-
-      window.location.replace(normalizeRedirect(nextRedirect || redirect));
+      const nextRedirect = await login({ identifier, password, redirect });
+      window.location.replace(normalizeRedirect(nextRedirect ?? redirect));
     } catch {
       setErrorMessage(LOGIN_ERROR_MESSAGE);
     } finally {
@@ -134,8 +78,8 @@ function LoginForm() {
     <main className="login-page flex min-h-screen items-center justify-center px-6 py-12">
       <div className="login-page-shell w-full max-w-md">
         <Card className="overflow-hidden border-[color:color-mix(in_srgb,var(--border)_75%,white)] bg-[color:color-mix(in_srgb,var(--card)_94%,white)] shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <CardHeader className="space-y-3 border-b border-[var(--border)] bg-[color:color-mix(in_srgb,var(--card)_86%,var(--accent))]">
-            <p className="text-sm font-medium uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
+          <CardHeader className="space-y-3 border-b border-border bg-[color:color-mix(in_srgb,var(--card)_86%,var(--accent))]">  
+            <p className="text-sm font-medium uppercase tracking-[0.24em] text-muted-foreground">
               Admin Access
             </p>
             <div className="space-y-1">

@@ -16,7 +16,7 @@ export function FormItem({ className, ...props }: FormItemProps) {
 export function FormLabel({ className, ...props }: FormLabelProps) {
   return (
     <label
-      className={cn("ui-form-label text-sm font-medium text-[var(--foreground)]", className)}
+      className={cn("ui-form-label text-sm font-medium text-foreground", className)}
       {...props}
     />
   );
@@ -28,7 +28,7 @@ export function FormDescription({
 }: FormDescriptionProps) {
   return (
     <p
-      className={cn("ui-form-description text-sm text-[var(--muted-foreground)]", className)}
+      className={cn("ui-form-description text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -36,6 +36,6 @@ export function FormDescription({
 
 export function FormMessage({ className, ...props }: FormMessageProps) {
   return (
-    <p className={cn("ui-form-message text-sm text-[var(--destructive)]", className)} {...props} />
+    <p className={cn("ui-form-message text-sm text-destructive", className)} {...props} />
   );
 }

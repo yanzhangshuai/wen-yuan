@@ -38,44 +38,52 @@ describe("getAuthContext", () => {
     });
 
     await expect(getAuthContext(headers)).resolves.toEqual({
-      userId: "user-1",
-      role  : AppRole.ADMIN
+      userId         : "user-1",
+      role           : AppRole.ADMIN,
+      name           : null,
+      isAuthenticated: true
     });
   });
 
   it("falls back to viewer when role header is missing", async () => {
     await expect(getAuthContext(new Headers())).resolves.toEqual({
-      userId: null,
-      role  : AppRole.VIEWER
+      userId         : null,
+      role           : AppRole.VIEWER,
+      name           : null,
+      isAuthenticated: false
     });
   });
 
   it("resolves admin from cookie token when middleware headers are missing", async () => {
     process.env.JWT_SECRET = testSecret;
     const now = Math.floor(Date.now() / 1000);
-    const token = await issueAuthToken(now);
+    const token = await issueAuthToken("管理员", now);
     const headers = new Headers({
       cookie: `token=${token}`
     });
 
     await expect(getAuthContext(headers)).resolves.toEqual({
-      userId: null,
-      role  : AppRole.ADMIN
+      userId         : null,
+      role           : AppRole.ADMIN,
+      name           : "管理员",
+      isAuthenticated: true
     });
   });
 
   it("prefers valid cookie token when middleware role header is viewer", async () => {
     process.env.JWT_SECRET = testSecret;
     const now = Math.floor(Date.now() / 1000);
-    const token = await issueAuthToken(now);
+    const token = await issueAuthToken("管理员", now);
     const headers = new Headers({
       "x-auth-role": AppRole.VIEWER,
       cookie       : `token=${token}`
     });
 
     await expect(getAuthContext(headers)).resolves.toEqual({
-      userId: null,
-      role  : AppRole.ADMIN
+      userId         : null,
+      role           : AppRole.ADMIN,
+      name           : "管理员",
+      isAuthenticated: true
     });
   });
 
@@ -86,19 +94,21 @@ describe("getAuthContext", () => {
     });
 
     await expect(getAuthContext(headers)).resolves.toEqual({
-      userId: null,
-      role  : AppRole.VIEWER
+      userId         : null,
+      role           : AppRole.VIEWER,
+      name           : null,
+      isAuthenticated: false
     });
   });
 });
 
 describe("requireAdmin", () => {
   it("allows admin role without throwing", () => {
-    expect(() => requireAdmin({ userId: "user-1", role: AppRole.ADMIN })).not.toThrow();
+    expect(() => requireAdmin({ userId: "user-1", role: AppRole.ADMIN, name: "管理员", isAuthenticated: true })).not.toThrow();
   });
 
   it("throws forbidden when current role is viewer", () => {
-    expect(() => requireAdmin({ userId: null, role: AppRole.VIEWER })).toThrowError(
+    expect(() => requireAdmin({ userId: null, role: AppRole.VIEWER, name: null, isAuthenticated: false })).toThrowError(
       new AuthError(ERROR_CODES.AUTH_FORBIDDEN, "当前用户没有管理员权限")
     );
   });
@@ -131,11 +141,12 @@ describe("auth token", () => {
   it("issues a signed admin token with 7 day ttl", async () => {
     process.env.JWT_SECRET = testSecret;
 
-    const token = await issueAuthToken(1_700_000_000);
+    const token = await issueAuthToken("管理员", 1_700_000_000);
     const payload = await verifyAuthToken(token, 1_700_000_100);
 
     expect(payload).toEqual({
       role: AppRole.ADMIN,
+      name: "管理员",
       iat : 1_700_000_000,
       exp : 1_700_000_000 + AUTH_TOKEN_TTL_SECONDS
     });
@@ -144,7 +155,7 @@ describe("auth token", () => {
   it("rejects tampered or expired tokens", async () => {
     process.env.JWT_SECRET = testSecret;
 
-    const token = await issueAuthToken(1_700_000_000);
+    const token = await issueAuthToken("管理员", 1_700_000_000);
     const tampered = `${token.slice(0, -1)}x`;
 
     await expect(verifyAuthToken(tampered, 1_700_000_100)).resolves.toBeNull();

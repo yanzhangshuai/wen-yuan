@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
-import { getAuthContext, requireAdmin } from "@/server/modules/auth";
+import { AUTH_COOKIE_NAME, getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { bulkVerifyDrafts, BulkReviewInputError, type BulkReviewResult } from "@/server/modules/review/bulkReview";
 import { ERROR_CODES } from "@/types/api";
 
@@ -44,6 +44,26 @@ function badRequestJson(
   );
 }
 
+function hasAuthCookie(cookieHeader: string | null): boolean {
+  if (!cookieHeader) {
+    return false;
+  }
+
+  return cookieHeader
+    .split(";")
+    .some((item) => item.trim().startsWith(`${AUTH_COOKIE_NAME}=`));
+}
+
+function buildCurrentPath(requestUrl: string): string {
+  const parsed = new URL(requestUrl);
+  return `${parsed.pathname}${parsed.search}`;
+}
+
+function redirectToLogin(request: Request): Response {
+  const redirectTarget = `/login?redirect=${encodeURIComponent(buildCurrentPath(request.url))}`;
+  return Response.redirect(new URL(redirectTarget, request.url), 307);
+}
+
 /**
  * 功能：确认一批 DRAFT 审核记录（关系/传记事件）。
  * 输入：管理员身份 + JSON `{ ids: string[] }`。
@@ -57,7 +77,16 @@ export async function POST(request: Request): Promise<Response> {
   const path = "/api/admin/bulk-verify";
 
   try {
-    const auth = await getAuthContext(await headers());
+    const requestHeaders = await headers();
+    const roleHeader = requestHeaders.get("x-auth-role");
+    const cookieHeader = requestHeaders.get("cookie") ?? request.headers.get("cookie");
+
+    // 在 API 路由未命中 middleware 注入时，兜底执行登录重定向语义（与 /admin 页面保持一致）。
+    if (!roleHeader && !hasAuthCookie(cookieHeader)) {
+      return redirectToLogin(request);
+    }
+
+    const auth = await getAuthContext(requestHeaders);
     requireAdmin(auth);
 
     const parsedBody = bulkVerifyBodySchema.safeParse(await readJsonBody(request));

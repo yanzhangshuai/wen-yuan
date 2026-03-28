@@ -36,7 +36,7 @@ describe("middleware helpers", () => {
 
   it("resolves valid token to admin and invalid token to viewer", async () => {
     process.env.JWT_SECRET = testJwtSecret;
-    const token = await issueAuthToken(Math.floor(Date.now() / 1000));
+    const token = await issueAuthToken("管理员", Math.floor(Date.now() / 1000));
 
     return Promise.all([
       expect(resolveAuthRole(token)).resolves.toBe(AppRole.ADMIN),
@@ -76,7 +76,7 @@ describe("middleware", () => {
 
   it("allows authenticated admin access to /admin/model and injects admin role header", async () => {
     process.env.JWT_SECRET = testJwtSecret;
-    const token = await issueAuthToken(Math.floor(Date.now() / 1000));
+    const token = await issueAuthToken("管理员", Math.floor(Date.now() / 1000));
     const request = new NextRequest("http://localhost/admin/model?tab=keys", {
       headers: {
         cookie: `${AUTH_COOKIE_NAME}=${token}`
@@ -100,5 +100,16 @@ describe("middleware", () => {
     expect(response.headers.get("x-middleware-request-x-auth-role")).toBe(AppRole.VIEWER);
     expect(response.headers.get("x-middleware-request-x-auth-user-id")).toBe("");
     expect(response.headers.get("x-middleware-request-x-auth-current-path")).toBe("/");
+  });
+
+  it("redirects unauthenticated access to /api/admin/ routes to login", async () => {
+    const request = new NextRequest("http://localhost/api/admin/models");
+
+    const response = await middleware(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?redirect=%2Fapi%2Fadmin%2Fmodels"
+    );
   });
 });

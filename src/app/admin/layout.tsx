@@ -28,8 +28,8 @@ export default async function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-(--color-admin-content-bg)">
-      <AdminHeader />
-      <main className="flex-1 w-full max-w-360 mx-auto px-6 py-6 pt-18">
+      <AdminHeader userName={auth.name} />
+      <main className="flex-1 w-full max-w-360 mx-auto px-6 py-6 pt-18 animate-page-enter">
         {children}
       </main>
     </div>

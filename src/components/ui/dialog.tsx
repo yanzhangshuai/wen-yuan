@@ -66,7 +66,7 @@ export function DialogContent({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "ui-dialog-content relative z-10 w-full max-w-lg rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-[var(--card-foreground)] shadow-2xl",
+          "ui-dialog-content relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl",
           className
         )}
         {...props}
@@ -74,7 +74,7 @@ export function DialogContent({
         <button
           type="button"
           aria-label="关闭弹窗"
-          className="absolute right-4 top-4 rounded-sm p-1 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+          className="absolute right-4 top-4 rounded-sm p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           onClick={() => onOpenChange(false)}
         >
           <X className="size-4" />
@@ -102,7 +102,7 @@ export function DialogDescription({
 }: DialogDescriptionProps) {
   return (
     <p
-      className={cn("ui-dialog-description text-sm text-[var(--muted-foreground)]", className)}
+      className={cn("ui-dialog-description text-sm text-muted-foreground", className)}
       {...props}
     />
   );

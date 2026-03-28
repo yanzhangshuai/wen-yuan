@@ -18,7 +18,7 @@ export default function AdminError({
       <h2 className="text-2xl font-bold mb-2">
         管理页面出错
       </h2>
-      <p className="text-[var(--color-muted-fg)] max-w-md mb-6">
+      <p className="text-muted-foreground max-w-md mb-6">
         {error.message || "发生了一个意外错误，请稍后重试。"}
       </p>
       <Button onClick={reset} className="gap-2">

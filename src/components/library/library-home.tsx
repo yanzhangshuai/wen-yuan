@@ -16,10 +16,10 @@ function LibraryEmptyState() {
       <div className="mb-6 p-6 rounded-full bg-primary-subtle">
         <Library className="w-12 h-12 text-primary" strokeWidth={1.5} />
       </div>
-      <h2 className="mb-3 text-2xl font-bold text-(--color-fg) tracking-tight">
+      <h2 className="mb-3 text-2xl font-bold text-foreground tracking-tight">
         暂无可阅读书籍
       </h2>
-      <p className="max-w-md text-base leading-relaxed text-(--color-muted-fg)">
+      <p className="max-w-md text-base leading-relaxed text-muted-foreground">
         书库目前空空如也。<br />请联系管理员在后台导入并解析书籍。
       </p>
       <div className="mt-8 grid grid-cols-3 gap-4 opacity-15 pointer-events-none select-none w-full max-w-lg">
@@ -50,12 +50,12 @@ export function LibraryHome({ books }: LibraryHomeProps) {
           <span className="h-px w-10 bg-linear-to-l from-transparent to-primary/30" />
         </div>
         <h1
-          className="text-xl font-medium tracking-[0.2em] text-(--color-fg) opacity-80"
+          className="text-xl font-medium tracking-[0.2em] text-foreground opacity-80"
           style={{ fontFamily: "var(--font-serif)" }}
         >
           藏書閣
         </h1>
-        <p className="mt-2 text-[11px] tracking-[0.4em] text-(--color-muted-fg)">
+        <p className="mt-2 text-[11px] tracking-[0.4em] text-muted-foreground">
           {books.length} 部典藏
         </p>
       </header>

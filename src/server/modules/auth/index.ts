@@ -18,9 +18,13 @@ import {
 
 export interface AuthContext {
   /** 当前请求关联用户 ID；未识别时为 `null`。 */
-  userId: string | null;
+  userId         : string | null;
   /** 当前请求角色：`ADMIN` 或 `VIEWER`。 */
-  role  : AuthRole;
+  role           : AuthRole;
+  /** 管理员展示名（Token 中得）；非管理员时为 `null`。 */
+  name           : string | null;
+  /** 是否已通过有效 JWT 认证（未登录时为 false）。 */
+  isAuthenticated: boolean;
 }
 
 export interface LoginInput {
@@ -93,29 +97,38 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   const payload = token ? await verifyAuthToken(token) : null;
 
   if (roleHeader === AUTH_ADMIN_ROLE) {
+    // 中间件已验证 JWT 有效，此处信任头注入。
     return {
-      userId: userIdHeader,
-      role  : AUTH_ADMIN_ROLE
+      userId         : userIdHeader,
+      role           : AUTH_ADMIN_ROLE,
+      name           : payload?.name ?? null,
+      isAuthenticated: true
     };
   }
 
   if (payload?.role === AUTH_ADMIN_ROLE) {
     return {
-      userId: userIdHeader,
-      role  : AUTH_ADMIN_ROLE
+      userId         : userIdHeader,
+      role           : AUTH_ADMIN_ROLE,
+      name           : payload.name ?? null,
+      isAuthenticated: true
     };
   }
 
   if (roleHeader === AUTH_VIEWER_ROLE) {
     return {
-      userId: userIdHeader,
-      role  : AUTH_VIEWER_ROLE
+      userId         : userIdHeader,
+      role           : AUTH_VIEWER_ROLE,
+      name           : null,
+      isAuthenticated: false
     };
   }
 
   return {
-    userId: userIdHeader,
-    role  : AUTH_VIEWER_ROLE
+    userId         : userIdHeader,
+    role           : AUTH_VIEWER_ROLE,
+    name           : null,
+    isAuthenticated: false
   };
 }
 
@@ -179,8 +192,8 @@ export async function authenticateAdmin(
  * 异常：签发失败时由底层抛错。
  * 副作用：无。
  */
-export async function issueAuthToken(now = Math.floor(Date.now() / 1000)): Promise<string> {
-  return issueAuthTokenWithJose(now);
+export async function issueAuthToken(name: string, now = Math.floor(Date.now() / 1000)): Promise<string> {
+  return issueAuthTokenWithJose(name, now);
 }
 
 /**

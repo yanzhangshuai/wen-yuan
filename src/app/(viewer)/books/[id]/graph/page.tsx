@@ -1,3 +1,9 @@
+import { notFound } from "next/navigation";
+
+import { getBookById } from "@/server/modules/books/getBookById";
+import { createGetBookGraphService } from "@/server/modules/books/getBookGraph";
+import { GraphView } from "@/components/graph/graph-view";
+
 interface BookGraphPageProps {
   params: Promise<{ id: string }>;
 }
@@ -7,17 +13,31 @@ export default async function BookGraphPage({
 }: BookGraphPageProps) {
   const { id } = await params;
 
+  const { getBookGraph } = createGetBookGraphService();
+
+  let book;
+  let snapshot;
+  try {
+    [book, snapshot] = await Promise.all([
+      getBookById(id),
+      getBookGraph({ bookId: id })
+    ]);
+  } catch {
+    notFound();
+  }
+
+  if (!book) {
+    notFound();
+  }
+
   return (
-    <section className="book-graph-page rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
-      <h1 className="text-2xl font-semibold">人物图谱（开发中）</h1>
-      <p className="mt-3 text-sm text-[var(--muted-foreground)]">
-        当前书籍 ID：
-        {" "}
-        <code>{id}</code>
-      </p>
-      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-        下一步将接入图谱数据与可视化渲染。
-      </p>
+    <section className="book-graph-page relative h-[calc(100vh-64px)] w-full overflow-hidden">
+      <GraphView
+        bookId={id}
+        initialSnapshot={snapshot}
+        totalChapters={book.chapterCount ?? 0}
+        chapterUnit="回"
+      />
     </section>
   );
 }

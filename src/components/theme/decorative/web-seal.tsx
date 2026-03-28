@@ -12,7 +12,7 @@ export function WenYuanSeal({ className, text = "文渊", size = 48 }: SealProps
       width={size}
       height={size}
       viewBox="0 0 100 100"
-      className={cn("text-[var(--color-primary)] opacity-80 mix-blend-multiply dark:mix-blend-screen", className)}
+      className={cn("text-primary opacity-80 mix-blend-multiply dark:mix-blend-screen", className)}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={text}

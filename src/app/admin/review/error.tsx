@@ -16,7 +16,7 @@ export default function ReviewError({
         <AlertCircle className="w-10 h-10 text-red-500" />
       </div>
       <h2 className="text-2xl font-bold mb-2">审核页面出错</h2>
-      <p className="text-[var(--color-muted-fg)] max-w-md mb-6">
+      <p className="text-muted-foreground max-w-md mb-6">
         {error.message || "加载审核数据时出错，请重试。"}
       </p>
       <Button onClick={reset} className="gap-2">

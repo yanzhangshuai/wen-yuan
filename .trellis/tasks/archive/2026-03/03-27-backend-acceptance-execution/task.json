@@ -3,18 +3,18 @@
   "name": "backend-acceptance-execution",
   "title": "后端代码验收执行任务（严格按TDD）",
   "description": "",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "backend",
   "scope": null,
   "priority": "P2",
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-03-27",
-  "completedAt": null,
+  "completedAt": "2026-03-28",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
-  "current_phase": 0,
+  "current_phase": 3,
   "next_action": [
     {
       "phase": 1,
@@ -39,6 +39,6 @@
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
+  "notes": "严格按 TDD/TDD-steps 完成后端验收。证据见 acceptance-execution-checklist.md 与 phase12-ae-rerun-2026-03-28.log。",
   "meta": {}
 }

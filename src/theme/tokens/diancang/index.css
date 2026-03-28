@@ -1,50 +1,82 @@
 /* =========================================
    主题 3 — 典藏·博物馆暗色 (diancang)
    深胡桃黑底 + 黄铜金强调 + Noto Serif SC
+   风格：博物馆陈列、历史厚重、金属质感
    ========================================= */
 [data-theme='diancang'] {
+  /* === 基础色 ===
+     bg 为深胡桃棕黑，fg 为暖米白 (保留古朴温度感) */
   --color-bg: #1A1714;
   --color-fg: #E8E0D4;
+
+  /* === 品牌主色 (黄铜金) ===
+     用于按钮、链接、选中态等核心交互
+     hover/active 为加深版本，primary-fg 用深底色 (金色背景不适合白字) */
   --color-primary: #C8A86E;
   --color-primary-hover: #B8983E;
   --color-primary-active: #A08530;
   --color-primary-subtle: rgba(200, 168, 110, 0.12);
-  --color-primary-fg: #1A1714;
+  --color-primary-fg: #1A1714;         /* 主色上的前景文字 (深色保证对比度) */
+
+  /* === 静音色 ===
+     低对比度背景 (muted) 与次要文字 (muted-fg)
+     用于禁用态、占位符、辅助信息 */
   --color-muted: #352F29;
   --color-muted-fg: #A09488;
+
+  /* === 边框 ===
+     border 为常规分隔线，border-strong 为更清晰的强调边框 */
   --color-border: #3A3228;
   --color-border-strong: #4A4030;
 
+  /* === 卡片 ===
+     稍浅于 bg 的卡片背景，card-border 带金色透明度边框增强质感 */
   --color-card-bg: #221F1A;
   --color-card-border: rgba(200, 168, 110, 0.20);
+
+  /* === 阴影 ===
+     带金色光晕的阴影，强化贵重典藏质感 */
   --shadow-card: 0 2px 16px rgba(200, 168, 110, 0.10);
   --shadow-card-hover: 0 8px 32px rgba(200, 168, 110, 0.18);
 
+  /* === 语义状态色 ===
+     success 操作成功 / warning 警告提示 / danger 错误破坏 / info 信息说明 */
   --color-success: #5A9E6F;
   --color-warning: #D4A855;
   --color-danger: #C95D4F;
   --color-info: #7AACCB;
 
-  --color-graph-bg: #12100D;
-  --color-graph-node-default: #C8A86E;
-  --color-graph-edge-positive: #7AACCB;
-  --color-graph-edge-negative: #C95D4F;
-  --color-graph-draft: rgba(200, 168, 110, 0.4);
-  --color-graph-verified-glow: rgba(200, 168, 110, 0.50);
-  --color-graph-focus-dim: rgba(26, 23, 20, 0.25);
+  /* === 关系图谱专用色 ===
+     仅在知识图谱画布中使用，不应用于通用 UI */
+  --color-graph-bg: #12100D;                        /* 图谱画布背景 */
+  --color-graph-node-default: #C8A86E;              /* 默认节点颜色 */
+  --color-graph-edge-positive: #7AACCB;             /* 正向关系边 */
+  --color-graph-edge-negative: #C95D4F;             /* 负向关系边 */
+  --color-graph-draft: rgba(200, 168, 110, 0.4);    /* 草稿状态节点 */
+  --color-graph-verified-glow: rgba(200, 168, 110, 0.50); /* 已验证节点光晕 */
+  --color-graph-focus-dim: rgba(26, 23, 20, 0.25);  /* 非聚焦节点遮罩 */
 
+  /* === 布局细节 ===
+     radius-base 是所有圆角的基准值 (sm/md/lg/xl 在 globals.css 中派生)
+     decorative-enabled: 1 = 启用书架纹理等装饰性背景 */
   --radius-base: 3px;
   --decorative-enabled: 1;
 
-  --color-shelf-surface: #302A22;
-  --color-shelf-edge: #241E16;
+  /* === 书架装饰色 ===
+     仅用于阅览器首页书架木纹效果 */
+  --color-shelf-surface: #302A22;     /* 书架台面 */
+  --color-shelf-edge: #241E16;        /* 书架边缘阴影 */
 
-  --color-admin-sidebar-bg: #1C1917;
-  --color-admin-sidebar-fg: #D6D3D1;
-  --color-admin-sidebar-active: #C0392B;
-  --color-admin-header-bg: #292524;
-  --color-admin-content-bg: #FAFAF9;
+  /* === 管理后台专用色 ===
+     后台侧边栏与 header 保持统一暗色调，content 用浅色提高可读性 */
+  --color-admin-sidebar-bg: #1C1917;  /* 侧边栏背景 */
+  --color-admin-sidebar-fg: #D6D3D1;  /* 侧边栏文字 */
+  --color-admin-sidebar-active: #C0392B; /* 当前激活菜单项 */
+  --color-admin-header-bg: #292524;   /* 顶部导航栏背景 */
+  --color-admin-content-bg: #FAFAF9;  /* 内容区背景 (浅色) */
 
+  /* === 字体 ===
+     典藏主题使用衬线字体，配合博物馆历史厚重感 */
   font-family: var(--font-serif);
 }
 

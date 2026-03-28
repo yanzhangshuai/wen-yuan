@@ -22,6 +22,8 @@ export type AuthRole = PrismaAppRole;
 export interface AuthTokenPayload {
   /** 用户角色：`ADMIN` 或 `VIEWER`。 */
   role: AuthRole;
+  /** 管理员展示名称。 */
+  name: string;
   /** 签发时间戳（秒）。 */
   iat : number;
   /** 过期时间戳（秒）。 */

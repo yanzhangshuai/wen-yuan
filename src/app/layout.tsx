@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Toaster } from "sonner";
 import { THEME_IDS } from "@/theme";
 import { ThemeProvider, DecorativeLayer } from "@/components/theme";
 import "./globals.css";
@@ -52,6 +53,7 @@ export default function RootLayout({
           storageKey="wen-yuan-theme"
         >
           <DecorativeLayer />
+          <Toaster position="top-right" richColors closeButton />
           {children}
         </ThemeProvider>
       </body>

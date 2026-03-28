@@ -26,8 +26,8 @@ export default function AdminHomePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--color-fg)]">管理中心</h1>
-        <p className="text-[var(--color-muted-fg)] mt-2">
+        <h1 className="text-3xl font-bold text-foreground">管理中心</h1>
+        <p className="text-muted-foreground mt-2">
           欢迎回来，请选择一个模块开始工作。
         </p>
       </div>
@@ -37,15 +37,15 @@ export default function AdminHomePage() {
           <Link
             key={card.href}
             href={card.href}
-            className="group block rounded-lg border border-[var(--color-border)] bg-white p-6 transition-all hover:shadow-lg hover:border-[var(--color-primary)] hover:-translate-y-1"
+            className="group block rounded-lg border border-border bg-white p-6 transition-all hover:shadow-lg hover:border-primary hover:-translate-y-1"
           >
-            <div className="mb-4 inline-flex items-center justify-center w-10 h-10 rounded-md bg-[var(--color-primary)]/10">
-              <card.icon size={20} className="text-[var(--color-primary)]" />
+            <div className="mb-4 inline-flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
+              <card.icon size={20} className="text-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-[var(--color-fg)] mb-2 group-hover:text-[var(--color-primary)] transition-colors">
+            <h2 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
               {card.title}
             </h2>
-            <p className="text-sm text-[var(--color-muted-fg)] leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {card.description}
             </p>
           </Link>

@@ -195,7 +195,7 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     const redirect = sanitizeRedirectPath(parsedResult.data.redirect);
-    const token = await issueAuthToken();
+    const token = await issueAuthToken(user.name);
     clearLoginFailures(clientIp);
 
     const response = okJson<LoginResponseData>({

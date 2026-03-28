@@ -141,3 +141,84 @@ html {
     transition-duration: 0ms !important;
   }
 }
+
+/* =========================================
+   Focus-visible accessibility ring
+   ========================================= */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* =========================================
+   Graph visual effects
+   ========================================= */
+
+/* VERIFIED node glow — driven by D3 adding class="verified-glow" */
+@keyframes verified-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px var(--color-graph-verified-glow)); }
+  50%      { filter: drop-shadow(0 0 10px var(--color-graph-verified-glow)); }
+}
+
+.graph-node-verified {
+  animation: verified-pulse 2.5s ease-in-out infinite;
+}
+
+/* diancang theme: stronger glow */
+[data-theme="diancang"] .graph-node-verified {
+  animation: verified-pulse-strong 2s ease-in-out infinite;
+}
+
+@keyframes verified-pulse-strong {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--color-graph-verified-glow)) drop-shadow(0 0 12px var(--color-graph-verified-glow)); }
+  50%      { filter: drop-shadow(0 0 14px var(--color-graph-verified-glow)) drop-shadow(0 0 24px var(--color-graph-verified-glow)); }
+}
+
+/* DRAFT node dashed outline indicator */
+.graph-node-draft {
+  stroke-dasharray: 4 2;
+  stroke: var(--color-graph-draft);
+  stroke-width: 2;
+}
+
+/* =========================================
+   Page transition fade
+   ========================================= */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-page-enter {
+  animation: page-enter 300ms ease-out forwards;
+}
+
+/* =========================================
+   Glassmorphism utility
+   ========================================= */
+.glass {
+  background: color-mix(in srgb, var(--color-card-bg) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* =========================================
+   Scrollbar styling
+   ========================================= */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 3px;
+}

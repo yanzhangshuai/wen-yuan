@@ -847,11 +847,13 @@ pnpm test:unit -- src/server/modules/books/
 
 # 步骤 7.1.2：手动测试文件上传（本地服务运行中）
 # 先登录获取 Cookie
-COOKIE=$(curl -s -c - -X POST http://localhost:3060/api/auth/login \
+LOGIN_RESP=$(curl -s -i -X POST http://localhost:3060/api/auth/login \
   -H "Content-Type: application/json" \
   -H "Origin: http://localhost:3060" \
-  -d '{"identifier":"admin","password":"your-password"}' \
-  | grep "token" | awk '{print "token="$NF}')
+  -d '{"identifier":"admin","password":"your-password"}')
+TOKEN=$(printf '%s' "$LOGIN_RESP" | tr -d '\r' \
+  | awk 'BEGIN{IGNORECASE=1} /^set-cookie: token=/{line=$0; sub(/^.*token=/,"",line); sub(/;.*$/,"",line); print line; exit}')
+COOKIE="token=${TOKEN}"
 
 # 上传书籍（需要准备一个 .txt 文件）
 curl -s -X POST http://localhost:3060/api/books \
@@ -859,10 +861,12 @@ curl -s -X POST http://localhost:3060/api/books \
   -F "title=红楼梦" \
   -F "author=曹雪芹" \
   -F "dynasty=清" \
-  -F "file=@/tmp/hongloumeng.txt;type=text/plain" | jq .
+  -F "file=@/tmp/hongloumeng.txt;type=text/plain"
+# 如本机安装了 jq，可追加 `| jq .` 便于阅读
 
 # 步骤 7.1.3：验证文件落盘（STORAGE_LOCAL_ROOT 下有物理文件）
-ls -la ./storage-test/books/
+# 以当前项目 .env 默认配置为准：STORAGE_LOCAL_ROOT=data/storage
+ls -la ./data/storage/books/
 ```
 
 ---
@@ -917,23 +921,42 @@ describe("runAnalysisJob 状态机", () => {
 
 ```bash
 # 步骤 7.3.2：验证 202 状态码和 fire-and-forget 行为（单测层）
-pnpm test:unit -- src/app/api/books/[id]/analyze/route.test.ts
+# zsh 需加引号避免 [id] 被当成通配符
+pnpm test:unit -- 'src/app/api/books/[id]/analyze/route.test.ts'
 
 # 步骤 7.3.3：验证接口返回的正确业务码
-curl -s -X POST http://localhost:3060/api/books/${BOOK_ID}/analyze \
+# 若当前 shell 没有 COOKIE，可先复用 7.1.2 的登录步骤重新获取
+if [ -z "${COOKIE:-}" ]; then
+  LOGIN_RESP=$(curl -s -i -X POST http://localhost:3060/api/auth/login \
+    -H "Content-Type: application/json" \
+    -H "Origin: http://localhost:3060" \
+    -d '{"identifier":"admin","password":"your-password"}')
+  TOKEN=$(printf '%s' "$LOGIN_RESP" | tr -d '\r' \
+    | awk 'BEGIN{IGNORECASE=1} /^set-cookie: token=/{line=$0; sub(/^.*token=/,"",line); sub(/;.*$/,"",line); print line; exit}')
+  COOKIE="token=${TOKEN}"
+fi
+
+HTTP_CODE=$(curl -s -o /tmp/analyze-response.json -w "%{http_code}" \
+  -X POST http://localhost:3060/api/books/${BOOK_ID}/analyze \
   -H "Content-Type: application/json" \
-  -b "token=your-admin-jwt" \
-  -d '{"scope":"FULL_BOOK"}' | jq '{status: .success, code: .code}'
+  -H "Origin: http://localhost:3060" \
+  -b "$COOKIE" \
+  -d '{"scope":"FULL_BOOK"}')
+cat /tmp/analyze-response.json | jq '{status: .success, code: .code}'
+echo "HTTP ${HTTP_CODE}"
+# 若无 jq，可直接去掉 `| jq ...` 查看原始 JSON
 # 期望：{ "status": true, "code": "BOOK_ANALYSIS_STARTED" }
 # HTTP 状态码：202（用 -w "%{http_code}" 验证）
 
 # 步骤 7.3.4：验证任务创建后书籍初始进度字段
 # 立即查询书籍状态（在 fire-and-forget 执行器跑完之前）
-curl -s "http://localhost:3060/api/books/${BOOK_ID}/status" | jq '{
+curl -s "http://localhost:3060/api/books/${BOOK_ID}/status" \
+  -b "$COOKIE" | jq '{
   status  : .data.status,
   progress: .data.progress,
   stage   : .data.stage
 }'
+# 若无 jq，可直接去掉 `| jq ...` 查看原始 JSON
 # 期望：{ "status": "PROCESSING", "progress": 0, "stage": "文本清洗" }
 ```
 

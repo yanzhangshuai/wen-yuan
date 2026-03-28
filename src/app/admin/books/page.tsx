@@ -20,8 +20,8 @@ export default async function AdminBooksPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--color-fg)]">书库管理</h1>
-          <p className="text-[var(--color-muted-fg)] mt-1">管理系统内所有书籍及其解析状态</p>
+          <h1 className="text-3xl font-bold text-foreground">书库管理</h1>
+          <p className="text-muted-foreground mt-1">管理系统内所有书籍及其解析状态</p>
         </div>
         <Link href="/admin/books/import">
           <Button className="gap-2">
@@ -31,7 +31,7 @@ export default async function AdminBooksPage() {
         </Link>
       </div>
 
-      <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-card-bg)]">
+      <div className="rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -45,7 +45,7 @@ export default async function AdminBooksPage() {
           <TableBody>
             {books.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-[var(--color-muted-fg)]">
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                   暂无书籍，请点击右上角导入。
                 </TableCell>
               </TableRow>
@@ -54,7 +54,7 @@ export default async function AdminBooksPage() {
                 <TableRow key={book.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-[var(--color-muted-fg)]" />
+                      <FileText size={16} className="text-muted-foreground" />
                       {book.title}
                     </div>
                   </TableCell>
@@ -70,7 +70,7 @@ export default async function AdminBooksPage() {
                        book.status === "ERROR" ? "失败" : "待处理"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-[var(--color-muted-fg)]">
+                  <TableCell className="text-muted-foreground">
                     {book.chapterCount}章 / {book.personaCount}人
                   </TableCell>
                   <TableCell className="text-right">
@@ -79,7 +79,7 @@ export default async function AdminBooksPage() {
                        <Button variant="ghost" size="icon" title="重新解析">
                          <RefreshCw size={16} />
                        </Button>
-                       <Button variant="ghost" size="icon" className="text-[var(--color-danger)]" title="删除">
+                       <Button variant="ghost" size="icon" className="text-destructive" title="删除">
                          <Trash2 size={16} />
                        </Button>
                     </div>

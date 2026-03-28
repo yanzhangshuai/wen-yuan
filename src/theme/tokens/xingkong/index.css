@@ -1,50 +1,83 @@
 /* =========================================
    主题 4 — 星空·深邃宇宙 (xingkong)
    深邃宇宙黑底 + 星辉银蓝强调 + Inter
+   风格：科技感、现代极简、宇宙探索
    ========================================= */
 [data-theme='xingkong'] {
+  /* === 基础色 ===
+     bg 为接近纯黑的深蓝黑，fg 为冷调灰蓝 (非纯白，减轻屏幕刺眼感) */
   --color-bg: #08090F;
   --color-fg: #C8CED8;
+
+  /* === 品牌主色 (星辉银蓝) ===
+     用于按钮、链接、选中态等核心交互
+     hover 比 primary 更亮，active 为加深版本，primary-fg 用深底色 */
   --color-primary: #7B90AF;
   --color-primary-hover: #8EA3C2;
   --color-primary-active: #6A7D9A;
   --color-primary-subtle: rgba(123, 144, 175, 0.10);
-  --color-primary-fg: #08090F;
+  --color-primary-fg: #08090F;         /* 主色上的前景文字 (深色保证对比度) */
+
+  /* === 静音色 ===
+     低对比度背景 (muted) 与次要文字 (muted-fg)
+     用于禁用态、占位符、辅助信息 */
   --color-muted: #161B28;
   --color-muted-fg: #7A8494;
+
+  /* === 边框 ===
+     border 极深接近不可见，border-strong 稍明显，整体保持隐忍克制 */
   --color-border: #181D2A;
   --color-border-strong: #252C3C;
 
+  /* === 卡片 ===
+     比 bg 略浅的深蓝黑，card-border 极低透明度营造微妙层次感 */
   --color-card-bg: #0E1018;
   --color-card-border: rgba(123, 144, 175, 0.08);
+
+  /* === 阴影 ===
+     纯黑阴影强调深度感，hover 时大幅加深增强浮起效果 */
   --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.40);
   --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.55);
 
+  /* === 语义状态色 ===
+     采用高饱和度鲜艳色，在深黑背景下保证辨识度
+     success 操作成功 / warning 警告提示 / danger 错误破坏 / info 信息说明 */
   --color-success: #22C55E;
   --color-warning: #EAB308;
   --color-danger: #EF4444;
   --color-info: #38BDF8;
 
-  --color-graph-bg: #050710;
-  --color-graph-node-default: #7B90AF;
-  --color-graph-edge-positive: #5AACB4;
-  --color-graph-edge-negative: #C46A5A;
-  --color-graph-draft: rgba(123, 144, 175, 0.40);
-  --color-graph-verified-glow: rgba(123, 144, 175, 0.55);
-  --color-graph-focus-dim: rgba(8, 9, 15, 0.25);
+  /* === 关系图谱专用色 ===
+     仅在知识图谱画布中使用，不应用于通用 UI */
+  --color-graph-bg: #050710;                        /* 图谱画布背景 (比页面更深) */
+  --color-graph-node-default: #7B90AF;              /* 默认节点颜色 */
+  --color-graph-edge-positive: #5AACB4;             /* 正向关系边 (青蓝) */
+  --color-graph-edge-negative: #C46A5A;             /* 负向关系边 (暖红) */
+  --color-graph-draft: rgba(123, 144, 175, 0.40);   /* 草稿状态节点 */
+  --color-graph-verified-glow: rgba(123, 144, 175, 0.55); /* 已验证节点光晕 */
+  --color-graph-focus-dim: rgba(8, 9, 15, 0.25);   /* 非聚焦节点遮罩 */
 
+  /* === 布局细节 ===
+     radius-base 是所有圆角的基准值 (sm/md/lg/xl 在 globals.css 中派生)
+     decorative-enabled: 1 = 启用星空渐变等装饰性背景 */
   --radius-base: 4px;
   --decorative-enabled: 1;
 
-  --color-shelf-surface: #12141C;
-  --color-shelf-edge: #0A0C14;
+  /* === 书架装饰色 ===
+     仅用于阅览器首页书架效果，使用近黑冷蓝色调 */
+  --color-shelf-surface: #12141C;     /* 书架台面 */
+  --color-shelf-edge: #0A0C14;        /* 书架边缘阴影 */
 
-  --color-admin-sidebar-bg: #1C1917;
-  --color-admin-sidebar-fg: #D6D3D1;
-  --color-admin-sidebar-active: #7B90AF;
-  --color-admin-header-bg: #292524;
-  --color-admin-content-bg: #FAFAF9;
+  /* === 管理后台专用色 ===
+     后台侧边栏与 header 保持统一暗色调，content 用浅色提高可读性 */
+  --color-admin-sidebar-bg: #1C1917;  /* 侧边栏背景 */
+  --color-admin-sidebar-fg: #D6D3D1;  /* 侧边栏文字 */
+  --color-admin-sidebar-active: #7B90AF; /* 当前激活菜单项 */
+  --color-admin-header-bg: #292524;   /* 顶部导航栏背景 */
+  --color-admin-content-bg: #FAFAF9;  /* 内容区背景 (浅色) */
 
+  /* === 字体 ===
+     星空主题使用无衬线字体，配合现代科技风格 */
   font-family: var(--font-sans);
 }
 

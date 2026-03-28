@@ -23,15 +23,16 @@ function getJwtSecretBytes(): Uint8Array {
 }
 
 /**
- * 功能：签发管理员 JWT，payload 仅包含 role/iat/exp。
- * 输入：now，秒级时间戳，默认使用当前时间。
+ * 功能：签发管理员 JWT，payload 包含 role/name/iat/exp。
+ * 输入：name(展示名称)、now，秒级时间戳，默认使用当前时间。
  * 输出：HS256 签名后的 JWT。
  * 异常：JWT_SECRET 缺失或不满足安全长度时抛错。
  * 副作用：无。
  */
-export async function issueAuthToken(now = Math.floor(Date.now() / 1000)): Promise<string> {
+export async function issueAuthToken(name: string, now = Math.floor(Date.now() / 1000)): Promise<string> {
   return new SignJWT({
-    role: AUTH_ADMIN_ROLE
+    role: AUTH_ADMIN_ROLE,
+    name
   })
     .setProtectedHeader({ alg: JWT_ALGORITHM, typ: "JWT" })
     .setIssuedAt(now)
@@ -66,6 +67,7 @@ export async function verifyAuthToken(
 
     return {
       role: AUTH_ADMIN_ROLE,
+      name: typeof payload.name === "string" ? payload.name : "",
       iat : payload.iat,
       exp : payload.exp
     };

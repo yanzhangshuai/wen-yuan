@@ -40,7 +40,7 @@ export function TableFooter({ className, ...props }: TableSectionProps) {
   return (
     <tfoot
       className={cn(
-        "ui-table-footer border-t bg-[var(--muted)]/50 font-medium [&>tr]:last:border-b-0",
+        "ui-table-footer border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
         className
       )}
       {...props}
@@ -52,7 +52,7 @@ export function TableRow({ className, ...props }: TableRowProps) {
   return (
     <tr
       className={cn(
-        "ui-table-row border-b transition-colors hover:bg-[var(--muted)]/50",
+        "ui-table-row border-b transition-colors hover:bg-muted/50",
         className
       )}
       {...props}
@@ -64,7 +64,7 @@ export function TableHead({ className, ...props }: TableHeadProps) {
   return (
     <th
       className={cn(
-        "ui-table-head h-10 px-4 text-left align-middle font-medium text-[var(--muted-foreground)]",
+        "ui-table-head h-10 px-4 text-left align-middle font-medium text-muted-foreground",
         className
       )}
       {...props}
@@ -81,7 +81,7 @@ export function TableCell({ className, ...props }: TableCellProps) {
 export function TableCaption({ className, ...props }: TableCaptionProps) {
   return (
     <caption
-      className={cn("ui-table-caption mt-4 text-sm text-[var(--muted-foreground)]", className)}
+      className={cn("ui-table-caption mt-4 text-sm text-muted-foreground", className)}
       {...props}
     />
   );

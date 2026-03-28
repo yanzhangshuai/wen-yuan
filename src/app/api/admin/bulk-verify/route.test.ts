@@ -71,6 +71,27 @@ describe("POST /api/admin/bulk-verify", () => {
     expect(bulkVerifyDraftsMock).not.toHaveBeenCalled();
   });
 
+  it("redirects to login when middleware headers and auth cookie are both missing", async () => {
+    headersMock.mockResolvedValueOnce(new Headers());
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/admin/bulk-verify?bookId=book-1", {
+      method : "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        ids: ["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"]
+      })
+    }));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?redirect=%2Fapi%2Fadmin%2Fbulk-verify%3FbookId%3Dbook-1"
+    );
+    expect(bulkVerifyDraftsMock).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when body is invalid", async () => {
     const { POST } = await import("./route");
 

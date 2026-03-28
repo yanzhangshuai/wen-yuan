@@ -109,4 +109,22 @@ describe("POST /api/admin/models/:id/test", () => {
     expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
     expect(payload.message).toBe("模型连通性测试失败");
   });
+
+  it("returns whitelist rejection detail when connectivity target is not allowed", async () => {
+    testAdminModelConnectionMock.mockRejectedValue(new Error("连通性测试地址不在白名单内"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/admin/models/${validId}/test`, {
+        method: "POST"
+      }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+    expect(payload.error?.detail).toBe("连通性测试地址不在白名单内");
+  });
 });

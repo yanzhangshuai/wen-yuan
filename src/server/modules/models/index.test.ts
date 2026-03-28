@@ -346,4 +346,393 @@ describe("models module", () => {
     expect(result.errorType).toBe("AUTH_ERROR");
     expect(result.errorMessage).toBe("invalid api key");
   });
+
+  it("throws when list API detects unsupported provider", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            provider: "openai"
+          })
+        ])
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.listModels()).rejects.toThrow();
+  });
+
+  it("throws when list API detects plaintext api key in storage", async () => {
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            apiKey: "sk-plaintext"
+          })
+        ])
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.listModels()).rejects.toThrow("非法 API Key 存储格式");
+  });
+
+  it("keeps existing encrypted apiKey when action is unchanged", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const existingApiKey = encryptValue("unchanged-key");
+    const updateMock = vi.fn().mockResolvedValue(createAiModelRecord({
+      apiKey: existingApiKey
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: existingApiKey
+        })),
+        update: updateMock
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await modelsModule.updateModel({
+      id    : "model-1",
+      apiKey: { action: "unchanged" }
+    });
+
+    expect(updateMock).toHaveBeenCalledOnce();
+    expect(updateMock.mock.calls[0][0].data.apiKey).toBe(existingApiKey);
+  });
+
+  it("trims api key and base url in update payload", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const updateMock = vi.fn().mockResolvedValue(createAiModelRecord({
+      baseUrl: "https://api.deepseek.com",
+      apiKey : encryptValue("trimmed-key")
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord()),
+        update    : updateMock
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await modelsModule.updateModel({
+      id     : "model-1",
+      baseUrl: "  https://api.deepseek.com///   ",
+      apiKey : {
+        action: "set",
+        value : "  trimmed-key   "
+      }
+    });
+
+    expect(updateMock.mock.calls[0][0].data.baseUrl).toBe("https://api.deepseek.com");
+    const persistedApiKey = updateMock.mock.calls[0][0].data.apiKey;
+    if (typeof persistedApiKey !== "string") {
+      throw new Error("expected encrypted api key to be string");
+    }
+    expect(decryptValue(persistedApiKey)).toBe("trimmed-key");
+  });
+
+  it("rejects update when model record does not exist", async () => {
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        update    : vi.fn()
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.updateModel({ id: "not-found" })).rejects.toThrow("模型不存在");
+  });
+
+  it("rejects update with empty model id", async () => {
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn(),
+        update    : vi.fn()
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.updateModel({ id: "   " })).rejects.toThrow("模型 ID 不能为空");
+  });
+
+  it("rejects setDefaultModel when target model does not exist", async () => {
+    const transactionClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        updateMany: vi.fn(),
+        update    : vi.fn()
+      }
+    };
+    const prismaClient = {
+      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof transactionClient) => Promise<unknown>) => {
+        return callback(transactionClient);
+      })
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.setDefaultModel("missing-id")).rejects.toThrow("模型不存在");
+  });
+
+  it("rejects setDefaultModel with empty model id", async () => {
+    const prismaClient = {
+      $transaction: vi.fn()
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.setDefaultModel("   ")).rejects.toThrow("模型 ID 不能为空");
+  });
+
+  it("rejects connectivity test when base url is invalid", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          baseUrl: "not-a-url",
+          apiKey : encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("BaseURL 不合法");
+  });
+
+  it("rejects connectivity test when base url is not https", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          baseUrl: "http://api.deepseek.com",
+          apiKey : encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试仅支持 HTTPS BaseURL");
+  });
+
+  it("allows hosts from MODEL_TEST_ALLOWED_HOSTS env", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+    process.env.MODEL_TEST_ALLOWED_HOSTS = " INTERNAL.EXAMPLE.com ";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          baseUrl: "https://internal.example.com",
+          apiKey : encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("classifies timeout HTTP statuses as TIMEOUT", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("gateway timeout", {
+      status: 504
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("TIMEOUT");
+    expect(result.detail).toBe("gateway timeout");
+  });
+
+  it("classifies 404 HTTP status as MODEL_UNAVAILABLE", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("not found", {
+      status: 404
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+    expect(result.detail).toBe("not found");
+  });
+
+  it("classifies unknown HTTP errors as NETWORK_ERROR", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("bad request", {
+      status: 400
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("NETWORK_ERROR");
+    expect(result.errorMessage).toBe("bad request");
+  });
+
+  it("extracts detail from top-level message field in JSON error", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      message: "service unavailable"
+    }), {
+      status : 503,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.detail).toBe("service unavailable");
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+  });
+
+  it("falls back to HTTP status detail when JSON parsing fails", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("not-json-body", {
+      status : 502,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.detail).toBe("HTTP 502");
+  });
+
+  it("classifies thrown abort errors as TIMEOUT", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockRejectedValue(new DOMException("aborted", "AbortError"));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("TIMEOUT");
+    expect(result.errorMessage).toContain("aborted");
+  });
+
+  it("classifies thrown network errors as NETWORK_ERROR", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockRejectedValue(new Error("network down"));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("NETWORK_ERROR");
+    expect(result.errorMessage).toBe("network down");
+  });
+
+  it("classifies thrown timeout messages as TIMEOUT", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockRejectedValue(new Error("request timeout from provider"));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("TIMEOUT");
+    expect(result.errorMessage).toContain("timeout");
+  });
+
+  it("rejects connectivity test when stored api key is plaintext", async () => {
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: "sk-plaintext"
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("非法 API Key 存储格式");
+  });
 });
