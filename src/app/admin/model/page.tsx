@@ -5,6 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listAdminModels } from "@/server/modules/models";
 import { ModelManager } from "./_components/model-manager";
+import {
+  PageContainer,
+  PageHeader
+} from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "模型设置" };
 
@@ -29,8 +33,18 @@ function ModelLoadingSkeleton() {
 export default function AdminModelPage() {
   const modelsPromise = listAdminModels();
   return (
-    <Suspense fallback={<ModelLoadingSkeleton />}>
-      <ModelManager initialModelsPromise={modelsPromise} />
-    </Suspense>
+    <PageContainer>
+      <PageHeader
+        title="模型设置"
+        description="配置 AI 模型、API 密钥与系统偏好"
+        breadcrumbs={[
+          { label: "管理后台", href: "/admin" },
+          { label: "模型设置" }
+        ]}
+      />
+      <Suspense fallback={<ModelLoadingSkeleton />}>
+        <ModelManager initialModelsPromise={modelsPromise} />
+      </Suspense>
+    </PageContainer>
   );
 }

@@ -200,7 +200,7 @@ export function buildTitleResolutionPrompt(input: TitleResolutionInput): string 
 
   return [
     "## 角色",
-    `你是中国古典文学历史背景专家，熟悉明清小说历史原型。`,
+    "你是中国古典文学历史背景专家，熟悉明清小说历史原型。",
     "",
     "## 任务",
     `书名：《${input.bookTitle}》`,

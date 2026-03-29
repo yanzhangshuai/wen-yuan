@@ -494,7 +494,11 @@ export default function AdminImportPage() {
                                     onChange={(e) => {
                                       setSelectedChapterIndices(prev => {
                                         const next = new Set(prev);
-                                        e.target.checked ? next.add(item.index) : next.delete(item.index);
+                                        if (e.target.checked) {
+                                          next.add(item.index);
+                                        } else {
+                                          next.delete(item.index);
+                                        }
                                         return next;
                                       });
                                     }}

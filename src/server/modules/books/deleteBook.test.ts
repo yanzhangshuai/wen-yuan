@@ -12,8 +12,8 @@ describe("deleteBook", () => {
     const analysisJobUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
     const transaction = vi.fn().mockImplementation(async (ops: Promise<unknown>[]) => Promise.all(ops));
     const service = createDeleteBookService({
-      book       : { findFirst: bookFindFirst, update: bookUpdate },
-      analysisJob: { updateMany: analysisJobUpdateMany },
+      book        : { findFirst: bookFindFirst, update: bookUpdate },
+      analysisJob : { updateMany: analysisJobUpdateMany },
       $transaction: transaction
     } as never);
 
@@ -22,7 +22,7 @@ describe("deleteBook", () => {
 
     // Assert
     expect(bookFindFirst).toHaveBeenCalledWith({
-      where: { id: "book-1", deletedAt: null },
+      where : { id: "book-1", deletedAt: null },
       select: { id: true }
     });
     expect(transaction).toHaveBeenCalledOnce();
@@ -44,7 +44,7 @@ describe("deleteBook", () => {
         findFirst: vi.fn().mockResolvedValue(null),
         update   : vi.fn()
       },
-      analysisJob: { updateMany: vi.fn() },
+      analysisJob : { updateMany: vi.fn() },
       $transaction: vi.fn()
     } as never);
 

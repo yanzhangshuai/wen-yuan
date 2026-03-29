@@ -1,109 +1,158 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { BookCover } from "@/components/library/book-cover";
 import { cn } from "@/lib/utils";
+import { Users, FileText, Clock, Cpu, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
-  Users,
-  Clock,
-  AlertCircle,
-  FileText
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 import type { BookLibraryListItem } from "@/types/book";
 
 interface BookCardProps {
   book: BookLibraryListItem;
 }
 
+/**
+ * 书库卡片组件——对齐 sheji 设计。
+ *
+ * 视觉层次：
+ *   1. 封面（BookCover）—— 有图显图，无图显色块+大字
+ *   2. hover 遮罩（bg-background/95）—— 仅已完成书籍触发，展示所有书籍详情
+ *   3. 平面卡片阴影（无立体书架结构，保持和首页网格一致）
+ *
+ * 交互模式：
+ *   - 已完成：Link 包裹，hover 轻微上移（平面卡片，不做立体旋转）
+ *   - 未完成：div 包裹，cursor-not-allowed，灰度+透明，不触发 hover panel
+ */
 export function BookCard({ book }: BookCardProps) {
   const isCompleted = book.status === "COMPLETED";
   const isError = book.status === "ERROR";
   const href = `/books/${book.id}/graph`;
 
+  /* 仅完成解析的书籍展示 hover 详情层；解析中/失败不响应 hover 详情，避免误导点击。 */
+  const hoverPanel = isCompleted ? (
+    <div className={cn(
+      "library-book-card-hover absolute inset-0 z-30 flex flex-col rounded-md bg-background/92 p-4 backdrop-blur-[2px]",
+      "opacity-0 translate-y-2 group-hover:translate-y-0 group-hover:opacity-100",
+      "transition-all duration-300"
+    )}>
+      <h3 className="mb-1 line-clamp-2 text-base leading-tight font-semibold">{book.title}</h3>
+      <p className="mb-4 text-sm text-muted-foreground">
+        {book.author || "佚名"}
+        {book.dynasty ? ` · ${book.dynasty}` : ""}
+      </p>
+
+      {/* 书籍统计信息 */}
+      <div className="space-y-2 text-sm/5">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <FileText className="h-4 w-4 shrink-0" />
+          <span>{book.chapterCount} 章回</span>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Users className="h-4 w-4 shrink-0" />
+          <span>{book.personaCount} 人物</span>
+        </div>
+        {book.lastAnalyzedAt && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="h-4 w-4 shrink-0" />
+            <span>{new Date(book.lastAnalyzedAt).toLocaleDateString("zh-CN")}</span>
+          </div>
+        )}
+        {book.currentModel && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Cpu className="h-4 w-4 shrink-0" />
+            <span>{book.currentModel}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 数据说明 tooltip（对齐 sheji 的 Info 按鈢） */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="mt-auto flex items-center gap-1 text-xs text-primary hover:underline"
+              /* 阻断 Link 局部点击，保证 tooltip 可读而不触发跳转。 */
+              onClick={(e) => e.preventDefault()}
+            >
+              <Info className="h-3 w-3" />
+              数据说明
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="text-sm">
+              {book.personaCount > 0
+                ? `已解析 ${book.personaCount} 位人物，${book.chapterCount} 个章回。数据由 AI 自动生成，仅供参考。`
+                : "数据由 AI 自动解析生成，可能存在误差，欢迎校对纠正。"}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  ) : null;
+
+  /* 未完成书籍状态标签 */
+  const statusBadge = !isCompleted ? (
+    <div className="absolute top-3 left-3 z-30 library-book-card-status">
+      <Badge
+        variant="outline"
+        className={cn(
+          "border-border/60 bg-background/75 text-xs backdrop-blur-sm",
+          isError && "border-destructive/50 text-destructive"
+        )}
+      >
+        {isError ? "解析失败" : "解析中"}
+      </Badge>
+    </div>
+  ) : null;
+
   const cardContent = (
-    <motion.div
-      className="relative group w-full h-full"
-      whileHover={isCompleted ? { y: -8 } : undefined}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-    >
-      <div className="relative w-full aspect-2/3">
+    <div className="relative">
+      {/* 封面区域 */}
+      <div
+        className={cn(
+          "library-book-card-surface relative aspect-2/3 overflow-hidden rounded-md border border-border/70 bg-card",
+          "transition-all duration-300",
+          isCompleted
+            ? "shadow-lg group-hover:border-primary/30 group-hover:shadow-2xl"
+            : "shadow-md"
+        )}
+      >
         <BookCover
           id={book.id}
           title={book.title}
           author={book.author}
+          dynasty={book.dynasty}
           coverUrl={book.coverUrl}
           disabled={!isCompleted}
           className={cn(
-            "shadow-card group-hover:shadow-card-hover transition-shadow duration-300"
+            "h-full w-full transition-transform duration-500",
+            isCompleted && "group-hover:scale-[1.01]",
+            !isCompleted && "opacity-70 grayscale-[24%]"
           )}
         />
-
-        {/* Non-completed overlay */}
-        {!isCompleted && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 rounded">
-            <span className={cn(
-              "px-3 py-1 rounded-full text-xs font-bold text-white backdrop-blur-sm",
-              isError ? "bg-red-500/80" : "bg-neutral-500/80"
-            )}>
-              {isError ? "解析失败" : "解析中"}
-            </span>
-          </div>
-        )}
-
-        {/* Hover details panel — gradient fades in, children stagger up */}
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30 rounded-b flex flex-col justify-end min-h-[55%]">
-          <h3 className="text-white font-bold text-lg leading-tight mb-1 drop-shadow-md line-clamp-2
-            translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100
-            transition-all duration-300 delay-0 group-hover:delay-75">
-            {book.title}
-          </h3>
-          <p className="text-white/80 text-sm mb-3 font-medium
-            translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100
-            transition-all duration-300 delay-0 group-hover:delay-100">
-            {book.author || "佚名"} {book.dynasty && `· ${book.dynasty}`}
-          </p>
-
-          <div className="grid grid-cols-2 gap-2 text-xs text-white/70
-            translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100
-            transition-all duration-300 delay-0 group-hover:delay-150">
-            <div className="flex items-center gap-1" title="章节数">
-              <FileText size={12} aria-hidden="true" />
-              <span>{book.chapterCount ?? 0} 章</span>
-            </div>
-            <div className="flex items-center gap-1" title="人物数">
-              <Users size={12} aria-hidden="true" />
-              <span>{book.personaCount ?? 0} 人</span>
-            </div>
-            {book.lastAnalyzedAt && (
-              <div className="col-span-2 flex items-center gap-1 mt-1 opacity-60" title={`最近解析: ${new Date(book.lastAnalyzedAt).toLocaleDateString()}`}>
-                <Clock size={12} aria-hidden="true" />
-                <span>{new Date(book.lastAnalyzedAt).toLocaleDateString()}</span>
-              </div>
-            )}
-            {isError && book.lastErrorSummary && (
-              <div className="col-span-2 flex items-start gap-1 mt-2 text-red-300 bg-red-900/40 p-1.5 rounded" title={book.lastErrorSummary}>
-                <AlertCircle size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
-                <span className="line-clamp-2 leading-tight" style={{ fontSize: "10px" }}>{book.lastErrorSummary}</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <div
+          className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/22 via-black/0 to-transparent"
+          aria-hidden="true"
+        />
+        {statusBadge}
+        {hoverPanel}
       </div>
-      {/* 3D Shelf — book resting on wooden ledge */}
-      <div className="relative" aria-hidden="true">
-        <div className="w-[115%] -ml-[7.5%] h-1.25 rounded-[1px]" style={{ backgroundColor: "var(--color-shelf-surface)" }} />
-        <div className="w-[118%] -ml-[9%] h-0.75 rounded-b-xs" style={{ backgroundColor: "var(--color-shelf-edge)" }} />
-        <div className="w-[110%] -ml-[5%] h-2 rounded-[50%] bg-black/8 blur-[3px] -mt-0.5" />
-      </div>
-    </motion.div>
+    </div>
   );
 
   if (isCompleted) {
     return (
       <Link
         href={href}
-        className="block w-full h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+        /* 书库保持平面卡片语言，只保留轻微上移动效。 */
+        className="library-book-card group relative block rounded-md transition-transform duration-300 hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         aria-label={`查看「${book.title}」人物图谱`}
       >
         {cardContent}
@@ -112,7 +161,7 @@ export function BookCard({ book }: BookCardProps) {
   }
 
   return (
-    <div className="block w-full h-full cursor-not-allowed opacity-80 grayscale-[0.5]">
+    <div className="library-book-card group relative block cursor-not-allowed">
       {cardContent}
     </div>
   );

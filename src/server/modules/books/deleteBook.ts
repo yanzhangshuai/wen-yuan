@@ -38,8 +38,8 @@ export function createDeleteBookService(
 
     await prismaClient.$transaction([
       prismaClient.book.update({
-        where: { id: bookId },
-        data : { deletedAt: new Date() },
+        where : { id: bookId },
+        data  : { deletedAt: new Date() },
         select: { id: true }
       }),
       prismaClient.analysisJob.updateMany({

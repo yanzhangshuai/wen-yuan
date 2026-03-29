@@ -14,6 +14,12 @@ import {
 import type { GraphFilter, GraphLayoutMode, ProcessingStatus } from "@/types/graph";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 
 /* ------------------------------------------------
    Props
@@ -92,35 +98,47 @@ export function GraphToolbar({
   return (
     <div className="graph-toolbar absolute left-4 top-4 z-10 flex flex-col gap-2">
       {/* Toolbar buttons */}
-      <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-1 shadow-md">
-        {toolButtons.map(btn => (
-          <button
-            key={btn.id}
-            type="button"
-            onClick={() => togglePanel(btn.id)}
-            className={`flex items-center justify-center rounded-md p-2 transition-colors hover:bg-primary-subtle ${
-              activePanel === btn.id ? "bg-primary-subtle text-primary" : "text-muted-foreground"
-            }`}
-            aria-label={btn.label}
-            title={btn.label}
-          >
-            {btn.icon}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={onFullscreen}
-          className="flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-primary-subtle"
-          aria-label="全屏"
-          title="全屏"
-        >
-          <Maximize size={18} />
-        </button>
-      </div>
+      <TooltipProvider delayDuration={300}>
+        <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-card/80 backdrop-blur-md p-1 shadow-lg">
+          {toolButtons.map(btn => (
+            <Tooltip key={btn.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => togglePanel(btn.id)}
+                  className={`flex items-center justify-center rounded-md p-2 transition-colors hover:bg-accent ${
+                    activePanel === btn.id ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                  }`}
+                  aria-label={btn.label}
+                >
+                  {btn.icon}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{btn.label}</TooltipContent>
+            </Tooltip>
+          ))}
+
+          <div className="my-0.5 h-px bg-border/60" />
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onFullscreen}
+                className="flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent"
+                aria-label="全屏"
+              >
+                <Maximize size={18} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">全屏</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
 
       {/* Expandable panels */}
       {activePanel && (
-        <div className="w-64 rounded-lg border border-border bg-card p-3 shadow-lg">
+        <div className="w-64 rounded-lg border border-border/60 bg-card/80 backdrop-blur-md p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-foreground">
               {toolButtons.find(b => b.id === activePanel)?.label ?? ""}

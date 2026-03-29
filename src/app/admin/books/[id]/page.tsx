@@ -13,6 +13,7 @@ import { BookRowActions } from "@/app/admin/books/_components/book-row-actions";
 import { getBookById } from "@/server/modules/books/getBookById";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { type BookStatus } from "@/types/book";
+import { PageContainer } from "@/components/layout/page-header";
 
 import { BookDetailTabs } from "./_components/book-detail-tabs";
 
@@ -58,7 +59,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   const statusMeta = STATUS_META[book.status] ?? { label: book.status, variant: "secondary" as const };
 
   return (
-    <div className="space-y-6 pb-16">
+    <PageContainer className="pb-16">
       {/* 顶部导航 */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/admin/books" className="flex items-center gap-1 hover:text-foreground transition-colors">
@@ -115,6 +116,6 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
       {/* 内容 Tabs（客户端组件） */}
       <BookDetailTabs bookId={book.id} initialStatus={book.status} />
-    </div>
+    </PageContainer>
   );
 }

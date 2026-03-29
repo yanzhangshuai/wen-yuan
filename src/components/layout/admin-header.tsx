@@ -2,88 +2,81 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Library, ClipboardCheck, Settings2, LogOut, UserCircle2 } from "lucide-react";
+import { BookOpen, CheckCircle, Settings2, LogOut, LayoutDashboard } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
-import { logout } from "@/lib/services/auth";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export interface AdminHeaderProps {
   userName?: string | null;
 }
 
+const adminLinks = [
+  { href: "/admin",          label: "概览",     icon: LayoutDashboard },
+  { href: "/admin/books",    label: "书籍管理", icon: BookOpen },
+  { href: "/admin/review",   label: "审核中心", icon: CheckCircle },
+  { href: "/admin/model",    label: "模型设置", icon: Settings2 }
+];
+
 export function AdminHeader({ userName }: AdminHeaderProps) {
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    void logout().finally(() => window.location.assign("/"));
-  };
-
-  // Nav configuration
-  const navItems = [
-    { label: "书库管理", href: "/admin/books", icon: Library, match: "/admin/books" },
-    { label: "审核中心", href: "/admin/review", icon: ClipboardCheck, match: "/admin/review" },
-    { label: "模型设置", href: "/admin/model", icon: Settings2, match: "/admin/model" }
-  ];
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-[56px] flex items-center justify-between px-6 bg-(--color-admin-header-bg) border-b border-(--color-border-strong) transition-colors">
-      <div className="flex items-center h-full">
-        {/* Admin Logo */}
-        <Link href="/admin" className="text-xl font-bold text-white no-underline mr-8 flex items-center gap-2 hover:opacity-90 transition-opacity">
-          <span className="bg-(--color-admin-sidebar-active) text-white w-6 h-6 rounded-sm flex items-center justify-center text-sm font-serif">文</span>
-          <span className="text-gray-100 tracking-wide">文渊Admin</span>
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-6">
+        {/* Logo */}
+        <Link href="/admin" className="flex items-center gap-3 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 border border-primary/20">
+            <span className="text-lg font-bold text-primary font-serif">淵</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-base font-semibold">文淵</span>
+            <span className="text-xs text-muted-foreground border-l border-border pl-2">管理后台</span>
+          </div>
         </Link>
-        
-        {/* Nav Items */}
-        <nav className="flex items-center h-full gap-1 ml-4 overflow-x-auto no-scrollbar">
-          {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.match);
+
+        {/* Navigation Links */}
+        <nav className="flex items-center gap-1">
+          {adminLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = pathname === link.href ||
+              (link.href !== "/admin" && pathname.startsWith(link.href));
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`group flex items-center gap-2 h-full px-4 text-sm font-medium transition-all relative
-                  ${isActive 
-                    ? "text-white" 
-                    : "text-(--color-admin-sidebar-fg) hover:text-white"
-                  }`}
-              >
-                <item.icon size={16} className={isActive ? "text-(--color-admin-sidebar-active)" : "text-current group-hover:text-white transition-colors"} />
-                {item.label}
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-(--color-admin-sidebar-active)" />
-                )}
+              <Link key={link.href} href={link.href}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "gap-2 h-9",
+                    isActive && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </Button>
               </Link>
             );
           })}
         </nav>
-      </div>
 
-      <div className="flex items-center gap-6">
-        {/* Theme Switcher even in Admin as per spec */}
-        <div className="hidden sm:block">
-           <ThemeToggle />
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+
+          {userName && (
+            <span className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
+              {userName}
+            </span>
+          )}
+
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+              <LogOut className="h-4 w-4" />
+              退出管理
+            </Button>
+          </Link>
         </div>
-        
-        <div className="h-4 w-[1px] bg-white/10" />
-
-        {userName && (
-          <span className="hidden sm:flex items-center gap-1.5 text-sm text-(--color-admin-sidebar-fg)">
-            <UserCircle2 size={14} />
-            {userName}
-          </span>
-        )}
-
-        <Link href="/" className="text-sm text-(--color-admin-sidebar-fg) hover:text-white transition-colors">
-          返回前台
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1.5 text-sm text-(--color-admin-sidebar-fg) hover:text-destructive transition-colors px-2 py-1 rounded hover:bg-white/5"
-          title="退出登录"
-        >
-          <LogOut size={16} />
-          <span className="hidden sm:inline">退出</span>
-        </button>
       </div>
     </header>
   );

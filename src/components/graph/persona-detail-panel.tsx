@@ -79,7 +79,7 @@ export function PersonaDetailPanel({
   const relTypes = [...new Set(persona?.relationships.filter(r => r.bookId === bookId).map(r => r.type) ?? [])];
 
   return (
-    <aside className="persona-detail-panel glass absolute right-0 top-0 z-20 flex h-full w-96 flex-col border-l border-border shadow-xl"
+    <aside className="persona-detail-panel absolute right-0 top-0 z-20 flex h-full w-96 flex-col border-l border-border/60 bg-card/80 backdrop-blur-md shadow-xl"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">

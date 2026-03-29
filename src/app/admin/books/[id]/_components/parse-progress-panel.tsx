@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 
 import {
   Card,
@@ -10,8 +10,9 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { fetchBookStatus, type BookStatusSnapshot } from "@/lib/services/books";
+import { fetchBookStatus, reanalyzeChapters, type BookStatusSnapshot } from "@/lib/services/books";
 
 interface ParseProgressPanelProps {
   bookId       : string;
@@ -49,6 +50,8 @@ function ChapterStatusBadge({ status }: { status: string }) {
 
 export function ParseProgressPanel({ bookId, initialStatus }: ParseProgressPanelProps) {
   const [snapshot, setSnapshot] = useState<BookStatusSnapshot | null>(null);
+  const [reanalyzingChapters, setReanalyzingChapters] = useState<Set<number>>(new Set());
+  const [reanalyzeErrors, setReanalyzeErrors] = useState<Map<number, string>>(new Map());
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const currentStatus = snapshot?.status ?? initialStatus;
@@ -84,6 +87,29 @@ export function ParseProgressPanel({ bookId, initialStatus }: ParseProgressPanel
       }
     };
   }, [isDone, poll]);
+
+  const handleReanalyzeChapter = useCallback(async (chapterNo: number) => {
+    setReanalyzingChapters(prev => new Set(prev).add(chapterNo));
+    setReanalyzeErrors(prev => {
+      const next = new Map(prev);
+      next.delete(chapterNo);
+      return next;
+    });
+    try {
+      await reanalyzeChapters(bookId, [chapterNo]);
+      // 立即触发一次轮询，将书籍状态更新为 PROCESSING，useEffect 会自动重启轮询间隔。
+      await poll();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "请求失败，请重试";
+      setReanalyzeErrors(prev => new Map(prev).set(chapterNo, msg));
+    } finally {
+      setReanalyzingChapters(prev => {
+        const next = new Set(prev);
+        next.delete(chapterNo);
+        return next;
+      });
+    }
+  }, [bookId, poll]);
 
   const progress = snapshot?.progress ?? (currentStatus === "COMPLETED" ? 100 : 0);
 
@@ -146,19 +172,48 @@ export function ParseProgressPanel({ bookId, initialStatus }: ParseProgressPanel
                   <tr>
                     <th className="px-4 py-2 text-left w-12">章</th>
                     <th className="px-4 py-2 text-left">标题</th>
-                    <th className="px-4 py-2 text-right">状态</th>
+                    <th className="px-4 py-2 text-center">状态</th>
+                    <th className="px-4 py-2 text-right w-24">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {snapshot!.chapters!.map((ch) => (
-                    <tr key={ch.no} className="border-t border-border">
-                      <td className="px-4 py-2 text-muted-foreground">{ch.no}</td>
-                      <td className="px-4 py-2 font-medium">{ch.title}</td>
-                      <td className="px-4 py-2 text-right">
-                        <ChapterStatusBadge status={ch.parseStatus} />
-                      </td>
-                    </tr>
-                  ))}
+                  {snapshot!.chapters!.map((ch) => {
+                    const isPending = reanalyzingChapters.has(ch.no);
+                    const errMsg = reanalyzeErrors.get(ch.no);
+                    const canReanalyze = ch.parseStatus === "FAILED" || ch.parseStatus === "SUCCEEDED";
+
+                    return (
+                      <tr key={ch.no} className="border-t border-border">
+                        <td className="px-4 py-2 text-muted-foreground">{ch.no}</td>
+                        <td className="px-4 py-2 font-medium">
+                          <div>{ch.title}</div>
+                          {errMsg && (
+                            <div className="text-xs text-destructive mt-0.5">{errMsg}</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <ChapterStatusBadge status={ch.parseStatus} />
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          {canReanalyze && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              disabled={isPending}
+                              onClick={() => void handleReanalyzeChapter(ch.no)}
+                            >
+                              {isPending
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <RefreshCw className="w-3 h-3" />
+                              }
+                              <span className="ml-1">{isPending ? "启动中" : "重新解析"}</span>
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

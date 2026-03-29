@@ -83,7 +83,7 @@ export function BookRowActions({ bookId, bookTitle }: BookRowActionsProps) {
         <Trash2 size={16} />
       </Button>
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>确认删除书籍</DialogTitle>
             <DialogDescription>

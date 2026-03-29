@@ -3,6 +3,10 @@ import Link from "next/link";
 import { ClipboardCheck, BookOpen } from "lucide-react";
 
 import { listBooks } from "@/server/modules/books/listBooks";
+import {
+  PageContainer,
+  PageHeader
+} from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
   title: "审核中心"
@@ -12,11 +16,11 @@ export default async function AdminReviewPage() {
   const books = await listBooks();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">审核中心</h1>
-        <p className="text-muted-foreground mt-1">审核 AI 识别的人物、关系与传记事件</p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="审核中心"
+        description="审核 AI 识别的人物、关系与传记事件"
+      />
 
       {books.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
@@ -56,6 +60,6 @@ export default async function AdminReviewPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -44,7 +44,7 @@ export function TextReaderPanel({
   }, [content, highlightParaIndex]);
 
   return (
-    <aside className="text-reader-panel absolute right-0 top-0 z-30 flex h-full w-[480px] flex-col border-l border-border bg-card shadow-xl">
+    <aside className="text-reader-panel absolute right-0 top-0 z-30 flex h-full w-[480px] flex-col border-l border-border/60 bg-card/80 backdrop-blur-md shadow-xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">

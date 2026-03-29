@@ -84,7 +84,7 @@ function nodePath(type: string, r: number): string {
 function edgeColor(sentiment: string): string {
   if (sentiment === "positive") return "var(--color-graph-edge-positive)";
   if (sentiment === "negative") return "var(--color-graph-edge-negative)";
-  return "var(--color-muted-fg)";
+  return "var(--muted-foreground)";
 }
 
 function shouldIncludeNode(node: GraphNode, filter?: GraphFilter): boolean {
@@ -182,7 +182,7 @@ export function ForceGraph({
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-muted-fg)");
+      .attr("fill", "var(--muted-foreground)");
 
     // Main group (for zoom/pan)
     const g = sel.append("g").attr("class", "graph-main");
@@ -255,7 +255,7 @@ export function ForceGraph({
       .append("text")
       .attr("text-anchor", "middle")
       .attr("font-size", "10px")
-      .attr("fill", "var(--color-muted-fg)")
+      .attr("fill", "var(--muted-foreground)")
       .attr("opacity", 0)
       .text(d => d.type);
 
@@ -317,7 +317,7 @@ export function ForceGraph({
       .attr("text-anchor", "middle")
       .attr("dy", d => nodeRadius(d.influence, maxInfluence) + 14)
       .attr("font-size", d => d.influence > maxInfluence * 0.5 ? "12px" : "10px")
-      .attr("fill", "var(--color-fg)")
+      .attr("fill", "var(--foreground)")
       .attr("pointer-events", "none")
       .text(d => d.name);
 

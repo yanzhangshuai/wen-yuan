@@ -45,14 +45,14 @@ const RELATIONAL_SUFFIXES = new Set([
  * 副作用：无。
  */
 interface ResolveInput {
-  bookId        : string;
-  extractedName : string;
-  chapterContent: string;
+  bookId         : string;
+  extractedName  : string;
+  chapterContent : string;
   /**
    * Phase 1 名册预解析映射：surfaceForm → personaId（已知实体）| "GENERIC"（泛化称谓）。
    * 存在时优先用于快速解析，跳过相似度计算。
    */
-  rosterMap?: Map<string, string>;
+  rosterMap?     : Map<string, string>;
   /**
    * Phase 1 标记为 TITLE_ONLY 的新建称号集合（surfaceForm）。
    * 存在时，在 Step 5 创建 persona 时写入 nameType = TITLE_ONLY。

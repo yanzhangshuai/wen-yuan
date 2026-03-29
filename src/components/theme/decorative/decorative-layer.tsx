@@ -3,15 +3,16 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { PaperTexture } from "./paper-texture";
+import { SuyaBackground } from "./suya-background";
 import { MuseumGlow } from "./museum-glow";
 import { StarDust } from "./star-dust";
 
 /**
  * 氛围装饰层 — 按主题自动选择装饰效果
- * danqing:  宣纸纹理 + 朱砂微光
- * suya:     无装饰（素雅）
- * diancang: 展厅微光
- * xingkong: 星尘粒子 + 星云辉光
+ * danqing:  水墨纹理 + 朱砂光晕
+ * suya:     宣纸纹理 + 竹青光晕
+ * diancang: 黄铜渐变 + 回纹底纹
+ * xingkong: Canvas 星空 + 流星
  */
 export function DecorativeLayer() {
   const { resolvedTheme } = useTheme();
@@ -26,6 +27,8 @@ export function DecorativeLayer() {
   switch (resolvedTheme) {
     case "danqing":
       return <PaperTexture />;
+    case "suya":
+      return <SuyaBackground />;
     case "diancang":
       return <MuseumGlow />;
     case "xingkong":

@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Library, LogOut } from "lucide-react";
+import { BookOpen, Settings, User, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/services/auth";
 
 export interface ViewerHeaderProps {
-  isAdmin?    : boolean; // Make it optional to avoid TS errors if not passed
+  isAdmin?    : boolean;
   currentPath?: string;
   user?       : { name?: string | null; image?: string | null };
 }
 
-export function ViewerHeader({ isAdmin, currentPath = "/", user: _user }: ViewerHeaderProps) {
+export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) {
   const pathname = usePathname();
 
   const handleLogout = () => {
@@ -23,68 +24,67 @@ export function ViewerHeader({ isAdmin, currentPath = "/", user: _user }: Viewer
   const loginRedirectHref = `/login?redirect=${encodeURIComponent(currentPath)}`;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-[56px] flex items-center justify-between border-b border-border px-4 bg-(--color-bg)/80 backdrop-blur-md transition-colors duration-300">
-      <div className="flex items-center gap-8">
+    <header className="viewer-header sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6">
         {/* Logo */}
-        <Link href="/" className="group flex items-center gap-2 no-underline">
-          <span className={cn(
-            "text-xl font-bold transition-colors duration-300",
-            "font-serif tracking-tight", // Noto Serif fallback
-            "text-primary group-hover:text-(--color-primary-hover)"
-          )}>
-            文渊
-          </span>
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
+            <span className="text-xl font-bold text-primary font-serif">淵</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold tracking-wide">文淵</span>
+            <span className="text-[10px] text-muted-foreground tracking-widest">WEN YUAN</span>
+          </div>
         </Link>
 
-        {/* Nav */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link 
-            href="/" 
-            className={cn(
-              "text-sm font-medium flex items-center gap-2 transition-colors duration-200",
-              pathname === "/" 
-                ? "text-primary" 
-                : "text-foreground hover:text-primary"
-            )}
-          >
-            <Library size={18} />
-            <span>书库</span>
+        {/* Navigation Links */}
+        <nav className="flex items-center gap-1">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              size="sm"
+              data-active={pathname === "/" ? "true" : "false"}
+              className={cn(
+                "viewer-header-nav-button gap-2",
+                pathname === "/" && "bg-accent/52 text-accent-foreground"
+              )}
+            >
+              <BookOpen className="h-4 w-4" />
+              书库
+            </Button>
           </Link>
         </nav>
-      </div>
 
-      <div className="flex items-center gap-4">
-        {/* Theme Switcher */}
-        <ThemeToggle />
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle triggerClassName="viewer-header-theme-toggle" />
 
-        {/* Auth / Profile */}
-        <div className="h-4 w-[1px] bg-border mx-1" />
-        
-        {isAdmin ? (
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/admin" 
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors hidden sm:block"
-            >
-              管理后台
+          {isAdmin ? (
+            <>
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden lg:inline">管理后台</span>
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-destructive"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <Link href={loginRedirectHref}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <User className="h-4 w-4" />
+                <span className="hidden lg:inline">登录</span>
+              </Button>
             </Link>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-muted-foreground hover:text-destructive hover:bg-primary-subtle/30 rounded-full transition-all"
-              title="退出登录"
-              aria-label="退出登录"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
-        ) : (
-          <Link 
-            href={loginRedirectHref} 
-            className="text-sm font-medium text-primary hover:text-(--color-primary-hover) px-3 py-1.5 rounded-md hover:bg-primary-subtle transition-colors"
-          >
-            管理员登录
-          </Link>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );

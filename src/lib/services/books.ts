@@ -162,6 +162,18 @@ export async function restartAnalysis(bookId: string): Promise<void> {
 }
 
 /**
+ * 单章节（或多章节）重新解析——使用书籍当前绑定模型。
+ * 对应接口：POST /api/books/:bookId/analyze，scope = CHAPTER_LIST。
+ */
+export async function reanalyzeChapters(bookId: string, chapterIndices: number[]): Promise<void> {
+  await clientMutate(`/api/books/${encodeURIComponent(bookId)}/analyze`, {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ scope: "CHAPTER_LIST", chapterIndices })
+  });
+}
+
+/**
  * 删除一本书。
  * 对应接口：DELETE /api/books/:bookId。
  */

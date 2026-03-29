@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   Check,
   X as XIcon,
@@ -38,10 +38,10 @@ import {
    Props
    ------------------------------------------------ */
 export interface ReviewPanelProps {
-  bookId                        : string;
-  bookTitle                     : string;
-  initialDraftsPromise          : Promise<DraftsData>;
-  initialMergeSuggestionsPromise: Promise<MergeSuggestionItem[]>;
+  bookId                 : string;
+  bookTitle              : string;
+  initialDrafts          : DraftsData;
+  initialMergeSuggestions: MergeSuggestionItem[];
 }
 
 /* ------------------------------------------------
@@ -49,7 +49,7 @@ export interface ReviewPanelProps {
    ------------------------------------------------ */
 type ReviewTab = "personas" | "relationships" | "biography" | "merge";
 
-const TAB_CONFIG: { id: ReviewTab; label: string; icon: React.ReactNode }[] = [
+const TAB_CONFIG: { id: ReviewTab; label: string; icon: ReactNode }[] = [
   { id: "personas", label: "人物草稿", icon: <Users size={14} /> },
   { id: "relationships", label: "关系草稿", icon: <Link2 size={14} /> },
   { id: "biography", label: "传记事件", icon: <Calendar size={14} /> },
@@ -72,12 +72,9 @@ const BIO_CATEGORY_LABELS: Record<string, string> = {
 export function ReviewPanel({
   bookId,
   bookTitle,
-  initialDraftsPromise,
-  initialMergeSuggestionsPromise
+  initialDrafts,
+  initialMergeSuggestions
 }: ReviewPanelProps) {
-  const [initialDrafts, initialMergeSuggestions] = use(
-    Promise.all([initialDraftsPromise, initialMergeSuggestionsPromise])
-  );
   const [activeTab, setActiveTab] = useState<ReviewTab>("personas");
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<DraftsData | null>(initialDrafts);
@@ -87,11 +84,27 @@ export function ReviewPanel({
   const [bulkLoading, setBulkLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingType, setEditingType] = useState<"persona" | "relationship" | "biography" | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [mergePreview, setMergePreview] = useState<{
     suggestionId : string;
     sourcePromise: Promise<PersonaSummary | null>;
     targetPromise: Promise<PersonaSummary | null>;
   } | null>(null);
+
+  useEffect(() => {
+    /* 模块切换时重置本地状态，避免旧书籍的筛选/选中态遗留到新 bookId。 */
+    setDrafts(initialDrafts);
+    setMergeSuggestions(initialMergeSuggestions);
+    setActiveTab("personas");
+    setSourceFilter(null);
+    setSelectedIds(new Set());
+    setBulkLoading(false);
+    setLoading(false);
+    setLoadError(null);
+    setEditingId(null);
+    setEditingType(null);
+    setMergePreview(null);
+  }, [bookId, initialDrafts, initialMergeSuggestions]);
 
   function startEdit(id: string, type: "persona" | "relationship" | "biography") {
     setEditingId(id);
@@ -111,11 +124,12 @@ export function ReviewPanel({
   // Fetch drafts
   const fetchDrafts = useCallback(async (nextSourceFilter: string | null) => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await apiFetchDrafts(bookId, nextSourceFilter);
       setDrafts(data);
     } catch {
-      // Silent
+      setLoadError("刷新审核列表失败，请稍后重试。");
     } finally {
       setLoading(false);
     }
@@ -123,11 +137,12 @@ export function ReviewPanel({
 
   // Fetch merge suggestions
   const fetchMerge = useCallback(async () => {
+    setLoadError(null);
     try {
       const data = await apiFetchMergeSuggestions(bookId);
       setMergeSuggestions(data);
     } catch {
-      // Silent
+      setLoadError("刷新合并建议失败，请稍后重试。");
     }
   }, [bookId]);
 
@@ -159,10 +174,14 @@ export function ReviewPanel({
 
   // Merge suggestion actions
   async function handleMergeAction(id: string, action: "accept" | "reject" | "defer") {
-    if (action === "accept") await acceptMergeSuggestion(id);
-    else if (action === "reject") await rejectMergeSuggestion(id);
-    else await deferMergeSuggestion(id);
-    void fetchMerge();
+    try {
+      if (action === "accept") await acceptMergeSuggestion(id);
+      else if (action === "reject") await rejectMergeSuggestion(id);
+      else await deferMergeSuggestion(id);
+      void fetchMerge();
+    } catch {
+      setLoadError("处理合并建议失败，请重试。");
+    }
   }
 
   // Selection helpers
@@ -272,6 +291,12 @@ export function ReviewPanel({
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full rounded-lg" />
           ))}
+        </div>
+      )}
+
+      {!loading && loadError && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {loadError}
         </div>
       )}
 

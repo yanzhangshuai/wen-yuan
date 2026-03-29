@@ -2,69 +2,86 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Palette, ChevronDown, Check } from "lucide-react";
+import { Palette, Check } from "lucide-react";
 import { THEME_OPTIONS } from "@/theme";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
-export function ThemeToggle() {
+export interface ThemeToggleProps {
+  triggerClassName?: string;
+}
+
+const THEME_COLORS: Record<string, string> = {
+  danqing : "bg-[#8b3a3a]",
+  suya    : "bg-[#5a8a6c]",
+  diancang: "bg-[#c9a227]",
+  xingkong: "bg-[#6b8cae]"
+};
+
+const THEME_DESCRIPTIONS: Record<string, string> = {
+  danqing : "深色古风 · 朱砂红",
+  suya    : "暖调浅色 · 竹青绿",
+  diancang: "博物馆暗色 · 黄铜金",
+  xingkong: "深邃宇宙 · 星辉银蓝"
+};
+
+export function ThemeToggle({ triggerClassName }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  React.useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
   if (!mounted) {
-    return <div className="w-25 h-9 bg-muted/20 animate-pulse rounded-md" />;
+    return <div className="w-9 h-9 bg-muted/20 animate-pulse rounded-md" />;
   }
 
   const current = THEME_OPTIONS.find((o) => o.value === theme);
 
   return (
-    <div ref={ref} className="relative inline-flex items-center">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-md border border-border bg-transparent text-sm font-medium text-foreground transition-colors hover:border-(--color-primary) focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--color-primary) cursor-pointer"
-        aria-label="切换主题"
-        aria-expanded={open}
-      >
-        <Palette size={14} className="text-muted-foreground" aria-hidden="true" />
-        <span>{current?.label ?? "主题"}</span>
-        <ChevronDown size={14} className={cn("text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden="true" />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] rounded-md border border-(--color-border-strong) bg-card py-1 shadow-lg">
-          {THEME_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { setTheme(opt.value); setOpen(false); }}
-              className={cn(
-                "flex items-center gap-2 w-full px-3 py-1.5 text-sm transition-colors cursor-pointer",
-                opt.value === theme
-                  ? "text-(--color-primary) font-medium bg-(--color-primary-subtle)"
-                  : "text-foreground hover:bg-(--color-muted)/40"
-              )}
-            >
-              {opt.value === theme && <Check size={12} aria-hidden="true" />}
-              <span className={opt.value !== theme ? "pl-[20px]" : ""}>{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn("theme-toggle-trigger gap-2", triggerClassName)}
+        >
+          <Palette className="h-4 w-4" />
+          <span className="hidden lg:inline">{current?.label ?? "主题"}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="theme-toggle-menu w-56">
+        {THEME_OPTIONS.map((opt) => (
+          <DropdownMenuItem
+            key={opt.value}
+            onClick={() => setTheme(opt.value)}
+            data-selected={theme === opt.value ? "true" : "false"}
+            className={cn(
+              "theme-toggle-option group/theme-item flex cursor-pointer flex-col items-start gap-1 rounded-md py-3",
+              /* hover 无边框，仅用透明底色表达；选中态保留更高不透明度。 */
+              theme === opt.value
+                ? "bg-accent/44 text-accent-foreground focus:bg-accent/44 data-[highlighted]:bg-accent/44 data-[highlighted]:text-accent-foreground"
+                : "focus:bg-accent/20 data-[highlighted]:bg-accent/20 data-[highlighted]:text-accent-foreground"
+            )}
+          >
+            <div className="flex w-full items-center gap-2">
+              <span className={cn("w-3 h-3 rounded-full", THEME_COLORS[opt.value] || "bg-primary")} />
+              <span className="font-medium">{opt.label}</span>
+              {theme === opt.value && <Check className="h-3 w-3 ml-auto" />}
+            </div>
+            <span className="text-xs text-muted-foreground pl-5">
+              {THEME_DESCRIPTIONS[opt.value] ?? ""}
+            </span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

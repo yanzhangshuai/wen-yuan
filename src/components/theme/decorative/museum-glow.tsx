@@ -1,17 +1,26 @@
 "use client";
 
 /**
- * 博物馆展厅微光背景 — diancang 典藏装饰
- * 顶部暖黄径向渐变，仿展厅漫射光效果
+ * 博物馆典藏背景 — diancang 装饰
+ * 仅保留低强度黄铜光晕，避免与页面内容背景产生花纹冲突
  */
 export function MuseumGlow() {
   return (
-    <div
-      className="fixed inset-0 pointer-events-none z-0"
-      aria-hidden="true"
-      style={{
-        background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(200,168,110,0.06) 0%, transparent 70%)"
-      }}
-    />
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+      <div
+        className="absolute top-[-160px] right-[-120px] h-[640px] w-[640px] opacity-[0.045]"
+        style={{
+          background: "radial-gradient(circle at 70% 24%, oklch(0.72 0.12 85) 0%, transparent 68%)",
+          filter    : "blur(84px)"
+        }}
+      />
+      <div
+        className="absolute bottom-[-220px] left-[-180px] h-[620px] w-[620px] opacity-[0.04]"
+        style={{
+          background: "radial-gradient(circle at 30% 70%, oklch(0.60 0.10 70) 0%, transparent 70%)",
+          filter    : "blur(92px)"
+        }}
+      />
+    </div>
   );
 }
