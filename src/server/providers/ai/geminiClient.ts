@@ -46,7 +46,9 @@ export class GeminiClient implements AiProviderClient {
         // 强制模型直接返回 JSON 文本，便于后端解析。
         responseMimeType: "application/json",
         // 温度偏低，优先稳定输出而非创造性发挥。
-        temperature     : 0.2
+        temperature     : 0.2,
+        // 展开输出 token 上限，防止内容被截断。
+        maxOutputTokens : 8192
       }
     });
 

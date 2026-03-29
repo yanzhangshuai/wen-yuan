@@ -1,5 +1,5 @@
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { ChapterType, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { chapterAnalysisService, type ChapterAnalysisResult } from "@/server/modules/analysis/services/ChapterAnalysisService";
 
@@ -24,7 +24,7 @@ interface ChapterTask {
  * 异常：无。
  * 副作用：无。
  */
-type ChapterAnalyzer = Pick<typeof chapterAnalysisService, "analyzeChapter">;
+type ChapterAnalyzer = Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles">;
 
 /**
  * 功能：定义任务执行器读取任务时的最小字段集合。
@@ -35,17 +35,19 @@ type ChapterAnalyzer = Pick<typeof chapterAnalysisService, "analyzeChapter">;
  */
 interface AnalysisJobRow {
   /** 任务主键（UUID）。 */
-  id          : string;
+  id            : string;
   /** 所属书籍主键（UUID）。 */
-  bookId      : string;
+  bookId        : string;
   /** 当前任务状态（QUEUED/RUNNING/SUCCEEDED/FAILED/CANCELED）。 */
-  status      : AnalysisJobStatus;
+  status        : AnalysisJobStatus;
   /** 执行范围（FULL_BOOK 或 CHAPTER_RANGE）。 */
-  scope       : string;
+  scope         : string;
   /** 范围任务起始章节号；全书任务时为 null。 */
-  chapterStart: number | null;
+  chapterStart  : number | null;
   /** 范围任务结束章节号；全书任务时为 null。 */
-  chapterEnd  : number | null;
+  chapterEnd    : number | null;
+  /** 指定章节编号列表（CHAPTER_LIST 任务）；其他范围时为空数组。 */
+  chapterIndices: number[];
 }
 
 /**
@@ -57,6 +59,48 @@ interface AnalysisJobRow {
  */
 function buildProgressStage(index: number, total: number): string {
   return `实体提取（第${index + 1}/${total}章）`;
+}
+/** 单章节失败后最多重试次数（不含首次）。 */
+const CHAPTER_MAX_RETRIES = 2;
+
+/** 单章节重试基础等待时间（ms），实际等待 = base * 第几次重试。 */
+const CHAPTER_RETRY_BASE_MS = 3000;
+
+/**
+ * 功能：判断章节级错误是否值得重试（网络抖动、限速、连接中断等临时性错误）。
+ * 输入：unknown 错误对象。
+ * 输出：true 表示可以重试；false 表示不可重试（逻辑错误、数据错误等）。
+ * 异常：无。
+ * 副作用：无。
+ */
+function isChapterRetryableError(error: unknown): boolean {
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  return (
+    message.includes("429") ||
+    message.includes("rate limit") ||
+    message.includes("timeout") ||
+    message.includes("temporarily unavailable") ||
+    message.includes("econnreset") ||
+    message.includes("network") ||
+    message.includes("terminated") ||
+    message.includes("aborted") ||
+    message.includes("fetch failed") ||
+    message.includes("socket") ||
+    message.includes("connection reset")
+  );
+}
+/**
+ * 功能：检查任务是否已被取消（乐观读，避免已删除书籍继续执行）。
+ * 输入：PrismaClient、jobId。
+ * 输出：true 表示已取消或不存在；false 表示仍在 RUNNING。
+ * 副作用：只读查询。
+ */
+async function isJobCanceled(prismaClient: PrismaClient, jobId: string): Promise<boolean> {
+  const row = await prismaClient.analysisJob.findUnique({
+    where : { id: jobId },
+    select: { status: true }
+  });
+  return !row || row.status === AnalysisJobStatus.CANCELED;
 }
 
 /**
@@ -75,6 +119,65 @@ function toErrorMessage(error: unknown): string {
 }
 
 /**
+ * 功能：整书解析完成后，检测 mention 数 < 2 的孤儿 Persona 并将其置信度降至 0.4。
+ * 目的：帮助审核者优先关注出场极少、可能为幻觉或次要角色的实体。
+ * 输入：PrismaClient、书籍 ID。
+ * 输出：被降级的孤儿 Persona 数量。
+ * 异常：数据库访问异常会向上抛出。
+ * 副作用：批量更新 personas.confidence 字段。
+ */
+export async function markOrphanPersonas(
+  prismaClient: PrismaClient,
+  bookId: string
+): Promise<number> {
+  // 查出本书所有已建档 Persona 的 ID。
+  const profiles = await prismaClient.profile.findMany({
+    where : { bookId },
+    select: { personaId: true }
+  });
+
+  if (profiles.length === 0) {
+    return 0;
+  }
+
+  const allPersonaIds = profiles.map(p => p.personaId);
+
+  // 统计每个 Persona 在本书各章节的有效提及数（排除软删除）。
+  const mentionGroups = await prismaClient.mention.groupBy({
+    by   : ["personaId"],
+    where: {
+      personaId: { in: allPersonaIds },
+      deletedAt: null,
+      chapter  : { bookId }
+    },
+    _count: { id: true }
+  });
+
+  // 将有提及的 persona 按 ID 建立计数映射，方便 O(1) 查询。
+  const mentionCountMap = new Map<string, number>(
+    mentionGroups.map(g => [g.personaId, g._count.id])
+  );
+
+  // mention 数严格 < 2 的视为孤儿（包含 0 次，即完全没有提及记录的）。
+  const orphanIds = allPersonaIds.filter(id => (mentionCountMap.get(id) ?? 0) < 2);
+
+  if (orphanIds.length === 0) {
+    return 0;
+  }
+
+  // 仅降级置信度尚未更低的孤儿，避免覆盖可能已被人工设置的更低分。
+  await prismaClient.persona.updateMany({
+    where: {
+      id        : { in: orphanIds },
+      confidence: { gt: 0.4 }
+    },
+    data: { confidence: 0.4 }
+  });
+
+  return orphanIds.length;
+}
+
+/**
  * 功能：按任务 ID 读取解析任务的执行关键字段。
  * 输入：PrismaClient、任务 ID。
  * 输出：任务快照；不存在时返回 null。
@@ -85,12 +188,13 @@ async function loadJob(prismaClient: PrismaClient, jobId: string): Promise<Analy
   return await prismaClient.analysisJob.findUnique({
     where : { id: jobId },
     select: {
-      id          : true,
-      bookId      : true,
-      status      : true,
-      scope       : true,
-      chapterStart: true,
-      chapterEnd  : true
+      id            : true,
+      bookId        : true,
+      status        : true,
+      scope         : true,
+      chapterStart  : true,
+      chapterEnd    : true,
+      chapterIndices: true
     }
   });
 }
@@ -108,6 +212,9 @@ async function loadChaptersForJob(
   prismaClient: PrismaClient,
   job: AnalysisJobRow
 ): Promise<ChapterTask[]> {
+  // 前言（PRELUDE）和后记（POSTLUDE）通常是作者序跋，不包含故事人物，跳过解析。
+  const SKIP_CHAPTER_TYPES: ChapterType[] = ["PRELUDE", "POSTLUDE"];
+
   if (job.scope === "CHAPTER_RANGE") {
     if (job.chapterStart == null || job.chapterEnd == null) {
       throw new Error(`解析任务 ${job.id} 的章节范围无效`);
@@ -116,6 +223,7 @@ async function loadChaptersForJob(
     return await prismaClient.chapter.findMany({
       where: {
         bookId: job.bookId,
+        type  : { notIn: SKIP_CHAPTER_TYPES },
         no    : {
           gte: job.chapterStart,
           lte: job.chapterEnd
@@ -126,8 +234,27 @@ async function loadChaptersForJob(
     });
   }
 
+  if (job.scope === "CHAPTER_LIST") {
+    if (!job.chapterIndices || job.chapterIndices.length === 0) {
+      throw new Error(`解析任务 ${job.id} 的章节列表为空`);
+    }
+
+    return await prismaClient.chapter.findMany({
+      where: {
+        bookId: job.bookId,
+        type  : { notIn: SKIP_CHAPTER_TYPES },
+        no    : { in: job.chapterIndices }
+      },
+      orderBy: { no: "asc" },
+      select : { id: true, no: true }
+    });
+  }
+
   return await prismaClient.chapter.findMany({
-    where  : { bookId: job.bookId },
+    where: {
+      bookId: job.bookId,
+      type  : { notIn: SKIP_CHAPTER_TYPES }
+    },
     orderBy: { no: "asc" },
     select : { id: true, no: true }
   });
@@ -198,11 +325,18 @@ export function createAnalysisJobRunner(
 
     let chapters: ChapterTask[] = [];
     let completed = 0;
+    let failedCount = 0;
     try {
       chapters = await loadChaptersForJob(prismaClient, job);
       if (chapters.length === 0) {
         throw new Error(`解析任务 ${job.id} 未找到可执行章节`);
       }
+
+      // 重置所有目标章节为 PENDING，确保检测状态与实际执行一致。
+      await prismaClient.chapter.updateMany({
+        where: { id: { in: chapters.map(c => c.id) } },
+        data : { parseStatus: "PENDING" }
+      });
 
       // 初始化书籍解析状态，后续在章节循环中持续刷新进度与阶段文本。
       await prismaClient.book.update({
@@ -216,27 +350,95 @@ export function createAnalysisJobRunner(
       });
 
       for (const [index, chapter] of chapters.entries()) {
-        await prismaClient.book.update({
-          where: { id: job.bookId },
-          data : {
-            parseProgress: Math.floor((index / chapters.length) * 100),
-            parseStage   : buildProgressStage(index, chapters.length)
-          }
-        });
+        // 循环内检查任务是否已被取消，支持中断长运行的解析任务。
+        if (await isJobCanceled(prismaClient, job.id)) { return; }
 
-        const result: ChapterAnalysisResult = await chapterAnalyzer.analyzeChapter(chapter.id);
-        completed += 1;
-
-        // 结构化日志用于排查“卡在某一章”或“章节草稿写入异常”等问题。
-        console.info(
-          "[analysis.runner] chapter.completed",
-          JSON.stringify({
-            jobId    : job.id,
-            chapterId: chapter.id,
-            chapterNo: chapter.no,
-            created  : result.created
+        await prismaClient.$transaction([
+          prismaClient.book.update({
+            where: { id: job.bookId },
+            data : {
+              parseProgress: Math.floor((index / chapters.length) * 100),
+              parseStage   : buildProgressStage(index, chapters.length)
+            }
+          }),
+          prismaClient.chapter.update({
+            where: { id: chapter.id },
+            data : { parseStatus: "PROCESSING" }
           })
-        );
+        ]);
+
+        let chapterSucceeded = false;
+        let chapterAttempt = 0;
+
+        // 单章节带退避重试循环：可重试错误（网络/限速/连接中断）最多重试 CHAPTER_MAX_RETRIES 次，
+        // 期间保持章节顺序串行执行，不跳过也不并发，确保关联 Persona 的解析上下文完整。
+        while (chapterAttempt <= CHAPTER_MAX_RETRIES) {
+          try {
+            const result: ChapterAnalysisResult = await chapterAnalyzer.analyzeChapter(chapter.id);
+            completed += 1;
+            chapterSucceeded = true;
+
+            // 结构化日志用于排查"卡在某一章"或"章节草稿写入异常"等问题。
+            console.info(
+              "[analysis.runner] chapter.completed",
+              JSON.stringify({
+                jobId    : job.id,
+                chapterId: chapter.id,
+                chapterNo: chapter.no,
+                attempt  : chapterAttempt,
+                created  : result.created
+              })
+            );
+            break; // 成功则退出重试循环
+          } catch (chapterError) {
+            const isRetryable = isChapterRetryableError(chapterError);
+            const retriesExhausted = chapterAttempt >= CHAPTER_MAX_RETRIES;
+
+            if (!isRetryable || retriesExhausted) {
+              // 不可重试错误或已耗尽重试次数：记日志，标记失败，跳出循环继续下一章。
+              failedCount += 1;
+              console.error(
+                "[analysis.runner] chapter.failed",
+                JSON.stringify({
+                  jobId    : job.id,
+                  chapterId: chapter.id,
+                  chapterNo: chapter.no,
+                  attempt  : chapterAttempt,
+                  isRetryable,
+                  error    : String(chapterError).slice(0, 500)
+                })
+              );
+              break;
+            }
+
+            // 可重试：指数退避等待后再次尝试。
+            const waitMs = CHAPTER_RETRY_BASE_MS * (chapterAttempt + 1);
+            console.warn(
+              "[analysis.runner] chapter.retry",
+              JSON.stringify({
+                jobId    : job.id,
+                chapterId: chapter.id,
+                chapterNo: chapter.no,
+                attempt  : chapterAttempt + 1,
+                waitMs,
+                reason   : String(chapterError).slice(0, 200)
+              })
+            );
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+            chapterAttempt += 1;
+          }
+        }
+
+        // 写回最终章节状态：无论重试几次，只在确定结果后写一次，避免多次数据库写入。
+        await prismaClient.chapter.update({
+          where: { id: chapter.id },
+          data : { parseStatus: chapterSucceeded ? "SUCCEEDED" : "FAILED" }
+        });
+      }
+
+      // 全部章节均失败时，视为任务整体失败。
+      if (completed === 0 && failedCount > 0) {
+        throw new Error(`所有章节解析失败，共 ${failedCount} 章`);
       }
 
       await prismaClient.$transaction([
@@ -258,6 +460,27 @@ export function createAnalysisJobRunner(
           }
         })
       ]);
+
+      // 整书解析完成后执行孤儿检测：mention 数 < 2 的 Persona 置信度降至 0.4，供审核优先关注。
+      // 仅在 FULL_BOOK 任务完成后触发，部分章节任务不做全局孤儿判断。
+      if (job.scope === "FULL_BOOK") {
+        const orphanCount = await markOrphanPersonas(prismaClient, job.bookId);
+        if (orphanCount > 0) {
+          console.info(
+            "[analysis.runner] orphan.personas.marked",
+            JSON.stringify({ jobId: job.id, bookId: job.bookId, orphanCount })
+          );
+        }
+
+        // Phase 5: 称号真名溯源——批量 AI 推断 TITLE_ONLY Persona 的历史真名并回写。
+        const resolvedTitleCount = await chapterAnalyzer.resolvePersonaTitles(job.bookId);
+        if (resolvedTitleCount > 0) {
+          console.info(
+            "[analysis.runner] title.personas.resolved",
+            JSON.stringify({ jobId: job.id, bookId: job.bookId, resolvedTitleCount })
+          );
+        }
+      }
     } catch (error) {
       const errorMessage = toErrorMessage(error);
       const failedProgress = chapters.length === 0

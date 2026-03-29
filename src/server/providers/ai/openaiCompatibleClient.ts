@@ -61,6 +61,7 @@ export class OpenAiCompatibleClient implements AiProviderClient {
       body: JSON.stringify({
         model          : this.modelName,
         temperature    : 0.2,
+        max_tokens     : 8192,
         response_format: { type: "json_object" },
         messages       : [{ role: "user", content: prompt }]
       })

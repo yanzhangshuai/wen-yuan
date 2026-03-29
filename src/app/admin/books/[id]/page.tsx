@@ -114,7 +114,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       </div>
 
       {/* 内容 Tabs（客户端组件） */}
-      <BookDetailTabs book={book} />
+      <BookDetailTabs bookId={book.id} initialStatus={book.status} />
     </div>
   );
 }

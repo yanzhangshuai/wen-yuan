@@ -167,14 +167,15 @@ model Book {
 
 /// @db.remark: 章节/回目。时间轴的物理基石，所有事件必须挂载在回目上。
 model Chapter {
-  id      String      @id @default(uuid()) @db.Uuid // 章节主键
-  bookId  String      @map("book_id") @db.Uuid // 所属书籍 ID
-  type    ChapterType @default(CHAPTER) // 标注是楔子还是正文
-  no      Int // 章节序号（第几回），决定时间轴物理排序
-  unit    String      @default("回") // 称谓单位 (如: "回", "章", "节")
-  noText  String?     @map("no_text") // 自定义序号显示 (如: "第一回", "序章")
-  title   String // 章节名，如"范进中举"
-  content String      @db.Text // 章节原文（用于 AI 解析及前端高亮溯源）
+  id          String      @id @default(uuid()) @db.Uuid // 章节主键
+  bookId      String      @map("book_id") @db.Uuid // 所属书籍 ID
+  type        ChapterType @default(CHAPTER) // 标注是楔子还是正文
+  no          Int // 章节序号（第几回），决定时间轴物理排序
+  unit        String      @default("回") // 称谓单位 (如: "回", "章", "节")
+  noText      String?     @map("no_text") // 自定义序号显示 (如: "第一回", "序章")
+  title       String // 章节名，如"范进中举"
+  content     String      @db.Text // 章节原文（用于 AI 解析及前端高亮溯源）
+  parseStatus String      @default("PENDING") @map("parse_status") // PENDING | PROCESSING | SUCCEEDED | FAILED
 
   // 针对文学作品的补充
   isAbstract Boolean  @default(false) @map("is_abstract") // 是否为总纲/大义

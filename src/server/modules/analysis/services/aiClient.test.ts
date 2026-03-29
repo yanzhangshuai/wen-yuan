@@ -51,12 +51,15 @@ describe("ChapterAnalysisAiClient", () => {
     expect(result.mentions).toHaveLength(1);
   });
 
-  it("throws when provider returns invalid json", async () => {
+  it("returns empty arrays when provider returns unparseable content", async () => {
     const providerClient: AiProviderClient = {
       generateJson: async () => "not-json"
     };
     const client = createChapterAnalysisAiClient(providerClient);
 
-    await expect(client.analyzeChapterChunk(sampleInput)).rejects.toThrow();
+    const result = await client.analyzeChapterChunk(sampleInput);
+    expect(result.biographies).toEqual([]);
+    expect(result.mentions).toEqual([]);
+    expect(result.relationships).toEqual([]);
   });
 });

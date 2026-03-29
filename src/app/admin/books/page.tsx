@@ -56,7 +56,9 @@ export default async function AdminBooksPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <FileText size={16} className="text-muted-foreground" />
-                      {book.title}
+                      <Link href={`/admin/books/${book.id}`} className="hover:underline">
+                        {book.title}
+                      </Link>
                     </div>
                   </TableCell>
                   <TableCell>{book.author || "-"}</TableCell>

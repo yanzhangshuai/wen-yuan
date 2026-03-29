@@ -17,6 +17,14 @@ const BOOK_STATUS_SELECT = {
     select : {
       errorLog: true
     }
+  },
+  chapters: {
+    orderBy: { no: "asc" as const },
+    select : {
+      no         : true,
+      title      : true,
+      parseStatus: true
+    }
   }
 } satisfies Prisma.BookSelect;
 
@@ -32,6 +40,8 @@ export interface BookStatusSnapshot {
   stage   : string | undefined;
   /** 错误摘要（优先书级，其次最新任务级）。 */
   errorLog: string | undefined;
+  /** 各章节解析状态列表（按章节号升序）。 */
+  chapters: Array<{ no: number; title: string; parseStatus: string }>;
 }
 
 export function createGetBookStatusService(
@@ -64,7 +74,8 @@ export function createGetBookStatusService(
       status  : book.status,
       progress: book.parseProgress,
       stage   : book.parseStage ?? undefined,
-      errorLog: book.errorLog ?? latestJobErrorLog
+      errorLog: book.errorLog ?? latestJobErrorLog,
+      chapters: book.chapters
     };
   }
 

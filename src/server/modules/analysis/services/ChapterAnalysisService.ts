@@ -12,7 +12,7 @@ import type {
 } from "@/types/analysis";
 
 // 配置常量
-const MAX_CHUNK_LENGTH = 3500; // 适配 Gemini/DeepSeek 的最佳 Context Window
+const MAX_CHUNK_LENGTH = 2000; // 每片输入字符数：缩小分片减少每次输出量，防止 AI token 上限截断
 const AI_CONCURRENCY = 3;      // 同时解析的分段数，避免触发 API 频控
 const AI_MAX_RETRIES = 2;
 const AI_RETRY_BASE_MS = 600;
@@ -197,8 +197,40 @@ export function createChapterAnalysisService(
       localSummary: p.localSummary
     }));
 
-    const chunks = splitContentIntoChunks(chapter.content, MAX_CHUNK_LENGTH);
     const runtimeAiClient = aiClient ?? await createRuntimeAiClient(chapter.book.aiModelId);
+
+    // Phase 1: 全章人物名册发现——AI 读完整章节，输出本章所有称谓的预解析映射。
+    // 此调用比 chunk 分析便宜（只识别称谓名单，不提取事件/关系），但能解决跨段指代歧义。
+    const roster = await runtimeAiClient.discoverChapterRoster({
+      bookTitle   : chapter.book.title,
+      chapterNo   : chapter.no,
+      chapterTitle: chapter.title,
+      content     : chapter.content,
+      profiles
+    });
+
+    log("analysis.roster_discovered", { chapterId, rosterSize: roster.length });
+
+    // 将名册结果转换为 rosterMap（surfaceForm → personaId | "GENERIC"）。
+    const entityIdMap = buildEntityIdMap(profiles);
+    const rosterMap = new Map<string, string>();
+    const titleOnlyNames = new Set<string>();
+    for (const entry of roster) {
+      if (entry.generic) {
+        rosterMap.set(entry.surfaceForm, "GENERIC");
+      } else if (entry.entityId !== undefined) {
+        const personaId = entityIdMap.get(entry.entityId);
+        if (personaId) {
+          rosterMap.set(entry.surfaceForm, personaId);
+        }
+      } else if (entry.isNew && entry.isTitleOnly) {
+        // isTitleOnly: true 且为新建实体 → 记录到集合供 PersonaResolver 写入 nameType = TITLE_ONLY
+        titleOnlyNames.add(entry.surfaceForm);
+      }
+      // isNew: true 且非 TITLE_ONLY → 不加入 rosterMap，走正常 resolver 创建新 persona 流程
+    }
+
+    const chunks = splitContentIntoChunks(chapter.content, MAX_CHUNK_LENGTH);
 
     const aiResults: ChapterAnalysisResponse[] = [];
     for (let i = 0; i < chunks.length; i += AI_CONCURRENCY) {
@@ -226,7 +258,9 @@ export function createChapterAnalysisService(
         chapterNo     : chapter.no,
         bookId        : chapter.bookId,
         chapterContent: chapter.content,
-        merged
+        merged,
+        rosterMap,
+        titleOnlyNames
       });
     }, {
       timeout: 30000
@@ -256,6 +290,8 @@ export function createChapterAnalysisService(
       bookId        : string;
       chapterContent: string;
       merged        : ChapterAnalysisResponse;
+      rosterMap     : Map<string, string>;
+      titleOnlyNames: Set<string>;
     }
   ): Promise<Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">> {
     await tx.mention.deleteMany({ where: { chapterId: input.chapterId } });
@@ -276,7 +312,9 @@ export function createChapterAnalysisService(
         const res = await personaResolver.resolve({
           bookId        : input.bookId,
           extractedName : name,
-          chapterContent: input.chapterContent
+          chapterContent: input.chapterContent,
+          rosterMap     : input.rosterMap,
+          titleOnlyNames: input.titleOnlyNames
         }, tx);
         cache.set(name, res);
         if (res.status === "created") personaCreated++;
@@ -380,13 +418,13 @@ export function createChapterAnalysisService(
       if (s.personaId && t.personaId && s.personaId !== t.personaId) {
         const normalizedDescription = sanitizeRelationshipField(r.description);
         const normalizedEvidence = sanitizeRelationshipField(r.evidence);
+        // 去重 key 与 DB 唯一约束保持一致：(chapterId, sourceId, targetId, type)
+        // recordSource 固定为 AI，不纳入 key；description/evidence 不在 DB 唯一索引中，不作去重依据
         const key = [
           input.chapterId,
           s.personaId,
           t.personaId,
-          r.type,
-          normalizedDescription ?? "",
-          normalizedEvidence ?? ""
+          r.type
         ].join("|");
         if (relationKeys.has(key)) continue;
         relationKeys.add(key);
@@ -555,7 +593,12 @@ export function createChapterAnalysisService(
       message.includes("timeout") ||
       message.includes("temporarily unavailable") ||
       message.includes("econnreset") ||
-      message.includes("network")
+      message.includes("network") ||
+      message.includes("terminated") ||
+      message.includes("aborted") ||
+      message.includes("fetch failed") ||
+      message.includes("socket") ||
+      message.includes("connection reset")
     );
   }
 
@@ -563,7 +606,92 @@ export function createChapterAnalysisService(
     console.info(`[ChapterAnalysisService] ${event}:`, JSON.stringify(data));
   }
 
-  return { analyzeChapter };
+  /**
+   * 功能：Phase 5 称号真名溯源——查询本书所有 TITLE_ONLY Persona，批量 AI 推断历史真名并回写。
+   * 输入：bookId - 书籍主键。
+   * 输出：实际更新的 Persona 数量。
+   * 异常：数据库或 AI 调用失败时抛错。
+   * 副作用：更新 personas.name / aliases / nameType / confidence。
+   */
+  async function resolvePersonaTitles(bookId: string): Promise<number> {
+    // 1. 加载书籍信息以及所有 TITLE_ONLY Persona。
+    const book = await prismaClient.book.findUnique({
+      where : { id: bookId },
+      select: { title: true, aiModelId: true }
+    });
+    if (!book) return 0;
+
+    const titleOnlyProfiles = await prismaClient.profile.findMany({
+      where: {
+        bookId,
+        deletedAt: null,
+        persona  : { nameType: "TITLE_ONLY", deletedAt: null }
+      },
+      select: {
+        localSummary: true,
+        persona     : { select: { id: true, name: true } }
+      }
+    });
+
+    if (titleOnlyProfiles.length === 0) return 0;
+
+    const entries = titleOnlyProfiles.map((p) => ({
+      personaId   : p.persona.id,
+      title       : p.persona.name,
+      localSummary: p.localSummary
+    }));
+
+    // 2. 调用 AI 批量溯源真名。
+    const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
+    const resolutions = await runtimeAiClient.resolvePersonaTitles({
+      bookTitle: book.title,
+      entries
+    });
+
+    // 3. 按置信度分流处理。
+    let updatedCount = 0;
+    for (const r of resolutions) {
+      if (r.confidence >= 0.7 && r.realName) {
+        // 高置信：确认真名，内嵌为常规 NAMED Persona。
+        await prismaClient.persona.update({
+          where: { id: r.personaId },
+          data : {
+            name      : r.realName,
+            nameType  : "NAMED",
+            confidence: r.confidence,
+            aliases   : { push: r.title } // 原称号茜入别名
+          }
+        });
+        updatedCount++;
+      } else {
+        // 低置信：只更新 confidence，称号保留 TITLE_ONLY 供审核者手动确认。
+        await prismaClient.persona.update({
+          where: { id: r.personaId },
+          data : { confidence: r.confidence }
+        });
+      }
+    }
+
+    return updatedCount;
+  }
+
+  return { analyzeChapter, resolvePersonaTitles };
 }
 
 export const chapterAnalysisService = createChapterAnalysisService();
+
+/**
+ * 功能：将人物档案列表转为短整型 ID 映射（shortId → personaId UUID）。
+ * 生成的 shortId 与 buildEntityContextLines 中的 [N] 序号完全对应（1-indexed）。
+ * 输入：profiles - 按稳定顺序传入的人物档案列表。
+ * 输出：Map<shortId, personaId>，用于将 Phase 1 AI 输出的 entityId 翻译回 UUID。
+ * 异常：无。
+ * 副作用：无。
+ */
+function buildEntityIdMap(profiles: AnalysisProfileContext[]): Map<number, string> {
+  const map = new Map<number, string>();
+  profiles.forEach((p, idx) => {
+    map.set(idx + 1, p.personaId);
+  });
+  return map;
+}

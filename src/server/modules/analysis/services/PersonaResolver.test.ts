@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createPersonaResolver } from "@/server/modules/analysis/services/PersonaResolver";
+import { createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
 
 function createPrismaMock() {
   const personaFindMany = vi.fn();
@@ -191,9 +191,11 @@ describe("persona resolver", () => {
     });
     expect(personaCreate).toHaveBeenCalledWith({
       data: {
-        name   : "赵六",
-        type   : "PERSON",
-        aliases: ["赵六"]
+        name      : "赵六",
+        type      : "PERSON",
+        nameType  : "NAMED",
+        aliases   : ["赵六"],
+        confidence: expect.any(Number)
       }
     });
     expect(profileCreate).toHaveBeenCalledWith({
@@ -238,5 +240,144 @@ describe("persona resolver", () => {
     expect(txPersonaFindMany).toHaveBeenCalledTimes(1);
     expect(txProfileUpsert).toHaveBeenCalledTimes(1);
     expect(personaFindMany).not.toHaveBeenCalled();
+  });
+
+  it("marks generic titles as hallucinated without DB queries", async () => {
+    const { prisma, personaFindMany } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    for (const title of ["老爷", "夫人", "众人", "掌柜的", "丫鬟"]) {
+      const result = await resolver.resolve({
+        bookId        : "book-1",
+        extractedName : title,
+        chapterContent: `${title}出现了`
+      });
+      expect(result).toEqual({
+        status    : "hallucinated",
+        confidence: 1.0,
+        reason    : "generic_title"
+      });
+    }
+    expect(personaFindMany).not.toHaveBeenCalled();
+  });
+
+  it("GENERIC_TITLES set contains expected common titles", () => {
+    expect(GENERIC_TITLES.has("老爷")).toBe(true);
+    expect(GENERIC_TITLES.has("夫人")).toBe(true);
+    expect(GENERIC_TITLES.has("众人")).toBe(true);
+    expect(GENERIC_TITLES.has("书办")).toBe(true);
+    expect(GENERIC_TITLES.has("掌舵")).toBe(true);
+    expect(GENERIC_TITLES.has("按察司")).toBe(true);
+    expect(GENERIC_TITLES.has("范进")).toBe(false);
+    expect(GENERIC_TITLES.has("严监生")).toBe(false);
+    expect(GENERIC_TITLES.has("蒋书办")).toBe(false);  // 有姓前缀，不是泛称
+  });
+
+  it("不将[姓名 + 亲属后缀]字符串合并到原始姓名 persona", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate,
+      profileCreate
+    } = createPrismaMock();
+
+    // 已存在 persona "蘧公孙"
+    personaFindMany
+      .mockResolvedValueOnce([{  // 直接召回
+        id      : "persona-qugongson",
+        name    : "蘧公孙",
+        aliases : [],
+        profiles: [{ localName: "蘧公孙" }]
+      }])
+      .mockResolvedValueOnce([]); // 兜底候选空
+
+    // "蘧公孙父亲" 不应与 "蘧公孙" 合并，应新建 persona
+    personaCreate.mockResolvedValueOnce({
+      id  : "persona-qugongson-father",
+      name: "蘧公孙父亲"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "蘧公孙父亲",
+      chapterContent: "蘧公孙父亲也到了场上。"
+    });
+
+    // 因为后缀是亲属词，不应解析为"蘧公孙"，应新建
+    expect(result.status).toBe("created");
+    expect(personaCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ name: "蘧公孙父亲" })
+    }));
+    expect(profileCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("通过 titleOnlyNames 创建 TITLE_ONLY persona", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate,
+      profileCreate
+    } = createPrismaMock();
+
+    personaFindMany
+      .mockResolvedValueOnce([])  // no direct match
+      .mockResolvedValueOnce([]); // no fallback candidates
+    personaCreate.mockResolvedValueOnce({
+      id  : "title-persona-1",
+      name: "太祖皇帝"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "太祖皇帝",
+      chapterContent: "太祖皇帝颂布科举评假。",
+      titleOnlyNames: new Set(["太祖皇帝"])
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("title-persona-1");
+    expect(personaCreate).toHaveBeenCalledWith({
+      data: {
+        name      : "太祖皇帝",
+        type      : "PERSON",
+        nameType  : "TITLE_ONLY",
+        aliases   : ["太祖皇帝"],
+        confidence: expect.any(Number)
+      }
+    });
+    expect(profileCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves via rosterMap fast-path with high confidence", async () => {
+    const { prisma, personaFindMany, profileUpsert } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    const rosterMap = new Map<string, string>([
+      ["范举人", "persona-fangjin-uuid"],
+      ["老爷", "GENERIC"]
+    ]);
+
+    const resolvedResult = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范举人",
+      chapterContent: "范举人中举之后...",
+      rosterMap
+    });
+    expect(resolvedResult.status).toBe("resolved");
+    expect(resolvedResult.personaId).toBe("persona-fangjin-uuid");
+    expect(resolvedResult.confidence).toBe(0.97);
+    expect(personaFindMany).not.toHaveBeenCalled();
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+
+    const genericResult = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "老爷",
+      chapterContent: "老爷走过来...",
+      rosterMap
+    });
+    expect(genericResult.status).toBe("hallucinated");
+    expect(genericResult.reason).toBe("generic_title");
   });
 });

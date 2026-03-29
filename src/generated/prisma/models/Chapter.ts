@@ -43,6 +43,7 @@ export type ChapterMinAggregateOutputType = {
   noText: string | null
   title: string | null
   content: string | null
+  parseStatus: string | null
   isAbstract: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -57,6 +58,7 @@ export type ChapterMaxAggregateOutputType = {
   noText: string | null
   title: string | null
   content: string | null
+  parseStatus: string | null
   isAbstract: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -71,6 +73,7 @@ export type ChapterCountAggregateOutputType = {
   noText: number
   title: number
   content: number
+  parseStatus: number
   isAbstract: number
   createdAt: number
   updatedAt: number
@@ -95,6 +98,7 @@ export type ChapterMinAggregateInputType = {
   noText?: true
   title?: true
   content?: true
+  parseStatus?: true
   isAbstract?: true
   createdAt?: true
   updatedAt?: true
@@ -109,6 +113,7 @@ export type ChapterMaxAggregateInputType = {
   noText?: true
   title?: true
   content?: true
+  parseStatus?: true
   isAbstract?: true
   createdAt?: true
   updatedAt?: true
@@ -123,6 +128,7 @@ export type ChapterCountAggregateInputType = {
   noText?: true
   title?: true
   content?: true
+  parseStatus?: true
   isAbstract?: true
   createdAt?: true
   updatedAt?: true
@@ -224,6 +230,7 @@ export type ChapterGroupByOutputType = {
   noText: string | null
   title: string
   content: string
+  parseStatus: string
   isAbstract: boolean
   createdAt: Date
   updatedAt: Date
@@ -261,6 +268,7 @@ export type ChapterWhereInput = {
   noText?: Prisma.StringNullableFilter<"Chapter"> | string | null
   title?: Prisma.StringFilter<"Chapter"> | string
   content?: Prisma.StringFilter<"Chapter"> | string
+  parseStatus?: Prisma.StringFilter<"Chapter"> | string
   isAbstract?: Prisma.BoolFilter<"Chapter"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Chapter"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Chapter"> | Date | string
@@ -279,6 +287,7 @@ export type ChapterOrderByWithRelationInput = {
   noText?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  parseStatus?: Prisma.SortOrder
   isAbstract?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -301,6 +310,7 @@ export type ChapterWhereUniqueInput = Prisma.AtLeast<{
   noText?: Prisma.StringNullableFilter<"Chapter"> | string | null
   title?: Prisma.StringFilter<"Chapter"> | string
   content?: Prisma.StringFilter<"Chapter"> | string
+  parseStatus?: Prisma.StringFilter<"Chapter"> | string
   isAbstract?: Prisma.BoolFilter<"Chapter"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Chapter"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Chapter"> | Date | string
@@ -319,6 +329,7 @@ export type ChapterOrderByWithAggregationInput = {
   noText?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  parseStatus?: Prisma.SortOrder
   isAbstract?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -341,6 +352,7 @@ export type ChapterScalarWhereWithAggregatesInput = {
   noText?: Prisma.StringNullableWithAggregatesFilter<"Chapter"> | string | null
   title?: Prisma.StringWithAggregatesFilter<"Chapter"> | string
   content?: Prisma.StringWithAggregatesFilter<"Chapter"> | string
+  parseStatus?: Prisma.StringWithAggregatesFilter<"Chapter"> | string
   isAbstract?: Prisma.BoolWithAggregatesFilter<"Chapter"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Chapter"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Chapter"> | Date | string
@@ -354,6 +366,7 @@ export type ChapterCreateInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -372,6 +385,7 @@ export type ChapterUncheckedCreateInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -388,6 +402,7 @@ export type ChapterUpdateInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -406,6 +421,7 @@ export type ChapterUncheckedUpdateInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -423,6 +439,7 @@ export type ChapterCreateManyInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -436,6 +453,7 @@ export type ChapterUpdateManyMutationInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -450,6 +468,7 @@ export type ChapterUncheckedUpdateManyInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -480,6 +499,7 @@ export type ChapterCountOrderByAggregateInput = {
   noText?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  parseStatus?: Prisma.SortOrder
   isAbstract?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -498,6 +518,7 @@ export type ChapterMaxOrderByAggregateInput = {
   noText?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  parseStatus?: Prisma.SortOrder
   isAbstract?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -512,6 +533,7 @@ export type ChapterMinOrderByAggregateInput = {
   noText?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  parseStatus?: Prisma.SortOrder
   isAbstract?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -622,6 +644,7 @@ export type ChapterCreateWithoutBookInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -638,6 +661,7 @@ export type ChapterUncheckedCreateWithoutBookInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -684,6 +708,7 @@ export type ChapterScalarWhereInput = {
   noText?: Prisma.StringNullableFilter<"Chapter"> | string | null
   title?: Prisma.StringFilter<"Chapter"> | string
   content?: Prisma.StringFilter<"Chapter"> | string
+  parseStatus?: Prisma.StringFilter<"Chapter"> | string
   isAbstract?: Prisma.BoolFilter<"Chapter"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Chapter"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Chapter"> | Date | string
@@ -697,6 +722,7 @@ export type ChapterCreateWithoutBiographiesInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -714,6 +740,7 @@ export type ChapterUncheckedCreateWithoutBiographiesInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -745,6 +772,7 @@ export type ChapterUpdateWithoutBiographiesInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -762,6 +790,7 @@ export type ChapterUncheckedUpdateWithoutBiographiesInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -777,6 +806,7 @@ export type ChapterCreateWithoutMentionsInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -794,6 +824,7 @@ export type ChapterUncheckedCreateWithoutMentionsInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -825,6 +856,7 @@ export type ChapterUpdateWithoutMentionsInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -842,6 +874,7 @@ export type ChapterUncheckedUpdateWithoutMentionsInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -857,6 +890,7 @@ export type ChapterCreateWithoutRelationsInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -874,6 +908,7 @@ export type ChapterUncheckedCreateWithoutRelationsInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -905,6 +940,7 @@ export type ChapterUpdateWithoutRelationsInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -922,6 +958,7 @@ export type ChapterUncheckedUpdateWithoutRelationsInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -937,6 +974,7 @@ export type ChapterCreateManyBookInput = {
   noText?: string | null
   title: string
   content: string
+  parseStatus?: string
   isAbstract?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -950,6 +988,7 @@ export type ChapterUpdateWithoutBookInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -966,6 +1005,7 @@ export type ChapterUncheckedUpdateWithoutBookInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -982,6 +1022,7 @@ export type ChapterUncheckedUpdateManyWithoutBookInput = {
   noText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  parseStatus?: Prisma.StringFieldUpdateOperationsInput | string
   isAbstract?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1045,6 +1086,7 @@ export type ChapterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   noText?: boolean
   title?: boolean
   content?: boolean
+  parseStatus?: boolean
   isAbstract?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1064,6 +1106,7 @@ export type ChapterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   noText?: boolean
   title?: boolean
   content?: boolean
+  parseStatus?: boolean
   isAbstract?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1079,6 +1122,7 @@ export type ChapterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   noText?: boolean
   title?: boolean
   content?: boolean
+  parseStatus?: boolean
   isAbstract?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1094,12 +1138,13 @@ export type ChapterSelectScalar = {
   noText?: boolean
   title?: boolean
   content?: boolean
+  parseStatus?: boolean
   isAbstract?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ChapterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "type" | "no" | "unit" | "noText" | "title" | "content" | "isAbstract" | "createdAt" | "updatedAt", ExtArgs["result"]["chapter"]>
+export type ChapterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "type" | "no" | "unit" | "noText" | "title" | "content" | "parseStatus" | "isAbstract" | "createdAt" | "updatedAt", ExtArgs["result"]["chapter"]>
 export type ChapterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   mentions?: boolean | Prisma.Chapter$mentionsArgs<ExtArgs>
@@ -1131,6 +1176,7 @@ export type $ChapterPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     noText: string | null
     title: string
     content: string
+    parseStatus: string
     isAbstract: boolean
     createdAt: Date
     updatedAt: Date
@@ -1569,6 +1615,7 @@ export interface ChapterFieldRefs {
   readonly noText: Prisma.FieldRef<"Chapter", 'String'>
   readonly title: Prisma.FieldRef<"Chapter", 'String'>
   readonly content: Prisma.FieldRef<"Chapter", 'String'>
+  readonly parseStatus: Prisma.FieldRef<"Chapter", 'String'>
   readonly isAbstract: Prisma.FieldRef<"Chapter", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Chapter", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Chapter", 'DateTime'>

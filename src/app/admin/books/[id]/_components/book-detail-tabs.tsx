@@ -3,14 +3,14 @@
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-import type { BookLibraryListItem } from "@/types/book";
 
 import { AnalysisJobsPanel } from "./analysis-jobs-panel";
 import { ParseProgressPanel } from "./parse-progress-panel";
 import { PersonasPanel } from "./personas-panel";
 
 interface BookDetailTabsProps {
-  book: BookLibraryListItem;
+  bookId       : string;
+  initialStatus: string;
 }
 
 type Tab = "overview" | "jobs" | "personas";
@@ -21,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "personas", label: "人物"     }
 ];
 
-export function BookDetailTabs({ book }: BookDetailTabsProps) {
+export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   return (
@@ -48,17 +48,17 @@ export function BookDetailTabs({ book }: BookDetailTabsProps) {
       {/* Tab Content */}
       {activeTab === "overview" && (
         <ParseProgressPanel
-          bookId={book.id}
-          initialStatus={book.status}
+          bookId={bookId}
+          initialStatus={initialStatus}
         />
       )}
 
       {activeTab === "jobs" && (
-        <AnalysisJobsPanel bookId={book.id} />
+        <AnalysisJobsPanel bookId={bookId} />
       )}
 
       {activeTab === "personas" && (
-        <PersonasPanel bookId={book.id} />
+        <PersonasPanel bookId={bookId} />
       )}
     </div>
   );

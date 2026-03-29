@@ -26,7 +26,7 @@ describe("buildChapterAnalysisPrompt", () => {
     });
 
     expect(prompt).toContain("## Known Entities (Context)");
-    expect(prompt).toContain("- ID: p1; StandardName: 范进; Aliases: 范老爷, 范相公");
+    expect(prompt).toContain("[1] 范进 | 别名: 范老爷, 范相公 | 小传: 晚年中举");
     expect(prompt).toContain("第 1/3 段");
     expect(prompt).toContain("范进见中举，众人态度大变。");
   });

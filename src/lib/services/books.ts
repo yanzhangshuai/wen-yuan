@@ -83,6 +83,7 @@ export interface BookStatusSnapshot {
   progress : number;
   stage?   : string;
   errorLog?: string;
+  chapters?: Array<{ no: number; title: string; parseStatus: string }>;
 }
 
 /* ------------------------------------------------
@@ -168,6 +169,69 @@ export async function deleteBookById(bookId: string): Promise<void> {
   await clientMutate(`/api/books/${encodeURIComponent(bookId)}`, {
     method: "DELETE"
   });
+}
+
+/**
+ * 解析任务列表项。
+ * 对应 GET /api/books/:bookId/jobs 响应中 data 的单个元素。
+ */
+export interface AnalysisJobListItem {
+  id            : string;
+  status        : string;
+  scope         : string;
+  chapterStart  : number | null;
+  chapterEnd    : number | null;
+  chapterIndices: number[];
+  attempt       : number;
+  errorLog      : string | null;
+  startedAt     : string | null;
+  finishedAt    : string | null;
+  createdAt     : string;
+  aiModelName   : string | null;
+}
+
+/**
+ * 书籍人物列表项（客户端用）。
+ * 镜像服务端 BookPersonaListItem，去掉 Prisma 枚举依赖。
+ */
+export interface BookPersonaListItem {
+  id           : string;
+  profileId    : string;
+  bookId       : string;
+  name         : string;
+  localName    : string;
+  aliases      : string[];
+  gender       : string | null;
+  hometown     : string | null;
+  nameType     : string;
+  globalTags   : string[];
+  localTags    : string[];
+  officialTitle: string | null;
+  localSummary : string | null;
+  ironyIndex   : number;
+  confidence   : number;
+  recordSource : string;
+  status       : string;
+}
+
+/**
+ * 拉取指定书籍的所有解析任务记录（按创建时间降序）。
+ * 对应接口：GET /api/books/:bookId/jobs。
+ */
+export async function fetchBookJobs(bookId: string): Promise<AnalysisJobListItem[]> {
+  return clientFetch<AnalysisJobListItem[]>(
+    `/api/books/${encodeURIComponent(bookId)}/jobs`
+  );
+}
+
+/**
+ * 拉取指定书籍的人物列表。
+ * 对应接口：GET /api/books/:bookId/personas。
+ */
+export async function fetchBookPersonas(bookId: string): Promise<BookPersonaListItem[]> {
+  return clientFetch<BookPersonaListItem[]>(
+    `/api/books/${encodeURIComponent(bookId)}/personas`
+  );
 }
 
 /**

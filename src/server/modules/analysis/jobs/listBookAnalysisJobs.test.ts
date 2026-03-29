@@ -64,17 +64,17 @@ describe("listBookAnalysisJobs", () => {
 
     const [first, second] = result;
     expect(first).toMatchObject({
-      id           : "job-1",
-      status       : AnalysisJobStatus.SUCCEEDED,
-      scope        : "FULL_BOOK",
-      chapterStart : null,
-      chapterEnd   : null,
-      attempt      : 1,
-      errorLog     : null,
-      startedAt    : STARTED_AT.toISOString(),
-      finishedAt   : FINISHED_AT.toISOString(),
-      createdAt    : NOW.toISOString(),
-      aiModelName  : "gpt-4o"
+      id          : "job-1",
+      status      : AnalysisJobStatus.SUCCEEDED,
+      scope       : "FULL_BOOK",
+      chapterStart: null,
+      chapterEnd  : null,
+      attempt     : 1,
+      errorLog    : null,
+      startedAt   : STARTED_AT.toISOString(),
+      finishedAt  : FINISHED_AT.toISOString(),
+      createdAt   : NOW.toISOString(),
+      aiModelName : "gpt-4o"
     });
     expect(second).toMatchObject({
       id          : "job-2",

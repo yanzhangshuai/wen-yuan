@@ -137,7 +137,8 @@ describe("chapter analysis service", () => {
         mentions     : [],
         biographies  : [],
         relationships: []
-      })
+      }),
+      discoverChapterRoster: vi.fn().mockResolvedValue([])
     } as never);
   });
 
@@ -223,7 +224,8 @@ describe("chapter analysis service", () => {
       };
     });
     const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk
+      analyzeChapterChunk,
+      discoverChapterRoster: vi.fn().mockResolvedValue([])
     } as never);
 
     const result = await service.analyzeChapter("chapter-1");
@@ -297,7 +299,8 @@ describe("chapter analysis service", () => {
         mentions     : [],
         biographies  : [],
         relationships: []
-      })
+      }),
+      discoverChapterRoster: vi.fn().mockResolvedValue([])
     } as never);
 
     const result = await service.analyzeChapter("chapter-1");
@@ -323,7 +326,8 @@ describe("chapter analysis service", () => {
         relationships: []
       });
     const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk
+      analyzeChapterChunk,
+      discoverChapterRoster: vi.fn().mockResolvedValue([])
     } as never);
 
     const result = await service.analyzeChapter("chapter-1");
@@ -336,7 +340,8 @@ describe("chapter analysis service", () => {
     const { prismaMock } = createPrismaMock();
     const analyzeChapterChunk = vi.fn().mockRejectedValueOnce(new Error("invalid json payload"));
     const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk
+      analyzeChapterChunk,
+      discoverChapterRoster: vi.fn().mockResolvedValue([])
     } as never);
 
     await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("invalid json payload");
@@ -440,7 +445,8 @@ describe("chapter analysis service", () => {
         mentions     : [],
         biographies  : [],
         relationships: []
-      })
+      }),
+      discoverChapterRoster: vi.fn().mockResolvedValue([])
     };
     mockedCreateChapterAnalysisAiClient.mockReturnValueOnce(runtimeAiClient as never);
     const service = createChapterAnalysisService(prismaMock as never);

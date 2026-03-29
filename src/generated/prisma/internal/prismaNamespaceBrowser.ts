@@ -146,6 +146,7 @@ export const ChapterScalarFieldEnum = {
   noText: 'noText',
   title: 'title',
   content: 'content',
+  parseStatus: 'parseStatus',
   isAbstract: 'isAbstract',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

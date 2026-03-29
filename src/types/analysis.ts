@@ -109,6 +109,69 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * 功能：尝试修复被 AI token 上限截断的不完整 JSON 字符串。
+ * 策略：
+ *   1. 尽剔 Markdown 代码块包裹；
+ *   2. 尝试直接解析；
+ *   3. 基于栈扫描找到最后一个「安全位置」（最近一次括号闭合处），截断后关闭所有未闭层级；
+ *   4. 舍弃已写入的不完整内容，返回最小合法骨架。
+ * 输入：raw - AI 返回的原始文本。
+ * 输出：合法 JSON 字符串（始终可解析）。
+ * 异常：无（容错设计）。
+ * 副作用：无。
+ */
+function repairJson(raw: string): string {
+  // Step 1: 尿 Markdown 代码块包裹
+  const s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+  // Step 2: 尝试直接解析
+  try {
+    JSON.parse(s);
+    return s;
+  } catch {
+    /* fall through to repair */
+  }
+
+  // Step 3: 基于栈扫描，记录最后一个安全截断位置
+  const stack: string[] = [];
+  let inStr = false;
+  let esc   = false;
+  let lastSafeEnd = 0;
+
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (esc)                 { esc = false; continue; }
+    if (c === "\\" && inStr) { esc = true;  continue; }
+    if (c === "\"")          { inStr = !inStr; continue; }
+    if (inStr)               continue;
+
+    if (c === "[" || c === "{") {
+      stack.push(c);
+    } else if (c === "]" || c === "}") {
+      if (stack.length > 0) stack.pop();
+      lastSafeEnd = i + 1; // 此层已完整关闭
+    }
+  }
+
+  // Step 4: 截到最后安全位置，脱去末尾逗号，补齐陷层括号
+  const root = s[0];
+  if (lastSafeEnd === 0) {
+    return root === "[" ? "[]" : "{}";
+  }
+
+  let candidate = s.slice(0, lastSafeEnd).trimEnd().replace(/,\s*$/, "");
+  const tail = [...stack].reverse().map(c => c === "[" ? "]" : "}").join("");
+  candidate += tail;
+
+  try {
+    JSON.parse(candidate);
+    return candidate;
+  } catch {
+    return root === "[" ? "[]" : "{}";
+  }
+}
+
 function isBioCategory(value: unknown): value is BioCategoryValue {
   return typeof value === "string" && (BIO_CATEGORY_VALUES as readonly string[]).includes(value);
 }
@@ -137,7 +200,8 @@ function normalizeRelationWeight(weight: unknown): number | undefined {
  * 副作用：无。
  */
 export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisResponse {
-  const parsed: unknown = JSON.parse(raw);
+  const repaired = repairJson(raw);
+  const parsed: unknown = JSON.parse(repaired);
 
   if (!isRecord(parsed)) {
     throw new Error("AI response is not a JSON object");
@@ -192,4 +256,140 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
     mentions     : normalizedMentions,
     relationships: normalizedRelationships
   };
+}
+
+/**
+ * 功能：章节人物名册条目（Phase 1 Roster Discovery AI 输出单条记录）。
+ * 输入：无。
+ * 输出：类型约束 ChapterRosterEntry。
+ * 异常：无。
+ * 副作用：无。
+ */
+export interface ChapterRosterEntry {
+  /** 在原文中出现的字面称谓（精确字符串）。 */
+  surfaceForm : string;
+  /** 对应已知人物的序号（与 Known Entities 列表 [N] 的 N 对应）。 */
+  entityId?   : number;
+  /** 确认为本书全新人物（不在已知档案中）。 */
+  isNew?      : boolean;
+  /** 泛化称谓，无法唯一指向某一人物，应忽略。 */
+  generic?    : boolean;
+  /**
+   * 仅有称号/尊号/封号，原文中未透露其真实姓名（如"太祖皇帝"、"吴王"）。
+   * 配合 isNew: true 使用，写入 Persona.nameType = TITLE_ONLY。
+   */
+  isTitleOnly?: boolean;
+}
+
+/**
+ * 功能：将 Phase 1 AI 返回的人物名册 JSON 文本解析为 ChapterRosterEntry 数组。
+ * 输入：raw - AI 返回的 JSON 字符串。
+ * 输出：已过滤、类型已校验的 ChapterRosterEntry 数组；解析失败时返回 []。
+ * 异常：无（解析失败时静默返回空数组）。
+ * 副作用：无。
+ */
+export function parseChapterRosterResponse(raw: string): ChapterRosterEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(repairJson(raw));
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter(isRecord)
+    .filter((item) => typeof item.surfaceForm === "string" && (item.surfaceForm).trim().length > 0)
+    .map((item) => ({
+      surfaceForm: (item.surfaceForm as string).trim(),
+      entityId   : typeof item.entityId === "number" ? item.entityId : undefined,
+      isNew      : item.isNew === true,
+      generic    : item.generic === true,
+      isTitleOnly: item.isTitleOnly === true
+    }));
+}
+
+/**
+ * 功能：Phase 5 称号真名溯源 AI 输出单条记录。
+ * 输入：无。
+ * 输出：类型约束 TitleResolutionEntry。
+ * 异常：无。
+ * 副作用：无。
+ */
+export interface TitleResolutionEntry {
+  /** Persona 主键，便于直接定位更新目标。 */
+  personaId      : string;
+  /** 书中称号（如"太祖皇帝"）。 */
+  title          : string;
+  /** AI 推断出的历史真名；无法判断时为 null。 */
+  realName       : string | null;
+  /** 置信度 0.0-1.0。 */
+  confidence     : number;
+  /** 推理依据（≤ 30字）。 */
+  historicalNote?: string;
+}
+
+/**
+ * 功能：Phase 5 称号真名溯源——批量 AI 推断输入结构。
+ * 输入：无。
+ * 输出：类型约束 TitleResolutionInput。
+ * 异常：无。
+ * 副作用：无。
+ */
+export interface TitleResolutionInput {
+  bookTitle: string;
+  /** 待溯源的称号条目列表（一本书中所有 nameType = TITLE_ONLY 的 Persona）。 */
+  entries: Array<{
+    personaId   : string;
+    title       : string;
+    localSummary: string | null;
+  }>;
+}
+
+/**
+ * 功能：将 Phase 5 AI 返回的称号溯源 JSON 文本解析为 TitleResolutionEntry 数组。
+ * 输入：raw - AI 返回的 JSON 字符串；personaIdByTitle - 称号 → personaId 映射（用于还原 ID）。
+ * 输出：已过滤、类型已校验的 TitleResolutionEntry 数组；解析失败返回 []。
+ * 异常：无（解析失败时静默返回空数组）。
+ * 副作用：无。
+ */
+export function parseTitleResolutionResponse(
+  raw: string,
+  personaIdByTitle: Map<string, string>
+): TitleResolutionEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  const results: TitleResolutionEntry[] = [];
+  for (const item of parsed) {
+    if (!isRecord(item)) continue;
+    if (typeof item.title !== "string" || (item.title).trim().length === 0) continue;
+
+    const title = (item.title).trim();
+    const personaId = personaIdByTitle.get(title);
+    if (!personaId) continue;
+
+    const rawConfidence = typeof item.confidence === "number" ? item.confidence : 0;
+    const confidence = Math.min(1, Math.max(0, rawConfidence));
+    const realName = typeof item.realName === "string" && (item.realName).trim().length > 0
+      ? (item.realName).trim()
+      : null;
+
+    results.push({
+      personaId,
+      title,
+      realName,
+      confidence,
+      historicalNote: typeof item.historicalNote === "string" ? item.historicalNote : undefined
+    });
+  }
+
+  return results;
 }

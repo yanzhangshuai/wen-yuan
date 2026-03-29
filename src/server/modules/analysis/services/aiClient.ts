@@ -1,6 +1,6 @@
 import type { AiProviderClient } from "@/server/providers/ai";
-import { buildChapterAnalysisPrompt, type BuildPromptInput } from "@/server/modules/analysis/services/prompts";
-import { type ChapterAnalysisResponse, parseChapterAnalysisResponse } from "@/types/analysis";
+import { buildChapterAnalysisPrompt, buildRosterDiscoveryPrompt, buildTitleResolutionPrompt, type BuildPromptInput, type RosterDiscoveryInput } from "@/server/modules/analysis/services/prompts";
+import { type ChapterAnalysisResponse, type ChapterRosterEntry, type TitleResolutionEntry, type TitleResolutionInput, parseChapterAnalysisResponse, parseChapterRosterResponse, parseTitleResolutionResponse } from "@/types/analysis";
 
 /**
  * 功能：定义章节分段 AI 分析输入参数。
@@ -13,13 +13,29 @@ export type AnalyzeChunkInput = BuildPromptInput;
 
 /**
  * 功能：定义章节分析场景的 AI 抽象接口。
- * 输入：AnalyzeChunkInput。
- * 输出：ChapterAnalysisResponse。
+ * 输入：AnalyzeChunkInput / RosterDiscoveryInput。
+ * 输出：ChapterAnalysisResponse / ChapterRosterEntry[]。
  * 异常：由具体实现决定。
  * 副作用：由具体实现决定。
  */
 export interface AiAnalysisClient {
   analyzeChapterChunk(input: AnalyzeChunkInput): Promise<ChapterAnalysisResponse>;
+  /**
+   * 功能：Phase 1 人物名册发现——读取完整章节正文，返回本章所有称谓的预解析映射。
+   * 输入：RosterDiscoveryInput（完整章节内容 + 已知人物档案）。
+   * 输出：ChapterRosterEntry 数组（surfaceForm → entityId/isNew/generic/isTitleOnly）。
+   * 异常：AI 调用失败时抛错。
+   * 副作用：发起外部 AI 请求。
+   */
+  discoverChapterRoster(input: RosterDiscoveryInput): Promise<ChapterRosterEntry[]>;
+  /**
+   * 功能：Phase 5 称号真名溯源——批量推断 TITLE_ONLY Persona 的历史真名。
+   * 输入：TitleResolutionInput（书名 + 称号列表 + 书中摘要）。
+   * 输出：TitleResolutionEntry 数组（包含 realName, confidence, historicalNote）。
+   * 异常：AI 调用失败时抛错。
+   * 副作用：发起外部 AI 请求。
+   */
+  resolvePersonaTitles(input: TitleResolutionInput): Promise<TitleResolutionEntry[]>;
 }
 
 /**
@@ -37,6 +53,20 @@ export function createChapterAnalysisAiClient(
       const prompt = buildChapterAnalysisPrompt(input);
       const raw = await providerClient.generateJson(prompt);
       return parseChapterAnalysisResponse(raw);
+    },
+
+    async discoverChapterRoster(input: RosterDiscoveryInput): Promise<ChapterRosterEntry[]> {
+      const prompt = buildRosterDiscoveryPrompt(input);
+      const raw = await providerClient.generateJson(prompt);
+      return parseChapterRosterResponse(raw);
+    },
+
+    async resolvePersonaTitles(input: TitleResolutionInput): Promise<TitleResolutionEntry[]> {
+      const prompt = buildTitleResolutionPrompt(input);
+      const raw = await providerClient.generateJson(prompt);
+      // 构建称号 → personaId 映射，供解析函数还原 ID。
+      const personaIdByTitle = new Map(input.entries.map((e) => [e.title, e.personaId]));
+      return parseTitleResolutionResponse(raw, personaIdByTitle);
     }
   };
 }
