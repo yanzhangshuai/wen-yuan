@@ -87,6 +87,20 @@
   --color-shelf-surface: oklch(0.88 0.012 85);
   --color-shelf-edge: oklch(0.84 0.01 85);
 
+  /* --- wen-yuan 扩展：书籍封面无图占位色 --- */
+  --book-cover-faction-0: #5E7452;
+  --book-cover-faction-1: #5A82A8;
+  --book-cover-faction-2: #4A8C5C;
+  --book-cover-faction-3: #B89840;
+  --book-cover-faction-4: #8B7DA0;
+  --book-cover-faction-5: #A06758;
+  --book-cover-faction-6: #4A8898;
+  --book-cover-faction-7: #A06868;
+  --book-cover-faction-8: #607080;
+  --book-cover-faction-9: #808070;
+  --book-cover-faction-10: #C45040;
+  --book-cover-faction-11: #4A7A62;
+
   /* 装饰性元素开关：0=浅色主题默认关闭纹理装饰 */
   --decorative-enabled: 0;
   font-family: var(--font-serif);

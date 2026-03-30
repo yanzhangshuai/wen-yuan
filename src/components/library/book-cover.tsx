@@ -1,9 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useTheme } from "next-themes";
 import { cn, getStringHash } from "@/lib/utils";
-import { getFactionColorsForTheme } from "@/theme";
 
 interface BookCoverProps {
   id        : string;
@@ -16,12 +14,9 @@ interface BookCoverProps {
 }
 
 export function BookCover({ id, title, author, dynasty, coverUrl, className, disabled }: BookCoverProps) {
-  const { theme } = useTheme();
-
   const hash = getStringHash(id);
-  const colorIndex = hash % 6;
-  const palette = getFactionColorsForTheme(theme);
-  const bgColor = palette[colorIndex];
+  const colorIndex = hash % 12;
+  const bgColor = `var(--book-cover-faction-${colorIndex}, var(--muted))`;
   const verticalTitle = title.replace(/\s+/g, "").slice(0, 8).split("");
   const normalizedCoverUrl = coverUrl?.trim() || null;
   const hasCover = normalizedCoverUrl !== null;
