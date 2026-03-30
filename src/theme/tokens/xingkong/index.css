@@ -16,10 +16,10 @@
   /* 前景：冷银白文字 */
   --foreground: oklch(0.88 0.005 220);
   /* 卡片：微暖的深灰黑，形成与纯黑背景的层次感 */
-  --card: oklch(0.08 0.005 60);
+  --card: oklch(0.065 0.004 230);
   --card-foreground: oklch(0.88 0.005 220);
   /* 弹窗：偏冷的深黑 */
-  --popover: oklch(0.06 0.004 200);
+  --popover: oklch(0.05 0.003 225);
   --popover-foreground: oklch(0.88 0.005 220);
 
   /* --- 语义色 --- */
@@ -27,13 +27,13 @@
   --primary: oklch(0.72 0.04 210);
   --primary-foreground: oklch(0.04 0.003 240);
   /* 次要：微暖深灰 */
-  --secondary: oklch(0.11 0.006 50);
+  --secondary: oklch(0.09 0.004 228);
   --secondary-foreground: oklch(0.85 0.005 220);
   /* 静音：冷调暗灰 */
-  --muted: oklch(0.10 0.005 200);
+  --muted: oklch(0.085 0.004 224);
   --muted-foreground: oklch(0.50 0.008 220);
-  /* 强调：深空蓝，避免按钮出现偏金色的违和感 */
-  --accent: oklch(0.34 0.06 245);
+  /* 强调：冷星蓝（非紫色主调），避免星空卡片出现“偏紫发脏”观感。 */
+  --accent: oklch(0.30 0.04 220);
   --accent-foreground: oklch(0.92 0.008 220);
   /* 危险/删除操作 */
   --destructive: oklch(0.50 0.15 25);
@@ -88,18 +88,20 @@
   --color-shelf-edge: oklch(0.08 0.003 240);
 
   /* --- wen-yuan 扩展：书籍封面无图占位色 --- */
-  --book-cover-faction-0: #7B90AF;
-  --book-cover-faction-1: #5AA5BE;
-  --book-cover-faction-2: #5F8FA8;
-  --book-cover-faction-3: #6F88B5;
-  --book-cover-faction-4: #8A84AE;
-  --book-cover-faction-5: #6F90A5;
-  --book-cover-faction-6: #5A9AB0;
-  --book-cover-faction-7: #6B7FA5;
-  --book-cover-faction-8: #7A80AA;
-  --book-cover-faction-9: #4F8D8B;
-  --book-cover-faction-10: #6A88B0;
-  --book-cover-faction-11: #7D78A8;
+  /* 降低无封面色块饱和度，避免在星点背景上出现“花+脏”的视觉噪声。 */
+  /* 书卡占位色以蓝黑/青灰为主，保留极弱暖色点缀，形成“深邃且五彩”的星空黑。 */
+  --book-cover-faction-0: #5A708A;
+  --book-cover-faction-1: #3F768B;
+  --book-cover-faction-2: #4B667B;
+  --book-cover-faction-3: #586A80;
+  --book-cover-faction-4: #6C625C;
+  --book-cover-faction-5: #4D6A79;
+  --book-cover-faction-6: #3C7286;
+  --book-cover-faction-7: #4F6076;
+  --book-cover-faction-8: #646B7C;
+  --book-cover-faction-9: #3F6868;
+  --book-cover-faction-10: #4E6782;
+  --book-cover-faction-11: #5B646F;
 
   /* 装饰性元素开关：1=启用星空粒子等装饰 */
   --decorative-enabled: 1;
@@ -113,16 +115,16 @@
   isolation: isolate;
   position: relative;
   background-color: transparent;
-  /* background-image:
+  /* 与 sheji 的节奏一致：只给一层低对比“深空幕布”，避免内容直接贴在星点上。 */
+  background-image:
     linear-gradient(
       180deg,
-      oklch(0.03 0.004 248 / 0.60) 0%,
-      oklch(0.03 0.004 250 / 0.74) 36%,
-      oklch(0.03 0.004 252 / 0.84) 100%
+      oklch(0.04 0.003 240 / 0.56) 0%,
+      oklch(0.04 0.003 242 / 0.70) 34%,
+      oklch(0.04 0.003 244 / 0.82) 100%
     ),
-    radial-gradient(55% 38% at 18% 12%, oklch(0.48 0.14 265 / 0.20) 0%, transparent 80%),
-    radial-gradient(48% 34% at 84% 16%, oklch(0.50 0.12 210 / 0.16) 0%, transparent 82%),
-    radial-gradient(46% 32% at 72% 82%, oklch(0.52 0.11 35 / 0.10) 0%, transparent 84%); */
+    radial-gradient(54% 36% at 18% 12%, oklch(0.46 0.08 220 / 0.10) 0%, transparent 82%),
+    radial-gradient(46% 30% at 84% 18%, oklch(0.52 0.07 185 / 0.08) 0%, transparent 84%);
 }
 
 /* 关闭首页白雾遮罩，保持星空背景直出。 */
@@ -137,7 +139,7 @@
 
 /* --- 星空主题 Hero section：取消毛玻璃，保留透明边界分隔 --- */
 [data-theme='xingkong'] .library-hero {
-  /* background-color: oklch(0.04 0.006 246 / 0.42); */
+  background-color: oklch(0.05 0.003 236 / 0.28);
   border-bottom-color: oklch(1 0 0 / 0.08);
   box-shadow: none;
 }
@@ -146,24 +148,24 @@
 [data-theme='xingkong'] .library-section {
   border: 1px solid oklch(1 0 0 / 0.12);
   border-radius: 1.1rem;
-  /* background-color: oklch(0.05 0.007 246 / 0.36); */
-  /* box-shadow: 0 16px 34px oklch(0.01 0.004 248 / 0.30); */
+  background-color: oklch(0.06 0.003 235 / 0.28);
+  box-shadow: 0 14px 30px oklch(0.02 0.003 235 / 0.22);
 }
 
 /* --- 书库卡片主题化（星空）---
    保持星空底图透出，同时用深空蓝面板保证封面和文字层级清晰。 */
 [data-theme='xingkong'] .library-book-card-surface {
-  background-color: oklch(0.07 0.010 244 / 0.84);
-  border-color: oklch(1 0 0 / 0.18);
-  box-shadow: 0 10px 24px oklch(0.01 0.005 248 / 0.30);
+  /* 进一步压深卡片底色，强化“深邃星空黑”而非灰雾感。 */
+  background-color: oklch(0.058 0.003 232 / 0.93);
+  border-color: oklch(1 0 0 / 0.16);
+  box-shadow: 0 10px 24px oklch(0.02 0.003 230 / 0.30);
 }
 
 [data-theme='xingkong'] .library-book-card:hover .library-book-card-surface {
-  background-color: oklch(0.09 0.013 248 / 0.88);
-  border-color: oklch(0.68 0.08 260 / 0.42);
-  box-shadow:
-    0 14px 30px oklch(0.01 0.006 248 / 0.34),
-    inset 0 1px 0 oklch(0.78 0.10 260 / 0.18);
+  /* hover 提亮幅度收敛，避免从底色到高亮的跳变过硬。 */
+  background-color: oklch(0.066 0.003 232 / 0.94);
+  border-color: oklch(1 0 0 / 0.16);
+  box-shadow: 0 14px 30px oklch(0.02 0.003 230 / 0.32);
 }
 
 /* 书卡底部光晕在深色背景下容易显脏，星空主题关闭。 */
@@ -182,19 +184,19 @@
 }
 
 [data-theme='xingkong'] .library-book-card-hover {
-  background-color: oklch(0.05 0.008 248 / 0.90);
+  background-color: oklch(0.05 0.003 235 / 0.58);
 }
 
 [data-theme='xingkong'] .library-book-card-status [data-slot='badge'] {
-  border-color: oklch(1 0 0 / 0.24);
-  background-color: oklch(0.05 0.008 248 / 0.74);
+  border-color: oklch(1 0 0 / 0.20);
+  background-color: oklch(0.05 0.003 235 / 0.80);
 }
 
 /* --- 星空头部按钮 ---
    选中态使用更深的宇宙蓝，避免出现偏暖色按钮。 */
 [data-theme='xingkong'] .viewer-header {
   border-bottom-color: oklch(1 0 0 / 0.14);
-  background-color: oklch(0.03 0.006 248 / 0.84);
+  background-color: oklch(0.04 0.003 240 / 0.78);
 }
 
 [data-theme='xingkong'] .viewer-header-nav-button[data-active='true'] {
@@ -247,10 +249,10 @@
   position: relative;
   isolation: isolate;
   background-color: var(--background);
+  /* 登录页保留“多彩星云”但降低层数与透明度，避免灰脏。 */
   background-image:
-    radial-gradient(980px circle at 26% 48%, rgba(120, 146, 255, 0.12) 0%, transparent 74%),
-    radial-gradient(760px circle at 78% 18%, rgba(188, 118, 235, 0.10) 0%, transparent 68%),
-    radial-gradient(680px circle at 66% 84%, rgba(96, 196, 176, 0.08) 0%, transparent 72%);
+    radial-gradient(900px circle at 32% 50%, rgba(178, 205, 252, 0.10) 0%, transparent 72%),
+    radial-gradient(700px circle at 82% 20%, rgba(162, 182, 232, 0.08) 0%, transparent 66%);
 }
 
 /* 登录页同样关闭白雾层，直接使用星空底图。 */

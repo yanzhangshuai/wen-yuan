@@ -5,16 +5,9 @@ import { THEME_IDS } from "@/theme";
 import { ThemeProvider, DecorativeLayer } from "@/components/theme";
 import "./globals.css";
 
-const sansFont = localFont({
-  src     : "../assets/fonts/inter/InterVariable.woff2",
-  variable: "--font-sans-local",
-  display : "swap",
-  fallback: ["sans-serif"]
-});
-
 const monoFont = localFont({
   src     : "../assets/fonts/jetbrains-mono/JetBrainsMono-Variable.woff2",
-  variable: "--font-mono-local",
+  variable: "--font-jetbrains-mono",
   display : "swap",
   fallback: ["monospace"]
 });
@@ -42,9 +35,9 @@ export default function RootLayout({
     <html
       lang="zh-CN"
       suppressHydrationWarning
-      className={`${sansFont.variable} ${monoFont.variable}`}
+      className={monoFont.variable}
     >
-      <body>
+      <body className="font-serif antialiased" suppressHydrationWarning>
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="danqing"

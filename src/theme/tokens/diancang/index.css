@@ -15,10 +15,10 @@
   /* 前景：暖奶白文字 */
   --foreground: oklch(0.88 0.02 85);
   /* 卡片：微暖的深灰胡桃 */
-  --card: oklch(0.18 0.015 55);
+  --card: oklch(0.165 0.014 56);
   --card-foreground: oklch(0.88 0.02 85);
   /* 弹窗：介于背景与卡片之间 */
-  --popover: oklch(0.16 0.012 58);
+  --popover: oklch(0.15 0.011 58);
   --popover-foreground: oklch(0.88 0.02 85);
 
   /* --- 语义色 --- */
@@ -26,10 +26,10 @@
   --primary: oklch(0.72 0.12 85);
   --primary-foreground: oklch(0.15 0.01 60);
   /* 次要：深灰胡桃中间色 */
-  --secondary: oklch(0.22 0.015 55);
+  --secondary: oklch(0.20 0.014 55);
   --secondary-foreground: oklch(0.85 0.02 80);
   /* 静音：暗灰，用于辅助文字和禁用态 */
-  --muted: oklch(0.20 0.012 55);
+  --muted: oklch(0.185 0.011 55);
   --muted-foreground: oklch(0.60 0.02 70);
   /* 强调：与主色相同的黄铜金 */
   --accent: oklch(0.72 0.12 85);
@@ -89,18 +89,19 @@
   --color-shelf-edge: oklch(0.18 0.012 55);
 
   /* --- wen-yuan 扩展：书籍封面无图占位色 --- */
-  --book-cover-faction-0: #C8A86E;
-  --book-cover-faction-1: #7AACCB;
-  --book-cover-faction-2: #5A9E6F;
-  --book-cover-faction-3: #D4A855;
-  --book-cover-faction-4: #9B7DB8;
-  --book-cover-faction-5: #C9805A;
-  --book-cover-faction-6: #6B9E9E;
-  --book-cover-faction-7: #B07A8A;
-  --book-cover-faction-8: #6A7F8D;
-  --book-cover-faction-9: #8C8378;
-  --book-cover-faction-10: #C95D4F;
-  --book-cover-faction-11: #5E8A7A;
+  /* 典藏只做轻度去艳，保留“展柜彩度”但降低刺眼度。 */
+  --book-cover-faction-0: #987548;
+  --book-cover-faction-1: #5E829A;
+  --book-cover-faction-2: #447553;
+  --book-cover-faction-3: #9F783B;
+  --book-cover-faction-4: #715988;
+  --book-cover-faction-5: #95583B;
+  --book-cover-faction-6: #4F7575;
+  --book-cover-faction-7: #845867;
+  --book-cover-faction-8: #4C5F6A;
+  --book-cover-faction-9: #665E55;
+  --book-cover-faction-10: #944138;
+  --book-cover-faction-11: #456757;
 
   /* 装饰性元素开关：1=启用博物馆级纹理装饰 */
   --decorative-enabled: 1;
@@ -141,23 +142,26 @@
 /* --- 书库卡片主题化（典藏）---
    深胡桃底 + 黄铜边界，维持博物馆展柜的稳重层次。 */
 [data-theme='diancang'] .library-book-card-surface {
-  background-color: oklch(0.19 0.015 56 / 0.92);
-  border-color: oklch(0.34 0.024 56 / 0.62);
-  box-shadow: 0 12px 24px oklch(0.10 0.008 58 / 0.30);
+  /* 小幅压深胡桃底色，保持典藏沉稳，不做“纯黑化”。 */
+  background-color: oklch(0.172 0.014 56 / 0.95);
+  border-color: oklch(0.33 0.022 56 / 0.58);
+  box-shadow: 0 12px 24px oklch(0.10 0.008 58 / 0.32);
 }
 
 [data-theme='diancang'] .library-book-card:hover .library-book-card-surface {
-  border-color: oklch(0.72 0.12 85 / 0.48);
+  /* 典藏只做轻抬升，保持展柜式稳定，不出现突兀“闪亮”。 */
+  background-color: oklch(0.178 0.014 56 / 0.96);
+  border-color: oklch(0.33 0.022 56 / 0.58);
   box-shadow: 0 18px 32px oklch(0.10 0.008 58 / 0.36);
 }
 
 [data-theme='diancang'] .library-book-card-hover {
-  background-color: oklch(0.16 0.012 58 / 0.92);
+  background-color: oklch(0.15 0.011 58 / 0.62);
 }
 
 [data-theme='diancang'] .library-book-card-status [data-slot='badge'] {
-  border-color: oklch(0.34 0.024 56 / 0.62);
-  background-color: oklch(0.16 0.012 58 / 0.76);
+  border-color: oklch(0.33 0.022 56 / 0.58);
+  background-color: oklch(0.15 0.011 58 / 0.80);
 }
 
 /* --- 登录页背景与右侧表单可读性 ---

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { BookCover } from "@/components/library/book-cover";
-import { cn } from "@/lib/utils";
 import { Users, FileText, Clock, Cpu, Info } from "lucide-react";
+
+import { BookCover } from "@/components/library/book-cover";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { BookLibraryListItem } from "@/types/book";
 
 interface BookCardProps {
@@ -18,28 +19,47 @@ interface BookCardProps {
 }
 
 /**
- * 书库卡片组件——对齐 sheji 设计。
- *
- * 视觉层次：
- *   1. 封面（BookCover）—— 有图显图，无图显色块+大字
- *   2. hover 遮罩（bg-background/95）—— 仅已完成书籍触发，展示所有书籍详情
- *   3. 平面卡片阴影（无立体书架结构，保持和首页网格一致）
- *
- * 交互模式：
- *   - 已完成：Link 包裹，hover 轻微上移（平面卡片，不做立体旋转）
- *   - 未完成：div 包裹，cursor-not-allowed，灰度+透明，不触发 hover panel
+ * 稳定日期文案，避免 SSR/CSR 受本地时区与 locale 影响导致 hydration mismatch。
  */
+function formatStableDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const year = String(date.getUTCFullYear());
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function BookCard({ book }: BookCardProps) {
   const isCompleted = book.status === "COMPLETED";
   const isError = book.status === "ERROR";
   const href = `/books/${book.id}/graph`;
 
-  /* 仅完成解析的书籍展示 hover 详情层；解析中/失败不响应 hover 详情，避免误导点击。 */
+  const statusBadge = !isCompleted ? (
+    <div className="library-book-card-status absolute top-3 left-3 z-30">
+      <Badge
+        variant="outline"
+        className={cn(
+          "border-border/60 bg-background/80 text-xs backdrop-blur-sm",
+          isError && "border-destructive/55 text-destructive"
+        )}
+      >
+        {isError ? "解析失败" : "解析中"}
+      </Badge>
+    </div>
+  ) : null;
+
   const hoverPanel = isCompleted ? (
     <div className={cn(
-      "library-book-card-hover absolute inset-0 z-30 flex flex-col rounded-md bg-background/92 p-4 backdrop-blur-[2px]",
-      "opacity-0 translate-y-2 group-hover:translate-y-0 group-hover:opacity-100",
-      "transition-all duration-300"
+      "library-book-card-hover absolute inset-[2px] z-30 flex flex-col rounded-[5px] p-4",
+      // hover 信息层不再整面“盖死”封面，保留外沿/书脊可见，维持书本立体感。
+      "bg-linear-to-b from-background/44 via-background/54 to-background/66 backdrop-blur-[1.25px]",
+      "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-20px_40px_rgba(0,0,0,0.22)]",
+      "pointer-events-none translate-y-[4px] scale-[0.988] opacity-0 transition-[opacity,transform] duration-[340ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+      "group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100"
     )}>
       <h3 className="mb-1 line-clamp-2 text-base leading-tight font-semibold">{book.title}</h3>
       <p className="mb-4 text-sm text-muted-foreground">
@@ -47,7 +67,6 @@ export function BookCard({ book }: BookCardProps) {
         {book.dynasty ? ` · ${book.dynasty}` : ""}
       </p>
 
-      {/* 书籍统计信息 */}
       <div className="space-y-2 text-sm/5">
         <div className="flex items-center gap-2 text-muted-foreground">
           <FileText className="h-4 w-4 shrink-0" />
@@ -60,7 +79,7 @@ export function BookCard({ book }: BookCardProps) {
         {book.lastAnalyzedAt && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-4 w-4 shrink-0" />
-            <span>{new Date(book.lastAnalyzedAt).toLocaleDateString("zh-CN")}</span>
+            <span>{formatStableDate(book.lastAnalyzedAt)}</span>
           </div>
         )}
         {book.currentModel && (
@@ -71,15 +90,13 @@ export function BookCard({ book }: BookCardProps) {
         )}
       </div>
 
-      {/* 数据说明 tooltip（对齐 sheji 的 Info 按鈢） */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               className="mt-auto flex items-center gap-1 text-xs text-primary hover:underline"
-              /* 阻断 Link 局部点击，保证 tooltip 可读而不触发跳转。 */
-              onClick={(e) => e.preventDefault()}
+              onClick={(event) => event.preventDefault()}
             >
               <Info className="h-3 w-3" />
               数据说明
@@ -97,33 +114,27 @@ export function BookCard({ book }: BookCardProps) {
     </div>
   ) : null;
 
-  /* 未完成书籍状态标签 */
-  const statusBadge = !isCompleted ? (
-    <div className="absolute top-3 left-3 z-30 library-book-card-status">
-      <Badge
-        variant="outline"
-        className={cn(
-          "border-border/60 bg-background/75 text-xs backdrop-blur-sm",
-          isError && "border-destructive/50 text-destructive"
-        )}
-      >
-        {isError ? "解析失败" : "解析中"}
-      </Badge>
-    </div>
-  ) : null;
-
-  const cardContent = (
-    <div className="relative">
-      {/* 封面区域 */}
+  const cardCore = (
+    <>
+      {/* 与 sheji 对齐：恢复书脊 + 底部阴影，让书卡 hover 更有“上浮翻页”感。 */}
       <div
         className={cn(
-          "library-book-card-surface relative aspect-2/3 overflow-hidden rounded-md border border-border/70 bg-card",
-          "transition-all duration-300",
+          "library-book-card-surface relative aspect-[2/3] overflow-hidden rounded-sm",
+          // 进一步收敛位移/旋转幅度，保持“虚浮”但避免过度摆动导致生硬。
+          "transform-gpu will-change-transform [transform:translate3d(0,0,0)_rotate(0deg)_scale(1)]",
+          "transition-[transform,box-shadow,filter,background-color,border-color] duration-[380ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "shadow-lg",
           isCompleted
-            ? "shadow-lg group-hover:border-primary/30 group-hover:shadow-2xl"
-            : "shadow-md"
+            ? "group-hover:[transform:translate3d(0,-8px,0)_rotate(0.72deg)_scale(1.012)] group-hover:shadow-2xl group-active:[transform:translate3d(0,-4px,0)_rotate(0.45deg)_scale(1.006)]"
+            : "opacity-50 grayscale-[30%]"
         )}
+        style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
       >
+        <div
+          className="pointer-events-none absolute top-0 left-0 z-20 h-full w-3 bg-linear-to-r from-black/36 via-black/16 to-transparent"
+          aria-hidden="true"
+        />
+
         <BookCover
           id={book.id}
           title={book.title}
@@ -131,38 +142,43 @@ export function BookCard({ book }: BookCardProps) {
           dynasty={book.dynasty}
           coverUrl={book.coverUrl}
           disabled={!isCompleted}
-          className={cn(
-            "h-full w-full transition-transform duration-500",
-            isCompleted && "group-hover:scale-[1.01]",
-            !isCompleted && "opacity-70 grayscale-[24%]"
-          )}
+          className="h-full w-full rounded-none"
         />
+
         <div
-          className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/22 via-black/0 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/28 via-transparent to-white/10"
           aria-hidden="true"
         />
+
         {statusBadge}
         {hoverPanel}
       </div>
-    </div>
+
+      <div
+        className={cn(
+          "pointer-events-none absolute -bottom-2 left-2 right-2 h-4 rounded-full bg-foreground/10 opacity-70 blur-md transition-[filter,background-color,opacity,transform] duration-[380ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isCompleted && "group-hover:translate-y-[3px] group-hover:blur-2xl group-hover:bg-foreground/24 group-hover:opacity-100"
+        )}
+        aria-hidden="true"
+      />
+    </>
   );
 
   if (isCompleted) {
     return (
       <Link
         href={href}
-        /* 书库保持平面卡片语言，只保留轻微上移动效。 */
-        className="library-book-card group relative block rounded-md transition-transform duration-300 hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         aria-label={`查看「${book.title}」人物图谱`}
+        className="library-book-card group relative block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        {cardContent}
+        {cardCore}
       </Link>
     );
   }
 
   return (
     <div className="library-book-card group relative block cursor-not-allowed">
-      {cardContent}
+      {cardCore}
     </div>
   );
 }

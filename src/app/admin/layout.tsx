@@ -29,7 +29,8 @@ export default async function AdminLayout({
   return (
     <div className="flex flex-col min-h-screen bg-(--color-admin-content-bg)">
       <AdminHeader userName={auth.name} />
-      <main className="flex-1 w-full max-w-360 mx-auto px-6 py-6 pt-18 animate-page-enter">
+      {/* 与 sheji 对齐：外层 layout 仅负责页面骨架，内容留白统一交给各页面的 PageContainer 控制。 */}
+      <main className="flex-1 animate-page-enter">
         {children}
       </main>
     </div>

@@ -31,8 +31,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-noto-serif-sc), 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
-  --font-serif: var(--font-noto-serif-sc), 'Noto Serif SC', 'Source Han Serif SC', serif;
+  --font-sans: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', serif;
   --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
 
   --color-background: var(--background);
@@ -88,7 +88,6 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    transition: color 300ms ease, background-color 300ms ease;
   }
 
   body {
@@ -161,8 +160,9 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 0ms !important;
-    transition-duration: 0ms !important;
+    /* 保留交互过渡，避免卡片 hover 等状态变化被“瞬时切换”成无动画。 */
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 

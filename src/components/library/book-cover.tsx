@@ -24,7 +24,7 @@ export function BookCover({ id, title, author, dynasty, coverUrl, className, dis
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden rounded-md transition-all duration-300",
+        "relative h-full w-full overflow-hidden rounded-md transition-[opacity,filter,background-color] duration-[320ms]",
         disabled && "grayscale opacity-80",
         className
       )}
@@ -35,7 +35,7 @@ export function BookCover({ id, title, author, dynasty, coverUrl, className, dis
           src={normalizedCoverUrl}
           alt={title}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.018]"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       ) : (
