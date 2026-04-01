@@ -1,6 +1,6 @@
 import type { AiProviderClient } from "@/server/providers/ai";
 import { buildChapterAnalysisPrompt, buildRosterDiscoveryPrompt, buildTitleResolutionPrompt, type BuildPromptInput, type RosterDiscoveryInput } from "@/server/modules/analysis/services/prompts";
-import { type ChapterAnalysisResponse, type ChapterRosterEntry, type TitleResolutionEntry, type TitleResolutionInput, parseChapterAnalysisResponse, parseChapterRosterResponse, parseTitleResolutionResponse } from "@/types/analysis";
+import { type ChapterAnalysisResponse, type EnhancedChapterRosterEntry, type TitleResolutionEntry, type TitleResolutionInput, parseChapterAnalysisResponse, parseEnhancedChapterRosterResponse, parseTitleResolutionResponse } from "@/types/analysis";
 
 /**
  * 功能：定义章节分段 AI 分析输入参数。
@@ -14,7 +14,7 @@ export type AnalyzeChunkInput = BuildPromptInput;
 /**
  * 功能：定义章节分析场景的 AI 抽象接口。
  * 输入：AnalyzeChunkInput / RosterDiscoveryInput。
- * 输出：ChapterAnalysisResponse / ChapterRosterEntry[]。
+ * 输出：ChapterAnalysisResponse / EnhancedChapterRosterEntry[]。
  * 异常：由具体实现决定。
  * 副作用：由具体实现决定。
  */
@@ -27,7 +27,7 @@ export interface AiAnalysisClient {
    * 异常：AI 调用失败时抛错。
    * 副作用：发起外部 AI 请求。
    */
-  discoverChapterRoster(input: RosterDiscoveryInput): Promise<ChapterRosterEntry[]>;
+  discoverChapterRoster(input: RosterDiscoveryInput): Promise<EnhancedChapterRosterEntry[]>;
   /**
    * 功能：Phase 5 称号真名溯源——批量推断 TITLE_ONLY Persona 的历史真名。
    * 输入：TitleResolutionInput（书名 + 称号列表 + 书中摘要）。
@@ -55,10 +55,10 @@ export function createChapterAnalysisAiClient(
       return parseChapterAnalysisResponse(raw);
     },
 
-    async discoverChapterRoster(input: RosterDiscoveryInput): Promise<ChapterRosterEntry[]> {
+    async discoverChapterRoster(input: RosterDiscoveryInput): Promise<EnhancedChapterRosterEntry[]> {
       const prompt = buildRosterDiscoveryPrompt(input);
       const raw = await providerClient.generateJson(prompt);
-      return parseChapterRosterResponse(raw);
+      return parseEnhancedChapterRosterResponse(raw);
     },
 
     async resolvePersonaTitles(input: TitleResolutionInput): Promise<TitleResolutionEntry[]> {

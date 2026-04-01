@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "docs/人物解析识别系统增强-prd.md", "reason": "主需求来源文档，所有结论必须可追溯"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "执行记录文本规范参考"}
+{"file": ".trellis/spec/guides/index.md", "reason": "任务拆解前置思考触发清单"}

@@ -1,4 +1,11 @@
 import type { AnalysisProfileContext, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
+import {
+  type ValidationIssue,
+  type ValidationIssueType,
+  type ValidationSeverity,
+  type ValidationSuggestionAction
+} from "@/types/validation";
+import { repairJson } from "@/types/analysis";
 
 /**
  * 功能：定义生成分段 Prompt 所需参数。
@@ -30,6 +37,58 @@ export interface RosterDiscoveryInput {
   chapterTitle: string;
   content     : string;
   profiles    : AnalysisProfileContext[];
+}
+
+export interface ChapterValidationPromptInput {
+  bookTitle       : string;
+  chapterNo       : number;
+  chapterTitle    : string;
+  chapterContent  : string;
+  existingPersonas: Array<{
+    id        : string;
+    name      : string;
+    aliases   : string[];
+    nameType  : string;
+    confidence: number;
+  }>;
+  newlyCreated: Array<{
+    id        : string;
+    name      : string;
+    nameType  : string;
+    confidence: number;
+  }>;
+  chapterMentions: Array<{
+    personaName: string;
+    rawText    : string;
+  }>;
+  chapterRelationships: Array<{
+    sourceName: string;
+    targetName: string;
+    type      : string;
+  }>;
+}
+
+export interface BookValidationPromptInput {
+  bookTitle: string;
+  personas: Array<{
+    id          : string;
+    name        : string;
+    aliases     : string[];
+    nameType    : string;
+    confidence  : number;
+    mentionCount: number;
+  }>;
+  relationships: Array<{
+    sourceName: string;
+    targetName: string;
+    type      : string;
+    count     : number;
+  }>;
+  lowConfidencePersonas: Array<{
+    id        : string;
+    name      : string;
+    confidence: number;
+  }>;
 }
 
 /**
@@ -89,12 +148,18 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
     "   - 现代文学批评家、学者（如鲁迅等）",
     "8. 单独出现的姓氏（如\"顾\"、\"夏\"、\"荀\"等单字），若无法确认是独立人物，标记为 generic",
     "9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），原文无法直接得知其真实姓名 → 配合 isNew: true 同时填 \"isTitleOnly\": true",
+    "10. 若 surfaceForm 是别名/称号/封号/职位称呼类型，额外标注:",
+    "    - \"aliasType\": \"TITLE\"(封号/尊号) | \"POSITION\"(职位称呼) | \"KINSHIP\"(亲属代称) | \"NICKNAME\"(绰号) | \"COURTESY_NAME\"(字号)",
+    "    - \"contextHint\": 简述该称呼在本章上下文中的线索（≤100字），包括共现人物、相关事件",
+    "    - \"suggestedRealName\": 如果上下文能推断出对应的真实人名，填写；否则省略",
+    "    - \"aliasConfidence\": 对 suggestedRealName 的确信度（0-1）",
     "",
     "## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）",
     JSON.stringify([
       { surfaceForm: "范举人", entityId: 1 },
+      { surfaceForm: "范老爷", entityId: 1, aliasType: "NICKNAME" },
       { surfaceForm: "严监生", isNew: true },
-      { surfaceForm: "太祖皇帝", isNew: true, isTitleOnly: true },
+      { surfaceForm: "太祖皇帝", isNew: true, isTitleOnly: true, aliasType: "TITLE", contextHint: "文中提及明朝开国，与朱元璋事迹吻合", suggestedRealName: "朱元璋", aliasConfidence: 0.9 },
       { surfaceForm: "那老者", generic: true }
     ], null, 2),
     "",
@@ -221,4 +286,271 @@ export function buildTitleResolutionPrompt(input: TitleResolutionInput): string 
     "## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）",
     JSON.stringify(exampleOutput, null, 2)
   ].join("\n");
+}
+
+const VALIDATION_ISSUE_TYPES: readonly ValidationIssueType[] = [
+  "ALIAS_AS_NEW_PERSONA",
+  "WRONG_MERGE",
+  "MISSING_NAME_MAPPING",
+  "INVALID_RELATIONSHIP",
+  "SAME_NAME_DIFFERENT_PERSON",
+  "DUPLICATE_PERSONA",
+  "LOW_CONFIDENCE_ENTITY",
+  "ORPHAN_MENTION"
+];
+
+const VALIDATION_SEVERITIES: readonly ValidationSeverity[] = [
+  "ERROR",
+  "WARNING",
+  "INFO"
+];
+
+const VALIDATION_ACTIONS: readonly ValidationSuggestionAction[] = [
+  "MERGE",
+  "SPLIT",
+  "UPDATE_NAME",
+  "ADD_ALIAS",
+  "DELETE",
+  "ADD_MAPPING",
+  "MANUAL_REVIEW"
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function asString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeValidationIssueType(value: unknown): ValidationIssueType | undefined {
+  return typeof value === "string" && (VALIDATION_ISSUE_TYPES as readonly string[]).includes(value)
+    ? value as ValidationIssueType
+    : undefined;
+}
+
+function normalizeValidationSeverity(value: unknown): ValidationSeverity | undefined {
+  return typeof value === "string" && (VALIDATION_SEVERITIES as readonly string[]).includes(value)
+    ? value as ValidationSeverity
+    : undefined;
+}
+
+function normalizeValidationAction(value: unknown): ValidationSuggestionAction | undefined {
+  return typeof value === "string" && (VALIDATION_ACTIONS as readonly string[]).includes(value)
+    ? value as ValidationSuggestionAction
+    : undefined;
+}
+
+function normalizeConfidence(value: unknown): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return 0;
+  }
+
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+}
+
+export function buildChapterValidationPrompt(input: ChapterValidationPromptInput): string {
+  return [
+    "## 角色",
+    "你是一个文学文本实体解析的质量审核专家。你的任务是检查人物解析结果的准确性，发现并报告问题。",
+    "",
+    "## 核心原则",
+    "1. 保守判断：只报告你确信存在的问题，不确定时宁可不报",
+    "2. 证据导向：每个问题必须附带原文证据或数据矛盾点",
+    "3. 不要过度修正：不要仅因为“可能”就建议合并或拆分",
+    "4. 不要发明信息：不要推测原文中没有的信息",
+    "",
+    "## 检查维度",
+    "1. 别名误识别：检查新建人物是否实际上是已知人物的别名/称号",
+    "2. 错误合并：检查是否有不同人物被错误归到同一 persona",
+    "3. 漏掉映射：检查 TITLE_ONLY 人物是否有线索可确定真名",
+    "4. 关系合理性：检查关系是否自洽（无自我关系、无明显矛盾）",
+    "5. 同名异人：检查同名人物在不同上下文中是否表现一致",
+    "",
+    "## 书籍上下文",
+    `书名: 《${input.bookTitle}》`,
+    `章节: 第${input.chapterNo}回「${input.chapterTitle}」`,
+    "",
+    "## 已知人物档案",
+    ...input.existingPersonas.map((p) =>
+      `- ${p.name} (${p.nameType}, 置信度:${p.confidence}) 别名:[${p.aliases.join(",")}]`
+    ),
+    "",
+    "## 本章新建人物",
+    ...input.newlyCreated.map((p) =>
+      `- ${p.name} (${p.nameType}, 置信度:${p.confidence})`
+    ),
+    "",
+    "## 本章提及记录",
+    ...input.chapterMentions.slice(0, 50).map((m) =>
+      `- ${m.personaName}: "${m.rawText.slice(0, 80)}"`
+    ),
+    "",
+    "## 本章关系记录",
+    ...input.chapterRelationships.map((r) =>
+      `- ${r.sourceName} → ${r.targetName}: ${r.type}`
+    ),
+    "",
+    "## 原文片段（重点段落）",
+    input.chapterContent.slice(0, 3000),
+    "",
+    "## 输出格式（仅输出 JSON，不加任何说明或 Markdown 代码块）",
+    JSON.stringify({
+      issues: [
+        {
+          type              : "ALIAS_AS_NEW_PERSONA | WRONG_MERGE | MISSING_NAME_MAPPING | INVALID_RELATIONSHIP | SAME_NAME_DIFFERENT_PERSON | DUPLICATE_PERSONA",
+          severity          : "ERROR | WARNING | INFO",
+          confidence        : 0.85,
+          description       : "问题的具体描述",
+          evidence          : "原文证据或数据矛盾点",
+          affectedPersonaIds: ["persona-id-1"],
+          suggestion        : {
+            action         : "MERGE | SPLIT | UPDATE_NAME | ADD_ALIAS | DELETE | ADD_MAPPING | MANUAL_REVIEW",
+            targetPersonaId: "target-id (如适用)",
+            sourcePersonaId: "source-id (如适用)",
+            newName        : "建议的新名称 (如适用)",
+            newAlias       : "建议添加的别名 (如适用)",
+            reason         : "修正理由"
+          }
+        }
+      ]
+    }, null, 2),
+    "",
+    "## 重要提醒",
+    "- 如果检查结果没有发现任何问题，返回 {\"issues\": []}",
+    "- confidence < 0.6 的问题不要报告",
+    "- 每个问题的 evidence 必须来自原文或上述数据，不可编造"
+  ].join("\n");
+}
+
+export function buildBookValidationPrompt(input: BookValidationPromptInput): string {
+  return [
+    "## 角色",
+    "你是文学实体识别全书质检专家，需要做跨章节一致性检查。",
+    "",
+    "## 任务",
+    `检查《${input.bookTitle}》全书人物解析结果的一致性与自洽性。`,
+    "",
+    "## 检查重点",
+    "1. 全书人物列表一致性（同人多名、同名异人、重复 persona）",
+    "2. 别名覆盖率（称号是否应回填到真实姓名）",
+    "3. 关系图自洽性（矛盾关系、自我关系）",
+    "4. 低置信实体是否需要人工审核",
+    "",
+    "## 全书人物列表",
+    ...input.personas.map((p) =>
+      `- ${p.name} [${p.id}] (${p.nameType}, 置信度:${p.confidence}, 提及:${p.mentionCount}) 别名:[${p.aliases.join(",")}]`
+    ),
+    "",
+    "## 关系统计",
+    ...input.relationships.map((r) =>
+      `- ${r.sourceName} → ${r.targetName}: ${r.type} (出现 ${r.count} 次)`
+    ),
+    "",
+    "## 低置信人物",
+    ...input.lowConfidencePersonas.map((p) =>
+      `- ${p.name} [${p.id}] (置信度:${p.confidence})`
+    ),
+    "",
+    "## 输出格式（仅输出 JSON，不加任何说明）",
+    JSON.stringify({
+      issues: [
+        {
+          type              : "DUPLICATE_PERSONA",
+          severity          : "WARNING",
+          confidence        : 0.9,
+          description       : "同一人物可能存在重复记录",
+          evidence          : "全书别名与关系指向高度重叠",
+          affectedPersonaIds: ["persona-id-1", "persona-id-2"],
+          suggestion        : {
+            action         : "MERGE",
+            targetPersonaId: "persona-id-1",
+            sourcePersonaId: "persona-id-2",
+            reason         : "建议合并重复实体"
+          }
+        }
+      ]
+    }, null, 2),
+    "",
+    "## 重要提醒",
+    "- 若无问题返回 {\"issues\": []}",
+    "- confidence < 0.6 的问题不要输出",
+    "- 只输出有明确证据的问题"
+  ].join("\n");
+}
+
+export function parseValidationResponse(raw: string): ValidationIssue[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(repairJson(raw));
+  } catch (parseError) {
+    console.warn("[parseValidationResponse] JSON parse failed:", String(parseError).slice(0, 200), "raw:", raw.slice(0, 200));
+    return [];
+  }
+
+  const issuesRaw: unknown[] = Array.isArray(parsed)
+    ? parsed
+    : isRecord(parsed) && Array.isArray(parsed.issues)
+      ? parsed.issues
+      : [];
+
+  const issues: ValidationIssue[] = [];
+  for (let index = 0; index < issuesRaw.length; index += 1) {
+    const item: unknown = issuesRaw[index];
+    if (!isRecord(item)) {
+      continue;
+    }
+
+    const type = normalizeValidationIssueType(item.type);
+    const severity = normalizeValidationSeverity(item.severity);
+    const description = asString(item.description);
+    const evidence = asString(item.evidence);
+
+    if (!type || !severity || !description || !evidence) {
+      continue;
+    }
+
+    const suggestion = isRecord(item.suggestion) ? item.suggestion : null;
+    const action = suggestion ? normalizeValidationAction(suggestion.action) : undefined;
+    const reason = suggestion ? asString(suggestion.reason) : undefined;
+    if (!action || !reason) {
+      continue;
+    }
+
+    const affectedPersonaIds = Array.isArray(item.affectedPersonaIds)
+      ? item.affectedPersonaIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+      : [];
+
+    const affectedChapterIds = Array.isArray(item.affectedChapterIds)
+      ? item.affectedChapterIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+      : undefined;
+
+    issues.push({
+      id        : asString(item.id) ?? `issue-${index + 1}`,
+      type,
+      severity,
+      confidence: normalizeConfidence(item.confidence),
+      description,
+      evidence,
+      affectedPersonaIds,
+      affectedChapterIds,
+      suggestion: {
+        action,
+        targetPersonaId: suggestion ? asString(suggestion.targetPersonaId) : undefined,
+        sourcePersonaId: suggestion ? asString(suggestion.sourcePersonaId) : undefined,
+        newName        : suggestion ? asString(suggestion.newName) : undefined,
+        newAlias       : suggestion ? asString(suggestion.newAlias) : undefined,
+        reason
+      }
+    });
+  }
+
+  return issues;
 }

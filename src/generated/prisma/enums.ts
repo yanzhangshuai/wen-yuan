@@ -53,6 +53,26 @@ export const AnalysisJobStatus = {
 export type AnalysisJobStatus = (typeof AnalysisJobStatus)[keyof typeof AnalysisJobStatus]
 
 
+export const AliasType = {
+  TITLE: 'TITLE',
+  POSITION: 'POSITION',
+  KINSHIP: 'KINSHIP',
+  NICKNAME: 'NICKNAME',
+  COURTESY_NAME: 'COURTESY_NAME'
+} as const
+
+export type AliasType = (typeof AliasType)[keyof typeof AliasType]
+
+
+export const AliasMappingStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type AliasMappingStatus = (typeof AliasMappingStatus)[keyof typeof AliasMappingStatus]
+
+
 export const PersonaType = {
   PERSON: 'PERSON',
   LOCATION: 'LOCATION',

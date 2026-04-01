@@ -1,0 +1,708 @@
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { prisma } from "@/server/db/prisma";
+import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
+import { buildBookValidationPrompt, buildChapterValidationPrompt, parseValidationResponse } from "@/server/modules/analysis/services/prompts";
+import { createAiProviderClient, type AiProviderName, type AiProviderClient } from "@/server/providers/ai";
+import { decryptValue } from "@/server/security/encryption";
+import type { AnalysisProfileContext } from "@/types/analysis";
+import type {
+  ValidationIssue,
+  ValidationReportData,
+  ValidationSeverity,
+  ValidationSummary
+} from "@/types/validation";
+
+interface ValidationAiModelConfig {
+  id       : string;
+  provider : string;
+  name     : string;
+  modelId  : string;
+  baseUrl  : string;
+  apiKey   : string | null;
+  isEnabled: boolean;
+}
+
+export interface ChapterValidationInput {
+  bookId          : string;
+  chapterId       : string;
+  chapterNo       : number;
+  chapterContent  : string;
+  jobId?          : string;
+  newPersonas     : Array<{ id: string; name: string; confidence: number; nameType: string }>;
+  newMentions     : Array<{ personaId: string; rawText: string }>;
+  newRelationships: Array<{ sourceId: string; targetId: string; type: string }>;
+  existingProfiles: AnalysisProfileContext[];
+}
+
+export interface ValidationAgentService {
+  validateChapterResult(input: ChapterValidationInput): Promise<ValidationReportData>;
+  validateBookResult(bookId: string, jobId: string): Promise<ValidationReportData>;
+  listValidationReports(bookId: string): Promise<Array<{
+    id       : string;
+    bookId   : string;
+    jobId    : string | null;
+    scope    : string;
+    chapterId: string | null;
+    status   : string;
+    summary  : ValidationSummary;
+    createdAt: string;
+  }>>;
+  getValidationReportDetail(bookId: string, reportId: string): Promise<{
+    id       : string;
+    bookId   : string;
+    jobId    : string | null;
+    scope    : string;
+    chapterId: string | null;
+    status   : string;
+    summary  : ValidationSummary;
+    issues   : ValidationIssue[];
+    createdAt: string;
+  } | null>;
+  applyAutoFixes(reportId: string): Promise<number>;
+}
+
+const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao"];
+const AUTO_FIX_ACTIONS = new Set(["MERGE", "ADD_ALIAS", "UPDATE_NAME"]);
+
+function normalizeProvider(provider: string): AiProviderName {
+  const normalizedProvider = provider.trim().toLowerCase();
+  if ((SUPPORTED_AI_PROVIDERS as readonly string[]).includes(normalizedProvider)) {
+    return normalizedProvider as AiProviderName;
+  }
+
+  throw new Error(`不支持的模型 provider: ${provider}`);
+}
+
+function readEncryptedApiKey(apiKey: string | null, modelName: string): string {
+  if (!apiKey) {
+    throw new Error(`模型「${modelName}」未配置 API Key`);
+  }
+
+  if (!apiKey.startsWith("enc:v1:")) {
+    throw new Error(`模型「${modelName}」API Key 存储格式非法，请在模型设置页重新保存`);
+  }
+
+  return decryptValue(apiKey);
+}
+
+function normalizeName(value: string): string {
+  return value.trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function unique(values: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(values.filter((item): item is string => Boolean(item && item.trim()))));
+}
+
+function parseValidationSummary(value: Prisma.JsonValue): ValidationSummary {
+  if (!isRecord(value)) {
+    return {
+      totalIssues : 0,
+      errorCount  : 0,
+      warningCount: 0,
+      infoCount   : 0,
+      autoFixable : 0,
+      needsReview : 0
+    };
+  }
+
+  return {
+    totalIssues : typeof value.totalIssues === "number" ? value.totalIssues : 0,
+    errorCount  : typeof value.errorCount === "number" ? value.errorCount : 0,
+    warningCount: typeof value.warningCount === "number" ? value.warningCount : 0,
+    infoCount   : typeof value.infoCount === "number" ? value.infoCount : 0,
+    autoFixable : typeof value.autoFixable === "number" ? value.autoFixable : 0,
+    needsReview : typeof value.needsReview === "number" ? value.needsReview : 0
+  };
+}
+
+function sanitizeIssuesByPersona(issues: ValidationIssue[], validPersonaIds: Set<string>): ValidationIssue[] {
+  return issues.map((issue) => {
+    const affectedPersonaIds = issue.affectedPersonaIds.filter((id) => validPersonaIds.has(id));
+    const targetPersonaId = issue.suggestion.targetPersonaId && validPersonaIds.has(issue.suggestion.targetPersonaId)
+      ? issue.suggestion.targetPersonaId
+      : undefined;
+    const sourcePersonaId = issue.suggestion.sourcePersonaId && validPersonaIds.has(issue.suggestion.sourcePersonaId)
+      ? issue.suggestion.sourcePersonaId
+      : undefined;
+
+    return {
+      ...issue,
+      affectedPersonaIds,
+      suggestion: {
+        ...issue.suggestion,
+        targetPersonaId,
+        sourcePersonaId
+      }
+    };
+  });
+}
+
+function buildSummary(issues: ValidationIssue[]): ValidationSummary {
+  const countBySeverity = issues.reduce<Record<ValidationSeverity, number>>((acc, issue) => {
+    acc[issue.severity] += 1;
+    return acc;
+  }, {
+    ERROR  : 0,
+    WARNING: 0,
+    INFO   : 0
+  });
+
+  const autoFixable = issues.filter((issue) =>
+    issue.confidence >= 0.9 && AUTO_FIX_ACTIONS.has(issue.suggestion.action)
+  ).length;
+
+  return {
+    totalIssues : issues.length,
+    errorCount  : countBySeverity.ERROR,
+    warningCount: countBySeverity.WARNING,
+    infoCount   : countBySeverity.INFO,
+    autoFixable,
+    needsReview : Math.max(0, issues.length - autoFixable)
+  };
+}
+
+export function createValidationAgentService(
+  prismaClient: PrismaClient = prisma,
+  aiClientFactory?: (bookAiModelId: string | null) => Promise<AiProviderClient>
+): ValidationAgentService {
+  const { mergePersonas } = createMergePersonasService(prismaClient);
+
+  async function resolveValidationModelConfig(bookAiModelId: string | null): Promise<ValidationAiModelConfig> {
+    if (bookAiModelId) {
+      const assignedModel = await prismaClient.aiModel.findUnique({
+        where : { id: bookAiModelId },
+        select: {
+          id       : true,
+          provider : true,
+          name     : true,
+          modelId  : true,
+          baseUrl  : true,
+          apiKey   : true,
+          isEnabled: true
+        }
+      });
+
+      if (!assignedModel) {
+        throw new Error(`书籍绑定模型不存在: ${bookAiModelId}`);
+      }
+
+      if (!assignedModel.isEnabled) {
+        throw new Error(`书籍绑定模型未启用: ${assignedModel.name}`);
+      }
+
+      return assignedModel;
+    }
+
+    const defaultModel = await prismaClient.aiModel.findFirst({
+      where  : { isDefault: true, isEnabled: true },
+      orderBy: { updatedAt: "desc" },
+      select : {
+        id       : true,
+        provider : true,
+        name     : true,
+        modelId  : true,
+        baseUrl  : true,
+        apiKey   : true,
+        isEnabled: true
+      }
+    });
+
+    if (!defaultModel) {
+      throw new Error("未找到可用默认模型，请在 /admin/model 配置并启用至少一个模型");
+    }
+
+    return defaultModel;
+  }
+
+  async function createRuntimeAiClient(bookAiModelId: string | null): Promise<AiProviderClient> {
+    if (aiClientFactory) {
+      return await aiClientFactory(bookAiModelId);
+    }
+
+    const modelConfig = await resolveValidationModelConfig(bookAiModelId);
+    const provider = normalizeProvider(modelConfig.provider);
+    const apiKey = readEncryptedApiKey(modelConfig.apiKey, modelConfig.name);
+
+    return createAiProviderClient({
+      provider,
+      apiKey,
+      baseUrl  : modelConfig.baseUrl,
+      modelName: modelConfig.modelId
+    });
+  }
+
+  async function ensureValidPersonaIds(personaIds: string[]): Promise<Set<string>> {
+    if (personaIds.length === 0) {
+      return new Set();
+    }
+
+    const rows = await prismaClient.persona.findMany({
+      where : { id: { in: personaIds }, deletedAt: null },
+      select: { id: true }
+    });
+
+    return new Set(rows.map((row) => row.id));
+  }
+
+  async function createValidationReport(input: {
+    bookId    : string;
+    jobId?    : string;
+    scope     : string;
+    chapterId?: string;
+    issues    : ValidationIssue[];
+    summary   : ValidationSummary;
+  }): Promise<ValidationReportData> {
+    const report = await prismaClient.validationReport.create({
+      data: {
+        bookId   : input.bookId,
+        jobId    : input.jobId ?? null,
+        scope    : input.scope,
+        chapterId: input.chapterId ?? null,
+        status   : "PENDING",
+        issues   : input.issues as unknown as Prisma.InputJsonValue,
+        summary  : input.summary as unknown as Prisma.InputJsonValue
+      },
+      select: { id: true }
+    });
+
+    return {
+      id     : report.id,
+      issues : input.issues,
+      summary: input.summary
+    };
+  }
+
+  async function validateChapterResult(input: ChapterValidationInput): Promise<ValidationReportData> {
+    const [book, chapter] = await Promise.all([
+      prismaClient.book.findUnique({
+        where : { id: input.bookId },
+        select: { id: true, title: true, aiModelId: true }
+      }),
+      prismaClient.chapter.findUnique({
+        where : { id: input.chapterId },
+        select: { title: true }
+      })
+    ]);
+
+    if (!book) {
+      throw new Error(`书籍不存在: ${input.bookId}`);
+    }
+    if (!chapter) {
+      throw new Error(`章节不存在: ${input.chapterId}`);
+    }
+
+    const existingPersonaIds = input.existingProfiles.map((profile) => profile.personaId);
+    const existingPersonaRows = existingPersonaIds.length === 0
+      ? []
+      : await prismaClient.persona.findMany({
+        where : { id: { in: existingPersonaIds }, deletedAt: null },
+        select: {
+          id        : true,
+          name      : true,
+          aliases   : true,
+          nameType  : true,
+          confidence: true
+        }
+      });
+    const existingPersonaMap = new Map(existingPersonaRows.map((row) => [row.id, row]));
+
+    const personaNameRows = await prismaClient.persona.findMany({
+      where: {
+        id: {
+          in: unique([
+            ...input.newMentions.map((item) => item.personaId),
+            ...input.newRelationships.map((item) => item.sourceId),
+            ...input.newRelationships.map((item) => item.targetId),
+            ...input.newPersonas.map((item) => item.id)
+          ])
+        },
+        deletedAt: null
+      },
+      select: {
+        id  : true,
+        name: true
+      }
+    });
+    const personaNameMap = new Map(personaNameRows.map((row) => [row.id, row.name]));
+
+    const prompt = buildChapterValidationPrompt({
+      bookTitle       : book.title,
+      chapterNo       : input.chapterNo,
+      chapterTitle    : chapter.title,
+      chapterContent  : input.chapterContent,
+      existingPersonas: input.existingProfiles.map((profile) => {
+        const row = existingPersonaMap.get(profile.personaId);
+        return {
+          id        : profile.personaId,
+          name      : profile.canonicalName,
+          aliases   : profile.aliases,
+          nameType  : row?.nameType ?? "NAMED",
+          confidence: row?.confidence ?? 1
+        };
+      }),
+      newlyCreated: input.newPersonas.map((persona) => ({
+        id        : persona.id,
+        name      : normalizeName(persona.name),
+        nameType  : persona.nameType,
+        confidence: persona.confidence
+      })),
+      chapterMentions: input.newMentions.map((mention) => ({
+        personaName: personaNameMap.get(mention.personaId) ?? mention.personaId,
+        rawText    : mention.rawText
+      })),
+      chapterRelationships: input.newRelationships.map((relation) => ({
+        sourceName: personaNameMap.get(relation.sourceId) ?? relation.sourceId,
+        targetName: personaNameMap.get(relation.targetId) ?? relation.targetId,
+        type      : relation.type
+      }))
+    });
+
+    const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
+    const raw = await runtimeAiClient.generateJson(prompt);
+
+    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= 0.6);
+    const validPersonaIds = await ensureValidPersonaIds(
+      unique(parsedIssues.flatMap((issue) => [
+        ...issue.affectedPersonaIds,
+        issue.suggestion.targetPersonaId,
+        issue.suggestion.sourcePersonaId
+      ]))
+    );
+    const issues = sanitizeIssuesByPersona(parsedIssues, validPersonaIds);
+    const summary = buildSummary(issues);
+
+    return await createValidationReport({
+      bookId   : input.bookId,
+      jobId    : input.jobId,
+      scope    : "CHAPTER",
+      chapterId: input.chapterId,
+      issues,
+      summary
+    });
+  }
+
+  async function validateBookResult(bookId: string, jobId: string): Promise<ValidationReportData> {
+    const book = await prismaClient.book.findUnique({
+      where : { id: bookId },
+      select: { title: true, aiModelId: true }
+    });
+    if (!book) {
+      throw new Error(`书籍不存在: ${bookId}`);
+    }
+
+    const [profiles, mentionStats, relationships] = await Promise.all([
+      prismaClient.profile.findMany({
+        where: {
+          bookId,
+          deletedAt: null,
+          persona  : { deletedAt: null }
+        },
+        select: {
+          personaId: true,
+          persona  : {
+            select: {
+              id        : true,
+              name      : true,
+              aliases   : true,
+              nameType  : true,
+              confidence: true
+            }
+          }
+        }
+      }),
+      prismaClient.mention.groupBy({
+        by   : ["personaId"],
+        where: {
+          deletedAt: null,
+          chapter  : { bookId }
+        },
+        _count: { id: true }
+      }),
+      prismaClient.relationship.findMany({
+        where: {
+          deletedAt: null,
+          chapter  : { bookId }
+        },
+        select: {
+          sourceId: true,
+          targetId: true,
+          type    : true
+        }
+      })
+    ]);
+
+    const mentionCountMap = new Map(mentionStats.map((item) => [item.personaId, item._count.id]));
+    const personaNameMap = new Map(profiles.map((item) => [item.persona.id, item.persona.name]));
+
+    const relationCounter = new Map<string, { sourceId: string; targetId: string; type: string; count: number }>();
+    for (const relation of relationships) {
+      const key = [relation.sourceId, relation.targetId, relation.type].join("|");
+      const previous = relationCounter.get(key);
+      if (previous) {
+        previous.count += 1;
+      } else {
+        relationCounter.set(key, {
+          sourceId: relation.sourceId,
+          targetId: relation.targetId,
+          type    : relation.type,
+          count   : 1
+        });
+      }
+    }
+
+    const prompt = buildBookValidationPrompt({
+      bookTitle: book.title,
+      personas : profiles.map((profile) => ({
+        id          : profile.persona.id,
+        name        : profile.persona.name,
+        aliases     : profile.persona.aliases,
+        nameType    : profile.persona.nameType,
+        confidence  : profile.persona.confidence,
+        mentionCount: mentionCountMap.get(profile.persona.id) ?? 0
+      })),
+      relationships: Array.from(relationCounter.values()).map((item) => ({
+        sourceName: personaNameMap.get(item.sourceId) ?? item.sourceId,
+        targetName: personaNameMap.get(item.targetId) ?? item.targetId,
+        type      : item.type,
+        count     : item.count
+      })),
+      lowConfidencePersonas: profiles
+        .map((profile) => ({
+          id        : profile.persona.id,
+          name      : profile.persona.name,
+          confidence: profile.persona.confidence
+        }))
+        .filter((item) => item.confidence < 0.7)
+    });
+
+    const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
+    const raw = await runtimeAiClient.generateJson(prompt);
+
+    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= 0.6);
+    const validPersonaIds = await ensureValidPersonaIds(
+      unique(parsedIssues.flatMap((issue) => [
+        ...issue.affectedPersonaIds,
+        issue.suggestion.targetPersonaId,
+        issue.suggestion.sourcePersonaId
+      ]))
+    );
+    const issues = sanitizeIssuesByPersona(parsedIssues, validPersonaIds);
+    const summary = buildSummary(issues);
+
+    return await createValidationReport({
+      bookId,
+      jobId,
+      scope: "BOOK",
+      issues,
+      summary
+    });
+  }
+
+  async function applyAutoFixes(reportId: string): Promise<number> {
+    const report = await prismaClient.validationReport.findUnique({
+      where : { id: reportId },
+      select: {
+        id    : true,
+        issues: true
+      }
+    });
+
+    if (!report) {
+      throw new Error(`自检报告不存在: ${reportId}`);
+    }
+
+    const issues = parseValidationResponse(JSON.stringify(report.issues));
+    let applied = 0;
+
+    for (const issue of issues) {
+      if (issue.confidence < 0.9 || !AUTO_FIX_ACTIONS.has(issue.suggestion.action)) {
+        continue;
+      }
+
+      if (issue.suggestion.action === "MERGE") {
+        if (!issue.suggestion.targetPersonaId || !issue.suggestion.sourcePersonaId) {
+          continue;
+        }
+        // 防止自合并
+        if (issue.suggestion.targetPersonaId === issue.suggestion.sourcePersonaId) {
+          continue;
+        }
+        // 校验双方 persona 仍然存活（报告生成后可能已被删除/合并）
+        const [target, source] = await Promise.all([
+          prismaClient.persona.findUnique({
+            where : { id: issue.suggestion.targetPersonaId },
+            select: { id: true, deletedAt: true }
+          }),
+          prismaClient.persona.findUnique({
+            where : { id: issue.suggestion.sourcePersonaId },
+            select: { id: true, deletedAt: true }
+          })
+        ]);
+        if (!target || target.deletedAt || !source || source.deletedAt) {
+          continue;
+        }
+
+        await mergePersonas({
+          targetId: issue.suggestion.targetPersonaId,
+          sourceId: issue.suggestion.sourcePersonaId
+        });
+        applied += 1;
+        continue;
+      }
+
+      if (issue.suggestion.action === "ADD_ALIAS") {
+        const targetPersonaId = issue.suggestion.targetPersonaId ?? issue.affectedPersonaIds[0];
+        const newAlias = issue.suggestion.newAlias?.trim();
+        if (!targetPersonaId || !newAlias) {
+          continue;
+        }
+
+        const persona = await prismaClient.persona.findUnique({
+          where : { id: targetPersonaId },
+          select: { aliases: true, deletedAt: true }
+        });
+        if (!persona || persona.deletedAt) {
+          continue;
+        }
+
+        const nextAliases = unique([...persona.aliases, newAlias]);
+        await prismaClient.persona.update({
+          where: { id: targetPersonaId },
+          data : { aliases: nextAliases }
+        });
+        applied += 1;
+        continue;
+      }
+
+      if (issue.suggestion.action === "UPDATE_NAME") {
+        const targetPersonaId = issue.suggestion.targetPersonaId ?? issue.affectedPersonaIds[0];
+        const newName = issue.suggestion.newName?.trim();
+        if (!targetPersonaId || !newName) {
+          continue;
+        }
+
+        const persona = await prismaClient.persona.findUnique({
+          where : { id: targetPersonaId },
+          select: { name: true, aliases: true, deletedAt: true }
+        });
+        if (!persona || persona.deletedAt) {
+          continue;
+        }
+
+        const nextAliases = unique([...persona.aliases, persona.name]);
+        await prismaClient.persona.update({
+          where: { id: targetPersonaId },
+          data : {
+            name   : newName,
+            aliases: nextAliases
+          }
+        });
+        applied += 1;
+      }
+    }
+
+    await prismaClient.validationReport.update({
+      where: { id: reportId },
+      data : { status: "APPLIED" }
+    });
+
+    return applied;
+  }
+
+  async function listValidationReports(bookId: string): Promise<Array<{
+    id       : string;
+    bookId   : string;
+    jobId    : string | null;
+    scope    : string;
+    chapterId: string | null;
+    status   : string;
+    summary  : ValidationSummary;
+    createdAt: string;
+  }>> {
+    const rows = await prismaClient.validationReport.findMany({
+      where  : { bookId },
+      orderBy: { createdAt: "desc" },
+      select : {
+        id       : true,
+        bookId   : true,
+        jobId    : true,
+        scope    : true,
+        chapterId: true,
+        status   : true,
+        summary  : true,
+        createdAt: true
+      }
+    });
+
+    return rows.map((row) => ({
+      id       : row.id,
+      bookId   : row.bookId,
+      jobId    : row.jobId,
+      scope    : row.scope,
+      chapterId: row.chapterId,
+      status   : row.status,
+      summary  : parseValidationSummary(row.summary),
+      createdAt: row.createdAt.toISOString()
+    }));
+  }
+
+  async function getValidationReportDetail(
+    bookId: string,
+    reportId: string
+  ): Promise<{
+    id       : string;
+    bookId   : string;
+    jobId    : string | null;
+    scope    : string;
+    chapterId: string | null;
+    status   : string;
+    summary  : ValidationSummary;
+    issues   : ValidationIssue[];
+    createdAt: string;
+  } | null> {
+    const row = await prismaClient.validationReport.findFirst({
+      where : { id: reportId, bookId },
+      select: {
+        id       : true,
+        bookId   : true,
+        jobId    : true,
+        scope    : true,
+        chapterId: true,
+        status   : true,
+        summary  : true,
+        issues   : true,
+        createdAt: true
+      }
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id       : row.id,
+      bookId   : row.bookId,
+      jobId    : row.jobId,
+      scope    : row.scope,
+      chapterId: row.chapterId,
+      status   : row.status,
+      summary  : parseValidationSummary(row.summary),
+      issues   : parseValidationResponse(JSON.stringify(row.issues)),
+      createdAt: row.createdAt.toISOString()
+    };
+  }
+
+  return {
+    validateChapterResult,
+    validateBookResult,
+    listValidationReports,
+    getValidationReportDetail,
+    applyAutoFixes
+  };
+}
+
+export const validationAgentService = createValidationAgentService();

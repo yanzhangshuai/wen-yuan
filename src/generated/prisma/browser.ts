@@ -68,6 +68,16 @@ export type Relationship = Prisma.RelationshipModel
  */
 export type AnalysisJob = Prisma.AnalysisJobModel
 /**
+ * Model AliasMapping
+ * @db.remark: 别名映射表。记录章节上下文中的“称号/别名 -> 真实人物”映射。
+ */
+export type AliasMapping = Prisma.AliasMappingModel
+/**
+ * Model ValidationReport
+ * @db.remark: 自检报告。记录章节/全书级别的结构化质量检查结果。
+ */
+export type ValidationReport = Prisma.ValidationReportModel
+/**
  * Model MergeSuggestion
  * @db.remark: 人物别名消歧建议。用于管理员审核同名/别名归并。
  */

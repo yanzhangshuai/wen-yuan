@@ -105,6 +105,16 @@ export interface ChapterAnalysisResponse {
   relationships: AiRelationship[];
 }
 
+export const ALIAS_TYPE_VALUES = [
+  "TITLE",
+  "POSITION",
+  "KINSHIP",
+  "NICKNAME",
+  "COURTESY_NAME"
+] as const;
+
+export type AliasTypeValue = (typeof ALIAS_TYPE_VALUES)[number];
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -121,7 +131,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * 异常：无（容错设计）。
  * 副作用：无。
  */
-function repairJson(raw: string): string {
+export function repairJson(raw: string): string {
   // Step 1: 尿 Markdown 代码块包裹
   const s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
@@ -190,6 +200,20 @@ function normalizeRelationWeight(weight: unknown): number | undefined {
   }
 
   return weight;
+}
+
+function isAliasType(value: unknown): value is AliasTypeValue {
+  return typeof value === "string" && (ALIAS_TYPE_VALUES as readonly string[]).includes(value);
+}
+
+function normalizeConfidence(value: unknown, fallback = 0): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return fallback;
+  }
+
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
 }
 
 /**
@@ -267,18 +291,62 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
  */
 export interface ChapterRosterEntry {
   /** 在原文中出现的字面称谓（精确字符串）。 */
-  surfaceForm : string;
+  surfaceForm       : string;
   /** 对应已知人物的序号（与 Known Entities 列表 [N] 的 N 对应）。 */
-  entityId?   : number;
+  entityId?         : number;
   /** 确认为本书全新人物（不在已知档案中）。 */
-  isNew?      : boolean;
+  isNew?            : boolean;
   /** 泛化称谓，无法唯一指向某一人物，应忽略。 */
-  generic?    : boolean;
+  generic?          : boolean;
   /**
    * 仅有称号/尊号/封号，原文中未透露其真实姓名（如"太祖皇帝"、"吴王"）。
    * 配合 isNew: true 使用，写入 Persona.nameType = TITLE_ONLY。
    */
-  isTitleOnly?: boolean;
+  isTitleOnly?      : boolean;
+  aliasType?        : AliasTypeValue;
+  contextHint?      : AliasContextHint;
+  suggestedRealName?: string;
+  aliasConfidence?  : number;
+}
+
+export interface AliasContextHint {
+  alias              : string;
+  aliasType          : AliasTypeValue;
+  coOccurringPersonas: string[];
+  contextClue        : string;
+  suggestedRealName? : string;
+  confidence         : number;
+}
+
+export interface EnhancedChapterRosterEntry extends ChapterRosterEntry {
+  aliasType?  : AliasTypeValue;
+  contextHint?: AliasContextHint;
+}
+
+export interface AliasMappingResult {
+  id?          : string;
+  alias        : string;
+  resolvedName : string | null;
+  personaId    : string | null;
+  aliasType    : AliasTypeValue;
+  confidence   : number;
+  evidence     : string;
+  status       : "PENDING" | "CONFIRMED" | "REJECTED";
+  chapterScope?: { start: number; end?: number };
+}
+
+export interface RegisterAliasInput {
+  bookId       : string;
+  personaId?   : string;
+  alias        : string;
+  resolvedName?: string;
+  aliasType    : AliasTypeValue;
+  confidence   : number;
+  evidence?    : string;
+  chapterStart?: number;
+  chapterEnd?  : number;
+  status?      : "PENDING" | "CONFIRMED" | "REJECTED";
+  contextHash? : string;
 }
 
 /**
@@ -301,13 +369,44 @@ export function parseChapterRosterResponse(raw: string): ChapterRosterEntry[] {
   return parsed
     .filter(isRecord)
     .filter((item) => typeof item.surfaceForm === "string" && (item.surfaceForm).trim().length > 0)
-    .map((item) => ({
-      surfaceForm: (item.surfaceForm as string).trim(),
-      entityId   : typeof item.entityId === "number" ? item.entityId : undefined,
-      isNew      : item.isNew === true,
-      generic    : item.generic === true,
-      isTitleOnly: item.isTitleOnly === true
-    }));
+    .map((item) => {
+      const surfaceForm = (item.surfaceForm as string).trim();
+      const aliasType = isAliasType(item.aliasType) ? item.aliasType : undefined;
+      const suggestedRealName = typeof item.suggestedRealName === "string" && (item.suggestedRealName).trim().length > 0
+        ? (item.suggestedRealName).trim()
+        : undefined;
+      const contextClue = typeof item.contextHint === "string" ? (item.contextHint).trim() : "";
+      const aliasConfidence = normalizeConfidence(item.aliasConfidence, 0);
+
+      const contextHint = aliasType && contextClue
+        ? {
+          alias              : surfaceForm,
+          aliasType,
+          coOccurringPersonas: Array.isArray(item.coOccurringPersonas)
+            ? item.coOccurringPersonas.filter((name): name is string => typeof name === "string")
+            : [],
+          contextClue,
+          suggestedRealName,
+          confidence: aliasConfidence
+        }
+        : undefined;
+
+      return {
+        surfaceForm,
+        entityId       : typeof item.entityId === "number" ? item.entityId : undefined,
+        isNew          : item.isNew === true,
+        generic        : item.generic === true,
+        isTitleOnly    : item.isTitleOnly === true,
+        aliasType,
+        contextHint,
+        suggestedRealName,
+        aliasConfidence: aliasType ? aliasConfidence : undefined
+      };
+    });
+}
+
+export function parseEnhancedChapterRosterResponse(raw: string): EnhancedChapterRosterEntry[] {
+  return parseChapterRosterResponse(raw);
 }
 
 /**

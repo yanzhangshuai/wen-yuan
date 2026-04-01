@@ -2,8 +2,10 @@ import { ProcessingStatus } from "@/generated/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createChapterAnalysisService } from "@/server/modules/analysis/services/ChapterAnalysisService";
+import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { createChapterAnalysisAiClient } from "@/server/modules/analysis/services/aiClient";
 import { createPersonaResolver } from "@/server/modules/analysis/services/PersonaResolver";
+import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
 import { createAiProviderClient } from "@/server/providers/ai";
 import { decryptValue } from "@/server/security/encryption";
 
@@ -21,6 +23,19 @@ vi.mock("@/server/modules/analysis/services/aiClient", () => ({
 
 vi.mock("@/server/security/encryption", () => ({
   decryptValue: vi.fn()
+}));
+
+vi.mock("@/server/modules/personas/mergePersonas", () => ({
+  createMergePersonasService: vi.fn().mockReturnValue({
+    mergePersonas: vi.fn().mockResolvedValue({ redirectedRelationships: 0 })
+  })
+}));
+
+vi.mock("@/server/modules/analysis/services/ValidationAgentService", () => ({
+  validationAgentService: {
+    validateChapterResult: vi.fn()
+  },
+  createValidationAgentService: vi.fn()
 }));
 
 function buildChapter(overrides: Partial<{
@@ -92,6 +107,15 @@ function createPrismaMock(chapter = buildChapter()) {
     chapter: {
       findUnique: vi.fn().mockResolvedValue(chapter)
     },
+    book: {
+      findUnique: vi.fn()
+    },
+    profile: {
+      findMany: vi.fn()
+    },
+    persona: {
+      update: vi.fn()
+    },
     aiModel: {
       findUnique: vi.fn(),
       findFirst : vi.fn()
@@ -118,11 +142,18 @@ describe("chapter analysis service", () => {
   const mockedCreateAiProviderClient = vi.mocked(createAiProviderClient);
   const mockedCreateChapterAnalysisAiClient = vi.mocked(createChapterAnalysisAiClient);
   const mockedDecryptValue = vi.mocked(decryptValue);
+  const mockedCreateMergePersonasService = vi.mocked(createMergePersonasService);
+  let mergePersonasMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
 
+    mergePersonasMock = vi.fn().mockResolvedValue({ redirectedRelationships: 0 });
+    mockedCreateMergePersonasService.mockReturnValue({
+      mergePersonas: mergePersonasMock
+    } as never);
     mockedCreatePersonaResolver.mockReturnValue({
       resolve: vi.fn().mockResolvedValue({
         status    : "resolved",
@@ -138,7 +169,8 @@ describe("chapter analysis service", () => {
         biographies  : [],
         relationships: []
       }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
+      discoverChapterRoster: vi.fn().mockResolvedValue([]),
+      resolvePersonaTitles : vi.fn().mockResolvedValue([])
     } as never);
   });
 
@@ -462,5 +494,255 @@ describe("chapter analysis service", () => {
     });
     expect(mockedCreateChapterAnalysisAiClient).toHaveBeenCalledTimes(1);
     expect(runtimeAiClient.analyzeChapterChunk).toHaveBeenCalledTimes(1);
+  });
+
+  it("registers high-confidence roster alias hints and passes chapterNo to resolver", async () => {
+    const { prismaMock, mentionCreateMany } = createPrismaMock();
+    const resolveMock = vi.fn().mockResolvedValue({
+      status    : "resolved",
+      personaId : "persona-existing",
+      confidence: 1
+    });
+    mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock } as never);
+
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias        : vi.fn(),
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+
+    const service = createChapterAnalysisService(prismaMock as never, {
+      analyzeChapterChunk: vi.fn().mockResolvedValue({
+        mentions     : [{ personaName: "范老爷", rawText: "范老爷来了", paraIndex: 0 }],
+        biographies  : [],
+        relationships: []
+      }),
+      discoverChapterRoster: vi.fn().mockResolvedValue([
+        {
+          surfaceForm      : "范老爷",
+          aliasType        : "NICKNAME",
+          suggestedRealName: "范进",
+          aliasConfidence  : 0.88,
+          contextHint      : {
+            alias              : "范老爷",
+            aliasType          : "NICKNAME",
+            coOccurringPersonas: ["严监生"],
+            contextClue        : "与范进同段叙述中举",
+            confidence         : 0.88
+          }
+        }
+      ]),
+      resolvePersonaTitles: vi.fn().mockResolvedValue([])
+    } as never, aliasRegistry);
+
+    await service.analyzeChapter("chapter-1");
+
+    expect(registerAlias).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      personaId   : "persona-existing",
+      alias       : "范老爷",
+      resolvedName: "范进",
+      aliasType   : "NICKNAME",
+      confidence  : 0.88,
+      evidence    : "与范进同段叙述中举",
+      chapterStart: 1,
+      status      : "PENDING"
+    }, expect.any(Object));
+
+    const firstResolveInput = resolveMock.mock.calls[0]?.[0] as {
+      chapterNo?: number;
+      rosterMap : Map<string, string>;
+    } | undefined;
+    expect(firstResolveInput?.chapterNo).toBe(1);
+    expect(firstResolveInput?.rosterMap.get("范老爷")).toBe("persona-existing");
+    expect(mentionCreateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("persists alias mapping after title resolution", async () => {
+    const prismaMock = {
+      book: {
+        findUnique: vi.fn().mockResolvedValue({
+          title    : "儒林外史",
+          aiModelId: null
+        })
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            localSummary: "明朝开国人物",
+            persona     : { id: "title-1", name: "太祖皇帝" }
+          }
+        ])
+      },
+      persona: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        update   : vi.fn().mockResolvedValue({})
+      },
+      aiModel: {
+        findUnique: vi.fn(),
+        findFirst : vi.fn().mockResolvedValue({
+          id       : "model-default",
+          provider : "DeepSeek",
+          name     : "DeepSeek V3",
+          modelId  : "deepseek-chat",
+          baseUrl  : "https://api.deepseek.com",
+          apiKey   : "enc:v1:cipher",
+          isEnabled: true
+        })
+      },
+      $transaction: vi.fn().mockImplementation(async (callback: (client: unknown) => Promise<unknown>) => {
+        // $transaction 内部使用 tx.persona.update，此处模拟
+        const txClient = {
+          persona     : prismaMock.persona,
+          aliasMapping: { create: vi.fn(), update: vi.fn(), findFirst: vi.fn() }
+        };
+        return callback(txClient);
+      })
+    };
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias        : vi.fn(),
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+
+    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce({
+      analyzeChapterChunk: vi.fn().mockResolvedValue({
+        mentions     : [],
+        biographies  : [],
+        relationships: []
+      }),
+      discoverChapterRoster: vi.fn().mockResolvedValue([]),
+      resolvePersonaTitles : vi.fn().mockResolvedValue([
+        {
+          personaId     : "title-1",
+          title         : "太祖皇帝",
+          realName      : "朱元璋",
+          confidence    : 0.93,
+          historicalNote: "明太祖"
+        }
+      ])
+    } as never);
+
+    const service = createChapterAnalysisService(prismaMock as never, undefined, aliasRegistry);
+    const updatedCount = await service.resolvePersonaTitles("book-1");
+
+    expect(updatedCount).toBe(1);
+    expect(prismaMock.persona.update).toHaveBeenCalledWith({
+      where: { id: "title-1" },
+      data : {
+        name      : "朱元璋",
+        nameType  : "NAMED",
+        confidence: 0.93,
+        aliases   : { push: "太祖皇帝" }
+      }
+    });
+    expect(registerAlias).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      personaId   : "title-1",
+      alias       : "太祖皇帝",
+      resolvedName: "朱元璋",
+      aliasType   : "TITLE",
+      confidence  : 0.93,
+      evidence    : "明太祖",
+      status      : "CONFIRMED"
+    }, expect.any(Object));
+  });
+
+  it("merges into existing persona when duplicate found in resolvePersonaTitles", async () => {
+    const prismaMock = {
+      book: {
+        findUnique: vi.fn().mockResolvedValue({
+          title    : "儒林外史",
+          aiModelId: null
+        })
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            localSummary: "明朝开国人物",
+            persona     : { id: "title-1", name: "太祖皇帝" }
+          }
+        ])
+      },
+      persona: {
+        // findFirst 返回已存在的 persona（触发合并路径）
+        findFirst: vi.fn().mockResolvedValue({ id: "existing-persona-zhu" }),
+        update   : vi.fn().mockResolvedValue({})
+      },
+      aiModel: {
+        findUnique: vi.fn(),
+        findFirst : vi.fn().mockResolvedValue({
+          id       : "model-default",
+          provider : "DeepSeek",
+          name     : "DeepSeek V3",
+          modelId  : "deepseek-chat",
+          baseUrl  : "https://api.deepseek.com",
+          apiKey   : "enc:v1:cipher",
+          isEnabled: true
+        })
+      },
+      $transaction: vi.fn().mockImplementation(async (callback: (client: unknown) => Promise<unknown>) => {
+        const txClient = {
+          persona     : prismaMock.persona,
+          aliasMapping: { create: vi.fn(), update: vi.fn(), findFirst: vi.fn() }
+        };
+        return callback(txClient);
+      })
+    };
+
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias        : vi.fn(),
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+
+    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce({
+      analyzeChapterChunk  : vi.fn(),
+      discoverChapterRoster: vi.fn(),
+      resolvePersonaTitles : vi.fn().mockResolvedValue([
+        {
+          personaId     : "title-1",
+          title         : "太祖皇帝",
+          realName      : "朱元璋",
+          confidence    : 0.95,
+          historicalNote: "明太祖洪武帝"
+        }
+      ])
+    } as never);
+
+    const service = createChapterAnalysisService(prismaMock as never, undefined, aliasRegistry, null);
+    const updatedCount = await service.resolvePersonaTitles("book-1");
+
+    expect(updatedCount).toBe(1);
+    // 应调用 mergePersonas 而非 persona.update
+    expect(mergePersonasMock).toHaveBeenCalledWith({
+      targetId: "existing-persona-zhu",
+      sourceId: "title-1"
+    });
+    // 不应调用 persona.update（因为走的 merge 路径）
+    expect(prismaMock.persona.update).not.toHaveBeenCalled();
+    // 别名注册应指向合并目标
+    expect(registerAlias).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      personaId   : "existing-persona-zhu",
+      alias       : "太祖皇帝",
+      resolvedName: "朱元璋",
+      aliasType   : "TITLE",
+      confidence  : 0.95,
+      evidence    : "明太祖洪武帝",
+      status      : "CONFIRMED"
+    });
   });
 });

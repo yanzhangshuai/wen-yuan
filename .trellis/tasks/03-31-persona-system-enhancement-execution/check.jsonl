@@ -1,0 +1,6 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check-backend.md", "reason": "Backend check spec"}
+{"file": ".claude/commands/trellis/check-frontend.md", "reason": "Frontend check spec"}
+{"file": "docs/人物解析识别系统增强-prd.md", "reason": "校验输出是否脱离源PRD"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "检查说明清晰度与可维护性"}
+{"file": ".trellis/spec/guides/index.md", "reason": "检查风险/依赖是否完整"}

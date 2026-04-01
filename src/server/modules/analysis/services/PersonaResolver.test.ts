@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
+import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 
 function createPrismaMock() {
   const personaFindMany = vi.fn();
@@ -33,6 +34,45 @@ function createPrismaMock() {
 }
 
 describe("persona resolver", () => {
+  it("resolves by alias registry fast-path when confidence is high enough", async () => {
+    const { prisma, personaFindMany, profileUpsert } = createPrismaMock();
+    const lookupAlias = vi.fn().mockResolvedValue({
+      alias       : "范老爷",
+      resolvedName: "范进",
+      personaId   : "persona-fanjin",
+      aliasType   : "NICKNAME",
+      confidence  : 0.86,
+      evidence    : "上下文共现",
+      status      : "CONFIRMED"
+    });
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias,
+      registerAlias      : vi.fn(),
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范老爷",
+      chapterContent: "范老爷今日登门。",
+      chapterNo     : 3
+    });
+
+    expect(result).toEqual({
+      status     : "resolved",
+      personaId  : "persona-fanjin",
+      confidence : 0.86,
+      matchedName: "范进"
+    });
+    expect(lookupAlias).toHaveBeenCalledWith("book-1", "范老爷", 3);
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+    expect(personaFindMany).not.toHaveBeenCalled();
+  });
+
   it("marks empty extracted name as hallucinated", async () => {
     const { prisma, personaFindMany } = createPrismaMock();
     const resolver = createPersonaResolver(prisma);
@@ -379,5 +419,52 @@ describe("persona resolver", () => {
     });
     expect(genericResult.status).toBe("hallucinated");
     expect(genericResult.reason).toBe("generic_title");
+  });
+
+  it("registers alias mapping when creating TITLE_ONLY persona with alias registry", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate
+    } = createPrismaMock();
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias        : vi.fn().mockResolvedValue(null),
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "title-persona-2",
+      name: "太祖皇帝"
+    });
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "太祖皇帝",
+      chapterContent: "太祖皇帝颁布恩诏。",
+      chapterNo     : 8,
+      titleOnlyNames: new Set(["太祖皇帝"])
+    });
+
+    expect(result.status).toBe("created");
+    expect(registerAlias).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      personaId   : "title-persona-2",
+      alias       : "太祖皇帝",
+      resolvedName: undefined,
+      aliasType   : "TITLE",
+      confidence  : expect.any(Number),
+      evidence    : "来自章节解析自动注册",
+      chapterStart: 8,
+      status      : "PENDING"
+    }, expect.any(Object));
   });
 });

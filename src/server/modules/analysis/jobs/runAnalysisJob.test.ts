@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createAnalysisJobRunner, markOrphanPersonas } from "@/server/modules/analysis/jobs/runAnalysisJob";
 
-function createRunnerContext() {
+function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const analysisJobFindUnique = vi.fn();
   const analysisJobFindFirst = vi.fn();
   const analysisJobUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
@@ -21,10 +21,27 @@ function createRunnerContext() {
   });
   // Phase 5 真名溯源：默认返回 0（无 TITLE_ONLY persona），不影响既有测试断言。
   const resolvePersonaTitles = vi.fn().mockResolvedValue(0);
+  const validateBookResult = vi.fn().mockResolvedValue({
+    id     : "report-default",
+    issues : [],
+    summary: {
+      totalIssues : 0,
+      errorCount  : 0,
+      warningCount: 0,
+      infoCount   : 0,
+      autoFixable : 0,
+      needsReview : 0
+    }
+  });
+  const applyAutoFixes = vi.fn().mockResolvedValue(0);
   // 孤儿检测所需：默认无档案 → 无孤儿，不影响既有测试断言。
   const profileFindMany = vi.fn().mockResolvedValue([]);
   const mentionGroupBy = vi.fn().mockResolvedValue([]);
   const personaUpdateMany = vi.fn().mockResolvedValue({ count: 0 });
+
+  const chapterAnalyzer = options.withValidation
+    ? { analyzeChapter, resolvePersonaTitles, validateBookResult, applyAutoFixes }
+    : { analyzeChapter, resolvePersonaTitles };
 
   const runner = createAnalysisJobRunner({
     analysisJob: {
@@ -39,7 +56,7 @@ function createRunnerContext() {
     mention     : { groupBy: mentionGroupBy },
     persona     : { updateMany: personaUpdateMany },
     $transaction: transaction
-  } as never, { analyzeChapter, resolvePersonaTitles });
+  } as never, chapterAnalyzer as never);
 
   return {
     runner,
@@ -54,6 +71,8 @@ function createRunnerContext() {
     transaction,
     analyzeChapter,
     resolvePersonaTitles,
+    validateBookResult,
+    applyAutoFixes,
     profileFindMany,
     mentionGroupBy,
     personaUpdateMany
@@ -418,6 +437,131 @@ describe("analysis job runner", () => {
       select : { id: true, no: true }
     });
     expect(analyzeChapter).toHaveBeenCalledTimes(2);
+  });
+
+  it("runs incremental title resolution every 5 chapters during chapter loop", async () => {
+    const { runner, analysisJobFindUnique, chapterFindMany, resolvePersonaTitles } = createRunnerContext();
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-incremental",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-incremental",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([
+      { id: "chapter-1", no: 1 },
+      { id: "chapter-2", no: 2 },
+      { id: "chapter-3", no: 3 },
+      { id: "chapter-4", no: 4 },
+      { id: "chapter-5", no: 5 },
+      { id: "chapter-6", no: 6 }
+    ]);
+
+    await runner.runAnalysisJobById("job-incremental");
+    // 第 5 章触发一次增量溯源 + FULL_BOOK 完成后再触发一次终极溯源。
+    expect(resolvePersonaTitles).toHaveBeenCalledTimes(2);
+    expect(resolvePersonaTitles).toHaveBeenCalledWith("book-1");
+  });
+
+  it("runs full-book validation and applies auto fixes when report is auto-fixable", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      validateBookResult,
+      applyAutoFixes
+    } = createRunnerContext({ withValidation: true });
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-validation",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-validation",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    validateBookResult.mockResolvedValueOnce({
+      id     : "report-1",
+      issues : [],
+      summary: {
+        totalIssues : 1,
+        errorCount  : 0,
+        warningCount: 1,
+        infoCount   : 0,
+        autoFixable : 1,
+        needsReview : 0
+      }
+    });
+    applyAutoFixes.mockResolvedValueOnce(1);
+
+    await runner.runAnalysisJobById("job-validation");
+    expect(validateBookResult).toHaveBeenCalledWith("book-1", "job-validation");
+    expect(applyAutoFixes).toHaveBeenCalledWith("report-1");
+  });
+
+  it("does not fail main job when full-book validation throws", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      validateBookResult,
+      analysisJobUpdate
+    } = createRunnerContext({ withValidation: true });
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-validation-warn",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-validation-warn",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    validateBookResult.mockRejectedValueOnce(new Error("validation service unavailable"));
+
+    await expect(runner.runAnalysisJobById("job-validation-warn")).resolves.toBeUndefined();
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-validation-warn" },
+      data : expect.objectContaining({
+        status: AnalysisJobStatus.SUCCEEDED
+      })
+    });
   });
 
   it("runNextAnalysisJob prioritizes recoverable running job", async () => {

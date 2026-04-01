@@ -394,6 +394,8 @@ export const ModelName = {
   Mention: 'Mention',
   Relationship: 'Relationship',
   AnalysisJob: 'AnalysisJob',
+  AliasMapping: 'AliasMapping',
+  ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion'
 } as const
 
@@ -410,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "mergeSuggestion"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "aliasMapping" | "validationReport" | "mergeSuggestion"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1154,6 +1156,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AliasMapping: {
+      payload: Prisma.$AliasMappingPayload<ExtArgs>
+      fields: Prisma.AliasMappingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AliasMappingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AliasMappingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>
+        }
+        findFirst: {
+          args: Prisma.AliasMappingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AliasMappingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>
+        }
+        findMany: {
+          args: Prisma.AliasMappingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>[]
+        }
+        create: {
+          args: Prisma.AliasMappingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>
+        }
+        createMany: {
+          args: Prisma.AliasMappingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AliasMappingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>[]
+        }
+        delete: {
+          args: Prisma.AliasMappingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>
+        }
+        update: {
+          args: Prisma.AliasMappingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>
+        }
+        deleteMany: {
+          args: Prisma.AliasMappingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AliasMappingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AliasMappingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>[]
+        }
+        upsert: {
+          args: Prisma.AliasMappingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AliasMappingPayload>
+        }
+        aggregate: {
+          args: Prisma.AliasMappingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAliasMapping>
+        }
+        groupBy: {
+          args: Prisma.AliasMappingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AliasMappingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AliasMappingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AliasMappingCountAggregateOutputType> | number
+        }
+      }
+    }
+    ValidationReport: {
+      payload: Prisma.$ValidationReportPayload<ExtArgs>
+      fields: Prisma.ValidationReportFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ValidationReportFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ValidationReportFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>
+        }
+        findFirst: {
+          args: Prisma.ValidationReportFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ValidationReportFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>
+        }
+        findMany: {
+          args: Prisma.ValidationReportFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>[]
+        }
+        create: {
+          args: Prisma.ValidationReportCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>
+        }
+        createMany: {
+          args: Prisma.ValidationReportCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ValidationReportCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>[]
+        }
+        delete: {
+          args: Prisma.ValidationReportDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>
+        }
+        update: {
+          args: Prisma.ValidationReportUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>
+        }
+        deleteMany: {
+          args: Prisma.ValidationReportDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ValidationReportUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ValidationReportUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>[]
+        }
+        upsert: {
+          args: Prisma.ValidationReportUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ValidationReportPayload>
+        }
+        aggregate: {
+          args: Prisma.ValidationReportAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateValidationReport>
+        }
+        groupBy: {
+          args: Prisma.ValidationReportGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ValidationReportGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ValidationReportCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ValidationReportCountAggregateOutputType> | number
+        }
+      }
+    }
     MergeSuggestion: {
       payload: Prisma.$MergeSuggestionPayload<ExtArgs>
       fields: Prisma.MergeSuggestionFieldRefs
@@ -1461,6 +1611,42 @@ export const AnalysisJobScalarFieldEnum = {
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
 
 
+export const AliasMappingScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  personaId: 'personaId',
+  alias: 'alias',
+  resolvedName: 'resolvedName',
+  aliasType: 'aliasType',
+  confidence: 'confidence',
+  evidence: 'evidence',
+  status: 'status',
+  chapterStart: 'chapterStart',
+  chapterEnd: 'chapterEnd',
+  contextHash: 'contextHash',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AliasMappingScalarFieldEnum = (typeof AliasMappingScalarFieldEnum)[keyof typeof AliasMappingScalarFieldEnum]
+
+
+export const ValidationReportScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  jobId: 'jobId',
+  scope: 'scope',
+  chapterId: 'chapterId',
+  status: 'status',
+  issues: 'issues',
+  summary: 'summary',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ValidationReportScalarFieldEnum = (typeof ValidationReportScalarFieldEnum)[keyof typeof ValidationReportScalarFieldEnum]
+
+
 export const MergeSuggestionScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
@@ -1491,6 +1677,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1712,6 +1905,34 @@ export type EnumAnalysisJobStatusFieldRefInput<$PrismaModel> = FieldRefInputType
 export type ListEnumAnalysisJobStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AnalysisJobStatus[]'>
     
 
+
+/**
+ * Reference to a field of type 'AliasType'
+ */
+export type EnumAliasTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AliasType'>
+    
+
+
+/**
+ * Reference to a field of type 'AliasType[]'
+ */
+export type ListEnumAliasTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AliasType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AliasMappingStatus'
+ */
+export type EnumAliasMappingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AliasMappingStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AliasMappingStatus[]'
+ */
+export type ListEnumAliasMappingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AliasMappingStatus[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -1817,6 +2038,8 @@ export type GlobalOmitConfig = {
   mention?: Prisma.MentionOmit
   relationship?: Prisma.RelationshipOmit
   analysisJob?: Prisma.AnalysisJobOmit
+  aliasMapping?: Prisma.AliasMappingOmit
+  validationReport?: Prisma.ValidationReportOmit
   mergeSuggestion?: Prisma.MergeSuggestionOmit
 }
 

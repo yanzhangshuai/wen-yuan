@@ -336,6 +336,8 @@ export type BookWhereInput = {
   chapters?: Prisma.ChapterListRelationFilter
   profiles?: Prisma.ProfileListRelationFilter
   analysisJobs?: Prisma.AnalysisJobListRelationFilter
+  aliasMappings?: Prisma.AliasMappingListRelationFilter
+  validationReports?: Prisma.ValidationReportListRelationFilter
   mergeSuggestions?: Prisma.MergeSuggestionListRelationFilter
 }
 
@@ -363,6 +365,8 @@ export type BookOrderByWithRelationInput = {
   chapters?: Prisma.ChapterOrderByRelationAggregateInput
   profiles?: Prisma.ProfileOrderByRelationAggregateInput
   analysisJobs?: Prisma.AnalysisJobOrderByRelationAggregateInput
+  aliasMappings?: Prisma.AliasMappingOrderByRelationAggregateInput
+  validationReports?: Prisma.ValidationReportOrderByRelationAggregateInput
   mergeSuggestions?: Prisma.MergeSuggestionOrderByRelationAggregateInput
 }
 
@@ -393,6 +397,8 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   chapters?: Prisma.ChapterListRelationFilter
   profiles?: Prisma.ProfileListRelationFilter
   analysisJobs?: Prisma.AnalysisJobListRelationFilter
+  aliasMappings?: Prisma.AliasMappingListRelationFilter
+  validationReports?: Prisma.ValidationReportListRelationFilter
   mergeSuggestions?: Prisma.MergeSuggestionListRelationFilter
 }, "id">
 
@@ -471,6 +477,8 @@ export type BookCreateInput = {
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
 }
 
@@ -497,6 +505,8 @@ export type BookUncheckedCreateInput = {
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
 }
 
@@ -523,6 +533,8 @@ export type BookUpdateInput = {
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
 }
 
@@ -549,6 +561,8 @@ export type BookUncheckedUpdateInput = {
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
 }
 
@@ -808,6 +822,34 @@ export type BookUpdateOneRequiredWithoutAnalysisJobsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.BookUpdateToOneWithWhereWithoutAnalysisJobsInput, Prisma.BookUpdateWithoutAnalysisJobsInput>, Prisma.BookUncheckedUpdateWithoutAnalysisJobsInput>
 }
 
+export type BookCreateNestedOneWithoutAliasMappingsInput = {
+  create?: Prisma.XOR<Prisma.BookCreateWithoutAliasMappingsInput, Prisma.BookUncheckedCreateWithoutAliasMappingsInput>
+  connectOrCreate?: Prisma.BookCreateOrConnectWithoutAliasMappingsInput
+  connect?: Prisma.BookWhereUniqueInput
+}
+
+export type BookUpdateOneRequiredWithoutAliasMappingsNestedInput = {
+  create?: Prisma.XOR<Prisma.BookCreateWithoutAliasMappingsInput, Prisma.BookUncheckedCreateWithoutAliasMappingsInput>
+  connectOrCreate?: Prisma.BookCreateOrConnectWithoutAliasMappingsInput
+  upsert?: Prisma.BookUpsertWithoutAliasMappingsInput
+  connect?: Prisma.BookWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BookUpdateToOneWithWhereWithoutAliasMappingsInput, Prisma.BookUpdateWithoutAliasMappingsInput>, Prisma.BookUncheckedUpdateWithoutAliasMappingsInput>
+}
+
+export type BookCreateNestedOneWithoutValidationReportsInput = {
+  create?: Prisma.XOR<Prisma.BookCreateWithoutValidationReportsInput, Prisma.BookUncheckedCreateWithoutValidationReportsInput>
+  connectOrCreate?: Prisma.BookCreateOrConnectWithoutValidationReportsInput
+  connect?: Prisma.BookWhereUniqueInput
+}
+
+export type BookUpdateOneRequiredWithoutValidationReportsNestedInput = {
+  create?: Prisma.XOR<Prisma.BookCreateWithoutValidationReportsInput, Prisma.BookUncheckedCreateWithoutValidationReportsInput>
+  connectOrCreate?: Prisma.BookCreateOrConnectWithoutValidationReportsInput
+  upsert?: Prisma.BookUpsertWithoutValidationReportsInput
+  connect?: Prisma.BookWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BookUpdateToOneWithWhereWithoutValidationReportsInput, Prisma.BookUpdateWithoutValidationReportsInput>, Prisma.BookUncheckedUpdateWithoutValidationReportsInput>
+}
+
 export type BookCreateNestedOneWithoutMergeSuggestionsInput = {
   create?: Prisma.XOR<Prisma.BookCreateWithoutMergeSuggestionsInput, Prisma.BookUncheckedCreateWithoutMergeSuggestionsInput>
   connectOrCreate?: Prisma.BookCreateOrConnectWithoutMergeSuggestionsInput
@@ -844,6 +886,8 @@ export type BookCreateWithoutAiModelInput = {
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
 }
 
@@ -869,6 +913,8 @@ export type BookUncheckedCreateWithoutAiModelInput = {
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
 }
 
@@ -945,6 +991,8 @@ export type BookCreateWithoutChaptersInput = {
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
 }
 
@@ -970,6 +1018,8 @@ export type BookUncheckedCreateWithoutChaptersInput = {
   updatedAt?: Date | string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
 }
 
@@ -1011,6 +1061,8 @@ export type BookUpdateWithoutChaptersInput = {
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
 }
 
@@ -1036,6 +1088,8 @@ export type BookUncheckedUpdateWithoutChaptersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
 }
 
@@ -1061,6 +1115,8 @@ export type BookCreateWithoutProfilesInput = {
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
 }
 
@@ -1086,6 +1142,8 @@ export type BookUncheckedCreateWithoutProfilesInput = {
   updatedAt?: Date | string
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
 }
 
@@ -1127,6 +1185,8 @@ export type BookUpdateWithoutProfilesInput = {
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
 }
 
@@ -1152,6 +1212,8 @@ export type BookUncheckedUpdateWithoutProfilesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
 }
 
@@ -1177,6 +1239,8 @@ export type BookCreateWithoutAnalysisJobsInput = {
   aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
 }
 
@@ -1202,6 +1266,8 @@ export type BookUncheckedCreateWithoutAnalysisJobsInput = {
   updatedAt?: Date | string
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
 }
 
@@ -1243,6 +1309,8 @@ export type BookUpdateWithoutAnalysisJobsInput = {
   aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
 }
 
@@ -1268,6 +1336,256 @@ export type BookUncheckedUpdateWithoutAnalysisJobsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
+  mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
+}
+
+export type BookCreateWithoutAliasMappingsInput = {
+  id?: string
+  title: string
+  author?: string | null
+  dynasty?: string | null
+  description?: string | null
+  coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
+  deletedAt?: Date | string | null
+  status?: string
+  errorLog?: string | null
+  parseProgress?: number
+  parseStage?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
+  chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
+  profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
+  analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
+  mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
+}
+
+export type BookUncheckedCreateWithoutAliasMappingsInput = {
+  id?: string
+  title: string
+  author?: string | null
+  dynasty?: string | null
+  description?: string | null
+  coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
+  deletedAt?: Date | string | null
+  status?: string
+  errorLog?: string | null
+  parseProgress?: number
+  parseStage?: string | null
+  aiModelId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
+  profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
+  analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
+  mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
+}
+
+export type BookCreateOrConnectWithoutAliasMappingsInput = {
+  where: Prisma.BookWhereUniqueInput
+  create: Prisma.XOR<Prisma.BookCreateWithoutAliasMappingsInput, Prisma.BookUncheckedCreateWithoutAliasMappingsInput>
+}
+
+export type BookUpsertWithoutAliasMappingsInput = {
+  update: Prisma.XOR<Prisma.BookUpdateWithoutAliasMappingsInput, Prisma.BookUncheckedUpdateWithoutAliasMappingsInput>
+  create: Prisma.XOR<Prisma.BookCreateWithoutAliasMappingsInput, Prisma.BookUncheckedCreateWithoutAliasMappingsInput>
+  where?: Prisma.BookWhereInput
+}
+
+export type BookUpdateToOneWithWhereWithoutAliasMappingsInput = {
+  where?: Prisma.BookWhereInput
+  data: Prisma.XOR<Prisma.BookUpdateWithoutAliasMappingsInput, Prisma.BookUncheckedUpdateWithoutAliasMappingsInput>
+}
+
+export type BookUpdateWithoutAliasMappingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
+  parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
+  chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
+  profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
+  analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
+  mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
+}
+
+export type BookUncheckedUpdateWithoutAliasMappingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
+  parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
+  profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
+  analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
+  mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
+}
+
+export type BookCreateWithoutValidationReportsInput = {
+  id?: string
+  title: string
+  author?: string | null
+  dynasty?: string | null
+  description?: string | null
+  coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
+  deletedAt?: Date | string | null
+  status?: string
+  errorLog?: string | null
+  parseProgress?: number
+  parseStage?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  aiModel?: Prisma.AiModelCreateNestedOneWithoutBooksInput
+  chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
+  profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
+  analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
+}
+
+export type BookUncheckedCreateWithoutValidationReportsInput = {
+  id?: string
+  title: string
+  author?: string | null
+  dynasty?: string | null
+  description?: string | null
+  coverUrl?: string | null
+  sourceFileKey?: string | null
+  sourceFileUrl?: string | null
+  sourceFileName?: string | null
+  sourceFileMime?: string | null
+  sourceFileSize?: number | null
+  deletedAt?: Date | string | null
+  status?: string
+  errorLog?: string | null
+  parseProgress?: number
+  parseStage?: string | null
+  aiModelId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
+  profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
+  analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
+}
+
+export type BookCreateOrConnectWithoutValidationReportsInput = {
+  where: Prisma.BookWhereUniqueInput
+  create: Prisma.XOR<Prisma.BookCreateWithoutValidationReportsInput, Prisma.BookUncheckedCreateWithoutValidationReportsInput>
+}
+
+export type BookUpsertWithoutValidationReportsInput = {
+  update: Prisma.XOR<Prisma.BookUpdateWithoutValidationReportsInput, Prisma.BookUncheckedUpdateWithoutValidationReportsInput>
+  create: Prisma.XOR<Prisma.BookCreateWithoutValidationReportsInput, Prisma.BookUncheckedCreateWithoutValidationReportsInput>
+  where?: Prisma.BookWhereInput
+}
+
+export type BookUpdateToOneWithWhereWithoutValidationReportsInput = {
+  where?: Prisma.BookWhereInput
+  data: Prisma.XOR<Prisma.BookUpdateWithoutValidationReportsInput, Prisma.BookUncheckedUpdateWithoutValidationReportsInput>
+}
+
+export type BookUpdateWithoutValidationReportsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
+  parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiModel?: Prisma.AiModelUpdateOneWithoutBooksNestedInput
+  chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
+  profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
+  analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
+}
+
+export type BookUncheckedUpdateWithoutValidationReportsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileMime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFileSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseProgress?: Prisma.IntFieldUpdateOperationsInput | number
+  parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
+  profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
+  analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
 }
 
@@ -1294,6 +1612,8 @@ export type BookCreateWithoutMergeSuggestionsInput = {
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutBookInput
 }
 
 export type BookUncheckedCreateWithoutMergeSuggestionsInput = {
@@ -1319,6 +1639,8 @@ export type BookUncheckedCreateWithoutMergeSuggestionsInput = {
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutBookInput
 }
 
 export type BookCreateOrConnectWithoutMergeSuggestionsInput = {
@@ -1360,6 +1682,8 @@ export type BookUpdateWithoutMergeSuggestionsInput = {
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
 }
 
 export type BookUncheckedUpdateWithoutMergeSuggestionsInput = {
@@ -1385,6 +1709,8 @@ export type BookUncheckedUpdateWithoutMergeSuggestionsInput = {
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
 }
 
 export type BookCreateManyAiModelInput = {
@@ -1430,6 +1756,8 @@ export type BookUpdateWithoutAiModelInput = {
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
 }
 
@@ -1455,6 +1783,8 @@ export type BookUncheckedUpdateWithoutAiModelInput = {
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutBookNestedInput
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput
 }
 
@@ -1488,6 +1818,8 @@ export type BookCountOutputType = {
   chapters: number
   profiles: number
   analysisJobs: number
+  aliasMappings: number
+  validationReports: number
   mergeSuggestions: number
 }
 
@@ -1495,6 +1827,8 @@ export type BookCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   chapters?: boolean | BookCountOutputTypeCountChaptersArgs
   profiles?: boolean | BookCountOutputTypeCountProfilesArgs
   analysisJobs?: boolean | BookCountOutputTypeCountAnalysisJobsArgs
+  aliasMappings?: boolean | BookCountOutputTypeCountAliasMappingsArgs
+  validationReports?: boolean | BookCountOutputTypeCountValidationReportsArgs
   mergeSuggestions?: boolean | BookCountOutputTypeCountMergeSuggestionsArgs
 }
 
@@ -1532,6 +1866,20 @@ export type BookCountOutputTypeCountAnalysisJobsArgs<ExtArgs extends runtime.Typ
 /**
  * BookCountOutputType without action
  */
+export type BookCountOutputTypeCountAliasMappingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AliasMappingWhereInput
+}
+
+/**
+ * BookCountOutputType without action
+ */
+export type BookCountOutputTypeCountValidationReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ValidationReportWhereInput
+}
+
+/**
+ * BookCountOutputType without action
+ */
 export type BookCountOutputTypeCountMergeSuggestionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.MergeSuggestionWhereInput
 }
@@ -1561,6 +1909,8 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
   profiles?: boolean | Prisma.Book$profilesArgs<ExtArgs>
   analysisJobs?: boolean | Prisma.Book$analysisJobsArgs<ExtArgs>
+  aliasMappings?: boolean | Prisma.Book$aliasMappingsArgs<ExtArgs>
+  validationReports?: boolean | Prisma.Book$validationReportsArgs<ExtArgs>
   mergeSuggestions?: boolean | Prisma.Book$mergeSuggestionsArgs<ExtArgs>
   _count?: boolean | Prisma.BookCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["book"]>
@@ -1639,6 +1989,8 @@ export type BookInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
   profiles?: boolean | Prisma.Book$profilesArgs<ExtArgs>
   analysisJobs?: boolean | Prisma.Book$analysisJobsArgs<ExtArgs>
+  aliasMappings?: boolean | Prisma.Book$aliasMappingsArgs<ExtArgs>
+  validationReports?: boolean | Prisma.Book$validationReportsArgs<ExtArgs>
   mergeSuggestions?: boolean | Prisma.Book$mergeSuggestionsArgs<ExtArgs>
   _count?: boolean | Prisma.BookCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1656,6 +2008,8 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     chapters: Prisma.$ChapterPayload<ExtArgs>[]
     profiles: Prisma.$ProfilePayload<ExtArgs>[]
     analysisJobs: Prisma.$AnalysisJobPayload<ExtArgs>[]
+    aliasMappings: Prisma.$AliasMappingPayload<ExtArgs>[]
+    validationReports: Prisma.$ValidationReportPayload<ExtArgs>[]
     mergeSuggestions: Prisma.$MergeSuggestionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -2076,6 +2430,8 @@ export interface Prisma__BookClient<T, Null = never, ExtArgs extends runtime.Typ
   chapters<T extends Prisma.Book$chaptersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$chaptersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChapterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   profiles<T extends Prisma.Book$profilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$profilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   analysisJobs<T extends Prisma.Book$analysisJobsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$analysisJobsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisJobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  aliasMappings<T extends Prisma.Book$aliasMappingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$aliasMappingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AliasMappingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  validationReports<T extends Prisma.Book$validationReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$validationReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ValidationReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   mergeSuggestions<T extends Prisma.Book$mergeSuggestionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$mergeSuggestionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MergeSuggestionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2609,6 +2965,54 @@ export type Book$analysisJobsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.AnalysisJobScalarFieldEnum | Prisma.AnalysisJobScalarFieldEnum[]
+}
+
+/**
+ * Book.aliasMappings
+ */
+export type Book$aliasMappingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AliasMapping
+   */
+  select?: Prisma.AliasMappingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AliasMapping
+   */
+  omit?: Prisma.AliasMappingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AliasMappingInclude<ExtArgs> | null
+  where?: Prisma.AliasMappingWhereInput
+  orderBy?: Prisma.AliasMappingOrderByWithRelationInput | Prisma.AliasMappingOrderByWithRelationInput[]
+  cursor?: Prisma.AliasMappingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AliasMappingScalarFieldEnum | Prisma.AliasMappingScalarFieldEnum[]
+}
+
+/**
+ * Book.validationReports
+ */
+export type Book$validationReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ValidationReport
+   */
+  select?: Prisma.ValidationReportSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ValidationReport
+   */
+  omit?: Prisma.ValidationReportOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ValidationReportInclude<ExtArgs> | null
+  where?: Prisma.ValidationReportWhereInput
+  orderBy?: Prisma.ValidationReportOrderByWithRelationInput | Prisma.ValidationReportOrderByWithRelationInput[]
+  cursor?: Prisma.ValidationReportWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ValidationReportScalarFieldEnum | Prisma.ValidationReportScalarFieldEnum[]
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { NameType, PersonaType } from "@/generated/prisma/enums";
+import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 
 /**
  * 功能：泛化称谓集合——无法唯一指向某一具体人物的称谓，直接标记为幻觉，阻止创建伪实体。
@@ -34,8 +35,24 @@ export const GENERIC_TITLES = new Set([
 const RELATIONAL_SUFFIXES = new Set([
   "父亲", "母亲", "太太", "夫人", "儿子", "女儿",
   "兄弟", "兄长", "弟弟", "姐姐", "妹妹",
-  "老爹", "老娘", "之妻", "之子", "之父", "之母"
+  "老爹", "老娘", "之妻", "之子", "之父", "之母",
+  "大人", "将军", "老爷", "先生", "娘子"
 ]);
+
+const TITLE_PATTERN = /(皇帝|太后|太祖|太宗|吴王|国公|侯|伯|王)$/;
+const POSITION_PATTERN = /(丞相|太守|知府|知县|将军|尚书|侍郎|巡抚|总督|学道|老爷|先生)$/;
+
+function inferAliasType(name: string): "TITLE" | "POSITION" | "NICKNAME" {
+  if (TITLE_PATTERN.test(name)) {
+    return "TITLE";
+  }
+
+  if (POSITION_PATTERN.test(name)) {
+    return "POSITION";
+  }
+
+  return "NICKNAME";
+}
 
 /**
  * 功能：定义实体对齐输入参数。
@@ -48,6 +65,7 @@ interface ResolveInput {
   bookId         : string;
   extractedName  : string;
   chapterContent : string;
+  chapterNo?     : number;
   /**
    * Phase 1 名册预解析映射：surfaceForm → personaId（已知实体）| "GENERIC"（泛化称谓）。
    * 存在时优先用于快速解析，跳过相似度计算。
@@ -77,7 +95,7 @@ export interface ResolveResult {
 
 type TxLike = Pick<
   PrismaClient,
-  "persona" | "profile"
+  "persona" | "profile" | "aliasMapping"
 >;
 
 /**
@@ -100,7 +118,10 @@ interface CandidatePersona {
  * 异常：数据库操作失败时抛错。
  * 副作用：可能新增 persona/profile，或 upsert profile。
  */
-export function createPersonaResolver(prisma: PrismaClient) {
+export function createPersonaResolver(
+  prisma: PrismaClient,
+  aliasRegistry?: AliasRegistryService
+) {
   async function loadCandidates(client: TxLike, bookId: string, extracted: string): Promise<CandidatePersona[]> {
     // 第一层：精确/半精确召回（名字、别名、书内称呼）。
     const directMatches = await client.persona.findMany({
@@ -227,6 +248,25 @@ export function createPersonaResolver(prisma: PrismaClient) {
       }
     }
 
+    // Step 2.5: 别名注册表查询——检查 AliasRegistry 中是否有已确认映射。
+    if (aliasRegistry && input.chapterNo !== undefined) {
+      const aliasResult = await aliasRegistry.lookupAlias(input.bookId, input.extractedName.trim(), input.chapterNo);
+      if (aliasResult && aliasResult.confidence >= 0.7 && aliasResult.personaId) {
+        await client.profile.upsert({
+          where : { personaId_bookId: { personaId: aliasResult.personaId, bookId: input.bookId } },
+          update: {},
+          create: { personaId: aliasResult.personaId, bookId: input.bookId, localName: input.extractedName }
+        });
+
+        return {
+          status     : "resolved",
+          personaId  : aliasResult.personaId,
+          confidence : aliasResult.confidence,
+          matchedName: aliasResult.resolvedName ?? undefined
+        };
+      }
+    }
+
     const candidates = await loadCandidates(client, input.bookId, extracted);
 
     const scored = candidates
@@ -257,7 +297,11 @@ export function createPersonaResolver(prisma: PrismaClient) {
       });
 
       // 将本次抽取称谓补齐到 aliases（去重后追加），提升后续章节别名召回率。
-      if (!winner.candidate.aliases.includes(input.extractedName) && winner.candidate.name !== input.extractedName) {
+      const normalizedExtracted = input.extractedName.trim().toLowerCase();
+      const aliasExists = winner.candidate.aliases.some(
+        (a) => a.trim().toLowerCase() === normalizedExtracted
+      );
+      if (!aliasExists && winner.candidate.name.trim().toLowerCase() !== normalizedExtracted) {
         await client.persona.update({
           where: { id: winner.candidate.id },
           data : { aliases: { push: input.extractedName } }
@@ -304,6 +348,22 @@ export function createPersonaResolver(prisma: PrismaClient) {
         localName: input.extractedName
       }
     });
+
+    if (aliasRegistry && (nameType === NameType.TITLE_ONLY || POSITION_PATTERN.test(input.extractedName) || TITLE_PATTERN.test(input.extractedName))) {
+      const aliasType = nameType === NameType.TITLE_ONLY ? "TITLE" : inferAliasType(input.extractedName);
+      const mappingStatus = (winner?.score ?? 0.35) >= 0.9 ? "CONFIRMED" : "PENDING";
+      await aliasRegistry.registerAlias({
+        bookId      : input.bookId,
+        personaId   : created.id,
+        alias       : input.extractedName,
+        resolvedName: nameType === NameType.TITLE_ONLY ? undefined : created.name,
+        aliasType,
+        confidence  : winner?.score ?? 0.35,
+        evidence    : "来自章节解析自动注册",
+        chapterStart: input.chapterNo,
+        status      : mappingStatus
+      }, client);
+    }
 
     return {
       status     : "created",

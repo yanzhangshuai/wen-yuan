@@ -314,6 +314,7 @@ export type AnalysisJobWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
   aiModel?: Prisma.XOR<Prisma.AiModelNullableScalarRelationFilter, Prisma.AiModelWhereInput> | null
+  validationReports?: Prisma.ValidationReportListRelationFilter
 }
 
 export type AnalysisJobOrderByWithRelationInput = {
@@ -335,6 +336,7 @@ export type AnalysisJobOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   book?: Prisma.BookOrderByWithRelationInput
   aiModel?: Prisma.AiModelOrderByWithRelationInput
+  validationReports?: Prisma.ValidationReportOrderByRelationAggregateInput
 }
 
 export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
@@ -359,6 +361,7 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
   aiModel?: Prisma.XOR<Prisma.AiModelNullableScalarRelationFilter, Prisma.AiModelWhereInput> | null
+  validationReports?: Prisma.ValidationReportListRelationFilter
 }, "id">
 
 export type AnalysisJobOrderByWithAggregationInput = {
@@ -424,6 +427,7 @@ export type AnalysisJobCreateInput = {
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
   aiModel?: Prisma.AiModelCreateNestedOneWithoutAnalysisJobsInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateInput = {
@@ -443,6 +447,7 @@ export type AnalysisJobUncheckedCreateInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUpdateInput = {
@@ -462,6 +467,7 @@ export type AnalysisJobUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
   aiModel?: Prisma.AiModelUpdateOneWithoutAnalysisJobsNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateInput = {
@@ -481,6 +487,7 @@ export type AnalysisJobUncheckedUpdateInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobCreateManyInput = {
@@ -625,6 +632,11 @@ export type AnalysisJobSumOrderByAggregateInput = {
   attempt?: Prisma.SortOrder
 }
 
+export type AnalysisJobNullableScalarRelationFilter = {
+  is?: Prisma.AnalysisJobWhereInput | null
+  isNot?: Prisma.AnalysisJobWhereInput | null
+}
+
 export type AnalysisJobCreateNestedManyWithoutAiModelInput = {
   create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput> | Prisma.AnalysisJobCreateWithoutAiModelInput[] | Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput[]
   connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput | Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput[]
@@ -722,6 +734,22 @@ export type AnalysisJobUpdatechapterIndicesInput = {
   push?: number | number[]
 }
 
+export type AnalysisJobCreateNestedOneWithoutValidationReportsInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedCreateWithoutValidationReportsInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutValidationReportsInput
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+}
+
+export type AnalysisJobUpdateOneWithoutValidationReportsNestedInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedCreateWithoutValidationReportsInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutValidationReportsInput
+  upsert?: Prisma.AnalysisJobUpsertWithoutValidationReportsInput
+  disconnect?: Prisma.AnalysisJobWhereInput | boolean
+  delete?: Prisma.AnalysisJobWhereInput | boolean
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutValidationReportsInput, Prisma.AnalysisJobUpdateWithoutValidationReportsInput>, Prisma.AnalysisJobUncheckedUpdateWithoutValidationReportsInput>
+}
+
 export type AnalysisJobCreateWithoutAiModelInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
@@ -738,6 +766,7 @@ export type AnalysisJobCreateWithoutAiModelInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutAiModelInput = {
@@ -756,6 +785,7 @@ export type AnalysisJobUncheckedCreateWithoutAiModelInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutAiModelInput = {
@@ -822,6 +852,7 @@ export type AnalysisJobCreateWithoutBookInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   aiModel?: Prisma.AiModelCreateNestedOneWithoutAnalysisJobsInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutBookInput = {
@@ -840,6 +871,7 @@ export type AnalysisJobUncheckedCreateWithoutBookInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutBookInput = {
@@ -866,6 +898,98 @@ export type AnalysisJobUpdateWithWhereUniqueWithoutBookInput = {
 export type AnalysisJobUpdateManyWithWhereWithoutBookInput = {
   where: Prisma.AnalysisJobScalarWhereInput
   data: Prisma.XOR<Prisma.AnalysisJobUpdateManyMutationInput, Prisma.AnalysisJobUncheckedUpdateManyWithoutBookInput>
+}
+
+export type AnalysisJobCreateWithoutValidationReportsInput = {
+  id?: string
+  status?: $Enums.AnalysisJobStatus
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
+  aiModel?: Prisma.AiModelCreateNestedOneWithoutAnalysisJobsInput
+}
+
+export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
+  id?: string
+  bookId: string
+  aiModelId?: string | null
+  status?: $Enums.AnalysisJobStatus
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type AnalysisJobCreateOrConnectWithoutValidationReportsInput = {
+  where: Prisma.AnalysisJobWhereUniqueInput
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedCreateWithoutValidationReportsInput>
+}
+
+export type AnalysisJobUpsertWithoutValidationReportsInput = {
+  update: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedUpdateWithoutValidationReportsInput>
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedCreateWithoutValidationReportsInput>
+  where?: Prisma.AnalysisJobWhereInput
+}
+
+export type AnalysisJobUpdateToOneWithWhereWithoutValidationReportsInput = {
+  where?: Prisma.AnalysisJobWhereInput
+  data: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedUpdateWithoutValidationReportsInput>
+}
+
+export type AnalysisJobUpdateWithoutValidationReportsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
+  aiModel?: Prisma.AiModelUpdateOneWithoutAnalysisJobsNestedInput
+}
+
+export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AnalysisJobCreateManyAiModelInput = {
@@ -902,6 +1026,7 @@ export type AnalysisJobUpdateWithoutAiModelInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutAiModelInput = {
@@ -920,6 +1045,7 @@ export type AnalysisJobUncheckedUpdateWithoutAiModelInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateManyWithoutAiModelInput = {
@@ -974,6 +1100,7 @@ export type AnalysisJobUpdateWithoutBookInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiModel?: Prisma.AiModelUpdateOneWithoutAnalysisJobsNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutBookInput = {
@@ -992,6 +1119,7 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
@@ -1013,6 +1141,35 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
 }
 
 
+/**
+ * Count Type AnalysisJobCountOutputType
+ */
+
+export type AnalysisJobCountOutputType = {
+  validationReports: number
+}
+
+export type AnalysisJobCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  validationReports?: boolean | AnalysisJobCountOutputTypeCountValidationReportsArgs
+}
+
+/**
+ * AnalysisJobCountOutputType without action
+ */
+export type AnalysisJobCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AnalysisJobCountOutputType
+   */
+  select?: Prisma.AnalysisJobCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * AnalysisJobCountOutputType without action
+ */
+export type AnalysisJobCountOutputTypeCountValidationReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ValidationReportWhereInput
+}
+
 
 export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1033,6 +1190,8 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   updatedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
+  validationReports?: boolean | Prisma.AnalysisJob$validationReportsArgs<ExtArgs>
+  _count?: boolean | Prisma.AnalysisJobCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["analysisJob"]>
 
 export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1100,6 +1259,8 @@ export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArg
 export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
+  validationReports?: boolean | Prisma.AnalysisJob$validationReportsArgs<ExtArgs>
+  _count?: boolean | Prisma.AnalysisJobCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AnalysisJobIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -1115,6 +1276,7 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
   objects: {
     book: Prisma.$BookPayload<ExtArgs>
     aiModel: Prisma.$AiModelPayload<ExtArgs> | null
+    validationReports: Prisma.$ValidationReportPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1529,6 +1691,7 @@ export interface Prisma__AnalysisJobClient<T, Null = never, ExtArgs extends runt
   readonly [Symbol.toStringTag]: "PrismaPromise"
   book<T extends Prisma.BookDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookDefaultArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   aiModel<T extends Prisma.AnalysisJob$aiModelArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$aiModelArgs<ExtArgs>>): Prisma.Prisma__AiModelClient<runtime.Types.Result.GetResult<Prisma.$AiModelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  validationReports<T extends Prisma.AnalysisJob$validationReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$validationReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ValidationReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1986,6 +2149,30 @@ export type AnalysisJob$aiModelArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   include?: Prisma.AiModelInclude<ExtArgs> | null
   where?: Prisma.AiModelWhereInput
+}
+
+/**
+ * AnalysisJob.validationReports
+ */
+export type AnalysisJob$validationReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ValidationReport
+   */
+  select?: Prisma.ValidationReportSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ValidationReport
+   */
+  omit?: Prisma.ValidationReportOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ValidationReportInclude<ExtArgs> | null
+  where?: Prisma.ValidationReportWhereInput
+  orderBy?: Prisma.ValidationReportOrderByWithRelationInput | Prisma.ValidationReportOrderByWithRelationInput[]
+  cursor?: Prisma.ValidationReportWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ValidationReportScalarFieldEnum | Prisma.ValidationReportScalarFieldEnum[]
 }
 
 /**

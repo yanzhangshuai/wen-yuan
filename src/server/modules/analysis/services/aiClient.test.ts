@@ -62,4 +62,37 @@ describe("ChapterAnalysisAiClient", () => {
     expect(result.mentions).toEqual([]);
     expect(result.relationships).toEqual([]);
   });
+
+  it("parses enhanced roster fields in discoverChapterRoster", async () => {
+    const providerClient: AiProviderClient = {
+      generateJson: vi.fn(async () => JSON.stringify([
+        {
+          surfaceForm      : "太祖皇帝",
+          isNew            : true,
+          isTitleOnly      : true,
+          aliasType        : "TITLE",
+          contextHint      : "明朝开国语境",
+          suggestedRealName: "朱元璋",
+          aliasConfidence  : 0.91
+        }
+      ]))
+    };
+    const client = createChapterAnalysisAiClient(providerClient);
+
+    const roster = await client.discoverChapterRoster({
+      bookTitle   : "儒林外史",
+      chapterNo   : 1,
+      chapterTitle: "第一回",
+      content     : "太祖皇帝谕旨。",
+      profiles    : []
+    });
+
+    expect(roster).toHaveLength(1);
+    expect(roster[0]).toMatchObject({
+      surfaceForm      : "太祖皇帝",
+      aliasType        : "TITLE",
+      suggestedRealName: "朱元璋",
+      aliasConfidence  : 0.91
+    });
+  });
 });

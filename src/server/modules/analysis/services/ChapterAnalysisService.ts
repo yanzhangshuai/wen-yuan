@@ -3,12 +3,16 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { createAiProviderClient, type AiProviderName } from "@/server/providers/ai";
 import { decryptValue } from "@/server/security/encryption";
+import { aliasRegistryService, type AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { createChapterAnalysisAiClient, type AiAnalysisClient } from "@/server/modules/analysis/services/aiClient";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
+import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
+import { validationAgentService as defaultValidationAgent, type ValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
 import type {
   AnalysisProfileContext,
   BioCategoryValue,
-  ChapterAnalysisResponse
+  ChapterAnalysisResponse,
+  RegisterAliasInput
 } from "@/types/analysis";
 
 // 配置常量
@@ -85,9 +89,12 @@ export interface ChapterAnalysisResult {
  */
 export function createChapterAnalysisService(
   prismaClient: PrismaClient = prisma,
-  aiClient?: AiAnalysisClient
+  aiClient?: AiAnalysisClient,
+  aliasRegistry?: AliasRegistryService,
+  validationAgent?: Pick<ValidationAgentService, "validateChapterResult"> | null
 ) {
-  const personaResolver = createPersonaResolver(prismaClient);
+  const personaResolver = createPersonaResolver(prismaClient, aliasRegistry);
+  const { mergePersonas } = createMergePersonasService(prismaClient);
 
   /**
    * 功能：为章节分析解析“实际生效模型”。
@@ -213,8 +220,10 @@ export function createChapterAnalysisService(
 
     // 将名册结果转换为 rosterMap（surfaceForm → personaId | "GENERIC"）。
     const entityIdMap = buildEntityIdMap(profiles);
+    const profileLookup = buildProfileLookupMap(profiles);
     const rosterMap = new Map<string, string>();
     const titleOnlyNames = new Set<string>();
+    const pendingRosterAliasMappings: RegisterAliasInput[] = [];
     for (const entry of roster) {
       if (entry.generic) {
         rosterMap.set(entry.surfaceForm, "GENERIC");
@@ -226,6 +235,34 @@ export function createChapterAnalysisService(
       } else if (entry.isNew && entry.isTitleOnly) {
         // isTitleOnly: true 且为新建实体 → 记录到集合供 PersonaResolver 写入 nameType = TITLE_ONLY
         titleOnlyNames.add(entry.surfaceForm);
+      }
+
+      if (
+        aliasRegistry &&
+        entry.aliasType &&
+        typeof entry.aliasConfidence === "number" &&
+        entry.aliasConfidence >= 0.7 &&
+        entry.suggestedRealName
+      ) {
+        const suggestedKey = normalizeLookupKey(entry.suggestedRealName);
+        const matchedProfile = profileLookup.get(suggestedKey);
+        const confidence = entry.aliasConfidence;
+
+        pendingRosterAliasMappings.push({
+          bookId      : chapter.bookId,
+          personaId   : matchedProfile?.personaId,
+          alias       : entry.surfaceForm,
+          resolvedName: matchedProfile?.canonicalName ?? entry.suggestedRealName.trim(),
+          aliasType   : entry.aliasType,
+          confidence,
+          evidence    : entry.contextHint?.contextClue ?? "Phase1 名册别名线索",
+          chapterStart: chapter.no,
+          status      : confidence >= 0.9 ? "CONFIRMED" : "PENDING"
+        });
+
+        if (matchedProfile?.personaId && confidence >= 0.85) {
+          rosterMap.set(entry.surfaceForm, matchedProfile.personaId);
+        }
       }
       // isNew: true 且非 TITLE_ONLY → 不加入 rosterMap，走正常 resolver 创建新 persona 流程
     }
@@ -260,13 +297,24 @@ export function createChapterAnalysisService(
         chapterContent: chapter.content,
         merged,
         rosterMap,
-        titleOnlyNames
+        titleOnlyNames,
+        pendingRosterAliasMappings
       });
     }, {
       timeout: 30000
     });
 
     log("analysis.completed", { chapterId, ...stats });
+
+    // 章节级自检（非阻塞）：成功解析后触发 AI 二次验证，失败仅记日志不影响主流程。
+    if (validationAgent) {
+      fireChapterValidation(
+        validationAgent, prismaClient, chapter, stats
+      ).catch((err) =>
+        console.warn("[ChapterAnalysisService] chapter.validation.failed",
+          JSON.stringify({ chapterId, error: String(err).slice(0, 300) }))
+      );
+    }
 
     return {
       chapterId,
@@ -285,13 +333,14 @@ export function createChapterAnalysisService(
   async function persistResult(
     tx: Prisma.TransactionClient,
     input: {
-      chapterId     : string;
-      chapterNo     : number;
-      bookId        : string;
-      chapterContent: string;
-      merged        : ChapterAnalysisResponse;
-      rosterMap     : Map<string, string>;
-      titleOnlyNames: Set<string>;
+      chapterId                 : string;
+      chapterNo                 : number;
+      bookId                    : string;
+      chapterContent            : string;
+      merged                    : ChapterAnalysisResponse;
+      rosterMap                 : Map<string, string>;
+      titleOnlyNames            : Set<string>;
+      pendingRosterAliasMappings: RegisterAliasInput[];
     }
   ): Promise<Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">> {
     await tx.mention.deleteMany({ where: { chapterId: input.chapterId } });
@@ -301,6 +350,12 @@ export function createChapterAnalysisService(
     await tx.relationship.deleteMany({
       where: { chapterId: input.chapterId, status: ProcessingStatus.DRAFT }
     });
+
+    if (aliasRegistry) {
+      for (const aliasMapping of input.pendingRosterAliasMappings) {
+        await aliasRegistry.registerAlias(aliasMapping, tx);
+      }
+    }
 
     const cache = new Map<string, ResolveResult>();
     let personaCreated = 0;
@@ -313,6 +368,7 @@ export function createChapterAnalysisService(
           bookId        : input.bookId,
           extractedName : name,
           chapterContent: input.chapterContent,
+          chapterNo     : input.chapterNo,
           rosterMap     : input.rosterMap,
           titleOnlyNames: input.titleOnlyNames
         }, tx);
@@ -602,6 +658,62 @@ export function createChapterAnalysisService(
     );
   }
 
+  /**
+   * 功能：异步触发章节级自检（非阻塞），从 DB 加载刚持久化的分析结果后调用 validationAgent。
+   * 输入：validationAgent、prismaClient、chapter 基础信息、分析统计结果。
+   * 输出：无（结果写入 validation_reports 表）。
+   * 异常：调用方应 catch 并记录日志；不应影响主流程。
+   */
+  async function fireChapterValidation(
+    agent: Pick<ValidationAgentService, "validateChapterResult">,
+    pc: PrismaClient,
+    chapter: { id: string; no: number; bookId: string; content: string },
+    _stats: Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">
+  ): Promise<void> {
+    const [newPersonas, newMentions, newRelationships, existingProfiles] = await Promise.all([
+      pc.persona.findMany({
+        where  : { profiles: { some: { bookId: chapter.bookId, deletedAt: null } }, deletedAt: null },
+        select : { id: true, name: true, confidence: true, nameType: true },
+        orderBy: { createdAt: "desc" },
+        take   : 50
+      }),
+      pc.mention.findMany({
+        where : { chapterId: chapter.id, deletedAt: null },
+        select: { personaId: true, rawText: true },
+        take  : 200
+      }),
+      pc.relationship.findMany({
+        where : { chapterId: chapter.id, deletedAt: null },
+        select: { sourceId: true, targetId: true, type: true },
+        take  : 100
+      }),
+      pc.profile.findMany({
+        where  : { bookId: chapter.bookId, deletedAt: null },
+        include: { persona: { select: { name: true, aliases: true } } }
+      })
+    ]);
+
+    await agent.validateChapterResult({
+      bookId        : chapter.bookId,
+      chapterId     : chapter.id,
+      chapterNo     : chapter.no,
+      chapterContent: chapter.content.slice(0, 3000),
+      newPersonas   : newPersonas.map((p) => ({
+        id: p.id, name: p.name, confidence: p.confidence ?? 0.5, nameType: p.nameType ?? "NAMED"
+      })),
+      newMentions     : newMentions.map((m) => ({ personaId: m.personaId, rawText: m.rawText })),
+      newRelationships: newRelationships.map((r) => ({
+        sourceId: r.sourceId, targetId: r.targetId, type: r.type
+      })),
+      existingProfiles: existingProfiles.map((p) => ({
+        personaId    : p.personaId,
+        canonicalName: p.persona?.name ?? p.localName,
+        aliases      : (Array.isArray(p.persona?.aliases) ? p.persona.aliases : []),
+        localSummary : p.localSummary
+      }))
+    });
+  }
+
   function log(event: string, data: Record<string, unknown>) {
     console.info(`[ChapterAnalysisService] ${event}:`, JSON.stringify(data));
   }
@@ -649,17 +761,70 @@ export function createChapterAnalysisService(
     });
 
     // 3. 按置信度分流处理。
+    //    mergePersonas 内部自带 $transaction，单条 update + registerAlias 用独立事务保护一致性。
     let updatedCount = 0;
     for (const r of resolutions) {
       if (r.confidence >= 0.7 && r.realName) {
+        const existingPersona = await prismaClient.persona.findFirst({
+          where: {
+            id       : { not: r.personaId },
+            deletedAt: null,
+            profiles : { some: { bookId, deletedAt: null } },
+            OR       : [
+              { name: r.realName },
+              { aliases: { has: r.realName } }
+            ]
+          },
+          select: { id: true }
+        });
+
+        if (existingPersona) {
+          // mergePersonas 内部自带 $transaction，无需外层包裹
+          await mergePersonas({
+            targetId: existingPersona.id,
+            sourceId: r.personaId
+          });
+
+          if (aliasRegistry) {
+            await aliasRegistry.registerAlias({
+              bookId,
+              personaId   : existingPersona.id,
+              alias       : r.title,
+              resolvedName: r.realName,
+              aliasType   : "TITLE",
+              confidence  : r.confidence,
+              evidence    : r.historicalNote ?? "Phase 5 称号真名溯源",
+              status      : "CONFIRMED"
+            });
+          }
+          updatedCount++;
+          continue;
+        }
+
         // 高置信：确认真名，内嵌为常规 NAMED Persona。
-        await prismaClient.persona.update({
-          where: { id: r.personaId },
-          data : {
-            name      : r.realName,
-            nameType  : "NAMED",
-            confidence: r.confidence,
-            aliases   : { push: r.title } // 原称号茜入别名
+        // persona update + alias 注册用事务保证一致性。
+        await prismaClient.$transaction(async (tx) => {
+          await tx.persona.update({
+            where: { id: r.personaId },
+            data : {
+              name      : r.realName!,
+              nameType  : "NAMED",
+              confidence: r.confidence,
+              aliases   : { push: r.title }
+            }
+          });
+
+          if (aliasRegistry) {
+            await aliasRegistry.registerAlias({
+              bookId,
+              personaId   : r.personaId,
+              alias       : r.title,
+              resolvedName: r.realName!,
+              aliasType   : "TITLE",
+              confidence  : r.confidence,
+              evidence    : r.historicalNote ?? "Phase 5 称号真名溯源",
+              status      : r.confidence >= 0.9 ? "CONFIRMED" : "PENDING"
+            }, tx);
           }
         });
         updatedCount++;
@@ -678,7 +843,7 @@ export function createChapterAnalysisService(
   return { analyzeChapter, resolvePersonaTitles };
 }
 
-export const chapterAnalysisService = createChapterAnalysisService();
+export const chapterAnalysisService = createChapterAnalysisService(prisma, undefined, aliasRegistryService, defaultValidationAgent);
 
 /**
  * 功能：将人物档案列表转为短整型 ID 映射（shortId → personaId UUID）。
@@ -694,4 +859,30 @@ function buildEntityIdMap(profiles: AnalysisProfileContext[]): Map<number, strin
     map.set(idx + 1, p.personaId);
   });
   return map;
+}
+
+function normalizeLookupKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function buildProfileLookupMap(
+  profiles: AnalysisProfileContext[]
+): Map<string, { personaId: string; canonicalName: string }> {
+  const lookup = new Map<string, { personaId: string; canonicalName: string }>();
+  for (const profile of profiles) {
+    const names = [profile.canonicalName, ...profile.aliases];
+    for (const name of names) {
+      const key = normalizeLookupKey(name);
+      if (!key || lookup.has(key)) {
+        continue;
+      }
+
+      lookup.set(key, {
+        personaId    : profile.personaId,
+        canonicalName: profile.canonicalName
+      });
+    }
+  }
+
+  return lookup;
 }

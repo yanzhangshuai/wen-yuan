@@ -2,6 +2,7 @@ import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import type { ChapterType, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { chapterAnalysisService, type ChapterAnalysisResult } from "@/server/modules/analysis/services/ChapterAnalysisService";
+import { validationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
 
 /**
  * 功能：定义任务执行时所需的最小章节信息载体。
@@ -24,7 +25,9 @@ interface ChapterTask {
  * 异常：无。
  * 副作用：无。
  */
-type ChapterAnalyzer = Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles">;
+type ChapterAnalyzer =
+  Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles"> &
+  Partial<Pick<typeof validationAgentService, "validateBookResult" | "applyAutoFixes">>;
 
 /**
  * 功能：定义任务执行器读取任务时的最小字段集合。
@@ -65,6 +68,12 @@ const CHAPTER_MAX_RETRIES = 2;
 
 /** 单章节重试基础等待时间（ms），实际等待 = base * 第几次重试。 */
 const CHAPTER_RETRY_BASE_MS = 3000;
+
+/**
+ * 每处理多少章触发一次增量称号溯源。
+ * 目的：在长书解析过程中提前归并 TITLE_ONLY 人物，减少后续章节误识别扩散。
+ */
+const INCREMENTAL_RESOLVE_INTERVAL = 5;
 
 /**
  * 功能：判断章节级错误是否值得重试（网络抖动、限速、连接中断等临时性错误）。
@@ -286,7 +295,10 @@ async function claimQueuedJob(prismaClient: PrismaClient, jobId: string): Promis
 
 export function createAnalysisJobRunner(
   prismaClient: PrismaClient = prisma,
-  chapterAnalyzer: ChapterAnalyzer = chapterAnalysisService
+  chapterAnalyzer: ChapterAnalyzer = {
+    ...chapterAnalysisService,
+    ...validationAgentService
+  }
 ) {
   /**
    * 功能：执行指定解析任务（支持 QUEUED 任务和中断后的 RUNNING 任务继续跑）。
@@ -434,6 +446,23 @@ export function createAnalysisJobRunner(
           where: { id: chapter.id },
           data : { parseStatus: chapterSucceeded ? "SUCCEEDED" : "FAILED" }
         });
+
+        // 增量溯源：每 5 章触发一次称号真名溯源，尽早收敛 TITLE_ONLY 人物。
+        if ((index + 1) % INCREMENTAL_RESOLVE_INTERVAL === 0) {
+          try {
+            await chapterAnalyzer.resolvePersonaTitles(job.bookId);
+          } catch (incrementalResolveError) {
+            console.warn(
+              "[analysis.runner] incremental.title.resolve.failed",
+              JSON.stringify({
+                jobId    : job.id,
+                bookId   : job.bookId,
+                chapterNo: chapter.no,
+                error    : String(incrementalResolveError).slice(0, 500)
+              })
+            );
+          }
+        }
       }
 
       // 全部章节均失败时，视为任务整体失败。
@@ -479,6 +508,31 @@ export function createAnalysisJobRunner(
             "[analysis.runner] title.personas.resolved",
             JSON.stringify({ jobId: job.id, bookId: job.bookId, resolvedTitleCount })
           );
+        }
+
+        // Phase 6: 全书自检（不阻塞主流程，失败仅记日志）。
+        if (chapterAnalyzer.validateBookResult) {
+          try {
+            const report = await chapterAnalyzer.validateBookResult(job.bookId, job.id);
+            if (report.summary.autoFixable > 0 && chapterAnalyzer.applyAutoFixes) {
+              const appliedCount = await chapterAnalyzer.applyAutoFixes(report.id);
+              if (appliedCount > 0) {
+                console.info(
+                  "[analysis.runner] validation.autofix.applied",
+                  JSON.stringify({ jobId: job.id, bookId: job.bookId, reportId: report.id, appliedCount })
+                );
+              }
+            }
+          } catch (validationError) {
+            console.warn(
+              "[analysis.runner] book.validation.failed",
+              JSON.stringify({
+                jobId : job.id,
+                bookId: job.bookId,
+                error : String(validationError).slice(0, 500)
+              })
+            );
+          }
         }
       }
     } catch (error) {

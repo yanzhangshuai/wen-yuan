@@ -61,6 +61,8 @@ export const ModelName = {
   Mention: 'Mention',
   Relationship: 'Relationship',
   AnalysisJob: 'AnalysisJob',
+  AliasMapping: 'AliasMapping',
+  ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion'
 } as const
 
@@ -274,6 +276,42 @@ export const AnalysisJobScalarFieldEnum = {
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
 
 
+export const AliasMappingScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  personaId: 'personaId',
+  alias: 'alias',
+  resolvedName: 'resolvedName',
+  aliasType: 'aliasType',
+  confidence: 'confidence',
+  evidence: 'evidence',
+  status: 'status',
+  chapterStart: 'chapterStart',
+  chapterEnd: 'chapterEnd',
+  contextHash: 'contextHash',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AliasMappingScalarFieldEnum = (typeof AliasMappingScalarFieldEnum)[keyof typeof AliasMappingScalarFieldEnum]
+
+
+export const ValidationReportScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  jobId: 'jobId',
+  scope: 'scope',
+  chapterId: 'chapterId',
+  status: 'status',
+  issues: 'issues',
+  summary: 'summary',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ValidationReportScalarFieldEnum = (typeof ValidationReportScalarFieldEnum)[keyof typeof ValidationReportScalarFieldEnum]
+
+
 export const MergeSuggestionScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
@@ -304,6 +342,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

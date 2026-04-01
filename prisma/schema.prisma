@@ -52,6 +52,24 @@ enum AnalysisJobStatus {
   @@map("analysis_job_status")
 }
 
+enum AliasType {
+  TITLE // 封号/尊号，如太祖皇帝、吴王
+  POSITION // 职位称呼，如丞相、知府
+  KINSHIP // 亲属代称，如皇后、世子
+  NICKNAME // 绰号/外号，如范老爷
+  COURTESY_NAME // 字号，如子美
+
+  @@map("alias_type")
+}
+
+enum AliasMappingStatus {
+  PENDING // 待确认
+  CONFIRMED // 已确认
+  REJECTED // 已拒绝
+
+  @@map("alias_mapping_status")
+}
+
 enum PersonaType {
   PERSON // 人物
   LOCATION // 地点（州县、官署、名胜）
@@ -157,6 +175,8 @@ model Book {
   chapters     Chapter[] // 章节列表
   profiles     Profile[] // 本书角色档案
   analysisJobs AnalysisJob[] // 解析任务记录
+  aliasMappings AliasMapping[] // 别名映射记录
+  validationReports ValidationReport[] // 自检报告
   mergeSuggestions MergeSuggestion[] // 人物合并建议队列
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
@@ -216,6 +236,7 @@ model Persona {
   profiles    Profile[] // 各书籍维度档案
   mentions    Mention[] // 角色提及集合
   biographies BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
+  aliasMappings AliasMapping[] // 别名映射记录
   sourceMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionSourcePersona")
   targetMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionTargetPersona")
 
@@ -356,10 +377,58 @@ model AnalysisJob {
 
   book    Book     @relation(fields: [bookId], references: [id]) // 关联书籍
   aiModel AiModel? @relation(fields: [aiModelId], references: [id], onDelete: SetNull) // 关联模型（删除后置空）
+  validationReports ValidationReport[] // 该任务生成的自检报告
 
   @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
   @@index([status, createdAt], map: "analysis_jobs_status_created_at_idx") // 状态队列查询索引
   @@map("analysis_jobs")
+}
+
+/// @db.remark: 别名映射表。记录章节上下文中的“称号/别名 -> 真实人物”映射。
+model AliasMapping {
+  id           String             @id @default(uuid()) @db.Uuid
+  bookId       String             @map("book_id") @db.Uuid
+  personaId    String?            @map("persona_id") @db.Uuid
+  alias        String
+  resolvedName String?            @map("resolved_name")
+  aliasType    AliasType          @map("alias_type")
+  confidence   Float              @default(0)
+  evidence     String?            @db.Text
+  status       AliasMappingStatus @default(PENDING)
+  chapterStart Int?               @map("chapter_start")
+  chapterEnd   Int?               @map("chapter_end")
+  contextHash  String?            @map("context_hash")
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book    Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  persona Persona? @relation(fields: [personaId], references: [id], onDelete: SetNull)
+
+  @@index([bookId, alias], map: "alias_book_idx")
+  @@index([bookId, personaId], map: "persona_book_idx")
+  @@map("alias_mappings")
+}
+
+/// @db.remark: 自检报告。记录章节/全书级别的结构化质量检查结果。
+model ValidationReport {
+  id        String   @id @default(uuid()) @db.Uuid
+  bookId    String   @map("book_id") @db.Uuid
+  jobId     String?  @map("job_id") @db.Uuid
+  scope     String
+  chapterId String?  @map("chapter_id") @db.Uuid
+  status    String   @default("PENDING")
+  issues    Json
+  summary   Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  job  AnalysisJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([bookId], map: "validation_book_idx")
+  @@index([bookId, chapterId], map: "validation_book_chapter_idx")
+  @@index([jobId], map: "validation_job_idx")
+  @@map("validation_reports")
 }
 
 /// @db.remark: 人物别名消歧建议。用于管理员审核同名/别名归并。

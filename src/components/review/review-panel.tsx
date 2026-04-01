@@ -10,7 +10,9 @@ import {
   Link2,
   Calendar,
   GitMerge,
-  Loader2
+  Loader2,
+  Tags,
+  ShieldCheck
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,8 @@ import { PersonaEditForm } from "@/components/review/persona-edit-form";
 import { RelationshipEditForm } from "@/components/review/relationship-edit-form";
 import { BiographyEditForm } from "@/components/review/biography-edit-form";
 import { EntityMergeTool } from "@/components/review/entity-merge-tool";
+import { AliasReviewTab } from "@/components/review/alias-review-tab";
+import { ValidationReportTab } from "@/components/review/validation-report-tab";
 import type { PersonaSummary } from "@/lib/services/personas";
 import { fetchPersonaSummary } from "@/lib/services/personas";
 import {
@@ -33,27 +37,39 @@ import {
   type MergeSuggestionItem,
   type DraftsData
 } from "@/lib/services/reviews";
+import {
+  fetchAliasMappings as apiFetchAliasMappings,
+  type AliasMappingItem
+} from "@/lib/services/alias-mappings";
+import {
+  fetchValidationReports as apiFetchValidationReports,
+  type ValidationReportItem
+} from "@/lib/services/validation-reports";
 
 /* ------------------------------------------------
    Props
    ------------------------------------------------ */
 export interface ReviewPanelProps {
-  bookId                 : string;
-  bookTitle              : string;
-  initialDrafts          : DraftsData;
-  initialMergeSuggestions: MergeSuggestionItem[];
+  bookId                   : string;
+  bookTitle                : string;
+  initialDrafts            : DraftsData;
+  initialMergeSuggestions  : MergeSuggestionItem[];
+  initialAliasMappings?    : AliasMappingItem[];
+  initialValidationReports?: ValidationReportItem[];
 }
 
 /* ------------------------------------------------
    Tab types
    ------------------------------------------------ */
-type ReviewTab = "personas" | "relationships" | "biography" | "merge";
+type ReviewTab = "personas" | "relationships" | "biography" | "merge" | "aliases" | "validation";
 
 const TAB_CONFIG: { id: ReviewTab; label: string; icon: ReactNode }[] = [
   { id: "personas", label: "人物草稿", icon: <Users size={14} /> },
   { id: "relationships", label: "关系草稿", icon: <Link2 size={14} /> },
   { id: "biography", label: "传记事件", icon: <Calendar size={14} /> },
-  { id: "merge", label: "合并建议", icon: <GitMerge size={14} /> }
+  { id: "merge", label: "合并建议", icon: <GitMerge size={14} /> },
+  { id: "aliases", label: "别名映射", icon: <Tags size={14} /> },
+  { id: "validation", label: "自检报告", icon: <ShieldCheck size={14} /> }
 ];
 
 const BIO_CATEGORY_LABELS: Record<string, string> = {
@@ -73,12 +89,16 @@ export function ReviewPanel({
   bookId,
   bookTitle,
   initialDrafts,
-  initialMergeSuggestions
+  initialMergeSuggestions,
+  initialAliasMappings,
+  initialValidationReports
 }: ReviewPanelProps) {
   const [activeTab, setActiveTab] = useState<ReviewTab>("personas");
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<DraftsData | null>(initialDrafts);
   const [mergeSuggestions, setMergeSuggestions] = useState<MergeSuggestionItem[]>(initialMergeSuggestions);
+  const [aliasMappings, setAliasMappings] = useState<AliasMappingItem[]>(initialAliasMappings ?? []);
+  const [validationReports, setValidationReports] = useState<ValidationReportItem[]>(initialValidationReports ?? []);
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -95,6 +115,8 @@ export function ReviewPanel({
     /* 模块切换时重置本地状态，避免旧书籍的筛选/选中态遗留到新 bookId。 */
     setDrafts(initialDrafts);
     setMergeSuggestions(initialMergeSuggestions);
+    setAliasMappings(initialAliasMappings ?? []);
+    setValidationReports(initialValidationReports ?? []);
     setActiveTab("personas");
     setSourceFilter(null);
     setSelectedIds(new Set());
@@ -104,7 +126,18 @@ export function ReviewPanel({
     setEditingId(null);
     setEditingType(null);
     setMergePreview(null);
-  }, [bookId, initialDrafts, initialMergeSuggestions]);
+  }, [bookId, initialDrafts, initialMergeSuggestions, initialAliasMappings, initialValidationReports]);
+
+  /* 未通过 SSR 预载别名/自检数据时，客户端首次挂载懒加载。 */
+  useEffect(() => {
+    if (!initialAliasMappings) {
+      void apiFetchAliasMappings(bookId).then(setAliasMappings).catch(() => { /* silent */ });
+    }
+    if (!initialValidationReports) {
+      void apiFetchValidationReports(bookId).then(setValidationReports).catch(() => { /* silent */ });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookId]);
 
   function startEdit(id: string, type: "persona" | "relationship" | "biography") {
     setEditingId(id);
@@ -143,6 +176,28 @@ export function ReviewPanel({
       setMergeSuggestions(data);
     } catch {
       setLoadError("刷新合并建议失败，请稍后重试。");
+    }
+  }, [bookId]);
+
+  // Fetch alias mappings
+  const fetchAliases = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const data = await apiFetchAliasMappings(bookId);
+      setAliasMappings(data);
+    } catch {
+      setLoadError("刷新别名映射失败，请稍后重试。");
+    }
+  }, [bookId]);
+
+  // Fetch validation reports
+  const fetchValidation = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const data = await apiFetchValidationReports(bookId);
+      setValidationReports(data);
+    } catch {
+      setLoadError("刷新自检报告失败，请稍后重试。");
     }
   }, [bookId]);
 
@@ -253,17 +308,19 @@ export function ReviewPanel({
           >
             {tab.icon}
             {tab.label}
-            {drafts && (
-              <span className="ml-1 rounded-full bg-primary-subtle px-1.5 py-0.5 text-xs">
-                {tab.id === "personas"
-                  ? drafts.summary.persona
-                  : tab.id === "relationships"
-                    ? drafts.summary.relationship
-                    : tab.id === "biography"
-                      ? drafts.summary.biography
-                      : mergeSuggestions.length}
-              </span>
-            )}
+            <span className="ml-1 rounded-full bg-primary-subtle px-1.5 py-0.5 text-xs">
+              {tab.id === "personas"
+                ? (drafts?.summary.persona ?? 0)
+                : tab.id === "relationships"
+                  ? (drafts?.summary.relationship ?? 0)
+                  : tab.id === "biography"
+                    ? (drafts?.summary.biography ?? 0)
+                    : tab.id === "merge"
+                      ? mergeSuggestions.length
+                      : tab.id === "aliases"
+                        ? aliasMappings.filter(m => m.status === "PENDING").length
+                        : validationReports.reduce((sum, r) => sum + r.summary.needsReview, 0)}
+            </span>
           </button>
         ))}
       </div>
@@ -665,6 +722,24 @@ export function ReviewPanel({
             )
           ))}
         </div>
+      )}
+
+      {/* Alias mappings tab */}
+      {!loading && activeTab === "aliases" && (
+        <AliasReviewTab
+          bookId={bookId}
+          aliasMappings={aliasMappings}
+          onRefresh={() => { void fetchAliases(); }}
+        />
+      )}
+
+      {/* Validation reports tab */}
+      {!loading && activeTab === "validation" && (
+        <ValidationReportTab
+          bookId={bookId}
+          reports={validationReports}
+          onRefresh={() => { void fetchValidation(); }}
+        />
       )}
     </div>
   );
