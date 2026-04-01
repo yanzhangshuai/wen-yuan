@@ -67,6 +67,7 @@ export type AliasType = (typeof AliasType)[keyof typeof AliasType]
 export const AliasMappingStatus = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
+  LLM_INFERRED: 'LLM_INFERRED',
   REJECTED: 'REJECTED'
 } as const
 

@@ -135,7 +135,7 @@ exports[`buildRosterDiscoveryPrompt > includes alias annotation rules and keeps 
 1. 每个条目的 **surfaceForm** 必须是原文精确字符串，不得修改或翻译
 2. 若 surfaceForm 对应已知人物 → 填入该人物的档案序号（entityId，如 1、2、3）
 3. 若 surfaceForm 确认为本书**全新故事人物** → 填 "isNew": true
-4. 若 surfaceForm 是**泛化称谓**（如 老爷、夫人、太太、老太太、小姐、少爷、公子、相公、娘子、先生、掌柜、掌柜的、账房、管家、老管家等，无法唯一指向某人）→ 填 "generic": true
+4. 若 surfaceForm 是**泛化称谓**（如 按察司、把总、彼、布政司、参将、此人、大家、弟弟、都司、尔、夫人、父亲、公子、管家、家丁等，无法唯一指向某人）→ 填 "generic": true
 5. 相同称谓只输出**一次**（去重）
 6. **不要**凭想象补充原文中未出现的人物
 7. **只列举书中的叙事故事人物（虚构角色）**，严格排除以下类型：
@@ -182,4 +182,36 @@ exports[`buildRosterDiscoveryPrompt > includes alias annotation rules and keeps 
 
 ## 本章正文
 范进见中举，众人态度大变。"
+`;
+
+exports[`buildTitleArbitrationPrompt > builds gray-zone arbitration prompt deterministically 1`] = `
+"## 角色
+你是文学实体解析仲裁助手。
+
+## 任务
+判断《儒林外史》中的灰区称谓是否已经人格化为特定人物稳定称呼。
+
+## 约束
+1. 只针对给定称谓逐项判断，不扩展新增词。
+2. 若称谓明显泛指，isPersonalized 返回 false。
+3. confidence 只反映当前判断确信度。
+
+## 待判定称谓
+- "老爷" (chapterAppearanceCount=3, hasStableAliasBinding=false, singlePersonaConsistency=false, genericRatio=0.50)
+
+## 输出格式（仅输出 JSON 数组，不加任何说明）
+[
+  {
+    "surfaceForm": "掌门",
+    "isPersonalized": true,
+    "confidence": 0.82,
+    "reason": "多章稳定指向同一人物"
+  },
+  {
+    "surfaceForm": "先生",
+    "isPersonalized": false,
+    "confidence": 0.74,
+    "reason": "多次泛指，缺乏稳定绑定"
+  }
+]"
 `;

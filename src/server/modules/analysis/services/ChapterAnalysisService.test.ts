@@ -169,8 +169,9 @@ describe("chapter analysis service", () => {
         biographies  : [],
         relationships: []
       }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([]),
-      resolvePersonaTitles : vi.fn().mockResolvedValue([])
+      discoverChapterRoster        : vi.fn().mockResolvedValue([]),
+      resolvePersonaTitles         : vi.fn().mockResolvedValue([]),
+      arbitrateTitlePersonalization: vi.fn().mockResolvedValue([])
     } as never);
   });
 

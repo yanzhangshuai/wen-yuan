@@ -65,6 +65,7 @@ enum AliasType {
 enum AliasMappingStatus {
   PENDING // 待确认
   CONFIRMED // 已确认
+  LLM_INFERRED // AI 仲裁推断，待后续验证升级
   REJECTED // 已拒绝
 
   @@map("alias_mapping_status")

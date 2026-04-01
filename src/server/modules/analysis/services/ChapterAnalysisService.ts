@@ -7,13 +7,18 @@ import { aliasRegistryService, type AliasRegistryService } from "@/server/module
 import { createChapterAnalysisAiClient, type AiAnalysisClient } from "@/server/modules/analysis/services/aiClient";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
+import {
+  type BookLexiconConfig,
+  type MentionPersonalizationEvidence,
+  buildEffectiveGenericTitles
+} from "@/server/modules/analysis/config/lexicon";
+import { ANALYSIS_PIPELINE_CONFIG, DEFAULT_GENRE_PRESET, GENRE_PRESETS } from "@/server/modules/analysis/config/pipeline";
 import type {
   AnalysisProfileContext,
   BioCategoryValue,
   ChapterAnalysisResponse,
   RegisterAliasInput
 } from "@/types/analysis";
-import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 
 // 配置常量
 const MAX_CHUNK_LENGTH = 2000; // 每片输入字符数：缩小分片减少每次输出量，防止 AI token 上限截断
@@ -79,6 +84,12 @@ export interface ChapterAnalysisResult {
     biographies  : number;
     relationships: number;
   };
+  grayZoneCount?: number;
+}
+
+export interface GrayZoneMentionRecord {
+  surfaceForm: string;
+  evidence   : MentionPersonalizationEvidence;
 }
 
 /**
@@ -95,6 +106,20 @@ export function createChapterAnalysisService(
 ) {
   const personaResolver = createPersonaResolver(prismaClient, aliasRegistry);
   const { mergePersonas } = createMergePersonasService(prismaClient);
+  const grayZoneMentionStore = new Map<string, Map<string, MentionPersonalizationEvidence>>();
+
+  function recordGrayZoneMention(
+    bookId: string,
+    name: string,
+    evidence: MentionPersonalizationEvidence
+  ): void {
+    const bookStore = grayZoneMentionStore.get(bookId) ?? new Map<string, MentionPersonalizationEvidence>();
+    const existing = bookStore.get(name);
+    if (!existing || evidence.chapterAppearanceCount >= existing.chapterAppearanceCount) {
+      bookStore.set(name, evidence);
+    }
+    grayZoneMentionStore.set(bookId, bookStore);
+  }
 
   /**
    * 功能：为章节分析解析“实际生效模型”。
@@ -203,6 +228,9 @@ export function createChapterAnalysisService(
       ),
       localSummary: p.localSummary
     }));
+    const bookLexiconConfig = resolveBookLexiconConfig(chapter.book.title);
+    const effectiveGenericTitles = buildEffectiveGenericTitles(bookLexiconConfig);
+    const genericTitlesExample = Array.from(effectiveGenericTitles).slice(0, 15).join("、") + "等";
 
     const runtimeAiClient = aiClient ?? await createRuntimeAiClient(chapter.book.aiModelId);
 
@@ -213,8 +241,10 @@ export function createChapterAnalysisService(
       chapterNo   : chapter.no,
       chapterTitle: chapter.title,
       content     : chapter.content,
-      profiles
+      profiles,
+      genericTitlesExample
     });
+    const resolvedGenericRatios = collectGenericRatiosFromRoster(roster);
 
     log("analysis.roster_discovered", { chapterId, rosterSize: roster.length });
 
@@ -280,7 +310,8 @@ export function createChapterAnalysisService(
           content     : chunk,
           profiles,
           chunkIndex  : i + idx,
-          chunkCount  : chunks.length
+          chunkCount  : chunks.length,
+          genericTitlesExample
         })
       );
       const results = await Promise.all(batchPromises);
@@ -298,7 +329,9 @@ export function createChapterAnalysisService(
         merged,
         rosterMap,
         titleOnlyNames,
-        pendingRosterAliasMappings
+        pendingRosterAliasMappings,
+        lexiconConfig : bookLexiconConfig,
+        genericRatios : resolvedGenericRatios
       });
     }, {
       timeout: 30000
@@ -331,6 +364,8 @@ export function createChapterAnalysisService(
       rosterMap                 : Map<string, string>;
       titleOnlyNames            : Set<string>;
       pendingRosterAliasMappings: RegisterAliasInput[];
+      lexiconConfig?            : BookLexiconConfig;
+      genericRatios             : Map<string, { generic: number; nonGeneric: number }>;
     }
   ): Promise<Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">> {
     await tx.mention.deleteMany({ where: { chapterId: input.chapterId } });
@@ -350,6 +385,7 @@ export function createChapterAnalysisService(
     const cache = new Map<string, ResolveResult>();
     let personaCreated = 0;
     let hallucinationCount = 0;
+    let grayZoneCount = 0;
     const hallucinatedNamesLogged = new Set<string>();
 
     const resolve = async (name: string) => {
@@ -360,10 +396,16 @@ export function createChapterAnalysisService(
           chapterContent: input.chapterContent,
           chapterNo     : input.chapterNo,
           rosterMap     : input.rosterMap,
-          titleOnlyNames: input.titleOnlyNames
+          titleOnlyNames: input.titleOnlyNames,
+          lexiconConfig : input.lexiconConfig,
+          genericRatios : input.genericRatios
         }, tx);
         cache.set(name, res);
         if (res.status === "created") personaCreated++;
+        if (res.personalizationTier === "gray_zone" && res.grayZoneEvidence && ANALYSIS_PIPELINE_CONFIG.recordGrayZoneMentions) {
+          grayZoneCount += 1;
+          recordGrayZoneMention(input.bookId, name, res.grayZoneEvidence);
+        }
         if (res.status === "hallucinated" && !hallucinatedNamesLogged.has(name)) {
           hallucinatedNamesLogged.add(name);
           log("analysis.hallucination", {
@@ -500,6 +542,7 @@ export function createChapterAnalysisService(
 
     return {
       hallucinationCount,
+      grayZoneCount,
       created: {
         personas     : personaCreated,
         mentions     : mentionData.length,
@@ -800,7 +843,68 @@ export function createChapterAnalysisService(
     });
   }
 
-  return { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount };
+  function collectGrayZoneMentions(bookId: string): GrayZoneMentionRecord[] {
+    const bucket = grayZoneMentionStore.get(bookId);
+    if (!bucket) return [];
+    return Array.from(bucket.entries()).map(([surfaceForm, evidence]) => ({ surfaceForm, evidence }));
+  }
+
+  function clearGrayZoneMentions(bookId: string): void {
+    grayZoneMentionStore.delete(bookId);
+  }
+
+  async function runGrayZoneArbitration(bookId: string): Promise<number> {
+    if (!ANALYSIS_PIPELINE_CONFIG.llmTitleArbitrationEnabled) return 0;
+    const grayZones = collectGrayZoneMentions(bookId);
+    if (grayZones.length === 0) return 0;
+
+    const book = await prismaClient.book.findUnique({
+      where : { id: bookId },
+      select: { title: true, aiModelId: true }
+    });
+    if (!book) return 0;
+
+    const terms = grayZones
+      .slice(0, ANALYSIS_PIPELINE_CONFIG.llmArbitrationMaxTerms)
+      .map((item) => ({
+        surfaceForm             : item.surfaceForm,
+        chapterAppearanceCount  : item.evidence.chapterAppearanceCount,
+        hasStableAliasBinding   : item.evidence.hasStableAliasBinding,
+        singlePersonaConsistency: item.evidence.singlePersonaConsistency,
+        genericRatio            : item.evidence.genericRatio
+      }));
+
+    if (terms.length === 0) return 0;
+    const runtimeAiClient = aiClient ?? await createRuntimeAiClient(book.aiModelId);
+    if (!runtimeAiClient.arbitrateTitlePersonalization) return 0;
+    const results = await runtimeAiClient.arbitrateTitlePersonalization({
+      bookTitle: book.title,
+      terms
+    });
+    let written = 0;
+    for (const row of results) {
+      const evidence = grayZones.find((item) => item.surfaceForm === row.surfaceForm)?.evidence;
+      if (!evidence || !row.isPersonalized || !aliasRegistry || row.confidence <= 0) {
+        continue;
+      }
+
+      await aliasRegistry.registerAlias({
+        bookId,
+        alias       : row.surfaceForm,
+        aliasType   : "NICKNAME",
+        confidence  : row.confidence,
+        evidence    : row.reason ?? "Phase 3 gray-zone arbitration",
+        status      : row.confidence >= ANALYSIS_PIPELINE_CONFIG.llmArbitrationMinConfidence ? "LLM_INFERRED" : "PENDING",
+        resolvedName: undefined
+      });
+      written += 1;
+    }
+    console.info("[ChapterAnalysisService] arbitration.completed:", JSON.stringify({ bookId, total: results.length, written }));
+    clearGrayZoneMentions(bookId);
+    return written;
+  }
+
+  return { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, collectGrayZoneMentions, clearGrayZoneMentions, runGrayZoneArbitration };
 }
 
 export const chapterAnalysisService = createChapterAnalysisService(prisma, undefined, aliasRegistryService);
@@ -845,4 +949,27 @@ function buildProfileLookupMap(
   }
 
   return lookup;
+}
+
+function resolveBookLexiconConfig(_bookTitle: string): BookLexiconConfig {
+  if (!ANALYSIS_PIPELINE_CONFIG.enableGenrePresetOverride) {
+    return GENRE_PRESETS[DEFAULT_GENRE_PRESET] ?? {};
+  }
+
+  return GENRE_PRESETS[DEFAULT_GENRE_PRESET] ?? {};
+}
+
+function collectGenericRatiosFromRoster(
+  roster: Array<{ surfaceForm: string; generic?: boolean }>
+): Map<string, { generic: number; nonGeneric: number }> {
+  const map = new Map<string, { generic: number; nonGeneric: number }>();
+  for (const item of roster) {
+    const key = item.surfaceForm.trim();
+    if (!key) continue;
+    const current = map.get(key) ?? { generic: 0, nonGeneric: 0 };
+    if (item.generic) current.generic += 1;
+    else current.nonGeneric += 1;
+    map.set(key, current);
+  }
+  return map;
 }

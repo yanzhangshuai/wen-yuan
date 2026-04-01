@@ -68,9 +68,10 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const personaFindMany = vi.fn().mockResolvedValue([]);
   const personaUpdateMany = vi.fn().mockResolvedValue({ count: 0 });
 
+  const runGrayZoneArbitration = vi.fn().mockResolvedValue(0);
   const chapterAnalyzer = options.withValidation
-    ? { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, validateChapterResult, validateBookResult, applyAutoFixes }
-    : { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, validateChapterResult };
+    ? { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult, validateBookResult, applyAutoFixes }
+    : { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult };
 
   const runner = createAnalysisJobRunner({
     analysisJob: {
@@ -107,6 +108,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     validateBookResult,
     validateChapterResult,
     applyAutoFixes,
+    runGrayZoneArbitration,
     profileFindMany,
     mentionGroupBy,
     mentionFindMany,
@@ -517,6 +519,36 @@ describe("analysis job runner", () => {
     // 第 5 章触发一次增量溯源 + FULL_BOOK 完成后再触发一次终态溯源。
     expect(resolvePersonaTitles).toHaveBeenCalledTimes(2);
     expect(resolvePersonaTitles).toHaveBeenCalledWith("book-1");
+  });
+
+  it("runs gray-zone arbitration once after full book processing", async () => {
+    const { runner, analysisJobFindUnique, chapterFindMany, runGrayZoneArbitration } = createRunnerContext();
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-gray-zone",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-gray-zone",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    runGrayZoneArbitration.mockResolvedValueOnce(2);
+
+    await runner.runAnalysisJobById("job-gray-zone");
+    expect(runGrayZoneArbitration).toHaveBeenCalledTimes(1);
+    expect(runGrayZoneArbitration).toHaveBeenCalledWith("book-1");
   });
 
   it("runs full-book validation and applies auto fixes when report is auto-fixable", async () => {

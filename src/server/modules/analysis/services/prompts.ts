@@ -1,4 +1,4 @@
-import type { AnalysisProfileContext, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
+import type { AnalysisProfileContext, TitleArbitrationEntry, TitleArbitrationInput, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
 import {
   type ValidationIssue,
   type ValidationIssueType,
@@ -6,10 +6,10 @@ import {
   type ValidationSuggestionAction
 } from "@/types/validation";
 import { repairJson } from "@/types/analysis";
-import { GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
+import { buildEffectiveGenericTitles } from "@/server/modules/analysis/config/lexicon";
 
 /** 从 GENERIC_TITLES 生成 prompt 中使用的泛化称谓示例列表（单一源，避免三处列表不一致） */
-const GENERIC_TITLES_EXAMPLE = Array.from(GENERIC_TITLES).slice(0, 15).join("、") + "等";
+const GENERIC_TITLES_EXAMPLE = Array.from(buildEffectiveGenericTitles(undefined)).slice(0, 15).join("、") + "等";
 
 /**
  * 功能：定义生成分段 Prompt 所需参数。
@@ -19,13 +19,14 @@ const GENERIC_TITLES_EXAMPLE = Array.from(GENERIC_TITLES).slice(0, 15).join("、
  * 副作用：无。
  */
 export interface BuildPromptInput {
-  bookTitle   : string;
-  chapterNo   : number;
-  chapterTitle: string;
-  content     : string;
-  profiles    : AnalysisProfileContext[];
-  chunkIndex  : number;
-  chunkCount  : number;
+  bookTitle            : string;
+  chapterNo            : number;
+  chapterTitle         : string;
+  content              : string;
+  profiles             : AnalysisProfileContext[];
+  chunkIndex           : number;
+  chunkCount           : number;
+  genericTitlesExample?: string;
 }
 
 /**
@@ -36,11 +37,12 @@ export interface BuildPromptInput {
  * 副作用：无。
  */
 export interface RosterDiscoveryInput {
-  bookTitle   : string;
-  chapterNo   : number;
-  chapterTitle: string;
-  content     : string;
-  profiles    : AnalysisProfileContext[];
+  bookTitle            : string;
+  chapterNo            : number;
+  chapterTitle         : string;
+  content              : string;
+  profiles             : AnalysisProfileContext[];
+  genericTitlesExample?: string;
 }
 
 export interface ChapterValidationPromptInput {
@@ -134,6 +136,7 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
       ? buildEntityContextLines(input.profiles)
       : "（本书目前尚无已建档人物）";
 
+  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
   return [
     "## 角色",
     "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。",
@@ -149,7 +152,7 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
     "1. 每个条目的 **surfaceForm** 必须是原文精确字符串，不得修改或翻译",
     "2. 若 surfaceForm 对应已知人物 → 填入该人物的档案序号（entityId，如 1、2、3）",
     '3. 若 surfaceForm 确认为本书**全新故事人物** → 填 "isNew": true',
-    `4. 若 surfaceForm 是**泛化称谓**（如 ${GENERIC_TITLES_EXAMPLE}，无法唯一指向某人）→ 填 "generic": true`,
+    `4. 若 surfaceForm 是**泛化称谓**（如 ${genericTitlesExample}，无法唯一指向某人）→ 填 "generic": true`,
     "5. 相同称谓只输出**一次**（去重）",
     "6. **不要**凭想象补充原文中未出现的人物",
     "7. **只列举书中的叙事故事人物（虚构角色）**，严格排除以下类型：",
@@ -192,6 +195,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
       ? buildEntityContextLines(input.profiles)
       : "（本书目前尚无已建档人物）";
 
+  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
   return [
     "## Role",
     "你是一个通用的叙事文学结构化提取专家，能够精准识别复杂文本中的实体轨迹与社交网络。",
@@ -209,7 +213,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
     "6. RELATION: relationship.description 只写结构化关系结论；relationship.evidence 单独填写原文证据短句（<=120字）。",
     "7. IRONY: ironyNote 为可选字段，仅在本段存在可直接引用的讽刺证据时填写；禁止泛化评价（如\"批判社会\"）。",
     "8. UNCERTAINTY: 不确定的人物或关系不要猜测，直接忽略。",
-    `9. GENERIC TITLES: ${GENERIC_TITLES_EXAMPLE}无法唯一指向具体人物的泛化称谓，禁止作为独立 personaName 输出，直接忽略。`,
+    `9. GENERIC TITLES: ${genericTitlesExample}无法唯一指向具体人物的泛化称谓，禁止作为独立 personaName 输出，直接忽略。`,
     "10. ALIAS MAPPING: 若原文使用官衔或亲属称谓指代已知人物（如\"范举人\"指代档案中的\"范进\"），personaName 必须填写该人物的标准名（canonicalName），而非原文称谓。",
     "11. VERBATIM NAME: personaName 必须为规范人名，不得在人名后附加\"大人\"\"老爷\"等称谓后缀。",
     "12. STORY CHARS ONLY: 只提取书中叙事故事人物（虚构角色）。严禁提取：作者（如吴敬梓）、评注者（如惺园退士）、序言里的真实历史人物、现代批评家（如鲁迅）、单独姓氏（如\"顾\"\"夏\"\"荀\"不可作为独立人物）。",
@@ -295,6 +299,36 @@ export function buildTitleResolutionPrompt(input: TitleResolutionInput): string 
     "",
     "## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）",
     JSON.stringify(exampleOutput, null, 2)
+  ].join("\n");
+}
+
+export function buildTitleArbitrationPrompt(input: TitleArbitrationInput): string {
+  const terms = input.terms.map((item) =>
+    `- "${item.surfaceForm}" (chapterAppearanceCount=${item.chapterAppearanceCount}, hasStableAliasBinding=${item.hasStableAliasBinding}, singlePersonaConsistency=${item.singlePersonaConsistency}, genericRatio=${item.genericRatio.toFixed(2)})`
+  ).join("\n");
+
+  const example: TitleArbitrationEntry[] = [
+    { surfaceForm: "掌门", isPersonalized: true, confidence: 0.82, reason: "多章稳定指向同一人物" },
+    { surfaceForm: "先生", isPersonalized: false, confidence: 0.74, reason: "多次泛指，缺乏稳定绑定" }
+  ];
+
+  return [
+    "## 角色",
+    "你是文学实体解析仲裁助手。",
+    "",
+    "## 任务",
+    `判断《${input.bookTitle}》中的灰区称谓是否已经人格化为特定人物稳定称呼。`,
+    "",
+    "## 约束",
+    "1. 只针对给定称谓逐项判断，不扩展新增词。",
+    "2. 若称谓明显泛指，isPersonalized 返回 false。",
+    "3. confidence 只反映当前判断确信度。",
+    "",
+    "## 待判定称谓",
+    terms || "（无）",
+    "",
+    "## 输出格式（仅输出 JSON 数组，不加任何说明）",
+    JSON.stringify(example, null, 2)
   ].join("\n");
 }
 

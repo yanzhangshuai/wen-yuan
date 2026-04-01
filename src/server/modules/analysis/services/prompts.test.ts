@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildBookValidationPrompt,
   buildChapterAnalysisPrompt,
+  buildTitleArbitrationPrompt,
   buildChapterValidationPrompt,
   buildRosterDiscoveryPrompt,
   parseValidationResponse
@@ -65,6 +66,28 @@ describe("buildRosterDiscoveryPrompt", () => {
     expect(prompt).toContain("\"contextHint\"");
     expect(prompt).toContain("\"suggestedRealName\"");
     expect(prompt).toContain("\"aliasConfidence\"");
+    expect(prompt).toMatchSnapshot();
+  });
+});
+
+describe("buildTitleArbitrationPrompt", () => {
+  it("builds gray-zone arbitration prompt deterministically", () => {
+    const prompt = buildTitleArbitrationPrompt({
+      bookTitle: "儒林外史",
+      terms    : [
+        {
+          surfaceForm             : "老爷",
+          chapterAppearanceCount  : 3,
+          hasStableAliasBinding   : false,
+          singlePersonaConsistency: false,
+          genericRatio            : 0.5
+        }
+      ]
+    });
+
+    expect(prompt).toContain("灰区称谓");
+    expect(prompt).toContain("\"surfaceForm\"");
+    expect(prompt).toContain("老爷");
     expect(prompt).toMatchSnapshot();
   });
 });

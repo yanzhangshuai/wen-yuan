@@ -130,4 +130,27 @@ describe("AliasRegistryService", () => {
     expect(cache.get("吴王")?.map((item) => item.id)).toEqual(["a2", "a1"]);
     expect(cache.get("太祖皇帝")?.[0]?.id).toBe("b1");
   });
+
+  it("persists and reads LLM_INFERRED without degrading to PENDING", async () => {
+    const { prisma, aliasMappingFindFirst, aliasMappingCreate } = createPrismaMock();
+    aliasMappingFindFirst.mockResolvedValueOnce(null);
+    aliasMappingCreate.mockResolvedValueOnce(
+      createAliasRow({ id: "llm-1", status: AliasMappingStatus.LLM_INFERRED })
+    );
+
+    const service = createAliasRegistryService(prisma);
+    await service.registerAlias({
+      bookId    : "book-1",
+      alias     : "老爷",
+      aliasType : "NICKNAME",
+      confidence: 0.83,
+      status    : "LLM_INFERRED"
+    });
+
+    expect(aliasMappingCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: AliasMappingStatus.LLM_INFERRED
+      })
+    }));
+  });
 });

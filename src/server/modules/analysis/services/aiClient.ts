@@ -1,6 +1,6 @@
 import type { AiProviderClient } from "@/server/providers/ai";
-import { buildChapterAnalysisPrompt, buildRosterDiscoveryPrompt, buildTitleResolutionPrompt, type BuildPromptInput, type RosterDiscoveryInput } from "@/server/modules/analysis/services/prompts";
-import { type ChapterAnalysisResponse, type EnhancedChapterRosterEntry, type TitleResolutionEntry, type TitleResolutionInput, parseChapterAnalysisResponse, parseEnhancedChapterRosterResponse, parseTitleResolutionResponse } from "@/types/analysis";
+import { buildChapterAnalysisPrompt, buildRosterDiscoveryPrompt, buildTitleArbitrationPrompt, buildTitleResolutionPrompt, type BuildPromptInput, type RosterDiscoveryInput } from "@/server/modules/analysis/services/prompts";
+import { type ChapterAnalysisResponse, type EnhancedChapterRosterEntry, type TitleArbitrationEntry, type TitleArbitrationInput, type TitleResolutionEntry, type TitleResolutionInput, parseChapterAnalysisResponse, parseEnhancedChapterRosterResponse, parseTitleArbitrationResponse, parseTitleResolutionResponse } from "@/types/analysis";
 
 /**
  * 功能：定义章节分段 AI 分析输入参数。
@@ -36,6 +36,7 @@ export interface AiAnalysisClient {
    * 副作用：发起外部 AI 请求。
    */
   resolvePersonaTitles(input: TitleResolutionInput): Promise<TitleResolutionEntry[]>;
+  arbitrateTitlePersonalization?(input: TitleArbitrationInput): Promise<TitleArbitrationEntry[]>;
 }
 
 /**
@@ -67,6 +68,12 @@ export function createChapterAnalysisAiClient(
       // 构建称号 → personaId 映射，供解析函数还原 ID。
       const personaIdByTitle = new Map(input.entries.map((e) => [e.title, e.personaId]));
       return parseTitleResolutionResponse(raw, personaIdByTitle);
+    },
+
+    async arbitrateTitlePersonalization(input: TitleArbitrationInput): Promise<TitleArbitrationEntry[]> {
+      const prompt = buildTitleArbitrationPrompt(input);
+      const raw = await providerClient.generateJson(prompt);
+      return parseTitleArbitrationResponse(raw);
     }
   };
 }

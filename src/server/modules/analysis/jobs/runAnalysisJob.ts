@@ -36,6 +36,7 @@ interface ChapterValidationBlockResult {
  */
 type ChapterAnalyzer =
   Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles" | "getTitleOnlyPersonaCount"> &
+  Partial<Pick<typeof chapterAnalysisService, "runGrayZoneArbitration">> &
   Pick<typeof validationAgentService, "validateChapterResult"> &
   Partial<Pick<typeof validationAgentService, "validateBookResult" | "applyAutoFixes">>;
 
@@ -689,6 +690,16 @@ export function createAnalysisJobRunner(
             console.info(
               "[analysis.runner] title.personas.resolved",
               JSON.stringify({ jobId: job.id, bookId: job.bookId, resolvedTitleCount })
+            );
+          }
+        }
+
+        if (chapterAnalyzer.runGrayZoneArbitration) {
+          const arbitrationWrittenCount = await chapterAnalyzer.runGrayZoneArbitration(job.bookId);
+          if (arbitrationWrittenCount > 0) {
+            console.info(
+              "[analysis.runner] title.gray_zone.arbitrated",
+              JSON.stringify({ jobId: job.id, bookId: job.bookId, arbitrationWrittenCount })
             );
           }
         }

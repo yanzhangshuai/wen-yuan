@@ -95,4 +95,29 @@ describe("ChapterAnalysisAiClient", () => {
       aliasConfidence  : 0.91
     });
   });
+
+  it("parses title arbitration output", async () => {
+    const providerClient: AiProviderClient = {
+      generateJson: vi.fn(async () => JSON.stringify([
+        { surfaceForm: "老爷", isPersonalized: true, confidence: 0.78, reason: "多章稳定指向" }
+      ]))
+    };
+    const client = createChapterAnalysisAiClient(providerClient);
+    const result = await client.arbitrateTitlePersonalization?.({
+      bookTitle: "儒林外史",
+      terms    : [
+        {
+          surfaceForm             : "老爷",
+          chapterAppearanceCount  : 4,
+          hasStableAliasBinding   : true,
+          singlePersonaConsistency: true,
+          genericRatio            : 0.2
+        }
+      ]
+    });
+
+    expect(result).toEqual([
+      { surfaceForm: "老爷", isPersonalized: true, confidence: 0.78, reason: "多章稳定指向" }
+    ]);
+  });
 });

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
+import { calculateSubstringMatchScore, createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
+import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
+import { classifyPersonalization, DEFAULT_SOFT_BLOCK_SUFFIXES, HARD_BLOCK_SUFFIXES } from "@/server/modules/analysis/config/lexicon";
 
 function createPrismaMock() {
   const personaFindMany = vi.fn();
@@ -12,6 +14,8 @@ function createPrismaMock() {
   });
   const profileUpsert = vi.fn().mockResolvedValue({});
   const profileCreate = vi.fn().mockResolvedValue({});
+  const aliasMappingFindMany = vi.fn().mockResolvedValue([]);
+  const mentionFindMany = vi.fn().mockResolvedValue([]);
 
   return {
     prisma: {
@@ -23,13 +27,17 @@ function createPrismaMock() {
       profile: {
         upsert: profileUpsert,
         create: profileCreate
-      }
+      },
+      aliasMapping: { findMany: aliasMappingFindMany },
+      mention     : { findMany: mentionFindMany }
     } as never,
     personaFindMany,
     personaUpdate,
     personaCreate,
     profileUpsert,
-    profileCreate
+    profileCreate,
+    aliasMappingFindMany,
+    mentionFindMany
   };
 }
 
@@ -294,8 +302,8 @@ describe("persona resolver", () => {
       });
       expect(result).toEqual({
         status    : "hallucinated",
-        confidence: 1.0,
-        reason    : "generic_title"
+        confidence: title === "众人" || title === "丫鬟" ? 1.0 : 0.9,
+        reason    : title === "众人" || title === "丫鬟" ? "safety_generic" : "config_generic"
       });
     }
     expect(personaFindMany).not.toHaveBeenCalled();
@@ -418,7 +426,7 @@ describe("persona resolver", () => {
       rosterMap
     });
     expect(genericResult.status).toBe("hallucinated");
-    expect(genericResult.reason).toBe("generic_title");
+    expect(genericResult.reason).toBe("config_generic");
   });
 
   it("registers alias mapping when creating TITLE_ONLY persona with alias registry", async () => {
@@ -466,5 +474,103 @@ describe("persona resolver", () => {
       chapterStart: 8,
       status      : "PENDING"
     }, expect.any(Object));
+  });
+
+  it("classifies config generic title as gray_zone when evidence is uncertain", async () => {
+    const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
+    (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = true;
+    const { prisma, aliasMappingFindMany, mentionFindMany } = createPrismaMock();
+    aliasMappingFindMany.mockResolvedValueOnce([]);
+    mentionFindMany.mockResolvedValueOnce([]);
+    const resolver = createPersonaResolver(prisma);
+
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "老爷",
+      chapterContent: "老爷在堂上发话。",
+      genericRatios : new Map([["老爷", { generic: 1, nonGeneric: 1 }]])
+    });
+
+    expect(result.status).toBe("hallucinated");
+    expect(result.reason).toBe("gray_zone");
+    expect(result.personalizationTier).toBe("gray_zone");
+    expect(result.grayZoneEvidence?.surfaceForm).toBe("老爷");
+    (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = original;
+  });
+
+  it("scorePair soft block uses normalScore × softBlockPenalty", () => {
+    const normalScore = 0.60 + 0.37 * ("王五".length / "王五大人".length);
+    const score = calculateSubstringMatchScore(
+      "王五大人",
+      "王五",
+      HARD_BLOCK_SUFFIXES,
+      DEFAULT_SOFT_BLOCK_SUFFIXES
+    );
+
+    expect(score).toBeCloseTo(normalScore * ANALYSIS_PIPELINE_CONFIG.softBlockPenalty, 8);
+  });
+
+  it("scorePair hard block returns 0", () => {
+    const score = calculateSubstringMatchScore(
+      "蘧公孙父亲",
+      "蘧公孙",
+      HARD_BLOCK_SUFFIXES,
+      DEFAULT_SOFT_BLOCK_SUFFIXES
+    );
+
+    expect(score).toBe(0);
+  });
+
+  it("collectPersonalizationEvidence supports personalized/generic/gray_zone classification", async () => {
+    const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
+    (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = true;
+    const { prisma, aliasMappingFindMany, mentionFindMany, personaFindMany } = createPrismaMock();
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    const resolver = createPersonaResolver(prisma);
+
+    aliasMappingFindMany.mockResolvedValueOnce([{ personaId: "p-1" }]);
+    mentionFindMany.mockResolvedValueOnce([{ chapterId: "c-1", personaId: "p-1" }]);
+    const personalized = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "老爷",
+      chapterContent: "老爷来了",
+      genericRatios : new Map([["老爷", { generic: 0, nonGeneric: 5 }]])
+    });
+    expect(personalized.reason).not.toBe("config_generic");
+    expect(classifyPersonalization({
+      surfaceForm             : "老爷",
+      hasStableAliasBinding   : true,
+      chapterAppearanceCount  : 1,
+      singlePersonaConsistency: true,
+      genericRatio            : 0.1
+    })).toBe("personalized");
+
+    aliasMappingFindMany.mockResolvedValueOnce([]);
+    mentionFindMany.mockResolvedValueOnce([]);
+    const generic = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "老爷",
+      chapterContent: "老爷来了",
+      genericRatios : new Map([["老爷", { generic: 8, nonGeneric: 1 }]])
+    });
+    expect(generic.reason).toBe("config_generic");
+
+    aliasMappingFindMany.mockResolvedValueOnce([]);
+    mentionFindMany.mockResolvedValueOnce([{ chapterId: "c-1", personaId: "p-1" }, { chapterId: "c-2", personaId: "p-2" }]);
+    const gray = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "老爷",
+      chapterContent: "老爷来了",
+      genericRatios : new Map([["老爷", { generic: 1, nonGeneric: 1 }]])
+    });
+    expect(gray.reason).toBe("gray_zone");
+
+    (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = original;
   });
 });

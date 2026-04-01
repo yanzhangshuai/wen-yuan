@@ -6,7 +6,8 @@ import type { AliasMappingResult, RegisterAliasInput } from "@/types/analysis";
 export const ALIAS_MAPPING_STATUS_VALUES = [
   "PENDING",
   "CONFIRMED",
-  "REJECTED"
+  "REJECTED",
+  "LLM_INFERRED"
 ] as const;
 
 type ReviewAliasMappingRow = {
@@ -42,6 +43,7 @@ function toAliasType(value: RegisterAliasInput["aliasType"]): AliasType {
 function toAliasStatus(value: RegisterAliasInput["status"]): AliasMappingStatus {
   if (value === "CONFIRMED") return AliasMappingStatus.CONFIRMED;
   if (value === "REJECTED") return AliasMappingStatus.REJECTED;
+  if (value === "LLM_INFERRED") return AliasMappingStatus.LLM_INFERRED;
   return AliasMappingStatus.PENDING;
 }
 
@@ -142,7 +144,7 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
     const rows = await prismaClient.aliasMapping.findMany({
       where: {
         bookId,
-        status: AliasMappingStatus.CONFIRMED
+        status: { in: [AliasMappingStatus.CONFIRMED, AliasMappingStatus.LLM_INFERRED] }
       },
       orderBy: [
         { alias: "asc" },
@@ -221,7 +223,7 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
       })
       : await client.aliasMapping.create({ data });
 
-    if (saved.status === AliasMappingStatus.CONFIRMED) {
+    if (saved.status === AliasMappingStatus.CONFIRMED || saved.status === AliasMappingStatus.LLM_INFERRED) {
       upsertInMemoryCache(input.bookId, toAliasMappingResult(saved));
     }
   }
@@ -287,7 +289,7 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
       }
     });
 
-    if (updated.status === AliasMappingStatus.CONFIRMED) {
+    if (updated.status === AliasMappingStatus.CONFIRMED || updated.status === AliasMappingStatus.LLM_INFERRED) {
       upsertInMemoryCache(bookId, toAliasMappingResult(updated));
     } else {
       // 细粒度失效：仅移除被 REJECTED 的条目，保留其余缓存

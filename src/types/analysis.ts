@@ -331,7 +331,7 @@ export interface AliasMappingResult {
   aliasType    : AliasTypeValue;
   confidence   : number;
   evidence     : string;
-  status       : "PENDING" | "CONFIRMED" | "REJECTED";
+  status       : "PENDING" | "CONFIRMED" | "REJECTED" | "LLM_INFERRED";
   chapterScope?: { start: number; end?: number };
 }
 
@@ -345,8 +345,50 @@ export interface RegisterAliasInput {
   evidence?    : string;
   chapterStart?: number;
   chapterEnd?  : number;
-  status?      : "PENDING" | "CONFIRMED" | "REJECTED";
+  status?      : "PENDING" | "CONFIRMED" | "REJECTED" | "LLM_INFERRED";
   contextHash? : string;
+}
+
+export interface TitleArbitrationTerm {
+  surfaceForm             : string;
+  chapterAppearanceCount  : number;
+  hasStableAliasBinding   : boolean;
+  singlePersonaConsistency: boolean;
+  genericRatio            : number;
+}
+
+export interface TitleArbitrationInput {
+  bookTitle: string;
+  terms    : TitleArbitrationTerm[];
+}
+
+export interface TitleArbitrationEntry {
+  surfaceForm   : string;
+  isPersonalized: boolean;
+  confidence    : number;
+  reason?       : string;
+}
+
+export function parseTitleArbitrationResponse(raw: string): TitleArbitrationEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(repairJson(raw));
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter(isRecord)
+    .filter((item) => typeof item.surfaceForm === "string" && typeof item.isPersonalized === "boolean")
+    .map((item) => ({
+      surfaceForm   : (item.surfaceForm as string).trim(),
+      isPersonalized: item.isPersonalized as boolean,
+      confidence    : normalizeConfidence(item.confidence, 0),
+      reason        : typeof item.reason === "string" ? item.reason : undefined
+    }))
+    .filter((item) => item.surfaceForm.length > 0);
 }
 
 /**
