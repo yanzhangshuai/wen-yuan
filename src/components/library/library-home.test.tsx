@@ -89,7 +89,7 @@ describe("LibraryHome", () => {
   it("displays book count and section header", () => {
     render(<LibraryHome books={[buildBook({ status: "COMPLETED" }), buildBook({ id: "book-2", status: "COMPLETED" })]} />);
 
-    expect(screen.getByText("藏書閣")).toBeInTheDocument();
+    expect(screen.getByText("书库")).toBeInTheDocument();
     expect(screen.getByText("2 部典藏")).toBeInTheDocument();
   });
 });

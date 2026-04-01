@@ -22,6 +22,9 @@ exports[`buildBookValidationPrompt > builds book validation prompt with determin
 ## 低置信人物
 - 周学道 [p-2] (置信度:0.58)
 
+## 抽样原文证据
+- 第1章「第一回」(代表性样本)：范进见中举，众人态度大变。
+
 ## 输出格式（仅输出 JSON，不加任何说明）
 {
   "issues": [
@@ -132,7 +135,7 @@ exports[`buildRosterDiscoveryPrompt > includes alias annotation rules and keeps 
 1. 每个条目的 **surfaceForm** 必须是原文精确字符串，不得修改或翻译
 2. 若 surfaceForm 对应已知人物 → 填入该人物的档案序号（entityId，如 1、2、3）
 3. 若 surfaceForm 确认为本书**全新故事人物** → 填 "isNew": true
-4. 若 surfaceForm 是**泛化称谓**（如 老爷、夫人、众人、那人、先生、他 等，无法唯一指向某人）→ 填 "generic": true
+4. 若 surfaceForm 是**泛化称谓**（如 老爷、夫人、太太、老太太、小姐、少爷、公子、相公、娘子、先生、掌柜、掌柜的、账房、管家、老管家等，无法唯一指向某人）→ 填 "generic": true
 5. 相同称谓只输出**一次**（去重）
 6. **不要**凭想象补充原文中未出现的人物
 7. **只列举书中的叙事故事人物（虚构角色）**，严格排除以下类型：
@@ -140,7 +143,7 @@ exports[`buildRosterDiscoveryPrompt > includes alias annotation rules and keeps 
    - 在序言、题跋、附录中出现的真实历史人物（非故事角色）
    - 现代文学批评家、学者（如鲁迅等）
 8. 单独出现的姓氏（如"顾"、"夏"、"荀"等单字），若无法确认是独立人物，标记为 generic
-9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），原文无法直接得知其真实姓名 → 配合 isNew: true 同时填 "isTitleOnly": true
+9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），且原文无法直接得知其真实姓名：若该称号可对应已知人物档案 → 填 entityId 并标记 "isTitleOnly": true；若确认为全新未知人物 → 填 "isNew": true 并标记 "isTitleOnly": true
 10. 若 surfaceForm 是别名/称号/封号/职位称呼类型，额外标注:
     - "aliasType": "TITLE"(封号/尊号) | "POSITION"(职位称呼) | "KINSHIP"(亲属代称) | "NICKNAME"(绰号) | "COURTESY_NAME"(字号)
     - "contextHint": 简述该称呼在本章上下文中的线索（≤100字），包括共现人物、相关事件

@@ -7,17 +7,18 @@ import { aliasRegistryService, type AliasRegistryService } from "@/server/module
 import { createChapterAnalysisAiClient, type AiAnalysisClient } from "@/server/modules/analysis/services/aiClient";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
-import { validationAgentService as defaultValidationAgent, type ValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
 import type {
   AnalysisProfileContext,
   BioCategoryValue,
   ChapterAnalysisResponse,
   RegisterAliasInput
 } from "@/types/analysis";
+import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 
 // 配置常量
 const MAX_CHUNK_LENGTH = 2000; // 每片输入字符数：缩小分片减少每次输出量，防止 AI token 上限截断
-const AI_CONCURRENCY = 3;      // 同时解析的分段数，避免触发 API 频控
+const CHUNK_OVERLAP    = 200;  // 相邻分片重叠字符数：缓解分片边界上下文断裂
+const AI_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chunkAiConcurrency; // 同时解析的分段数，避免触发 API 频控
 const AI_MAX_RETRIES = 2;
 const AI_RETRY_BASE_MS = 600;
 const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao"];
@@ -90,8 +91,7 @@ export interface ChapterAnalysisResult {
 export function createChapterAnalysisService(
   prismaClient: PrismaClient = prisma,
   aiClient?: AiAnalysisClient,
-  aliasRegistry?: AliasRegistryService,
-  validationAgent?: Pick<ValidationAgentService, "validateChapterResult"> | null
+  aliasRegistry?: AliasRegistryService
 ) {
   const personaResolver = createPersonaResolver(prismaClient, aliasRegistry);
   const { mergePersonas } = createMergePersonasService(prismaClient);
@@ -241,7 +241,7 @@ export function createChapterAnalysisService(
         aliasRegistry &&
         entry.aliasType &&
         typeof entry.aliasConfidence === "number" &&
-        entry.aliasConfidence >= 0.7 &&
+        entry.aliasConfidence >= ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence &&
         entry.suggestedRealName
       ) {
         const suggestedKey = normalizeLookupKey(entry.suggestedRealName);
@@ -305,16 +305,6 @@ export function createChapterAnalysisService(
     });
 
     log("analysis.completed", { chapterId, ...stats });
-
-    // 章节级自检（非阻塞）：成功解析后触发 AI 二次验证，失败仅记日志不影响主流程。
-    if (validationAgent) {
-      fireChapterValidation(
-        validationAgent, prismaClient, chapter, stats
-      ).catch((err) =>
-        console.warn("[ChapterAnalysisService] chapter.validation.failed",
-          JSON.stringify({ chapterId, error: String(err).slice(0, 300) }))
-      );
-    }
 
     return {
       chapterId,
@@ -520,36 +510,49 @@ export function createChapterAnalysisService(
   }
 
   /**
-   * 功能：按段落边界切分章节内容，控制单次模型输入长度。
-   * 输入：content - 章节原文；maxLength - 单块最大长度。
+   * 功能：按段落边界切分章节内容，控制单次模型输入长度，支持相邻分片重叠以缓解边界断裂。
+   * 输入：content - 章节原文；size - 单块最大长度；overlap - 相邻块重叠字符数（默认 CHUNK_OVERLAP）。
    * 输出：分段文本数组。
    * 异常：无。
    * 副作用：无。
    */
-  function splitContentIntoChunks(text: string, size: number): string[] {
+  function splitContentIntoChunks(text: string, size: number, overlap: number = CHUNK_OVERLAP): string[] {
     const paras = text.split(/\n+/).filter(p => p.trim());
-    const chunks: string[] = [];
+    const rawChunks: string[] = [];
     let current = "";
     for (const p of paras) {
       if (p.length > size) {
         if (current) {
-          chunks.push(current);
+          rawChunks.push(current);
           current = "";
         }
         for (let start = 0; start < p.length; start += size) {
-          chunks.push(p.slice(start, start + size));
+          rawChunks.push(p.slice(start, start + size));
         }
         continue;
       }
 
       if ((current + p).length > size && current) {
-        chunks.push(current);
+        rawChunks.push(current);
         current = p;
       } else {
         current += (current ? "\n\n" : "") + p;
       }
     }
-    if (current) chunks.push(current);
+    if (current) rawChunks.push(current);
+
+    // 只有一个 chunk 时无需重叠
+    if (rawChunks.length <= 1 || overlap <= 0) {
+      return rawChunks;
+    }
+
+    // 为第 2 个及以后的 chunk 添加前一个 chunk 尾部的 overlap 上下文
+    const chunks: string[] = [rawChunks[0]];
+    for (let i = 1; i < rawChunks.length; i++) {
+      const prev = rawChunks[i - 1];
+      const overlapText = prev.slice(-overlap);
+      chunks.push(overlapText + rawChunks[i]);
+    }
     return chunks;
   }
 
@@ -658,62 +661,6 @@ export function createChapterAnalysisService(
     );
   }
 
-  /**
-   * 功能：异步触发章节级自检（非阻塞），从 DB 加载刚持久化的分析结果后调用 validationAgent。
-   * 输入：validationAgent、prismaClient、chapter 基础信息、分析统计结果。
-   * 输出：无（结果写入 validation_reports 表）。
-   * 异常：调用方应 catch 并记录日志；不应影响主流程。
-   */
-  async function fireChapterValidation(
-    agent: Pick<ValidationAgentService, "validateChapterResult">,
-    pc: PrismaClient,
-    chapter: { id: string; no: number; bookId: string; content: string },
-    _stats: Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">
-  ): Promise<void> {
-    const [newPersonas, newMentions, newRelationships, existingProfiles] = await Promise.all([
-      pc.persona.findMany({
-        where  : { profiles: { some: { bookId: chapter.bookId, deletedAt: null } }, deletedAt: null },
-        select : { id: true, name: true, confidence: true, nameType: true },
-        orderBy: { createdAt: "desc" },
-        take   : 50
-      }),
-      pc.mention.findMany({
-        where : { chapterId: chapter.id, deletedAt: null },
-        select: { personaId: true, rawText: true },
-        take  : 200
-      }),
-      pc.relationship.findMany({
-        where : { chapterId: chapter.id, deletedAt: null },
-        select: { sourceId: true, targetId: true, type: true },
-        take  : 100
-      }),
-      pc.profile.findMany({
-        where  : { bookId: chapter.bookId, deletedAt: null },
-        include: { persona: { select: { name: true, aliases: true } } }
-      })
-    ]);
-
-    await agent.validateChapterResult({
-      bookId        : chapter.bookId,
-      chapterId     : chapter.id,
-      chapterNo     : chapter.no,
-      chapterContent: chapter.content.slice(0, 3000),
-      newPersonas   : newPersonas.map((p) => ({
-        id: p.id, name: p.name, confidence: p.confidence ?? 0.5, nameType: p.nameType ?? "NAMED"
-      })),
-      newMentions     : newMentions.map((m) => ({ personaId: m.personaId, rawText: m.rawText })),
-      newRelationships: newRelationships.map((r) => ({
-        sourceId: r.sourceId, targetId: r.targetId, type: r.type
-      })),
-      existingProfiles: existingProfiles.map((p) => ({
-        personaId    : p.personaId,
-        canonicalName: p.persona?.name ?? p.localName,
-        aliases      : (Array.isArray(p.persona?.aliases) ? p.persona.aliases : []),
-        localSummary : p.localSummary
-      }))
-    });
-  }
-
   function log(event: string, data: Record<string, unknown>) {
     console.info(`[ChapterAnalysisService] ${event}:`, JSON.stringify(data));
   }
@@ -764,7 +711,7 @@ export function createChapterAnalysisService(
     //    mergePersonas 内部自带 $transaction，单条 update + registerAlias 用独立事务保护一致性。
     let updatedCount = 0;
     for (const r of resolutions) {
-      if (r.confidence >= 0.7 && r.realName) {
+      if (r.confidence >= ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence && r.realName) {
         const existingPersona = await prismaClient.persona.findFirst({
           where: {
             id       : { not: r.personaId },
@@ -840,10 +787,23 @@ export function createChapterAnalysisService(
     return updatedCount;
   }
 
-  return { analyzeChapter, resolvePersonaTitles };
+  /**
+   * 查询当前书籍仍处于 TITLE_ONLY 的人物数量，用于条件触发称号溯源。
+   */
+  async function getTitleOnlyPersonaCount(bookId: string): Promise<number> {
+    return await prismaClient.profile.count({
+      where: {
+        bookId,
+        deletedAt: null,
+        persona  : { nameType: "TITLE_ONLY", deletedAt: null }
+      }
+    });
+  }
+
+  return { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount };
 }
 
-export const chapterAnalysisService = createChapterAnalysisService(prisma, undefined, aliasRegistryService, defaultValidationAgent);
+export const chapterAnalysisService = createChapterAnalysisService(prisma, undefined, aliasRegistryService);
 
 /**
  * 功能：将人物档案列表转为短整型 ID 映射（shortId → personaId UUID）。

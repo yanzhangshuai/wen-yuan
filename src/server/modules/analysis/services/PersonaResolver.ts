@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { NameType, PersonaType } from "@/generated/prisma/enums";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
+import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 
 /**
  * 功能：泛化称谓集合——无法唯一指向某一具体人物的称谓，直接标记为幻觉，阻止创建伪实体。
@@ -237,7 +238,7 @@ export function createPersonaResolver(
         // personaId 已由 Phase 1 AI 确认 → 直接 upsert profile，无需相似度计算。
         await client.profile.upsert({
           where : { personaId_bookId: { personaId: rosterValue, bookId: input.bookId } },
-          update: {},
+          update: { localName: input.extractedName },
           create: { personaId: rosterValue, bookId: input.bookId, localName: input.extractedName }
         });
         return {
@@ -251,10 +252,10 @@ export function createPersonaResolver(
     // Step 2.5: 别名注册表查询——检查 AliasRegistry 中是否有已确认映射。
     if (aliasRegistry && input.chapterNo !== undefined) {
       const aliasResult = await aliasRegistry.lookupAlias(input.bookId, input.extractedName.trim(), input.chapterNo);
-      if (aliasResult && aliasResult.confidence >= 0.7 && aliasResult.personaId) {
+      if (aliasResult && aliasResult.confidence >= ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence && aliasResult.personaId) {
         await client.profile.upsert({
           where : { personaId_bookId: { personaId: aliasResult.personaId, bookId: input.bookId } },
-          update: {},
+          update: { localName: input.extractedName },
           create: { personaId: aliasResult.personaId, bookId: input.bookId, localName: input.extractedName }
         });
 
@@ -278,9 +279,9 @@ export function createPersonaResolver(
 
     const winner = scored[0];
 
-    // Step 3: 多信号评分达阈值（0.72）则合并到已有 Persona。
-    if (winner && winner.score >= 0.72) {
-      // 确保该 persona 在当前书有 profile（幂等 upsert）。
+    // Step 3: 多信号评分达阈值则合并到已有 Persona。
+    if (winner && winner.score >= ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore) {
+      // 确保该 persona 在当前书有 profile（幂等 upsert），同时更新 localName 以保留最新称谓。
       await client.profile.upsert({
         where: {
           personaId_bookId: {
@@ -288,7 +289,7 @@ export function createPersonaResolver(
             bookId   : input.bookId
           }
         },
-        update: {},
+        update: { localName: input.extractedName },
         create: {
           personaId: winner.candidate.id,
           bookId   : input.bookId,
@@ -414,15 +415,13 @@ function scorePair(a: string, b: string): number {
   if (minLen >= 2) {
     if (a.includes(b)) {
       const tail = a.slice(a.indexOf(b) + b.length);
-      if (!RELATIONAL_SUFFIXES.has(tail)) {
-        return 0.60 + 0.37 * (b.length / a.length);
-      }
+      if (tail && RELATIONAL_SUFFIXES.has(tail)) return 0;
+      return 0.60 + 0.37 * (b.length / a.length);
     }
     if (b.includes(a)) {
       const tail = b.slice(b.indexOf(a) + a.length);
-      if (!RELATIONAL_SUFFIXES.has(tail)) {
-        return 0.60 + 0.37 * (a.length / b.length);
-      }
+      if (tail && RELATIONAL_SUFFIXES.has(tail)) return 0;
+      return 0.60 + 0.37 * (a.length / b.length);
     }
   }
 

@@ -6,6 +6,10 @@ import {
   type ValidationSuggestionAction
 } from "@/types/validation";
 import { repairJson } from "@/types/analysis";
+import { GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
+
+/** 从 GENERIC_TITLES 生成 prompt 中使用的泛化称谓示例列表（单一源，避免三处列表不一致） */
+const GENERIC_TITLES_EXAMPLE = Array.from(GENERIC_TITLES).slice(0, 15).join("、") + "等";
 
 /**
  * 功能：定义生成分段 Prompt 所需参数。
@@ -89,6 +93,12 @@ export interface BookValidationPromptInput {
     name      : string;
     confidence: number;
   }>;
+  sourceExcerpts: Array<{
+    chapterNo   : number;
+    chapterTitle: string;
+    reason      : string;
+    excerpt     : string;
+  }>;
 }
 
 /**
@@ -139,7 +149,7 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
     "1. 每个条目的 **surfaceForm** 必须是原文精确字符串，不得修改或翻译",
     "2. 若 surfaceForm 对应已知人物 → 填入该人物的档案序号（entityId，如 1、2、3）",
     '3. 若 surfaceForm 确认为本书**全新故事人物** → 填 "isNew": true',
-    '4. 若 surfaceForm 是**泛化称谓**（如 老爷、夫人、众人、那人、先生、他 等，无法唯一指向某人）→ 填 "generic": true',
+    `4. 若 surfaceForm 是**泛化称谓**（如 ${GENERIC_TITLES_EXAMPLE}，无法唯一指向某人）→ 填 "generic": true`,
     "5. 相同称谓只输出**一次**（去重）",
     "6. **不要**凭想象补充原文中未出现的人物",
     "7. **只列举书中的叙事故事人物（虚构角色）**，严格排除以下类型：",
@@ -147,7 +157,7 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
     "   - 在序言、题跋、附录中出现的真实历史人物（非故事角色）",
     "   - 现代文学批评家、学者（如鲁迅等）",
     "8. 单独出现的姓氏（如\"顾\"、\"夏\"、\"荀\"等单字），若无法确认是独立人物，标记为 generic",
-    "9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），原文无法直接得知其真实姓名 → 配合 isNew: true 同时填 \"isTitleOnly\": true",
+    "9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），且原文无法直接得知其真实姓名：若该称号可对应已知人物档案 → 填 entityId 并标记 \"isTitleOnly\": true；若确认为全新未知人物 → 填 \"isNew\": true 并标记 \"isTitleOnly\": true",
     "10. 若 surfaceForm 是别名/称号/封号/职位称呼类型，额外标注:",
     "    - \"aliasType\": \"TITLE\"(封号/尊号) | \"POSITION\"(职位称呼) | \"KINSHIP\"(亲属代称) | \"NICKNAME\"(绰号) | \"COURTESY_NAME\"(字号)",
     "    - \"contextHint\": 简述该称呼在本章上下文中的线索（≤100字），包括共现人物、相关事件",
@@ -180,7 +190,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
   const entityContext =
     input.profiles.length > 0
       ? buildEntityContextLines(input.profiles)
-      : "No existing entities found in this book yet.";
+      : "（本书目前尚无已建档人物）";
 
   return [
     "## Role",
@@ -199,7 +209,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
     "6. RELATION: relationship.description 只写结构化关系结论；relationship.evidence 单独填写原文证据短句（<=120字）。",
     "7. IRONY: ironyNote 为可选字段，仅在本段存在可直接引用的讽刺证据时填写；禁止泛化评价（如\"批判社会\"）。",
     "8. UNCERTAINTY: 不确定的人物或关系不要猜测，直接忽略。",
-    "9. GENERIC TITLES: 老爷、夫人、太太、小姐、公子、掌柜、那人、众人、旁人等无法唯一指向具体人物的泛化称谓，禁止作为独立 personaName 输出，直接忽略。",
+    `9. GENERIC TITLES: ${GENERIC_TITLES_EXAMPLE}无法唯一指向具体人物的泛化称谓，禁止作为独立 personaName 输出，直接忽略。`,
     "10. ALIAS MAPPING: 若原文使用官衔或亲属称谓指代已知人物（如\"范举人\"指代档案中的\"范进\"），personaName 必须填写该人物的标准名（canonicalName），而非原文称谓。",
     "11. VERBATIM NAME: personaName 必须为规范人名，不得在人名后附加\"大人\"\"老爷\"等称谓后缀。",
     "12. STORY CHARS ONLY: 只提取书中叙事故事人物（虚构角色）。严禁提取：作者（如吴敬梓）、评注者（如惺园退士）、序言里的真实历史人物、现代批评家（如鲁迅）、单独姓氏（如\"顾\"\"夏\"\"荀\"不可作为独立人物）。",
@@ -279,7 +289,7 @@ export function buildTitleResolutionPrompt(input: TitleResolutionInput): string 
     "## 输出规则",
     "1. realName 填写最准确的历史真名（如\"朱元璋\"）",
     "2. 若确实无法判断→ realName 填 null",
-    "3. confidence 0.0-1.0：有据可查填 0.85+，推断填 0.5-0.7，不确定填 < 0.5",
+    "3. confidence 0.0-1.0：有据可查填 0.85+，较有把握的推断填 0.7-0.85，一般推断填 0.5-0.7，不确定填 < 0.5",
     "4. historicalNote 简短说明推理依据（≤ 30字）",
     "5. 每个称号必须对应一条输出，不得多个称号共用同一条",
     "",
@@ -457,6 +467,11 @@ export function buildBookValidationPrompt(input: BookValidationPromptInput): str
     "## 低置信人物",
     ...input.lowConfidencePersonas.map((p) =>
       `- ${p.name} [${p.id}] (置信度:${p.confidence})`
+    ),
+    "",
+    "## 抽样原文证据",
+    ...input.sourceExcerpts.map((item) =>
+      `- 第${item.chapterNo}章「${item.chapterTitle}」(${item.reason})：${item.excerpt}`
     ),
     "",
     "## 输出格式（仅输出 JSON，不加任何说明）",

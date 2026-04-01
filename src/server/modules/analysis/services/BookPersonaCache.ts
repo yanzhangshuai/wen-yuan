@@ -3,8 +3,8 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 export interface BookPersonaCache {
   personas    : Map<string, { id: string; name: string; aliases: string[]; nameType: string }>;
-  aliasIndex  : Map<string, string>;
-  profileIndex: Map<string, string>;
+  aliasIndex  : Map<string, Set<string>>;
+  profileIndex: Map<string, Set<string>>;
 
   lookupByName(name: string): string | undefined;
   lookupByAlias(alias: string): string | undefined;
@@ -16,18 +16,57 @@ function normalizeKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function appendToIndex(index: Map<string, Set<string>>, key: string, personaId: string): void {
+  const existing = index.get(key);
+  if (existing) {
+    existing.add(personaId);
+    return;
+  }
+  index.set(key, new Set([personaId]));
+}
+
 export function createBookPersonaCache(): BookPersonaCache {
   const personas = new Map<string, { id: string; name: string; aliases: string[]; nameType: string }>();
-  const aliasIndex = new Map<string, string>();
-  const profileIndex = new Map<string, string>();
+  const aliasIndex = new Map<string, Set<string>>();
+  const profileIndex = new Map<string, Set<string>>();
   const nameIndex = new Map<string, string>();
+
+  function choosePersonaId(candidates: Set<string>, preferName?: string): string | undefined {
+    if (candidates.size === 0) {
+      return undefined;
+    }
+    if (candidates.size === 1) {
+      return Array.from(candidates)[0];
+    }
+
+    // 别名冲突处理：优先 canonicalName 精确命中，其次优先非 TITLE_ONLY；仍冲突则返回 undefined 交给上游保守处理。
+    if (preferName) {
+      const normalizedPrefer = normalizeKey(preferName);
+      for (const personaId of candidates) {
+        const persona = personas.get(personaId);
+        if (persona && normalizeKey(persona.name) === normalizedPrefer) {
+          return personaId;
+        }
+      }
+    }
+
+    const nonTitleOnly = Array.from(candidates).filter((personaId) => {
+      const persona = personas.get(personaId);
+      return persona?.nameType !== NameType.TITLE_ONLY;
+    });
+    if (nonTitleOnly.length === 1) {
+      return nonTitleOnly[0];
+    }
+
+    return undefined;
+  }
 
   function addAlias(alias: string, personaId: string): void {
     const key = normalizeKey(alias);
     if (!key) {
       return;
     }
-    aliasIndex.set(key, personaId);
+    appendToIndex(aliasIndex, key, personaId);
   }
 
   function addPersona(persona: { id: string; name: string; aliases: string[]; nameType: string }): void {
@@ -57,7 +96,7 @@ export function createBookPersonaCache(): BookPersonaCache {
       return byName;
     }
 
-    return aliasIndex.get(key);
+    return choosePersonaId(aliasIndex.get(key) ?? new Set(), name);
   }
 
   function lookupByAlias(alias: string): string | undefined {
@@ -66,7 +105,12 @@ export function createBookPersonaCache(): BookPersonaCache {
       return undefined;
     }
 
-    return aliasIndex.get(key) ?? profileIndex.get(key);
+    const aliasMatches = aliasIndex.get(key);
+    if (aliasMatches && aliasMatches.size > 0) {
+      return choosePersonaId(aliasMatches, alias);
+    }
+
+    return choosePersonaId(profileIndex.get(key) ?? new Set(), alias);
   }
 
   return {
@@ -116,7 +160,7 @@ export async function loadBookPersonaCache(prismaClient: PrismaClient, bookId: s
 
     const profileNameKey = normalizeKey(profile.localName);
     if (profileNameKey) {
-      cache.profileIndex.set(profileNameKey, profile.personaId);
+      appendToIndex(cache.profileIndex, profileNameKey, profile.personaId);
     }
 
     cache.addAlias(profile.localName, profile.personaId);

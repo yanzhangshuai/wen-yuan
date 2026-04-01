@@ -722,7 +722,7 @@ describe("chapter analysis service", () => {
       ])
     } as never);
 
-    const service = createChapterAnalysisService(prismaMock as never, undefined, aliasRegistry, null);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, aliasRegistry);
     const updatedCount = await service.resolvePersonaTitles("book-1");
 
     expect(updatedCount).toBe(1);

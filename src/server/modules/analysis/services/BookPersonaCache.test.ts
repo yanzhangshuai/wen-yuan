@@ -33,10 +33,28 @@ describe("BookPersonaCache", () => {
   it("lookupByAlias checks alias and profile index", () => {
     const cache = createBookPersonaCache();
     cache.addAlias("周学道", "persona-2");
-    cache.profileIndex.set("周大人", "persona-2");
+    cache.profileIndex.set("周大人", new Set(["persona-2"]));
 
     expect(cache.lookupByAlias("周学道")).toBe("persona-2");
     expect(cache.lookupByAlias("周大人")).toBe("persona-2");
+  });
+
+  it("returns undefined when alias collides across personas", () => {
+    const cache = createBookPersonaCache();
+    cache.addPersona({
+      id      : "persona-1",
+      name    : "范进",
+      aliases : ["老爷"],
+      nameType: NameType.NAMED
+    });
+    cache.addPersona({
+      id      : "persona-2",
+      name    : "严监生",
+      aliases : ["老爷"],
+      nameType: NameType.NAMED
+    });
+
+    expect(cache.lookupByAlias("老爷")).toBeUndefined();
   });
 
   it("loadBookPersonaCache builds persona and index maps", async () => {

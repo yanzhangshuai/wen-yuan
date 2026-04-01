@@ -43,7 +43,7 @@ describe("buildChapterAnalysisPrompt", () => {
       profiles: []
     });
 
-    expect(prompt).toContain("No existing entities found in this book yet.");
+    expect(prompt).toContain("（本书目前尚无已建档人物）");
   });
 });
 
@@ -142,11 +142,20 @@ describe("buildBookValidationPrompt", () => {
           name      : "周学道",
           confidence: 0.58
         }
+      ],
+      sourceExcerpts: [
+        {
+          chapterNo   : 1,
+          chapterTitle: "第一回",
+          reason      : "代表性样本",
+          excerpt     : "范进见中举，众人态度大变。"
+        }
       ]
     });
 
     expect(prompt).toContain("## 检查重点");
     expect(prompt).toContain("DUPLICATE_PERSONA");
+    expect(prompt).toContain("## 抽样原文证据");
     expect(prompt).toMatchSnapshot();
   });
 });

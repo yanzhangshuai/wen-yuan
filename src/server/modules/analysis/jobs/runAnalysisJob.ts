@@ -3,6 +3,7 @@ import type { ChapterType, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { chapterAnalysisService, type ChapterAnalysisResult } from "@/server/modules/analysis/services/ChapterAnalysisService";
 import { validationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
+import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 
 /**
  * 功能：定义任务执行时所需的最小章节信息载体。
@@ -18,6 +19,14 @@ interface ChapterTask {
   no: number;
 }
 
+interface ChapterValidationBlockResult {
+  reportId      : string;
+  errorCount    : number;
+  autoFixable   : number;
+  appliedAutoFix: number;
+  needsReview   : boolean;
+}
+
 /**
  * 功能：约束章节解析器依赖，仅暴露 `analyzeChapter` 能力。
  * 输入：无（类型声明）。
@@ -26,7 +35,8 @@ interface ChapterTask {
  * 副作用：无。
  */
 type ChapterAnalyzer =
-  Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles"> &
+  Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles" | "getTitleOnlyPersonaCount"> &
+  Pick<typeof validationAgentService, "validateChapterResult"> &
   Partial<Pick<typeof validationAgentService, "validateBookResult" | "applyAutoFixes">>;
 
 /**
@@ -63,6 +73,10 @@ interface AnalysisJobRow {
 function buildProgressStage(index: number, total: number): string {
   return `实体提取（第${index + 1}/${total}章）`;
 }
+
+function buildCompletedStage(done: number, total: number): string {
+  return `实体提取（已完成${done}/${total}章）`;
+}
 /** 单章节失败后最多重试次数（不含首次）。 */
 const CHAPTER_MAX_RETRIES = 2;
 
@@ -73,7 +87,8 @@ const CHAPTER_RETRY_BASE_MS = 3000;
  * 每处理多少章触发一次增量称号溯源。
  * 目的：在长书解析过程中提前归并 TITLE_ONLY 人物，减少后续章节误识别扩散。
  */
-const INCREMENTAL_RESOLVE_INTERVAL = 5;
+const INCREMENTAL_RESOLVE_INTERVAL = ANALYSIS_PIPELINE_CONFIG.incrementalResolveInterval;
+const CHAPTER_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chapterConcurrency;
 
 /**
  * 功能：判断章节级错误是否值得重试（网络抖动、限速、连接中断等临时性错误）。
@@ -300,6 +315,128 @@ export function createAnalysisJobRunner(
     ...validationAgentService
   }
 ) {
+  async function runChapterValidationBlocking(jobId: string, chapter: ChapterTask, bookId: string): Promise<ChapterValidationBlockResult> {
+    const chapterRow = await prismaClient.chapter.findUnique({
+      where : { id: chapter.id },
+      select: { id: true, no: true, title: true, content: true, bookId: true }
+    });
+    if (!chapterRow) {
+      throw new Error(`章节不存在: ${chapter.id}`);
+    }
+
+    const [book, newPersonas, newMentions, newRelationships, existingProfiles] = await Promise.all([
+      prismaClient.book.findUnique({
+        where : { id: bookId },
+        select: { title: true }
+      }),
+      prismaClient.persona.findMany({
+        where  : { profiles: { some: { bookId: chapterRow.bookId, deletedAt: null } }, deletedAt: null },
+        select : { id: true, name: true, confidence: true, nameType: true },
+        orderBy: { createdAt: "desc" },
+        take   : 50
+      }),
+      prismaClient.mention.findMany({
+        where : { chapterId: chapterRow.id, deletedAt: null },
+        select: { personaId: true, rawText: true },
+        take  : 200
+      }),
+      prismaClient.relationship.findMany({
+        where : { chapterId: chapterRow.id, deletedAt: null },
+        select: { sourceId: true, targetId: true, type: true },
+        take  : 100
+      }),
+      prismaClient.profile.findMany({
+        where  : { bookId: chapterRow.bookId, deletedAt: null },
+        include: { persona: { select: { name: true, aliases: true } } }
+      })
+    ]);
+    if (!book) {
+      throw new Error(`书籍不存在: ${bookId}`);
+    }
+    const personaNameRows = await prismaClient.persona.findMany({
+      where: {
+        id: {
+          in: Array.from(new Set([
+            ...newMentions.map((item) => item.personaId),
+            ...newRelationships.map((item) => item.sourceId),
+            ...newRelationships.map((item) => item.targetId),
+            ...newPersonas.map((item) => item.id)
+          ]))
+        },
+        deletedAt: null
+      },
+      select: { id: true, name: true }
+    });
+    const personaNameMap = new Map(personaNameRows.map((row) => [row.id, row.name]));
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= ANALYSIS_PIPELINE_CONFIG.chapterValidationRetries; attempt += 1) {
+      try {
+        const report = await chapterAnalyzer.validateChapterResult({
+          bookId        : chapterRow.bookId,
+          chapterId     : chapterRow.id,
+          chapterNo     : chapterRow.no,
+          chapterContent: chapterRow.content.slice(0, 3000),
+          jobId,
+          newPersonas   : newPersonas.map((p) => ({
+            id: p.id, name: p.name, confidence: p.confidence ?? 0.5, nameType: p.nameType ?? "NAMED"
+          })),
+          newMentions: newMentions.map((m) => ({
+            personaId: m.personaId,
+            rawText  : `${personaNameMap.get(m.personaId) ?? m.personaId}: ${m.rawText}`
+          })),
+          newRelationships: newRelationships.map((r) => ({
+            sourceId: r.sourceId, targetId: r.targetId, type: r.type
+          })),
+          existingProfiles: existingProfiles.map((p) => ({
+            personaId    : p.personaId,
+            canonicalName: p.persona?.name ?? p.localName,
+            aliases      : (Array.isArray(p.persona?.aliases) ? p.persona.aliases : []),
+            localSummary : p.localSummary
+          }))
+        });
+
+        let appliedAutoFix = 0;
+        if (report.summary.autoFixable > 0 && chapterAnalyzer.applyAutoFixes) {
+          appliedAutoFix = await chapterAnalyzer.applyAutoFixes(report.id);
+        }
+
+        // 自动修复后若仍有 ERROR，标记需人工复审但不中止全书。
+        const postFixErrorCount = report.summary.errorCount;
+
+        return {
+          reportId   : report.id,
+          errorCount : postFixErrorCount,
+          autoFixable: report.summary.autoFixable,
+          appliedAutoFix,
+          needsReview: postFixErrorCount > 0
+        };
+      } catch (error) {
+        lastError = error;
+        if (attempt >= ANALYSIS_PIPELINE_CONFIG.chapterValidationRetries) {
+          break;
+        }
+      }
+    }
+
+    // 验证服务异常时，为避免全书中止，降级为 NEEDS_REVIEW 并继续。
+    console.warn(
+      "[analysis.runner] chapter.validation.degraded",
+      JSON.stringify({
+        jobId,
+        chapterId: chapter.id,
+        error    : toErrorMessage(lastError)
+      })
+    );
+    return {
+      reportId      : "validation-degraded",
+      errorCount    : 0,
+      autoFixable   : 0,
+      appliedAutoFix: 0,
+      needsReview   : true
+    };
+  }
+
   /**
    * 功能：执行指定解析任务（支持 QUEUED 任务和中断后的 RUNNING 任务继续跑）。
    * 输入：jobId。
@@ -361,109 +498,152 @@ export function createAnalysisJobRunner(
         }
       });
 
-      for (const [index, chapter] of chapters.entries()) {
-        // 循环内检查任务是否已被取消，支持中断长运行的解析任务。
-        if (await isJobCanceled(prismaClient, job.id)) { return; }
+      const pending = [...chapters];
+      let doneCount = 0;
+      let nextResolveAt = INCREMENTAL_RESOLVE_INTERVAL;
+      let resolveChain = Promise.resolve();
 
-        await prismaClient.$transaction([
-          prismaClient.book.update({
-            where: { id: job.bookId },
-            data : {
-              parseProgress: Math.floor((index / chapters.length) * 100),
-              parseStage   : buildProgressStage(index, chapters.length)
-            }
-          }),
-          prismaClient.chapter.update({
-            where: { id: chapter.id },
-            data : { parseStatus: "PROCESSING" }
-          })
-        ]);
-
-        let chapterSucceeded = false;
-        let chapterAttempt = 0;
-
-        // 单章节带退避重试循环：可重试错误（网络/限速/连接中断）最多重试 CHAPTER_MAX_RETRIES 次，
-        // 期间保持章节顺序串行执行，不跳过也不并发，确保关联 Persona 的解析上下文完整。
-        while (chapterAttempt <= CHAPTER_MAX_RETRIES) {
+      async function scheduleIncrementalTitleResolution(chapterNo: number): Promise<void> {
+        resolveChain = resolveChain.then(async () => {
+          if (doneCount < nextResolveAt) {
+            return;
+          }
+          const titleOnlyCount = await chapterAnalyzer.getTitleOnlyPersonaCount(job.bookId);
+          if (titleOnlyCount <= 0) {
+            nextResolveAt += INCREMENTAL_RESOLVE_INTERVAL;
+            return;
+          }
           try {
-            const result: ChapterAnalysisResult = await chapterAnalyzer.analyzeChapter(chapter.id);
-            completed += 1;
-            chapterSucceeded = true;
-
-            // 结构化日志用于排查"卡在某一章"或"章节草稿写入异常"等问题。
-            console.info(
-              "[analysis.runner] chapter.completed",
+            await chapterAnalyzer.resolvePersonaTitles(job.bookId);
+            nextResolveAt += INCREMENTAL_RESOLVE_INTERVAL;
+          } catch (incrementalResolveError) {
+            console.warn(
+              "[analysis.runner] incremental.title.resolve.failed",
               JSON.stringify({
-                jobId    : job.id,
-                chapterId: chapter.id,
-                chapterNo: chapter.no,
-                attempt  : chapterAttempt,
-                created  : result.created
+                jobId : job.id,
+                bookId: job.bookId,
+                chapterNo,
+                error : String(incrementalResolveError).slice(0, 500)
               })
             );
-            break; // 成功则退出重试循环
-          } catch (chapterError) {
-            const isRetryable = isChapterRetryableError(chapterError);
-            const retriesExhausted = chapterAttempt >= CHAPTER_MAX_RETRIES;
+          }
+        });
 
-            if (!isRetryable || retriesExhausted) {
-              // 不可重试错误或已耗尽重试次数：记日志，标记失败，跳出循环继续下一章。
-              failedCount += 1;
-              console.error(
-                "[analysis.runner] chapter.failed",
+        await resolveChain;
+      }
+
+      async function workerLoop(): Promise<void> {
+        while (true) {
+          const chapter = pending.shift();
+          if (!chapter) {
+            return;
+          }
+          if (await isJobCanceled(prismaClient, job.id)) {
+            return;
+          }
+
+          await prismaClient.chapter.update({
+            where: { id: chapter.id },
+            data : { parseStatus: "PROCESSING" }
+          });
+
+          let chapterSucceeded = false;
+          let chapterAttempt = 0;
+          let chapterNeedsReview = false;
+
+          while (chapterAttempt <= CHAPTER_MAX_RETRIES) {
+            try {
+              const result: ChapterAnalysisResult = await chapterAnalyzer.analyzeChapter(chapter.id);
+              const validationResult = await runChapterValidationBlocking(job.id, chapter, job.bookId);
+              if (validationResult.needsReview) {
+                chapterNeedsReview = true;
+                console.warn(
+                  "[analysis.runner] chapter.validation.needs_review",
+                  JSON.stringify({
+                    jobId     : job.id,
+                    chapterId : chapter.id,
+                    chapterNo : chapter.no,
+                    reportId  : validationResult.reportId,
+                    errorCount: validationResult.errorCount
+                  })
+                );
+              }
+
+              completed += 1;
+              chapterSucceeded = true;
+              console.info(
+                "[analysis.runner] chapter.completed",
                 JSON.stringify({
                   jobId    : job.id,
                   chapterId: chapter.id,
                   chapterNo: chapter.no,
                   attempt  : chapterAttempt,
-                  isRetryable,
-                  error    : String(chapterError).slice(0, 500)
+                  created  : result.created
                 })
               );
               break;
+            } catch (chapterError) {
+              const isRetryable = isChapterRetryableError(chapterError);
+              const retriesExhausted = chapterAttempt >= CHAPTER_MAX_RETRIES;
+              if (!isRetryable || retriesExhausted) {
+                failedCount += 1;
+                console.error(
+                  "[analysis.runner] chapter.failed",
+                  JSON.stringify({
+                    jobId    : job.id,
+                    chapterId: chapter.id,
+                    chapterNo: chapter.no,
+                    attempt  : chapterAttempt,
+                    isRetryable,
+                    error    : String(chapterError).slice(0, 500)
+                  })
+                );
+                break;
+              }
+
+              const waitMs = CHAPTER_RETRY_BASE_MS * (chapterAttempt + 1);
+              console.warn(
+                "[analysis.runner] chapter.retry",
+                JSON.stringify({
+                  jobId    : job.id,
+                  chapterId: chapter.id,
+                  chapterNo: chapter.no,
+                  attempt  : chapterAttempt + 1,
+                  waitMs,
+                  reason   : String(chapterError).slice(0, 200)
+                })
+              );
+              await new Promise((resolve) => setTimeout(resolve, waitMs));
+              chapterAttempt += 1;
             }
-
-            // 可重试：指数退避等待后再次尝试。
-            const waitMs = CHAPTER_RETRY_BASE_MS * (chapterAttempt + 1);
-            console.warn(
-              "[analysis.runner] chapter.retry",
-              JSON.stringify({
-                jobId    : job.id,
-                chapterId: chapter.id,
-                chapterNo: chapter.no,
-                attempt  : chapterAttempt + 1,
-                waitMs,
-                reason   : String(chapterError).slice(0, 200)
-              })
-            );
-            await new Promise((resolve) => setTimeout(resolve, waitMs));
-            chapterAttempt += 1;
           }
-        }
 
-        // 写回最终章节状态：无论重试几次，只在确定结果后写一次，避免多次数据库写入。
-        await prismaClient.chapter.update({
-          where: { id: chapter.id },
-          data : { parseStatus: chapterSucceeded ? "SUCCEEDED" : "FAILED" }
-        });
+          doneCount += 1;
+          await prismaClient.$transaction([
+              prismaClient.chapter.update({
+                where: { id: chapter.id },
+                data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "PENDING" : "SUCCEEDED") : "FAILED" }
+              }),
+            prismaClient.book.update({
+              where: { id: job.bookId },
+              data : {
+                parseProgress: Math.floor((doneCount / chapters.length) * 100),
+                parseStage   : buildCompletedStage(doneCount, chapters.length)
+              }
+            })
+          ]);
 
-        // 增量溯源：每 5 章触发一次称号真名溯源，尽早收敛 TITLE_ONLY 人物。
-        if ((index + 1) % INCREMENTAL_RESOLVE_INTERVAL === 0) {
-          try {
-            await chapterAnalyzer.resolvePersonaTitles(job.bookId);
-          } catch (incrementalResolveError) {
-            console.warn(
-              "[analysis.runner] incremental.title.resolve.failed",
-              JSON.stringify({
-                jobId    : job.id,
-                bookId   : job.bookId,
-                chapterNo: chapter.no,
-                error    : String(incrementalResolveError).slice(0, 500)
-              })
-            );
+          if (chapterSucceeded) {
+            await scheduleIncrementalTitleResolution(chapter.no);
           }
         }
       }
+
+      await Promise.all(Array.from(
+        { length: Math.max(1, Math.min(CHAPTER_CONCURRENCY, chapters.length)) },
+        () => workerLoop()
+      ));
+      await resolveChain;
 
       // 全部章节均失败时，视为任务整体失败。
       if (completed === 0 && failedCount > 0) {
@@ -502,12 +682,15 @@ export function createAnalysisJobRunner(
         }
 
         // Phase 5: 称号真名溯源——批量 AI 推断 TITLE_ONLY Persona 的历史真名并回写。
-        const resolvedTitleCount = await chapterAnalyzer.resolvePersonaTitles(job.bookId);
-        if (resolvedTitleCount > 0) {
-          console.info(
-            "[analysis.runner] title.personas.resolved",
-            JSON.stringify({ jobId: job.id, bookId: job.bookId, resolvedTitleCount })
-          );
+        const titleOnlyCount = await chapterAnalyzer.getTitleOnlyPersonaCount(job.bookId);
+        if (titleOnlyCount > 0) {
+          const resolvedTitleCount = await chapterAnalyzer.resolvePersonaTitles(job.bookId);
+          if (resolvedTitleCount > 0) {
+            console.info(
+              "[analysis.runner] title.personas.resolved",
+              JSON.stringify({ jobId: job.id, bookId: job.bookId, resolvedTitleCount })
+            );
+          }
         }
 
         // Phase 6: 全书自检（不阻塞主流程，失败仅记日志）。

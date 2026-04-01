@@ -5,6 +5,7 @@ import { buildBookValidationPrompt, buildChapterValidationPrompt, parseValidatio
 import { createAiProviderClient, type AiProviderName, type AiProviderClient } from "@/server/providers/ai";
 import { decryptValue } from "@/server/security/encryption";
 import type { AnalysisProfileContext } from "@/types/analysis";
+import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type {
   ValidationIssue,
   ValidationReportData,
@@ -64,6 +65,16 @@ export interface ValidationAgentService {
 const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao"];
 const AUTO_FIX_ACTIONS = new Set(["MERGE", "ADD_ALIAS", "UPDATE_NAME"]);
 
+/** 验证结果最低置信度阈值：低于此值的 issue 将被过滤 */
+const VALIDATION_MIN_CONFIDENCE = 0.6;
+
+/** 按 action 类型分层的自动修复置信度阈值 */
+const AUTO_FIX_CONFIDENCE: Record<string, number> = {
+  MERGE      : 0.9,
+  ADD_ALIAS  : 0.8,
+  UPDATE_NAME: 0.85
+};
+
 function normalizeProvider(provider: string): AiProviderName {
   const normalizedProvider = provider.trim().toLowerCase();
   if ((SUPPORTED_AI_PROVIDERS as readonly string[]).includes(normalizedProvider)) {
@@ -97,6 +108,23 @@ function unique(values: Array<string | null | undefined>): string[] {
   return Array.from(new Set(values.filter((item): item is string => Boolean(item && item.trim()))));
 }
 
+/**
+ * 从 Prisma JsonValue 字段直接解析 ValidationIssue[]，避免 JSON.stringify + parseValidationResponse 的双重序列化。
+ * 当字段已是对象/数组时直接使用；仅在为字符串时 fallback 到 parseValidationResponse。
+ */
+function parseJsonFieldAsValidationIssues(field: Prisma.JsonValue): ValidationIssue[] {
+  if (typeof field === "string") {
+    return parseValidationResponse(field);
+  }
+  if (Array.isArray(field)) {
+    return parseValidationResponse(JSON.stringify(field));
+  }
+  if (isRecord(field) && Array.isArray(field.issues)) {
+    return parseValidationResponse(JSON.stringify(field.issues));
+  }
+  return [];
+}
+
 function parseValidationSummary(value: Prisma.JsonValue): ValidationSummary {
   if (!isRecord(value)) {
     return {
@@ -120,25 +148,27 @@ function parseValidationSummary(value: Prisma.JsonValue): ValidationSummary {
 }
 
 function sanitizeIssuesByPersona(issues: ValidationIssue[], validPersonaIds: Set<string>): ValidationIssue[] {
-  return issues.map((issue) => {
-    const affectedPersonaIds = issue.affectedPersonaIds.filter((id) => validPersonaIds.has(id));
-    const targetPersonaId = issue.suggestion.targetPersonaId && validPersonaIds.has(issue.suggestion.targetPersonaId)
-      ? issue.suggestion.targetPersonaId
-      : undefined;
-    const sourcePersonaId = issue.suggestion.sourcePersonaId && validPersonaIds.has(issue.suggestion.sourcePersonaId)
-      ? issue.suggestion.sourcePersonaId
-      : undefined;
+  return issues
+    .map((issue) => {
+      const affectedPersonaIds = issue.affectedPersonaIds.filter((id) => validPersonaIds.has(id));
+      const targetPersonaId = issue.suggestion.targetPersonaId && validPersonaIds.has(issue.suggestion.targetPersonaId)
+        ? issue.suggestion.targetPersonaId
+        : undefined;
+      const sourcePersonaId = issue.suggestion.sourcePersonaId && validPersonaIds.has(issue.suggestion.sourcePersonaId)
+        ? issue.suggestion.sourcePersonaId
+        : undefined;
 
-    return {
-      ...issue,
-      affectedPersonaIds,
-      suggestion: {
-        ...issue.suggestion,
-        targetPersonaId,
-        sourcePersonaId
-      }
-    };
-  });
+      return {
+        ...issue,
+        affectedPersonaIds,
+        suggestion: {
+          ...issue.suggestion,
+          targetPersonaId,
+          sourcePersonaId
+        }
+      };
+    })
+    .filter((issue) => issue.affectedPersonaIds.length > 0);
 }
 
 function buildSummary(issues: ValidationIssue[]): ValidationSummary {
@@ -151,9 +181,10 @@ function buildSummary(issues: ValidationIssue[]): ValidationSummary {
     INFO   : 0
   });
 
-  const autoFixable = issues.filter((issue) =>
-    issue.confidence >= 0.9 && AUTO_FIX_ACTIONS.has(issue.suggestion.action)
-  ).length;
+  const autoFixable = issues.filter((issue) => {
+    const threshold = AUTO_FIX_CONFIDENCE[issue.suggestion.action] ?? 0.9;
+    return issue.confidence >= threshold && AUTO_FIX_ACTIONS.has(issue.suggestion.action);
+  }).length;
 
   return {
     totalIssues : issues.length,
@@ -364,7 +395,7 @@ export function createValidationAgentService(
     const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
     const raw = await runtimeAiClient.generateJson(prompt);
 
-    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= 0.6);
+    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= VALIDATION_MIN_CONFIDENCE);
     const validPersonaIds = await ensureValidPersonaIds(
       unique(parsedIssues.flatMap((issue) => [
         ...issue.affectedPersonaIds,
@@ -394,7 +425,7 @@ export function createValidationAgentService(
       throw new Error(`书籍不存在: ${bookId}`);
     }
 
-    const [profiles, mentionStats, relationships] = await Promise.all([
+    const [profiles, mentionStats, relationships, sampledChapters] = await Promise.all([
       prismaClient.profile.findMany({
         where: {
           bookId,
@@ -432,6 +463,12 @@ export function createValidationAgentService(
           targetId: true,
           type    : true
         }
+      }),
+      prismaClient.chapter.findMany({
+        where  : { bookId, parseStatus: "SUCCEEDED" },
+        orderBy: { no: "asc" },
+        select : { no: true, title: true, content: true },
+        take   : ANALYSIS_PIPELINE_CONFIG.bookValidationSampleLimit
       })
     ]);
 
@@ -453,6 +490,13 @@ export function createValidationAgentService(
         });
       }
     }
+
+    const sourceExcerpts = sampledChapters.map((chapter, index) => ({
+      chapterNo   : chapter.no,
+      chapterTitle: chapter.title,
+      reason      : index === 0 ? "代表性样本" : "覆盖更多章节",
+      excerpt     : chapter.content.slice(0, ANALYSIS_PIPELINE_CONFIG.bookValidationExcerptChars)
+    }));
 
     const prompt = buildBookValidationPrompt({
       bookTitle: book.title,
@@ -476,13 +520,14 @@ export function createValidationAgentService(
           name      : profile.persona.name,
           confidence: profile.persona.confidence
         }))
-        .filter((item) => item.confidence < 0.7)
+        .filter((item) => item.confidence < 0.7),
+      sourceExcerpts
     });
 
     const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
     const raw = await runtimeAiClient.generateJson(prompt);
 
-    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= 0.6);
+    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= VALIDATION_MIN_CONFIDENCE);
     const validPersonaIds = await ensureValidPersonaIds(
       unique(parsedIssues.flatMap((issue) => [
         ...issue.affectedPersonaIds,
@@ -515,11 +560,13 @@ export function createValidationAgentService(
       throw new Error(`自检报告不存在: ${reportId}`);
     }
 
-    const issues = parseValidationResponse(JSON.stringify(report.issues));
+    const issues = parseJsonFieldAsValidationIssues(report.issues);
     let applied = 0;
+    const updatedNameIds = new Set<string>();
 
     for (const issue of issues) {
-      if (issue.confidence < 0.9 || !AUTO_FIX_ACTIONS.has(issue.suggestion.action)) {
+      const threshold = AUTO_FIX_CONFIDENCE[issue.suggestion.action] ?? 0.9;
+      if (issue.confidence < threshold || !AUTO_FIX_ACTIONS.has(issue.suggestion.action)) {
         continue;
       }
 
@@ -585,6 +632,11 @@ export function createValidationAgentService(
           continue;
         }
 
+        // 每轮 auto-fix 中只允许对同一 persona 执行一次 UPDATE_NAME，防止别名链
+        if (updatedNameIds.has(targetPersonaId)) {
+          continue;
+        }
+
         const persona = await prismaClient.persona.findUnique({
           where : { id: targetPersonaId },
           select: { name: true, aliases: true, deletedAt: true }
@@ -601,6 +653,7 @@ export function createValidationAgentService(
             aliases: nextAliases
           }
         });
+        updatedNameIds.add(targetPersonaId);
         applied += 1;
       }
     }
@@ -691,7 +744,7 @@ export function createValidationAgentService(
       chapterId: row.chapterId,
       status   : row.status,
       summary  : parseValidationSummary(row.summary),
-      issues   : parseValidationResponse(JSON.stringify(row.issues)),
+      issues   : parseJsonFieldAsValidationIssues(row.issues),
       createdAt: row.createdAt.toISOString()
     };
   }

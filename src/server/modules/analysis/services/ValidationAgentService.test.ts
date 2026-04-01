@@ -17,6 +17,7 @@ function createPrismaMock() {
   const profileFindMany = vi.fn();
   const mentionGroupBy = vi.fn();
   const relationshipFindMany = vi.fn();
+  const chapterFindMany = vi.fn();
   const personaFindMany = vi.fn();
   const personaFindUnique = vi.fn();
   const personaUpdate = vi.fn();
@@ -32,7 +33,8 @@ function createPrismaMock() {
         findUnique: bookFindUnique
       },
       chapter: {
-        findUnique: chapterFindUnique
+        findUnique: chapterFindUnique,
+        findMany  : chapterFindMany
       },
       profile: {
         findMany: profileFindMany
@@ -61,6 +63,7 @@ function createPrismaMock() {
     profileFindMany,
     mentionGroupBy,
     relationshipFindMany,
+    chapterFindMany,
     personaFindMany,
     personaFindUnique,
     personaUpdate,
@@ -188,6 +191,7 @@ describe("ValidationAgentService", () => {
       profileFindMany,
       mentionGroupBy,
       relationshipFindMany,
+      chapterFindMany,
       personaFindMany,
       validationReportCreate
     } = createPrismaMock();
@@ -245,6 +249,9 @@ describe("ValidationAgentService", () => {
       { sourceId: "persona-a", targetId: "persona-b", type: "同乡" },
       { sourceId: "persona-a", targetId: "persona-b", type: "同乡" }
     ]);
+    chapterFindMany.mockResolvedValueOnce([
+      { no: 1, title: "第一回", content: "范进中举，众人相贺。" }
+    ]);
     personaFindMany.mockResolvedValueOnce([{ id: "persona-a" }, { id: "persona-b" }]);
     validationReportCreate.mockResolvedValueOnce({ id: "report-book-1" });
 
@@ -256,6 +263,7 @@ describe("ValidationAgentService", () => {
 
     expect(generateJson).toHaveBeenCalledTimes(1);
     expect(generateJson.mock.calls[0]?.[0]).toContain("## 全书人物列表");
+    expect(generateJson.mock.calls[0]?.[0]).toContain("## 抽样原文证据");
     expect(report.id).toBe("report-book-1");
     expect(report.summary.autoFixable).toBe(1);
     expect(validationReportCreate).toHaveBeenCalledWith({
