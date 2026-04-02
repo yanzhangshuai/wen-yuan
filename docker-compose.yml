@@ -1,45 +1,119 @@
-version: "3.9"
-
 services:
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: wen_yuan_pg
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5434:5432"
-  #   environment:
-  #     POSTGRES_DB: wen_yuan
-  #     POSTGRES_USER: wen_yuan
-  #     POSTGRES_PASSWORD: wen_yuan
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U wen_yuan -d books_graph"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  postgres:
+    image: postgres:16-alpine
+    container_name: wen_yuan_postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-wen_yuan}
+      POSTGRES_USER: ${POSTGRES_USER:-wen_yuan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wen_yuan}
+    volumes:
+      - ${POSTGRES_DATA_MOUNT:-./.volumes/postgres/data}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - wen_yuan_net
 
   neo4j:
     image: neo4j:5.15-community
     container_name: wen_yuan_neo4j
-    hostname: wen-yuan-neo4j
-    extra_hosts:
-      - "wen-yuan-neo4j:127.0.0.1"
-    restart: always
+    restart: unless-stopped
     ports:
-      - "7474:7474" # HTTP 控制台
-      - "7687:7687" # Bolt 协议
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
     environment:
-      - NEO4J_AUTH=neo4j/neo4j_password_123
-      - NEO4J_PLUGINS=["apoc"] # 启用 APOC 插件，方便复杂路径查询
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_password_123}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INIT:-512m}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-1g}
     volumes:
-      - ./.volumes/neo4j/data:/data
-      - ./.volumes/neo4j/logs:/logs
-      - ./.volumes/neo4j/plugins:/plugins
+      - ${NEO4J_DATA_MOUNT:-./.volumes/neo4j/data}:/data
+      - ${NEO4J_LOGS_MOUNT:-./.volumes/neo4j/logs}:/logs
+      - ${NEO4J_PLUGINS_MOUNT:-./.volumes/neo4j/plugins}:/plugins
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cypher-shell -a bolt://127.0.0.1:7687 -u neo4j -p ${NEO4J_PASSWORD:-neo4j_password_123} \"RETURN 1\" >/dev/null 2>&1"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    networks:
+      - wen_yuan_net
 
-# volumes:
-#   postgres_data:
-#   neo4j:
-#     data:
-#     logs:
-#     plugins:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wen-yuan:local
+    container_name: wen_yuan_migrate
+    restart: "no"
+    env_file:
+      - ${ENV_FILE:-.env.dev}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://plotweaver:plotweaver@postgres:5432/wen_yuan?schema=public}
+      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j_password_123}
+      RUN_DB_SEED: ${RUN_DB_SEED:-if-empty}
+      ENTRYPOINT_MODE: migrate
+    volumes:
+      - ${APP_DATA_MOUNT:-./.volumes/app/data}:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks:
+      - wen_yuan_net
+
+  app:
+    image: wen-yuan:local
+    container_name: wen_yuan_app
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.dev}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://plotweaver:plotweaver@postgres:5432/wen_yuan?schema=public}
+      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j_password_123}
+      STORAGE_LOCAL_ROOT: /app/data/storage
+      ENTRYPOINT_MODE: app
+    ports:
+      - "${APP_PORT:-3310}:3000"
+    volumes:
+      - ${APP_DATA_MOUNT:-./.volumes/app/data}:/app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - wen_yuan_net
+
+networks:
+  wen_yuan_net:
+    name: wen_yuan_net
+    driver: bridge

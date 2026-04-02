@@ -1,0 +1,35 @@
+services:
+  # 本地直连宿主机数据库时，不启动 compose 内置数据库
+  postgres:
+    profiles: ["compose-db"]
+
+  # 本地直连宿主机 Neo4j 时，不启动 compose 内置 Neo4j
+  neo4j:
+    profiles: ["compose-db"]
+
+  migrate:
+    # Linux 下 host 网络可让容器内 127.0.0.1 指向宿主机
+    network_mode: host
+    networks: !reset []
+    depends_on: !reset {}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://plotweaver:plotweaver@127.0.0.1:5432/wen_yuan?schema=public}
+      NEO4J_URI: ${NEO4J_URI:-bolt://127.0.0.1:7687}
+
+  app:
+    network_mode: host
+    networks: !reset []
+    ports: !reset []
+    depends_on: !reset
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: ${APP_PORT:-3310}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://plotweaver:plotweaver@127.0.0.1:5432/wen_yuan?schema=public}
+      NEO4J_URI: ${NEO4J_URI:-bolt://127.0.0.1:7687}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:' + process.env.PORT).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        ]

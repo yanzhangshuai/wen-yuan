@@ -1,0 +1,16 @@
+.git
+.gitignore
+.next
+node_modules
+coverage
+.pnpm-store
+.vscode
+.trellis/tasks
+.claude
+.codex
+.agents
+.volumes
+*.log
+Dockerfile*
+docker-compose*.yml
+README.md

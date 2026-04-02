@@ -1,3 +1,6 @@
+-- 全量初始化迁移 / Full Initial Schema Migration
+-- Generated from current schema.prisma
+
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
@@ -15,6 +18,12 @@ CREATE TYPE "processing_status" AS ENUM ('DRAFT', 'VERIFIED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "analysis_job_status" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELED');
+
+-- CreateEnum
+CREATE TYPE "alias_type" AS ENUM ('TITLE', 'POSITION', 'KINSHIP', 'NICKNAME', 'COURTESY_NAME');
+
+-- CreateEnum
+CREATE TYPE "alias_mapping_status" AS ENUM ('PENDING', 'CONFIRMED', 'LLM_INFERRED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "persona_type" AS ENUM ('PERSON', 'LOCATION', 'ORGANIZATION', 'CONCEPT');
@@ -65,11 +74,16 @@ CREATE TABLE "books" (
     "dynasty" TEXT,
     "description" TEXT,
     "cover_url" TEXT,
+    "source_file_key" TEXT,
+    "source_file_url" TEXT,
+    "source_file_name" TEXT,
+    "source_file_mime" TEXT,
+    "source_file_size" INTEGER,
+    "deleted_at" TIMESTAMPTZ(6),
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "error_log" TEXT,
     "parse_progress" INTEGER NOT NULL DEFAULT 0,
     "parse_stage" TEXT,
-    "raw_content" TEXT,
     "ai_model_id" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -87,6 +101,7 @@ CREATE TABLE "chapters" (
     "no_text" TEXT,
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
+    "parse_status" TEXT NOT NULL DEFAULT 'PENDING',
     "is_abstract" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -163,6 +178,7 @@ CREATE TABLE "mentions" (
     "raw_text" TEXT NOT NULL,
     "summary" TEXT,
     "para_index" INTEGER,
+    "record_source" "record_source" NOT NULL DEFAULT 'AI',
     "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -199,14 +215,69 @@ CREATE TABLE "analysis_jobs" (
     "scope" TEXT NOT NULL DEFAULT 'FULL_BOOK',
     "chapter_start" INTEGER,
     "chapter_end" INTEGER,
+    "chapter_indices" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "attempt" INTEGER NOT NULL DEFAULT 1,
     "error_log" TEXT,
+    "override_strategy" TEXT,
+    "keep_history" BOOLEAN NOT NULL DEFAULT false,
     "started_at" TIMESTAMPTZ(6),
     "finished_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "analysis_jobs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "alias_mappings" (
+    "id" UUID NOT NULL,
+    "book_id" UUID NOT NULL,
+    "persona_id" UUID,
+    "alias" TEXT NOT NULL,
+    "resolved_name" TEXT,
+    "alias_type" "alias_type" NOT NULL,
+    "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "evidence" TEXT,
+    "status" "alias_mapping_status" NOT NULL DEFAULT 'PENDING',
+    "chapter_start" INTEGER,
+    "chapter_end" INTEGER,
+    "context_hash" TEXT,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "alias_mappings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "validation_reports" (
+    "id" UUID NOT NULL,
+    "book_id" UUID NOT NULL,
+    "job_id" UUID,
+    "scope" TEXT NOT NULL,
+    "chapter_id" UUID,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "issues" JSONB NOT NULL,
+    "summary" JSONB NOT NULL,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "validation_reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "merge_suggestions" (
+    "id" UUID NOT NULL,
+    "book_id" UUID NOT NULL,
+    "source_persona_id" UUID NOT NULL,
+    "target_persona_id" UUID NOT NULL,
+    "reason" TEXT NOT NULL,
+    "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "evidence_refs" JSONB,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "resolved_at" TIMESTAMPTZ(6),
+
+    CONSTRAINT "merge_suggestions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -220,6 +291,9 @@ CREATE INDEX "users_is_active_idx" ON "users"("is_active");
 
 -- CreateIndex
 CREATE INDEX "ai_models_provider_enabled_idx" ON "ai_models"("provider", "is_enabled");
+
+-- CreateIndex
+CREATE INDEX "books_deleted_at_idx" ON "books"("deleted_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "chapter_book_type_no_key" ON "chapters"("book_id", "type", "no");
@@ -269,6 +343,30 @@ CREATE INDEX "analysis_jobs_book_created_at_idx" ON "analysis_jobs"("book_id", "
 -- CreateIndex
 CREATE INDEX "analysis_jobs_status_created_at_idx" ON "analysis_jobs"("status", "created_at");
 
+-- CreateIndex
+CREATE INDEX "alias_book_idx" ON "alias_mappings"("book_id", "alias");
+
+-- CreateIndex
+CREATE INDEX "persona_book_idx" ON "alias_mappings"("book_id", "persona_id");
+
+-- CreateIndex
+CREATE INDEX "validation_book_idx" ON "validation_reports"("book_id");
+
+-- CreateIndex
+CREATE INDEX "validation_book_chapter_idx" ON "validation_reports"("book_id", "chapter_id");
+
+-- CreateIndex
+CREATE INDEX "validation_job_idx" ON "validation_reports"("job_id");
+
+-- CreateIndex
+CREATE INDEX "merge_suggestions_book_status_idx" ON "merge_suggestions"("book_id", "status");
+
+-- CreateIndex
+CREATE INDEX "merge_suggestions_source_persona_idx" ON "merge_suggestions"("source_persona_id");
+
+-- CreateIndex
+CREATE INDEX "merge_suggestions_target_persona_idx" ON "merge_suggestions"("target_persona_id");
+
 -- AddForeignKey
 ALTER TABLE "books" ADD CONSTRAINT "books_ai_model_id_fkey" FOREIGN KEY ("ai_model_id") REFERENCES "ai_models"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -308,3 +406,23 @@ ALTER TABLE "analysis_jobs" ADD CONSTRAINT "analysis_jobs_book_id_fkey" FOREIGN 
 -- AddForeignKey
 ALTER TABLE "analysis_jobs" ADD CONSTRAINT "analysis_jobs_ai_model_id_fkey" FOREIGN KEY ("ai_model_id") REFERENCES "ai_models"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "alias_mappings" ADD CONSTRAINT "alias_mappings_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "alias_mappings" ADD CONSTRAINT "alias_mappings_persona_id_fkey" FOREIGN KEY ("persona_id") REFERENCES "personas"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "validation_reports" ADD CONSTRAINT "validation_reports_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "validation_reports" ADD CONSTRAINT "validation_reports_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "analysis_jobs"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "merge_suggestions" ADD CONSTRAINT "merge_suggestions_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "merge_suggestions" ADD CONSTRAINT "merge_suggestions_source_persona_id_fkey" FOREIGN KEY ("source_persona_id") REFERENCES "personas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "merge_suggestions" ADD CONSTRAINT "merge_suggestions_target_persona_id_fkey" FOREIGN KEY ("target_persona_id") REFERENCES "personas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
