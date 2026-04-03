@@ -22,8 +22,8 @@ const sampleInput = {
 
 describe("ChapterAnalysisAiClient", () => {
   it("builds prompt through provider and parses structured response", async () => {
-    const generateJson = vi.fn(async (_prompt: string) =>
-      JSON.stringify({
+    const generateJson = vi.fn(async () => ({
+      content: JSON.stringify({
         biographies: [
           {
             personaName: "范进",
@@ -38,22 +38,39 @@ describe("ChapterAnalysisAiClient", () => {
           }
         ],
         relationships: []
-      })
-    );
+      }),
+      usage: {
+        promptTokens    : 120,
+        completionTokens: 48,
+        totalTokens     : 168
+      }
+    }));
     const providerClient: AiProviderClient = { generateJson };
     const client = createChapterAnalysisAiClient(providerClient);
 
     const result = await client.analyzeChapterChunk(sampleInput);
+    const detailed = await client.analyzeChapterChunkWithUsage(sampleInput);
 
-    expect(generateJson).toHaveBeenCalledTimes(1);
-    expect(generateJson.mock.calls[0]?.[0]).toContain("《儒林外史》");
+    expect(generateJson).toHaveBeenCalledTimes(2);
+    expect(generateJson).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        system: expect.stringContaining("结构化提取专家"),
+        user  : expect.stringContaining("《儒林外史》")
+      }),
+      undefined
+    );
     expect(result.biographies).toHaveLength(1);
     expect(result.mentions).toHaveLength(1);
+    expect(detailed.usage).toMatchObject({
+      promptTokens    : 120,
+      completionTokens: 48
+    });
   });
 
   it("returns empty arrays when provider returns unparseable content", async () => {
     const providerClient: AiProviderClient = {
-      generateJson: async () => "not-json"
+      generateJson: async () => ({ content: "not-json", usage: null })
     };
     const client = createChapterAnalysisAiClient(providerClient);
 
@@ -65,17 +82,20 @@ describe("ChapterAnalysisAiClient", () => {
 
   it("parses enhanced roster fields in discoverChapterRoster", async () => {
     const providerClient: AiProviderClient = {
-      generateJson: vi.fn(async () => JSON.stringify([
-        {
-          surfaceForm      : "太祖皇帝",
-          isNew            : true,
-          isTitleOnly      : true,
-          aliasType        : "TITLE",
-          contextHint      : "明朝开国语境",
-          suggestedRealName: "朱元璋",
-          aliasConfidence  : 0.91
-        }
-      ]))
+      generateJson: vi.fn(async () => ({
+        content: JSON.stringify([
+          {
+            surfaceForm      : "太祖皇帝",
+            isNew            : true,
+            isTitleOnly      : true,
+            aliasType        : "TITLE",
+            contextHint      : "明朝开国语境",
+            suggestedRealName: "朱元璋",
+            aliasConfidence  : 0.91
+          }
+        ]),
+        usage: null
+      }))
     };
     const client = createChapterAnalysisAiClient(providerClient);
 
@@ -98,9 +118,12 @@ describe("ChapterAnalysisAiClient", () => {
 
   it("parses title arbitration output", async () => {
     const providerClient: AiProviderClient = {
-      generateJson: vi.fn(async () => JSON.stringify([
-        { surfaceForm: "老爷", isPersonalized: true, confidence: 0.78, reason: "多章稳定指向" }
-      ]))
+      generateJson: vi.fn(async () => ({
+        content: JSON.stringify([
+          { surfaceForm: "老爷", isPersonalized: true, confidence: 0.78, reason: "多章稳定指向" }
+        ]),
+        usage: null
+      }))
     };
     const client = createChapterAnalysisAiClient(providerClient);
     const result = await client.arbitrateTitlePersonalization?.({

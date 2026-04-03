@@ -394,6 +394,8 @@ export const ModelName = {
   Mention: 'Mention',
   Relationship: 'Relationship',
   AnalysisJob: 'AnalysisJob',
+  ModelStrategyConfig: 'ModelStrategyConfig',
+  AnalysisPhaseLog: 'AnalysisPhaseLog',
   AliasMapping: 'AliasMapping',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion'
@@ -412,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "aliasMapping" | "validationReport" | "mergeSuggestion"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1156,6 +1158,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ModelStrategyConfig: {
+      payload: Prisma.$ModelStrategyConfigPayload<ExtArgs>
+      fields: Prisma.ModelStrategyConfigFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ModelStrategyConfigFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ModelStrategyConfigFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
+        }
+        findFirst: {
+          args: Prisma.ModelStrategyConfigFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ModelStrategyConfigFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
+        }
+        findMany: {
+          args: Prisma.ModelStrategyConfigFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>[]
+        }
+        create: {
+          args: Prisma.ModelStrategyConfigCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
+        }
+        createMany: {
+          args: Prisma.ModelStrategyConfigCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ModelStrategyConfigCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>[]
+        }
+        delete: {
+          args: Prisma.ModelStrategyConfigDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
+        }
+        update: {
+          args: Prisma.ModelStrategyConfigUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
+        }
+        deleteMany: {
+          args: Prisma.ModelStrategyConfigDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ModelStrategyConfigUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ModelStrategyConfigUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>[]
+        }
+        upsert: {
+          args: Prisma.ModelStrategyConfigUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
+        }
+        aggregate: {
+          args: Prisma.ModelStrategyConfigAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateModelStrategyConfig>
+        }
+        groupBy: {
+          args: Prisma.ModelStrategyConfigGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ModelStrategyConfigGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ModelStrategyConfigCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ModelStrategyConfigCountAggregateOutputType> | number
+        }
+      }
+    }
+    AnalysisPhaseLog: {
+      payload: Prisma.$AnalysisPhaseLogPayload<ExtArgs>
+      fields: Prisma.AnalysisPhaseLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AnalysisPhaseLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AnalysisPhaseLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>
+        }
+        findFirst: {
+          args: Prisma.AnalysisPhaseLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AnalysisPhaseLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>
+        }
+        findMany: {
+          args: Prisma.AnalysisPhaseLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>[]
+        }
+        create: {
+          args: Prisma.AnalysisPhaseLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>
+        }
+        createMany: {
+          args: Prisma.AnalysisPhaseLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AnalysisPhaseLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>[]
+        }
+        delete: {
+          args: Prisma.AnalysisPhaseLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>
+        }
+        update: {
+          args: Prisma.AnalysisPhaseLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.AnalysisPhaseLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AnalysisPhaseLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AnalysisPhaseLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.AnalysisPhaseLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AnalysisPhaseLogPayload>
+        }
+        aggregate: {
+          args: Prisma.AnalysisPhaseLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAnalysisPhaseLog>
+        }
+        groupBy: {
+          args: Prisma.AnalysisPhaseLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AnalysisPhaseLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AnalysisPhaseLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AnalysisPhaseLogCountAggregateOutputType> | number
+        }
+      }
+    }
     AliasMapping: {
       payload: Prisma.$AliasMappingPayload<ExtArgs>
       fields: Prisma.AliasMappingFieldRefs
@@ -1466,7 +1616,6 @@ export const BookScalarFieldEnum = {
   errorLog: 'errorLog',
   parseProgress: 'parseProgress',
   parseStage: 'parseStage',
-  aiModelId: 'aiModelId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1592,7 +1741,6 @@ export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[k
 export const AnalysisJobScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
-  aiModelId: 'aiModelId',
   status: 'status',
   scope: 'scope',
   chapterStart: 'chapterStart',
@@ -1600,6 +1748,7 @@ export const AnalysisJobScalarFieldEnum = {
   chapterIndices: 'chapterIndices',
   attempt: 'attempt',
   errorLog: 'errorLog',
+  experimentTag: 'experimentTag',
   overrideStrategy: 'overrideStrategy',
   keepHistory: 'keepHistory',
   startedAt: 'startedAt',
@@ -1609,6 +1758,39 @@ export const AnalysisJobScalarFieldEnum = {
 } as const
 
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
+
+
+export const ModelStrategyConfigScalarFieldEnum = {
+  id: 'id',
+  scope: 'scope',
+  bookId: 'bookId',
+  jobId: 'jobId',
+  stages: 'stages',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ModelStrategyConfigScalarFieldEnum = (typeof ModelStrategyConfigScalarFieldEnum)[keyof typeof ModelStrategyConfigScalarFieldEnum]
+
+
+export const AnalysisPhaseLogScalarFieldEnum = {
+  id: 'id',
+  jobId: 'jobId',
+  chapterId: 'chapterId',
+  stage: 'stage',
+  modelId: 'modelId',
+  modelSource: 'modelSource',
+  isFallback: 'isFallback',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  durationMs: 'durationMs',
+  status: 'status',
+  errorMessage: 'errorMessage',
+  chunkIndex: 'chunkIndex',
+  createdAt: 'createdAt'
+} as const
+
+export type AnalysisPhaseLogScalarFieldEnum = (typeof AnalysisPhaseLogScalarFieldEnum)[keyof typeof AnalysisPhaseLogScalarFieldEnum]
 
 
 export const AliasMappingScalarFieldEnum = {
@@ -1907,6 +2089,20 @@ export type ListEnumAnalysisJobStatusFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'ModelStrategyScope'
+ */
+export type EnumModelStrategyScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModelStrategyScope'>
+    
+
+
+/**
+ * Reference to a field of type 'ModelStrategyScope[]'
+ */
+export type ListEnumModelStrategyScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModelStrategyScope[]'>
+    
+
+
+/**
  * Reference to a field of type 'AliasType'
  */
 export type EnumAliasTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AliasType'>
@@ -2038,6 +2234,8 @@ export type GlobalOmitConfig = {
   mention?: Prisma.MentionOmit
   relationship?: Prisma.RelationshipOmit
   analysisJob?: Prisma.AnalysisJobOmit
+  modelStrategyConfig?: Prisma.ModelStrategyConfigOmit
+  analysisPhaseLog?: Prisma.AnalysisPhaseLogOmit
   aliasMapping?: Prisma.AliasMappingOmit
   validationReport?: Prisma.ValidationReportOmit
   mergeSuggestion?: Prisma.MergeSuggestionOmit

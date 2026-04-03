@@ -5,6 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 import { AnalysisJobsPanel } from "./analysis-jobs-panel";
+import { BookStrategyPanel } from "./book-strategy-panel";
 import { ParseProgressPanel } from "./parse-progress-panel";
 import { PersonasPanel } from "./personas-panel";
 
@@ -13,12 +14,13 @@ interface BookDetailTabsProps {
   initialStatus: string;
 }
 
-type Tab = "overview" | "jobs" | "personas";
+type Tab = "overview" | "jobs" | "personas" | "strategy";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "解析进度" },
   { id: "jobs",     label: "解析任务" },
-  { id: "personas", label: "人物"     }
+  { id: "personas", label: "人物"     },
+  { id: "strategy", label: "模型策略" }
 ];
 
 export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
@@ -59,6 +61,10 @@ export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
 
       {activeTab === "personas" && (
         <PersonasPanel bookId={bookId} />
+      )}
+
+      {activeTab === "strategy" && (
+        <BookStrategyPanel bookId={bookId} />
       )}
     </div>
   );

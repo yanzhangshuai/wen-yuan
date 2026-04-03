@@ -24,12 +24,8 @@ interface BookListRow {
   updatedAt: Date;
   /** 书级错误摘要。 */
   errorLog : string | null;
-  /** 当前绑定模型。 */
-  aiModel      : {
-    name: string;
-  } | null;
   /** 关系计数字段（用于统计章节与人物数量）。 */
-  _count      : {
+  _count : {
     /** 章节计数。 */
     chapters: number;
     /** 有效人物档案计数（已过滤 deletedAt）。 */
@@ -40,9 +36,11 @@ interface BookListRow {
     updatedAt : Date;
     finishedAt: Date | null;
     errorLog  : string | null;
-    aiModel   : {
-      name: string;
-    } | null;
+    phaseLogs : Array<{
+      model: {
+        name: string;
+      } | null;
+    }>;
   }>;
   /** 存储对象 key。 */
   sourceFileKey : string | null;
@@ -67,12 +65,7 @@ const BOOK_LIST_SELECT = {
   createdAt: true,
   updatedAt: true,
   errorLog : true,
-  aiModel  : {
-    select: {
-      name: true
-    }
-  },
-  _count: {
+  _count   : {
     select: {
       chapters: true,
       profiles: {
@@ -87,9 +80,15 @@ const BOOK_LIST_SELECT = {
       updatedAt : true,
       finishedAt: true,
       errorLog  : true,
-      aiModel   : {
-        select: {
-          name: true
+      phaseLogs : {
+        take   : 1,
+        orderBy: { createdAt: "desc" },
+        select : {
+          model: {
+            select: {
+              name: true
+            }
+          }
         }
       }
     }
@@ -120,7 +119,9 @@ function resolveLastAnalyzedAt(
  */
 function mapBook(book: BookListRow): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
-  const currentModel = book.aiModel?.name ?? book.analysisJobs[0]?.aiModel?.name ?? null;
+  // Book / AnalysisJob 均不再直接存 aiModel 关系，列表模型名取自最新任务的最新阶段日志。
+  // 这样可保证展示值与真实执行日志一致，并避免访问已移除的旧 relation 字段。
+  const currentModel = book.analysisJobs[0]?.phaseLogs?.[0]?.model?.name ?? null;
   const lastErrorSummary = book.errorLog ?? book.analysisJobs[0]?.errorLog ?? null;
 
   return {

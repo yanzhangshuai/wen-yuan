@@ -37,19 +37,17 @@ interface BookDetailRow {
   sourceFileMime: string | null;
   /** 源文件大小。 */
   sourceFileSize: number | null;
-  /** 当前绑定模型。 */
-  aiModel       : {
-    name: string;
-  } | null;
-  chapters    : Array<{ id: string }>;
-  profiles    : Array<{ id: string }>;
+  chapters      : Array<{ id: string }>;
+  profiles      : Array<{ id: string }>;
   analysisJobs: Array<{
     updatedAt : Date;
     finishedAt: Date | null;
     errorLog  : string | null;
-    aiModel   : {
-      name: string;
-    } | null;
+    phaseLogs : Array<{
+      model: {
+        name: string;
+      } | null;
+    }>;
   }>;
 }
 
@@ -71,7 +69,7 @@ function resolveLastAnalyzedAt(
  */
 function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
-  const currentModel = book.aiModel?.name ?? book.analysisJobs[0]?.aiModel?.name ?? null;
+  const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
   const lastErrorSummary = book.errorLog ?? book.analysisJobs[0]?.errorLog ?? null;
 
   return {
@@ -130,12 +128,7 @@ export function createGetBookByIdService(
         sourceFileName: true,
         sourceFileMime: true,
         sourceFileSize: true,
-        aiModel       : {
-          select: {
-            name: true
-          }
-        },
-        chapters: {
+        chapters      : {
           select: {
             id: true
           }
@@ -153,9 +146,15 @@ export function createGetBookByIdService(
             updatedAt : true,
             finishedAt: true,
             errorLog  : true,
-            aiModel   : {
-              select: {
-                name: true
+            phaseLogs : {
+              take   : 1,
+              orderBy: { createdAt: "desc" },
+              select : {
+                model: {
+                  select: {
+                    name: true
+                  }
+                }
               }
             }
           }

@@ -9,10 +9,20 @@ export const ANALYSIS_PIPELINE_CONFIG = {
   aliasRegistryMinConfidence   : 0.75,
   /** 多信号实体合并阈值。 */
   personaResolveMinScore       : 0.72,
+  /** Phase 2 单片输入长度。 */
+  maxChunkLength               : 6000,
+  /** Phase 2 相邻分片重叠长度。 */
+  chunkOverlap                 : 500,
+  /** Phase 1 触发长章节分片保护的阈值。 */
+  rosterMaxInputLength         : 20000,
+  /** Phase 1 长章节分片大小。 */
+  rosterChunkSize              : 15000,
+  /** Phase 1 长章节分片重叠。 */
+  rosterChunkOverlap           : 2000,
   /** Chunk 并发。 */
   chunkAiConcurrency           : 3,
   /** 章节间并发。 */
-  chapterConcurrency           : 1,
+  chapterConcurrency           : 2,
   /** 增量称号溯源触发间隔（按成功章节数）。 */
   incrementalResolveInterval   : 5,
   /** 章节校验重试次数（不含首次）。 */

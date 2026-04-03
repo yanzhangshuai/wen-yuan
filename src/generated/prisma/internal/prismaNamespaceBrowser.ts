@@ -61,6 +61,8 @@ export const ModelName = {
   Mention: 'Mention',
   Relationship: 'Relationship',
   AnalysisJob: 'AnalysisJob',
+  ModelStrategyConfig: 'ModelStrategyConfig',
+  AnalysisPhaseLog: 'AnalysisPhaseLog',
   AliasMapping: 'AliasMapping',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion'
@@ -131,7 +133,6 @@ export const BookScalarFieldEnum = {
   errorLog: 'errorLog',
   parseProgress: 'parseProgress',
   parseStage: 'parseStage',
-  aiModelId: 'aiModelId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -257,7 +258,6 @@ export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[k
 export const AnalysisJobScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
-  aiModelId: 'aiModelId',
   status: 'status',
   scope: 'scope',
   chapterStart: 'chapterStart',
@@ -265,6 +265,7 @@ export const AnalysisJobScalarFieldEnum = {
   chapterIndices: 'chapterIndices',
   attempt: 'attempt',
   errorLog: 'errorLog',
+  experimentTag: 'experimentTag',
   overrideStrategy: 'overrideStrategy',
   keepHistory: 'keepHistory',
   startedAt: 'startedAt',
@@ -274,6 +275,39 @@ export const AnalysisJobScalarFieldEnum = {
 } as const
 
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
+
+
+export const ModelStrategyConfigScalarFieldEnum = {
+  id: 'id',
+  scope: 'scope',
+  bookId: 'bookId',
+  jobId: 'jobId',
+  stages: 'stages',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ModelStrategyConfigScalarFieldEnum = (typeof ModelStrategyConfigScalarFieldEnum)[keyof typeof ModelStrategyConfigScalarFieldEnum]
+
+
+export const AnalysisPhaseLogScalarFieldEnum = {
+  id: 'id',
+  jobId: 'jobId',
+  chapterId: 'chapterId',
+  stage: 'stage',
+  modelId: 'modelId',
+  modelSource: 'modelSource',
+  isFallback: 'isFallback',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  durationMs: 'durationMs',
+  status: 'status',
+  errorMessage: 'errorMessage',
+  chunkIndex: 'chunkIndex',
+  createdAt: 'createdAt'
+} as const
+
+export type AnalysisPhaseLogScalarFieldEnum = (typeof AnalysisPhaseLogScalarFieldEnum)[keyof typeof AnalysisPhaseLogScalarFieldEnum]
 
 
 export const AliasMappingScalarFieldEnum = {

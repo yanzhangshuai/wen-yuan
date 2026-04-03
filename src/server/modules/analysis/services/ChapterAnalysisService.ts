@@ -1,12 +1,19 @@
 import { BioCategory, ProcessingStatus } from "@/generated/prisma/enums";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { createAiProviderClient, type AiProviderName } from "@/server/providers/ai";
-import { decryptValue } from "@/server/security/encryption";
+import { createAiProviderClient } from "@/server/providers/ai";
 import { aliasRegistryService, type AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { createChapterAnalysisAiClient, type AiAnalysisClient } from "@/server/modules/analysis/services/aiClient";
+import { aiCallExecutor, type AiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
+import {
+  createModelStrategyResolver,
+  type ModelStrategyResolver,
+  type ResolvedFallbackModel,
+  type ResolvedStageModel
+} from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
+import { buildChapterAnalysisPrompt, buildRosterDiscoveryPrompt, buildTitleArbitrationPrompt, buildTitleResolutionPrompt } from "@/server/modules/analysis/services/prompts";
 import {
   type BookLexiconConfig,
   type MentionPersonalizationEvidence,
@@ -17,16 +24,19 @@ import type {
   AnalysisProfileContext,
   BioCategoryValue,
   ChapterAnalysisResponse,
+  EnhancedChapterRosterEntry,
+  TitleArbitrationInput,
+  TitleResolutionInput,
   RegisterAliasInput
 } from "@/types/analysis";
+import { PipelineStage } from "@/types/pipeline";
 
-// 配置常量
-const MAX_CHUNK_LENGTH = 2000; // 每片输入字符数：缩小分片减少每次输出量，防止 AI token 上限截断
-const CHUNK_OVERLAP    = 200;  // 相邻分片重叠字符数：缓解分片边界上下文断裂
-const AI_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chunkAiConcurrency; // 同时解析的分段数，避免触发 API 频控
-const AI_MAX_RETRIES = 2;
-const AI_RETRY_BASE_MS = 600;
-const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao"];
+// 同时解析的分段数，避免触发 API 频控，同时控制单章处理时长。
+const AI_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chunkAiConcurrency;
+// 文档要求泛化称谓示例 >= 30，章节分析阶段与 prompt 构建阶段保持同口径。
+const GENERIC_TITLES_PROMPT_LIMIT = 30;
+// relationship evidence 仅保留前 5 条，避免异常长证据链污染最终结构化结果。
+const RELATIONSHIP_EVIDENCE_LIMIT = 5;
 const GENERIC_IRONY_PATTERNS: readonly RegExp[] = [
   /批判(了|的是)?社会/,
   /揭露(了|的是)?(社会|官场|制度)/,
@@ -35,37 +45,6 @@ const GENERIC_IRONY_PATTERNS: readonly RegExp[] = [
   /辛辣?讽刺/,
   /社会(现实)?(黑暗|腐败)/
 ];
-
-interface AnalysisAiModelConfig {
-  id       : string;
-  provider : string;
-  name     : string;
-  modelId  : string;
-  baseUrl  : string;
-  apiKey   : string | null;
-  isEnabled: boolean;
-}
-
-function normalizeProvider(provider: string): AiProviderName {
-  const normalizedProvider = provider.trim().toLowerCase();
-  if ((SUPPORTED_AI_PROVIDERS as readonly string[]).includes(normalizedProvider)) {
-    return normalizedProvider as AiProviderName;
-  }
-
-  throw new Error(`不支持的模型 provider: ${provider}`);
-}
-
-function readEncryptedApiKey(apiKey: string | null, modelName: string): string {
-  if (!apiKey) {
-    throw new Error(`模型「${modelName}」未配置 API Key`);
-  }
-
-  if (!apiKey.startsWith("enc:v1:")) {
-    throw new Error(`模型「${modelName}」API Key 存储格式非法，请在模型设置页重新保存`);
-  }
-
-  return decryptValue(apiKey);
-}
 
 /**
  * 功能：定义章节分析完成后的统计结果结构。
@@ -93,6 +72,138 @@ export interface GrayZoneMentionRecord {
 }
 
 /**
+ * mention 去重键约定：
+ * - paraIndex 存在时优先使用 personaName + rawText + paraIndex，避免跨段误去重；
+ * - paraIndex 缺失时降级到 personaName + rawText，兼容历史输出。
+ * - 该函数只负责“键生成”，不承担标准化写回；这样便于在测试中单独验证去重语义。
+ */
+function buildMentionDedupKey(mention: ChapterAnalysisResponse["mentions"][number]): string {
+  const baseKey = `${mention.personaName}||${mention.rawText}`;
+  return typeof mention.paraIndex === "number"
+    ? `${baseKey}||${mention.paraIndex}`
+    : baseKey;
+}
+
+/**
+ * 统一合并 Phase 1 人物名册结果：
+ * - 优先按 suggestedRealName + aliasType 聚合（对应文档中的 normalizedName + titleType）；
+ * - 若缺失 suggestedRealName，则退化到 surfaceForm + aliasType。
+ */
+export function mergeRosterEntriesForAnalysis(entries: EnhancedChapterRosterEntry[]): EnhancedChapterRosterEntry[] {
+  const rosterMap = new Map<string, EnhancedChapterRosterEntry>();
+
+  for (const entry of entries) {
+    const surfaceForm = entry.surfaceForm.trim();
+    if (!surfaceForm) continue;
+
+    const normalizedName = entry.suggestedRealName?.trim().toLowerCase();
+    const typeKey = entry.aliasType ?? "_";
+    const dedupBase = normalizedName && normalizedName.length > 0
+      ? normalizedName
+      : surfaceForm.toLowerCase();
+    const dedupKey = `${dedupBase}||${typeKey}`;
+
+    const normalized: EnhancedChapterRosterEntry = {
+      ...entry,
+      surfaceForm
+    };
+    const existing = rosterMap.get(dedupKey);
+    if (!existing) {
+      rosterMap.set(dedupKey, normalized);
+      continue;
+    }
+
+    // 合并策略：保留“更完整且更可信”的字段，避免后写入的弱信息覆盖强信息。
+    rosterMap.set(dedupKey, {
+      ...existing,
+      ...normalized,
+      surfaceForm,
+      entityId         : existing.entityId ?? normalized.entityId,
+      isNew            : existing.isNew || normalized.isNew,
+      generic          : existing.generic && normalized.generic,
+      isTitleOnly      : existing.isTitleOnly || normalized.isTitleOnly,
+      suggestedRealName: existing.suggestedRealName ?? normalized.suggestedRealName,
+      aliasType        : existing.aliasType ?? normalized.aliasType,
+      aliasConfidence  : Math.max(existing.aliasConfidence ?? 0, normalized.aliasConfidence ?? 0),
+      contextHint      : existing.contextHint ?? normalized.contextHint
+    });
+  }
+
+  return Array.from(rosterMap.values());
+}
+
+/**
+ * 分段结果聚合：
+ * - mention：按 paraIndex 感知去重，减少跨段误折叠；
+ * - relationship：同键关系保留最大权重，并聚合证据；
+ * - evidence 聚合后截断到 5 条，防止异常长链污染结果与日志。
+ */
+export function mergeChunkResultsForAnalysis(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse {
+  const mentionMap = new Map<string, ChapterAnalysisResponse["mentions"][number]>();
+  const biographyMap = new Map<string, ChapterAnalysisResponse["biographies"][number]>();
+  const relationshipMap = new Map<string, ChapterAnalysisResponse["relationships"][number]>();
+
+  for (const result of results) {
+    for (const mention of result.mentions) {
+      const key = buildMentionDedupKey(mention);
+      if (!mentionMap.has(key)) {
+        mentionMap.set(key, mention);
+      }
+    }
+
+    for (const biography of result.biographies) {
+      const key = `${biography.personaName}||${biography.event}`;
+      if (!biographyMap.has(key)) {
+        biographyMap.set(key, biography);
+      }
+    }
+
+    for (const relationship of result.relationships) {
+      const key = `${relationship.sourceName}||${relationship.targetName}||${relationship.type}`;
+      const existing = relationshipMap.get(key);
+      if (!existing) {
+        relationshipMap.set(key, { ...relationship });
+        continue;
+      }
+
+      // 证据字段可能已经是“；”拼接串，这里按分号拆分去重并限制上限。
+      const evidences = new Set<string>();
+      for (const evidenceChunk of [existing.evidence, relationship.evidence]) {
+        if (!evidenceChunk) {
+          continue;
+        }
+        for (const item of evidenceChunk.split("；")) {
+          const trimmed = item.trim();
+          if (trimmed) {
+            evidences.add(trimmed);
+          }
+          if (evidences.size >= RELATIONSHIP_EVIDENCE_LIMIT) {
+            break;
+          }
+        }
+        if (evidences.size >= RELATIONSHIP_EVIDENCE_LIMIT) {
+          break;
+        }
+      }
+
+      relationshipMap.set(key, {
+        ...existing,
+        // 权重采用最大值，避免高置信边被后续低置信片段“冲淡”。
+        weight     : Math.max(existing.weight ?? 0, relationship.weight ?? 0) || undefined,
+        description: existing.description ?? relationship.description,
+        evidence   : Array.from(evidences).filter(Boolean).slice(0, RELATIONSHIP_EVIDENCE_LIMIT).join("；") || undefined
+      });
+    }
+  }
+
+  return {
+    biographies  : Array.from(biographyMap.values()),
+    mentions     : Array.from(mentionMap.values()),
+    relationships: Array.from(relationshipMap.values())
+  };
+}
+
+/**
  * 功能：创建章节分析服务，执行章节分析主流程并写入结构化文学数据。
  * 输入：prismaClient、aiClient（均可注入，便于测试）。
  * 输出：包含 analyzeChapter 方法的服务对象。
@@ -102,7 +213,9 @@ export interface GrayZoneMentionRecord {
 export function createChapterAnalysisService(
   prismaClient: PrismaClient = prisma,
   aiClient?: AiAnalysisClient,
-  aliasRegistry?: AliasRegistryService
+  aliasRegistry?: AliasRegistryService,
+  stageAiCallExecutor: AiCallExecutor = aiCallExecutor,
+  strategyResolver: ModelStrategyResolver = createModelStrategyResolver(prismaClient)
 ) {
   const personaResolver = createPersonaResolver(prismaClient, aliasRegistry);
   const { mergePersonas } = createMergePersonasService(prismaClient);
@@ -121,80 +234,286 @@ export function createChapterAnalysisService(
     grayZoneMentionStore.set(bookId, bookStore);
   }
 
-  /**
-   * 功能：为章节分析解析“实际生效模型”。
-   * 输入：bookAiModelId - 书籍绑定模型 ID，可为空。
-   * 输出：可直接用于构造 provider 的模型配置（已校验启用状态）。
-   * 异常：模型不存在、未启用或未配置 Key 时抛错。
-   * 副作用：读取数据库 `ai_models` 表。
-   */
-  async function resolveAnalysisModelConfig(bookAiModelId: string | null): Promise<AnalysisAiModelConfig> {
-    if (bookAiModelId) {
-      const assignedModel = await prismaClient.aiModel.findUnique({
-        where : { id: bookAiModelId },
-        select: {
-          id       : true,
-          provider : true,
-          name     : true,
-          modelId  : true,
-          baseUrl  : true,
-          apiKey   : true,
-          isEnabled: true
-        }
-      });
+  const runtimeAiClientCache = new Map<string, AiAnalysisClient>();
 
-      if (!assignedModel) {
-        throw new Error(`书籍绑定模型不存在: ${bookAiModelId}`);
-      }
+  interface AnalysisExecutionContext {
+    jobId?: string;
+  }
 
-      if (!assignedModel.isEnabled) {
-        throw new Error(`书籍绑定模型未启用: ${assignedModel.name}`);
-      }
+  function toGenerateOptions(model: ResolvedStageModel | ResolvedFallbackModel) {
+    return {
+      temperature    : model.params.temperature,
+      maxOutputTokens: model.params.maxOutputTokens,
+      topP           : model.params.topP
+    };
+  }
 
-      return assignedModel;
+  function getRuntimeAiClient(model: ResolvedStageModel | ResolvedFallbackModel): AiAnalysisClient {
+    if (aiClient) {
+      return aiClient;
     }
 
-    const defaultModel = await prismaClient.aiModel.findFirst({
-      where  : { isDefault: true, isEnabled: true },
-      orderBy: { updatedAt: "desc" },
-      select : {
-        id       : true,
-        provider : true,
-        name     : true,
-        modelId  : true,
-        baseUrl  : true,
-        apiKey   : true,
-        isEnabled: true
+    const cached = runtimeAiClientCache.get(model.modelId);
+    if (cached) {
+      return cached;
+    }
+
+    const providerClient = createAiProviderClient({
+      provider : model.provider,
+      apiKey   : model.apiKey,
+      baseUrl  : model.baseUrl,
+      modelName: model.modelName
+    });
+    const createdClient = createChapterAnalysisAiClient(providerClient);
+    runtimeAiClientCache.set(model.modelId, createdClient);
+    return createdClient;
+  }
+
+  async function discoverRosterByStage(input: {
+    chapterId   : string;
+    stageContext: { bookId: string; jobId?: string };
+    rosterInput : Parameters<AiAnalysisClient["discoverChapterRoster"]>[0];
+    chunkIndex? : number;
+  }): Promise<EnhancedChapterRosterEntry[]> {
+    if (!input.stageContext.jobId) {
+      if (aiClient) {
+        if (aiClient.discoverChapterRosterWithUsage) {
+          const result = await aiClient.discoverChapterRosterWithUsage(input.rosterInput);
+          return result.data;
+        }
+
+        return await aiClient.discoverChapterRoster(input.rosterInput);
+      }
+
+      const model = await strategyResolver.resolveForStage(PipelineStage.ROSTER_DISCOVERY, {
+        bookId: input.stageContext.bookId
+      });
+      const runtimeClient = getRuntimeAiClient(model);
+      const result = runtimeClient.discoverChapterRosterWithUsage
+        ? await runtimeClient.discoverChapterRosterWithUsage(input.rosterInput, toGenerateOptions(model))
+        : {
+          data : await runtimeClient.discoverChapterRoster(input.rosterInput, toGenerateOptions(model)),
+          usage: null
+        };
+      return result.data;
+    }
+
+    const prompt = buildRosterDiscoveryPrompt(input.rosterInput);
+    const result = await stageAiCallExecutor.execute({
+      stage     : PipelineStage.ROSTER_DISCOVERY,
+      prompt,
+      jobId     : input.stageContext.jobId,
+      chapterId : input.chapterId,
+      chunkIndex: input.chunkIndex,
+      context   : input.stageContext,
+      callFn    : async ({ model }) => {
+        const runtimeClient = getRuntimeAiClient(model);
+        if (runtimeClient.discoverChapterRosterWithUsage) {
+          return await runtimeClient.discoverChapterRosterWithUsage(input.rosterInput, toGenerateOptions(model));
+        }
+
+        const data = await runtimeClient.discoverChapterRoster(input.rosterInput, toGenerateOptions(model));
+        return { data, usage: null };
       }
     });
 
-    if (!defaultModel) {
-      throw new Error("未找到可用默认模型，请在 /admin/model 配置并启用至少一个模型");
+    return result.data;
+  }
+
+  async function analyzeChunkByStage(input: {
+    chapterId   : string;
+    stageContext: { bookId: string; jobId?: string };
+    chunkInput  : Parameters<AiAnalysisClient["analyzeChapterChunk"]>[0];
+    chunkIndex  : number;
+  }): Promise<ChapterAnalysisResponse> {
+    if (!input.stageContext.jobId) {
+      if (aiClient) {
+        if (aiClient.analyzeChapterChunkWithUsage) {
+          const result = await aiClient.analyzeChapterChunkWithUsage(input.chunkInput);
+          return result.data;
+        }
+
+        return await aiClient.analyzeChapterChunk(input.chunkInput);
+      }
+
+      const model = await strategyResolver.resolveForStage(PipelineStage.CHUNK_EXTRACTION, {
+        bookId: input.stageContext.bookId
+      });
+      const runtimeClient = getRuntimeAiClient(model);
+      const result = runtimeClient.analyzeChapterChunkWithUsage
+        ? await runtimeClient.analyzeChapterChunkWithUsage(input.chunkInput, toGenerateOptions(model))
+        : {
+          data : await runtimeClient.analyzeChapterChunk(input.chunkInput, toGenerateOptions(model)),
+          usage: null
+        };
+      return result.data;
     }
 
-    return defaultModel;
+    const prompt = buildChapterAnalysisPrompt(input.chunkInput);
+    const result = await stageAiCallExecutor.execute({
+      stage     : PipelineStage.CHUNK_EXTRACTION,
+      prompt,
+      jobId     : input.stageContext.jobId,
+      chapterId : input.chapterId,
+      chunkIndex: input.chunkIndex,
+      context   : input.stageContext,
+      callFn    : async ({ model }) => {
+        const runtimeClient = getRuntimeAiClient(model);
+        if (runtimeClient.analyzeChapterChunkWithUsage) {
+          return await runtimeClient.analyzeChapterChunkWithUsage(input.chunkInput, toGenerateOptions(model));
+        }
+
+        const data = await runtimeClient.analyzeChapterChunk(input.chunkInput, toGenerateOptions(model));
+        return { data, usage: null };
+      }
+    });
+
+    return result.data;
+  }
+
+  async function resolveTitlesByStage(input: {
+    stageContext: { bookId: string; jobId?: string };
+    titleInput  : TitleResolutionInput;
+  }) {
+    if (!input.stageContext.jobId) {
+      if (aiClient) {
+        if (aiClient.resolvePersonaTitlesWithUsage) {
+          const result = await aiClient.resolvePersonaTitlesWithUsage(input.titleInput);
+          return result.data;
+        }
+
+        return await aiClient.resolvePersonaTitles(input.titleInput);
+      }
+
+      const model = await strategyResolver.resolveForStage(PipelineStage.TITLE_RESOLUTION, {
+        bookId: input.stageContext.bookId
+      });
+      const runtimeClient = getRuntimeAiClient(model);
+      const result = runtimeClient.resolvePersonaTitlesWithUsage
+        ? await runtimeClient.resolvePersonaTitlesWithUsage(input.titleInput, toGenerateOptions(model))
+        : {
+          data : await runtimeClient.resolvePersonaTitles(input.titleInput, toGenerateOptions(model)),
+          usage: null
+        };
+      return result.data;
+    }
+
+    const prompt = buildTitleResolutionPrompt(input.titleInput);
+    const result = await stageAiCallExecutor.execute({
+      stage  : PipelineStage.TITLE_RESOLUTION,
+      prompt,
+      jobId  : input.stageContext.jobId,
+      context: input.stageContext,
+      callFn : async ({ model }) => {
+        const runtimeClient = getRuntimeAiClient(model);
+        if (runtimeClient.resolvePersonaTitlesWithUsage) {
+          return await runtimeClient.resolvePersonaTitlesWithUsage(input.titleInput, toGenerateOptions(model));
+        }
+
+        const data = await runtimeClient.resolvePersonaTitles(input.titleInput, toGenerateOptions(model));
+        return { data, usage: null };
+      }
+    });
+
+    return result.data;
+  }
+
+  async function arbitrateGrayZoneByStage(input: {
+    stageContext    : { bookId: string; jobId?: string };
+    arbitrationInput: TitleArbitrationInput;
+  }) {
+    if (!input.stageContext.jobId) {
+      if (aiClient) {
+        if (aiClient.arbitrateTitlePersonalizationWithUsage) {
+          const result = await aiClient.arbitrateTitlePersonalizationWithUsage(input.arbitrationInput);
+          return result.data;
+        }
+        return aiClient.arbitrateTitlePersonalization
+          ? await aiClient.arbitrateTitlePersonalization(input.arbitrationInput)
+          : [];
+      }
+
+      const model = await strategyResolver.resolveForStage(PipelineStage.GRAY_ZONE_ARBITRATION, {
+        bookId: input.stageContext.bookId
+      });
+      const runtimeClient = getRuntimeAiClient(model);
+      if (runtimeClient.arbitrateTitlePersonalizationWithUsage) {
+        const result = await runtimeClient.arbitrateTitlePersonalizationWithUsage(
+          input.arbitrationInput,
+          toGenerateOptions(model)
+        );
+        return result.data;
+      }
+      return runtimeClient.arbitrateTitlePersonalization
+        ? await runtimeClient.arbitrateTitlePersonalization(input.arbitrationInput, toGenerateOptions(model))
+        : [];
+    }
+
+    const prompt = buildTitleArbitrationPrompt(input.arbitrationInput);
+    const result = await stageAiCallExecutor.execute({
+      stage  : PipelineStage.GRAY_ZONE_ARBITRATION,
+      prompt,
+      jobId  : input.stageContext.jobId,
+      context: input.stageContext,
+      callFn : async ({ model }) => {
+        const runtimeClient = getRuntimeAiClient(model);
+        if (runtimeClient.arbitrateTitlePersonalizationWithUsage) {
+          return await runtimeClient.arbitrateTitlePersonalizationWithUsage(
+            input.arbitrationInput,
+            toGenerateOptions(model)
+          );
+        }
+
+        const data = runtimeClient.arbitrateTitlePersonalization
+          ? await runtimeClient.arbitrateTitlePersonalization(input.arbitrationInput, toGenerateOptions(model))
+          : [];
+        return { data, usage: null };
+      }
+    });
+
+    return result.data;
   }
 
   /**
-   * 功能：根据书籍绑定模型动态创建章节分析 AI 客户端。
-   * 输入：bookAiModelId - 书籍模型 ID（可为空）。
-   * 输出：AiAnalysisClient。
-   * 异常：模型配置不合法或 Key 解密失败时抛错。
-   * 副作用：读取数据库模型配置。
+   * Phase 1 长章节保护：超过阈值时按更大的切片执行名册发现，再按称谓去重合并。
    */
-  async function createRuntimeAiClient(bookAiModelId: string | null): Promise<AiAnalysisClient> {
-    const modelConfig = await resolveAnalysisModelConfig(bookAiModelId);
-    const provider = normalizeProvider(modelConfig.provider);
-    const apiKey = readEncryptedApiKey(modelConfig.apiKey, modelConfig.name);
+  async function discoverRosterWithProtection(input: {
+    chapterId     : string;
+    chapterContent: string;
+    stageContext  : { bookId: string; jobId?: string };
+    rosterInput   : Omit<Parameters<AiAnalysisClient["discoverChapterRoster"]>[0], "content">;
+  }): Promise<EnhancedChapterRosterEntry[]> {
+    if (input.chapterContent.length <= ANALYSIS_PIPELINE_CONFIG.rosterMaxInputLength) {
+      return await discoverRosterByStage({
+        chapterId   : input.chapterId,
+        stageContext: input.stageContext,
+        rosterInput : {
+          ...input.rosterInput,
+          content: input.chapterContent
+        }
+      });
+    }
 
-    const providerClient = createAiProviderClient({
-      provider,
-      apiKey,
-      baseUrl  : modelConfig.baseUrl,
-      modelName: modelConfig.modelId
-    });
+    const rosterChunks = splitContentIntoChunks(
+      input.chapterContent,
+      ANALYSIS_PIPELINE_CONFIG.rosterChunkSize,
+      ANALYSIS_PIPELINE_CONFIG.rosterChunkOverlap
+    );
+    const allEntries: EnhancedChapterRosterEntry[] = [];
+    for (let index = 0; index < rosterChunks.length; index += 1) {
+      const chunkRoster = await discoverRosterByStage({
+        chapterId   : input.chapterId,
+        stageContext: input.stageContext,
+        chunkIndex  : index,
+        rosterInput : {
+          ...input.rosterInput,
+          content: rosterChunks[index] ?? ""
+        }
+      });
+      allEntries.push(...chunkRoster);
+    }
 
-    return createChapterAnalysisAiClient(providerClient);
+    return mergeRosterEntries(allEntries);
   }
 
   /**
@@ -204,7 +523,7 @@ export function createChapterAnalysisService(
    * 异常：章节不存在、AI 调用失败、数据库失败时抛错。
    * 副作用：更新该章节的 mentions / biography_records / relationships 等数据。
    */
-  async function analyzeChapter(chapterId: string): Promise<ChapterAnalysisResult> {
+  async function analyzeChapter(chapterId: string, executionContext: AnalysisExecutionContext = {}): Promise<ChapterAnalysisResult> {
     log("analysis.start", { chapterId });
 
     const chapter = await prismaClient.chapter.findUnique({
@@ -230,19 +549,26 @@ export function createChapterAnalysisService(
     }));
     const bookLexiconConfig = resolveBookLexiconConfig(chapter.book.title);
     const effectiveGenericTitles = buildEffectiveGenericTitles(bookLexiconConfig);
-    const genericTitlesExample = Array.from(effectiveGenericTitles).slice(0, 15).join("、") + "等";
+    const genericTitlesExample = Array.from(effectiveGenericTitles).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等";
 
-    const runtimeAiClient = aiClient ?? await createRuntimeAiClient(chapter.book.aiModelId);
+    const stageContext = {
+      bookId: chapter.bookId,
+      jobId : executionContext.jobId
+    };
 
     // Phase 1: 全章人物名册发现——AI 读完整章节，输出本章所有称谓的预解析映射。
     // 此调用比 chunk 分析便宜（只识别称谓名单，不提取事件/关系），但能解决跨段指代歧义。
-    const roster = await runtimeAiClient.discoverChapterRoster({
-      bookTitle   : chapter.book.title,
-      chapterNo   : chapter.no,
-      chapterTitle: chapter.title,
-      content     : chapter.content,
-      profiles,
-      genericTitlesExample
+    const roster = await discoverRosterWithProtection({
+      chapterId     : chapter.id,
+      chapterContent: chapter.content,
+      stageContext,
+      rosterInput   : {
+        bookTitle   : chapter.book.title,
+        chapterNo   : chapter.no,
+        chapterTitle: chapter.title,
+        profiles,
+        genericTitlesExample
+      }
     });
     const resolvedGenericRatios = collectGenericRatiosFromRoster(roster);
 
@@ -297,13 +623,20 @@ export function createChapterAnalysisService(
       // isNew: true 且非 TITLE_ONLY → 不加入 rosterMap，走正常 resolver 创建新 persona 流程
     }
 
-    const chunks = splitContentIntoChunks(chapter.content, MAX_CHUNK_LENGTH);
+    const chunks = splitContentIntoChunks(
+      chapter.content,
+      ANALYSIS_PIPELINE_CONFIG.maxChunkLength,
+      ANALYSIS_PIPELINE_CONFIG.chunkOverlap
+    );
 
     const aiResults: ChapterAnalysisResponse[] = [];
     for (let i = 0; i < chunks.length; i += AI_CONCURRENCY) {
       const batch = chunks.slice(i, i + AI_CONCURRENCY);
-      const batchPromises = batch.map((chunk, idx) =>
-        analyzeChunkWithRetry(runtimeAiClient, {
+      const batchPromises = batch.map((chunk, idx) => analyzeChunkByStage({
+        chapterId : chapter.id,
+        stageContext,
+        chunkIndex: i + idx,
+        chunkInput: {
           bookTitle   : chapter.book.title,
           chapterNo   : chapter.no,
           chapterTitle: chapter.title,
@@ -312,8 +645,8 @@ export function createChapterAnalysisService(
           chunkIndex  : i + idx,
           chunkCount  : chunks.length,
           genericTitlesExample
-        })
-      );
+        }
+      }));
       const results = await Promise.all(batchPromises);
       aiResults.push(...results);
     }
@@ -554,12 +887,16 @@ export function createChapterAnalysisService(
 
   /**
    * 功能：按段落边界切分章节内容，控制单次模型输入长度，支持相邻分片重叠以缓解边界断裂。
-   * 输入：content - 章节原文；size - 单块最大长度；overlap - 相邻块重叠字符数（默认 CHUNK_OVERLAP）。
+   * 输入：content - 章节原文；size - 单块最大长度；overlap - 相邻块重叠字符数（默认配置值）。
    * 输出：分段文本数组。
    * 异常：无。
    * 副作用：无。
    */
-  function splitContentIntoChunks(text: string, size: number, overlap: number = CHUNK_OVERLAP): string[] {
+  function splitContentIntoChunks(
+    text: string,
+    size: number,
+    overlap: number = ANALYSIS_PIPELINE_CONFIG.chunkOverlap
+  ): string[] {
     const paras = text.split(/\n+/).filter(p => p.trim());
     const rawChunks: string[] = [];
     let current = "";
@@ -600,6 +937,15 @@ export function createChapterAnalysisService(
   }
 
   /**
+   * 统一合并 Phase 1 人物名册结果：
+   * - 使用外部纯函数，便于直接单元测试；
+   * - 真实去重键规则见 mergeRosterEntriesForAnalysis（normalizedName + aliasType 优先）。
+   */
+  function mergeRosterEntries(entries: EnhancedChapterRosterEntry[]): EnhancedChapterRosterEntry[] {
+    return mergeRosterEntriesForAnalysis(entries);
+  }
+
+  /**
    * 功能：合并多个分段分析结果。
    * 输入：results - 各分段的 ChapterAnalysisResponse。
    * 输出：单一 ChapterAnalysisResponse。
@@ -607,11 +953,7 @@ export function createChapterAnalysisService(
    * 副作用：无。
    */
   function mergeChunkResults(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse {
-    return {
-      biographies  : results.flatMap(r => r.biographies),
-      mentions     : results.flatMap(r => r.mentions),
-      relationships: results.flatMap(r => r.relationships)
-    };
+    return mergeChunkResultsForAnalysis(results);
   }
 
   function normalizeCategory(val: BioCategoryValue): BioCategory {
@@ -657,53 +999,6 @@ export function createChapterAnalysisService(
     return clean.length < 2 ? undefined : clean.slice(0, 400);
   }
 
-  async function analyzeChunkWithRetry(
-    activeAiClient: AiAnalysisClient,
-    input: Parameters<AiAnalysisClient["analyzeChapterChunk"]>[0]
-  ): Promise<ChapterAnalysisResponse> {
-    let attempt = 0;
-    let lastError: unknown;
-
-    while (attempt <= AI_MAX_RETRIES) {
-      try {
-        return await activeAiClient.analyzeChapterChunk(input);
-      } catch (error) {
-        lastError = error;
-        if (!isRetryableAiError(error) || attempt === AI_MAX_RETRIES) {
-          throw error;
-        }
-        const waitMs = AI_RETRY_BASE_MS * (attempt + 1);
-        log("analysis.ai_retry", {
-          chunkIndex: input.chunkIndex,
-          attempt   : attempt + 1,
-          waitMs,
-          reason    : error instanceof Error ? error.message : String(error)
-        });
-        await new Promise((resolve) => setTimeout(resolve, waitMs));
-        attempt += 1;
-      }
-    }
-
-    throw lastError instanceof Error ? lastError : new Error("AI chunk analysis failed");
-  }
-
-  function isRetryableAiError(error: unknown): boolean {
-    const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
-    return (
-      message.includes("429") ||
-      message.includes("rate limit") ||
-      message.includes("timeout") ||
-      message.includes("temporarily unavailable") ||
-      message.includes("econnreset") ||
-      message.includes("network") ||
-      message.includes("terminated") ||
-      message.includes("aborted") ||
-      message.includes("fetch failed") ||
-      message.includes("socket") ||
-      message.includes("connection reset")
-    );
-  }
-
   function log(event: string, data: Record<string, unknown>) {
     console.info(`[ChapterAnalysisService] ${event}:`, JSON.stringify(data));
   }
@@ -715,11 +1010,11 @@ export function createChapterAnalysisService(
    * 异常：数据库或 AI 调用失败时抛错。
    * 副作用：更新 personas.name / aliases / nameType / confidence。
    */
-  async function resolvePersonaTitles(bookId: string): Promise<number> {
+  async function resolvePersonaTitles(bookId: string, executionContext: AnalysisExecutionContext = {}): Promise<number> {
     // 1. 加载书籍信息以及所有 TITLE_ONLY Persona。
     const book = await prismaClient.book.findUnique({
       where : { id: bookId },
-      select: { title: true, aiModelId: true }
+      select: { title: true }
     });
     if (!book) return 0;
 
@@ -744,10 +1039,15 @@ export function createChapterAnalysisService(
     }));
 
     // 2. 调用 AI 批量溯源真名。
-    const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
-    const resolutions = await runtimeAiClient.resolvePersonaTitles({
-      bookTitle: book.title,
-      entries
+    const resolutions = await resolveTitlesByStage({
+      stageContext: {
+        bookId,
+        jobId: executionContext.jobId
+      },
+      titleInput: {
+        bookTitle: book.title,
+        entries
+      }
     });
 
     // 3. 按置信度分流处理。
@@ -853,14 +1153,14 @@ export function createChapterAnalysisService(
     grayZoneMentionStore.delete(bookId);
   }
 
-  async function runGrayZoneArbitration(bookId: string): Promise<number> {
+  async function runGrayZoneArbitration(bookId: string, executionContext: AnalysisExecutionContext = {}): Promise<number> {
     if (!ANALYSIS_PIPELINE_CONFIG.llmTitleArbitrationEnabled) return 0;
     const grayZones = collectGrayZoneMentions(bookId);
     if (grayZones.length === 0) return 0;
 
     const book = await prismaClient.book.findUnique({
       where : { id: bookId },
-      select: { title: true, aiModelId: true }
+      select: { title: true }
     });
     if (!book) return 0;
 
@@ -875,11 +1175,15 @@ export function createChapterAnalysisService(
       }));
 
     if (terms.length === 0) return 0;
-    const runtimeAiClient = aiClient ?? await createRuntimeAiClient(book.aiModelId);
-    if (!runtimeAiClient.arbitrateTitlePersonalization) return 0;
-    const results = await runtimeAiClient.arbitrateTitlePersonalization({
-      bookTitle: book.title,
-      terms
+    const results = await arbitrateGrayZoneByStage({
+      stageContext: {
+        bookId,
+        jobId: executionContext.jobId
+      },
+      arbitrationInput: {
+        bookTitle: book.title,
+        terms
+      }
     });
     let written = 0;
     for (const row of results) {

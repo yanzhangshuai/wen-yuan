@@ -29,7 +29,7 @@ export interface AnalysisJobListItem {
   finishedAt    : string | null;
   /** 任务创建时间（ISO 8601）。 */
   createdAt     : string;
-  /** 使用的 AI 模型名称。 */
+      /** 使用的 AI 模型名称。 */
   aiModelName   : string | null;
 }
 
@@ -68,8 +68,14 @@ export function createListBookAnalysisJobsService(
         startedAt     : true,
         finishedAt    : true,
         createdAt     : true,
-        aiModel       : {
-          select: { name: true }
+        phaseLogs     : {
+          take   : 1,
+          orderBy: { createdAt: "desc" },
+          select : {
+            model: {
+              select: { name: true }
+            }
+          }
         }
       }
     });
@@ -86,7 +92,7 @@ export function createListBookAnalysisJobsService(
       startedAt     : job.startedAt?.toISOString() ?? null,
       finishedAt    : job.finishedAt?.toISOString() ?? null,
       createdAt     : job.createdAt.toISOString(),
-      aiModelName   : job.aiModel?.name ?? null
+      aiModelName   : job.phaseLogs?.[0]?.model?.name ?? null
     }));
   }
 

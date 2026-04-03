@@ -518,7 +518,7 @@ describe("analysis job runner", () => {
     await runner.runAnalysisJobById("job-incremental");
     // 第 5 章触发一次增量溯源 + FULL_BOOK 完成后再触发一次终态溯源。
     expect(resolvePersonaTitles).toHaveBeenCalledTimes(2);
-    expect(resolvePersonaTitles).toHaveBeenCalledWith("book-1");
+    expect(resolvePersonaTitles).toHaveBeenCalledWith("book-1", { jobId: "job-incremental" });
   });
 
   it("runs gray-zone arbitration once after full book processing", async () => {
@@ -548,7 +548,7 @@ describe("analysis job runner", () => {
 
     await runner.runAnalysisJobById("job-gray-zone");
     expect(runGrayZoneArbitration).toHaveBeenCalledTimes(1);
-    expect(runGrayZoneArbitration).toHaveBeenCalledWith("book-1");
+    expect(runGrayZoneArbitration).toHaveBeenCalledWith("book-1", { jobId: "job-gray-zone" });
   });
 
   it("runs full-book validation and applies auto fixes when report is auto-fixable", async () => {

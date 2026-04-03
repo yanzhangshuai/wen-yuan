@@ -18,10 +18,7 @@ function createBookRow(overrides: Partial<Record<string, unknown>> = {}) {
     sourceFileName: "rulin.txt",
     sourceFileMime: "text/plain; charset=utf-8",
     sourceFileSize: 1234,
-    aiModel       : {
-      name: "DeepSeek V3"
-    },
-    _count: {
+    _count        : {
       chapters: 2,
       profiles: 3
     },
@@ -30,9 +27,13 @@ function createBookRow(overrides: Partial<Record<string, unknown>> = {}) {
         updatedAt : new Date("2026-03-24T10:00:00.000Z"),
         finishedAt: new Date("2026-03-24T10:08:00.000Z"),
         errorLog  : null,
-        aiModel   : {
-          name: "DeepSeek V3"
-        }
+        phaseLogs : [
+          {
+            model: {
+              name: "DeepSeek V3"
+            }
+          }
+        ]
       }
     ],
     ...overrides
@@ -92,18 +93,21 @@ describe("listBooks", () => {
     ]);
   });
 
-  it("falls back to latest analysis model when current aiModel is null", async () => {
+  it("uses latest analysis model as currentModel", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
-        aiModel     : null,
         analysisJobs: [
           {
             updatedAt : new Date("2026-03-24T10:00:00.000Z"),
             finishedAt: new Date("2026-03-24T10:08:00.000Z"),
             errorLog  : null,
-            aiModel   : {
-              name: "Gemini Flash"
-            }
+            phaseLogs : [
+              {
+                model: {
+                  name: "Gemini Flash"
+                }
+              }
+            ]
           }
         ]
       })
@@ -124,9 +128,13 @@ describe("listBooks", () => {
             updatedAt : new Date("2026-03-24T10:00:00.000Z"),
             finishedAt: null,
             errorLog  : "analysis error",
-            aiModel   : {
-              name: "DeepSeek V3"
-            }
+            phaseLogs : [
+              {
+                model: {
+                  name: "DeepSeek V3"
+                }
+              }
+            ]
           }
         ]
       })
@@ -147,9 +155,13 @@ describe("listBooks", () => {
             updatedAt : new Date("2026-03-24T10:00:00.000Z"),
             finishedAt: null,
             errorLog  : "analysis error",
-            aiModel   : {
-              name: "DeepSeek V3"
-            }
+            phaseLogs : [
+              {
+                model: {
+                  name: "DeepSeek V3"
+                }
+              }
+            ]
           }
         ]
       })
@@ -169,9 +181,13 @@ describe("listBooks", () => {
             updatedAt : new Date("2026-03-24T10:06:00.000Z"),
             finishedAt: null,
             errorLog  : null,
-            aiModel   : {
-              name: "DeepSeek V3"
-            }
+            phaseLogs : [
+              {
+                model: {
+                  name: "DeepSeek V3"
+                }
+              }
+            ]
           }
         ]
       })

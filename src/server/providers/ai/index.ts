@@ -2,16 +2,31 @@ import { DeepSeekClient } from "@/server/providers/ai/deepseekClient";
 import { DoubaoClient } from "@/server/providers/ai/doubaoClient";
 import { GeminiClient } from "@/server/providers/ai/geminiClient";
 import { QwenClient } from "@/server/providers/ai/qwenClient";
+import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
 /**
  * 功能：定义通用 AI Provider 抽象接口。
- * 输入：prompt 字符串。
- * 输出：模型返回的 JSON 文本。
+ * 输入：system/user 分离后的 Prompt 结构与可选采样参数。
+ * 输出：模型返回的 JSON 文本与 usage。
  * 异常：由具体实现决定。
  * 副作用：由具体实现决定。
  */
+export interface AiGenerateOptions {
+  temperature?    : number;
+  maxOutputTokens?: number;
+  topP?           : number;
+}
+
+export interface AiGenerateResult {
+  content: string;
+  usage  : AiUsage | null;
+}
+
 export interface AiProviderClient {
-  generateJson(prompt: string): Promise<string>;
+  generateJson(
+    input: PromptMessageInput,
+    options?: AiGenerateOptions
+  ): Promise<AiGenerateResult>;
 }
 
 /**

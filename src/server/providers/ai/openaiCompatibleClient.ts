@@ -1,4 +1,5 @@
-import type { AiProviderClient } from "@/server/providers/ai";
+import type { AiGenerateOptions, AiProviderClient } from "@/server/providers/ai";
+import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
 /**
  * OpenAI 兼容接口的最小响应子集。
@@ -7,12 +8,42 @@ import type { AiProviderClient } from "@/server/providers/ai";
 interface OpenAiLikeResponse {
   choices?: Array<{
     message?: {
-      content?: string;
+      content?: string | Array<{ text?: string; type?: string }>;
     };
   }>;
+  usage?: {
+    prompt_tokens?    : number;
+    completion_tokens?: number;
+    total_tokens?     : number;
+  };
   error?: {
     message?: string;
   };
+}
+
+function toAiUsage(usage: OpenAiLikeResponse["usage"]): AiUsage {
+  return {
+    promptTokens    : typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
+    completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,
+    totalTokens     : typeof usage?.total_tokens === "number" ? usage.total_tokens : null
+  };
+}
+
+function extractTextContent(content: string | Array<{ text?: string; type?: string }> | undefined): string | null {
+  if (typeof content === "string") {
+    const text = content.trim();
+    return text.length > 0 ? text : null;
+  }
+
+  if (!Array.isArray(content)) {
+    return null;
+  }
+
+  const text = content
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
+    .join("")
+    .trim();
+  return text.length > 0 ? text : null;
 }
 
 /**
@@ -51,7 +82,16 @@ export class OpenAiCompatibleClient implements AiProviderClient {
   /**
    * 强制供应商返回 JSON 字符串，保持各 Provider 在上层分析流程中的输出契约一致。
    */
-  async generateJson(prompt: string): Promise<string> {
+  async generateJson(
+    input: PromptMessageInput,
+    options?: AiGenerateOptions
+  ): Promise<{ content: string; usage: AiUsage | null }> {
+    const messages: Array<{ role: "system" | "user"; content: string }> = [];
+    if (input.system.trim().length > 0) {
+      messages.push({ role: "system", content: input.system });
+    }
+    messages.push({ role: "user", content: input.user });
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method : "POST",
       headers: {
@@ -60,10 +100,11 @@ export class OpenAiCompatibleClient implements AiProviderClient {
       },
       body: JSON.stringify({
         model          : this.modelName,
-        temperature    : 0.2,
-        max_tokens     : 8192,
+        temperature    : options?.temperature ?? 0.2,
+        top_p          : options?.topP,
+        max_tokens     : options?.maxOutputTokens ?? 8192,
         response_format: { type: "json_object" },
-        messages       : [{ role: "user", content: prompt }]
+        messages
       })
     });
 
@@ -73,12 +114,15 @@ export class OpenAiCompatibleClient implements AiProviderClient {
       throw new Error(payload.error?.message ?? `${this.providerName} request failed: ${response.status}`);
     }
 
-    const raw = payload.choices?.[0]?.message?.content;
+    const raw = extractTextContent(payload.choices?.[0]?.message?.content);
     if (!raw) {
       // 兼容网关经常会在限流或协议不完全兼容时返回空 choices，这里显式抛错更容易定位问题。
       throw new Error(`${this.providerName} returned an empty response`);
     }
 
-    return raw;
+    return {
+      content: raw,
+      usage  : toAiUsage(payload.usage)
+    };
   }
 }

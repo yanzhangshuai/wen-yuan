@@ -1,14 +1,45 @@
-import type { AiProviderClient } from "@/server/providers/ai";
+import type { AiGenerateOptions, AiProviderClient } from "@/server/providers/ai";
+import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
 interface DeepSeekChatResponse {
   choices?: Array<{
     message?: {
-      content?: string;
+      content?: string | Array<{ text?: string; type?: string }>;
     };
   }>;
+  usage?: {
+    prompt_tokens?    : number;
+    completion_tokens?: number;
+    total_tokens?     : number;
+  };
   error?: {
     message?: string;
   };
+}
+
+function toAiUsage(usage: DeepSeekChatResponse["usage"]): AiUsage {
+  return {
+    promptTokens    : typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
+    completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,
+    totalTokens     : typeof usage?.total_tokens === "number" ? usage.total_tokens : null
+  };
+}
+
+function extractTextContent(content: string | Array<{ text?: string; type?: string }> | undefined): string | null {
+  if (typeof content === "string") {
+    const text = content.trim();
+    return text.length > 0 ? text : null;
+  }
+
+  if (!Array.isArray(content)) {
+    return null;
+  }
+
+  const text = content
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
+    .join("")
+    .trim();
+  return text.length > 0 ? text : null;
 }
 
 /**
@@ -46,12 +77,18 @@ export class DeepSeekClient implements AiProviderClient {
 
   /**
    * 功能：调用 DeepSeek 生成 JSON 文本。
-   * 输入：prompt - 业务层构建的 Prompt 文本。
-   * 输出：模型返回的 JSON 文本。
+   * 输入：system/user Prompt 与可选采样参数。
+   * 输出：模型返回的 JSON 文本与 usage。
    * 异常：接口调用失败或空响应时抛错。
    * 副作用：发起外部 API 请求。
    */
-  async generateJson(prompt: string): Promise<string> {
+  async generateJson(input: PromptMessageInput, options?: AiGenerateOptions): Promise<{ content: string; usage: AiUsage | null }> {
+    const messages: Array<{ role: "system" | "user"; content: string }> = [];
+    if (input.system.trim().length > 0) {
+      messages.push({ role: "system", content: input.system });
+    }
+    messages.push({ role: "user", content: input.user });
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method : "POST",
       headers: {
@@ -60,9 +97,11 @@ export class DeepSeekClient implements AiProviderClient {
       },
       body: JSON.stringify({
         model          : this.modelName,
-        temperature    : 0.2,
+        temperature    : options?.temperature ?? 0.2,
+        top_p          : options?.topP,
+        max_tokens     : options?.maxOutputTokens ?? 8192,
         response_format: { type: "json_object" },
-        messages       : [{ role: "user", content: prompt }]
+        messages
       })
     });
 
@@ -73,12 +112,15 @@ export class DeepSeekClient implements AiProviderClient {
       throw new Error(message);
     }
 
-    const raw = payload.choices?.[0]?.message?.content;
+    const raw = extractTextContent(payload.choices?.[0]?.message?.content);
 
     if (!raw) {
       throw new Error("DeepSeek returned an empty response");
     }
 
-    return raw;
+    return {
+      content: raw,
+      usage  : toAiUsage(payload.usage)
+    };
   }
 }

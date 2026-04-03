@@ -1,12 +1,8 @@
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import {
-  AnalysisModelDisabledError,
-  AnalysisModelNotFoundError,
-  AnalysisScopeInvalidError,
-  BookNotFoundError
-} from "@/server/modules/books/errors";
+import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
+import { AnalysisScopeInvalidError, BookNotFoundError } from "@/server/modules/books/errors";
 
 /** 允许的解析范围枚举值。 */
 export const ANALYSIS_SCOPE_VALUES = ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const;
@@ -21,8 +17,8 @@ export type AnalysisOverrideStrategy = (typeof ANALYSIS_OVERRIDE_STRATEGY_VALUES
  * 启动解析任务输入。
  */
 export interface StartBookAnalysisInput {
-  /** 指定模型 ID；为空时使用书籍当前绑定模型。 */
-  aiModelId        ?: string | null;
+  /** 任务级阶段模型配置（覆盖 Book/GLOBAL 配置）。 */
+  modelStrategy    ?: StrategyStagesDto | null;
   /** 解析范围：全书或章节区间。 */
   scope            ?: AnalysisScope;
   /** 章节区间起点（仅 CHAPTER_RANGE 时必填）。 */
@@ -59,8 +55,6 @@ export interface StartBookAnalysisResult {
   overrideStrategy: AnalysisOverrideStrategy;
   /** 是否保留历史。 */
   keepHistory     : boolean;
-  /** 本次任务使用模型 ID。 */
-  aiModelId       : string | null;
   /** 书籍状态（已切换为 PROCESSING）。 */
   bookStatus      : string;
   /** 解析进度（重置为 0）。 */
@@ -194,8 +188,7 @@ export function createStartBookAnalysisService(
         deletedAt: null
       },
       select: {
-        id       : true,
-        aiModelId: true
+        id: true
       }
     });
 
@@ -208,25 +201,6 @@ export function createStartBookAnalysisService(
     const keepHistory = resolveKeepHistory(input.keepHistory);
     const range = resolveChapterRange(scope, input.chapterStart, input.chapterEnd);
     const chapterIndices = resolveChapterList(scope, input.chapterIndices);
-    const selectedModelId = input.aiModelId ?? book.aiModelId ?? null;
-
-    if (selectedModelId) {
-      const model = await prismaClient.aiModel.findUnique({
-        where : { id: selectedModelId },
-        select: {
-          id       : true,
-          isEnabled: true
-        }
-      });
-
-      if (!model) {
-        throw new AnalysisModelNotFoundError(selectedModelId);
-      }
-
-      if (!model.isEnabled) {
-        throw new AnalysisModelDisabledError(selectedModelId);
-      }
-    }
 
     const chapterCount = await prismaClient.chapter.count({
       where: scope === "CHAPTER_RANGE"
@@ -248,11 +222,10 @@ export function createStartBookAnalysisService(
       throw new AnalysisScopeInvalidError("请先确认章节后再启动解析");
     }
 
-    const [job, updatedBook] = await prismaClient.$transaction([
-      prismaClient.analysisJob.create({
+    const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
+      const createdJob = await tx.analysisJob.create({
         data: {
           bookId      : book.id,
-          aiModelId   : selectedModelId,
           status      : AnalysisJobStatus.QUEUED,
           scope,
           chapterStart: range.chapterStart,
@@ -271,11 +244,21 @@ export function createStartBookAnalysisService(
           overrideStrategy: true,
           keepHistory     : true
         }
-      }),
-      prismaClient.book.update({
+      });
+
+      if (input.modelStrategy) {
+        await tx.modelStrategyConfig.create({
+          data: {
+            scope : "JOB",
+            jobId : createdJob.id,
+            stages: input.modelStrategy
+          }
+        });
+      }
+
+      const nextBook = await tx.book.update({
         where: { id: book.id },
         data : {
-          aiModelId    : selectedModelId,
           status       : "PROCESSING",
           parseProgress: 0,
           parseStage   : "文本清洗",
@@ -286,8 +269,10 @@ export function createStartBookAnalysisService(
           parseProgress: true,
           parseStage   : true
         }
-      })
-    ]);
+      });
+
+      return [createdJob, nextBook] as const;
+    });
 
     return {
       bookId          : book.id,
@@ -299,7 +284,6 @@ export function createStartBookAnalysisService(
       chapterIndices  : job.chapterIndices,
       overrideStrategy: (job.overrideStrategy ?? "DRAFT_ONLY") as AnalysisOverrideStrategy,
       keepHistory     : job.keepHistory,
-      aiModelId       : selectedModelId,
       bookStatus      : updatedBook.status,
       parseProgress   : updatedBook.parseProgress,
       parseStage      : updatedBook.parseStage
@@ -311,8 +295,6 @@ export function createStartBookAnalysisService(
 
 export const { startBookAnalysis } = createStartBookAnalysisService();
 export {
-  AnalysisModelDisabledError,
-  AnalysisModelNotFoundError,
   AnalysisScopeInvalidError,
   BookNotFoundError
 } from "@/server/modules/books/errors";

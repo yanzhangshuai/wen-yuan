@@ -1,7 +1,11 @@
 import { ProcessingStatus } from "@/generated/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createChapterAnalysisService } from "@/server/modules/analysis/services/ChapterAnalysisService";
+import {
+  createChapterAnalysisService,
+  mergeChunkResultsForAnalysis,
+  mergeRosterEntriesForAnalysis
+} from "@/server/modules/analysis/services/ChapterAnalysisService";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { createChapterAnalysisAiClient } from "@/server/modules/analysis/services/aiClient";
 import { createPersonaResolver } from "@/server/modules/analysis/services/PersonaResolver";
@@ -80,6 +84,21 @@ function buildChapter(overrides: Partial<{
   };
 }
 
+function buildEnabledModel(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id       : "model-default",
+    provider : "deepseek",
+    name     : "DeepSeek V3",
+    modelId  : "deepseek-chat",
+    baseUrl  : "https://api.deepseek.com",
+    apiKey   : "enc:v1:abc",
+    isEnabled: true,
+    isDefault: true,
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    ...overrides
+  };
+}
+
 function createPrismaMock(chapter = buildChapter()) {
   const mentionDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const mentionCreateMany = vi.fn().mockResolvedValue({ count: 0 });
@@ -118,7 +137,11 @@ function createPrismaMock(chapter = buildChapter()) {
     },
     aiModel: {
       findUnique: vi.fn(),
-      findFirst : vi.fn()
+      findMany  : vi.fn().mockResolvedValue([]),
+      findFirst : vi.fn().mockResolvedValue(buildEnabledModel())
+    },
+    modelStrategyConfig: {
+      findFirst: vi.fn().mockResolvedValue(null)
     },
     $transaction: vi.fn().mockImplementation(async (callback: (client: typeof tx) => Promise<unknown>) => {
       return callback(tx);
@@ -264,7 +287,7 @@ describe("chapter analysis service", () => {
     const result = await service.analyzeChapter("chapter-1");
 
     expect(result.chapterId).toBe("chapter-1");
-    expect(result.chunkCount).toBe(4);
+    expect(result.chunkCount).toBe(1);
     expect(result.hallucinationCount).toBe(3);
     expect(result.created).toEqual({
       personas     : 1,
@@ -349,7 +372,7 @@ describe("chapter analysis service", () => {
     expect(relationshipCreateMany).not.toHaveBeenCalled();
   });
 
-  it("retries retryable ai errors and succeeds", async () => {
+  it("does not retry ai errors when no job context", async () => {
     const { prismaMock } = createPrismaMock();
     const analyzeChapterChunk = vi.fn()
       .mockRejectedValueOnce(new Error("429 rate limit"))
@@ -363,10 +386,8 @@ describe("chapter analysis service", () => {
       discoverChapterRoster: vi.fn().mockResolvedValue([])
     } as never);
 
-    const result = await service.analyzeChapter("chapter-1");
-
-    expect(result.created.mentions).toBe(0);
-    expect(analyzeChapterChunk).toHaveBeenCalledTimes(2);
+    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("429 rate limit");
+    expect(analyzeChapterChunk).toHaveBeenCalledTimes(1);
   });
 
   it("throws immediately on non-retryable ai errors", async () => {
@@ -381,37 +402,49 @@ describe("chapter analysis service", () => {
     expect(analyzeChapterChunk).toHaveBeenCalledTimes(1);
   });
 
-  it("throws when assigned model does not exist", async () => {
+  it("falls back to system default when configured stage model does not exist", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: "book-model" }));
-    prismaMock.aiModel.findUnique.mockResolvedValueOnce(null);
-    const service = createChapterAnalysisService(prismaMock as never);
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // JOB
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce({
+      stages: {
+        CHUNK_EXTRACTION: { modelId: "book-model" }
+      }
+    }); // BOOK
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // GLOBAL
 
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("书籍绑定模型不存在: book-model");
+    const service = createChapterAnalysisService(prismaMock as never);
+    const result = await service.analyzeChapter("chapter-1");
+
+    expect(result.chapterId).toBe("chapter-1");
+    expect(mockedCreateAiProviderClient).toHaveBeenCalledWith(expect.objectContaining({
+      provider : "deepseek",
+      modelName: "deepseek-chat"
+    }));
   });
 
-  it("throws when assigned model is disabled", async () => {
+  it("falls back to system default when configured stage model is disabled", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: "book-model" }));
-    prismaMock.aiModel.findUnique.mockResolvedValueOnce({
-      id       : "book-model",
-      provider : "deepseek",
-      name     : "DeepSeek V3",
-      modelId  : "deepseek-chat",
-      baseUrl  : "https://api.deepseek.com",
-      apiKey   : "enc:v1:abc",
-      isEnabled: false
-    });
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // JOB
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce({
+      stages: {
+        CHUNK_EXTRACTION: { modelId: "book-model" }
+      }
+    }); // BOOK
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // GLOBAL
     const service = createChapterAnalysisService(prismaMock as never);
 
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("书籍绑定模型未启用: DeepSeek V3");
+    await expect(service.analyzeChapter("chapter-1")).resolves.toEqual(expect.objectContaining({
+      chapterId: "chapter-1"
+    }));
   });
 
   it("throws when no enabled default model exists", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
-    prismaMock.aiModel.findFirst.mockResolvedValueOnce(null);
+    prismaMock.aiModel.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     const service = createChapterAnalysisService(prismaMock as never);
 
     await expect(service.analyzeChapter("chapter-1")).rejects.toThrow(
-      "未找到可用默认模型，请在 /admin/model 配置并启用至少一个模型"
+      "未找到可用模型，请在 /admin/model 配置并启用至少一个模型"
     );
   });
 
@@ -585,6 +618,7 @@ describe("chapter analysis service", () => {
       },
       aiModel: {
         findUnique: vi.fn(),
+        findMany  : vi.fn().mockResolvedValue([]),
         findFirst : vi.fn().mockResolvedValue({
           id       : "model-default",
           provider : "DeepSeek",
@@ -594,6 +628,9 @@ describe("chapter analysis service", () => {
           apiKey   : "enc:v1:cipher",
           isEnabled: true
         })
+      },
+      modelStrategyConfig: {
+        findFirst: vi.fn().mockResolvedValue(null)
       },
       $transaction: vi.fn().mockImplementation(async (callback: (client: unknown) => Promise<unknown>) => {
         // $transaction 内部使用 tx.persona.update，此处模拟
@@ -680,6 +717,7 @@ describe("chapter analysis service", () => {
       },
       aiModel: {
         findUnique: vi.fn(),
+        findMany  : vi.fn().mockResolvedValue([]),
         findFirst : vi.fn().mockResolvedValue({
           id       : "model-default",
           provider : "DeepSeek",
@@ -689,6 +727,9 @@ describe("chapter analysis service", () => {
           apiKey   : "enc:v1:cipher",
           isEnabled: true
         })
+      },
+      modelStrategyConfig: {
+        findFirst: vi.fn().mockResolvedValue(null)
       },
       $transaction: vi.fn().mockImplementation(async (callback: (client: unknown) => Promise<unknown>) => {
         const txClient = {
@@ -745,5 +786,151 @@ describe("chapter analysis service", () => {
       evidence    : "明太祖洪武帝",
       status      : "CONFIRMED"
     });
+  });
+});
+
+describe("chapter analysis merge helpers", () => {
+  it("deduplicates mentions when personaName/rawText/paraIndex are identical", () => {
+    // Arrange
+    const results = [{
+      mentions: [
+        { personaName: "范进", rawText: "范进", paraIndex: 0, summary: "首次出现" },
+        { personaName: "范进", rawText: "范进", paraIndex: 0, summary: "重复出现" }
+      ],
+      biographies  : [],
+      relationships: []
+    }];
+
+    // Act
+    const merged = mergeChunkResultsForAnalysis(results);
+
+    // Assert
+    // paraIndex 相同表示同段同称谓，属于重复 mention，应折叠为单条。
+    expect(merged.mentions).toHaveLength(1);
+    expect(merged.mentions[0]).toMatchObject({
+      personaName: "范进",
+      rawText    : "范进",
+      paraIndex  : 0
+    });
+  });
+
+  it("keeps mentions when paraIndex differs", () => {
+    // Arrange
+    const results = [{
+      mentions: [
+        { personaName: "范进", rawText: "范进", paraIndex: 0 },
+        { personaName: "范进", rawText: "范进", paraIndex: 1 }
+      ],
+      biographies  : [],
+      relationships: []
+    }];
+
+    // Act
+    const merged = mergeChunkResultsForAnalysis(results);
+
+    // Assert
+    // paraIndex 不同表示来自不同段落，不应被误判为重复 mention。
+    expect(merged.mentions).toHaveLength(2);
+  });
+
+  it("returns stable result for empty input and single-chunk input", () => {
+    // Arrange
+    const singleChunk = [{
+      mentions   : [{ personaName: "严监生", rawText: "严监生", paraIndex: 3 }],
+      biographies: [{
+        personaName: "严监生",
+        category   : "EVENT" as const,
+        event      : "病中伸二指"
+      }],
+      relationships: []
+    }];
+
+    // Act
+    const emptyMerged = mergeChunkResultsForAnalysis([]);
+    const singleMerged = mergeChunkResultsForAnalysis(singleChunk);
+
+    // Assert
+    // 空输入必须稳定返回空结构，避免调用方出现 undefined 分支。
+    expect(emptyMerged).toEqual({
+      mentions     : [],
+      biographies  : [],
+      relationships: []
+    });
+    // 单分片输入应保持原样，防止 merge 逻辑引入额外副作用。
+    expect(singleMerged).toEqual(singleChunk[0]);
+  });
+
+  it("merges relationships with max weight and caps evidence entries at five", () => {
+    // Arrange
+    const results = [{
+      mentions     : [],
+      biographies  : [],
+      relationships: [
+        {
+          sourceName: "范进",
+          targetName: "周学道",
+          type      : "师生",
+          weight    : 0.3,
+          evidence  : "证据1"
+        },
+        {
+          sourceName: "范进",
+          targetName: "周学道",
+          type      : "师生",
+          weight    : 0.9,
+          evidence  : "证据2；证据3；证据4；证据5；证据6；证据7"
+        }
+      ]
+    }];
+
+    // Act
+    const merged = mergeChunkResultsForAnalysis(results);
+    const relationship = merged.relationships[0];
+    const evidenceItems = relationship?.evidence?.split("；") ?? [];
+
+    // Assert
+    expect(merged.relationships).toHaveLength(1);
+    // 合并后权重取 max，确保强证据关系优先保留。
+    expect(relationship?.weight).toBe(0.9);
+    // evidence 限制为 5 条，防止异常长文本污染后续展示与日志统计。
+    expect(evidenceItems).toHaveLength(5);
+    expect(evidenceItems).toEqual(["证据1", "证据2", "证据3", "证据4", "证据5"]);
+  });
+
+  it("deduplicates roster by normalized name + alias type and trims whitespace", () => {
+    // Arrange
+    const entries = [
+      {
+        surfaceForm      : " 范老爷 ",
+        aliasType        : "NICKNAME" as const,
+        suggestedRealName: "范进",
+        aliasConfidence  : 0.6
+      },
+      {
+        surfaceForm      : "范老爷",
+        aliasType        : "NICKNAME" as const,
+        suggestedRealName: "范进",
+        aliasConfidence  : 0.8
+      },
+      {
+        surfaceForm      : "范老爷",
+        aliasType        : "TITLE" as const,
+        suggestedRealName: "范进",
+        aliasConfidence  : 0.7
+      }
+    ];
+
+    // Act
+    const merged = mergeRosterEntriesForAnalysis(entries);
+    const nickname = merged.find((item) => item.aliasType === "NICKNAME");
+    const title = merged.find((item) => item.aliasType === "TITLE");
+
+    // Assert
+    // 同一 normalizedName 在不同 aliasType 下应保留多条（称谓类型语义不同）。
+    expect(merged).toHaveLength(2);
+    // surfaceForm 应被 trim，aliasConfidence 保留较高值。
+    expect(nickname?.surfaceForm).toBe("范老爷");
+    expect(nickname?.aliasConfidence).toBe(0.8);
+    expect(title?.surfaceForm).toBe("范老爷");
   });
 });

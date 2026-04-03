@@ -43,13 +43,13 @@ export type AnalysisJobSumAggregateOutputType = {
 export type AnalysisJobMinAggregateOutputType = {
   id: string | null
   bookId: string | null
-  aiModelId: string | null
   status: $Enums.AnalysisJobStatus | null
   scope: string | null
   chapterStart: number | null
   chapterEnd: number | null
   attempt: number | null
   errorLog: string | null
+  experimentTag: string | null
   overrideStrategy: string | null
   keepHistory: boolean | null
   startedAt: Date | null
@@ -61,13 +61,13 @@ export type AnalysisJobMinAggregateOutputType = {
 export type AnalysisJobMaxAggregateOutputType = {
   id: string | null
   bookId: string | null
-  aiModelId: string | null
   status: $Enums.AnalysisJobStatus | null
   scope: string | null
   chapterStart: number | null
   chapterEnd: number | null
   attempt: number | null
   errorLog: string | null
+  experimentTag: string | null
   overrideStrategy: string | null
   keepHistory: boolean | null
   startedAt: Date | null
@@ -79,7 +79,6 @@ export type AnalysisJobMaxAggregateOutputType = {
 export type AnalysisJobCountAggregateOutputType = {
   id: number
   bookId: number
-  aiModelId: number
   status: number
   scope: number
   chapterStart: number
@@ -87,6 +86,7 @@ export type AnalysisJobCountAggregateOutputType = {
   chapterIndices: number
   attempt: number
   errorLog: number
+  experimentTag: number
   overrideStrategy: number
   keepHistory: number
   startedAt: number
@@ -114,13 +114,13 @@ export type AnalysisJobSumAggregateInputType = {
 export type AnalysisJobMinAggregateInputType = {
   id?: true
   bookId?: true
-  aiModelId?: true
   status?: true
   scope?: true
   chapterStart?: true
   chapterEnd?: true
   attempt?: true
   errorLog?: true
+  experimentTag?: true
   overrideStrategy?: true
   keepHistory?: true
   startedAt?: true
@@ -132,13 +132,13 @@ export type AnalysisJobMinAggregateInputType = {
 export type AnalysisJobMaxAggregateInputType = {
   id?: true
   bookId?: true
-  aiModelId?: true
   status?: true
   scope?: true
   chapterStart?: true
   chapterEnd?: true
   attempt?: true
   errorLog?: true
+  experimentTag?: true
   overrideStrategy?: true
   keepHistory?: true
   startedAt?: true
@@ -150,7 +150,6 @@ export type AnalysisJobMaxAggregateInputType = {
 export type AnalysisJobCountAggregateInputType = {
   id?: true
   bookId?: true
-  aiModelId?: true
   status?: true
   scope?: true
   chapterStart?: true
@@ -158,6 +157,7 @@ export type AnalysisJobCountAggregateInputType = {
   chapterIndices?: true
   attempt?: true
   errorLog?: true
+  experimentTag?: true
   overrideStrategy?: true
   keepHistory?: true
   startedAt?: true
@@ -256,7 +256,6 @@ export type AnalysisJobGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 export type AnalysisJobGroupByOutputType = {
   id: string
   bookId: string
-  aiModelId: string | null
   status: $Enums.AnalysisJobStatus
   scope: string
   chapterStart: number | null
@@ -264,6 +263,7 @@ export type AnalysisJobGroupByOutputType = {
   chapterIndices: number[]
   attempt: number
   errorLog: string | null
+  experimentTag: string | null
   overrideStrategy: string | null
   keepHistory: boolean
   startedAt: Date | null
@@ -298,7 +298,6 @@ export type AnalysisJobWhereInput = {
   NOT?: Prisma.AnalysisJobWhereInput | Prisma.AnalysisJobWhereInput[]
   id?: Prisma.UuidFilter<"AnalysisJob"> | string
   bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
-  aiModelId?: Prisma.UuidNullableFilter<"AnalysisJob"> | string | null
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
@@ -306,6 +305,7 @@ export type AnalysisJobWhereInput = {
   chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  experimentTag?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
@@ -313,14 +313,14 @@ export type AnalysisJobWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
-  aiModel?: Prisma.XOR<Prisma.AiModelNullableScalarRelationFilter, Prisma.AiModelWhereInput> | null
+  modelStrategies?: Prisma.ModelStrategyConfigListRelationFilter
+  phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
   validationReports?: Prisma.ValidationReportListRelationFilter
 }
 
 export type AnalysisJobOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  aiModelId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -328,6 +328,7 @@ export type AnalysisJobOrderByWithRelationInput = {
   chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
+  experimentTag?: Prisma.SortOrderInput | Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -335,7 +336,8 @@ export type AnalysisJobOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   book?: Prisma.BookOrderByWithRelationInput
-  aiModel?: Prisma.AiModelOrderByWithRelationInput
+  modelStrategies?: Prisma.ModelStrategyConfigOrderByRelationAggregateInput
+  phaseLogs?: Prisma.AnalysisPhaseLogOrderByRelationAggregateInput
   validationReports?: Prisma.ValidationReportOrderByRelationAggregateInput
 }
 
@@ -345,7 +347,6 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.AnalysisJobWhereInput[]
   NOT?: Prisma.AnalysisJobWhereInput | Prisma.AnalysisJobWhereInput[]
   bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
-  aiModelId?: Prisma.UuidNullableFilter<"AnalysisJob"> | string | null
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
@@ -353,6 +354,7 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  experimentTag?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
@@ -360,14 +362,14 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
-  aiModel?: Prisma.XOR<Prisma.AiModelNullableScalarRelationFilter, Prisma.AiModelWhereInput> | null
+  modelStrategies?: Prisma.ModelStrategyConfigListRelationFilter
+  phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
   validationReports?: Prisma.ValidationReportListRelationFilter
 }, "id">
 
 export type AnalysisJobOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  aiModelId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -375,6 +377,7 @@ export type AnalysisJobOrderByWithAggregationInput = {
   chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrderInput | Prisma.SortOrder
+  experimentTag?: Prisma.SortOrderInput | Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -394,7 +397,6 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AnalysisJobScalarWhereWithAggregatesInput | Prisma.AnalysisJobScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"AnalysisJob"> | string
   bookId?: Prisma.UuidWithAggregatesFilter<"AnalysisJob"> | string
-  aiModelId?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisJob"> | string | null
   status?: Prisma.EnumAnalysisJobStatusWithAggregatesFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
   scope?: Prisma.StringWithAggregatesFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableWithAggregatesFilter<"AnalysisJob"> | number | null
@@ -402,6 +404,7 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
   chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
   attempt?: Prisma.IntWithAggregatesFilter<"AnalysisJob"> | number
   errorLog?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
+  experimentTag?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
   overrideStrategy?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolWithAggregatesFilter<"AnalysisJob"> | boolean
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisJob"> | Date | string | null
@@ -419,6 +422,7 @@ export type AnalysisJobCreateInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
@@ -426,14 +430,14 @@ export type AnalysisJobCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
-  aiModel?: Prisma.AiModelCreateNestedOneWithoutAnalysisJobsInput
+  modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateInput = {
   id?: string
   bookId: string
-  aiModelId?: string | null
   status?: $Enums.AnalysisJobStatus
   scope?: string
   chapterStart?: number | null
@@ -441,12 +445,15 @@ export type AnalysisJobUncheckedCreateInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
 }
 
@@ -459,6 +466,7 @@ export type AnalysisJobUpdateInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -466,14 +474,14 @@ export type AnalysisJobUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
-  aiModel?: Prisma.AiModelUpdateOneWithoutAnalysisJobsNestedInput
+  modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -481,19 +489,21 @@ export type AnalysisJobUncheckedUpdateInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobCreateManyInput = {
   id?: string
   bookId: string
-  aiModelId?: string | null
   status?: $Enums.AnalysisJobStatus
   scope?: string
   chapterStart?: number | null
@@ -501,6 +511,7 @@ export type AnalysisJobCreateManyInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
@@ -518,6 +529,7 @@ export type AnalysisJobUpdateManyMutationInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -529,7 +541,6 @@ export type AnalysisJobUpdateManyMutationInput = {
 export type AnalysisJobUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -537,6 +548,7 @@ export type AnalysisJobUncheckedUpdateManyInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -566,7 +578,6 @@ export type IntNullableListFilter<$PrismaModel = never> = {
 export type AnalysisJobCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  aiModelId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
@@ -574,6 +585,7 @@ export type AnalysisJobCountOrderByAggregateInput = {
   chapterIndices?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
+  experimentTag?: Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
@@ -592,13 +604,13 @@ export type AnalysisJobAvgOrderByAggregateInput = {
 export type AnalysisJobMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  aiModelId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
+  experimentTag?: Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
@@ -610,13 +622,13 @@ export type AnalysisJobMaxOrderByAggregateInput = {
 export type AnalysisJobMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  aiModelId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
   attempt?: Prisma.SortOrder
   errorLog?: Prisma.SortOrder
+  experimentTag?: Prisma.SortOrder
   overrideStrategy?: Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
@@ -637,46 +649,9 @@ export type AnalysisJobNullableScalarRelationFilter = {
   isNot?: Prisma.AnalysisJobWhereInput | null
 }
 
-export type AnalysisJobCreateNestedManyWithoutAiModelInput = {
-  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput> | Prisma.AnalysisJobCreateWithoutAiModelInput[] | Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput[]
-  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput | Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput[]
-  createMany?: Prisma.AnalysisJobCreateManyAiModelInputEnvelope
-  connect?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-}
-
-export type AnalysisJobUncheckedCreateNestedManyWithoutAiModelInput = {
-  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput> | Prisma.AnalysisJobCreateWithoutAiModelInput[] | Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput[]
-  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput | Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput[]
-  createMany?: Prisma.AnalysisJobCreateManyAiModelInputEnvelope
-  connect?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-}
-
-export type AnalysisJobUpdateManyWithoutAiModelNestedInput = {
-  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput> | Prisma.AnalysisJobCreateWithoutAiModelInput[] | Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput[]
-  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput | Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput[]
-  upsert?: Prisma.AnalysisJobUpsertWithWhereUniqueWithoutAiModelInput | Prisma.AnalysisJobUpsertWithWhereUniqueWithoutAiModelInput[]
-  createMany?: Prisma.AnalysisJobCreateManyAiModelInputEnvelope
-  set?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  disconnect?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  delete?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  connect?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  update?: Prisma.AnalysisJobUpdateWithWhereUniqueWithoutAiModelInput | Prisma.AnalysisJobUpdateWithWhereUniqueWithoutAiModelInput[]
-  updateMany?: Prisma.AnalysisJobUpdateManyWithWhereWithoutAiModelInput | Prisma.AnalysisJobUpdateManyWithWhereWithoutAiModelInput[]
-  deleteMany?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
-}
-
-export type AnalysisJobUncheckedUpdateManyWithoutAiModelNestedInput = {
-  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput> | Prisma.AnalysisJobCreateWithoutAiModelInput[] | Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput[]
-  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput | Prisma.AnalysisJobCreateOrConnectWithoutAiModelInput[]
-  upsert?: Prisma.AnalysisJobUpsertWithWhereUniqueWithoutAiModelInput | Prisma.AnalysisJobUpsertWithWhereUniqueWithoutAiModelInput[]
-  createMany?: Prisma.AnalysisJobCreateManyAiModelInputEnvelope
-  set?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  disconnect?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  delete?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  connect?: Prisma.AnalysisJobWhereUniqueInput | Prisma.AnalysisJobWhereUniqueInput[]
-  update?: Prisma.AnalysisJobUpdateWithWhereUniqueWithoutAiModelInput | Prisma.AnalysisJobUpdateWithWhereUniqueWithoutAiModelInput[]
-  updateMany?: Prisma.AnalysisJobUpdateManyWithWhereWithoutAiModelInput | Prisma.AnalysisJobUpdateManyWithWhereWithoutAiModelInput[]
-  deleteMany?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
+export type AnalysisJobScalarRelationFilter = {
+  is?: Prisma.AnalysisJobWhereInput
+  isNot?: Prisma.AnalysisJobWhereInput
 }
 
 export type AnalysisJobCreateNestedManyWithoutBookInput = {
@@ -734,6 +709,36 @@ export type AnalysisJobUpdatechapterIndicesInput = {
   push?: number | number[]
 }
 
+export type AnalysisJobCreateNestedOneWithoutModelStrategiesInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutModelStrategiesInput, Prisma.AnalysisJobUncheckedCreateWithoutModelStrategiesInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutModelStrategiesInput
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+}
+
+export type AnalysisJobUpdateOneWithoutModelStrategiesNestedInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutModelStrategiesInput, Prisma.AnalysisJobUncheckedCreateWithoutModelStrategiesInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutModelStrategiesInput
+  upsert?: Prisma.AnalysisJobUpsertWithoutModelStrategiesInput
+  disconnect?: Prisma.AnalysisJobWhereInput | boolean
+  delete?: Prisma.AnalysisJobWhereInput | boolean
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutModelStrategiesInput, Prisma.AnalysisJobUpdateWithoutModelStrategiesInput>, Prisma.AnalysisJobUncheckedUpdateWithoutModelStrategiesInput>
+}
+
+export type AnalysisJobCreateNestedOneWithoutPhaseLogsInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutPhaseLogsInput, Prisma.AnalysisJobUncheckedCreateWithoutPhaseLogsInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutPhaseLogsInput
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+}
+
+export type AnalysisJobUpdateOneRequiredWithoutPhaseLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutPhaseLogsInput, Prisma.AnalysisJobUncheckedCreateWithoutPhaseLogsInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutPhaseLogsInput
+  upsert?: Prisma.AnalysisJobUpsertWithoutPhaseLogsInput
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutPhaseLogsInput, Prisma.AnalysisJobUpdateWithoutPhaseLogsInput>, Prisma.AnalysisJobUncheckedUpdateWithoutPhaseLogsInput>
+}
+
 export type AnalysisJobCreateNestedOneWithoutValidationReportsInput = {
   create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutValidationReportsInput, Prisma.AnalysisJobUncheckedCreateWithoutValidationReportsInput>
   connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutValidationReportsInput
@@ -750,92 +755,6 @@ export type AnalysisJobUpdateOneWithoutValidationReportsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutValidationReportsInput, Prisma.AnalysisJobUpdateWithoutValidationReportsInput>, Prisma.AnalysisJobUncheckedUpdateWithoutValidationReportsInput>
 }
 
-export type AnalysisJobCreateWithoutAiModelInput = {
-  id?: string
-  status?: $Enums.AnalysisJobStatus
-  scope?: string
-  chapterStart?: number | null
-  chapterEnd?: number | null
-  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
-  attempt?: number
-  errorLog?: string | null
-  overrideStrategy?: string | null
-  keepHistory?: boolean
-  startedAt?: Date | string | null
-  finishedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
-  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
-}
-
-export type AnalysisJobUncheckedCreateWithoutAiModelInput = {
-  id?: string
-  bookId: string
-  status?: $Enums.AnalysisJobStatus
-  scope?: string
-  chapterStart?: number | null
-  chapterEnd?: number | null
-  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
-  attempt?: number
-  errorLog?: string | null
-  overrideStrategy?: string | null
-  keepHistory?: boolean
-  startedAt?: Date | string | null
-  finishedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
-}
-
-export type AnalysisJobCreateOrConnectWithoutAiModelInput = {
-  where: Prisma.AnalysisJobWhereUniqueInput
-  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput>
-}
-
-export type AnalysisJobCreateManyAiModelInputEnvelope = {
-  data: Prisma.AnalysisJobCreateManyAiModelInput | Prisma.AnalysisJobCreateManyAiModelInput[]
-  skipDuplicates?: boolean
-}
-
-export type AnalysisJobUpsertWithWhereUniqueWithoutAiModelInput = {
-  where: Prisma.AnalysisJobWhereUniqueInput
-  update: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutAiModelInput, Prisma.AnalysisJobUncheckedUpdateWithoutAiModelInput>
-  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutAiModelInput, Prisma.AnalysisJobUncheckedCreateWithoutAiModelInput>
-}
-
-export type AnalysisJobUpdateWithWhereUniqueWithoutAiModelInput = {
-  where: Prisma.AnalysisJobWhereUniqueInput
-  data: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutAiModelInput, Prisma.AnalysisJobUncheckedUpdateWithoutAiModelInput>
-}
-
-export type AnalysisJobUpdateManyWithWhereWithoutAiModelInput = {
-  where: Prisma.AnalysisJobScalarWhereInput
-  data: Prisma.XOR<Prisma.AnalysisJobUpdateManyMutationInput, Prisma.AnalysisJobUncheckedUpdateManyWithoutAiModelInput>
-}
-
-export type AnalysisJobScalarWhereInput = {
-  AND?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
-  OR?: Prisma.AnalysisJobScalarWhereInput[]
-  NOT?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
-  id?: Prisma.UuidFilter<"AnalysisJob"> | string
-  bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
-  aiModelId?: Prisma.UuidNullableFilter<"AnalysisJob"> | string | null
-  status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
-  scope?: Prisma.StringFilter<"AnalysisJob"> | string
-  chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
-  chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
-  chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
-  attempt?: Prisma.IntFilter<"AnalysisJob"> | number
-  errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
-  overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
-  keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
-  startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
-  finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
-  createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
-}
-
 export type AnalysisJobCreateWithoutBookInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
@@ -845,19 +764,20 @@ export type AnalysisJobCreateWithoutBookInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  aiModel?: Prisma.AiModelCreateNestedOneWithoutAnalysisJobsInput
+  modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutBookInput = {
   id?: string
-  aiModelId?: string | null
   status?: $Enums.AnalysisJobStatus
   scope?: string
   chapterStart?: number | null
@@ -865,12 +785,15 @@ export type AnalysisJobUncheckedCreateWithoutBookInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
 }
 
@@ -900,6 +823,228 @@ export type AnalysisJobUpdateManyWithWhereWithoutBookInput = {
   data: Prisma.XOR<Prisma.AnalysisJobUpdateManyMutationInput, Prisma.AnalysisJobUncheckedUpdateManyWithoutBookInput>
 }
 
+export type AnalysisJobScalarWhereInput = {
+  AND?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
+  OR?: Prisma.AnalysisJobScalarWhereInput[]
+  NOT?: Prisma.AnalysisJobScalarWhereInput | Prisma.AnalysisJobScalarWhereInput[]
+  id?: Prisma.UuidFilter<"AnalysisJob"> | string
+  bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
+  status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFilter<"AnalysisJob"> | string
+  chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
+  chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
+  chapterIndices?: Prisma.IntNullableListFilter<"AnalysisJob">
+  attempt?: Prisma.IntFilter<"AnalysisJob"> | number
+  errorLog?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  experimentTag?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
+  keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
+  startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
+  finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
+}
+
+export type AnalysisJobCreateWithoutModelStrategiesInput = {
+  id?: string
+  status?: $Enums.AnalysisJobStatus
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+}
+
+export type AnalysisJobUncheckedCreateWithoutModelStrategiesInput = {
+  id?: string
+  bookId: string
+  status?: $Enums.AnalysisJobStatus
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+}
+
+export type AnalysisJobCreateOrConnectWithoutModelStrategiesInput = {
+  where: Prisma.AnalysisJobWhereUniqueInput
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutModelStrategiesInput, Prisma.AnalysisJobUncheckedCreateWithoutModelStrategiesInput>
+}
+
+export type AnalysisJobUpsertWithoutModelStrategiesInput = {
+  update: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutModelStrategiesInput, Prisma.AnalysisJobUncheckedUpdateWithoutModelStrategiesInput>
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutModelStrategiesInput, Prisma.AnalysisJobUncheckedCreateWithoutModelStrategiesInput>
+  where?: Prisma.AnalysisJobWhereInput
+}
+
+export type AnalysisJobUpdateToOneWithWhereWithoutModelStrategiesInput = {
+  where?: Prisma.AnalysisJobWhereInput
+  data: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutModelStrategiesInput, Prisma.AnalysisJobUncheckedUpdateWithoutModelStrategiesInput>
+}
+
+export type AnalysisJobUpdateWithoutModelStrategiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+}
+
+export type AnalysisJobUncheckedUpdateWithoutModelStrategiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+}
+
+export type AnalysisJobCreateWithoutPhaseLogsInput = {
+  id?: string
+  status?: $Enums.AnalysisJobStatus
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
+  modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+}
+
+export type AnalysisJobUncheckedCreateWithoutPhaseLogsInput = {
+  id?: string
+  bookId: string
+  status?: $Enums.AnalysisJobStatus
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+}
+
+export type AnalysisJobCreateOrConnectWithoutPhaseLogsInput = {
+  where: Prisma.AnalysisJobWhereUniqueInput
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutPhaseLogsInput, Prisma.AnalysisJobUncheckedCreateWithoutPhaseLogsInput>
+}
+
+export type AnalysisJobUpsertWithoutPhaseLogsInput = {
+  update: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutPhaseLogsInput, Prisma.AnalysisJobUncheckedUpdateWithoutPhaseLogsInput>
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutPhaseLogsInput, Prisma.AnalysisJobUncheckedCreateWithoutPhaseLogsInput>
+  where?: Prisma.AnalysisJobWhereInput
+}
+
+export type AnalysisJobUpdateToOneWithWhereWithoutPhaseLogsInput = {
+  where?: Prisma.AnalysisJobWhereInput
+  data: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutPhaseLogsInput, Prisma.AnalysisJobUncheckedUpdateWithoutPhaseLogsInput>
+}
+
+export type AnalysisJobUpdateWithoutPhaseLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
+  modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+}
+
+export type AnalysisJobUncheckedUpdateWithoutPhaseLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+}
+
 export type AnalysisJobCreateWithoutValidationReportsInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
@@ -909,6 +1054,7 @@ export type AnalysisJobCreateWithoutValidationReportsInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
@@ -916,13 +1062,13 @@ export type AnalysisJobCreateWithoutValidationReportsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
-  aiModel?: Prisma.AiModelCreateNestedOneWithoutAnalysisJobsInput
+  modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
   id?: string
   bookId: string
-  aiModelId?: string | null
   status?: $Enums.AnalysisJobStatus
   scope?: string
   chapterStart?: number | null
@@ -930,12 +1076,15 @@ export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutValidationReportsInput = {
@@ -963,6 +1112,7 @@ export type AnalysisJobUpdateWithoutValidationReportsInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -970,13 +1120,13 @@ export type AnalysisJobUpdateWithoutValidationReportsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
-  aiModel?: Prisma.AiModelUpdateOneWithoutAnalysisJobsNestedInput
+  modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -984,91 +1134,19 @@ export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type AnalysisJobCreateManyAiModelInput = {
-  id?: string
-  bookId: string
-  status?: $Enums.AnalysisJobStatus
-  scope?: string
-  chapterStart?: number | null
-  chapterEnd?: number | null
-  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
-  attempt?: number
-  errorLog?: string | null
-  overrideStrategy?: string | null
-  keepHistory?: boolean
-  startedAt?: Date | string | null
-  finishedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type AnalysisJobUpdateWithoutAiModelInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
-  scope?: Prisma.StringFieldUpdateOperationsInput | string
-  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
-  attempt?: Prisma.IntFieldUpdateOperationsInput | number
-  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
-  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
-}
-
-export type AnalysisJobUncheckedUpdateWithoutAiModelInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
-  scope?: Prisma.StringFieldUpdateOperationsInput | string
-  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
-  attempt?: Prisma.IntFieldUpdateOperationsInput | number
-  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
-}
-
-export type AnalysisJobUncheckedUpdateManyWithoutAiModelInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
-  scope?: Prisma.StringFieldUpdateOperationsInput | string
-  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
-  attempt?: Prisma.IntFieldUpdateOperationsInput | number
-  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobCreateManyBookInput = {
   id?: string
-  aiModelId?: string | null
   status?: $Enums.AnalysisJobStatus
   scope?: string
   chapterStart?: number | null
@@ -1076,6 +1154,7 @@ export type AnalysisJobCreateManyBookInput = {
   chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
   attempt?: number
   errorLog?: string | null
+  experimentTag?: string | null
   overrideStrategy?: string | null
   keepHistory?: boolean
   startedAt?: Date | string | null
@@ -1093,19 +1172,20 @@ export type AnalysisJobUpdateWithoutBookInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  aiModel?: Prisma.AiModelUpdateOneWithoutAnalysisJobsNestedInput
+  modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1113,18 +1193,20 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  aiModelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1132,6 +1214,7 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
   chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1146,10 +1229,14 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
  */
 
 export type AnalysisJobCountOutputType = {
+  modelStrategies: number
+  phaseLogs: number
   validationReports: number
 }
 
 export type AnalysisJobCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  modelStrategies?: boolean | AnalysisJobCountOutputTypeCountModelStrategiesArgs
+  phaseLogs?: boolean | AnalysisJobCountOutputTypeCountPhaseLogsArgs
   validationReports?: boolean | AnalysisJobCountOutputTypeCountValidationReportsArgs
 }
 
@@ -1166,6 +1253,20 @@ export type AnalysisJobCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.
 /**
  * AnalysisJobCountOutputType without action
  */
+export type AnalysisJobCountOutputTypeCountModelStrategiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ModelStrategyConfigWhereInput
+}
+
+/**
+ * AnalysisJobCountOutputType without action
+ */
+export type AnalysisJobCountOutputTypeCountPhaseLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AnalysisPhaseLogWhereInput
+}
+
+/**
+ * AnalysisJobCountOutputType without action
+ */
 export type AnalysisJobCountOutputTypeCountValidationReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ValidationReportWhereInput
 }
@@ -1174,7 +1275,6 @@ export type AnalysisJobCountOutputTypeCountValidationReportsArgs<ExtArgs extends
 export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
-  aiModelId?: boolean
   status?: boolean
   scope?: boolean
   chapterStart?: boolean
@@ -1182,6 +1282,7 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
+  experimentTag?: boolean
   overrideStrategy?: boolean
   keepHistory?: boolean
   startedAt?: boolean
@@ -1189,7 +1290,8 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   createdAt?: boolean
   updatedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
+  modelStrategies?: boolean | Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>
+  phaseLogs?: boolean | Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>
   validationReports?: boolean | Prisma.AnalysisJob$validationReportsArgs<ExtArgs>
   _count?: boolean | Prisma.AnalysisJobCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["analysisJob"]>
@@ -1197,7 +1299,6 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
 export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
-  aiModelId?: boolean
   status?: boolean
   scope?: boolean
   chapterStart?: boolean
@@ -1205,6 +1306,7 @@ export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
+  experimentTag?: boolean
   overrideStrategy?: boolean
   keepHistory?: boolean
   startedAt?: boolean
@@ -1212,13 +1314,11 @@ export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   createdAt?: boolean
   updatedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
 }, ExtArgs["result"]["analysisJob"]>
 
 export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
-  aiModelId?: boolean
   status?: boolean
   scope?: boolean
   chapterStart?: boolean
@@ -1226,6 +1326,7 @@ export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
+  experimentTag?: boolean
   overrideStrategy?: boolean
   keepHistory?: boolean
   startedAt?: boolean
@@ -1233,13 +1334,11 @@ export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   createdAt?: boolean
   updatedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
 }, ExtArgs["result"]["analysisJob"]>
 
 export type AnalysisJobSelectScalar = {
   id?: boolean
   bookId?: boolean
-  aiModelId?: boolean
   status?: boolean
   scope?: boolean
   chapterStart?: boolean
@@ -1247,6 +1346,7 @@ export type AnalysisJobSelectScalar = {
   chapterIndices?: boolean
   attempt?: boolean
   errorLog?: boolean
+  experimentTag?: boolean
   overrideStrategy?: boolean
   keepHistory?: boolean
   startedAt?: boolean
@@ -1255,33 +1355,32 @@ export type AnalysisJobSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "aiModelId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "overrideStrategy" | "keepHistory" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
+export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "experimentTag" | "overrideStrategy" | "keepHistory" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
 export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
+  modelStrategies?: boolean | Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>
+  phaseLogs?: boolean | Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>
   validationReports?: boolean | Prisma.AnalysisJob$validationReportsArgs<ExtArgs>
   _count?: boolean | Prisma.AnalysisJobCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AnalysisJobIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
 }
 export type AnalysisJobIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  aiModel?: boolean | Prisma.AnalysisJob$aiModelArgs<ExtArgs>
 }
 
 export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AnalysisJob"
   objects: {
     book: Prisma.$BookPayload<ExtArgs>
-    aiModel: Prisma.$AiModelPayload<ExtArgs> | null
+    modelStrategies: Prisma.$ModelStrategyConfigPayload<ExtArgs>[]
+    phaseLogs: Prisma.$AnalysisPhaseLogPayload<ExtArgs>[]
     validationReports: Prisma.$ValidationReportPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     bookId: string
-    aiModelId: string | null
     status: $Enums.AnalysisJobStatus
     scope: string
     chapterStart: number | null
@@ -1289,6 +1388,7 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
     chapterIndices: number[]
     attempt: number
     errorLog: string | null
+    experimentTag: string | null
     overrideStrategy: string | null
     keepHistory: boolean
     startedAt: Date | null
@@ -1690,7 +1790,8 @@ readonly fields: AnalysisJobFieldRefs;
 export interface Prisma__AnalysisJobClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   book<T extends Prisma.BookDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookDefaultArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  aiModel<T extends Prisma.AnalysisJob$aiModelArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$aiModelArgs<ExtArgs>>): Prisma.Prisma__AiModelClient<runtime.Types.Result.GetResult<Prisma.$AiModelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  modelStrategies<T extends Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ModelStrategyConfigPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  phaseLogs<T extends Prisma.AnalysisJob$phaseLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisPhaseLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   validationReports<T extends Prisma.AnalysisJob$validationReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$validationReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ValidationReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1723,7 +1824,6 @@ export interface Prisma__AnalysisJobClient<T, Null = never, ExtArgs extends runt
 export interface AnalysisJobFieldRefs {
   readonly id: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly bookId: Prisma.FieldRef<"AnalysisJob", 'String'>
-  readonly aiModelId: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly status: Prisma.FieldRef<"AnalysisJob", 'AnalysisJobStatus'>
   readonly scope: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly chapterStart: Prisma.FieldRef<"AnalysisJob", 'Int'>
@@ -1731,6 +1831,7 @@ export interface AnalysisJobFieldRefs {
   readonly chapterIndices: Prisma.FieldRef<"AnalysisJob", 'Int[]'>
   readonly attempt: Prisma.FieldRef<"AnalysisJob", 'Int'>
   readonly errorLog: Prisma.FieldRef<"AnalysisJob", 'String'>
+  readonly experimentTag: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly overrideStrategy: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly keepHistory: Prisma.FieldRef<"AnalysisJob", 'Boolean'>
   readonly startedAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>
@@ -2133,22 +2234,51 @@ export type AnalysisJobDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
 }
 
 /**
- * AnalysisJob.aiModel
+ * AnalysisJob.modelStrategies
  */
-export type AnalysisJob$aiModelArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type AnalysisJob$modelStrategiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the AiModel
+   * Select specific fields to fetch from the ModelStrategyConfig
    */
-  select?: Prisma.AiModelSelect<ExtArgs> | null
+  select?: Prisma.ModelStrategyConfigSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the AiModel
+   * Omit specific fields from the ModelStrategyConfig
    */
-  omit?: Prisma.AiModelOmit<ExtArgs> | null
+  omit?: Prisma.ModelStrategyConfigOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.AiModelInclude<ExtArgs> | null
-  where?: Prisma.AiModelWhereInput
+  include?: Prisma.ModelStrategyConfigInclude<ExtArgs> | null
+  where?: Prisma.ModelStrategyConfigWhereInput
+  orderBy?: Prisma.ModelStrategyConfigOrderByWithRelationInput | Prisma.ModelStrategyConfigOrderByWithRelationInput[]
+  cursor?: Prisma.ModelStrategyConfigWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ModelStrategyConfigScalarFieldEnum | Prisma.ModelStrategyConfigScalarFieldEnum[]
+}
+
+/**
+ * AnalysisJob.phaseLogs
+ */
+export type AnalysisJob$phaseLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AnalysisPhaseLog
+   */
+  select?: Prisma.AnalysisPhaseLogSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AnalysisPhaseLog
+   */
+  omit?: Prisma.AnalysisPhaseLogOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AnalysisPhaseLogInclude<ExtArgs> | null
+  where?: Prisma.AnalysisPhaseLogWhereInput
+  orderBy?: Prisma.AnalysisPhaseLogOrderByWithRelationInput | Prisma.AnalysisPhaseLogOrderByWithRelationInput[]
+  cursor?: Prisma.AnalysisPhaseLogWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AnalysisPhaseLogScalarFieldEnum | Prisma.AnalysisPhaseLogScalarFieldEnum[]
 }
 
 /**

@@ -90,3 +90,54 @@
 - 推荐下一个断点 / 下一张 ticket：
   - 导入向导 Step 2/3：元数据确认 + 章节切分预览
   - 或先接首页按钮到真实导入入口
+
+
+## Session 1: Archive 04-01 & 04-03 and finalize mixed-model refactor
+
+**Date**: 2026-04-04
+**Task**: Archive 04-01 & 04-03 and finalize mixed-model refactor
+
+### Summary
+
+归档 04-01/04-03，完成收尾验证并记录会话
+
+### Main Changes
+
+| Task | Result |
+|------|--------|
+| 04-03-mixed-model-strategy-refactor | 已完成并归档到 `.trellis/tasks/archive/2026-04/04-03-mixed-model-strategy-refactor/` |
+| 04-01-cross-book-title-arbitration | 已完成并归档到 `.trellis/tasks/archive/2026-04/04-01-cross-book-title-arbitration/` |
+
+**Summary**:
+- 完成混合模型策略重构收尾：补齐去重键、Prompt 泛化称谓数量、服务层与关键聚合测试、回归验证通过。
+- 完成跨书称谓仲裁相关任务收束与归档，确保任务状态与归档目录一致。
+- 执行 finish-work 校验：`pnpm lint`、`pnpm test`、`pnpm type-check`（新增脚本后）均通过。
+
+**Verification**:
+- `pnpm lint` ✅
+- `pnpm type-check` ✅
+- `pnpm test` ✅（98 files / 593 tests passed）
+
+**Archive Paths**:
+- `.trellis/tasks/archive/2026-04/04-01-cross-book-title-arbitration/`
+- `.trellis/tasks/archive/2026-04/04-03-mixed-model-strategy-refactor/`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0a03e23` | (see git log) |
+| `2efdac3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

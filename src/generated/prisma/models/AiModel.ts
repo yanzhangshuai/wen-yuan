@@ -222,8 +222,7 @@ export type AiModelWhereInput = {
   isDefault?: Prisma.BoolFilter<"AiModel"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
-  books?: Prisma.BookListRelationFilter
-  analysisJobs?: Prisma.AnalysisJobListRelationFilter
+  phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
 }
 
 export type AiModelOrderByWithRelationInput = {
@@ -237,8 +236,7 @@ export type AiModelOrderByWithRelationInput = {
   isDefault?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  books?: Prisma.BookOrderByRelationAggregateInput
-  analysisJobs?: Prisma.AnalysisJobOrderByRelationAggregateInput
+  phaseLogs?: Prisma.AnalysisPhaseLogOrderByRelationAggregateInput
 }
 
 export type AiModelWhereUniqueInput = Prisma.AtLeast<{
@@ -255,8 +253,7 @@ export type AiModelWhereUniqueInput = Prisma.AtLeast<{
   isDefault?: Prisma.BoolFilter<"AiModel"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
-  books?: Prisma.BookListRelationFilter
-  analysisJobs?: Prisma.AnalysisJobListRelationFilter
+  phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
 }, "id">
 
 export type AiModelOrderByWithAggregationInput = {
@@ -302,8 +299,7 @@ export type AiModelCreateInput = {
   isDefault?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  books?: Prisma.BookCreateNestedManyWithoutAiModelInput
-  analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutAiModelInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutModelInput
 }
 
 export type AiModelUncheckedCreateInput = {
@@ -317,8 +313,7 @@ export type AiModelUncheckedCreateInput = {
   isDefault?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  books?: Prisma.BookUncheckedCreateNestedManyWithoutAiModelInput
-  analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutAiModelInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutModelInput
 }
 
 export type AiModelUpdateInput = {
@@ -332,8 +327,7 @@ export type AiModelUpdateInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUpdateManyWithoutAiModelNestedInput
-  analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutAiModelNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutModelNestedInput
 }
 
 export type AiModelUncheckedUpdateInput = {
@@ -347,8 +341,7 @@ export type AiModelUncheckedUpdateInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUncheckedUpdateManyWithoutAiModelNestedInput
-  analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutAiModelNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutModelNestedInput
 }
 
 export type AiModelCreateManyInput = {
@@ -438,39 +431,23 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
-export type AiModelCreateNestedOneWithoutBooksInput = {
-  create?: Prisma.XOR<Prisma.AiModelCreateWithoutBooksInput, Prisma.AiModelUncheckedCreateWithoutBooksInput>
-  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutBooksInput
+export type AiModelCreateNestedOneWithoutPhaseLogsInput = {
+  create?: Prisma.XOR<Prisma.AiModelCreateWithoutPhaseLogsInput, Prisma.AiModelUncheckedCreateWithoutPhaseLogsInput>
+  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutPhaseLogsInput
   connect?: Prisma.AiModelWhereUniqueInput
 }
 
-export type AiModelUpdateOneWithoutBooksNestedInput = {
-  create?: Prisma.XOR<Prisma.AiModelCreateWithoutBooksInput, Prisma.AiModelUncheckedCreateWithoutBooksInput>
-  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutBooksInput
-  upsert?: Prisma.AiModelUpsertWithoutBooksInput
+export type AiModelUpdateOneWithoutPhaseLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.AiModelCreateWithoutPhaseLogsInput, Prisma.AiModelUncheckedCreateWithoutPhaseLogsInput>
+  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutPhaseLogsInput
+  upsert?: Prisma.AiModelUpsertWithoutPhaseLogsInput
   disconnect?: Prisma.AiModelWhereInput | boolean
   delete?: Prisma.AiModelWhereInput | boolean
   connect?: Prisma.AiModelWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.AiModelUpdateToOneWithWhereWithoutBooksInput, Prisma.AiModelUpdateWithoutBooksInput>, Prisma.AiModelUncheckedUpdateWithoutBooksInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AiModelUpdateToOneWithWhereWithoutPhaseLogsInput, Prisma.AiModelUpdateWithoutPhaseLogsInput>, Prisma.AiModelUncheckedUpdateWithoutPhaseLogsInput>
 }
 
-export type AiModelCreateNestedOneWithoutAnalysisJobsInput = {
-  create?: Prisma.XOR<Prisma.AiModelCreateWithoutAnalysisJobsInput, Prisma.AiModelUncheckedCreateWithoutAnalysisJobsInput>
-  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutAnalysisJobsInput
-  connect?: Prisma.AiModelWhereUniqueInput
-}
-
-export type AiModelUpdateOneWithoutAnalysisJobsNestedInput = {
-  create?: Prisma.XOR<Prisma.AiModelCreateWithoutAnalysisJobsInput, Prisma.AiModelUncheckedCreateWithoutAnalysisJobsInput>
-  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutAnalysisJobsInput
-  upsert?: Prisma.AiModelUpsertWithoutAnalysisJobsInput
-  disconnect?: Prisma.AiModelWhereInput | boolean
-  delete?: Prisma.AiModelWhereInput | boolean
-  connect?: Prisma.AiModelWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.AiModelUpdateToOneWithWhereWithoutAnalysisJobsInput, Prisma.AiModelUpdateWithoutAnalysisJobsInput>, Prisma.AiModelUncheckedUpdateWithoutAnalysisJobsInput>
-}
-
-export type AiModelCreateWithoutBooksInput = {
+export type AiModelCreateWithoutPhaseLogsInput = {
   id?: string
   provider: string
   name: string
@@ -481,10 +458,9 @@ export type AiModelCreateWithoutBooksInput = {
   isDefault?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutAiModelInput
 }
 
-export type AiModelUncheckedCreateWithoutBooksInput = {
+export type AiModelUncheckedCreateWithoutPhaseLogsInput = {
   id?: string
   provider: string
   name: string
@@ -495,26 +471,25 @@ export type AiModelUncheckedCreateWithoutBooksInput = {
   isDefault?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutAiModelInput
 }
 
-export type AiModelCreateOrConnectWithoutBooksInput = {
+export type AiModelCreateOrConnectWithoutPhaseLogsInput = {
   where: Prisma.AiModelWhereUniqueInput
-  create: Prisma.XOR<Prisma.AiModelCreateWithoutBooksInput, Prisma.AiModelUncheckedCreateWithoutBooksInput>
+  create: Prisma.XOR<Prisma.AiModelCreateWithoutPhaseLogsInput, Prisma.AiModelUncheckedCreateWithoutPhaseLogsInput>
 }
 
-export type AiModelUpsertWithoutBooksInput = {
-  update: Prisma.XOR<Prisma.AiModelUpdateWithoutBooksInput, Prisma.AiModelUncheckedUpdateWithoutBooksInput>
-  create: Prisma.XOR<Prisma.AiModelCreateWithoutBooksInput, Prisma.AiModelUncheckedCreateWithoutBooksInput>
+export type AiModelUpsertWithoutPhaseLogsInput = {
+  update: Prisma.XOR<Prisma.AiModelUpdateWithoutPhaseLogsInput, Prisma.AiModelUncheckedUpdateWithoutPhaseLogsInput>
+  create: Prisma.XOR<Prisma.AiModelCreateWithoutPhaseLogsInput, Prisma.AiModelUncheckedCreateWithoutPhaseLogsInput>
   where?: Prisma.AiModelWhereInput
 }
 
-export type AiModelUpdateToOneWithWhereWithoutBooksInput = {
+export type AiModelUpdateToOneWithWhereWithoutPhaseLogsInput = {
   where?: Prisma.AiModelWhereInput
-  data: Prisma.XOR<Prisma.AiModelUpdateWithoutBooksInput, Prisma.AiModelUncheckedUpdateWithoutBooksInput>
+  data: Prisma.XOR<Prisma.AiModelUpdateWithoutPhaseLogsInput, Prisma.AiModelUncheckedUpdateWithoutPhaseLogsInput>
 }
 
-export type AiModelUpdateWithoutBooksInput = {
+export type AiModelUpdateWithoutPhaseLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -525,10 +500,9 @@ export type AiModelUpdateWithoutBooksInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutAiModelNestedInput
 }
 
-export type AiModelUncheckedUpdateWithoutBooksInput = {
+export type AiModelUncheckedUpdateWithoutPhaseLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -539,79 +513,6 @@ export type AiModelUncheckedUpdateWithoutBooksInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutAiModelNestedInput
-}
-
-export type AiModelCreateWithoutAnalysisJobsInput = {
-  id?: string
-  provider: string
-  name: string
-  modelId: string
-  baseUrl: string
-  apiKey?: string | null
-  isEnabled?: boolean
-  isDefault?: boolean
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  books?: Prisma.BookCreateNestedManyWithoutAiModelInput
-}
-
-export type AiModelUncheckedCreateWithoutAnalysisJobsInput = {
-  id?: string
-  provider: string
-  name: string
-  modelId: string
-  baseUrl: string
-  apiKey?: string | null
-  isEnabled?: boolean
-  isDefault?: boolean
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  books?: Prisma.BookUncheckedCreateNestedManyWithoutAiModelInput
-}
-
-export type AiModelCreateOrConnectWithoutAnalysisJobsInput = {
-  where: Prisma.AiModelWhereUniqueInput
-  create: Prisma.XOR<Prisma.AiModelCreateWithoutAnalysisJobsInput, Prisma.AiModelUncheckedCreateWithoutAnalysisJobsInput>
-}
-
-export type AiModelUpsertWithoutAnalysisJobsInput = {
-  update: Prisma.XOR<Prisma.AiModelUpdateWithoutAnalysisJobsInput, Prisma.AiModelUncheckedUpdateWithoutAnalysisJobsInput>
-  create: Prisma.XOR<Prisma.AiModelCreateWithoutAnalysisJobsInput, Prisma.AiModelUncheckedCreateWithoutAnalysisJobsInput>
-  where?: Prisma.AiModelWhereInput
-}
-
-export type AiModelUpdateToOneWithWhereWithoutAnalysisJobsInput = {
-  where?: Prisma.AiModelWhereInput
-  data: Prisma.XOR<Prisma.AiModelUpdateWithoutAnalysisJobsInput, Prisma.AiModelUncheckedUpdateWithoutAnalysisJobsInput>
-}
-
-export type AiModelUpdateWithoutAnalysisJobsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  modelId?: Prisma.StringFieldUpdateOperationsInput | string
-  baseUrl?: Prisma.StringFieldUpdateOperationsInput | string
-  apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUpdateManyWithoutAiModelNestedInput
-}
-
-export type AiModelUncheckedUpdateWithoutAnalysisJobsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  modelId?: Prisma.StringFieldUpdateOperationsInput | string
-  baseUrl?: Prisma.StringFieldUpdateOperationsInput | string
-  apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUncheckedUpdateManyWithoutAiModelNestedInput
 }
 
 
@@ -620,13 +521,11 @@ export type AiModelUncheckedUpdateWithoutAnalysisJobsInput = {
  */
 
 export type AiModelCountOutputType = {
-  books: number
-  analysisJobs: number
+  phaseLogs: number
 }
 
 export type AiModelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  books?: boolean | AiModelCountOutputTypeCountBooksArgs
-  analysisJobs?: boolean | AiModelCountOutputTypeCountAnalysisJobsArgs
+  phaseLogs?: boolean | AiModelCountOutputTypeCountPhaseLogsArgs
 }
 
 /**
@@ -642,15 +541,8 @@ export type AiModelCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
 /**
  * AiModelCountOutputType without action
  */
-export type AiModelCountOutputTypeCountBooksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.BookWhereInput
-}
-
-/**
- * AiModelCountOutputType without action
- */
-export type AiModelCountOutputTypeCountAnalysisJobsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AnalysisJobWhereInput
+export type AiModelCountOutputTypeCountPhaseLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AnalysisPhaseLogWhereInput
 }
 
 
@@ -665,8 +557,7 @@ export type AiModelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   isDefault?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  books?: boolean | Prisma.AiModel$booksArgs<ExtArgs>
-  analysisJobs?: boolean | Prisma.AiModel$analysisJobsArgs<ExtArgs>
+  phaseLogs?: boolean | Prisma.AiModel$phaseLogsArgs<ExtArgs>
   _count?: boolean | Prisma.AiModelCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["aiModel"]>
 
@@ -711,8 +602,7 @@ export type AiModelSelectScalar = {
 
 export type AiModelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "name" | "modelId" | "baseUrl" | "apiKey" | "isEnabled" | "isDefault" | "createdAt" | "updatedAt", ExtArgs["result"]["aiModel"]>
 export type AiModelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  books?: boolean | Prisma.AiModel$booksArgs<ExtArgs>
-  analysisJobs?: boolean | Prisma.AiModel$analysisJobsArgs<ExtArgs>
+  phaseLogs?: boolean | Prisma.AiModel$phaseLogsArgs<ExtArgs>
   _count?: boolean | Prisma.AiModelCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AiModelIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -721,8 +611,7 @@ export type AiModelIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 export type $AiModelPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AiModel"
   objects: {
-    books: Prisma.$BookPayload<ExtArgs>[]
-    analysisJobs: Prisma.$AnalysisJobPayload<ExtArgs>[]
+    phaseLogs: Prisma.$AnalysisPhaseLogPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1129,8 +1018,7 @@ readonly fields: AiModelFieldRefs;
  */
 export interface Prisma__AiModelClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  books<T extends Prisma.AiModel$booksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiModel$booksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  analysisJobs<T extends Prisma.AiModel$analysisJobsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiModel$analysisJobsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisJobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  phaseLogs<T extends Prisma.AiModel$phaseLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiModel$phaseLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisPhaseLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1558,51 +1446,27 @@ export type AiModelDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
- * AiModel.books
+ * AiModel.phaseLogs
  */
-export type AiModel$booksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type AiModel$phaseLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Book
+   * Select specific fields to fetch from the AnalysisPhaseLog
    */
-  select?: Prisma.BookSelect<ExtArgs> | null
+  select?: Prisma.AnalysisPhaseLogSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Book
+   * Omit specific fields from the AnalysisPhaseLog
    */
-  omit?: Prisma.BookOmit<ExtArgs> | null
+  omit?: Prisma.AnalysisPhaseLogOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.BookInclude<ExtArgs> | null
-  where?: Prisma.BookWhereInput
-  orderBy?: Prisma.BookOrderByWithRelationInput | Prisma.BookOrderByWithRelationInput[]
-  cursor?: Prisma.BookWhereUniqueInput
+  include?: Prisma.AnalysisPhaseLogInclude<ExtArgs> | null
+  where?: Prisma.AnalysisPhaseLogWhereInput
+  orderBy?: Prisma.AnalysisPhaseLogOrderByWithRelationInput | Prisma.AnalysisPhaseLogOrderByWithRelationInput[]
+  cursor?: Prisma.AnalysisPhaseLogWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.BookScalarFieldEnum | Prisma.BookScalarFieldEnum[]
-}
-
-/**
- * AiModel.analysisJobs
- */
-export type AiModel$analysisJobsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the AnalysisJob
-   */
-  select?: Prisma.AnalysisJobSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the AnalysisJob
-   */
-  omit?: Prisma.AnalysisJobOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.AnalysisJobInclude<ExtArgs> | null
-  where?: Prisma.AnalysisJobWhereInput
-  orderBy?: Prisma.AnalysisJobOrderByWithRelationInput | Prisma.AnalysisJobOrderByWithRelationInput[]
-  cursor?: Prisma.AnalysisJobWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.AnalysisJobScalarFieldEnum | Prisma.AnalysisJobScalarFieldEnum[]
+  distinct?: Prisma.AnalysisPhaseLogScalarFieldEnum | Prisma.AnalysisPhaseLogScalarFieldEnum[]
 }
 
 /**

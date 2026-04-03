@@ -2,25 +2,37 @@ import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  AnalysisModelDisabledError,
-  AnalysisModelNotFoundError,
   AnalysisScopeInvalidError,
   BookNotFoundError,
   createStartBookAnalysisService
 } from "@/server/modules/books/startBookAnalysis";
 
+function createMockPrisma() {
+  const bookFindFirst = vi.fn();
+  const bookUpdate = vi.fn();
+  const tx = {
+    analysisJob        : { create: vi.fn() },
+    modelStrategyConfig: { create: vi.fn() },
+    book               : { update: bookUpdate }
+  };
+
+  const prisma = {
+    book               : { findFirst: bookFindFirst, update: bookUpdate },
+    chapter            : { count: vi.fn() },
+    $transaction       : vi.fn(async (callback: (input: typeof tx) => Promise<unknown>) => callback(tx)),
+    analysisJob        : tx.analysisJob,
+    modelStrategyConfig: tx.modelStrategyConfig
+  };
+
+  return { prisma, tx };
+}
+
 describe("startBookAnalysis", () => {
   it("creates analysis job and updates book processing status", async () => {
-    // Arrange
-    const bookFindFirst = vi.fn().mockResolvedValue({
-      id       : "book-1",
-      aiModelId: "model-1"
-    });
-    const modelFindUnique = vi.fn().mockResolvedValue({
-      id       : "model-1",
-      isEnabled: true
-    });
-    const analysisJobCreate = vi.fn().mockResolvedValue({
+    const { prisma, tx } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(12);
+    tx.analysisJob.create.mockResolvedValue({
       id              : "job-1",
       status          : AnalysisJobStatus.QUEUED,
       scope           : "FULL_BOOK",
@@ -30,44 +42,33 @@ describe("startBookAnalysis", () => {
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false
     });
-    const bookUpdate = vi.fn().mockResolvedValue({
+    tx.book.update.mockResolvedValue({
       status       : "PROCESSING",
       parseProgress: 0,
       parseStage   : "文本清洗"
     });
-    const chapterCount = vi.fn().mockResolvedValue(12);
-    const transaction = vi.fn(async (operations) => Promise.all(operations));
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: bookFindFirst, update: bookUpdate },
-      aiModel     : { findUnique: modelFindUnique },
-      chapter     : { count: chapterCount },
-      analysisJob : { create: analysisJobCreate },
-      $transaction: transaction
-    } as never);
 
-    // Act
+    const service = createStartBookAnalysisService(prisma as never);
     const result = await service.startBookAnalysis("book-1");
 
-    // Assert
-    expect(bookFindFirst).toHaveBeenCalledWith({
+    expect(prisma.book.findFirst).toHaveBeenCalledWith({
       where: {
         id       : "book-1",
         deletedAt: null
       },
-      select: { id: true, aiModelId: true }
+      select: { id: true }
     });
-    expect(modelFindUnique).toHaveBeenCalledWith({
-      where : { id: "model-1" },
-      select: { id: true, isEnabled: true }
-    });
-    expect(analysisJobCreate).toHaveBeenCalled();
-    expect(analysisJobCreate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
+        bookId          : "book-1",
+        scope           : "FULL_BOOK",
+        chapterIndices  : [],
         overrideStrategy: "DRAFT_ONLY",
         keepHistory     : false
       })
     }));
-    expect(bookUpdate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(tx.modelStrategyConfig.create).not.toHaveBeenCalled();
+    expect(tx.book.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "book-1" },
       data : expect.objectContaining({
         status       : "PROCESSING",
@@ -85,70 +86,68 @@ describe("startBookAnalysis", () => {
       chapterIndices  : [],
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false,
-      aiModelId       : "model-1",
       bookStatus      : "PROCESSING",
       parseProgress   : 0,
       parseStage      : "文本清洗"
     });
   });
 
-  it("throws BookNotFoundError when book does not exist", async () => {
-    // Arrange
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue(null) },
-      aiModel     : { findUnique: vi.fn() },
-      chapter     : { count: vi.fn() },
-      analysisJob : { create: vi.fn() },
-      $transaction: vi.fn()
-    } as never);
+  it("writes job-level strategy when modelStrategy is provided", async () => {
+    const { prisma, tx } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(12);
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-2",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      chapterIndices  : [],
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
+    });
+    tx.book.update.mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
 
-    // Act + Assert
+    const service = createStartBookAnalysisService(prisma as never);
+    await service.startBookAnalysis("book-1", {
+      modelStrategy: {
+        CHUNK_EXTRACTION: {
+          modelId    : "00000000-0000-0000-0000-000000000001",
+          temperature: 0.2
+        }
+      }
+    });
+
+    expect(tx.modelStrategyConfig.create).toHaveBeenCalledWith({
+      data: {
+        scope : "JOB",
+        jobId : "job-2",
+        stages: {
+          CHUNK_EXTRACTION: {
+            modelId    : "00000000-0000-0000-0000-000000000001",
+            temperature: 0.2
+          }
+        }
+      }
+    });
+  });
+
+  it("throws BookNotFoundError when book does not exist", async () => {
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue(null);
+    const service = createStartBookAnalysisService(prisma as never);
     await expect(service.startBookAnalysis("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);
   });
 
-  it("throws AnalysisModelNotFoundError when selected model does not exist", async () => {
-    // Arrange
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel     : { findUnique: vi.fn().mockResolvedValue(null) },
-      chapter     : { count: vi.fn() },
-      analysisJob : { create: vi.fn() },
-      $transaction: vi.fn()
-    } as never);
-
-    // Act + Assert
-    await expect(
-      service.startBookAnalysis("book-1", { aiModelId: "missing-model" })
-    ).rejects.toBeInstanceOf(AnalysisModelNotFoundError);
-  });
-
-  it("throws AnalysisModelDisabledError when selected model is disabled", async () => {
-    // Arrange
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel     : { findUnique: vi.fn().mockResolvedValue({ id: "model-1", isEnabled: false }) },
-      chapter     : { count: vi.fn() },
-      analysisJob : { create: vi.fn() },
-      $transaction: vi.fn()
-    } as never);
-
-    // Act + Assert
-    await expect(
-      service.startBookAnalysis("book-1", { aiModelId: "model-1" })
-    ).rejects.toBeInstanceOf(AnalysisModelDisabledError);
-  });
-
   it("throws AnalysisScopeInvalidError for invalid chapter range", async () => {
-    // Arrange
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel     : { findUnique: vi.fn() },
-      chapter     : { count: vi.fn() },
-      analysisJob : { create: vi.fn() },
-      $transaction: vi.fn()
-    } as never);
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    const service = createStartBookAnalysisService(prisma as never);
 
-    // Act + Assert
     await expect(
       service.startBookAnalysis("book-1", {
         scope       : "CHAPTER_RANGE",
@@ -159,21 +158,20 @@ describe("startBookAnalysis", () => {
   });
 
   it("throws AnalysisScopeInvalidError when no chapters are confirmed", async () => {
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: "model-1" }) },
-      aiModel     : { findUnique: vi.fn().mockResolvedValue({ id: "model-1", isEnabled: true }) },
-      chapter     : { count: vi.fn().mockResolvedValue(0) },
-      analysisJob : { create: vi.fn() },
-      $transaction: vi.fn()
-    } as never);
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(0);
+    const service = createStartBookAnalysisService(prisma as never);
 
     await expect(service.startBookAnalysis("book-1")).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
   });
 
   it("creates CHAPTER_LIST analysis job with specified chapter indices", async () => {
-    // Arrange
-    const analysisJobCreate = vi.fn().mockResolvedValue({
-      id              : "job-2",
+    const { prisma, tx } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(3);
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-3",
       status          : AnalysisJobStatus.QUEUED,
       scope           : "CHAPTER_LIST",
       chapterStart    : null,
@@ -182,28 +180,19 @@ describe("startBookAnalysis", () => {
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false
     });
-    const bookUpdate = vi.fn().mockResolvedValue({
+    tx.book.update.mockResolvedValue({
       status       : "PROCESSING",
       parseProgress: 0,
       parseStage   : "文本清洗"
     });
-    const transaction = vi.fn(async (operations) => Promise.all(operations));
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }), update: bookUpdate },
-      aiModel     : { findUnique: vi.fn() },
-      chapter     : { count: vi.fn().mockResolvedValue(3) },
-      analysisJob : { create: analysisJobCreate },
-      $transaction: transaction
-    } as never);
 
-    // Act
+    const service = createStartBookAnalysisService(prisma as never);
     const result = await service.startBookAnalysis("book-1", {
       scope         : "CHAPTER_LIST",
       chapterIndices: [5, 1, 3]
     });
 
-    // Assert: indices are deduplicated and sorted
-    expect(analysisJobCreate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         scope         : "CHAPTER_LIST",
         chapterIndices: [1, 3, 5],
@@ -216,13 +205,9 @@ describe("startBookAnalysis", () => {
   });
 
   it("throws AnalysisScopeInvalidError for CHAPTER_LIST with empty indices", async () => {
-    const service = createStartBookAnalysisService({
-      book        : { findFirst: vi.fn().mockResolvedValue({ id: "book-1", aiModelId: null }) },
-      aiModel     : { findUnique: vi.fn() },
-      chapter     : { count: vi.fn() },
-      analysisJob : { create: vi.fn() },
-      $transaction: vi.fn()
-    } as never);
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    const service = createStartBookAnalysisService(prisma as never);
 
     await expect(
       service.startBookAnalysis("book-1", { scope: "CHAPTER_LIST", chapterIndices: [] })

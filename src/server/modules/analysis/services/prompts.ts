@@ -1,4 +1,5 @@
 import type { AnalysisProfileContext, TitleArbitrationEntry, TitleArbitrationInput, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
+import type { PromptMessageInput } from "@/types/pipeline";
 import {
   type ValidationIssue,
   type ValidationIssueType,
@@ -8,8 +9,14 @@ import {
 import { repairJson } from "@/types/analysis";
 import { buildEffectiveGenericTitles } from "@/server/modules/analysis/config/lexicon";
 
-/** 从 GENERIC_TITLES 生成 prompt 中使用的泛化称谓示例列表（单一源，避免三处列表不一致） */
-const GENERIC_TITLES_EXAMPLE = Array.from(buildEffectiveGenericTitles(undefined)).slice(0, 15).join("、") + "等";
+// 文档要求泛化称谓示例 >= 30；使用常量避免多个 prompt 构建点口径漂移。
+const GENERIC_TITLES_PROMPT_LIMIT = 30;
+
+/**
+ * 从 GENERIC_TITLES 生成 prompt 使用的示例列表。
+ * 这里固定从统一词库截取，避免章节分析/名册发现/测试断言三处列表不一致。
+ */
+const GENERIC_TITLES_EXAMPLE = Array.from(buildEffectiveGenericTitles(undefined)).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等";
 
 /**
  * 功能：定义生成分段 Prompt 所需参数。
@@ -130,17 +137,14 @@ function buildEntityContextLines(profiles: AnalysisProfileContext[]): string {
  * 异常：无。
  * 副作用：无。
  */
-export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string {
+export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): PromptMessageInput {
   const entityContextLines =
     input.profiles.length > 0
       ? buildEntityContextLines(input.profiles)
       : "（本书目前尚无已建档人物）";
 
   const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
-  return [
-    "## 角色",
-    "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。",
-    "",
+  const user = [
     "## 任务",
     `阅读《${input.bookTitle}》第 ${input.chapterNo} 章「${input.chapterTitle}」的完整正文。`,
     "建立**本章人物名册**：枚举本章原文中所有明确出现的人物称谓（姓名、官衔称呼、亲属称呼等）。",
@@ -179,6 +183,11 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
     "## 本章正文",
     input.content
   ].join("\n");
+
+  return {
+    system: "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。",
+    user
+  };
 }
 
 /**
@@ -188,7 +197,7 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): string 
  * 异常：无。
  * 副作用：无。
  */
-export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
+export function buildChapterAnalysisPrompt(input: BuildPromptInput): PromptMessageInput {
   // 实体上下文：使用短整型索引格式（[N] 标准名 | 别名 | 小传），让模型直接引用标准名
   const entityContext =
     input.profiles.length > 0
@@ -196,10 +205,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
       : "（本书目前尚无已建档人物）";
 
   const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
-  return [
-    "## Role",
-    "你是一个通用的叙事文学结构化提取专家，能够精准识别复杂文本中的实体轨迹与社交网络。",
-    "",
+  const user = [
     "## Task",
     `分析书籍《${input.bookTitle}》第${input.chapterNo}章/回（${input.chapterTitle}）的文本片段（第 ${input.chunkIndex + 1}/${input.chunkCount} 段）。`,
     "将非结构化叙事转换为结构化 JSON 数据，涵盖：生平/关键事件 (biographies)、实体提及 (mentions)、实体间动态关系 (relationships)。",
@@ -257,6 +263,11 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
     "## Source Text",
     input.content
   ].join("\n");
+
+  return {
+    system: "你是一个通用的叙事文学结构化提取专家，能够精准识别复杂文本中的实体轨迹与社交网络。",
+    user
+  };
 }
 
 /**
@@ -266,7 +277,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): string {
  * 异常：无。
  * 副作用：无。
  */
-export function buildTitleResolutionPrompt(input: TitleResolutionInput): string {
+export function buildTitleResolutionPrompt(input: TitleResolutionInput): PromptMessageInput {
   const tableRows = input.entries.map(
     (e) => `| ${e.title} | ${e.localSummary ?? ""} |`
   ).join("\n");
@@ -277,10 +288,7 @@ export function buildTitleResolutionPrompt(input: TitleResolutionInput): string 
     { title: "不知名称号", realName: null, confidence: 0.2, historicalNote: "无历史依据" }
   ];
 
-  return [
-    "## 角色",
-    "你是中国古典文学历史背景专家，熟悉明清小说历史原型。",
-    "",
+  const user = [
     "## 任务",
     `书名：《${input.bookTitle}》`,
     "以下人物在书中仅以称号出现，请根据书中语境和历史知识，推断其真实姓名。",
@@ -300,9 +308,14 @@ export function buildTitleResolutionPrompt(input: TitleResolutionInput): string 
     "## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）",
     JSON.stringify(exampleOutput, null, 2)
   ].join("\n");
+
+  return {
+    system: "你是中国古典文学历史背景专家，熟悉明清小说历史原型。",
+    user
+  };
 }
 
-export function buildTitleArbitrationPrompt(input: TitleArbitrationInput): string {
+export function buildTitleArbitrationPrompt(input: TitleArbitrationInput): PromptMessageInput {
   const terms = input.terms.map((item) =>
     `- "${item.surfaceForm}" (chapterAppearanceCount=${item.chapterAppearanceCount}, hasStableAliasBinding=${item.hasStableAliasBinding}, singlePersonaConsistency=${item.singlePersonaConsistency}, genericRatio=${item.genericRatio.toFixed(2)})`
   ).join("\n");
@@ -312,10 +325,7 @@ export function buildTitleArbitrationPrompt(input: TitleArbitrationInput): strin
     { surfaceForm: "先生", isPersonalized: false, confidence: 0.74, reason: "多次泛指，缺乏稳定绑定" }
   ];
 
-  return [
-    "## 角色",
-    "你是文学实体解析仲裁助手。",
-    "",
+  const user = [
     "## 任务",
     `判断《${input.bookTitle}》中的灰区称谓是否已经人格化为特定人物稳定称呼。`,
     "",
@@ -330,6 +340,11 @@ export function buildTitleArbitrationPrompt(input: TitleArbitrationInput): strin
     "## 输出格式（仅输出 JSON 数组，不加任何说明）",
     JSON.stringify(example, null, 2)
   ].join("\n");
+
+  return {
+    system: "你是文学实体解析仲裁助手。",
+    user
+  };
 }
 
 const VALIDATION_ISSUE_TYPES: readonly ValidationIssueType[] = [
@@ -400,11 +415,8 @@ function normalizeConfidence(value: unknown): number {
   return value;
 }
 
-export function buildChapterValidationPrompt(input: ChapterValidationPromptInput): string {
-  return [
-    "## 角色",
-    "你是一个文学文本实体解析的质量审核专家。你的任务是检查人物解析结果的准确性，发现并报告问题。",
-    "",
+export function buildChapterValidationPrompt(input: ChapterValidationPromptInput): PromptMessageInput {
+  const user = [
     "## 核心原则",
     "1. 保守判断：只报告你确信存在的问题，不确定时宁可不报",
     "2. 证据导向：每个问题必须附带原文证据或数据矛盾点",
@@ -472,13 +484,15 @@ export function buildChapterValidationPrompt(input: ChapterValidationPromptInput
     "- confidence < 0.6 的问题不要报告",
     "- 每个问题的 evidence 必须来自原文或上述数据，不可编造"
   ].join("\n");
+
+  return {
+    system: "你是一个文学文本实体解析的质量审核专家。你的任务是检查人物解析结果的准确性，发现并报告问题。",
+    user
+  };
 }
 
-export function buildBookValidationPrompt(input: BookValidationPromptInput): string {
-  return [
-    "## 角色",
-    "你是文学实体识别全书质检专家，需要做跨章节一致性检查。",
-    "",
+export function buildBookValidationPrompt(input: BookValidationPromptInput): PromptMessageInput {
+  const user = [
     "## 任务",
     `检查《${input.bookTitle}》全书人物解析结果的一致性与自洽性。`,
     "",
@@ -533,6 +547,11 @@ export function buildBookValidationPrompt(input: BookValidationPromptInput): str
     "- confidence < 0.6 的问题不要输出",
     "- 只输出有明确证据的问题"
   ].join("\n");
+
+  return {
+    system: "你是文学实体识别全书质检专家，需要做跨章节一致性检查。",
+    user
+  };
 }
 
 export function parseValidationResponse(raw: string): ValidationIssue[] {

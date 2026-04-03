@@ -52,6 +52,14 @@ enum AnalysisJobStatus {
   @@map("analysis_job_status")
 }
 
+enum ModelStrategyScope {
+  GLOBAL
+  BOOK
+  JOB
+
+  @@map("model_strategy_scope")
+}
+
 enum AliasType {
   TITLE // 封号/尊号，如太祖皇帝、吴王
   POSITION // 职位称呼，如丞相、知府
@@ -142,8 +150,7 @@ model AiModel {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  books        Book[] // 被该模型配置关联的书籍
-  analysisJobs AnalysisJob[] // 使用该模型执行的解析任务
+  phaseLogs AnalysisPhaseLog[] // 阶段调用日志
 
   @@index([provider, isEnabled], map: "ai_models_provider_enabled_idx")
   @@map("ai_models")
@@ -169,14 +176,11 @@ model Book {
   parseProgress Int     @default(0) @map("parse_progress") // 解析进度 0-100
   parseStage    String? @map("parse_stage") // 当前阶段文本，如"实体提取"
 
-  // 解析时选用的 AI 模型（FK）
-  aiModelId String?  @map("ai_model_id") @db.Uuid
-  aiModel   AiModel? @relation(fields: [aiModelId], references: [id])
-
-  chapters     Chapter[] // 章节列表
-  profiles     Profile[] // 本书角色档案
-  analysisJobs AnalysisJob[] // 解析任务记录
-  aliasMappings AliasMapping[] // 别名映射记录
+  chapters          Chapter[] // 章节列表
+  profiles          Profile[] // 本书角色档案
+  analysisJobs      AnalysisJob[] // 解析任务记录
+  aliasMappings     AliasMapping[] // 别名映射记录
+  modelStrategies   ModelStrategyConfig[] @relation("BookStrategies")
   validationReports ValidationReport[] // 自检报告
   mergeSuggestions MergeSuggestion[] // 人物合并建议队列
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
@@ -207,6 +211,7 @@ model Chapter {
   mentions    Mention[] // 本章提及记录
   biographies BiographyRecord[] // 本章履历事件
   relations   Relationship[] // 本章关系边
+  phaseLogs   AnalysisPhaseLog[] // 阶段调用日志
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
@@ -361,7 +366,6 @@ model Relationship {
 model AnalysisJob {
   id           String            @id @default(uuid()) @db.Uuid // 任务主键
   bookId       String            @map("book_id") @db.Uuid // 目标书籍 ID
-  aiModelId    String?           @map("ai_model_id") @db.Uuid // 本次任务模型 ID
   status         AnalysisJobStatus @default(QUEUED) // 任务状态
   scope          String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE | CHAPTER_LIST
   chapterStart   Int?              @map("chapter_start") // 章节起点（范围任务）
@@ -369,6 +373,7 @@ model AnalysisJob {
   chapterIndices Int[]             @default([]) @map("chapter_indices") // 指定章节编号列表（CHAPTER_LIST 任务）
   attempt      Int               @default(1) // 当前重试次数
   errorLog     String?           @map("error_log") @db.Text // 失败摘要
+  experimentTag String?          @map("experiment_tag")
   overrideStrategy String?       @map("override_strategy") // DRAFT_ONLY | ALL_DRAFTS
   keepHistory      Boolean       @default(false) @map("keep_history") // 是否保留历史草稿版本
   startedAt    DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
@@ -376,13 +381,60 @@ model AnalysisJob {
   createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  book    Book     @relation(fields: [bookId], references: [id]) // 关联书籍
-  aiModel AiModel? @relation(fields: [aiModelId], references: [id], onDelete: SetNull) // 关联模型（删除后置空）
+  book            Book                 @relation(fields: [bookId], references: [id]) // 关联书籍
+  modelStrategies ModelStrategyConfig[] @relation("JobStrategies")
+  phaseLogs       AnalysisPhaseLog[]
   validationReports ValidationReport[] // 该任务生成的自检报告
 
   @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
   @@index([status, createdAt], map: "analysis_jobs_status_created_at_idx") // 状态队列查询索引
   @@map("analysis_jobs")
+}
+
+/// @db.remark: 混合模型策略配置。支持 GLOBAL/BOOK/JOB 三层覆盖。
+model ModelStrategyConfig {
+  id        String             @id @default(uuid()) @db.Uuid
+  scope     ModelStrategyScope
+  bookId    String?            @map("book_id") @db.Uuid
+  jobId     String?            @map("job_id") @db.Uuid
+  stages    Json
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book        Book?        @relation("BookStrategies", fields: [bookId], references: [id], onDelete: Cascade)
+  analysisJob AnalysisJob? @relation("JobStrategies", fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([scope, bookId], map: "uq_strategy_book")
+  @@unique([scope, jobId], map: "uq_strategy_job")
+  @@index([scope], map: "model_strategy_scope_idx")
+  @@map("model_strategy_configs")
+}
+
+/// @db.remark: AI 阶段调用日志。记录每次调用模型、耗时、token 及 fallback 信息。
+model AnalysisPhaseLog {
+  id               String   @id @default(uuid()) @db.Uuid
+  jobId            String   @map("job_id") @db.Uuid
+  chapterId        String?  @map("chapter_id") @db.Uuid
+  stage            String
+  modelId          String?  @map("model_id") @db.Uuid
+  modelSource      String   @map("model_source")
+  isFallback       Boolean  @default(false) @map("is_fallback")
+  promptTokens     Int?     @map("prompt_tokens")
+  completionTokens Int?     @map("completion_tokens")
+  durationMs       Int?     @map("duration_ms")
+  status           String
+  errorMessage     String?  @map("error_message")
+  chunkIndex       Int?     @map("chunk_index")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  job     AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  model   AiModel?    @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  chapter Chapter?    @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+
+  @@index([jobId, stage], map: "analysis_phase_logs_job_stage_idx")
+  @@index([modelId], map: "analysis_phase_logs_model_idx")
+  @@index([createdAt], map: "analysis_phase_logs_created_at_idx")
+  @@map("analysis_phase_logs")
 }
 
 /// @db.remark: 别名映射表。记录章节上下文中的“称号/别名 -> 真实人物”映射。

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
@@ -37,6 +37,12 @@ import {
   testModel,
   type AdminModelItem
 } from "@/lib/services/models";
+import {
+  fetchGlobalStrategy,
+  saveGlobalStrategy,
+  type ModelStrategyInput
+} from "@/lib/services/model-strategy";
+import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
 
 /* ------------------------------------------------
    Types
@@ -191,6 +197,32 @@ export function ModelManager({
     () => Object.fromEntries(initialModels.map(m => [m.id, null]))
   );
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
+  const [globalStrategy, setGlobalStrategy] = useState<ModelStrategyInput | null>(null);
+  const [globalStrategyLoading, setGlobalStrategyLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadGlobalStrategy() {
+      setGlobalStrategyLoading(true);
+      try {
+        const data = await fetchGlobalStrategy();
+        if (cancelled) {
+          return;
+        }
+        setGlobalStrategy(data);
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "全局策略加载失败");
+        }
+      } finally {
+        if (!cancelled) {
+          setGlobalStrategyLoading(false);
+        }
+      }
+    }
+    void loadGlobalStrategy();
+    return () => { cancelled = true; };
+  }, []);
 
   const sortedModels = [...models].sort(
     (left, right) => Number(right.isDefault) - Number(left.isDefault)
@@ -294,6 +326,24 @@ export function ModelManager({
     const draft = drafts[m.id];
     return draft ? draft.isEnabled : m.isEnabled;
   });
+  const strategyEnabledModels: EnabledModelItem[] = models
+    .filter(model => model.isEnabled)
+    .map(model => ({
+      id      : model.id,
+      name    : model.name,
+      provider: model.provider,
+      modelId : model.modelId
+    }));
+
+  async function handleSaveGlobalStrategy(strategy: ModelStrategyInput) {
+    try {
+      await saveGlobalStrategy(strategy);
+      setGlobalStrategy(strategy);
+      toast.success("全局模型策略保存成功");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "全局模型策略保存失败");
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -456,6 +506,26 @@ export function ModelManager({
             </div>
           </CardContent>
         </Card>
+      </PageSection>
+
+      <PageSection
+        title="默认解析策略"
+        description="配置各解析阶段默认使用的 AI 模型"
+      >
+        {globalStrategyLoading ? (
+          <Card>
+            <CardContent className="py-8 text-sm text-muted-foreground text-center">
+              正在加载全局模型策略...
+            </CardContent>
+          </Card>
+        ) : (
+          <ModelStrategyForm
+            initialStrategy={globalStrategy}
+            availableModels={strategyEnabledModels}
+            onSave={handleSaveGlobalStrategy}
+            showResetToRecommended
+          />
+        )}
       </PageSection>
 
       {/* 主题设置 — 对齐 sheji 模型设置截图 */}

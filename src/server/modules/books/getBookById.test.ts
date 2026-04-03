@@ -22,19 +22,18 @@ describe("getBookById", () => {
       sourceFileName: "rulin.txt",
       sourceFileMime: "text/plain; charset=utf-8",
       sourceFileSize: 999,
-      aiModel       : {
-        name: "DeepSeek V3"
-      },
-      chapters    : [{ id: "chapter-1" }, { id: "chapter-2" }],
-      profiles    : [{ id: "profile-1" }],
-      analysisJobs: [
+      chapters      : [{ id: "chapter-1" }, { id: "chapter-2" }],
+      profiles      : [{ id: "profile-1" }],
+      analysisJobs  : [
         {
           updatedAt : new Date("2026-03-24T10:09:00.000Z"),
           finishedAt: new Date("2026-03-24T10:09:30.000Z"),
           errorLog  : null,
-          aiModel   : {
-            name: "DeepSeek V3"
-          }
+          phaseLogs : [{
+            model: {
+              name: "DeepSeek V3"
+            }
+          }]
         }
       ]
     });

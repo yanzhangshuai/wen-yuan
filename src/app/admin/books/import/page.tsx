@@ -10,7 +10,6 @@ import {
   XCircle
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +26,8 @@ import {
 } from "@/lib/services/books";
 import { BookDetailTabs } from "@/app/admin/books/[id]/_components/book-detail-tabs";
 import { fetchModels, type AdminModelItem } from "@/lib/services/models";
+import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
+import type { ModelStrategyInput } from "@/lib/services/model-strategy";
 import { cn } from "@/lib/utils";
 
 type ImportStep = 1 | 2 | 3 | 4;
@@ -81,7 +82,7 @@ export default function AdminImportPage() {
   const [chapterStart, setChapterStart] = useState("");
   const [chapterEnd, setChapterEnd] = useState("");
   const [selectedChapterIndices, setSelectedChapterIndices] = useState<Set<number>>(new Set());
-  const [selectedModel, setSelectedModel] = useState("");
+  const [jobStrategy, setJobStrategy] = useState<ModelStrategyInput | null>(null);
   const [models, setModels] = useState<AdminModelItem[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [modelsLoadError, setModelsLoadError] = useState<string | null>(null);
@@ -102,11 +103,6 @@ export default function AdminImportPage() {
         const enabledModels = allModels.filter(m => m.isEnabled);
         if (cancelled) return;
         setModels(enabledModels);
-        setSelectedModel(current => {
-          if (current && enabledModels.some(m => m.id === current)) return current;
-          const def = enabledModels.find(m => m.isDefault);
-          return def?.id ?? enabledModels[0]?.id ?? "";
-        });
         if (enabledModels.length === 0) setModelsLoadError("暂无可用模型，请先到模型设置页面启用模型。");
       } catch (err) {
         if (!cancelled) {
@@ -201,10 +197,13 @@ export default function AdminImportPage() {
   }
 
   async function handleStartAnalysis() {
-    if (!createdBook || !selectedModel) return;
+    if (!createdBook) return;
     setIsSubmitting(true);
     try {
       let body: StartAnalysisBody;
+      const requestModelStrategy = jobStrategy && Object.keys(jobStrategy).length > 0
+        ? { stages: jobStrategy }
+        : undefined;
       if (scope === "CHAPTER_RANGE") {
         const parsedStart = parsePositiveInteger(chapterStart);
         const parsedEnd = parsePositiveInteger(chapterEnd);
@@ -213,16 +212,28 @@ export default function AdminImportPage() {
           setIsSubmitting(false);
           return;
         }
-        body = { scope: "CHAPTER_RANGE", aiModelId: selectedModel, chapterStart: parsedStart, chapterEnd: parsedEnd };
+        body = {
+          scope        : "CHAPTER_RANGE",
+          chapterStart : parsedStart,
+          chapterEnd   : parsedEnd,
+          modelStrategy: requestModelStrategy
+        };
       } else if (scope === "CHAPTER_LIST") {
         if (selectedChapterIndices.size === 0) {
           toast.error("请至少勾选一个章节");
           setIsSubmitting(false);
           return;
         }
-        body = { scope: "CHAPTER_LIST", aiModelId: selectedModel, chapterIndices: [...selectedChapterIndices].sort((a, b) => a - b) };
+        body = {
+          scope         : "CHAPTER_LIST",
+          chapterIndices: [...selectedChapterIndices].sort((a, b) => a - b),
+          modelStrategy : requestModelStrategy
+        };
       } else {
-        body = { scope: "FULL_BOOK", aiModelId: selectedModel };
+        body = {
+          scope        : "FULL_BOOK",
+          modelStrategy: requestModelStrategy
+        };
       }
       await startAnalysis(createdBook.id, body);
       setStep(4);
@@ -235,6 +246,12 @@ export default function AdminImportPage() {
   }
 
   const stepLabels = ["上传信息", "确认章节", "解析配置", "实时进度"];
+  const enabledModels: EnabledModelItem[] = models.map((model) => ({
+    id      : model.id,
+    name    : model.name,
+    provider: model.provider,
+    modelId : model.modelId
+  }));
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -410,46 +427,40 @@ export default function AdminImportPage() {
         {/* Step 3: AI Model & Scope Config */}
         {step === 3 && (
           <div className="space-y-6">
+            {modelsLoading ? (
+              <Card>
+                <CardContent className="pt-6 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  正在加载模型列表...
+                </CardContent>
+              </Card>
+            ) : (
+              <ModelStrategyForm
+                initialStrategy={jobStrategy}
+                availableModels={enabledModels}
+                onSave={(strategy) => {
+                  setJobStrategy(strategy);
+                  toast.success("已保存本次任务的阶段模型策略");
+                  return Promise.resolve();
+                }}
+                showResetToRecommended
+              />
+            )}
+
+            {modelsLoadError && (
+              <Card>
+                <CardContent className="pt-6 text-sm text-muted-foreground">
+                  {modelsLoadError}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>解析配置</CardTitle>
-                <CardDescription>选择 AI 模型与解析范围，完成后启动解析任务</CardDescription>
+                <CardDescription>配置解析范围，确认后启动解析任务</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Model Selection */}
-                <div>
-                  <label className="text-sm font-medium mb-3 block">选择模型</label>
-                  {modelsLoading ? (
-                    <div className="rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-                      模型列表加载中...
-                    </div>
-                  ) : models.length === 0 ? (
-                    <div className="rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-                      {modelsLoadError ?? "当前暂无可用模型，将使用系统默认模型。"}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {models.map(model => (
-                        <div
-                          key={model.id}
-                          onClick={() => setSelectedModel(model.id)}
-                          className={cn(
-                            "cursor-pointer border-2 rounded-lg p-4 transition-all hover:bg-primary/5",
-                            selectedModel === model.id ? "border-primary bg-primary/10" : "border-border"
-                          )}
-                        >
-                          <div className="font-bold text-sm mb-1">{model.name}</div>
-                          <div className="text-xs text-muted-foreground mb-2">{model.provider}</div>
-                          <div className="flex items-center justify-between mt-2 gap-2">
-                            <Badge variant="outline" className="text-[10px] h-5">{model.modelId}</Badge>
-                            {model.isDefault ? <Badge className="text-[10px] h-5">默认</Badge> : null}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
                 {/* Scope Selection */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -523,7 +534,7 @@ export default function AdminImportPage() {
               <Button
                 size="lg"
                 onClick={() => { void handleStartAnalysis(); }}
-                disabled={isSubmitting || modelsLoading || !selectedModel}
+                disabled={isSubmitting}
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? "启动中..." : "启动解析任务"}

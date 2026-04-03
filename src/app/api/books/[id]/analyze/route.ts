@@ -7,11 +7,10 @@ import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-resp
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
+import { strategyStagesSchema } from "@/server/modules/analysis/dto/modelStrategy";
 import {
   ANALYSIS_SCOPE_VALUES,
   ANALYSIS_OVERRIDE_STRATEGY_VALUES,
-  AnalysisModelDisabledError,
-  AnalysisModelNotFoundError,
   AnalysisScopeInvalidError,
   BookNotFoundError,
   startBookAnalysis,
@@ -20,10 +19,27 @@ import {
 import { runAnalysisJobById } from "@/server/modules/analysis/jobs/runAnalysisJob";
 import { ERROR_CODES } from "@/types/api";
 
+const modelStrategyInputSchema = z.union([
+  z.object({
+    stages: strategyStagesSchema
+  }).strict(),
+  strategyStagesSchema.strict()
+]);
+
+function normalizeModelStrategyInput(
+  input: z.infer<typeof modelStrategyInputSchema> | null | undefined
+) {
+  if (!input) {
+    return undefined;
+  }
+
+  return "stages" in input ? input.stages : input;
+}
+
 /**
  * 功能：启动书籍解析任务请求体校验。
  * 输入字段：
- * - `aiModelId: string | null | undefined` 指定本次任务模型 ID（UUID）；为空时走默认模型。
+ * - `modelStrategy` 任务级阶段模型策略，可传 `{ stages: ... }` 或直接传阶段映射对象。
  * - `scope: "FULL_BOOK" | "CHAPTER_RANGE" | undefined` 解析范围。
  * - `chapterStart/chapterEnd: number | null | undefined` 当 `scope=CHAPTER_RANGE` 时生效。
  * - `overrideStrategy` 冲突覆盖策略（是否覆盖旧草稿/保留版本）。
@@ -33,8 +49,8 @@ import { ERROR_CODES } from "@/types/api";
  * 副作用：无。
  */
 const startAnalysisBodySchema = z.object({
-  // 可选模型 ID；为空表示使用系统默认模型。
-  aiModelId       : z.string().uuid("模型 ID 不合法").nullable().optional(),
+  // 可选任务级阶段模型策略；为空时走 BOOK/GLOBAL/SYSTEM_DEFAULT 解析链路。
+  modelStrategy   : modelStrategyInputSchema.nullable().optional(),
   // 任务执行范围；默认由服务层回落到 FULL_BOOK。
   scope           : z.enum(ANALYSIS_SCOPE_VALUES).optional(),
   // 范围任务起始章节号（仅 CHAPTER_RANGE 有效）。
@@ -105,7 +121,7 @@ function notFoundJson(
 }
 
 /**
- * 功能：创建一本书的解析任务（全书或章节范围）。
+ * 功能：创建一本书的解析任务（全书、章节范围或指定章节）。
  * 输入：管理员身份 + 路由参数 `bookId` + 解析配置请求体。
  * 输出：202 Accepted，返回任务 ID、任务状态与书籍解析状态快照。
  * 异常：参数错误 400；书籍不存在 404；其余失败 500。
@@ -138,7 +154,11 @@ export async function POST(
       );
     }
 
-    const data = await startBookAnalysis(parsedRoute.bookId, parsedBody.data);
+    const normalizedModelStrategy = normalizeModelStrategyInput(parsedBody.data.modelStrategy);
+    const data = await startBookAnalysis(parsedRoute.bookId, {
+      ...parsedBody.data,
+      modelStrategy: normalizedModelStrategy
+    });
 
     /**
      * 调度策略说明：
@@ -173,11 +193,7 @@ export async function POST(
       return notFoundJson(requestId, startedAt, error.bookId);
     }
 
-    if (
-      error instanceof AnalysisModelNotFoundError
-      || error instanceof AnalysisModelDisabledError
-      || error instanceof AnalysisScopeInvalidError
-    ) {
+    if (error instanceof AnalysisScopeInvalidError) {
       return badRequestJson(
         requestId,
         startedAt,

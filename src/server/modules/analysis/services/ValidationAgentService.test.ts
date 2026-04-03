@@ -2,14 +2,56 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
+import { createAiProviderClient } from "@/server/providers/ai";
 
 const hoisted = vi.hoisted(() => ({
-  mergePersonas: vi.fn()
+  mergePersonas         : vi.fn(),
+  createAiProviderClient: vi.fn()
 }));
 
 vi.mock("@/server/modules/personas/mergePersonas", () => ({
   createMergePersonasService: vi.fn(() => ({ mergePersonas: hoisted.mergePersonas }))
 }));
+
+vi.mock("@/server/providers/ai", () => ({
+  createAiProviderClient: hoisted.createAiProviderClient
+}));
+
+function createStageExecutorMock() {
+  const resolvedModel = {
+    modelId    : "deepseek-chat",
+    provider   : "deepseek",
+    modelName  : "deepseek-chat",
+    displayName: "DeepSeek Chat",
+    baseUrl    : "https://api.deepseek.com",
+    apiKey     : "sk-test",
+    source     : "JOB",
+    params     : {
+      temperature    : 0.2,
+      maxOutputTokens: 4096,
+      topP           : 1,
+      maxRetries     : 1,
+      retryBaseMs    : 300
+    }
+  } as const;
+
+  return {
+    execute: vi.fn(async (input: {
+      prompt: { system: string; user: string };
+      callFn: (args: { model: typeof resolvedModel; prompt: { system: string; user: string } }) => Promise<{ data: string; usage: null }>;
+    }) => {
+      const result = await input.callFn({
+        model : resolvedModel,
+        prompt: input.prompt
+      });
+      return {
+        ...result,
+        modelId   : resolvedModel.modelId,
+        isFallback: false
+      };
+    })
+  };
+}
 
 function createPrismaMock() {
   const bookFindUnique = vi.fn();
@@ -77,10 +119,12 @@ function createPrismaMock() {
 
 describe("ValidationAgentService", () => {
   const mockedCreateMergePersonasService = vi.mocked(createMergePersonasService);
+  const mockedCreateAiProviderClient = vi.mocked(createAiProviderClient);
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockedCreateMergePersonasService.mockReturnValue({ mergePersonas: hoisted.mergePersonas } as never);
+    mockedCreateAiProviderClient.mockReset();
   });
 
   it("validateChapterResult filters low-confidence issues and persists report", async () => {
@@ -91,38 +135,41 @@ describe("ValidationAgentService", () => {
       personaFindMany,
       validationReportCreate
     } = createPrismaMock();
-    const generateJson = vi.fn().mockResolvedValue(JSON.stringify({
-      issues: [
-        {
-          id                : "issue-1",
-          type              : "DUPLICATE_PERSONA",
-          severity          : "WARNING",
-          confidence        : 0.82,
-          description       : "疑似重复",
-          evidence          : "别名重叠",
-          affectedPersonaIds: ["persona-a", "ghost-persona"],
-          suggestion        : {
-            action         : "MERGE",
-            targetPersonaId: "persona-a",
-            sourcePersonaId: "ghost-persona",
-            reason         : "建议合并"
+    const generateJson = vi.fn().mockResolvedValue({
+      content: JSON.stringify({
+        issues: [
+          {
+            id                : "issue-1",
+            type              : "DUPLICATE_PERSONA",
+            severity          : "WARNING",
+            confidence        : 0.82,
+            description       : "疑似重复",
+            evidence          : "别名重叠",
+            affectedPersonaIds: ["persona-a", "ghost-persona"],
+            suggestion        : {
+              action         : "MERGE",
+              targetPersonaId: "persona-a",
+              sourcePersonaId: "ghost-persona",
+              reason         : "建议合并"
+            }
+          },
+          {
+            id                : "issue-low",
+            type              : "LOW_CONFIDENCE_ENTITY",
+            severity          : "INFO",
+            confidence        : 0.4,
+            description       : "低置信",
+            evidence          : "线索不足",
+            affectedPersonaIds: ["persona-a"],
+            suggestion        : {
+              action: "MANUAL_REVIEW",
+              reason: "人工复核"
+            }
           }
-        },
-        {
-          id                : "issue-low",
-          type              : "LOW_CONFIDENCE_ENTITY",
-          severity          : "INFO",
-          confidence        : 0.4,
-          description       : "低置信",
-          evidence          : "线索不足",
-          affectedPersonaIds: ["persona-a"],
-          suggestion        : {
-            action: "MANUAL_REVIEW",
-            reason: "人工复核"
-          }
-        }
-      ]
-    }));
+        ]
+      }),
+      usage: null
+    });
 
     bookFindUnique.mockResolvedValueOnce({
       id       : "book-1",
@@ -145,10 +192,9 @@ describe("ValidationAgentService", () => {
       .mockResolvedValueOnce([{ id: "persona-a" }]);
     validationReportCreate.mockResolvedValueOnce({ id: "report-1" });
 
-    const service = createValidationAgentService(
-      prisma,
-      async () => ({ generateJson })
-    );
+    const stageExecutor = createStageExecutorMock();
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    const service = createValidationAgentService(prisma, stageExecutor as never);
     const report = await service.validateChapterResult({
       bookId          : "book-1",
       chapterId       : "chapter-1",
@@ -195,25 +241,28 @@ describe("ValidationAgentService", () => {
       personaFindMany,
       validationReportCreate
     } = createPrismaMock();
-    const generateJson = vi.fn().mockResolvedValue(JSON.stringify({
-      issues: [
-        {
-          id                : "book-issue-1",
-          type              : "DUPLICATE_PERSONA",
-          severity          : "WARNING",
-          confidence        : 0.91,
-          description       : "全书层面疑似重复人物",
-          evidence          : "关系图与别名高度重叠",
-          affectedPersonaIds: ["persona-a", "persona-b"],
-          suggestion        : {
-            action         : "MERGE",
-            targetPersonaId: "persona-a",
-            sourcePersonaId: "persona-b",
-            reason         : "建议合并"
+    const generateJson = vi.fn().mockResolvedValue({
+      content: JSON.stringify({
+        issues: [
+          {
+            id                : "book-issue-1",
+            type              : "DUPLICATE_PERSONA",
+            severity          : "WARNING",
+            confidence        : 0.91,
+            description       : "全书层面疑似重复人物",
+            evidence          : "关系图与别名高度重叠",
+            affectedPersonaIds: ["persona-a", "persona-b"],
+            suggestion        : {
+              action         : "MERGE",
+              targetPersonaId: "persona-a",
+              sourcePersonaId: "persona-b",
+              reason         : "建议合并"
+            }
           }
-        }
-      ]
-    }));
+        ]
+      }),
+      usage: null
+    });
 
     bookFindUnique.mockResolvedValueOnce({
       title    : "儒林外史",
@@ -255,15 +304,14 @@ describe("ValidationAgentService", () => {
     personaFindMany.mockResolvedValueOnce([{ id: "persona-a" }, { id: "persona-b" }]);
     validationReportCreate.mockResolvedValueOnce({ id: "report-book-1" });
 
-    const service = createValidationAgentService(
-      prisma,
-      async () => ({ generateJson })
-    );
+    const stageExecutor = createStageExecutorMock();
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    const service = createValidationAgentService(prisma, stageExecutor as never);
     const report = await service.validateBookResult("book-1", "job-1");
 
     expect(generateJson).toHaveBeenCalledTimes(1);
-    expect(generateJson.mock.calls[0]?.[0]).toContain("## 全书人物列表");
-    expect(generateJson.mock.calls[0]?.[0]).toContain("## 抽样原文证据");
+    expect(generateJson.mock.calls[0]?.[0].user).toContain("## 全书人物列表");
+    expect(generateJson.mock.calls[0]?.[0].user).toContain("## 抽样原文证据");
     expect(report.id).toBe("report-book-1");
     expect(report.summary.autoFixable).toBe(1);
     expect(validationReportCreate).toHaveBeenCalledWith({

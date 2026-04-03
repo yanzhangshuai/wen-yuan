@@ -5,6 +5,7 @@
  * 封装书籍导入与解析流程相关的 HTTP 请求，对应后端路由 `/api/books/*`。
  */
 import { clientFetch, clientMutate } from "@/lib/client-api";
+import type { ModelStrategyInput } from "@/lib/services/model-strategy";
 
 /* ------------------------------------------------
    Types
@@ -52,12 +53,12 @@ export type AnalyzeScope = "FULL_BOOK" | "CHAPTER_RANGE" | "CHAPTER_LIST";
 
 /**
  * 启动解析任务请求体。
- * 全书解析需传 aiModelId + scope；章节范围解析需额外传起止章节号。
+ * 支持可选任务级模型策略（按阶段覆盖）；不传则使用 BOOK/GLOBAL/SYSTEM_DEFAULT。
  */
 export type StartAnalysisBody =
-  | { aiModelId: string; scope: "FULL_BOOK" }
-  | { aiModelId: string; scope: "CHAPTER_RANGE"; chapterStart: number; chapterEnd: number }
-  | { aiModelId: string; scope: "CHAPTER_LIST"; chapterIndices: number[] };
+  | { scope: "FULL_BOOK"; modelStrategy?: { stages: ModelStrategyInput } }
+  | { scope: "CHAPTER_RANGE"; chapterStart: number; chapterEnd: number; modelStrategy?: { stages: ModelStrategyInput } }
+  | { scope: "CHAPTER_LIST"; chapterIndices: number[]; modelStrategy?: { stages: ModelStrategyInput } };
 
 /**
  * 阅读面板章节内容。

@@ -1,6 +1,21 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-import type { AiProviderClient } from "@/server/providers/ai";
+import type { AiGenerateOptions, AiProviderClient } from "@/server/providers/ai";
+import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
+
+interface GeminiUsageMetadata {
+  promptTokenCount?    : number;
+  candidatesTokenCount?: number;
+  totalTokenCount?     : number;
+}
+
+function toAiUsage(usage: GeminiUsageMetadata | undefined): AiUsage {
+  return {
+    promptTokens    : typeof usage?.promptTokenCount === "number" ? usage.promptTokenCount : null,
+    completionTokens: typeof usage?.candidatesTokenCount === "number" ? usage.candidatesTokenCount : null,
+    totalTokens     : typeof usage?.totalTokenCount === "number" ? usage.totalTokenCount : null
+  };
+}
 
 /**
  * 功能：实现 Gemini Provider，按统一接口生成 JSON 文本。
@@ -31,24 +46,31 @@ export class GeminiClient implements AiProviderClient {
 
   /**
    * 功能：调用 Gemini 生成 JSON 文本。
-   * 输入：prompt - 业务层构建的 Prompt 文本。
-   * 输出：模型返回的 JSON 文本。
+   * 输入：system/user Prompt 与可选采样参数。
+   * 输出：模型返回的 JSON 文本与 usage。
    * 异常：接口调用失败或空响应时抛错。
    * 副作用：发起外部 API 请求。
    */
-  async generateJson(prompt: string): Promise<string> {
+  async generateJson(
+    input: PromptMessageInput,
+    options?: AiGenerateOptions
+  ): Promise<{ content: string; usage: AiUsage | null }> {
     // 按当前配置加载模型（默认 gemini-3.1-flash）。
-    const model = this.client.getGenerativeModel({ model: this.modelName });
+    const model = this.client.getGenerativeModel({
+      model            : this.modelName,
+      systemInstruction: input.system.trim().length > 0 ? input.system : undefined
+    });
 
     const result = await model.generateContent({
-      contents        : [{ role: "user", parts: [{ text: prompt }] }],
+      contents        : [{ role: "user", parts: [{ text: input.user }] }],
       generationConfig: {
         // 强制模型直接返回 JSON 文本，便于后端解析。
         responseMimeType: "application/json",
         // 温度偏低，优先稳定输出而非创造性发挥。
-        temperature     : 0.2,
+        temperature     : options?.temperature ?? 0.2,
+        topP            : options?.topP,
         // 展开输出 token 上限，防止内容被截断。
-        maxOutputTokens : 8192
+        maxOutputTokens : options?.maxOutputTokens ?? 8192
       }
     });
 
@@ -58,6 +80,9 @@ export class GeminiClient implements AiProviderClient {
       throw new Error("Gemini returned an empty response");
     }
 
-    return raw;
+    return {
+      content: raw,
+      usage  : toAiUsage((result.response as { usageMetadata?: GeminiUsageMetadata }).usageMetadata)
+    };
   }
 }

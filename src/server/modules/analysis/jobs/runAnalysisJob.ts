@@ -1,8 +1,13 @@
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import type { ChapterType, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { chapterAnalysisService, type ChapterAnalysisResult } from "@/server/modules/analysis/services/ChapterAnalysisService";
-import { validationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
+import {
+  createChapterAnalysisService,
+  type ChapterAnalysisResult
+} from "@/server/modules/analysis/services/ChapterAnalysisService";
+import { createValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
+import { createAiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
+import { createModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 
 /**
@@ -35,10 +40,17 @@ interface ChapterValidationBlockResult {
  * 副作用：无。
  */
 type ChapterAnalyzer =
-  Pick<typeof chapterAnalysisService, "analyzeChapter" | "resolvePersonaTitles" | "getTitleOnlyPersonaCount"> &
-  Partial<Pick<typeof chapterAnalysisService, "runGrayZoneArbitration">> &
-  Pick<typeof validationAgentService, "validateChapterResult"> &
-  Partial<Pick<typeof validationAgentService, "validateBookResult" | "applyAutoFixes">>;
+  Pick<ReturnType<typeof createChapterAnalysisService>, "analyzeChapter" | "resolvePersonaTitles" | "getTitleOnlyPersonaCount"> &
+  Partial<Pick<ReturnType<typeof createChapterAnalysisService>, "runGrayZoneArbitration">> &
+  Pick<ReturnType<typeof createValidationAgentService>, "validateChapterResult"> &
+  Partial<Pick<ReturnType<typeof createValidationAgentService>, "validateBookResult" | "applyAutoFixes">>;
+
+interface ChapterAnalyzerFactoryInput {
+  jobId : string;
+  bookId: string;
+}
+
+type ChapterAnalyzerFactory = (input: ChapterAnalyzerFactoryInput) => Promise<ChapterAnalyzer>;
 
 /**
  * 功能：定义任务执行器读取任务时的最小字段集合。
@@ -309,14 +321,35 @@ async function claimQueuedJob(prismaClient: PrismaClient, jobId: string): Promis
   return updated.count === 1;
 }
 
+function createDefaultChapterAnalyzerFactory(prismaClient: PrismaClient): ChapterAnalyzerFactory {
+  return async ({ jobId, bookId }) => {
+    const resolver = createModelStrategyResolver(prismaClient);
+    await resolver.preloadStrategy({ jobId, bookId });
+    const executor = createAiCallExecutor(prismaClient, resolver);
+
+    const chapterService = createChapterAnalysisService(prismaClient, undefined, undefined, executor, resolver);
+    const validationService = createValidationAgentService(prismaClient, executor, resolver);
+
+    return {
+      ...chapterService,
+      ...validationService
+    };
+  };
+}
+
 export function createAnalysisJobRunner(
   prismaClient: PrismaClient = prisma,
-  chapterAnalyzer: ChapterAnalyzer = {
-    ...chapterAnalysisService,
-    ...validationAgentService
-  }
+  chapterAnalyzer?: ChapterAnalyzer,
+  chapterAnalyzerFactory?: ChapterAnalyzerFactory
 ) {
-  async function runChapterValidationBlocking(jobId: string, chapter: ChapterTask, bookId: string): Promise<ChapterValidationBlockResult> {
+  const resolvedAnalyzerFactory = chapterAnalyzerFactory ?? createDefaultChapterAnalyzerFactory(prismaClient);
+
+  async function runChapterValidationBlocking(
+    analyzer: ChapterAnalyzer,
+    jobId: string,
+    chapter: ChapterTask,
+    bookId: string
+  ): Promise<ChapterValidationBlockResult> {
     const chapterRow = await prismaClient.chapter.findUnique({
       where : { id: chapter.id },
       select: { id: true, no: true, title: true, content: true, bookId: true }
@@ -373,7 +406,7 @@ export function createAnalysisJobRunner(
     let lastError: unknown;
     for (let attempt = 0; attempt <= ANALYSIS_PIPELINE_CONFIG.chapterValidationRetries; attempt += 1) {
       try {
-        const report = await chapterAnalyzer.validateChapterResult({
+        const report = await analyzer.validateChapterResult({
           bookId        : chapterRow.bookId,
           chapterId     : chapterRow.id,
           chapterNo     : chapterRow.no,
@@ -398,8 +431,8 @@ export function createAnalysisJobRunner(
         });
 
         let appliedAutoFix = 0;
-        if (report.summary.autoFixable > 0 && chapterAnalyzer.applyAutoFixes) {
-          appliedAutoFix = await chapterAnalyzer.applyAutoFixes(report.id);
+        if (report.summary.autoFixable > 0 && analyzer.applyAutoFixes) {
+          appliedAutoFix = await analyzer.applyAutoFixes(report.id);
         }
 
         // 自动修复后若仍有 ERROR，标记需人工复审但不中止全书。
@@ -472,14 +505,19 @@ export function createAnalysisJobRunner(
     if (!job || job.status !== AnalysisJobStatus.RUNNING) {
       return;
     }
+    const runningJob: AnalysisJobRow = job;
+    const activeAnalyzer = chapterAnalyzer ?? await resolvedAnalyzerFactory({
+      jobId : runningJob.id,
+      bookId: runningJob.bookId
+    });
 
     let chapters: ChapterTask[] = [];
     let completed = 0;
     let failedCount = 0;
     try {
-      chapters = await loadChaptersForJob(prismaClient, job);
+      chapters = await loadChaptersForJob(prismaClient, runningJob);
       if (chapters.length === 0) {
-        throw new Error(`解析任务 ${job.id} 未找到可执行章节`);
+        throw new Error(`解析任务 ${runningJob.id} 未找到可执行章节`);
       }
 
       // 重置所有目标章节为 PENDING，确保检测状态与实际执行一致。
@@ -490,7 +528,7 @@ export function createAnalysisJobRunner(
 
       // 初始化书籍解析状态，后续在章节循环中持续刷新进度与阶段文本。
       await prismaClient.book.update({
-        where: { id: job.bookId },
+        where: { id: runningJob.bookId },
         data : {
           status       : "PROCESSING",
           parseProgress: 0,
@@ -509,20 +547,20 @@ export function createAnalysisJobRunner(
           if (doneCount < nextResolveAt) {
             return;
           }
-          const titleOnlyCount = await chapterAnalyzer.getTitleOnlyPersonaCount(job.bookId);
+          const titleOnlyCount = await activeAnalyzer.getTitleOnlyPersonaCount(runningJob.bookId);
           if (titleOnlyCount <= 0) {
             nextResolveAt += INCREMENTAL_RESOLVE_INTERVAL;
             return;
           }
           try {
-            await chapterAnalyzer.resolvePersonaTitles(job.bookId);
+            await activeAnalyzer.resolvePersonaTitles(runningJob.bookId, { jobId: runningJob.id });
             nextResolveAt += INCREMENTAL_RESOLVE_INTERVAL;
           } catch (incrementalResolveError) {
             console.warn(
               "[analysis.runner] incremental.title.resolve.failed",
               JSON.stringify({
-                jobId : job.id,
-                bookId: job.bookId,
+                jobId : runningJob.id,
+                bookId: runningJob.bookId,
                 chapterNo,
                 error : String(incrementalResolveError).slice(0, 500)
               })
@@ -539,7 +577,7 @@ export function createAnalysisJobRunner(
           if (!chapter) {
             return;
           }
-          if (await isJobCanceled(prismaClient, job.id)) {
+          if (await isJobCanceled(prismaClient, runningJob.id)) {
             return;
           }
 
@@ -554,14 +592,14 @@ export function createAnalysisJobRunner(
 
           while (chapterAttempt <= CHAPTER_MAX_RETRIES) {
             try {
-              const result: ChapterAnalysisResult = await chapterAnalyzer.analyzeChapter(chapter.id);
-              const validationResult = await runChapterValidationBlocking(job.id, chapter, job.bookId);
+              const result: ChapterAnalysisResult = await activeAnalyzer.analyzeChapter(chapter.id, { jobId: runningJob.id });
+              const validationResult = await runChapterValidationBlocking(activeAnalyzer, runningJob.id, chapter, runningJob.bookId);
               if (validationResult.needsReview) {
                 chapterNeedsReview = true;
                 console.warn(
                   "[analysis.runner] chapter.validation.needs_review",
                   JSON.stringify({
-                    jobId     : job.id,
+                    jobId     : runningJob.id,
                     chapterId : chapter.id,
                     chapterNo : chapter.no,
                     reportId  : validationResult.reportId,
@@ -575,7 +613,7 @@ export function createAnalysisJobRunner(
               console.info(
                 "[analysis.runner] chapter.completed",
                 JSON.stringify({
-                  jobId    : job.id,
+                  jobId    : runningJob.id,
                   chapterId: chapter.id,
                   chapterNo: chapter.no,
                   attempt  : chapterAttempt,
@@ -591,7 +629,7 @@ export function createAnalysisJobRunner(
                 console.error(
                   "[analysis.runner] chapter.failed",
                   JSON.stringify({
-                    jobId    : job.id,
+                    jobId    : runningJob.id,
                     chapterId: chapter.id,
                     chapterNo: chapter.no,
                     attempt  : chapterAttempt,
@@ -606,7 +644,7 @@ export function createAnalysisJobRunner(
               console.warn(
                 "[analysis.runner] chapter.retry",
                 JSON.stringify({
-                  jobId    : job.id,
+                  jobId    : runningJob.id,
                   chapterId: chapter.id,
                   chapterNo: chapter.no,
                   attempt  : chapterAttempt + 1,
@@ -626,7 +664,7 @@ export function createAnalysisJobRunner(
                 data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "PENDING" : "SUCCEEDED") : "FAILED" }
               }),
             prismaClient.book.update({
-              where: { id: job.bookId },
+              where: { id: runningJob.bookId },
               data : {
                 parseProgress: Math.floor((doneCount / chapters.length) * 100),
                 parseStage   : buildCompletedStage(doneCount, chapters.length)
@@ -653,7 +691,7 @@ export function createAnalysisJobRunner(
 
       await prismaClient.$transaction([
         prismaClient.analysisJob.update({
-          where: { id: job.id },
+          where: { id: runningJob.id },
           data : {
             status    : AnalysisJobStatus.SUCCEEDED,
             finishedAt: new Date(),
@@ -661,7 +699,7 @@ export function createAnalysisJobRunner(
           }
         }),
         prismaClient.book.update({
-          where: { id: job.bookId },
+          where: { id: runningJob.bookId },
           data : {
             status       : "COMPLETED",
             parseProgress: 100,
@@ -673,47 +711,47 @@ export function createAnalysisJobRunner(
 
       // 整书解析完成后执行孤儿检测：mention 数 < 2 的 Persona 置信度降至 0.4，供审核优先关注。
       // 仅在 FULL_BOOK 任务完成后触发，部分章节任务不做全局孤儿判断。
-      if (job.scope === "FULL_BOOK") {
-        const orphanCount = await markOrphanPersonas(prismaClient, job.bookId);
+      if (runningJob.scope === "FULL_BOOK") {
+        const orphanCount = await markOrphanPersonas(prismaClient, runningJob.bookId);
         if (orphanCount > 0) {
           console.info(
             "[analysis.runner] orphan.personas.marked",
-            JSON.stringify({ jobId: job.id, bookId: job.bookId, orphanCount })
+            JSON.stringify({ jobId: runningJob.id, bookId: runningJob.bookId, orphanCount })
           );
         }
 
         // Phase 5: 称号真名溯源——批量 AI 推断 TITLE_ONLY Persona 的历史真名并回写。
-        const titleOnlyCount = await chapterAnalyzer.getTitleOnlyPersonaCount(job.bookId);
+        const titleOnlyCount = await activeAnalyzer.getTitleOnlyPersonaCount(runningJob.bookId);
         if (titleOnlyCount > 0) {
-          const resolvedTitleCount = await chapterAnalyzer.resolvePersonaTitles(job.bookId);
+          const resolvedTitleCount = await activeAnalyzer.resolvePersonaTitles(runningJob.bookId, { jobId: runningJob.id });
           if (resolvedTitleCount > 0) {
             console.info(
               "[analysis.runner] title.personas.resolved",
-              JSON.stringify({ jobId: job.id, bookId: job.bookId, resolvedTitleCount })
+              JSON.stringify({ jobId: runningJob.id, bookId: runningJob.bookId, resolvedTitleCount })
             );
           }
         }
 
-        if (chapterAnalyzer.runGrayZoneArbitration) {
-          const arbitrationWrittenCount = await chapterAnalyzer.runGrayZoneArbitration(job.bookId);
+        if (activeAnalyzer.runGrayZoneArbitration) {
+          const arbitrationWrittenCount = await activeAnalyzer.runGrayZoneArbitration(runningJob.bookId, { jobId: runningJob.id });
           if (arbitrationWrittenCount > 0) {
             console.info(
               "[analysis.runner] title.gray_zone.arbitrated",
-              JSON.stringify({ jobId: job.id, bookId: job.bookId, arbitrationWrittenCount })
+              JSON.stringify({ jobId: runningJob.id, bookId: runningJob.bookId, arbitrationWrittenCount })
             );
           }
         }
 
         // Phase 6: 全书自检（不阻塞主流程，失败仅记日志）。
-        if (chapterAnalyzer.validateBookResult) {
+        if (activeAnalyzer.validateBookResult) {
           try {
-            const report = await chapterAnalyzer.validateBookResult(job.bookId, job.id);
-            if (report.summary.autoFixable > 0 && chapterAnalyzer.applyAutoFixes) {
-              const appliedCount = await chapterAnalyzer.applyAutoFixes(report.id);
+            const report = await activeAnalyzer.validateBookResult(runningJob.bookId, runningJob.id);
+            if (report.summary.autoFixable > 0 && activeAnalyzer.applyAutoFixes) {
+              const appliedCount = await activeAnalyzer.applyAutoFixes(report.id);
               if (appliedCount > 0) {
                 console.info(
                   "[analysis.runner] validation.autofix.applied",
-                  JSON.stringify({ jobId: job.id, bookId: job.bookId, reportId: report.id, appliedCount })
+                  JSON.stringify({ jobId: runningJob.id, bookId: runningJob.bookId, reportId: report.id, appliedCount })
                 );
               }
             }
@@ -721,8 +759,8 @@ export function createAnalysisJobRunner(
             console.warn(
               "[analysis.runner] book.validation.failed",
               JSON.stringify({
-                jobId : job.id,
-                bookId: job.bookId,
+                jobId : runningJob.id,
+                bookId: runningJob.bookId,
                 error : String(validationError).slice(0, 500)
               })
             );
@@ -738,7 +776,7 @@ export function createAnalysisJobRunner(
       // 失败时同步回写任务与书籍状态，便于前台/后台展示一致的错误上下文。
       await prismaClient.$transaction([
         prismaClient.analysisJob.update({
-          where: { id: job.id },
+          where: { id: runningJob.id },
           data : {
             status    : AnalysisJobStatus.FAILED,
             finishedAt: new Date(),
@@ -746,7 +784,7 @@ export function createAnalysisJobRunner(
           }
         }),
         prismaClient.book.update({
-          where: { id: job.bookId },
+          where: { id: runningJob.bookId },
           data : {
             status       : "ERROR",
             parseProgress: failedProgress,

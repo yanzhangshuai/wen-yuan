@@ -68,6 +68,16 @@ export type Relationship = Prisma.RelationshipModel
  */
 export type AnalysisJob = Prisma.AnalysisJobModel
 /**
+ * Model ModelStrategyConfig
+ * @db.remark: 混合模型策略配置。支持 GLOBAL/BOOK/JOB 三层覆盖。
+ */
+export type ModelStrategyConfig = Prisma.ModelStrategyConfigModel
+/**
+ * Model AnalysisPhaseLog
+ * @db.remark: AI 阶段调用日志。记录每次调用模型、耗时、token 及 fallback 信息。
+ */
+export type AnalysisPhaseLog = Prisma.AnalysisPhaseLogModel
+/**
  * Model AliasMapping
  * @db.remark: 别名映射表。记录章节上下文中的“称号/别名 -> 真实人物”映射。
  */

@@ -32,10 +32,11 @@ describe("buildChapterAnalysisPrompt", () => {
       ]
     });
 
-    expect(prompt).toContain("## Known Entities (Context)");
-    expect(prompt).toContain("[1] 范进 | 别名: 范老爷, 范相公 | 小传: 晚年中举");
-    expect(prompt).toContain("第 1/3 段");
-    expect(prompt).toContain("范进见中举，众人态度大变。");
+    expect(prompt.system).toContain("结构化提取专家");
+    expect(prompt.user).toContain("## Known Entities (Context)");
+    expect(prompt.user).toContain("[1] 范进 | 别名: 范老爷, 范相公 | 小传: 晚年中举");
+    expect(prompt.user).toContain("第 1/3 段");
+    expect(prompt.user).toContain("范进见中举，众人态度大变。");
   });
 
   it("uses fallback context text when there are no known profiles", () => {
@@ -44,7 +45,29 @@ describe("buildChapterAnalysisPrompt", () => {
       profiles: []
     });
 
-    expect(prompt).toContain("（本书目前尚无已建档人物）");
+    expect(prompt.user).toContain("（本书目前尚无已建档人物）");
+  });
+
+  it("includes at least 30 generic title examples in default prompt", () => {
+    // Arrange
+    const prompt = buildChapterAnalysisPrompt({
+      ...baseInput,
+      profiles: []
+    });
+
+    // Act
+    // 从规则行提取示例串，验证“>=30”的文档约束是否真正写入 prompt 文本。
+    const match = prompt.user.match(/GENERIC TITLES:\s*(.+?)无法唯一指向具体人物/);
+    const titles = (match?.[1] ?? "")
+      .replace(/等$/, "")
+      .split("、")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    // Assert
+    expect(match).not.toBeNull();
+    // 保持下限断言而非固定值，允许词库未来扩充时无需同步改测试。
+    expect(titles.length).toBeGreaterThanOrEqual(30);
   });
 });
 
@@ -62,10 +85,11 @@ describe("buildRosterDiscoveryPrompt", () => {
       ]
     });
 
-    expect(prompt).toContain("\"aliasType\"");
-    expect(prompt).toContain("\"contextHint\"");
-    expect(prompt).toContain("\"suggestedRealName\"");
-    expect(prompt).toContain("\"aliasConfidence\"");
+    expect(prompt.system).toContain("命名实体专家");
+    expect(prompt.user).toContain("\"aliasType\"");
+    expect(prompt.user).toContain("\"contextHint\"");
+    expect(prompt.user).toContain("\"suggestedRealName\"");
+    expect(prompt.user).toContain("\"aliasConfidence\"");
     expect(prompt).toMatchSnapshot();
   });
 });
@@ -85,9 +109,10 @@ describe("buildTitleArbitrationPrompt", () => {
       ]
     });
 
-    expect(prompt).toContain("灰区称谓");
-    expect(prompt).toContain("\"surfaceForm\"");
-    expect(prompt).toContain("老爷");
+    expect(prompt.system).toContain("仲裁助手");
+    expect(prompt.user).toContain("灰区称谓");
+    expect(prompt.user).toContain("\"surfaceForm\"");
+    expect(prompt.user).toContain("老爷");
     expect(prompt).toMatchSnapshot();
   });
 });
@@ -131,8 +156,9 @@ describe("buildChapterValidationPrompt", () => {
       ]
     });
 
-    expect(prompt).toContain("## 检查维度");
-    expect(prompt).toContain("ALIAS_AS_NEW_PERSONA");
+    expect(prompt.system).toContain("质量审核专家");
+    expect(prompt.user).toContain("## 检查维度");
+    expect(prompt.user).toContain("ALIAS_AS_NEW_PERSONA");
     expect(prompt).toMatchSnapshot();
   });
 });
@@ -176,9 +202,10 @@ describe("buildBookValidationPrompt", () => {
       ]
     });
 
-    expect(prompt).toContain("## 检查重点");
-    expect(prompt).toContain("DUPLICATE_PERSONA");
-    expect(prompt).toContain("## 抽样原文证据");
+    expect(prompt.system).toContain("全书质检专家");
+    expect(prompt.user).toContain("## 检查重点");
+    expect(prompt.user).toContain("DUPLICATE_PERSONA");
+    expect(prompt.user).toContain("## 抽样原文证据");
     expect(prompt).toMatchSnapshot();
   });
 });

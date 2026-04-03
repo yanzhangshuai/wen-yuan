@@ -14,18 +14,6 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
     }
   }
 
-  class AnalysisModelNotFoundError extends Error {
-    constructor(modelId: string) {
-      super(`AI model not found: ${modelId}`);
-    }
-  }
-
-  class AnalysisModelDisabledError extends Error {
-    constructor(modelId: string) {
-      super(`AI model is disabled: ${modelId}`);
-    }
-  }
-
   class AnalysisScopeInvalidError extends Error {}
 
   return {
@@ -33,8 +21,6 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
     ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
     startBookAnalysis                : startBookAnalysisMock,
     BookNotFoundError,
-    AnalysisModelNotFoundError,
-    AnalysisModelDisabledError,
     AnalysisScopeInvalidError
   };
 });
@@ -64,7 +50,6 @@ describe("POST /api/books/:id/analyze", () => {
       chapterEnd      : null,
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false,
-      aiModelId       : "model-1",
       bookStatus      : "PROCESSING",
       parseProgress   : 0,
       parseStage      : "文本清洗"
@@ -79,7 +64,7 @@ describe("POST /api/books/:id/analyze", () => {
           "Content-Type": "application/json",
           "x-auth-role" : AppRole.ADMIN
         },
-        body: JSON.stringify({ aiModelId: "cc06e3e5-8728-4de8-b76c-3ff40eb57ef8" })
+        body: JSON.stringify({})
       }),
       { params: Promise.resolve({ id: bookId }) }
     );
@@ -89,14 +74,7 @@ describe("POST /api/books/:id/analyze", () => {
     const payload = await response.json();
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("BOOK_ANALYSIS_STARTED");
-    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {
-      aiModelId       : "cc06e3e5-8728-4de8-b76c-3ff40eb57ef8",
-      chapterEnd      : undefined,
-      chapterStart    : undefined,
-      scope           : undefined,
-      overrideStrategy: undefined,
-      keepHistory     : undefined
-    });
+    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {});
     expect(runAnalysisJobByIdMock).toHaveBeenCalledWith("job-1");
   });
 
@@ -133,7 +111,15 @@ describe("POST /api/books/:id/analyze", () => {
           "Content-Type": "application/json",
           "x-auth-role" : AppRole.ADMIN
         },
-        body: JSON.stringify({ aiModelId: "not-uuid" })
+        body: JSON.stringify({
+          modelStrategy: {
+            stages: {
+              ROSTER_DISCOVERY: {
+                modelId: "not-uuid"
+              }
+            }
+          }
+        })
       }),
       { params: Promise.resolve({ id: bookId }) }
     );

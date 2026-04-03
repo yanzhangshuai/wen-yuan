@@ -25,7 +25,11 @@ describe("listBookAnalysisJobs", () => {
         startedAt     : STARTED_AT,
         finishedAt    : FINISHED_AT,
         createdAt     : NOW,
-        aiModel       : { name: "gpt-4o" }
+        phaseLogs     : [
+          {
+            model: { name: "gpt-4o" }
+          }
+        ]
       },
       {
         id            : "job-2",
@@ -39,7 +43,7 @@ describe("listBookAnalysisJobs", () => {
         startedAt     : STARTED_AT,
         finishedAt    : null,
         createdAt     : NOW,
-        aiModel       : null
+        phaseLogs     : []
       }
     ]);
 

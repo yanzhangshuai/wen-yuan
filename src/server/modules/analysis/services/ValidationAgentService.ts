@@ -1,27 +1,24 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { aiCallExecutor, type AiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
+import {
+  modelStrategyResolver,
+  type ModelStrategyResolver,
+  type ResolvedFallbackModel,
+  type ResolvedStageModel
+} from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
 import { buildBookValidationPrompt, buildChapterValidationPrompt, parseValidationResponse } from "@/server/modules/analysis/services/prompts";
-import { createAiProviderClient, type AiProviderName, type AiProviderClient } from "@/server/providers/ai";
-import { decryptValue } from "@/server/security/encryption";
+import { createAiProviderClient, type AiProviderClient } from "@/server/providers/ai";
 import type { AnalysisProfileContext } from "@/types/analysis";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
+import { PipelineStage } from "@/types/pipeline";
 import type {
   ValidationIssue,
   ValidationReportData,
   ValidationSeverity,
   ValidationSummary
 } from "@/types/validation";
-
-interface ValidationAiModelConfig {
-  id       : string;
-  provider : string;
-  name     : string;
-  modelId  : string;
-  baseUrl  : string;
-  apiKey   : string | null;
-  isEnabled: boolean;
-}
 
 export interface ChapterValidationInput {
   bookId          : string;
@@ -62,7 +59,6 @@ export interface ValidationAgentService {
   applyAutoFixes(reportId: string): Promise<number>;
 }
 
-const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao"];
 const AUTO_FIX_ACTIONS = new Set(["MERGE", "ADD_ALIAS", "UPDATE_NAME"]);
 
 /** 验证结果最低置信度阈值：低于此值的 issue 将被过滤 */
@@ -74,27 +70,6 @@ const AUTO_FIX_CONFIDENCE: Record<string, number> = {
   ADD_ALIAS  : 0.8,
   UPDATE_NAME: 0.85
 };
-
-function normalizeProvider(provider: string): AiProviderName {
-  const normalizedProvider = provider.trim().toLowerCase();
-  if ((SUPPORTED_AI_PROVIDERS as readonly string[]).includes(normalizedProvider)) {
-    return normalizedProvider as AiProviderName;
-  }
-
-  throw new Error(`不支持的模型 provider: ${provider}`);
-}
-
-function readEncryptedApiKey(apiKey: string | null, modelName: string): string {
-  if (!apiKey) {
-    throw new Error(`模型「${modelName}」未配置 API Key`);
-  }
-
-  if (!apiKey.startsWith("enc:v1:")) {
-    throw new Error(`模型「${modelName}」API Key 存储格式非法，请在模型设置页重新保存`);
-  }
-
-  return decryptValue(apiKey);
-}
 
 function normalizeName(value: string): string {
   return value.trim();
@@ -198,72 +173,70 @@ function buildSummary(issues: ValidationIssue[]): ValidationSummary {
 
 export function createValidationAgentService(
   prismaClient: PrismaClient = prisma,
-  aiClientFactory?: (bookAiModelId: string | null) => Promise<AiProviderClient>
+  stageAiCallExecutor: AiCallExecutor = aiCallExecutor,
+  strategyResolver: ModelStrategyResolver = modelStrategyResolver
 ): ValidationAgentService {
   const { mergePersonas } = createMergePersonasService(prismaClient);
+  const runtimeAiClientCache = new Map<string, AiProviderClient>();
 
-  async function resolveValidationModelConfig(bookAiModelId: string | null): Promise<ValidationAiModelConfig> {
-    if (bookAiModelId) {
-      const assignedModel = await prismaClient.aiModel.findUnique({
-        where : { id: bookAiModelId },
-        select: {
-          id       : true,
-          provider : true,
-          name     : true,
-          modelId  : true,
-          baseUrl  : true,
-          apiKey   : true,
-          isEnabled: true
-        }
-      });
-
-      if (!assignedModel) {
-        throw new Error(`书籍绑定模型不存在: ${bookAiModelId}`);
-      }
-
-      if (!assignedModel.isEnabled) {
-        throw new Error(`书籍绑定模型未启用: ${assignedModel.name}`);
-      }
-
-      return assignedModel;
-    }
-
-    const defaultModel = await prismaClient.aiModel.findFirst({
-      where  : { isDefault: true, isEnabled: true },
-      orderBy: { updatedAt: "desc" },
-      select : {
-        id       : true,
-        provider : true,
-        name     : true,
-        modelId  : true,
-        baseUrl  : true,
-        apiKey   : true,
-        isEnabled: true
-      }
-    });
-
-    if (!defaultModel) {
-      throw new Error("未找到可用默认模型，请在 /admin/model 配置并启用至少一个模型");
-    }
-
-    return defaultModel;
+  function toGenerateOptions(model: ResolvedStageModel | ResolvedFallbackModel) {
+    return {
+      temperature    : model.params.temperature,
+      maxOutputTokens: model.params.maxOutputTokens,
+      topP           : model.params.topP
+    };
   }
 
-  async function createRuntimeAiClient(bookAiModelId: string | null): Promise<AiProviderClient> {
-    if (aiClientFactory) {
-      return await aiClientFactory(bookAiModelId);
+  function getRuntimeAiClient(model: ResolvedStageModel | ResolvedFallbackModel): AiProviderClient {
+    const cached = runtimeAiClientCache.get(model.modelId);
+    if (cached) {
+      return cached;
     }
 
-    const modelConfig = await resolveValidationModelConfig(bookAiModelId);
-    const provider = normalizeProvider(modelConfig.provider);
-    const apiKey = readEncryptedApiKey(modelConfig.apiKey, modelConfig.name);
-
-    return createAiProviderClient({
-      provider,
-      apiKey,
-      baseUrl  : modelConfig.baseUrl,
-      modelName: modelConfig.modelId
+    const client = createAiProviderClient({
+      provider : model.provider,
+      apiKey   : model.apiKey,
+      baseUrl  : model.baseUrl,
+      modelName: model.modelName
     });
+    runtimeAiClientCache.set(model.modelId, client);
+    return client;
+  }
+
+  async function executeValidationStage(input: {
+    stage     : PipelineStage.CHAPTER_VALIDATION | PipelineStage.BOOK_VALIDATION;
+    prompt    : { system: string; user: string };
+    bookId    : string;
+    jobId?    : string;
+    chapterId?: string;
+  }): Promise<string> {
+    if (!input.jobId) {
+      const model = await strategyResolver.resolveForStage(input.stage, { bookId: input.bookId });
+      const client = getRuntimeAiClient(model);
+      const result = await client.generateJson(input.prompt, toGenerateOptions(model));
+      return result.content;
+    }
+
+    const result = await stageAiCallExecutor.execute({
+      stage    : input.stage,
+      prompt   : input.prompt,
+      jobId    : input.jobId,
+      chapterId: input.chapterId,
+      context  : {
+        jobId : input.jobId,
+        bookId: input.bookId
+      },
+      callFn: async ({ model, prompt }) => {
+        const runtimeClient = getRuntimeAiClient(model);
+        const generated = await runtimeClient.generateJson(prompt, toGenerateOptions(model));
+        return {
+          data : generated.content,
+          usage: generated.usage
+        };
+      }
+    });
+
+    return result.data;
   }
 
   async function ensureValidPersonaIds(personaIds: string[]): Promise<Set<string>> {
@@ -311,7 +284,7 @@ export function createValidationAgentService(
     const [book, chapter] = await Promise.all([
       prismaClient.book.findUnique({
         where : { id: input.bookId },
-        select: { id: true, title: true, aiModelId: true }
+        select: { id: true, title: true }
       }),
       prismaClient.chapter.findUnique({
         where : { id: input.chapterId },
@@ -392,10 +365,15 @@ export function createValidationAgentService(
       }))
     });
 
-    const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
-    const raw = await runtimeAiClient.generateJson(prompt);
+    const content = await executeValidationStage({
+      stage    : PipelineStage.CHAPTER_VALIDATION,
+      prompt,
+      bookId   : input.bookId,
+      jobId    : input.jobId,
+      chapterId: input.chapterId
+    });
 
-    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= VALIDATION_MIN_CONFIDENCE);
+    const parsedIssues = parseValidationResponse(content).filter((issue) => issue.confidence >= VALIDATION_MIN_CONFIDENCE);
     const validPersonaIds = await ensureValidPersonaIds(
       unique(parsedIssues.flatMap((issue) => [
         ...issue.affectedPersonaIds,
@@ -419,7 +397,7 @@ export function createValidationAgentService(
   async function validateBookResult(bookId: string, jobId: string): Promise<ValidationReportData> {
     const book = await prismaClient.book.findUnique({
       where : { id: bookId },
-      select: { title: true, aiModelId: true }
+      select: { title: true }
     });
     if (!book) {
       throw new Error(`书籍不存在: ${bookId}`);
@@ -524,10 +502,14 @@ export function createValidationAgentService(
       sourceExcerpts
     });
 
-    const runtimeAiClient = await createRuntimeAiClient(book.aiModelId);
-    const raw = await runtimeAiClient.generateJson(prompt);
+    const content = await executeValidationStage({
+      stage: PipelineStage.BOOK_VALIDATION,
+      prompt,
+      bookId,
+      jobId
+    });
 
-    const parsedIssues = parseValidationResponse(raw).filter((issue) => issue.confidence >= VALIDATION_MIN_CONFIDENCE);
+    const parsedIssues = parseValidationResponse(content).filter((issue) => issue.confidence >= VALIDATION_MIN_CONFIDENCE);
     const validPersonaIds = await ensureValidPersonaIds(
       unique(parsedIssues.flatMap((issue) => [
         ...issue.affectedPersonaIds,
