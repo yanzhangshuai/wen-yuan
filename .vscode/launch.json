@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: Launch Dev Debug",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm dev:debug"
+    },
+    {
+      "name": "Next.js: Attach (9229)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ]
+}

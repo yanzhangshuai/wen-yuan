@@ -1,0 +1,74 @@
+{
+  "id": "model-benchmark-execution",
+  "name": "model-benchmark-execution",
+  "title": "execute: 多模型策略基准执行与验收",
+  "description": "基于20章金标集执行阶段级A/B实验，输出四指标与门禁判定，收敛最终stage model map。",
+  "status": "in_progress",
+  "dev_type": "backend",
+  "scope": "analysis",
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-04",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 1,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    "A1 创建任务工作区与验收文件",
+    "A2 固化阶段能力档位+候选池配置",
+    "B1 建立金标schema与数据校验脚本",
+    "B2 实现阶段A/B执行器（只换模型不换Prompt）",
+    "B3 实现指标汇总与门禁判定脚本",
+    "C1 执行Phase1 A/B并产出报告",
+    "C2 执行Phase2 A/B并产出报告",
+    "C3 执行Phase5/全书验证A/B并产出报告",
+    "D1 产出最终stage model map",
+    "D2 完成回归测试与三路径验收证据"
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "/home/mwjz/code/wen-yuan/docs/多模型策略/多模型策略执行与验收实施文档.md",
+    "/home/mwjz/code/wen-yuan/docs/多模型策略/多模型策略.md",
+    "/home/mwjz/code/wen-yuan/src/server/modules/analysis/services/ModelStrategyResolver.ts",
+    "/home/mwjz/code/wen-yuan/src/server/modules/analysis/services/AiCallExecutor.ts",
+    "/home/mwjz/code/wen-yuan/src/server/modules/analysis/services/modelStrategyAdminService.ts"
+  ],
+  "notes": "验收必须输出 metrics.summary.json 与 gate.result.json，且三路径证据完整。",
+  "meta": {
+    "acceptance_gate": {
+      "json_success_rate_min": 0.98,
+      "f1_delta_target": 0.015,
+      "cost_per_10k_chars_delta_target": -0.2,
+      "throughput_time_delta_target": -0.15
+    },
+    "must_follow_specs": [
+      "/home/mwjz/code/wen-yuan/.trellis/spec/backend/quality-guidelines.md",
+      "/home/mwjz/code/wen-yuan/.trellis/spec/backend/ai-output-contract.md",
+      "/home/mwjz/code/wen-yuan/.trellis/spec/guides/verification-checklist.md",
+      "/home/mwjz/code/wen-yuan/.trellis/spec/guides/verification-evidence-standard.md"
+    ]
+  }
+}
