@@ -141,3 +141,49 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: debugger入口命名与VSCode调试落地
+
+**Date**: 2026-04-04
+**Task**: debugger入口命名与VSCode调试落地
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Goal | 分析并落地可用的 debugger 命名与 VSCode 调试入口 |
+| Naming Decision | 采用 `dev:debug`（与现有 `namespace:verb` 风格一致） |
+| Delivery | 新增 `.vscode/launch.json`（Launch + Attach），新增 `docs/debugging.md` 使用说明 |
+| Script | `package.json` 新增 `dev:debug`，以 `NODE_OPTIONS=--inspect` 启动 `next dev` |
+| Validation | `pnpm lint`、`pnpm type-check`、`pnpm test` 全通过；`pnpm dev:debug` 启动成功并确认可附加端口 |
+| Task Mgmt | 任务 `04-04-debugger-script-vscode-debug` 已归档 |
+
+**Key Files**:
+- `package.json`
+- `.vscode/launch.json`
+- `docs/debugging.md`
+- `.trellis/tasks/archive/2026-04/04-04-debugger-script-vscode-debug/prd.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e9dd876` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
