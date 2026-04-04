@@ -199,6 +199,20 @@ else toast.error(result.errorMessage ?? result.detail);
 - 这是典型的“变更传播失败（C）+ 跨层契约（B）”叠加问题。
 - 参数链路中任何一层漏传，功能都会“配置看似生效、运行实际无效”。
 
+### 错误 10：把“通用参数名”误当成“跨 provider 通用协议”
+
+**反例**：所有模型统一发送 `enable_thinking` / `reasoning_effort`，假设各厂商都兼容。
+
+**正例**：引入 provider 参数能力矩阵，并在 provider 层做映射或降级：
+- DeepSeek：`thinking: { type: "enabled" | "disabled" }`
+- OpenAI-compatible（如 Qwen）：按兼容参数发送（并关注厂商文档是否忽略/限制）
+- 不支持的 provider：显式忽略并记录日志（或在配置层禁用）
+
+原因：
+- 这是“平台策略参数层”与“厂商协议层”的契约错位。
+- 统一抽象只能统一语义，不能假设底层字段名和行为也统一。
+- 若无能力矩阵，最常见后果是“配置成功但运行无效”或“仅部分模型报错”。
+
 ---
 
 ## 跨层功能检查清单
@@ -219,6 +233,7 @@ else toast.error(result.errorMessage ?? result.detail);
 - [ ] 使用统一 API 响应包装时，已区分“传输层 success”与“业务层 success”
 - [ ] 模型探活已验证响应语义（不只看 HTTP 状态码）
 - [ ] 新增模型参数（如 thinking/reasoning）已完成“策略->执行->provider”全链路透传测试
+- [ ] 新增模型参数已声明 provider 能力矩阵（支持/映射/忽略策略）并有对应测试
 
 ---
 
