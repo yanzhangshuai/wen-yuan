@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { useTheme } from "next-themes";
+import { useHydratedTheme } from "@/hooks/use-hydrated-theme";
 import { PaperTexture } from "./paper-texture";
 import { SuyaBackground } from "./suya-background";
 import { MuseumGlow } from "./museum-glow";
@@ -15,16 +14,10 @@ import { StarDust } from "./star-dust";
  * xingkong: Canvas 星空 + 流星
  */
 export function DecorativeLayer() {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const { isHydrated, selectedTheme } = useHydratedTheme();
+  if (!isHydrated || !selectedTheme) return null;
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || !resolvedTheme) return null;
-
-  switch (resolvedTheme) {
+  switch (selectedTheme) {
     case "danqing":
       return <PaperTexture />;
     case "suya":
