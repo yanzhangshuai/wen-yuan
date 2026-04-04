@@ -247,7 +247,7 @@ function collectConfiguredModelIds(layers: LayerSnapshot): string[] {
 
 /**
  * 功能：批量加载策略中引用且已启用的模型。
- * 输入：模型 ID 列表。
+ * 输入：模型 UUID 列表。
  * 输出：`modelId -> model` 的映射表。
  * 异常：数据库查询失败时向上抛出。
  * 副作用：读取数据库。
@@ -275,7 +275,12 @@ async function loadEnabledModels(prismaClient: PrismaClient, modelIds: string[])
     }
   });
 
-  return new Map(models.map((model) => [model.id, model]));
+  const modelMap = new Map<string, LoadedModel>();
+  for (const model of models) {
+    modelMap.set(model.id, model);
+  }
+
+  return modelMap;
 }
 
 /**

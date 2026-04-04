@@ -36,10 +36,10 @@ describe("PATCH /api/admin/models/:id", () => {
 
   it("updates model config with 200", async () => {
     updateAdminModelMock.mockResolvedValue({
-      id       : validId,
-      modelId  : "deepseek-chat",
-      baseUrl  : "https://api.deepseek.com",
-      isEnabled: true
+      id             : validId,
+      providerModelId: "deepseek-v3.2",
+      baseUrl        : "https://api.deepseek.com",
+      isEnabled      : true
     });
     const { PATCH } = await import("./route");
 
@@ -48,9 +48,9 @@ describe("PATCH /api/admin/models/:id", () => {
         method : "PATCH",
         headers: { "content-type": "application/json" },
         body   : JSON.stringify({
-          modelId  : "deepseek-chat",
-          baseUrl  : "https://api.deepseek.com",
-          isEnabled: true
+          providerModelId: "deepseek-v3.2",
+          baseUrl        : "https://api.deepseek.com",
+          isEnabled      : true
         })
       }),
       { params: Promise.resolve({ id: validId }) }
@@ -61,9 +61,9 @@ describe("PATCH /api/admin/models/:id", () => {
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("ADMIN_MODEL_UPDATED");
     expect(updateAdminModelMock).toHaveBeenCalledWith(validId, {
-      modelId  : "deepseek-chat",
-      baseUrl  : "https://api.deepseek.com",
-      isEnabled: true
+      providerModelId: "deepseek-v3.2",
+      baseUrl        : "https://api.deepseek.com",
+      isEnabled      : true
     });
   });
 
@@ -127,7 +127,7 @@ describe("PATCH /api/admin/models/:id", () => {
     expect(updateAdminModelMock).not.toHaveBeenCalled();
   });
 
-  it("returns 400 when modelId is blank", async () => {
+  it("returns 400 when providerModelId is blank", async () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
@@ -135,7 +135,7 @@ describe("PATCH /api/admin/models/:id", () => {
         method : "PATCH",
         headers: { "content-type": "application/json" },
         body   : JSON.stringify({
-          modelId: "   "
+          providerModelId: "   "
         })
       }),
       { params: Promise.resolve({ id: validId }) }

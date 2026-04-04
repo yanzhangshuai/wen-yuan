@@ -9,13 +9,14 @@ type SupportedProvider = "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
 const providerSchema = z.enum(["deepseek", "qwen", "doubao", "gemini", "glm"]);
 
 const idSchema = z.string().trim().min(1, "模型 ID 不能为空");
+const providerModelIdSchema = z.string().trim().min(1, "模型标识不能为空");
 
 const updateModelInputSchema = z.object({
-  id       : idSchema,
-  modelId  : z.string().trim().min(1, "模型标识不能为空").optional(),
-  baseUrl  : z.string().trim().min(1, "BaseURL 不能为空").optional(),
-  isEnabled: z.boolean().optional(),
-  apiKey   : z.discriminatedUnion("action", [
+  id             : idSchema,
+  providerModelId: providerModelIdSchema.optional(),
+  baseUrl        : z.string().trim().min(1, "BaseURL 不能为空").optional(),
+  isEnabled      : z.boolean().optional(),
+  apiKey         : z.discriminatedUnion("action", [
     z.object({
       action: z.literal("unchanged")
     }),
@@ -34,6 +35,7 @@ interface AiModelRecord {
   provider : string;
   name     : string;
   modelId  : string;
+  aliasKey : string | null;
   baseUrl  : string;
   apiKey   : string | null;
   isEnabled: boolean;
@@ -57,17 +59,18 @@ export interface ModelPerformanceSnapshot {
 }
 
 export interface ModelListItem {
-  id          : string;
-  provider    : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
-  name        : string;
-  modelId     : string;
-  baseUrl     : string;
-  isEnabled   : boolean;
-  isDefault   : boolean;
-  apiKeyMasked: string | null;
-  isConfigured: boolean;
-  performance : ModelPerformanceSnapshot;
-  updatedAt   : string;
+  id             : string;
+  provider       : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
+  name           : string;
+  providerModelId: string;
+  aliasKey       : string | null;
+  baseUrl        : string;
+  isEnabled      : boolean;
+  isDefault      : boolean;
+  apiKeyMasked   : string | null;
+  isConfigured   : boolean;
+  performance    : ModelPerformanceSnapshot;
+  updatedAt      : string;
 }
 
 export type ApiKeyChange =
@@ -76,18 +79,18 @@ export type ApiKeyChange =
   | { action: "set"; value: string };
 
 export interface UpdateModelInput {
-  modelId?  : string;
-  id        : string;
-  baseUrl?  : string;
-  isEnabled?: boolean;
-  apiKey?   : ApiKeyChange;
+  providerModelId?: string;
+  id              : string;
+  baseUrl?        : string;
+  isEnabled?      : boolean;
+  apiKey?         : ApiKeyChange;
 }
 
 export interface UpdateAdminModelPayload {
-  modelId?  : string;
-  baseUrl?  : string;
-  isEnabled?: boolean;
-  apiKey?   : string | null;
+  providerModelId?: string;
+  baseUrl?        : string;
+  isEnabled?      : boolean;
+  apiKey?         : string | null;
 }
 
 export type ModelConnectivityErrorType =
@@ -109,6 +112,7 @@ const modelSelect = {
   provider : true,
   name     : true,
   modelId  : true,
+  aliasKey : true,
   baseUrl  : true,
   apiKey   : true,
   isEnabled: true,
@@ -262,17 +266,18 @@ function toModelListItem(
   const plainApiKey = readStoredApiKey(model.apiKey);
 
   return {
-    id          : model.id,
-    provider    : providerSchema.parse(model.provider.toLowerCase()),
-    name        : model.name,
-    modelId     : model.modelId,
-    baseUrl     : model.baseUrl,
-    isEnabled   : model.isEnabled,
-    isDefault   : model.isDefault,
-    apiKeyMasked: maskSensitiveValue(plainApiKey),
-    isConfigured: Boolean(plainApiKey),
+    id             : model.id,
+    provider       : providerSchema.parse(model.provider.toLowerCase()),
+    name           : model.name,
+    providerModelId: model.modelId,
+    aliasKey       : model.aliasKey,
+    baseUrl        : model.baseUrl,
+    isEnabled      : model.isEnabled,
+    isDefault      : model.isDefault,
+    apiKeyMasked   : maskSensitiveValue(plainApiKey),
+    isConfigured   : Boolean(plainApiKey),
     performance,
-    updatedAt   : model.updatedAt.toISOString()
+    updatedAt      : model.updatedAt.toISOString()
   };
 }
 
@@ -639,7 +644,7 @@ export function createModelsModule(
     const parsedInput = updateModelInputSchema.parse(input);
     const currentModel = await getModelRecord(parsedInput.id);
 
-    const nextModelId = parsedInput.modelId ?? currentModel.modelId;
+    const nextProviderModelId = parsedInput.providerModelId ?? currentModel.modelId;
     const nextBaseUrl = parsedInput.baseUrl ? normalizeBaseUrl(parsedInput.baseUrl) : currentModel.baseUrl;
 
     let nextEncryptedApiKey = currentModel.apiKey;
@@ -663,7 +668,7 @@ export function createModelsModule(
     const updatedModel = await prismaClient.aiModel.update({
       where: { id: parsedInput.id },
       data : {
-        modelId  : nextModelId,
+        modelId  : nextProviderModelId,
         baseUrl  : nextBaseUrl,
         isEnabled: nextIsEnabled,
         ...(parsedInput.apiKey ? { apiKey: nextEncryptedApiKey } : {})
@@ -862,10 +867,10 @@ export async function updateAdminModel(
 ): Promise<ModelListItem> {
   return updateModel({
     id,
-    modelId  : payload.modelId,
-    baseUrl  : payload.baseUrl,
-    isEnabled: payload.isEnabled,
-    apiKey   : toApiKeyChange(payload.apiKey)
+    providerModelId: payload.providerModelId,
+    baseUrl        : payload.baseUrl,
+    isEnabled      : payload.isEnabled,
+    apiKey         : toApiKeyChange(payload.apiKey)
   });
 }
 

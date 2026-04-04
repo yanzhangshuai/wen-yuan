@@ -42,10 +42,11 @@ export function BookStrategyPanel({ bookId }: BookStrategyPanelProps) {
           allModels
             .filter((model) => model.isEnabled)
             .map((model) => ({
-              id      : model.id,
-              name    : model.name,
-              provider: model.provider,
-              modelId : model.modelId
+              id             : model.id,
+              name           : model.name,
+              provider       : model.provider,
+              providerModelId: model.providerModelId,
+              aliasKey       : model.aliasKey
             }))
         );
         setStrategy(bookStrategy);

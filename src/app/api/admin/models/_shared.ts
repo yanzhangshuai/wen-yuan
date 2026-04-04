@@ -11,14 +11,14 @@ export const modelRouteParamsSchema = z.object({
 
 /** 更新模型配置请求体 Schema。 */
 export const updateModelBodySchema = z.object({
-  /** 模型标识（如 deepseek-chat / qwen-plus / ep-xxxxxx）。 */
-  modelId  : z.string().trim().min(1, "模型标识不能为空").optional(),
+  /** 供应商协议模型标识（如 deepseek-v3.2 / qwen-max / ep-xxxxxx）。 */
+  providerModelId: z.string().trim().min(1, "模型标识不能为空").optional(),
   /** API Key（允许传 `null` 表示清空）。 */
-  apiKey   : z.string().trim().min(1, "API Key 不能为空").nullable().optional(),
+  apiKey         : z.string().trim().min(1, "API Key 不能为空").nullable().optional(),
   /** 自定义 BaseURL（需是完整 URL）。 */
-  baseUrl  : z.string().trim().url("BaseURL 格式不合法").optional(),
+  baseUrl        : z.string().trim().url("BaseURL 格式不合法").optional(),
   /** 是否启用该模型。 */
-  isEnabled: z.boolean().optional()
+  isEnabled      : z.boolean().optional()
 }).refine((value) => Object.keys(value).length > 0, {
   message: "至少提供一个可更新字段"
 });

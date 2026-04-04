@@ -133,9 +133,9 @@ function toStrategyDto(row: StrategyRow): ModelStrategyDto {
 }
 
 /**
- * 功能：收集策略中引用的全部模型 ID（含 FALLBACK 槽位）。
+ * 功能：收集策略中引用的全部模型 UUID（含 FALLBACK 槽位）。
  * 输入：阶段策略配置。
- * 输出：去重后的模型 ID 列表。
+ * 输出：去重后的模型 UUID 列表。
  * 异常：无。
  * 副作用：无。
  */
@@ -201,8 +201,8 @@ export function createModelStrategyAdminService(
   }
 
   /**
-   * 策略模型校验：只允许引用已启用模型。
-   * 这样可以避免运行阶段才发现 modelId 失效，保证配置保存即“可执行”。
+   * 策略模型校验：只允许引用已启用模型 UUID。
+   * 这样可以避免运行阶段才发现模型已失效，保证配置保存即“可执行”。
    */
   async function assertEnabledModelIds(stages: StrategyStagesDto): Promise<void> {
     const modelIds = collectModelIds(stages);
@@ -216,27 +216,18 @@ export function createModelStrategyAdminService(
         isEnabled: true
       },
       select: {
-        id: true
+        id  : true,
+        name: true
       }
     });
 
-    if (enabledModels.length === modelIds.length) {
+    const enabledModelIdSet = new Set(enabledModels.map((model) => model.id));
+    const missingModelId = modelIds.find((modelId) => !enabledModelIdSet.has(modelId));
+    if (!missingModelId) {
       return;
     }
 
-    const enabledSet = new Set(enabledModels.map((model) => model.id));
-    const missingModelIds = modelIds.filter((id) => !enabledSet.has(id));
-    const fallbackMissingId = missingModelIds[0];
-
-    const modelRecord = fallbackMissingId
-      ? await prismaClient.aiModel.findUnique({
-        where : { id: fallbackMissingId },
-        select: { name: true }
-      })
-      : null;
-
-    const modelLabel = modelRecord?.name ?? fallbackMissingId ?? "未知模型";
-    throw new ModelStrategyValidationError(`模型 ${modelLabel} 不存在或未启用`);
+    throw new ModelStrategyValidationError(`模型 ID ${missingModelId} 不存在或未启用`);
   }
 
   async function findScopedStrategy(scope: StrategyScope, bookId?: string): Promise<StrategyRow | null> {

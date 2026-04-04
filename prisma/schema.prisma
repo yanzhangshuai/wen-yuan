@@ -141,7 +141,8 @@ model AiModel {
   id        String     @id @default(uuid()) @db.Uuid // 模型配置主键
   provider  String // 推荐值: "deepseek" | "qwen" | "doubao" | "gemini" | "glm"
   name      String // 显示名称，如 "DeepSeek V3"
-  modelId   String     @map("model_id") // API 调用标识，如 "deepseek-chat"
+  modelId   String     @map("model_id") // 供应商 API 调用标识，如 "deepseek-chat"
+  aliasKey  String?    @map("alias_key") // 语义别名键（用于阶段推荐与版本平滑升级）
   baseUrl   String     @map("base_url") // 可自定义，支持私有部署
   apiKey    String?    @map("api_key") // 前端只展示脱敏版
   isEnabled Boolean    @default(false) @map("is_enabled") // Key 配置后才可启用
@@ -153,6 +154,7 @@ model AiModel {
   phaseLogs AnalysisPhaseLog[] // 阶段调用日志
 
   @@index([provider, isEnabled], map: "ai_models_provider_enabled_idx")
+  @@index([aliasKey], map: "ai_models_alias_key_idx")
   @@map("ai_models")
 }
 

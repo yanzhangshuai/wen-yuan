@@ -24,14 +24,15 @@ import { clientFetch } from "@/lib/client-api";
  * 对应 GET /api/admin/models 响应中 data 数组的单个元素。
  */
 export interface AdminModelItem {
-  id          : string;
-  provider    : string;
-  name        : string;
-  modelId     : string;
-  baseUrl     : string;
-  apiKeyMasked: string | null;
-  isConfigured: boolean;
-  performance : {
+  id             : string;
+  provider       : string;
+  name           : string;
+  providerModelId: string;
+  aliasKey       : string | null;
+  baseUrl        : string;
+  apiKeyMasked   : string | null;
+  isConfigured   : boolean;
+  performance    : {
     callCount          : number;
     successRate        : number | null;
     avgLatencyMs       : number | null;
@@ -65,10 +66,10 @@ export interface ModelTestResult {
  * apiKey 传 null 表示清除已有 Key，传字符串表示更新，不传表示保持原值。
  */
 export interface PatchModelBody {
-  modelId  ?: string;
-  baseUrl  ?: string;
-  apiKey   ?: string | null;
-  isEnabled?: boolean;
+  providerModelId?: string;
+  baseUrl?        : string;
+  apiKey?         : string | null;
+  isEnabled?      : boolean;
 }
 
 /* ------------------------------------------------

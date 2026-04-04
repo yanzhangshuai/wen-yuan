@@ -18,6 +18,11 @@ import {
 } from "@/components/ui/select";
 import { BUSINESS_PIPELINE_STAGES, PipelineStage } from "@/types/pipeline";
 import type { ModelStrategyInput } from "@/lib/services/model-strategy";
+import {
+  STAGE_RECOMMENDED_MODELS,
+  isRecommendedModelMatch,
+  pickRecommendedEnabledModel
+} from "@/lib/model-recommendations";
 import { cn } from "@/lib/utils";
 
 const INHERIT_MODEL_VALUE = "__INHERIT__";
@@ -40,21 +45,12 @@ const STAGE_LABELS: Record<PipelineStage, string> = {
   [PipelineStage.FALLBACK]             : "降级兜底（全阶段共享）"
 };
 
-const RECOMMENDED_MODELS: Record<PipelineStage, { provider: string; modelId: string; label: string } | null> = {
-  [PipelineStage.ROSTER_DISCOVERY]     : { provider: "glm", modelId: "glm-4.6", label: "GLM 4.6" },
-  [PipelineStage.CHUNK_EXTRACTION]     : { provider: "deepseek", modelId: "deepseek-chat", label: "DeepSeek V3" },
-  [PipelineStage.CHAPTER_VALIDATION]   : { provider: "qwen", modelId: "qwen-plus", label: "通义千问 Plus" },
-  [PipelineStage.TITLE_RESOLUTION]     : { provider: "qwen", modelId: "qwen-max", label: "通义千问 Max" },
-  [PipelineStage.GRAY_ZONE_ARBITRATION]: { provider: "qwen", modelId: "qwen-plus", label: "通义千问 Plus" },
-  [PipelineStage.BOOK_VALIDATION]      : { provider: "qwen", modelId: "qwen-max", label: "通义千问 Max" },
-  [PipelineStage.FALLBACK]             : { provider: "qwen", modelId: "qwen-plus", label: "通义千问 Plus" }
-};
-
 export interface EnabledModelItem {
-  id      : string;
-  name    : string;
-  provider: string;
-  modelId : string;
+  id             : string;
+  name           : string;
+  provider       : string;
+  providerModelId: string;
+  aliasKey?      : string | null;
 }
 
 interface ModelStrategyFormProps {
@@ -120,6 +116,18 @@ export function ModelStrategyForm({
     setDraftStrategy(cloneStrategy(initialStrategy));
   }, [initialStrategy]);
 
+  const selectableModels = useMemo<EnabledModelItem[]>(() => {
+    return availableModels;
+  }, [availableModels]);
+
+  const availableModelById = useMemo(() => {
+    const mapping = new Map<string, EnabledModelItem>();
+    for (const model of selectableModels) {
+      mapping.set(model.id, model);
+    }
+    return mapping;
+  }, [selectableModels]);
+
   const recommendedByStage = useMemo(() => {
     const mapping: Record<PipelineStage, EnabledModelItem | null> = {
       [PipelineStage.ROSTER_DISCOVERY]     : null,
@@ -132,19 +140,17 @@ export function ModelStrategyForm({
     };
 
     for (const stage of STAGES_FOR_FORM) {
-      const rec = RECOMMENDED_MODELS[stage];
+      const rec = STAGE_RECOMMENDED_MODELS[stage];
       if (!rec) {
         mapping[stage] = null;
         continue;
       }
 
-      mapping[stage] = availableModels.find(
-        model => model.provider === rec.provider && model.modelId === rec.modelId
-      ) ?? null;
+      mapping[stage] = pickRecommendedEnabledModel(rec, selectableModels);
     }
 
     return mapping;
-  }, [availableModels]);
+  }, [selectableModels]);
 
   function updateStageConfig(
     stage: PipelineStage,
@@ -285,7 +291,7 @@ export function ModelStrategyForm({
             variant="outline"
             size="sm"
             onClick={resetToRecommended}
-            disabled={availableModels.length === 0 || isSaving}
+            disabled={selectableModels.length === 0 || isSaving}
           >
             <RotateCcw className="mr-2 h-3.5 w-3.5" />
             恢复推荐配置
@@ -312,7 +318,7 @@ export function ModelStrategyForm({
           </div>
         </div>
 
-        {availableModels.length === 0 ? (
+        {selectableModels.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground space-y-2">
             <p>暂无可用模型，请先在模型管理中启用至少一个模型。</p>
             <Link href="/admin/model" className="text-primary hover:underline">
@@ -324,8 +330,13 @@ export function ModelStrategyForm({
             {STAGES_FOR_FORM.map((stage) => {
               const stageConfig = draftStrategy[stage];
               const recommended = recommendedByStage[stage];
-              const recommendedMeta = RECOMMENDED_MODELS[stage];
-              const selectedIsRecommended = recommended?.id === stageConfig?.modelId;
+              const recommendedMeta = STAGE_RECOMMENDED_MODELS[stage];
+              const selectedModel = stageConfig?.modelId
+                ? availableModelById.get(stageConfig.modelId)
+                : null;
+              const selectedIsRecommended = selectedModel
+                ? isRecommendedModelMatch(recommendedMeta, selectedModel)
+                : false;
               const isFallback = stage === PipelineStage.FALLBACK;
               const isExpanded = expandedStages.has(stage);
 
@@ -370,9 +381,9 @@ export function ModelStrategyForm({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={INHERIT_MODEL_VALUE}>使用上级默认</SelectItem>
-                          {availableModels.map((model) => (
+                          {selectableModels.map((model) => (
                             <SelectItem key={model.id} value={model.id}>
-                              {model.name} ({model.provider} / {model.modelId})
+                              {model.name} ({model.provider} / {model.providerModelId})
                             </SelectItem>
                           ))}
                         </SelectContent>

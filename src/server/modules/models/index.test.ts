@@ -9,6 +9,7 @@ function createAiModelRecord(overrides: Partial<{
   provider : string;
   name     : string;
   modelId  : string;
+  aliasKey : string | null;
   baseUrl  : string;
   apiKey   : string | null;
   isEnabled: boolean;
@@ -20,6 +21,7 @@ function createAiModelRecord(overrides: Partial<{
     provider : "deepseek",
     name     : "DeepSeek V3",
     modelId  : "deepseek-chat",
+    aliasKey : "deepseek-v3-stable",
     baseUrl  : "https://api.deepseek.com",
     apiKey   : null,
     isEnabled: false,
@@ -95,12 +97,14 @@ describe("models module", () => {
 
     expect(result).toEqual([
       expect.objectContaining({
-        id          : "model-1",
-        provider    : "deepseek",
-        apiKeyMasked: "abcd********5678",
-        isConfigured: true,
-        isDefault   : true,
-        performance : {
+        id             : "model-1",
+        provider       : "deepseek",
+        providerModelId: "deepseek-chat",
+        aliasKey       : "deepseek-v3-stable",
+        apiKeyMasked   : "abcd********5678",
+        isConfigured   : true,
+        isDefault      : true,
+        performance    : {
           callCount          : 10,
           successRate        : 0.8,
           avgLatencyMs       : 1200,
@@ -114,11 +118,12 @@ describe("models module", () => {
         }
       }),
       expect.objectContaining({
-        id          : "model-2",
-        provider    : "glm",
-        apiKeyMasked: null,
-        isConfigured: false,
-        performance : {
+        id             : "model-2",
+        provider       : "glm",
+        providerModelId: "glm-4.6",
+        apiKeyMasked   : null,
+        isConfigured   : false,
+        performance    : {
           callCount          : 6,
           successRate        : 2 / 6,
           avgLatencyMs       : 2400,
@@ -609,7 +614,7 @@ describe("models module", () => {
     expect(updateMock.mock.calls[0][0].data.apiKey).toBe(existingApiKey);
   });
 
-  it("trims model id, api key and base url in update payload", async () => {
+  it("trims provider model id, api key and base url in update payload", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const updateMock = vi.fn().mockResolvedValue(createAiModelRecord({
@@ -626,10 +631,10 @@ describe("models module", () => {
 
     const modelsModule = createModelsModule(prismaClient);
     await modelsModule.updateModel({
-      modelId: "  ep-202604010001  ",
-      id     : "model-1",
-      baseUrl: "  https://api.deepseek.com///   ",
-      apiKey : {
+      providerModelId: "  ep-202604010001  ",
+      id             : "model-1",
+      baseUrl        : "  https://api.deepseek.com///   ",
+      apiKey         : {
         action: "set",
         value : "  trimmed-key   "
       }

@@ -49,11 +49,11 @@ import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_component
 type LoadingAction = "save" | "default" | "test" | null;
 
 interface ModelDraftState {
-  modelId    : string;
-  baseUrl    : string;
-  apiKey     : string;
-  clearApiKey: boolean;
-  isEnabled  : boolean;
+  providerModelId: string;
+  baseUrl        : string;
+  apiKey         : string;
+  clearApiKey    : boolean;
+  isEnabled      : boolean;
 }
 
 /* ------------------------------------------------
@@ -61,11 +61,11 @@ interface ModelDraftState {
    ------------------------------------------------ */
 function buildInitialDraft(model: AdminModelItem): ModelDraftState {
   return {
-    modelId    : model.modelId,
-    baseUrl    : model.baseUrl,
-    apiKey     : "",
-    clearApiKey: false,
-    isEnabled  : model.isEnabled
+    providerModelId: model.providerModelId,
+    baseUrl        : model.baseUrl,
+    apiKey         : "",
+    clearApiKey    : false,
+    isEnabled      : model.isEnabled
   };
 }
 
@@ -253,7 +253,7 @@ export function ModelManager({
     const draft = drafts[model.id];
     if (!draft) return;
 
-    if (!draft.modelId.trim()) {
+    if (!draft.providerModelId.trim()) {
       toast.error("模型标识不能为空");
       return;
     }
@@ -266,9 +266,9 @@ export function ModelManager({
     setLoading(model.id, "save");
 
     const body: Record<string, unknown> = {
-      modelId  : draft.modelId.trim(),
-      baseUrl  : draft.baseUrl.trim(),
-      isEnabled: draft.isEnabled
+      providerModelId: draft.providerModelId.trim(),
+      baseUrl        : draft.baseUrl.trim(),
+      isEnabled      : draft.isEnabled
     };
     if (draft.clearApiKey) body.apiKey = null;
     else if (draft.apiKey.trim()) body.apiKey = draft.apiKey.trim();
@@ -337,10 +337,11 @@ export function ModelManager({
   const strategyEnabledModels: EnabledModelItem[] = models
     .filter(model => model.isEnabled)
     .map(model => ({
-      id      : model.id,
-      name    : model.name,
-      provider: model.provider,
-      modelId : model.modelId
+      id             : model.id,
+      name           : model.name,
+      provider       : model.provider,
+      providerModelId: model.providerModelId,
+      aliasKey       : model.aliasKey
     }));
   async function handleSaveGlobalStrategy(strategy: ModelStrategyInput) {
     try {
@@ -410,11 +411,11 @@ export function ModelManager({
                   <div className="space-y-2">
                     <Label>模型标识</Label>
                     <Input
-                      value={draft.modelId}
+                      value={draft.providerModelId}
                       placeholder="例如 deepseek-chat / qwen-plus / ep-xxxx"
                       onChange={event => {
                         const nextValue = event.target.value;
-                        updateDraft(model.id, d => ({ ...d, modelId: nextValue }));
+                        updateDraft(model.id, d => ({ ...d, providerModelId: nextValue }));
                       }}
                     />
                     {model.provider === "doubao" && (

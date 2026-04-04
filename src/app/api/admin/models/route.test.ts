@@ -35,12 +35,13 @@ describe("GET /api/admin/models", () => {
   it("returns admin models list with 200", async () => {
     listAdminModelsMock.mockResolvedValue([
       {
-        id       : "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39",
-        name     : "DeepSeek V3",
-        provider : "deepseek",
-        modelId  : "deepseek-chat",
-        isEnabled: true,
-        isDefault: true
+        id             : "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39",
+        name           : "DeepSeek V3",
+        provider       : "deepseek",
+        providerModelId: "deepseek-chat",
+        aliasKey       : "deepseek-v3-stable",
+        isEnabled      : true,
+        isDefault      : true
       }
     ]);
     const { GET } = await import("./route");

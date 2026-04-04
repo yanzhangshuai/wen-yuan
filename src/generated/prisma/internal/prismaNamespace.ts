@@ -1588,6 +1588,7 @@ export const AiModelScalarFieldEnum = {
   provider: 'provider',
   name: 'name',
   modelId: 'modelId',
+  aliasKey: 'aliasKey',
   baseUrl: 'baseUrl',
   apiKey: 'apiKey',
   isEnabled: 'isEnabled',

@@ -1,0 +1,27 @@
+{
+  "version": "v1",
+  "aliases": {
+    "glm-latest-stable": {
+      "label": "GLM 4.6"
+    },
+    "deepseek-v3-stable": {
+      "label": "DeepSeek V3"
+    },
+    "qwen-plus-stable": {
+      "label": "通义千问 Plus"
+    },
+    "qwen-max-stable": {
+      "label": "通义千问 Max"
+    }
+  },
+  "stageAliases": {
+    "ROSTER_DISCOVERY": "qwen-max-stable",
+    "CHUNK_EXTRACTION": "deepseek-v3-stable",
+    "CHAPTER_VALIDATION": "qwen-plus-stable",
+    "TITLE_RESOLUTION": "qwen-max-stable",
+    "GRAY_ZONE_ARBITRATION": "qwen-plus-stable",
+    "BOOK_VALIDATION": "qwen-max-stable",
+    "FALLBACK": "qwen-plus-stable"
+  },
+  "notes": "阶段默认模型仅通过 aliasKey 决定；推荐配置不再携带 providerModelId，具体供应商模型由数据库模型表（aliasKey -> UUID/provider/modelId）决定。"
+}

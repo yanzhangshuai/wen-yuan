@@ -246,11 +246,11 @@ else toast.error(result.errorMessage ?? result.detail);
 - 统一抽象只能统一语义，不能假设底层字段名和行为也统一。
 - 若无能力矩阵，最常见后果是“配置成功但运行无效”或“仅部分模型报错”。
 
-### 错误 11：推荐模型匹配规则写在 UI，导致配置与运行模型 ID 脱节
+### 错误 11：推荐模型匹配规则写在 UI，导致默认推荐语义漂移
 
-**反例**：推荐配置只写 `provider + modelId`，UI 里再按 provider 写硬编码兼容（如 DeepSeek 的 `deepseek-chat`/`deepseek-v3.2`）。
+**反例**：推荐默认在 UI 里按 `provider/modelId` 写硬编码判断，或者配置侧允许多套命中规则并在页面拼接。
 
-**正例**：把兼容规则放在配置层（alias 级 `compatibleModelIds`），由 `model-recommendations` 统一解析并提供匹配函数；UI 仅消费统一 helper。
+**正例**：推荐默认只使用 `aliasKey`。由 `model-recommendations` 统一解析并提供匹配函数；UI 仅消费统一 helper。
 
 ```ts
 // 反例：UI 私有兼容逻辑
@@ -263,30 +263,33 @@ isRecommendedModelMatch(recommendation, model);
 
 原因：
 - 这是“推荐配置层”→“解析库层”→“页面展示层”的跨层契约分裂。
-- 当模型实际 ID 升级（如 `deepseek-v3.2`）但推荐别名仍指向旧 ID（如 `deepseek-chat`）时，UI 会误报“推荐模型未启用”。
-- 兼容规则必须配置化并在单一模块集中实现，禁止在页面组件写 provider 特判。
+- `aliasKey` 才是推荐语义键；`providerModelId` 是供应商协议字段，不应用于默认推荐命中。
+- 推荐命中规则必须在单一模块集中实现，禁止在页面组件写 provider 特判。
 
-### 错误 12：策略 DTO 用 modelId，解析链路用 aliasKey，导致配置可保存但运行不生效
+### 错误 12：把“阶段策略主键”和“推荐默认键”混为一谈，导致 UI 与执行链路判断不一致
 
-**反例**：`modelStrategy` 的 DTO/前端表单仍提交 `modelId`，而 resolver 按 `aliasKey` 查启用模型。
+**反例**：
+- 阶段策略（可执行配置）与推荐默认（运维建议）都用同一种键，或在推荐匹配时回退到 `providerModelId`。
+- 结果是“推荐显示命中”，但实际并非该 alias 对应的模型实体。
 
-**正例**：统一跨层标识职责：
-- 策略层（DTO/API/前端表单）只传 `aliasKey`
-- 解析层（resolver）只做 `aliasKey -> enabled model` 映射
-- 运行层（provider 调用）只使用模型实体里的 `provider + modelId`
+**正例**：统一跨层标识职责（双轨但不混用）：
+- 阶段策略层（DTO/API/前端表单/Resolver）只传并解析 `modelId(UUID)`。
+- 推荐默认层（`model-recommendations.v1.json`）只传 `stageDefaults.*.aliasKey`。
+- 推荐命中规则按 `aliasKey` 判断；`providerModelId` 只保留在 alias 元数据中用于展示/运维说明。
+- 运行层（provider 调用）只使用模型实体里的 `provider + modelId`（供应商协议字段）。
 
 ```ts
-// 反例：策略层绑定 provider modelId（易随供应商版本漂移）
-stages: { CHUNK_EXTRACTION: { modelId: "deepseek-v3.2" } }
+// 阶段策略：可执行主键
+stages: { CHUNK_EXTRACTION: { modelId: "11111111-1111-4111-8111-111111111111" } }
 
-// 正例：策略层只绑定语义别名
-stages: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
+// 推荐默认：语义别名
+stageDefaults: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
 ```
 
 原因：
-- 这是“策略配置层”→“策略解析层”→“模型运行层”的跨层契约混用。
-- `modelId` 是供应商协议字段，变化频繁；`aliasKey` 是业务语义键，应该稳定。
-- 两者混用会出现“保存成功、解析回退默认模型、UI/运行结果不一致”的隐性故障。
+- 这是“策略执行层”与“推荐展示层”的契约边界问题。
+- `modelId(UUID)` 适合稳定引用具体模型实体；`aliasKey` 适合表达“默认推荐语义”。
+- 若推荐再回退到 `providerModelId`，会把“供应商协议字段”误当业务语义键，导致默认判定漂移。
 
 ---
 
@@ -310,7 +313,8 @@ stages: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
 - [ ] 模型探活已验证响应语义（不只看 HTTP 状态码）
 - [ ] 新增模型参数（如 thinking/reasoning）已完成“策略->执行->provider”全链路透传测试
 - [ ] 新增模型参数已声明 provider 能力矩阵（支持/映射/忽略策略）并有对应测试
-- [ ] 策略配置跨层契约已统一为 `aliasKey`（DTO/API/UI/Resolver），运行时 `modelId` 仅在 provider 调用层使用
+- [ ] 阶段策略跨层契约已统一为 `modelId(UUID)`（DTO/API/UI/Resolver）
+- [ ] 推荐默认跨层契约已统一为 `stageDefaults.*.aliasKey`（配置/UI 展示）
 
 ---
 

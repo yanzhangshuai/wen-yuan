@@ -210,7 +210,12 @@ describe("ModelStrategyResolver", () => {
         })
       },
       aiModel: {
-        findMany : vi.fn(async () => ([buildModel({ id: MODEL_IDS.bookRoster, provider: "glm", modelId: "glm-4.6", name: "GLM 4.6" })])),
+        findMany: vi.fn(async () => ([buildModel({
+          id      : MODEL_IDS.bookRoster,
+          provider: "glm",
+          modelId : "glm-4.6",
+          name    : "GLM 4.6"
+        })])),
         findFirst: vi.fn(async () => buildModel({ id: MODEL_IDS.systemDefault, name: "System Default Model" }))
       }
     };

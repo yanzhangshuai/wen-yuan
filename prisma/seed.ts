@@ -77,6 +77,7 @@ async function hashPassword(password: string): Promise<string> {
 const defaultAiModels = [
   {
     provider : "deepseek",
+    aliasKey : "deepseek-v3-stable",
     name     : "DeepSeek V3",
     modelId  : "deepseek-chat",
     baseUrl  : "https://api.deepseek.com",
@@ -84,6 +85,7 @@ const defaultAiModels = [
   },
   {
     provider : "deepseek",
+    aliasKey : "deepseek-r1-stable",
     name     : "DeepSeek R1",
     modelId  : "deepseek-reasoner",
     baseUrl  : "https://api.deepseek.com",
@@ -91,6 +93,7 @@ const defaultAiModels = [
   },
   {
     provider : "qwen",
+    aliasKey : "qwen-max-stable",
     name     : "通义千问 Max",
     modelId  : "qwen-max",
     baseUrl  : "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -98,6 +101,7 @@ const defaultAiModels = [
   },
   {
     provider : "qwen",
+    aliasKey : "qwen-plus-stable",
     name     : "通义千问 Plus",
     modelId  : "qwen-plus",
     baseUrl  : "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -105,6 +109,7 @@ const defaultAiModels = [
   },
   {
     provider : "doubao",
+    aliasKey : "doubao-pro-stable",
     name     : "豆包 Pro",
     modelId  : "ep-your-endpoint-id",
     baseUrl  : "https://ark.cn-beijing.volces.com/api/v3",
@@ -112,13 +117,23 @@ const defaultAiModels = [
   },
   {
     provider : "glm",
-    name     : "GLM",
+    aliasKey : "glm-4.6-stable",
+    name     : "GLM 4.6",
     modelId  : "glm-4.6",
     baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
     isDefault: false
   },
   {
+    provider : "glm",
+    aliasKey : "glm-5-stable",
+    name     : "GLM 5",
+    modelId  : "glm-5",
+    baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
+    isDefault: false
+  },
+  {
     provider : "gemini",
+    aliasKey : "gemini-flash-stable",
     name     : "Gemini Flash",
     modelId  : "gemini-3.1-flash",
     baseUrl  : "https://generativelanguage.googleapis.com",
@@ -159,6 +174,7 @@ async function main() {
     await tx.aiModel.createMany({
       data: defaultAiModels.map((item) => ({
         provider : item.provider,
+        aliasKey : item.aliasKey,
         name     : item.name,
         modelId  : item.modelId,
         baseUrl  : item.baseUrl,

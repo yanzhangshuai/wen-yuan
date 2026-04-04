@@ -160,8 +160,11 @@ export default function AdminImportPage() {
     }
     setIsSubmitting(true);
     try {
+      if (!selectedFile) {
+        throw new Error("请选择导入文件");
+      }
       const formData = new FormData();
-      formData.set("file", selectedFile!);
+      formData.set("file", selectedFile);
       if (title) formData.set("title", title);
       if (author) formData.set("author", author);
       if (dynasty) formData.set("dynasty", dynasty);
@@ -247,10 +250,11 @@ export default function AdminImportPage() {
 
   const stepLabels = ["上传信息", "确认章节", "解析配置", "实时进度"];
   const enabledModels: EnabledModelItem[] = models.map((model) => ({
-    id      : model.id,
-    name    : model.name,
-    provider: model.provider,
-    modelId : model.modelId
+    id             : model.id,
+    name           : model.name,
+    provider       : model.provider,
+    providerModelId: model.providerModelId,
+    aliasKey       : model.aliasKey
   }));
 
   return (
