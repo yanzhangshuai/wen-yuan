@@ -14,12 +14,12 @@ export default function ViewerNotFound() {
       <p className="text-muted-foreground max-w-md mb-6">
         您访问的页面不存在，可能已被移除或地址有误。
       </p>
-      <Link href="/">
-        <Button className="gap-2">
+      <Button asChild className="gap-2">
+        <Link href="/">
           <Library size={16} />
           返回书库
-        </Button>
-      </Link>
+        </Link>
+      </Button>
     </div>
   );
 }

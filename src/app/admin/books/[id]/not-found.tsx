@@ -12,12 +12,12 @@ export default function BookDetailNotFound() {
       <p className="text-muted-foreground max-w-md mb-6">
         您访问的书籍不存在或已被删除。
       </p>
-      <Link href="/admin/books">
-        <Button variant="outline" className="gap-2">
+      <Button asChild variant="outline" className="gap-2">
+        <Link href="/admin/books">
           <BookOpen size={16} />
           返回书库管理
-        </Button>
-      </Link>
+        </Link>
+      </Button>
     </div>
   );
 }

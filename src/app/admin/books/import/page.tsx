@@ -548,12 +548,12 @@ export default function AdminImportPage() {
           <div className="space-y-6">
             <BookDetailTabs bookId={createdBook.id} initialStatus="PROCESSING" />
             <div className="flex gap-4 justify-end">
-              <Link href="/admin/books">
-                <Button variant="outline">返回书库列表</Button>
-              </Link>
-              <Link href={`/admin/books/${createdBook.id}`}>
-                <Button>查看书籍详情</Button>
-              </Link>
+              <Button asChild variant="outline">
+                <Link href="/admin/books">返回书库列表</Link>
+              </Button>
+              <Button asChild>
+                <Link href={`/admin/books/${createdBook.id}`}>查看书籍详情</Link>
+              </Button>
             </div>
           </div>
         )}

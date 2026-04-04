@@ -113,13 +113,13 @@ export default async function AdminHomePage() {
           </PageSection>
 
           {/* Book List Summary */}
-          <PageSection title="书籍概览" className="mt-6" action={
-            <Link href="/admin/books">
-              <Button variant="ghost" size="sm" className="gap-1">
+          <PageSection title="书籍概览" className="mt-6" action={(
+            <Button asChild variant="ghost" size="sm" className="gap-1">
+              <Link href="/admin/books">
                 查看全部 <ChevronRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          }>
+              </Link>
+            </Button>
+          )}>
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y divide-border">

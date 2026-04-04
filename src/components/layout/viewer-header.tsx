@@ -39,20 +39,21 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
 
         {/* Navigation Links */}
         <nav className="flex items-center gap-1">
-          <Link href="/">
-            <Button
-              variant="ghost"
-              size="sm"
-              data-active={pathname === "/" ? "true" : "false"}
-              className={cn(
-                "viewer-header-nav-button gap-2",
-                pathname === "/" && "bg-accent/52 text-accent-foreground"
-              )}
-            >
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            data-active={pathname === "/" ? "true" : "false"}
+            className={cn(
+              "viewer-header-nav-button gap-2",
+              pathname === "/" && "bg-accent/52 text-accent-foreground"
+            )}
+          >
+            <Link href="/">
               <BookOpen className="h-4 w-4" />
               书库
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </nav>
 
         {/* Right Actions */}
@@ -61,12 +62,12 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
 
           {isAdmin ? (
             <>
-              <Link href="/admin">
-                <Button variant="ghost" size="sm" className="gap-2">
+              <Button asChild variant="ghost" size="sm" className="gap-2">
+                <Link href="/admin">
                   <Settings className="h-4 w-4" />
                   <span className="hidden lg:inline">管理后台</span>
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -77,12 +78,12 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
               </Button>
             </>
           ) : (
-            <Link href={loginRedirectHref}>
-              <Button variant="outline" size="sm" className="gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link href={loginRedirectHref}>
                 <User className="h-4 w-4" />
                 <span className="hidden lg:inline">登录</span>
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       </div>

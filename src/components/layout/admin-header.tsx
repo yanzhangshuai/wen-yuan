@@ -43,19 +43,21 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
               (link.href !== "/admin" && pathname.startsWith(link.href));
 
             return (
-              <Link key={link.href} href={link.href}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "gap-2 h-9",
-                    isActive && "bg-accent text-accent-foreground"
-                  )}
-                >
+              <Button
+                key={link.href}
+                asChild
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "gap-2 h-9",
+                  isActive && "bg-accent text-accent-foreground"
+                )}
+              >
+                <Link href={link.href}>
                   <Icon className="h-4 w-4" />
                   {link.label}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             );
           })}
         </nav>
@@ -70,12 +72,12 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
             </span>
           )}
 
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+          <Button asChild variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+            <Link href="/">
               <LogOut className="h-4 w-4" />
               退出管理
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

@@ -18,12 +18,12 @@ export default async function AdminBooksPage() {
         title="书籍管理"
         description="管理书库中的所有典籍，包括导入、编辑和发布"
       >
-        <Link href="/admin/books/import">
-          <Button className="gap-2">
+        <Button asChild className="gap-2">
+          <Link href="/admin/books/import">
             <Plus size={16} />
             导入书籍
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </PageHeader>
 
       <BookListClient books={books} />
