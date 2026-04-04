@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -79,6 +80,17 @@ function formatSuccessRate(successRate: number | null): string {
     return "暂无数据";
   }
   return `${Math.round(successRate * 100)}%`;
+}
+
+function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState): number {
+  const isEnabled = draft ? draft.isEnabled : model.isEnabled;
+  const hasDraftApiKey = Boolean(draft?.apiKey.trim());
+  const isConfigured = model.isConfigured || hasDraftApiKey;
+
+  if (model.isDefault) return 0;
+  if (isEnabled) return 1;
+  if (isConfigured) return 2;
+  return 3;
 }
 
 /* ------------------------------------------------
@@ -216,9 +228,14 @@ export function ModelManager({
     return () => { cancelled = true; };
   }, []);
 
-  const sortedModels = [...models].sort(
-    (left, right) => Number(right.isDefault) - Number(left.isDefault)
-  );
+  const sortedModels = [...models].sort((left, right) => {
+    const leftBucket = resolveSortBucket(left, drafts[left.id]);
+    const rightBucket = resolveSortBucket(right, drafts[right.id]);
+    if (leftBucket !== rightBucket) {
+      return leftBucket - rightBucket;
+    }
+    return left.name.localeCompare(right.name, "zh-CN");
+  });
 
   function updateDraft(modelId: string, updater: (draft: ModelDraftState) => ModelDraftState) {
     setDrafts(currentDrafts => {
@@ -353,250 +370,265 @@ export function ModelManager({
   }
 
   return (
-    <div className="space-y-8">
-      {/* 模型配置 — 2 列卡片网格（对齐 sheji） */}
-      <PageSection
-        title="模型配置"
-        description="配置可用的 AI 模型及其 API 密钥"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sortedModels.map(model => {
-            const draft = drafts[model.id] ?? buildInitialDraft(model);
-            const loadingAction = loadingActions[model.id] ?? null;
-            const ratings = model.performance.ratings;
+    <Tabs
+      defaultValue="model-config"
+      className="space-y-6"
+    >
+      <TabsList>
+        <TabsTrigger value="model-config">模型配置</TabsTrigger>
+        <TabsTrigger value="strategy">解析策略</TabsTrigger>
+      </TabsList>
 
-            return (
-              <Card
-                key={model.id}
-                className={cn("relative", !draft.isEnabled && "opacity-60")}
-              >
-                {model.isDefault && (
-                  <Badge className="absolute -top-2 -right-2 z-10">默认</Badge>
-                )}
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <Cpu className="h-5 w-5 text-primary" />
+      <TabsContent
+        value="model-config"
+        className="space-y-8"
+      >
+        {/* 模型配置 — 2 列卡片网格（对齐 sheji） */}
+        <PageSection
+          title="模型配置"
+          description="配置可用的 AI 模型及其 API 密钥"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sortedModels.map(model => {
+              const draft = drafts[model.id] ?? buildInitialDraft(model);
+              const loadingAction = loadingActions[model.id] ?? null;
+              const ratings = model.performance.ratings;
+
+              return (
+                <Card
+                  key={model.id}
+                  className={cn("relative", !draft.isEnabled && "opacity-60")}
+                >
+                  {model.isDefault && (
+                    <Badge className="absolute -top-2 -right-2 z-10">默认</Badge>
+                  )}
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                          <Cpu className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">{model.name}</CardTitle>
+                          <CardDescription>{model.provider}</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-base">{model.name}</CardTitle>
-                        <CardDescription>{model.provider}</CardDescription>
+                      <Switch
+                        checked={draft.isEnabled}
+                        disabled={!resolveCanEnable(model, draft) && !draft.isEnabled}
+                        onCheckedChange={(checked) =>
+                          updateDraft(model.id, d => ({ ...d, isEnabled: checked }))
+                        }
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* 评分条 — 速度 / 稳定 / 费用 */}
+                    <div className="grid grid-cols-3 gap-4 text-xs">
+                      <RatingBar value={ratings.speed} icon={Zap} label="速度" />
+                      <RatingBar value={ratings.stability} icon={Check} label="稳定" />
+                      <RatingBar value={ratings.cost} icon={DollarSign} label="费用" variant="destructive" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      样本 {model.performance.callCount} 次 · 成功率 {formatSuccessRate(model.performance.successRate)}
+                    </p>
+
+                    <Separator />
+
+                    {/* 模型标识 */}
+                    <div className="space-y-2">
+                      <Label>模型标识</Label>
+                      <Input
+                        value={draft.providerModelId}
+                        placeholder="例如 deepseek-chat / qwen-plus / ep-xxxx"
+                        onChange={event => {
+                          const nextValue = event.target.value;
+                          updateDraft(model.id, d => ({ ...d, providerModelId: nextValue }));
+                        }}
+                      />
+                      {model.provider === "doubao" && (
+                        <p className="text-xs text-amber-600">
+                          豆包请填写方舟控制台中的 Endpoint/模型标识（通常不是 doubao-pro）。
+                        </p>
+                      )}
+                    </div>
+
+                    {/* API Key */}
+                    <div className="space-y-2">
+                      <Label>API Key</Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={showApiKeys[model.id] ? "text" : "password"}
+                            value={draft.apiKey}
+                            placeholder={model.isConfigured ? (model.apiKeyMasked ?? "已配置") : "输入 API Key"}
+                            onChange={event => {
+                              const nextValue = event.target.value;
+                              updateDraft(model.id, d => ({ ...d, apiKey: nextValue, clearApiKey: false }));
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggleApiKeyVisibility(model.id)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={showApiKeys[model.id] ? "隐藏 API Key" : "显示 API Key"}
+                          >
+                            {showApiKeys[model.id] ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <Switch
-                      checked={draft.isEnabled}
-                      disabled={!resolveCanEnable(model, draft) && !draft.isEnabled}
-                      onCheckedChange={(checked) =>
-                        updateDraft(model.id, d => ({ ...d, isEnabled: checked }))
-                      }
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* 评分条 — 速度 / 稳定 / 费用 */}
-                  <div className="grid grid-cols-3 gap-4 text-xs">
-                    <RatingBar value={ratings.speed} icon={Zap} label="速度" />
-                    <RatingBar value={ratings.stability} icon={Check} label="稳定" />
-                    <RatingBar value={ratings.cost} icon={DollarSign} label="费用" variant="destructive" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    样本 {model.performance.callCount} 次 · 成功率 {formatSuccessRate(model.performance.successRate)}
-                  </p>
 
-                  <Separator />
+                    {/* Base URL */}
+                    <div className="space-y-2">
+                      <Label>Base URL（可选）</Label>
+                      <Input
+                        value={draft.baseUrl}
+                        placeholder="使用默认地址"
+                        onChange={event => {
+                          const nextValue = event.target.value;
+                          updateDraft(model.id, d => ({ ...d, baseUrl: nextValue }));
+                        }}
+                      />
+                    </div>
 
-                  {/* 模型标识 */}
-                  <div className="space-y-2">
-                    <Label>模型标识</Label>
-                    <Input
-                      value={draft.providerModelId}
-                      placeholder="例如 deepseek-chat / qwen-plus / ep-xxxx"
-                      onChange={event => {
-                        const nextValue = event.target.value;
-                        updateDraft(model.id, d => ({ ...d, providerModelId: nextValue }));
-                      }}
-                    />
-                    {model.provider === "doubao" && (
-                      <p className="text-xs text-amber-600">
-                        豆包请填写方舟控制台中的 Endpoint/模型标识（通常不是 doubao-pro）。
-                      </p>
-                    )}
-                  </div>
-
-                  {/* API Key */}
-                  <div className="space-y-2">
-                    <Label>API Key</Label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          type={showApiKeys[model.id] ? "text" : "password"}
-                          value={draft.apiKey}
-                          placeholder={model.isConfigured ? (model.apiKeyMasked ?? "已配置") : "输入 API Key"}
-                          onChange={event => {
-                            const nextValue = event.target.value;
-                            updateDraft(model.id, d => ({ ...d, apiKey: nextValue, clearApiKey: false }));
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleApiKeyVisibility(model.id)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          aria-label={showApiKeys[model.id] ? "隐藏 API Key" : "显示 API Key"}
+                    {/* 操作按钮 */}
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleTest(model.id)}
+                          disabled={loadingAction === "test"}
                         >
-                          {showApiKeys[model.id] ? (
-                            <EyeOff className="h-4 w-4" />
+                          {loadingAction === "test" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              测试中
+                            </>
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            "测试连接"
                           )}
-                        </button>
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={loadingAction === "save"}
+                          onClick={() => void handleSave(model)}
+                        >
+                          {loadingAction === "save" ? "保存中..." : "保存"}
+                        </Button>
                       </div>
+                      {loadingAction === null && model.isConfigured && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-primary">已配置</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </PageSection>
 
-                  {/* Base URL */}
-                  <div className="space-y-2">
-                    <Label>Base URL（可选）</Label>
-                    <Input
-                      value={draft.baseUrl}
-                      placeholder="使用默认地址"
-                      onChange={event => {
-                        const nextValue = event.target.value;
-                        updateDraft(model.id, d => ({ ...d, baseUrl: nextValue }));
-                      }}
-                    />
-                  </div>
-
-                  {/* 操作按钮 */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void handleTest(model.id)}
-                        disabled={loadingAction === "test"}
-                      >
-                        {loadingAction === "test" ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            测试中
-                          </>
-                        ) : (
-                          "测试连接"
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={loadingAction === "save"}
-                        onClick={() => void handleSave(model)}
-                      >
-                        {loadingAction === "save" ? "保存中..." : "保存"}
-                      </Button>
-                    </div>
-                    {loadingAction === null && model.isConfigured && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className="text-primary">已配置</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </PageSection>
-
-      {/* 默认模型选择 */}
-      <PageSection
-        title="默认模型"
-        description="选择新书籍导入时默认使用的模型"
-      >
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Label className="w-32">默认解析模型</Label>
-              <Select
-                value={sortedModels.find(m => m.isDefault)?.id ?? ""}
-                onValueChange={(value: string) => void handleSetDefault(value)}
-              >
-                <SelectTrigger className="w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {enabledModels.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      </PageSection>
-
-      <PageSection
-        title="默认解析策略"
-        description="配置各解析阶段默认使用的 AI 模型"
-      >
-        {globalStrategyLoading ? (
+        {/* 默认模型选择 */}
+        <PageSection
+          title="默认模型"
+          description="选择新书籍导入时默认使用的模型"
+        >
           <Card>
-            <CardContent className="py-8 text-sm text-muted-foreground text-center">
-              正在加载全局模型策略...
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Label className="w-32">默认解析模型</Label>
+                <Select
+                  value={sortedModels.find(m => m.isDefault)?.id ?? ""}
+                  onValueChange={(value: string) => void handleSetDefault(value)}
+                >
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enabledModels.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        {model.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <ModelStrategyForm
-            initialStrategy={globalStrategy}
-            availableModels={strategyEnabledModels}
-            onSave={handleSaveGlobalStrategy}
-            showResetToRecommended
-          />
-        )}
-      </PageSection>
+        </PageSection>
 
-      {/* 主题设置 — 对齐 sheji 模型设置截图 */}
-      <PageSection
-        title="主题设置"
-        description="选择界面显示主题"
-      >
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-              <Label className="w-24 shrink-0 pt-1">界面主题</Label>
-              {isHydrated ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
-                  {THEME_OPTIONS.map((opt) => (
-                    <ThemePreviewCard
-                      key={opt.value}
-                      value={opt.value}
-                      label={opt.label}
-                      isSelected={selectedTheme === opt.value}
-                      onSelect={() => setTheme(opt.value)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
-                  {THEME_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-border opacity-60 cursor-default w-full text-left"
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    >
-                      <div className="w-full rounded overflow-hidden h-14 bg-muted" />
-                      <span className="text-xs font-medium">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </PageSection>
-    </div>
+        {/* 主题设置 — 对齐 sheji 模型设置截图 */}
+        <PageSection
+          title="主题设置"
+          description="选择界面显示主题"
+        >
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                <Label className="w-24 shrink-0 pt-1">界面主题</Label>
+                {isHydrated ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+                    {THEME_OPTIONS.map((opt) => (
+                      <ThemePreviewCard
+                        key={opt.value}
+                        value={opt.value}
+                        label={opt.label}
+                        isSelected={selectedTheme === opt.value}
+                        onSelect={() => setTheme(opt.value)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+                    {THEME_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-border opacity-60 cursor-default w-full text-left"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      >
+                        <div className="w-full rounded overflow-hidden h-14 bg-muted" />
+                        <span className="text-xs font-medium">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </PageSection>
+      </TabsContent>
+
+      <TabsContent value="strategy">
+        <PageSection
+          title="默认解析策略"
+          description="配置各解析阶段默认使用的 AI 模型"
+        >
+          {globalStrategyLoading ? (
+            <Card>
+              <CardContent className="py-8 text-sm text-muted-foreground text-center">
+                正在加载全局模型策略...
+              </CardContent>
+            </Card>
+          ) : (
+            <ModelStrategyForm
+              initialStrategy={globalStrategy}
+              availableModels={strategyEnabledModels}
+              onSave={handleSaveGlobalStrategy}
+              showResetToRecommended
+            />
+          )}
+        </PageSection>
+      </TabsContent>
+    </Tabs>
   );
 }

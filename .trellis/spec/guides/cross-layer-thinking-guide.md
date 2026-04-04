@@ -314,6 +314,45 @@ stageDefaults: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
 - `modelId(UUID)` 适合稳定引用具体模型实体；`aliasKey` 适合表达“默认推荐语义”。
 - 若推荐再回退到 `providerModelId`，会把“供应商协议字段”误当业务语义键，导致默认判定漂移。
 
+### 错误 13：模型状态排序规则分散在页面渲染里，导致展示顺序与业务状态契约漂移
+
+**反例**：只按 `isDefault` 排序，启用/未启用/未配置混排；或在多个组件各自实现排序分支。
+
+**正例**：把排序规则集中为单一 helper（示意）：
+- `0`: 默认模型
+- `1`: 启用模型
+- `2`: 未启用但已配置
+- `3`: 未配置
+
+并在页面中统一调用该 helper，避免重复实现。
+
+```ts
+function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState) {
+  if (model.isDefault) return 0;
+  if (draft?.isEnabled ?? model.isEnabled) return 1;
+  if (model.isConfigured || Boolean(draft?.apiKey.trim())) return 2;
+  return 3;
+}
+```
+
+原因：
+- 这是“模型状态语义层”→“管理台展示层”的跨层契约问题。
+- 排序规则如果散落在 JSX 条件分支中，新增状态（例如“未配置”）时很容易漏改，导致 UI 与运营认知不一致。
+- 规则集中后可复用、可测试，并能稳定支持二级排序（如 `name`）以减少列表抖动。
+
+### 错误 14：高密度设置页没有按任务流分区，导致“配置”与“策略”操作互相干扰
+
+**反例**：模型配置、默认模型、解析策略全部在同一长页面连续堆叠，用户很难聚焦当前任务。
+
+**正例**：按任务流切成清晰的 Tab 边界：
+- Tab A：模型配置 + 默认模型（偏资源与接入管理）
+- Tab B：解析策略（偏业务策略编排）
+
+原因：
+- 这是“信息架构层”与“交互任务层”的契约问题。
+- 当页面同时承载“接入配置”和“策略编排”两类任务时，不分区会放大误操作概率，也增加回归测试范围。
+- 使用稳定 Tab 边界能把状态变更影响面收敛到当前上下文，提高可维护性。
+
 ---
 
 ## 跨层功能检查清单
@@ -339,6 +378,8 @@ stageDefaults: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
 - [ ] 新增模型参数已声明 provider 能力矩阵（支持/映射/忽略策略）并有对应测试
 - [ ] 阶段策略跨层契约已统一为 `modelId(UUID)`（DTO/API/UI/Resolver）
 - [ ] 推荐默认跨层契约已统一为 `stageDefaults.*.aliasKey`（配置/UI 展示）
+- [ ] 状态型列表（默认/启用/未启用/未配置）排序规则已集中在单一 helper，并有明确次级排序规则
+- [ ] 高密度设置页已按任务流进行信息分区（如 Tab），避免“资源配置”与“策略编排”混杂
 
 ---
 
