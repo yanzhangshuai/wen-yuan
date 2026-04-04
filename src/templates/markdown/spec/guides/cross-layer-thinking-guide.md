@@ -154,6 +154,51 @@ type PerformanceSnapshot = {
 - 静态映射与真实运行时数据分叉后，UI 会长期显示过期信息，误导运营判断。
 - 契约应明确 null 语义（无样本时为 null/0）和评分来源（由后端计算并下发）。
 
+### 错误 7：HTTP 成功与业务成功语义混淆
+
+**反例**：路由层统一返回 `200 + { success: true, data }`，前端仅根据 HTTP/外层 `success` 就弹“测试成功”。
+
+**正例**：明确两层语义：
+- 传输层：HTTP/外层 `success` 仅代表“接口调用成功”；
+- 业务层：`data.success` 才代表“模型连通性成功”。
+
+```ts
+// 反例
+const result = await testModel(id);
+toast.success("测试成功");
+
+// 正例
+const result = await testModel(id);
+if (result.success) toast.success("测试成功");
+else toast.error(result.errorMessage ?? result.detail);
+```
+
+原因：
+- 这是“API 包装层契约”与“业务结果契约”的跨层分层问题。
+- 如果不区分语义层，任何业务失败都可能被 UI 误报为成功。
+
+### 错误 8：连通性探针仅看 HTTP 状态，未做语义校验
+
+**反例**：第三方返回 HTTP 200，但 body 内含 `error` 或缺少 `choices`，仍认定探活成功。
+
+**正例**：对 OpenAI-compatible provider 增加“最小语义契约”校验：
+- body 不含 `error`；
+- 存在 `choices[0].message.content`（或等价可读文本）。
+
+原因：
+- 这是“供应商协议层”与“平台探针层”的契约缺口。
+- 仅看状态码会漏掉鉴权失败、模型不可用、协议不兼容等软失败。
+
+### 错误 9：模型可选参数在策略层配置了，但调用层未透传
+
+**反例**：策略里有 `enableThinking/reasoningEffort`，但执行阶段 `toGenerateOptions` 或 provider 请求体丢失字段。
+
+**正例**：建立“策略 DTO → resolver params → service generate options → provider payload”的全链路透传，并加单测锁定。
+
+原因：
+- 这是典型的“变更传播失败（C）+ 跨层契约（B）”叠加问题。
+- 参数链路中任何一层漏传，功能都会“配置看似生效、运行实际无效”。
+
 ---
 
 ## 跨层功能检查清单
@@ -171,6 +216,9 @@ type PerformanceSnapshot = {
 - [ ] 涉及 UI 结构时，已确认 SSR HTML 在浏览器解析后不会因无效嵌套被重排（特别是交互元素嵌套）
 - [ ] 涉及浏览器本地状态时，已确认 SSR/CSR 首帧关键属性一致（必要时 mounted 门控）
 - [ ] 涉及统计/评分展示时，已确认前端只消费后端快照契约（无静态副本）并覆盖“无样本”语义测试
+- [ ] 使用统一 API 响应包装时，已区分“传输层 success”与“业务层 success”
+- [ ] 模型探活已验证响应语义（不只看 HTTP 状态码）
+- [ ] 新增模型参数（如 thinking/reasoning）已完成“策略->执行->provider”全链路透传测试
 
 ---
 
