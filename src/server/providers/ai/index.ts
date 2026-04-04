@@ -1,6 +1,7 @@
 import { DeepSeekClient } from "@/server/providers/ai/deepseekClient";
 import { DoubaoClient } from "@/server/providers/ai/doubaoClient";
 import { GeminiClient } from "@/server/providers/ai/geminiClient";
+import { GlmClient } from "@/server/providers/ai/glmClient";
 import { QwenClient } from "@/server/providers/ai/qwenClient";
 import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
@@ -36,7 +37,7 @@ export interface AiProviderClient {
  * 异常：无。
  * 副作用：无。
  */
-export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao";
+export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao" | "glm";
 
 /**
  * 功能：定义创建 Provider 客户端所需的运行时配置（来自数据库模型设置）。
@@ -77,6 +78,8 @@ export function createAiProviderClient(input: CreateAiProviderInput): AiProvider
       );
     case "doubao":
       return new DoubaoClient(input.apiKey, input.baseUrl ?? "https://ark.cn-beijing.volces.com/api/v3", input.modelName);
+    case "glm":
+      return new GlmClient(input.apiKey, input.baseUrl ?? "https://open.bigmodel.cn/api/paas/v4", input.modelName);
     default: {
       const exhaustiveCheck: never = input.provider;
       throw new Error(`Unsupported provider: ${String(exhaustiveCheck)}`);

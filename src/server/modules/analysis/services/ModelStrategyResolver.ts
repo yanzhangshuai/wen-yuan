@@ -12,7 +12,7 @@ import {
   type StageParams
 } from "@/types/pipeline";
 
-const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao"];
+const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao", "glm"];
 const ALL_PIPELINE_STAGES: PipelineStage[] = [
   ...BUSINESS_PIPELINE_STAGES,
   PipelineStage.FALLBACK

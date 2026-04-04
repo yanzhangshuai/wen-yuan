@@ -176,4 +176,35 @@ describe("ModelStrategyResolver", () => {
     expect(fallback.modelId).toBe(MODEL_IDS.systemDefault);
     expect(fallback.source).toBe("SYSTEM_DEFAULT");
   });
+
+  it("accepts glm provider in configured stage model", async () => {
+    const prismaMock = {
+      modelStrategyConfig: {
+        findFirst: vi.fn(async ({ where }: { where: { scope: string } }) => {
+          if (where.scope === "GLOBAL") {
+            return {
+              stages: {
+                [PipelineStage.ROSTER_DISCOVERY]: {
+                  modelId: MODEL_IDS.bookRoster
+                }
+              }
+            };
+          }
+          return null;
+        })
+      },
+      aiModel: {
+        findMany : vi.fn(async () => ([buildModel({ id: MODEL_IDS.bookRoster, provider: "glm", modelId: "glm-4.6", name: "GLM 4.6" })])),
+        findFirst: vi.fn(async () => buildModel({ id: MODEL_IDS.systemDefault, name: "System Default Model" }))
+      }
+    };
+
+    const resolver = createModelStrategyResolver(prismaMock as never);
+    const resolved = await resolver.resolveForStage(PipelineStage.ROSTER_DISCOVERY, {});
+
+    expect(resolved.modelId).toBe(MODEL_IDS.bookRoster);
+    expect(resolved.provider).toBe("glm");
+    expect(resolved.modelName).toBe("glm-4.6");
+    expect(resolved.source).toBe("GLOBAL");
+  });
 });

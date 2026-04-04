@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "next:stop-stale-dev",
+      "type": "shell",
+      "command": "pkill -f '${workspaceFolder}/node_modules/.bin/../next/dist/bin/next dev' || true",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -139,7 +139,7 @@ model User {
 /// @db.remark: AI 模型配置表。存储各模型的 Key、BaseURL 及启用状态，由设置页管理。
 model AiModel {
   id        String     @id @default(uuid()) @db.Uuid // 模型配置主键
-  provider  String // 推荐值: "deepseek" | "qwen" | "doubao" | "gemini"
+  provider  String // 推荐值: "deepseek" | "qwen" | "doubao" | "gemini" | "glm"
   name      String // 显示名称，如 "DeepSeek V3"
   modelId   String     @map("model_id") // API 调用标识，如 "deepseek-chat"
   baseUrl   String     @map("base_url") // 可自定义，支持私有部署

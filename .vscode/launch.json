@@ -2,20 +2,74 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Next.js: Launch Dev Debug",
+      "name": "Next.js: Client Debug",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm dev:debug"
+      "command": "pnpm dev",
+      "preLaunchTask": "next:stop-stale-dev",
+      "cwd": "${workspaceFolder}",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**",
+        "**/.pnpm/**"
+      ],
+      "serverReadyAction": {
+        "action": "debugWithChrome",
+        "pattern": "- Local:\\s+(https?://.+)",
+        "uriFormat": "%s",
+        "webRoot": "${workspaceFolder}"
+      }
     },
     {
-      "name": "Next.js: Attach (9229)",
+      "name": "Next.js: Node API Debug",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm exec next dev --inspect=9229 --webpack",
+      "preLaunchTask": "next:stop-stale-dev",
+      "cwd": "${workspaceFolder}",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**",
+        "**/.pnpm/**"
+      ],
+      "serverReadyAction": {
+        "action": "startDebugging",
+        "name": "Next.js: _Attach API Internal",
+        "pattern": "Debugger listening on .*:9229"
+      }
+    },
+    {
+      "name": "Next.js: _Attach API Internal",
       "type": "node",
       "request": "attach",
+      "address": "127.0.0.1",
       "port": 9229,
       "restart": true,
+      "timeout": 60000,
+      "continueOnAttach": true,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "smartStep": true,
+      "outFiles": [
+        "${workspaceFolder}/.next/**/*.js"
+      ],
+      "sourceMapPathOverrides": {
+        "webpack://_N_E/*": "${workspaceFolder}/*",
+        "webpack:///*": "*",
+        "file:///*": "*"
+      },
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "skipFiles": [
-        "<node_internals>/**"
-      ]
+        "<node_internals>/**",
+        "**/node_modules/**",
+        "**/.pnpm/**"
+      ],
+      "presentation": {
+        "hidden": true
+      }
     }
   ]
 }

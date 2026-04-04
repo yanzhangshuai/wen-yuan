@@ -9,6 +9,8 @@ import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, modelRouteParamsSchema } from "../../_shared";
 
+export const runtime = "nodejs";
+
 /**
  * POST `/api/admin/models/:id/test`
  * 功能：触发模型联通性测试（管理员操作）。

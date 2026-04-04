@@ -45,4 +45,15 @@ describe("createAiProviderClient", () => {
 
     expect(client).toBeDefined();
   });
+
+  it("creates glm provider client from db settings", () => {
+    const client = createAiProviderClient({
+      provider : "glm",
+      apiKey   : "test-key",
+      baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
+      modelName: "glm-4.6"
+    });
+
+    expect(client).toBeDefined();
+  });
 });

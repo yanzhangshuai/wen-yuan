@@ -184,7 +184,7 @@ pnpm prisma:seed
 
 - [ ] `users` 表存在 1 条 `role=ADMIN` 记录，`username` = 环境变量 `ADMIN_USERNAME`
 - [ ] 密码字段以 `$argon2id$` 开头（非明文）
-- [ ] `ai_models` 表存在 6 条预置模型记录：DeepSeek V3、DeepSeek R1、通义千问 Max、通义千问 Plus、豆包 Pro、Gemini Flash
+- [ ] `ai_models` 表存在 7 条预置模型记录：DeepSeek V3、DeepSeek R1、通义千问 Max、通义千问 Plus、豆包 Pro、GLM 4.6、Gemini Flash
 - [ ] 所有模型 `is_enabled=false`，`is_default=false`（初始状态）
 - [ ] Seed 幂等：重复执行不报错，不产生重复数据
 
@@ -738,7 +738,7 @@ it("rejects path traversal in key", async () => {
 
 | 测试用例 | 验收条件 |
 |---|---|
-| 返回所有模型（6 条预置） | — |
+| 返回所有模型（7 条预置） | — |
 | `apiKey` 已脱敏 | 格式为 `sk-****xxxx`，非明文 |
 | `apiKey=null` 时返回 null 或空字符串 | 不崩溃 |
 | Viewer 访问 | 403 |
@@ -772,7 +772,7 @@ it("rejects path traversal in key", async () => {
 | 超时 | `{ success: false, errorType: 'TIMEOUT' }` |
 | 响应中不含明文 API Key | 检查响应 body 和 headers |
 | SSRF 防护：非白名单域被禁止 | 400 或明确报错 |
-| 白名单域包含 deepseek/qwen/doubao/gemini 官方地址 | 正常访问 |
+| 白名单域包含 deepseek/qwen/doubao/glm/gemini 官方地址 | 正常访问 |
 
 ---
 

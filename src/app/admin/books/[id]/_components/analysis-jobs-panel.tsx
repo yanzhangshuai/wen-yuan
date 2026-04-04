@@ -68,6 +68,8 @@ const MODEL_PRICING_CNY_PER_1M: Record<string, { prompt: number; completion: num
   "deepseek v3"  : { prompt: 2, completion: 8 },
   "deepseek chat": { prompt: 2, completion: 8 },
   "gemini flash" : { prompt: 0.7, completion: 2.1 },
+  "glm 4.6"      : { prompt: 1.2, completion: 2.8 },
+  "glm-4.6"      : { prompt: 1.2, completion: 2.8 },
   "通义千问 max"     : { prompt: 4, completion: 12 },
   "通义千问 plus"    : { prompt: 1, completion: 3 },
   "qwen max"     : { prompt: 4, completion: 12 },

@@ -1,0 +1,122 @@
+{
+  "version": "v1",
+  "currency": "CNY",
+  "models": {
+    "qwen-max-latest": {
+      "displayName": "Qwen Max",
+      "provider": "qwen",
+      "modelId": "qwen-max",
+      "pricing": {
+        "promptPer1M": 2.4,
+        "completionPer1M": 6.0
+      }
+    },
+    "qwen-plus-latest": {
+      "displayName": "Qwen Plus",
+      "provider": "qwen",
+      "modelId": "qwen-plus",
+      "pricing": {
+        "promptPer1M": 0.8,
+        "completionPer1M": 2.0
+      }
+    },
+    "glm-4.6": {
+      "displayName": "GLM 4.6",
+      "provider": "glm",
+      "modelId": "glm-4.6",
+      "pricing": {
+        "promptPer1M": 1.2,
+        "completionPer1M": 2.8
+      }
+    },
+    "deepseek-chat": {
+      "displayName": "DeepSeek Chat",
+      "provider": "deepseek",
+      "modelId": "deepseek-chat",
+      "pricing": {
+        "promptPer1M": 0.7,
+        "completionPer1M": 1.4
+      }
+    },
+    "deepseek-reasoner": {
+      "displayName": "DeepSeek Reasoner",
+      "provider": "deepseek",
+      "modelId": "deepseek-reasoner",
+      "pricing": {
+        "promptPer1M": 4.0,
+        "completionPer1M": 16.0
+      }
+    },
+    "gemini-2.5-pro": {
+      "displayName": "Gemini 2.5 Pro",
+      "provider": "gemini",
+      "modelId": "gemini-2.5-pro",
+      "pricing": {
+        "promptPer1M": 3.0,
+        "completionPer1M": 12.0
+      }
+    }
+  },
+  "phaseCandidates": {
+    "ROSTER_DISCOVERY": [
+      {
+        "candidateId": "phase1-qwen-max",
+        "label": "Phase1 中文语义强档 Qwen",
+        "primaryModelKey": "qwen-max-latest",
+        "fallbackModelKey": "qwen-plus-latest"
+      },
+      {
+        "candidateId": "phase1-glm46",
+        "label": "Phase1 中文语义强档 GLM",
+        "primaryModelKey": "glm-4.6",
+        "fallbackModelKey": "qwen-plus-latest"
+      }
+    ],
+    "CHUNK_EXTRACTION": [
+      {
+        "candidateId": "phase2-deepseek-chat",
+        "label": "Phase2 高性价比结构化 DeepSeek",
+        "primaryModelKey": "deepseek-chat",
+        "fallbackModelKey": "qwen-plus-latest"
+      },
+      {
+        "candidateId": "phase2-qwen-plus",
+        "label": "Phase2 高性价比结构化 Qwen",
+        "primaryModelKey": "qwen-plus-latest",
+        "fallbackModelKey": "deepseek-chat"
+      }
+    ],
+    "TITLE_RESOLUTION": [
+      {
+        "candidateId": "phase5-deepseek-reasoner",
+        "label": "Phase5 推理档按需启用",
+        "primaryModelKey": "deepseek-reasoner",
+        "fallbackModelKey": "qwen-plus-latest"
+      },
+      {
+        "candidateId": "phase5-qwen-max",
+        "label": "Phase5 语义档对照组",
+        "primaryModelKey": "qwen-max-latest",
+        "fallbackModelKey": "qwen-plus-latest"
+      }
+    ],
+    "BOOK_VALIDATION": [
+      {
+        "candidateId": "bookval-reasoner",
+        "label": "全书验证 Reasoner",
+        "primaryModelKey": "deepseek-reasoner",
+        "fallbackModelKey": "qwen-plus-latest"
+      },
+      {
+        "candidateId": "bookval-gemini-long-context",
+        "label": "全书验证 Gemini 超长上下文特例",
+        "primaryModelKey": "gemini-2.5-pro",
+        "fallbackModelKey": "qwen-plus-latest"
+      }
+    ]
+  },
+  "defaults": {
+    "fallbackModelKey": "qwen-plus-latest"
+  },
+  "notes": "模型价格请按供应商最新报价定期更新。候选池只表达能力档位，不绑定单一版本生命周期。"
+}

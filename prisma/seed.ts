@@ -111,6 +111,13 @@ const defaultAiModels = [
     isDefault: false
   },
   {
+    provider : "glm",
+    name     : "GLM 4.6",
+    modelId  : "glm-4.6",
+    baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
+    isDefault: false
+  },
+  {
     provider : "gemini",
     name     : "Gemini Flash",
     modelId  : "gemini-3.1-flash",

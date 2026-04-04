@@ -8,25 +8,27 @@
 
 ## Preflight Checklist
 
-- [ ] `pnpm lint` 通过
-- [ ] `pnpm type-check` 通过
-- [ ] `pnpm test` 通过
-- [ ] 金标数据 schema 校验通过
-- [ ] 实验报告与指标文件已生成
+- [x] `pnpm lint` 通过（2026-04-04）
+- [x] `pnpm type-check` 通过（2026-04-04）
+- [x] `pnpm test` 通过（2026-04-04，98 files / 593 tests）
+- [x] 金标数据 schema 校验通过（`EVAL_GOLDSET_VALID`）
+- [x] 实验报告与指标文件已生成
 
 ## Success Path
 
-- **Scenario**: 完整执行 Phase1/2/5/全书验证 A/B，产出可用 stage model map。
+- **Scenario**: 完整执行 Phase1/2/5/全书验证 A/B，产出指标与 gate 判定。
 - **Steps**:
-  1. 运行质量门禁命令。
-  2. 运行金标校验脚本。
-  3. 分阶段执行 A/B（ROSTER_DISCOVERY、CHUNK_EXTRACTION、TITLE_RESOLUTION、BOOK_VALIDATION）。
-  4. 汇总指标并执行门禁判定脚本。
+  1. 运行金标校验脚本。
+  2. 执行四阶段 A/B（dry-run，保证链路可执行）。
+  3. 计算指标并执行门禁判定。
 - **Expected**:
-  - `docs/eval/metrics.summary.json` 成功产出。
-  - `docs/eval/gate.result.json` 为 `PASS`。
-  - 生成阶段报告与 `model-stage-map.v1.json`。
-- **Actual**: 待执行后填写。
+  - 产出 `docs/eval/metrics.summary.json`。
+  - 产出 `docs/eval/gate.result.json`。
+  - 在真实数据下 gate 可据实给出 PASS/FAIL。
+- **Actual**:
+  - 以上文件均成功产出。
+  - 当前运行为 dry-run，`gate.result.json` 判定 `FAIL`（`phasesPassed=0/4`，`runsPassed=0/8`）。
+  - 原因：dry-run 无真实抽取结果，`jsonSuccessRate/cost/throughput` 为 `null`，F1 为 0。
 - **Evidence**:
   - 命令输出日志：`docs/eval/logs/success-path.log`
   - 指标文件：`docs/eval/metrics.summary.json`
@@ -34,36 +36,40 @@
 
 ## Failure Path
 
-- **Scenario**: 使用非法输入验证错误处理与错误码稳定性。
+- **Scenario**: 用非法输入验证错误处理、错误码与错误信息稳定性。
 - **Steps**:
-  1. 构造不符合 schema 的 goldset 行。
-  2. 以非法 `--phase` 调用 A/B 脚本。
-  3. 使用无效候选池路径调用脚本。
+  1. 使用损坏的 goldset JSONL。
+  2. 使用非法 `--phase`。
+  3. 使用不存在的候选池路径。
 - **Expected**:
-  - 失败分支返回稳定错误码。
-  - 错误信息可读且能定位具体参数或文件。
-  - 不发生静默成功。
-- **Actual**: 待执行后填写。
+  - 返回稳定错误码。
+  - 错误信息可读，能定位输入问题。
+- **Actual**:
+  - Case1 返回 `EVAL_GOLDSET_VALIDATION_FAILED` + `EVAL_GOLDSET_JSONL_PARSE_FAILED`，退出码 `1`。
+  - Case2 返回 `EVAL_STAGE_AB_FAILED`（`--phase` 非法），退出码 `1`。
+  - Case3 返回 `EVAL_STAGE_AB_FAILED`（`ENOENT`），退出码 `1`。
 - **Evidence**:
   - 命令输出日志：`docs/eval/logs/failure-path.log`
-  - 错误码汇总：`docs/eval/failure-cases.json`
+  - 错误案例汇总：`docs/eval/failure-cases.json`
 
 ## Boundary Path
 
-- **Scenario**: 边界数据下系统稳定处理。
+- **Scenario**: 边界输入（空列表、最小样本、全量样本）下流程稳定性验证。
 - **Steps**:
-  1. `chapter-list` 为空列表。
-  2. 单章最小样本（1章）执行 A/B。
-  3. 全量样本（20章）执行 A/B。
-  4. 超长章节触发 Phase1 长输入保护。
+  1. 空章节列表 `[]`。
+  2. 单章列表 `[1]`。
+  3. 全量 20 章列表。
 - **Expected**:
-  - 空输入返回稳定错误而非崩溃。
-  - 1章/20章都能按契约输出。
-  - 长章节场景可完成并写入阶段日志。
-- **Actual**: 待执行后填写。
+  - 空输入返回可读错误。
+  - 1章和20章可稳定产出结果文件。
+- **Actual**:
+  - 空列表返回 `EVAL_STAGE_AB_FAILED` + `chapter-list 不能为空`，退出码 `1`。
+  - 单章与20章均返回 `EVAL_STAGE_AB_COMPLETED`，退出码 `0`，并产出实验文件。
+  - 超长章节保护需真实书籍数据与数据库链路，dry-run 未覆盖该子场景。
 - **Evidence**:
   - 命令输出日志：`docs/eval/logs/boundary-path.log`
-  - 边界结果汇总：`docs/eval/boundary-cases.json`
+  - 边界案例汇总：`docs/eval/boundary-cases.json`
+  - 边界实验文件：`docs/eval/experiments/boundary_one_chapter.json`、`docs/eval/experiments/boundary_full_chapters.json`
 
 ## Commands Run
 
@@ -78,31 +84,35 @@ pnpm ts-node scripts/eval/validate-goldset.ts \
 
 pnpm ts-node scripts/eval/run-stage-ab.ts \
   --phase ROSTER_DISCOVERY \
-  --book-id <BOOK_ID> \
+  --book-id DRYRUN_BOOK_001 \
   --chapter-list data/eval/chapters.20.json \
   --candidate-set config/model-candidates.v1.json \
-  --experiment-tag phase1_ab_v1
+  --experiment-tag phase1_ab_v1 \
+  --dry-run
 
 pnpm ts-node scripts/eval/run-stage-ab.ts \
   --phase CHUNK_EXTRACTION \
-  --book-id <BOOK_ID> \
+  --book-id DRYRUN_BOOK_001 \
   --chapter-list data/eval/chapters.20.json \
   --candidate-set config/model-candidates.v1.json \
-  --experiment-tag phase2_ab_v1
+  --experiment-tag phase2_ab_v1 \
+  --dry-run
 
 pnpm ts-node scripts/eval/run-stage-ab.ts \
   --phase TITLE_RESOLUTION \
-  --book-id <BOOK_ID> \
+  --book-id DRYRUN_BOOK_001 \
   --chapter-list data/eval/chapters.20.json \
   --candidate-set config/model-candidates.v1.json \
-  --experiment-tag phase5_ab_v1
+  --experiment-tag phase5_ab_v1 \
+  --dry-run
 
 pnpm ts-node scripts/eval/run-stage-ab.ts \
   --phase BOOK_VALIDATION \
-  --book-id <BOOK_ID> \
+  --book-id DRYRUN_BOOK_001 \
   --chapter-list data/eval/chapters.20.json \
   --candidate-set config/model-candidates.v1.json \
-  --experiment-tag bookval_ab_v1
+  --experiment-tag bookval_ab_v1 \
+  --dry-run
 
 pnpm ts-node scripts/eval/compute-metrics.ts \
   --experiments phase1_ab_v1,phase2_ab_v1,phase5_ab_v1,bookval_ab_v1 \
@@ -118,10 +128,10 @@ pnpm ts-node scripts/eval/check-gate.ts \
 ## Acceptance Decision
 
 - [ ] PASS
-- [ ] FAIL
-- **Decision Reason**: 待执行后填写。
+- [x] FAIL
+- **Decision Reason**: 当前仅完成 dry-run 级链路验收，未连接真实分析任务执行与真实抽取结果，导致四项核心指标不达门禁阈值（详见 `docs/eval/gate.result.json`）。
 
 ## Reviewer Sign-off
 
-- Reviewer: `________________`
-- Date: `________________`
+- Reviewer: `待评审`
+- Date: `2026-04-04`

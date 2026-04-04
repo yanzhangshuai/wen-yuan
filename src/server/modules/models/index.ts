@@ -4,9 +4,9 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { decryptValue, encryptValue, maskSensitiveValue } from "@/server/security/encryption";
 
 type FetchImpl = typeof fetch;
-type SupportedProvider = "deepseek" | "qwen" | "doubao" | "gemini";
+type SupportedProvider = "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
 
-const providerSchema = z.enum(["deepseek", "qwen", "doubao", "gemini"]);
+const providerSchema = z.enum(["deepseek", "qwen", "doubao", "gemini", "glm"]);
 
 const idSchema = z.string().trim().min(1, "模型 ID 不能为空");
 
@@ -42,7 +42,7 @@ interface AiModelRecord {
 
 export interface ModelListItem {
   id          : string;
-  provider    : "deepseek" | "qwen" | "doubao" | "gemini";
+  provider    : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
   name        : string;
   modelId     : string;
   baseUrl     : string;
@@ -101,7 +101,8 @@ const connectivityHostAllowList: Record<SupportedProvider, readonly string[]> = 
   deepseek: ["api.deepseek.com"],
   qwen    : ["dashscope.aliyuncs.com"],
   doubao  : ["ark.cn-beijing.volces.com"],
-  gemini  : ["generativelanguage.googleapis.com"]
+  gemini  : ["generativelanguage.googleapis.com"],
+  glm     : ["open.bigmodel.cn"]
 };
 
 /**
@@ -440,7 +441,7 @@ export function createModelsModule(
           }
         );
       } else {
-        // DeepSeek/Qwen/Doubao 统一按 OpenAI-compatible chat/completions 最小请求探活。
+        // DeepSeek/Qwen/Doubao/GLM 统一按 OpenAI-compatible chat/completions 最小请求探活。
         response = await fetchImpl(`${baseUrl}/chat/completions`, {
           method : "POST",
           headers: {

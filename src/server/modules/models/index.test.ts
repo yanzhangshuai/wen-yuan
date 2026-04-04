@@ -51,9 +51,9 @@ describe("models module", () => {
           }),
           createAiModelRecord({
             id      : "model-2",
-            provider: "gemini",
-            name    : "Gemini Flash",
-            modelId : "gemini-2.0-flash",
+            provider: "glm",
+            name    : "GLM 4.6",
+            modelId : "glm-4.6",
             apiKey  : null
           })
         ])
@@ -73,7 +73,7 @@ describe("models module", () => {
       }),
       expect.objectContaining({
         id          : "model-2",
-        provider    : "gemini",
+        provider    : "glm",
         apiKeyMasked: null,
         isConfigured: false
       })
@@ -283,6 +283,45 @@ describe("models module", () => {
     expect(result.detail).toBe("quota exceeded");
     expect(result.errorType).toBe("MODEL_UNAVAILABLE");
     expect(result.errorMessage).toBe("quota exceeded");
+  });
+
+  it("tests glm model connectivity with openai-compatible endpoint", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: "chatcmpl-glm"
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          provider: "glm",
+          modelId : "glm-4.6",
+          baseUrl : "https://open.bigmodel.cn/api/paas/v4/",
+          apiKey  : encryptValue("glm-secret")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      expect.objectContaining({
+        method : "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer glm-secret"
+        })
+      })
+    );
+    expect(result.success).toBe(true);
+    expect(result.detail).toBe("连接成功");
+    expect(result.errorType).toBeUndefined();
   });
 
   it("throws a readable error when api key is missing during connectivity test", async () => {

@@ -38,7 +38,7 @@ const STAGE_LABELS: Record<PipelineStage, string> = {
 };
 
 const RECOMMENDED_MODELS: Record<PipelineStage, { provider: string; modelId: string; label: string } | null> = {
-  [PipelineStage.ROSTER_DISCOVERY]     : { provider: "qwen", modelId: "qwen-max", label: "通义千问 Max" },
+  [PipelineStage.ROSTER_DISCOVERY]     : { provider: "glm", modelId: "glm-4.6", label: "GLM 4.6" },
   [PipelineStage.CHUNK_EXTRACTION]     : { provider: "deepseek", modelId: "deepseek-chat", label: "DeepSeek V3" },
   [PipelineStage.CHAPTER_VALIDATION]   : { provider: "qwen", modelId: "qwen-plus", label: "通义千问 Plus" },
   [PipelineStage.TITLE_RESOLUTION]     : { provider: "qwen", modelId: "qwen-max", label: "通义千问 Max" },

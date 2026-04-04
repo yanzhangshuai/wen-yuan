@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wen-yuan/eval/goldset.v1",
+  "title": "WenYuan Goldset Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bookId",
+    "chapterNo",
+    "personas",
+    "relationships"
+  ],
+  "properties": {
+    "bookId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chapterNo": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "chapterTitle": {
+      "type": "string"
+    },
+    "textLength": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "personas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "target",
+          "type"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

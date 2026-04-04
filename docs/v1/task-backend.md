@@ -91,7 +91,7 @@ enum AppRole {
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | `id` | `UUID` | PK | — |
-| `provider` | `String` | NOT NULL | `deepseek` / `qwen` / `doubao` / `gemini` |
+| `provider` | `String` | NOT NULL | `deepseek` / `qwen` / `doubao` / `glm` / `gemini` |
 | `name` | `String` | NOT NULL | 显示名称 |
 | `model_id` | `String` | NOT NULL | API 调用标识 |
 | `base_url` | `String` | NOT NULL | 默认官方地址，可自定义 |
@@ -109,8 +109,9 @@ enum AppRole {
 | DeepSeek R1 | `deepseek-reasoner` | `https://api.deepseek.com` | `DEEPSEEK_API_KEY` |
 | 通义千问 Max | `qwen-max` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `QWEN_API_KEY` |
 | 通义千问 Plus | `qwen-plus` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `QWEN_API_KEY` |
-| 豆包 Pro | `doubao-pro-32k` | `https://ark.cn-beijing.volces.com/api/v3` | `DOUBAO_API_KEY` |
-| Gemini Flash | `gemini-1.5-flash` | `https://generativelanguage.googleapis.com` | `GEMINI_API_KEY` |
+| 豆包 Pro | `doubao-pro` | `https://ark.cn-beijing.volces.com/api/v3` | `DOUBAO_API_KEY` |
+| GLM 4.6 | `glm-4.6` | `https://open.bigmodel.cn/api/paas/v4` | `GLM_API_KEY` |
+| Gemini Flash | `gemini-3.1-flash` | `https://generativelanguage.googleapis.com` | `GEMINI_API_KEY` |
 
 ### 3.4 `Book` 表新增字段
 

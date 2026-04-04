@@ -1,0 +1,734 @@
+{
+  "version": "eval-metrics.v1",
+  "generatedAt": "2026-04-03T23:52:49.669Z",
+  "input": {
+    "goldsetPath": "/home/mwjz/code/wen-yuan/data/eval/goldset.v1.jsonl",
+    "experimentPaths": [
+      "/home/mwjz/code/wen-yuan/docs/eval/experiments/phase1_ab_v1.json",
+      "/home/mwjz/code/wen-yuan/docs/eval/experiments/phase2_ab_v1.json",
+      "/home/mwjz/code/wen-yuan/docs/eval/experiments/phase5_ab_v1.json",
+      "/home/mwjz/code/wen-yuan/docs/eval/experiments/bookval_ab_v1.json"
+    ]
+  },
+  "goldset": {
+    "recordCount": 20,
+    "bookIds": [
+      "BOOK_ID_PLACEHOLDER"
+    ]
+  },
+  "experiments": [
+    {
+      "experimentTag": "phase1_ab_v1",
+      "phase": "ROSTER_DISCOVERY",
+      "sourceFile": "/home/mwjz/code/wen-yuan/docs/eval/experiments/phase1_ab_v1.json",
+      "bookId": "DRYRUN_BOOK_001",
+      "chapterList": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "dryRun": true,
+      "goldsetScope": "FALLBACK_ALL_BOOKS",
+      "runs": [
+        {
+          "candidateId": "phase1-qwen-max",
+          "label": "Phase1 中文语义强档 Qwen",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        },
+        {
+          "candidateId": "phase1-glm46",
+          "label": "Phase1 中文语义强档 GLM",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        }
+      ],
+      "ranking": {
+        "byEntityF1": [
+          {
+            "candidateId": "phase1-qwen-max",
+            "value": 0
+          },
+          {
+            "candidateId": "phase1-glm46",
+            "value": 0
+          }
+        ],
+        "byRelationF1": [
+          {
+            "candidateId": "phase1-qwen-max",
+            "value": 0
+          },
+          {
+            "candidateId": "phase1-glm46",
+            "value": 0
+          }
+        ],
+        "byF1Mean": [
+          {
+            "candidateId": "phase1-qwen-max",
+            "value": 0
+          },
+          {
+            "candidateId": "phase1-glm46",
+            "value": 0
+          }
+        ],
+        "byCostPer10kChars": [
+          {
+            "candidateId": "phase1-qwen-max",
+            "value": null
+          },
+          {
+            "candidateId": "phase1-glm46",
+            "value": null
+          }
+        ],
+        "byThroughputMsPer10k": [
+          {
+            "candidateId": "phase1-qwen-max",
+            "value": null
+          },
+          {
+            "candidateId": "phase1-glm46",
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "experimentTag": "phase2_ab_v1",
+      "phase": "CHUNK_EXTRACTION",
+      "sourceFile": "/home/mwjz/code/wen-yuan/docs/eval/experiments/phase2_ab_v1.json",
+      "bookId": "DRYRUN_BOOK_001",
+      "chapterList": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "dryRun": true,
+      "goldsetScope": "FALLBACK_ALL_BOOKS",
+      "runs": [
+        {
+          "candidateId": "phase2-deepseek-chat",
+          "label": "Phase2 高性价比结构化 DeepSeek",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        },
+        {
+          "candidateId": "phase2-qwen-plus",
+          "label": "Phase2 高性价比结构化 Qwen",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        }
+      ],
+      "ranking": {
+        "byEntityF1": [
+          {
+            "candidateId": "phase2-deepseek-chat",
+            "value": 0
+          },
+          {
+            "candidateId": "phase2-qwen-plus",
+            "value": 0
+          }
+        ],
+        "byRelationF1": [
+          {
+            "candidateId": "phase2-deepseek-chat",
+            "value": 0
+          },
+          {
+            "candidateId": "phase2-qwen-plus",
+            "value": 0
+          }
+        ],
+        "byF1Mean": [
+          {
+            "candidateId": "phase2-deepseek-chat",
+            "value": 0
+          },
+          {
+            "candidateId": "phase2-qwen-plus",
+            "value": 0
+          }
+        ],
+        "byCostPer10kChars": [
+          {
+            "candidateId": "phase2-deepseek-chat",
+            "value": null
+          },
+          {
+            "candidateId": "phase2-qwen-plus",
+            "value": null
+          }
+        ],
+        "byThroughputMsPer10k": [
+          {
+            "candidateId": "phase2-deepseek-chat",
+            "value": null
+          },
+          {
+            "candidateId": "phase2-qwen-plus",
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "experimentTag": "phase5_ab_v1",
+      "phase": "TITLE_RESOLUTION",
+      "sourceFile": "/home/mwjz/code/wen-yuan/docs/eval/experiments/phase5_ab_v1.json",
+      "bookId": "DRYRUN_BOOK_001",
+      "chapterList": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "dryRun": true,
+      "goldsetScope": "FALLBACK_ALL_BOOKS",
+      "runs": [
+        {
+          "candidateId": "phase5-deepseek-reasoner",
+          "label": "Phase5 推理档按需启用",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        },
+        {
+          "candidateId": "phase5-qwen-max",
+          "label": "Phase5 语义档对照组",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        }
+      ],
+      "ranking": {
+        "byEntityF1": [
+          {
+            "candidateId": "phase5-deepseek-reasoner",
+            "value": 0
+          },
+          {
+            "candidateId": "phase5-qwen-max",
+            "value": 0
+          }
+        ],
+        "byRelationF1": [
+          {
+            "candidateId": "phase5-deepseek-reasoner",
+            "value": 0
+          },
+          {
+            "candidateId": "phase5-qwen-max",
+            "value": 0
+          }
+        ],
+        "byF1Mean": [
+          {
+            "candidateId": "phase5-deepseek-reasoner",
+            "value": 0
+          },
+          {
+            "candidateId": "phase5-qwen-max",
+            "value": 0
+          }
+        ],
+        "byCostPer10kChars": [
+          {
+            "candidateId": "phase5-deepseek-reasoner",
+            "value": null
+          },
+          {
+            "candidateId": "phase5-qwen-max",
+            "value": null
+          }
+        ],
+        "byThroughputMsPer10k": [
+          {
+            "candidateId": "phase5-deepseek-reasoner",
+            "value": null
+          },
+          {
+            "candidateId": "phase5-qwen-max",
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "experimentTag": "bookval_ab_v1",
+      "phase": "BOOK_VALIDATION",
+      "sourceFile": "/home/mwjz/code/wen-yuan/docs/eval/experiments/bookval_ab_v1.json",
+      "bookId": "DRYRUN_BOOK_001",
+      "chapterList": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "dryRun": true,
+      "goldsetScope": "FALLBACK_ALL_BOOKS",
+      "runs": [
+        {
+          "candidateId": "bookval-reasoner",
+          "label": "全书验证 Reasoner",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        },
+        {
+          "candidateId": "bookval-gemini-long-context",
+          "label": "全书验证 Gemini 超长上下文特例",
+          "jobId": "DRY_RUN",
+          "jobStatus": "QUEUED",
+          "jsonSuccessRate": null,
+          "entity": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 40
+          },
+          "relation": {
+            "precision": 0,
+            "recall": 0,
+            "f1": 0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 20
+          },
+          "f1Mean": 0,
+          "estimatedCost": {
+            "currency": "CNY",
+            "total": 0,
+            "per10kChars": null,
+            "missingPrice": 0
+          },
+          "throughput": {
+            "totalDurationMs": 0,
+            "jobDurationMs": null,
+            "msPer10kChars": null,
+            "totalPredictedChars": 0
+          },
+          "coverage": {
+            "chapterCount": 20,
+            "missingGoldChapters": [],
+            "missingPredictedChapters": [],
+            "extraPredictedChapters": []
+          }
+        }
+      ],
+      "ranking": {
+        "byEntityF1": [
+          {
+            "candidateId": "bookval-reasoner",
+            "value": 0
+          },
+          {
+            "candidateId": "bookval-gemini-long-context",
+            "value": 0
+          }
+        ],
+        "byRelationF1": [
+          {
+            "candidateId": "bookval-reasoner",
+            "value": 0
+          },
+          {
+            "candidateId": "bookval-gemini-long-context",
+            "value": 0
+          }
+        ],
+        "byF1Mean": [
+          {
+            "candidateId": "bookval-reasoner",
+            "value": 0
+          },
+          {
+            "candidateId": "bookval-gemini-long-context",
+            "value": 0
+          }
+        ],
+        "byCostPer10kChars": [
+          {
+            "candidateId": "bookval-reasoner",
+            "value": null
+          },
+          {
+            "candidateId": "bookval-gemini-long-context",
+            "value": null
+          }
+        ],
+        "byThroughputMsPer10k": [
+          {
+            "candidateId": "bookval-reasoner",
+            "value": null
+          },
+          {
+            "candidateId": "bookval-gemini-long-context",
+            "value": null
+          }
+        ]
+      }
+    }
+  ],
+  "aggregate": {
+    "runCount": 8,
+    "best": {
+      "f1Mean": {
+        "phase": "ROSTER_DISCOVERY",
+        "experimentTag": "phase1_ab_v1",
+        "candidateId": "phase1-qwen-max",
+        "f1Mean": 0,
+        "jsonSuccessRate": null,
+        "costPer10kChars": null,
+        "throughputMsPer10kChars": null
+      },
+      "jsonSuccessRate": {
+        "phase": "ROSTER_DISCOVERY",
+        "experimentTag": "phase1_ab_v1",
+        "candidateId": "phase1-qwen-max",
+        "f1Mean": 0,
+        "jsonSuccessRate": null,
+        "costPer10kChars": null,
+        "throughputMsPer10kChars": null
+      },
+      "costPer10kChars": {
+        "phase": "ROSTER_DISCOVERY",
+        "experimentTag": "phase1_ab_v1",
+        "candidateId": "phase1-qwen-max",
+        "f1Mean": 0,
+        "jsonSuccessRate": null,
+        "costPer10kChars": null,
+        "throughputMsPer10kChars": null
+      },
+      "throughputMsPer10kChars": {
+        "phase": "ROSTER_DISCOVERY",
+        "experimentTag": "phase1_ab_v1",
+        "candidateId": "phase1-qwen-max",
+        "f1Mean": 0,
+        "jsonSuccessRate": null,
+        "costPer10kChars": null,
+        "throughputMsPer10kChars": null
+      }
+    }
+  }
+}
