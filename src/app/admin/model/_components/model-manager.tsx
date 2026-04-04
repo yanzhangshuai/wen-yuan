@@ -188,6 +188,7 @@ export function ModelManager({
 }) {
   const initialModels = use(initialModelsPromise);
   const { theme, setTheme } = useTheme();
+  const [themeReady, setThemeReady] = useState(false);
 
   const [models, setModels] = useState<AdminModelItem[]>(initialModels);
   const [drafts, setDrafts] = useState<Record<string, ModelDraftState>>(
@@ -199,6 +200,10 @@ export function ModelManager({
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [globalStrategy, setGlobalStrategy] = useState<ModelStrategyInput | null>(null);
   const [globalStrategyLoading, setGlobalStrategyLoading] = useState(true);
+
+  useEffect(() => {
+    setThemeReady(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -334,6 +339,7 @@ export function ModelManager({
       provider: model.provider,
       modelId : model.modelId
     }));
+  const selectedTheme = themeReady ? theme : null;
 
   async function handleSaveGlobalStrategy(strategy: ModelStrategyInput) {
     try {
@@ -543,7 +549,7 @@ export function ModelManager({
                     key={opt.value}
                     value={opt.value}
                     label={opt.label}
-                    isSelected={theme === opt.value}
+                    isSelected={selectedTheme === opt.value}
                     onSelect={() => setTheme(opt.value)}
                   />
                 ))}
