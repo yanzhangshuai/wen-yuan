@@ -246,6 +246,48 @@ else toast.error(result.errorMessage ?? result.detail);
 - 统一抽象只能统一语义，不能假设底层字段名和行为也统一。
 - 若无能力矩阵，最常见后果是“配置成功但运行无效”或“仅部分模型报错”。
 
+### 错误 11：推荐模型匹配规则写在 UI，导致配置与运行模型 ID 脱节
+
+**反例**：推荐配置只写 `provider + modelId`，UI 里再按 provider 写硬编码兼容（如 DeepSeek 的 `deepseek-chat`/`deepseek-v3.2`）。
+
+**正例**：把兼容规则放在配置层（alias 级 `compatibleModelIds`），由 `model-recommendations` 统一解析并提供匹配函数；UI 仅消费统一 helper。
+
+```ts
+// 反例：UI 私有兼容逻辑
+if (provider === "deepseek") return DEEPSEEK_IDS.has(modelId);
+
+// 正例：配置驱动 + 统一库函数
+pickRecommendedEnabledModel(recommendation, availableModels);
+isRecommendedModelMatch(recommendation, model);
+```
+
+原因：
+- 这是“推荐配置层”→“解析库层”→“页面展示层”的跨层契约分裂。
+- 当模型实际 ID 升级（如 `deepseek-v3.2`）但推荐别名仍指向旧 ID（如 `deepseek-chat`）时，UI 会误报“推荐模型未启用”。
+- 兼容规则必须配置化并在单一模块集中实现，禁止在页面组件写 provider 特判。
+
+### 错误 12：策略 DTO 用 modelId，解析链路用 aliasKey，导致配置可保存但运行不生效
+
+**反例**：`modelStrategy` 的 DTO/前端表单仍提交 `modelId`，而 resolver 按 `aliasKey` 查启用模型。
+
+**正例**：统一跨层标识职责：
+- 策略层（DTO/API/前端表单）只传 `aliasKey`
+- 解析层（resolver）只做 `aliasKey -> enabled model` 映射
+- 运行层（provider 调用）只使用模型实体里的 `provider + modelId`
+
+```ts
+// 反例：策略层绑定 provider modelId（易随供应商版本漂移）
+stages: { CHUNK_EXTRACTION: { modelId: "deepseek-v3.2" } }
+
+// 正例：策略层只绑定语义别名
+stages: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
+```
+
+原因：
+- 这是“策略配置层”→“策略解析层”→“模型运行层”的跨层契约混用。
+- `modelId` 是供应商协议字段，变化频繁；`aliasKey` 是业务语义键，应该稳定。
+- 两者混用会出现“保存成功、解析回退默认模型、UI/运行结果不一致”的隐性故障。
+
 ---
 
 ## 跨层功能检查清单
@@ -268,6 +310,7 @@ else toast.error(result.errorMessage ?? result.detail);
 - [ ] 模型探活已验证响应语义（不只看 HTTP 状态码）
 - [ ] 新增模型参数（如 thinking/reasoning）已完成“策略->执行->provider”全链路透传测试
 - [ ] 新增模型参数已声明 provider 能力矩阵（支持/映射/忽略策略）并有对应测试
+- [ ] 策略配置跨层契约已统一为 `aliasKey`（DTO/API/UI/Resolver），运行时 `modelId` 仅在 provider 调用层使用
 
 ---
 
