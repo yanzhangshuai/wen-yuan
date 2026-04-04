@@ -200,6 +200,24 @@ if (!isHydrated) return <ThemeSkeleton />;
 - 新增主题逻辑时，先判断“是否影响首帧属性”。若是，默认接入 `useHydratedTheme`。
 - 若选择直连 `useTheme`，PR 描述中需写明“为何不会造成 SSR/CSR 首帧不一致”。
 
+### 主题集中管理审计清单
+
+每次新增/修改主题相关逻辑时，按以下顺序审计：
+
+1. 是否影响 SSR 首帧可见属性（`aria-*`、`data-*`、`className`、显隐）？
+2. 是否在当前组件内执行 `setTheme`，并立即展示选中态？
+3. 是否只是挂载后副作用（canvas/D3/第三方实例）？
+
+判定规则：
+- 只要命中 1 或 2，必须接入 `useHydratedTheme`。
+- 仅命中 3 时，可以保留 `useTheme`，但必须保证首帧结构与属性稳定。
+
+建议在自检或 CR 前运行：
+```bash
+rg -n 'from "next-themes"|useTheme\\(' src --glob '!**/*.d.ts'
+rg -n 'useHydratedTheme\\(' src --glob '!**/*.d.ts'
+```
+
 ---
 
 ## 客户端轮询（SWR）
