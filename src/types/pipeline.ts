@@ -37,49 +37,56 @@ export const DEFAULT_STAGE_PARAMS: Record<PipelineStage, StageParams> = {
     maxOutputTokens: 8192,
     topP           : 1,
     maxRetries     : 2,
-    retryBaseMs    : 600
+    retryBaseMs    : 600,
+    enableThinking : false
   },
   [PipelineStage.CHUNK_EXTRACTION]: {
     temperature    : 0.15,
     maxOutputTokens: 8192,
     topP           : 1,
     maxRetries     : 2,
-    retryBaseMs    : 600
+    retryBaseMs    : 600,
+    enableThinking : false
   },
   [PipelineStage.CHAPTER_VALIDATION]: {
     temperature    : 0.2,
     maxOutputTokens: 8192,
     topP           : 1,
     maxRetries     : 1,
-    retryBaseMs    : 600
+    retryBaseMs    : 600,
+    enableThinking : false
   },
   [PipelineStage.TITLE_RESOLUTION]: {
     temperature    : 0.4,
     maxOutputTokens: 8192,
     topP           : 1,
     maxRetries     : 2,
-    retryBaseMs    : 1000
+    retryBaseMs    : 1000,
+    enableThinking : true
   },
   [PipelineStage.GRAY_ZONE_ARBITRATION]: {
     temperature    : 0.3,
     maxOutputTokens: 4096,
     topP           : 1,
     maxRetries     : 1,
-    retryBaseMs    : 600
+    retryBaseMs    : 600,
+    enableThinking : true
   },
   [PipelineStage.BOOK_VALIDATION]: {
     temperature    : 0.2,
     maxOutputTokens: 8192,
     topP           : 1,
     maxRetries     : 1,
-    retryBaseMs    : 1000
+    retryBaseMs    : 1000,
+    enableThinking : true
   },
   [PipelineStage.FALLBACK]: {
     temperature    : 0.2,
     maxOutputTokens: 8192,
     topP           : 1,
     maxRetries     : 1,
-    retryBaseMs    : 600
+    retryBaseMs    : 600,
+    enableThinking : false
   }
 };
 

@@ -112,6 +112,7 @@ export function ModelStrategyForm({
   readOnly = false
 }: ModelStrategyFormProps) {
   const [draftStrategy, setDraftStrategy] = useState<ModelStrategyInput>(() => cloneStrategy(initialStrategy));
+  const [advancedModeEnabled, setAdvancedModeEnabled] = useState(false);
   const [expandedStages, setExpandedStages] = useState<Set<PipelineStage>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
 
@@ -229,6 +230,16 @@ export function ModelStrategyForm({
     });
   }
 
+  function handleToggleAdvancedMode() {
+    setAdvancedModeEnabled((current) => {
+      const next = !current;
+      if (!next) {
+        setExpandedStages(new Set());
+      }
+      return next;
+    });
+  }
+
   function resetToRecommended() {
     const next: ModelStrategyInput = {};
     for (const stage of STAGES_FOR_FORM) {
@@ -282,6 +293,25 @@ export function ModelStrategyForm({
         )}
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">高级参数</p>
+              <p className="text-xs text-muted-foreground">
+                默认隐藏，避免普通用户误操作。开启后可调整温度、重试和 thinking 参数；`reasoningEffort` 在不同模型平台的支持可能不同。
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant={advancedModeEnabled ? "secondary" : "outline"}
+              size="sm"
+              onClick={handleToggleAdvancedMode}
+            >
+              {advancedModeEnabled ? "已开启高级模式" : "开启高级模式"}
+            </Button>
+          </div>
+        </div>
+
         {availableModels.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground space-y-2">
             <p>暂无可用模型，请先在模型管理中启用至少一个模型。</p>
@@ -367,19 +397,21 @@ export function ModelStrategyForm({
                     <p className="text-xs text-muted-foreground">
                       {stageConfig?.modelId ? "已配置当前阶段模型" : "将使用上级默认策略"}
                     </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => toggleExpand(stage)}
-                      disabled={readOnly}
-                    >
-                      {isExpanded ? "收起高级参数" : "展开高级参数"}
-                    </Button>
+                    {advancedModeEnabled && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => toggleExpand(stage)}
+                        disabled={readOnly}
+                      >
+                        {isExpanded ? "收起高级参数" : "展开高级参数"}
+                      </Button>
+                    )}
                   </div>
 
-                  {isExpanded && (
+                  {advancedModeEnabled && isExpanded && (
                     <div className="grid grid-cols-2 lg:grid-cols-7 gap-2">
                       <div className="space-y-1">
                         <Label className="text-xs">temperature</Label>
@@ -471,7 +503,7 @@ export function ModelStrategyForm({
                             <SelectValue placeholder="继承默认" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={INHERIT_PARAM_VALUE}>继承默认</SelectItem>
+                            <SelectItem value={INHERIT_PARAM_VALUE}>继承阶段默认</SelectItem>
                             <SelectItem value={ENABLE_THINKING_TRUE}>开启</SelectItem>
                             <SelectItem value={ENABLE_THINKING_FALSE}>关闭</SelectItem>
                           </SelectContent>
@@ -490,7 +522,7 @@ export function ModelStrategyForm({
                             <SelectValue placeholder="继承默认" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={INHERIT_PARAM_VALUE}>继承默认</SelectItem>
+                            <SelectItem value={INHERIT_PARAM_VALUE}>继承模型默认（推荐）</SelectItem>
                             <SelectItem value="low">low</SelectItem>
                             <SelectItem value="medium">medium</SelectItem>
                             <SelectItem value="high">high</SelectItem>

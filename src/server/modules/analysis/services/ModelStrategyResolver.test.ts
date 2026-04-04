@@ -165,6 +165,8 @@ describe("ModelStrategyResolver", () => {
     // Assert
     expect(resolved.modelId).toBe(MODEL_IDS.systemDefault);
     expect(resolved.source).toBe("SYSTEM_DEFAULT");
+    expect(resolved.params.enableThinking).toBe(false);
+    expect(resolved.params.reasoningEffort).toBeUndefined();
   });
 
   it("marks fallback source as SYSTEM_DEFAULT when fallback slot is not configured", async () => {
@@ -187,6 +189,8 @@ describe("ModelStrategyResolver", () => {
     // Assert
     expect(fallback.modelId).toBe(MODEL_IDS.systemDefault);
     expect(fallback.source).toBe("SYSTEM_DEFAULT");
+    expect(fallback.params.enableThinking).toBe(false);
+    expect(fallback.params.reasoningEffort).toBeUndefined();
   });
 
   it("accepts glm provider in configured stage model", async () => {
@@ -218,5 +222,30 @@ describe("ModelStrategyResolver", () => {
     expect(resolved.provider).toBe("glm");
     expect(resolved.modelName).toBe("glm-4.6");
     expect(resolved.source).toBe("GLOBAL");
+    expect(resolved.params.enableThinking).toBe(false);
+  });
+
+  it("uses stage-level thinking defaults when no override is configured", async () => {
+    const prismaMock = {
+      modelStrategyConfig: {
+        findFirst: vi.fn(async () => null)
+      },
+      aiModel: {
+        findMany : vi.fn(async () => []),
+        findFirst: vi.fn(async () => buildModel({ id: MODEL_IDS.systemDefault, name: "System Default Model" }))
+      }
+    };
+
+    const resolver = createModelStrategyResolver(prismaMock as never);
+
+    const titleModel = await resolver.resolveForStage(PipelineStage.TITLE_RESOLUTION, { bookId: "book-1" });
+    expect(titleModel.source).toBe("SYSTEM_DEFAULT");
+    expect(titleModel.params.enableThinking).toBe(true);
+    expect(titleModel.params.reasoningEffort).toBeUndefined();
+
+    const chapterValidationModel = await resolver.resolveForStage(PipelineStage.CHAPTER_VALIDATION, { bookId: "book-1" });
+    expect(chapterValidationModel.source).toBe("SYSTEM_DEFAULT");
+    expect(chapterValidationModel.params.enableThinking).toBe(false);
+    expect(chapterValidationModel.params.reasoningEffort).toBeUndefined();
   });
 });

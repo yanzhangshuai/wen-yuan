@@ -95,4 +95,49 @@ describe("OpenAiCompatibleClient", () => {
     // Act + Assert
     await expect(client.generateJson({ system: "", user: "hello" })).rejects.toThrow("returned an empty response");
   });
+
+  it("does not send reasoning_effort when not explicitly configured", async () => {
+    // Arrange
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        choices: [{ message: { content: "{\"ok\":true}" } }],
+        usage  : {
+          prompt_tokens    : 10,
+          completion_tokens: 5,
+          total_tokens     : 15
+        }
+      }), {
+        status : 200,
+        headers: { "content-type": "application/json" }
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new OpenAiCompatibleClient({
+      providerName: "Qwen",
+      apiKey      : "test-key",
+      baseUrl     : "https://example.com/v1",
+      modelName   : "qwen-plus"
+    });
+
+    // Act
+    await client.generateJson(
+      {
+        system: "system role",
+        user  : "请输出 JSON"
+      },
+      {
+        temperature    : 0.2,
+        topP           : 1,
+        maxOutputTokens: 1024,
+        enableThinking : true
+      }
+    );
+
+    // Assert
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String(init?.body));
+    expect(body.enable_thinking).toBe(true);
+    expect(body.reasoning_effort).toBeUndefined();
+  });
 });
