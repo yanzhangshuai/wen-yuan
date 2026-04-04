@@ -185,6 +185,21 @@ if (!isHydrated) return <ThemeSkeleton />;
 <button aria-pressed={selectedTheme === "suya"} onClick={() => setTheme("suya")} />;
 ```
 
+### useHydratedTheme 与 useTheme 的使用边界
+
+必须使用 `useHydratedTheme` 的场景：
+- 主题值直接影响首帧可见属性（`aria-pressed`、`data-selected`、`className`、显隐）。
+- 用户在当前组件里触发主题切换（`setTheme`）并需要稳定选中态反馈。
+- 页面存在多个主题选择入口，需要统一 hydration 语义。
+
+可以直接使用 `useTheme` 的场景：
+- 主题只用于挂载后副作用/绘制（如 canvas、D3、第三方实例更新），不参与 SSR 首帧关键属性。
+- 组件本身已明确在 mounted 后才渲染主题分支，且不会暴露首帧属性差异。
+
+评审检查项：
+- 新增主题逻辑时，先判断“是否影响首帧属性”。若是，默认接入 `useHydratedTheme`。
+- 若选择直连 `useTheme`，PR 描述中需写明“为何不会造成 SSR/CSR 首帧不一致”。
+
 ---
 
 ## 客户端轮询（SWR）
