@@ -12,10 +12,10 @@ import { badRequestJson, modelRouteParamsSchema, updateModelBodySchema } from ".
 
 /**
  * PATCH `/api/admin/models/:id`
- * 功能：更新单个模型配置（API Key / BaseURL / 启用状态）。
+ * 功能：更新单个模型配置（模型标识 / API Key / BaseURL / 启用状态）。
  * 入参：
  * - 路由参数：`id`（模型 UUID）；
- * - 请求体：`apiKey | baseUrl | isEnabled`（至少一个字段）。
+ * - 请求体：`modelId | apiKey | baseUrl | isEnabled`（至少一个字段）。
  * 返回：更新后的模型配置快照。
  */
 export async function PATCH(

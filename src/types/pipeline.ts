@@ -22,11 +22,13 @@ export const BUSINESS_PIPELINE_STAGES: PipelineStage[] = [
 ];
 
 export interface StageParams {
-  temperature    : number;
-  maxOutputTokens: number;
-  topP           : number;
-  maxRetries     : number;
-  retryBaseMs    : number;
+  temperature     : number;
+  maxOutputTokens : number;
+  topP            : number;
+  maxRetries      : number;
+  retryBaseMs     : number;
+  enableThinking? : boolean;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export const DEFAULT_STAGE_PARAMS: Record<PipelineStage, StageParams> = {

@@ -106,13 +106,13 @@ const defaultAiModels = [
   {
     provider : "doubao",
     name     : "豆包 Pro",
-    modelId  : "doubao-pro",
+    modelId  : "ep-your-endpoint-id",
     baseUrl  : "https://ark.cn-beijing.volces.com/api/v3",
     isDefault: false
   },
   {
     provider : "glm",
-    name     : "GLM 4.6",
+    name     : "GLM",
     modelId  : "glm-4.6",
     baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
     isDefault: false

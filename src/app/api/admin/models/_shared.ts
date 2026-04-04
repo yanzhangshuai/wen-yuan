@@ -11,6 +11,8 @@ export const modelRouteParamsSchema = z.object({
 
 /** 更新模型配置请求体 Schema。 */
 export const updateModelBodySchema = z.object({
+  /** 模型标识（如 deepseek-chat / qwen-plus / ep-xxxxxx）。 */
+  modelId  : z.string().trim().min(1, "模型标识不能为空").optional(),
   /** API Key（允许传 `null` 表示清空）。 */
   apiKey   : z.string().trim().min(1, "API Key 不能为空").nullable().optional(),
   /** 自定义 BaseURL（需是完整 URL）。 */

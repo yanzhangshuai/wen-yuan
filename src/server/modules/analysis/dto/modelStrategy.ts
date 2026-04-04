@@ -7,6 +7,8 @@ export const stageModelConfigSchema = z.object({
   temperature    : z.number().min(0).max(2).optional(),
   maxOutputTokens: z.number().int().min(256).max(65536).optional(),
   topP           : z.number().min(0).max(1).optional(),
+  enableThinking : z.boolean().optional(),
+  reasoningEffort: z.enum(["low", "medium", "high"]).optional(),
   maxRetries     : z.number().int().min(0).max(5).optional(),
   retryBaseMs    : z.number().int().min(100).max(10000).optional()
 });

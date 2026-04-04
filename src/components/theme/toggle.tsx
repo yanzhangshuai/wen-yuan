@@ -1,11 +1,10 @@
 "use client";
 
-import * as React from "react";
-import { useTheme } from "next-themes";
 import { Palette, Check } from "lucide-react";
 import { THEME_OPTIONS } from "@/theme";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useHydratedTheme } from "@/hooks/use-hydrated-theme";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,14 +31,9 @@ const THEME_DESCRIPTIONS: Record<string, string> = {
 };
 
 export function ThemeToggle({ triggerClassName }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const { theme, setTheme, isHydrated } = useHydratedTheme();
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!isHydrated) {
     return <div className="w-9 h-9 bg-muted/20 animate-pulse rounded-md" />;
   }
 

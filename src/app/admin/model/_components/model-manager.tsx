@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +18,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { PageSection } from "@/components/layout/page-header";
+import { useHydratedTheme } from "@/hooks/use-hydrated-theme";
 import { THEME_OPTIONS } from "@/theme";
 import {
   Cpu,
@@ -27,7 +27,6 @@ import {
   Eye,
   EyeOff,
   Zap,
-  BookOpen,
   DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -50,6 +49,7 @@ import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_component
 type LoadingAction = "save" | "default" | "test" | null;
 
 interface ModelDraftState {
+  modelId    : string;
   baseUrl    : string;
   apiKey     : string;
   clearApiKey: boolean;
@@ -57,25 +57,11 @@ interface ModelDraftState {
 }
 
 /* ------------------------------------------------
-   静态评分数据（sheji 设计中各模型的速度/古文/费用评分）
-   当模型来自真实 API 时，以 modelId 匹配评分配置。
-   ------------------------------------------------ */
-const MODEL_RATINGS: Record<string, { speed: number; classical: number; cost: number }> = {
-  "gpt-4o"     : { speed: 3, classical: 4, cost: 3 },
-  "gpt-4o-mini": { speed: 5, classical: 3, cost: 1 },
-  "claude-3.5" : { speed: 4, classical: 5, cost: 3 },
-  "gemini-pro" : { speed: 4, classical: 3, cost: 2 }
-};
-
-function getRatings(modelId: string) {
-  return MODEL_RATINGS[modelId] ?? { speed: 3, classical: 3, cost: 2 };
-}
-
-/* ------------------------------------------------
    Helpers
    ------------------------------------------------ */
 function buildInitialDraft(model: AdminModelItem): ModelDraftState {
   return {
+    modelId    : model.modelId,
     baseUrl    : model.baseUrl,
     apiKey     : "",
     clearApiKey: false,
@@ -86,6 +72,13 @@ function buildInitialDraft(model: AdminModelItem): ModelDraftState {
 function resolveCanEnable(model: AdminModelItem, draft: ModelDraftState): boolean {
   if (draft.clearApiKey) return false;
   return model.isConfigured || draft.apiKey.trim().length > 0;
+}
+
+function formatSuccessRate(successRate: number | null): string {
+  if (successRate === null) {
+    return "暂无数据";
+  }
+  return `${Math.round(successRate * 100)}%`;
 }
 
 /* ------------------------------------------------
@@ -187,8 +180,7 @@ export function ModelManager({
   initialModelsPromise: Promise<AdminModelItem[]>
 }) {
   const initialModels = use(initialModelsPromise);
-  const { theme, setTheme } = useTheme();
-  const [themeReady, setThemeReady] = useState(false);
+  const { setTheme, selectedTheme } = useHydratedTheme();
 
   const [models, setModels] = useState<AdminModelItem[]>(initialModels);
   const [drafts, setDrafts] = useState<Record<string, ModelDraftState>>(
@@ -200,10 +192,6 @@ export function ModelManager({
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [globalStrategy, setGlobalStrategy] = useState<ModelStrategyInput | null>(null);
   const [globalStrategyLoading, setGlobalStrategyLoading] = useState(true);
-
-  useEffect(() => {
-    setThemeReady(true);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -247,7 +235,9 @@ export function ModelManager({
 
   function replaceModel(nextModel: AdminModelItem) {
     setModels(currentModels =>
-      currentModels.map(m => (m.id === nextModel.id ? nextModel : m))
+      currentModels.map((model) => (model.id === nextModel.id
+        ? { ...nextModel, performance: model.performance }
+        : model))
     );
     setDrafts(currentDrafts => ({
       ...currentDrafts,
@@ -263,6 +253,11 @@ export function ModelManager({
     const draft = drafts[model.id];
     if (!draft) return;
 
+    if (!draft.modelId.trim()) {
+      toast.error("模型标识不能为空");
+      return;
+    }
+
     if (draft.isEnabled && !resolveCanEnable(model, draft)) {
       toast.error("请先配置 API Key，再启用模型");
       return;
@@ -271,6 +266,7 @@ export function ModelManager({
     setLoading(model.id, "save");
 
     const body: Record<string, unknown> = {
+      modelId  : draft.modelId.trim(),
       baseUrl  : draft.baseUrl.trim(),
       isEnabled: draft.isEnabled
     };
@@ -309,7 +305,14 @@ export function ModelManager({
 
     try {
       const result = await testModel(modelId);
-      toast.success(`连通性测试成功，耗时 ${result.latencyMs} ms`);
+      if (result.success) {
+        const latencyMessage = typeof result.latencyMs === "number"
+          ? `，耗时 ${result.latencyMs} ms`
+          : "";
+        toast.success(`连通性测试成功${latencyMessage}`);
+      } else {
+        toast.error(result.errorMessage ?? result.detail);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "连通性测试失败");
     } finally {
@@ -339,8 +342,6 @@ export function ModelManager({
       provider: model.provider,
       modelId : model.modelId
     }));
-  const selectedTheme = themeReady ? theme : null;
-
   async function handleSaveGlobalStrategy(strategy: ModelStrategyInput) {
     try {
       await saveGlobalStrategy(strategy);
@@ -362,7 +363,7 @@ export function ModelManager({
           {sortedModels.map(model => {
             const draft = drafts[model.id] ?? buildInitialDraft(model);
             const loadingAction = loadingActions[model.id] ?? null;
-            const ratings = getRatings(model.modelId);
+            const ratings = model.performance.ratings;
 
             return (
               <Card
@@ -393,14 +394,35 @@ export function ModelManager({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* 评分条 — 速度 / 古文 / 费用 */}
+                  {/* 评分条 — 速度 / 稳定 / 费用 */}
                   <div className="grid grid-cols-3 gap-4 text-xs">
                     <RatingBar value={ratings.speed} icon={Zap} label="速度" />
-                    <RatingBar value={ratings.classical} icon={BookOpen} label="古文" />
+                    <RatingBar value={ratings.stability} icon={Check} label="稳定" />
                     <RatingBar value={ratings.cost} icon={DollarSign} label="费用" variant="destructive" />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    样本 {model.performance.callCount} 次 · 成功率 {formatSuccessRate(model.performance.successRate)}
+                  </p>
 
                   <Separator />
+
+                  {/* 模型标识 */}
+                  <div className="space-y-2">
+                    <Label>模型标识</Label>
+                    <Input
+                      value={draft.modelId}
+                      placeholder="例如 deepseek-chat / qwen-plus / ep-xxxx"
+                      onChange={event => {
+                        const nextValue = event.target.value;
+                        updateDraft(model.id, d => ({ ...d, modelId: nextValue }));
+                      }}
+                    />
+                    {model.provider === "doubao" && (
+                      <p className="text-xs text-amber-600">
+                        豆包请填写方舟控制台中的 Endpoint/模型标识（通常不是 doubao-pro）。
+                      </p>
+                    )}
+                  </div>
 
                   {/* API Key */}
                   <div className="space-y-2">

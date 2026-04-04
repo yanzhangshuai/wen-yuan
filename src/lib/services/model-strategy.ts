@@ -19,6 +19,8 @@ export interface StageModelConfigInput {
   temperature?    : number;
   maxOutputTokens?: number;
   topP?           : number;
+  enableThinking? : boolean;
+  reasoningEffort?: "low" | "medium" | "high";
   maxRetries?     : number;
   retryBaseMs?    : number;
 }

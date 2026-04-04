@@ -37,6 +37,7 @@ describe("PATCH /api/admin/models/:id", () => {
   it("updates model config with 200", async () => {
     updateAdminModelMock.mockResolvedValue({
       id       : validId,
+      modelId  : "deepseek-chat",
       baseUrl  : "https://api.deepseek.com",
       isEnabled: true
     });
@@ -47,6 +48,7 @@ describe("PATCH /api/admin/models/:id", () => {
         method : "PATCH",
         headers: { "content-type": "application/json" },
         body   : JSON.stringify({
+          modelId  : "deepseek-chat",
           baseUrl  : "https://api.deepseek.com",
           isEnabled: true
         })
@@ -59,6 +61,7 @@ describe("PATCH /api/admin/models/:id", () => {
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("ADMIN_MODEL_UPDATED");
     expect(updateAdminModelMock).toHaveBeenCalledWith(validId, {
+      modelId  : "deepseek-chat",
       baseUrl  : "https://api.deepseek.com",
       isEnabled: true
     });
@@ -121,6 +124,28 @@ describe("PATCH /api/admin/models/:id", () => {
     expect(payload.success).toBe(false);
     expect(payload.code).toBe("COMMON_BAD_REQUEST");
     expect(payload.error?.detail).toBe("至少提供一个可更新字段");
+    expect(updateAdminModelMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when modelId is blank", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/admin/models/${validId}`, {
+        method : "PATCH",
+        headers: { "content-type": "application/json" },
+        body   : JSON.stringify({
+          modelId: "   "
+        })
+      }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(payload.error?.detail).toBe("模型标识不能为空");
     expect(updateAdminModelMock).not.toHaveBeenCalled();
   });
 

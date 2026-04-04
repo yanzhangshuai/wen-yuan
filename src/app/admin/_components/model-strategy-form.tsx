@@ -21,6 +21,9 @@ import type { ModelStrategyInput } from "@/lib/services/model-strategy";
 import { cn } from "@/lib/utils";
 
 const INHERIT_MODEL_VALUE = "__INHERIT__";
+const INHERIT_PARAM_VALUE = "__INHERIT_PARAM__";
+const ENABLE_THINKING_TRUE = "__ENABLE_THINKING_TRUE__";
+const ENABLE_THINKING_FALSE = "__ENABLE_THINKING_FALSE__";
 
 const STAGES_FOR_FORM: PipelineStage[] = [
   ...BUSINESS_PIPELINE_STAGES,
@@ -180,6 +183,40 @@ export function ModelStrategyForm({
     });
   }
 
+  function updateEnableThinkingParam(stage: PipelineStage, value: string) {
+    updateStageConfig(stage, (current) => {
+      if (!current?.modelId) {
+        return current;
+      }
+
+      const next = { ...current };
+      if (value === INHERIT_PARAM_VALUE) {
+        delete next.enableThinking;
+      } else {
+        next.enableThinking = value === ENABLE_THINKING_TRUE;
+      }
+
+      return next;
+    });
+  }
+
+  function updateReasoningEffortParam(stage: PipelineStage, value: string) {
+    updateStageConfig(stage, (current) => {
+      if (!current?.modelId) {
+        return current;
+      }
+
+      const next = { ...current };
+      if (value === INHERIT_PARAM_VALUE) {
+        delete next.reasoningEffort;
+      } else {
+        next.reasoningEffort = value as "low" | "medium" | "high";
+      }
+
+      return next;
+    });
+  }
+
   function toggleExpand(stage: PipelineStage) {
     setExpandedStages((current) => {
       const next = new Set(current);
@@ -206,6 +243,8 @@ export function ModelStrategyForm({
         temperature    : current?.temperature,
         maxOutputTokens: current?.maxOutputTokens,
         topP           : current?.topP,
+        enableThinking : current?.enableThinking,
+        reasoningEffort: current?.reasoningEffort,
         maxRetries     : current?.maxRetries,
         retryBaseMs    : current?.retryBaseMs
       };
@@ -341,7 +380,7 @@ export function ModelStrategyForm({
                   </div>
 
                   {isExpanded && (
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-7 gap-2">
                       <div className="space-y-1">
                         <Label className="text-xs">temperature</Label>
                         <Input
@@ -416,6 +455,47 @@ export function ModelStrategyForm({
                           }}
                           disabled={readOnly || !stageConfig?.modelId}
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">enableThinking</Label>
+                        <Select
+                          value={typeof stageConfig?.enableThinking === "boolean"
+                            ? (stageConfig.enableThinking ? ENABLE_THINKING_TRUE : ENABLE_THINKING_FALSE)
+                            : INHERIT_PARAM_VALUE}
+                          onValueChange={(value) => {
+                            updateEnableThinkingParam(stage, value);
+                          }}
+                          disabled={readOnly || !stageConfig?.modelId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="继承默认" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={INHERIT_PARAM_VALUE}>继承默认</SelectItem>
+                            <SelectItem value={ENABLE_THINKING_TRUE}>开启</SelectItem>
+                            <SelectItem value={ENABLE_THINKING_FALSE}>关闭</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">reasoningEffort</Label>
+                        <Select
+                          value={stageConfig?.reasoningEffort ?? INHERIT_PARAM_VALUE}
+                          onValueChange={(value) => {
+                            updateReasoningEffortParam(stage, value);
+                          }}
+                          disabled={readOnly || !stageConfig?.modelId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="继承默认" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={INHERIT_PARAM_VALUE}>继承默认</SelectItem>
+                            <SelectItem value="low">low</SelectItem>
+                            <SelectItem value="medium">medium</SelectItem>
+                            <SelectItem value="high">high</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   )}

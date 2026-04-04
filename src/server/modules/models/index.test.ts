@@ -41,6 +41,33 @@ describe("models module", () => {
 
   it("lists models with masked api key and isConfigured flag", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+    const groupByMock = vi.fn()
+      .mockResolvedValueOnce([
+        { modelId: "model-1", status: "SUCCESS", _count: { _all: 8 } },
+        { modelId: "model-1", status: "ERROR", _count: { _all: 2 } },
+        { modelId: "model-2", status: "SUCCESS", _count: { _all: 2 } },
+        { modelId: "model-2", status: "ERROR", _count: { _all: 4 } }
+      ])
+      .mockResolvedValueOnce([
+        {
+          modelId: "model-1",
+          _count : { _all: 8 },
+          _avg   : {
+            durationMs      : 1200,
+            promptTokens    : 500,
+            completionTokens: 300
+          }
+        },
+        {
+          modelId: "model-2",
+          _count : { _all: 2 },
+          _avg   : {
+            durationMs      : 2400,
+            promptTokens    : 200,
+            completionTokens: 100
+          }
+        }
+      ]);
 
     const prismaClient = {
       aiModel: {
@@ -57,6 +84,9 @@ describe("models module", () => {
             apiKey  : null
           })
         ])
+      },
+      analysisPhaseLog: {
+        groupBy: groupByMock
       }
     } as never;
 
@@ -69,15 +99,74 @@ describe("models module", () => {
         provider    : "deepseek",
         apiKeyMasked: "abcd********5678",
         isConfigured: true,
-        isDefault   : true
+        isDefault   : true,
+        performance : {
+          callCount          : 10,
+          successRate        : 0.8,
+          avgLatencyMs       : 1200,
+          avgPromptTokens    : 500,
+          avgCompletionTokens: 300,
+          ratings            : {
+            speed    : 5,
+            stability: 4,
+            cost     : 1
+          }
+        }
       }),
       expect.objectContaining({
         id          : "model-2",
         provider    : "glm",
         apiKeyMasked: null,
-        isConfigured: false
+        isConfigured: false,
+        performance : {
+          callCount          : 6,
+          successRate        : 2 / 6,
+          avgLatencyMs       : 2400,
+          avgPromptTokens    : 200,
+          avgCompletionTokens: 100,
+          ratings            : {
+            speed    : 1,
+            stability: 2,
+            cost     : 5
+          }
+        }
       })
     ]);
+    expect(groupByMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns empty performance snapshot when model has no runtime logs", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            id    : "model-empty",
+            apiKey: encryptValue("masked-key")
+          })
+        ])
+      },
+      analysisPhaseLog: {
+        groupBy: vi.fn().mockResolvedValue([])
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.listModels();
+
+    expect(result[0]?.performance).toEqual({
+      callCount          : 0,
+      successRate        : null,
+      avgLatencyMs       : null,
+      avgPromptTokens    : null,
+      avgCompletionTokens: null,
+      ratings            : {
+        speed    : 0,
+        stability: 0,
+        cost     : 0
+      }
+    });
   });
 
   it("updates model and encrypts api key before persisting", async () => {
@@ -214,7 +303,14 @@ describe("models module", () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      id: "chatcmpl-1"
+      id     : "chatcmpl-1",
+      choices: [
+        {
+          message: {
+            content: "pong"
+          }
+        }
+      ]
     }), {
       status : 200,
       headers: {
@@ -244,6 +340,62 @@ describe("models module", () => {
     expect(result.success).toBe(true);
     expect(result.detail).toBe("连接成功");
     expect(result.errorType).toBeUndefined();
+  });
+
+  it("treats http 200 with provider error payload as failed connectivity", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: {
+        message: "invalid api key"
+      }
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("invalid-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("AUTH_ERROR");
+    expect(result.errorMessage).toBe("invalid api key");
+  });
+
+  it("treats http 200 without choices as failed connectivity", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: "chatcmpl-1"
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+    expect(result.errorMessage).toBe("响应缺少 choices，无法确认模型可用");
   });
 
   it("tests gemini model connectivity with generateContent endpoint", async () => {
@@ -289,7 +441,14 @@ describe("models module", () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      id: "chatcmpl-glm"
+      id     : "chatcmpl-glm",
+      choices: [
+        {
+          message: {
+            content: "pong"
+          }
+        }
+      ]
     }), {
       status : 200,
       headers: {
@@ -396,6 +555,9 @@ describe("models module", () => {
             provider: "openai"
           })
         ])
+      },
+      analysisPhaseLog: {
+        groupBy: vi.fn().mockResolvedValue([])
       }
     } as never;
 
@@ -411,6 +573,9 @@ describe("models module", () => {
             apiKey: "sk-plaintext"
           })
         ])
+      },
+      analysisPhaseLog: {
+        groupBy: vi.fn().mockResolvedValue([])
       }
     } as never;
 
@@ -444,10 +609,11 @@ describe("models module", () => {
     expect(updateMock.mock.calls[0][0].data.apiKey).toBe(existingApiKey);
   });
 
-  it("trims api key and base url in update payload", async () => {
+  it("trims model id, api key and base url in update payload", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const updateMock = vi.fn().mockResolvedValue(createAiModelRecord({
+      modelId: "ep-202604010001",
       baseUrl: "https://api.deepseek.com",
       apiKey : encryptValue("trimmed-key")
     }));
@@ -460,6 +626,7 @@ describe("models module", () => {
 
     const modelsModule = createModelsModule(prismaClient);
     await modelsModule.updateModel({
+      modelId: "  ep-202604010001  ",
       id     : "model-1",
       baseUrl: "  https://api.deepseek.com///   ",
       apiKey : {
@@ -468,6 +635,7 @@ describe("models module", () => {
       }
     });
 
+    expect(updateMock.mock.calls[0][0].data.modelId).toBe("ep-202604010001");
     expect(updateMock.mock.calls[0][0].data.baseUrl).toBe("https://api.deepseek.com");
     const persistedApiKey = updateMock.mock.calls[0][0].data.apiKey;
     if (typeof persistedApiKey !== "string") {
@@ -563,7 +731,15 @@ describe("models module", () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
     process.env.MODEL_TEST_ALLOWED_HOSTS = " INTERNAL.EXAMPLE.com ";
 
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: "pong"
+          }
+        }
+      ]
+    }), {
       status : 200,
       headers: {
         "content-type": "application/json"

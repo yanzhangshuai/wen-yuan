@@ -31,9 +31,21 @@ export interface AdminModelItem {
   baseUrl     : string;
   apiKeyMasked: string | null;
   isConfigured: boolean;
-  isEnabled   : boolean;
-  isDefault   : boolean;
-  updatedAt   : string;
+  performance : {
+    callCount          : number;
+    successRate        : number | null;
+    avgLatencyMs       : number | null;
+    avgPromptTokens    : number | null;
+    avgCompletionTokens: number | null;
+    ratings            : {
+      speed    : number;
+      stability: number;
+      cost     : number;
+    };
+  };
+  isEnabled: boolean;
+  isDefault: boolean;
+  updatedAt: string;
 }
 
 /**
@@ -41,8 +53,11 @@ export interface AdminModelItem {
  * 对应 POST /api/admin/models/:id/test 响应中的 data 字段。
  */
 export interface ModelTestResult {
-  message  : string;
-  latencyMs: number | null;
+  success      : boolean;
+  latencyMs?   : number;
+  detail       : string;
+  errorType?   : "NETWORK_ERROR" | "AUTH_ERROR" | "MODEL_UNAVAILABLE" | "TIMEOUT";
+  errorMessage?: string;
 }
 
 /**
@@ -50,6 +65,7 @@ export interface ModelTestResult {
  * apiKey 传 null 表示清除已有 Key，传字符串表示更新，不传表示保持原值。
  */
 export interface PatchModelBody {
+  modelId  ?: string;
   baseUrl  ?: string;
   apiKey   ?: string | null;
   isEnabled?: boolean;

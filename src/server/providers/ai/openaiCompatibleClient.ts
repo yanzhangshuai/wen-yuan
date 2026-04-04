@@ -99,10 +99,16 @@ export class OpenAiCompatibleClient implements AiProviderClient {
         Authorization : `Bearer ${this.apiKey}`
       },
       body: JSON.stringify({
-        model          : this.modelName,
-        temperature    : options?.temperature ?? 0.2,
-        top_p          : options?.topP,
-        max_tokens     : options?.maxOutputTokens ?? 8192,
+        model      : this.modelName,
+        temperature: options?.temperature ?? 0.2,
+        top_p      : options?.topP,
+        max_tokens : options?.maxOutputTokens ?? 8192,
+        ...(typeof options?.enableThinking === "boolean"
+          ? { enable_thinking: options.enableThinking }
+          : {}),
+        ...(options?.reasoningEffort
+          ? { reasoning_effort: options.reasoningEffort }
+          : {}),
         response_format: { type: "json_object" },
         messages
       })

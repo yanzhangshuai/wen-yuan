@@ -12,6 +12,7 @@ const idSchema = z.string().trim().min(1, "模型 ID 不能为空");
 
 const updateModelInputSchema = z.object({
   id       : idSchema,
+  modelId  : z.string().trim().min(1, "模型标识不能为空").optional(),
   baseUrl  : z.string().trim().min(1, "BaseURL 不能为空").optional(),
   isEnabled: z.boolean().optional(),
   apiKey   : z.discriminatedUnion("action", [
@@ -40,6 +41,21 @@ interface AiModelRecord {
   updatedAt: Date;
 }
 
+export interface ModelPerformanceRatings {
+  speed    : number;
+  stability: number;
+  cost     : number;
+}
+
+export interface ModelPerformanceSnapshot {
+  callCount          : number;
+  successRate        : number | null;
+  avgLatencyMs       : number | null;
+  avgPromptTokens    : number | null;
+  avgCompletionTokens: number | null;
+  ratings            : ModelPerformanceRatings;
+}
+
 export interface ModelListItem {
   id          : string;
   provider    : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
@@ -50,6 +66,7 @@ export interface ModelListItem {
   isDefault   : boolean;
   apiKeyMasked: string | null;
   isConfigured: boolean;
+  performance : ModelPerformanceSnapshot;
   updatedAt   : string;
 }
 
@@ -59,6 +76,7 @@ export type ApiKeyChange =
   | { action: "set"; value: string };
 
 export interface UpdateModelInput {
+  modelId?  : string;
   id        : string;
   baseUrl?  : string;
   isEnabled?: boolean;
@@ -66,6 +84,7 @@ export interface UpdateModelInput {
 }
 
 export interface UpdateAdminModelPayload {
+  modelId?  : string;
   baseUrl?  : string;
   isEnabled?: boolean;
   apiKey?   : string | null;
@@ -98,11 +117,25 @@ const modelSelect = {
 } as const;
 
 const connectivityHostAllowList: Record<SupportedProvider, readonly string[]> = {
-  deepseek: ["api.deepseek.com"],
+  deepseek: ["api.deepseek.com", "dashscope.aliyuncs.com"],
   qwen    : ["dashscope.aliyuncs.com"],
   doubao  : ["ark.cn-beijing.volces.com"],
   gemini  : ["generativelanguage.googleapis.com"],
   glm     : ["open.bigmodel.cn"]
+};
+
+const FINAL_MODEL_CALL_STATUSES = ["SUCCESS", "ERROR"] as const;
+const EMPTY_PERFORMANCE_SNAPSHOT: ModelPerformanceSnapshot = {
+  callCount          : 0,
+  successRate        : null,
+  avgLatencyMs       : null,
+  avgPromptTokens    : null,
+  avgCompletionTokens: null,
+  ratings            : {
+    speed    : 0,
+    stability: 0,
+    cost     : 0
+  }
 };
 
 /**
@@ -176,6 +209,26 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
 }
 
+function clampRating(value: number): number {
+  if (Number.isNaN(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(5, Math.round(value)));
+}
+
+function toInverseRangeRating(value: number, min: number, max: number): number {
+  if (max <= min) {
+    return 3;
+  }
+
+  const ratio = (value - min) / (max - min);
+  return clampRating((1 - ratio) * 4 + 1);
+}
+
+function toSuccessRateRating(successRate: number): number {
+  return clampRating(successRate * 4 + 1);
+}
+
 /**
  * 功能：读取数据库中的 API Key 并按需解密。
  * 输入：数据库 `api_key` 字段（仅允许 null 或 `enc:v1:` 密文）。
@@ -202,7 +255,10 @@ function readStoredApiKey(apiKey: string | null): string | null {
  * 异常：provider 非受支持值时由 zod 抛错。
  * 副作用：无。
  */
-function toModelListItem(model: AiModelRecord): ModelListItem {
+function toModelListItem(
+  model: AiModelRecord,
+  performance: ModelPerformanceSnapshot = EMPTY_PERFORMANCE_SNAPSHOT
+): ModelListItem {
   const plainApiKey = readStoredApiKey(model.apiKey);
 
   return {
@@ -215,6 +271,7 @@ function toModelListItem(model: AiModelRecord): ModelListItem {
     isDefault   : model.isDefault,
     apiKeyMasked: maskSensitiveValue(plainApiKey),
     isConfigured: Boolean(plainApiKey),
+    performance,
     updatedAt   : model.updatedAt.toISOString()
   };
 }
@@ -225,6 +282,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 /**
@@ -274,6 +335,96 @@ function classifyThrownErrorType(error: unknown): ModelConnectivityErrorType {
   return "NETWORK_ERROR";
 }
 
+function classifySemanticErrorType(detail: string): ModelConnectivityErrorType {
+  const normalized = detail.toLowerCase();
+  if (
+    normalized.includes("api key")
+    || normalized.includes("unauthorized")
+    || normalized.includes("forbidden")
+    || normalized.includes("鉴权")
+    || normalized.includes("令牌")
+  ) {
+    return "AUTH_ERROR";
+  }
+
+  return "MODEL_UNAVAILABLE";
+}
+
+function hasOpenAiCompatibleMessage(payload: Record<string, unknown>): boolean {
+  const choices = payload.choices;
+  if (!Array.isArray(choices) || choices.length === 0) {
+    return false;
+  }
+
+  const firstChoice: unknown = choices[0];
+  if (!isRecord(firstChoice)) {
+    return false;
+  }
+
+  const message = firstChoice.message;
+  if (!isRecord(message)) {
+    return false;
+  }
+
+  const content = message.content;
+  if (typeof content === "string") {
+    return true;
+  }
+
+  if (!Array.isArray(content)) {
+    return false;
+  }
+
+  return content.some((part) => {
+    if (!isRecord(part)) {
+      return false;
+    }
+
+    return typeof part.text === "string";
+  });
+}
+
+function validateOpenAiCompatibleProbePayload(payload: Record<string, unknown> | null): {
+  success: boolean;
+  detail?: string;
+} {
+  if (!payload) {
+    return {
+      success: false,
+      detail : "响应不是合法 JSON，无法确认模型可用"
+    };
+  }
+
+  const payloadError = payload.error;
+  if (isRecord(payloadError) && typeof payloadError.message === "string" && payloadError.message.trim().length > 0) {
+    return {
+      success: false,
+      detail : payloadError.message
+    };
+  }
+
+  if (!Array.isArray(payload.choices) || payload.choices.length === 0) {
+    return {
+      success: false,
+      detail : "响应缺少 choices，无法确认模型可用"
+    };
+  }
+
+  if (!hasOpenAiCompatibleMessage(payload)) {
+    return {
+      success: false,
+      detail : "响应缺少可读内容，无法确认模型可用"
+    };
+  }
+
+  return { success: true };
+}
+
+interface ExtractedResponseDetail {
+  detail : string;
+  payload: Record<string, unknown> | null;
+}
+
 /**
  * 功能：提取 provider 返回中的可读错误信息，统一返回给管理端测试弹窗。
  * 输入：response、fallback。
@@ -281,34 +432,58 @@ function classifyThrownErrorType(error: unknown): ModelConnectivityErrorType {
  * 异常：解析失败时吞掉异常并回退 fallback。
  * 副作用：消耗一次 response body 读取流。
  */
-async function extractResponseDetail(response: Response, fallback: string): Promise<string> {
+async function extractResponseDetail(response: Response, fallback: string): Promise<ExtractedResponseDetail> {
   const contentType = response.headers.get("content-type") ?? "";
 
   try {
     if (contentType.includes("application/json")) {
-      const payload = (await response.json()) as {
-        error?  : { message?: string };
-        message?: string;
+      const rawPayload: unknown = await response.json();
+      if (!isRecord(rawPayload)) {
+        return {
+          detail : fallback,
+          payload: null
+        };
+      }
+
+      const payloadError = rawPayload.error;
+      if (isRecord(payloadError) && typeof payloadError.message === "string" && payloadError.message.trim().length > 0) {
+        return {
+          detail : payloadError.message,
+          payload: rawPayload
+        };
+      }
+
+      if (typeof rawPayload.message === "string" && rawPayload.message.trim().length > 0) {
+        return {
+          detail : rawPayload.message,
+          payload: rawPayload
+        };
+      }
+
+      return {
+        detail : fallback,
+        payload: rawPayload
       };
-
-      if (payload.error?.message) {
-        return payload.error.message;
-      }
-
-      if (payload.message) {
-        return payload.message;
-      }
     } else {
       const rawText = await response.text();
       if (rawText.trim()) {
-        return rawText.trim().slice(0, 200);
+        return {
+          detail : rawText.trim().slice(0, 200),
+          payload: null
+        };
       }
     }
   } catch {
-    return fallback;
+    return {
+      detail : fallback,
+      payload: null
+    };
   }
 
-  return fallback;
+  return {
+    detail : fallback,
+    payload: null
+  };
 }
 
 export function createModelsModule(
@@ -328,6 +503,125 @@ export function createModelsModule(
     return model;
   }
 
+  async function buildModelPerformanceMap(modelIds: string[]): Promise<Map<string, ModelPerformanceSnapshot>> {
+    if (modelIds.length === 0) {
+      return new Map();
+    }
+
+    const [statusBuckets, successBuckets] = await Promise.all([
+      prismaClient.analysisPhaseLog.groupBy({
+        by   : ["modelId", "status"],
+        where: {
+          modelId: { in: modelIds },
+          status : { in: [...FINAL_MODEL_CALL_STATUSES] }
+        },
+        _count: { _all: true }
+      }),
+      prismaClient.analysisPhaseLog.groupBy({
+        by   : ["modelId"],
+        where: {
+          modelId: { in: modelIds },
+          status : "SUCCESS"
+        },
+        _count: { _all: true },
+        _avg  : {
+          durationMs      : true,
+          promptTokens    : true,
+          completionTokens: true
+        }
+      })
+    ]);
+
+    const totalsByModel = new Map<string, { totalCalls: number; successCalls: number }>();
+    for (const bucket of statusBuckets) {
+      if (!bucket.modelId) {
+        continue;
+      }
+
+      const current = totalsByModel.get(bucket.modelId) ?? { totalCalls: 0, successCalls: 0 };
+      current.totalCalls += bucket._count._all;
+      if (bucket.status === "SUCCESS") {
+        current.successCalls += bucket._count._all;
+      }
+      totalsByModel.set(bucket.modelId, current);
+    }
+
+    const successByModel = new Map<string, {
+      avgLatencyMs       : number | null;
+      avgPromptTokens    : number | null;
+      avgCompletionTokens: number | null;
+    }>();
+    for (const bucket of successBuckets) {
+      if (!bucket.modelId) {
+        continue;
+      }
+
+      successByModel.set(bucket.modelId, {
+        avgLatencyMs       : bucket._avg.durationMs ?? null,
+        avgPromptTokens    : bucket._avg.promptTokens ?? null,
+        avgCompletionTokens: bucket._avg.completionTokens ?? null
+      });
+    }
+
+    const rawByModel = new Map<string, {
+      callCount          : number;
+      successRate        : number | null;
+      avgLatencyMs       : number | null;
+      avgPromptTokens    : number | null;
+      avgCompletionTokens: number | null;
+      avgTotalTokens     : number | null;
+    }>();
+
+    for (const modelId of modelIds) {
+      const totals = totalsByModel.get(modelId);
+      const success = successByModel.get(modelId);
+      const avgPromptTokens = success?.avgPromptTokens ?? null;
+      const avgCompletionTokens = success?.avgCompletionTokens ?? null;
+      const avgTotalTokens = avgPromptTokens === null && avgCompletionTokens === null
+        ? null
+        : (avgPromptTokens ?? 0) + (avgCompletionTokens ?? 0);
+
+      rawByModel.set(modelId, {
+        callCount   : totals?.totalCalls ?? 0,
+        successRate : totals && totals.totalCalls > 0 ? totals.successCalls / totals.totalCalls : null,
+        avgLatencyMs: success?.avgLatencyMs ?? null,
+        avgPromptTokens,
+        avgCompletionTokens,
+        avgTotalTokens
+      });
+    }
+
+    const latencyValues = Array.from(rawByModel.values())
+      .map((item) => item.avgLatencyMs)
+      .filter((value): value is number => typeof value === "number");
+    const tokenValues = Array.from(rawByModel.values())
+      .map((item) => item.avgTotalTokens)
+      .filter((value): value is number => typeof value === "number");
+
+    const latencyMin = latencyValues.length > 0 ? Math.min(...latencyValues) : 0;
+    const latencyMax = latencyValues.length > 0 ? Math.max(...latencyValues) : 0;
+    const tokenMin = tokenValues.length > 0 ? Math.min(...tokenValues) : 0;
+    const tokenMax = tokenValues.length > 0 ? Math.max(...tokenValues) : 0;
+
+    const performanceMap = new Map<string, ModelPerformanceSnapshot>();
+    for (const [modelId, raw] of rawByModel.entries()) {
+      performanceMap.set(modelId, {
+        callCount          : raw.callCount,
+        successRate        : raw.successRate,
+        avgLatencyMs       : raw.avgLatencyMs,
+        avgPromptTokens    : raw.avgPromptTokens,
+        avgCompletionTokens: raw.avgCompletionTokens,
+        ratings            : {
+          speed    : raw.avgLatencyMs === null ? 0 : toInverseRangeRating(raw.avgLatencyMs, latencyMin, latencyMax),
+          stability: raw.successRate === null ? 0 : toSuccessRateRating(raw.successRate),
+          cost     : raw.avgTotalTokens === null ? 0 : toInverseRangeRating(raw.avgTotalTokens, tokenMin, tokenMax)
+        }
+      });
+    }
+
+    return performanceMap;
+  }
+
   async function listModels(): Promise<ModelListItem[]> {
     const models = await prismaClient.aiModel.findMany({
       orderBy: [
@@ -337,13 +631,15 @@ export function createModelsModule(
       select: modelSelect
     });
 
-    return models.map(toModelListItem);
+    const performanceByModelId = await buildModelPerformanceMap(models.map((model) => model.id));
+    return models.map((model) => toModelListItem(model, performanceByModelId.get(model.id) ?? EMPTY_PERFORMANCE_SNAPSHOT));
   }
 
   async function updateModel(input: UpdateModelInput): Promise<ModelListItem> {
     const parsedInput = updateModelInputSchema.parse(input);
     const currentModel = await getModelRecord(parsedInput.id);
 
+    const nextModelId = parsedInput.modelId ?? currentModel.modelId;
     const nextBaseUrl = parsedInput.baseUrl ? normalizeBaseUrl(parsedInput.baseUrl) : currentModel.baseUrl;
 
     let nextEncryptedApiKey = currentModel.apiKey;
@@ -367,6 +663,7 @@ export function createModelsModule(
     const updatedModel = await prismaClient.aiModel.update({
       where: { id: parsedInput.id },
       data : {
+        modelId  : nextModelId,
         baseUrl  : nextBaseUrl,
         isEnabled: nextIsEnabled,
         ...(parsedInput.apiKey ? { apiKey: nextEncryptedApiKey } : {})
@@ -458,19 +755,37 @@ export function createModelsModule(
       }
 
       const latencyMs = Date.now() - startedAt;
-      const detail = await extractResponseDetail(response, response.ok ? "连接成功" : `HTTP ${response.status}`);
-      const errorType = response.ok ? undefined : classifyHttpErrorType(response.status);
+      const { detail, payload } = await extractResponseDetail(response, response.ok ? "连接成功" : `HTTP ${response.status}`);
+
+      if (!response.ok) {
+        const errorType = classifyHttpErrorType(response.status);
+        return {
+          success     : false,
+          latencyMs,
+          detail,
+          errorType,
+          errorMessage: detail
+        };
+      }
+
+      if (provider !== "gemini") {
+        const semanticResult = validateOpenAiCompatibleProbePayload(payload);
+        if (!semanticResult.success) {
+          const semanticDetail = semanticResult.detail ?? detail;
+          return {
+            success     : false,
+            latencyMs,
+            detail      : semanticDetail,
+            errorType   : classifySemanticErrorType(semanticDetail),
+            errorMessage: semanticDetail
+          };
+        }
+      }
 
       return {
-        success: response.ok,
+        success: true,
         latencyMs,
-        detail,
-        ...(errorType
-          ? {
-              errorType,
-              errorMessage: detail
-            }
-          : {})
+        detail : "连接成功"
       };
     } catch (error) {
       const detail = getErrorMessage(error, "模型连通性测试失败");
@@ -547,6 +862,7 @@ export async function updateAdminModel(
 ): Promise<ModelListItem> {
   return updateModel({
     id,
+    modelId  : payload.modelId,
     baseUrl  : payload.baseUrl,
     isEnabled: payload.isEnabled,
     apiKey   : toApiKeyChange(payload.apiKey)

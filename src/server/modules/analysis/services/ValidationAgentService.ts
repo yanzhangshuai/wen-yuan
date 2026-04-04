@@ -183,7 +183,13 @@ export function createValidationAgentService(
     return {
       temperature    : model.params.temperature,
       maxOutputTokens: model.params.maxOutputTokens,
-      topP           : model.params.topP
+      topP           : model.params.topP,
+      ...(typeof model.params.enableThinking === "boolean"
+        ? { enableThinking: model.params.enableThinking }
+        : {}),
+      ...(model.params.reasoningEffort
+        ? { reasoningEffort: model.params.reasoningEffort }
+        : {})
     };
   }
 

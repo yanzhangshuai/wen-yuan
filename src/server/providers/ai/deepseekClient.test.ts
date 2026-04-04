@@ -41,7 +41,9 @@ describe("DeepSeekClient", () => {
       {
         temperature    : 0.2,
         topP           : 1,
-        maxOutputTokens: 2048
+        maxOutputTokens: 2048,
+        enableThinking : false,
+        reasoningEffort: "medium"
       }
     );
 
@@ -54,6 +56,8 @@ describe("DeepSeekClient", () => {
       { role: "user", content: "只输出 JSON" }
     ]);
     expect(body.max_tokens).toBe(2048);
+    expect(body.thinking).toEqual({ type: "disabled" });
+    expect(body.reasoning_effort).toBeUndefined();
 
     expect(result).toEqual({
       content: "{\"roles\":[\"A\"]}",

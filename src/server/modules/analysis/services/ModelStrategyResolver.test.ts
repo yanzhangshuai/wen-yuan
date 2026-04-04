@@ -53,9 +53,11 @@ describe("ModelStrategyResolver", () => {
             return {
               stages: {
                 [PipelineStage.CHUNK_EXTRACTION]: {
-                  modelId    : MODEL_IDS.jobChunk,
-                  temperature: 0.61,
-                  maxRetries : 4
+                  modelId        : MODEL_IDS.jobChunk,
+                  temperature    : 0.61,
+                  maxRetries     : 4,
+                  enableThinking : false,
+                  reasoningEffort: "high"
                 }
               }
             };
@@ -64,20 +66,24 @@ describe("ModelStrategyResolver", () => {
             return {
               stages: {
                 [PipelineStage.ROSTER_DISCOVERY]: {
-                  modelId    : MODEL_IDS.bookRoster,
-                  temperature: 0.33
+                  modelId        : MODEL_IDS.bookRoster,
+                  temperature    : 0.33,
+                  enableThinking : true,
+                  reasoningEffort: "medium"
                 }
               }
             };
           }
           return {
-            stages: {
-              [PipelineStage.FALLBACK]: {
-                modelId    : MODEL_IDS.globalFallback,
-                retryBaseMs: 900
+              stages: {
+                [PipelineStage.FALLBACK]: {
+                  modelId        : MODEL_IDS.globalFallback,
+                  retryBaseMs    : 900,
+                  enableThinking : true,
+                  reasoningEffort: "low"
+                }
               }
-            }
-          };
+            };
         })
       },
       aiModel: {
@@ -101,6 +107,8 @@ describe("ModelStrategyResolver", () => {
     expect(chunkModel.source).toBe("JOB");
     expect(chunkModel.params.temperature).toBe(0.61);
     expect(chunkModel.params.maxRetries).toBe(4);
+    expect(chunkModel.params.enableThinking).toBe(false);
+    expect(chunkModel.params.reasoningEffort).toBe("high");
 
     const rosterModel = await resolver.resolveForStage(PipelineStage.ROSTER_DISCOVERY, {
       jobId : "job-1",
@@ -109,6 +117,8 @@ describe("ModelStrategyResolver", () => {
     expect(rosterModel.modelId).toBe(MODEL_IDS.bookRoster);
     expect(rosterModel.source).toBe("BOOK");
     expect(rosterModel.params.temperature).toBe(0.33);
+    expect(rosterModel.params.enableThinking).toBe(true);
+    expect(rosterModel.params.reasoningEffort).toBe("medium");
 
     const fallbackModel = await resolver.resolveFallback({
       jobId : "job-1",
@@ -119,6 +129,8 @@ describe("ModelStrategyResolver", () => {
     expect(fallbackModel.modelId).toBe(MODEL_IDS.globalFallback);
     expect(fallbackModel.source).toBe("FALLBACK");
     expect(fallbackModel.params.retryBaseMs).toBe(900);
+    expect(fallbackModel.params.enableThinking).toBe(true);
+    expect(fallbackModel.params.reasoningEffort).toBe("low");
   });
 
   it("degrades to system default when configured stage model is missing/disabled", async () => {

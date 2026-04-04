@@ -124,13 +124,27 @@ function mergeStageParams(base: StageParams, input: StrategyStagesDto[PipelineSt
     return base;
   }
 
-  return {
+  const merged: StageParams = {
     temperature    : input.temperature ?? base.temperature,
     maxOutputTokens: input.maxOutputTokens ?? base.maxOutputTokens,
     topP           : input.topP ?? base.topP,
     maxRetries     : input.maxRetries ?? base.maxRetries,
     retryBaseMs    : input.retryBaseMs ?? base.retryBaseMs
   };
+
+  if (typeof input.enableThinking === "boolean") {
+    merged.enableThinking = input.enableThinking;
+  } else if (typeof base.enableThinking === "boolean") {
+    merged.enableThinking = base.enableThinking;
+  }
+
+  if (input.reasoningEffort) {
+    merged.reasoningEffort = input.reasoningEffort;
+  } else if (base.reasoningEffort) {
+    merged.reasoningEffort = base.reasoningEffort;
+  }
+
+  return merged;
 }
 
 function toModelSource(layer: StrategyLayer): Exclude<StageModelSource, "FALLBACK"> {

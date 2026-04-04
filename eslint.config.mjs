@@ -91,6 +91,18 @@ const config = [
       "import-x/newline-after-import": "error",
       "import-x/no-named-as-default-member": "off",
       "import-x/no-duplicates": "error",
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "sonner",
+              importNames: ["Toaster"],
+              message: "请从 '@/components/ui/sonner' 导入 Toaster；toast 可继续从 'sonner' 导入。"
+            }
+          ]
+        }
+      ],
       "no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": [
@@ -103,6 +115,13 @@ const config = [
           ignoreRestSiblings: true
         }
       ]
+    }
+  },
+  {
+    name: "local/sonner-wrapper-allowlist",
+    files: ["src/components/ui/sonner.tsx"],
+    rules: {
+      "no-restricted-imports": "off"
     }
   },
   {

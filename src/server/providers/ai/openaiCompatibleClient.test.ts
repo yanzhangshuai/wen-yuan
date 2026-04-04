@@ -46,7 +46,9 @@ describe("OpenAiCompatibleClient", () => {
       {
         temperature    : 0.35,
         topP           : 0.9,
-        maxOutputTokens: 4096
+        maxOutputTokens: 4096,
+        enableThinking : true,
+        reasoningEffort: "high"
       }
     );
 
@@ -61,6 +63,8 @@ describe("OpenAiCompatibleClient", () => {
     expect(body.temperature).toBe(0.35);
     expect(body.top_p).toBe(0.9);
     expect(body.max_tokens).toBe(4096);
+    expect(body.enable_thinking).toBe(true);
+    expect(body.reasoning_effort).toBe("high");
 
     expect(result).toEqual({
       content: "{\"ok\":true}",

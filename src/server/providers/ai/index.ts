@@ -16,6 +16,8 @@ export interface AiGenerateOptions {
   temperature?    : number;
   maxOutputTokens?: number;
   topP?           : number;
+  enableThinking? : boolean;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface AiGenerateResult {
