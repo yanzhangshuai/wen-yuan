@@ -154,6 +154,39 @@ type PerformanceSnapshot = {
 - 静态映射与真实运行时数据分叉后，UI 会长期显示过期信息，误导运营判断。
 - 契约应明确 null 语义（无样本时为 null/0）和评分来源（由后端计算并下发）。
 
+### 错误 6.1：模型评分口径未声明“相对分”与“样本语义”
+
+**反例**：把 5 分当成“绝对快/绝对便宜”，或把 0 分误解为“最差模型”。
+
+**正例**：在跨层契约里明确评分公式与边界语义（后端统一计算，前端只展示）。
+
+```ts
+// speed: 延迟越低分越高（相对当前模型集合）
+speed = avgLatencyMs === null
+  ? 0
+  : toInverseRangeRating(avgLatencyMs, latencyMin, latencyMax);
+
+// stability: 成功率线性映射到 1~5
+stability = successRate === null
+  ? 0
+  : clamp(successRate * 4 + 1);
+
+// cost: token 越少分越高（相对当前模型集合）
+cost = avgTotalTokens === null
+  ? 0
+  : toInverseRangeRating(avgTotalTokens, tokenMin, tokenMax);
+```
+
+关键语义（必须写入文档并在 UI 提示中体现）：
+- `0` 分 = 当前无样本（`callCount=0` 或无成功调用均值），不是“性能最差”。
+- `1~5` 是相对分，由当前模型集合的 min/max 归一化得到，不是跨时间、跨环境可直接比较的绝对分。
+- 当 `max=min`（样本方差为 0）时，反向归一化退化为中位分 `3`，避免误导性极值。
+- 评分输入来自 `analysis_phase_log` 聚合，新增日志会改变 min/max，分数会随运行数据动态变化。
+
+原因：
+- 这是“分析日志层”→“评分计算层”→“前端展示层”的跨层契约清晰度问题。
+- 如果不显式声明“相对分/无样本”语义，业务方会把运营看板读成错误结论，导致错误决策。
+
 ### 错误 7：HTTP 成功与业务成功语义混淆
 
 **反例**：路由层统一返回 `200 + { success: true, data }`，前端仅根据 HTTP/外层 `success` 就弹“测试成功”。
@@ -230,6 +263,7 @@ else toast.error(result.errorMessage ?? result.detail);
 - [ ] 涉及 UI 结构时，已确认 SSR HTML 在浏览器解析后不会因无效嵌套被重排（特别是交互元素嵌套）
 - [ ] 涉及浏览器本地状态时，已确认 SSR/CSR 首帧关键属性一致（必要时 mounted 门控）
 - [ ] 涉及统计/评分展示时，已确认前端只消费后端快照契约（无静态副本）并覆盖“无样本”语义测试
+- [ ] 涉及统计/评分展示时，已声明评分是“相对分/绝对分”口径，并覆盖 `max=min` 与“无样本=0”语义测试
 - [ ] 使用统一 API 响应包装时，已区分“传输层 success”与“业务层 success”
 - [ ] 模型探活已验证响应语义（不只看 HTTP 状态码）
 - [ ] 新增模型参数（如 thinking/reasoning）已完成“策略->执行->provider”全链路透传测试
