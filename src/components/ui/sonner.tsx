@@ -1,14 +1,22 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useHydratedTheme } from "@/hooks/use-hydrated-theme";
+import type { ThemeId } from "@/theme";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+const LIGHT_THEME_SET = new Set<ThemeId>(["suya"]);
+
+function mapToSonnerTheme(theme: ThemeId | null): ToasterProps["theme"] {
+  if (!theme) return "dark";
+  return LIGHT_THEME_SET.has(theme) ? "light" : "dark";
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const { selectedTheme } = useHydratedTheme();
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={mapToSonnerTheme(selectedTheme)}
       className="toaster group"
       style={
         {
