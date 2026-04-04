@@ -131,6 +131,29 @@ const selectedTheme = mounted ? theme : null;
 - 这是“服务端渲染层（无浏览器上下文）”与“客户端状态层（有本地持久化）”的契约缺口。
 - 该类 warning 常为“属性不一致且不会被自动修补”，会长期污染控制台并掩盖真实问题。
 
+### 错误 6：前端展示指标与后端运行时数据契约脱节
+
+**反例**：前端用静态评分表（hardcode）展示“速度/评分/费用”，后端已经有运行日志却未接入。
+
+**正例**：后端输出统一 `performance snapshot`，前端只消费该契约，不再维护静态评分副本。
+
+```ts
+// 反例：UI 本地静态映射
+const MODEL_RATINGS = { "gpt-4o": { speed: 3, cost: 3 } };
+
+// 正例：后端契约（示意）
+type PerformanceSnapshot = {
+  callCount: number;
+  successRate: number | null;
+  ratings: { speed: number; stability: number; cost: number };
+};
+```
+
+原因：
+- 这是“分析日志层”→“模型服务层”→“前端展示层”的三层契约问题。
+- 静态映射与真实运行时数据分叉后，UI 会长期显示过期信息，误导运营判断。
+- 契约应明确 null 语义（无样本时为 null/0）和评分来源（由后端计算并下发）。
+
 ---
 
 ## 跨层功能检查清单
@@ -147,6 +170,7 @@ const selectedTheme = mounted ? theme : null;
 - [ ] 已确认数据往返后不丢失关键信息
 - [ ] 涉及 UI 结构时，已确认 SSR HTML 在浏览器解析后不会因无效嵌套被重排（特别是交互元素嵌套）
 - [ ] 涉及浏览器本地状态时，已确认 SSR/CSR 首帧关键属性一致（必要时 mounted 门控）
+- [ ] 涉及统计/评分展示时，已确认前端只消费后端快照契约（无静态副本）并覆盖“无样本”语义测试
 
 ---
 

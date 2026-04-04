@@ -162,6 +162,29 @@ function ThemeCard({ value }: { value: string }) {
 - 服务端无法读取用户浏览器本地偏好，直接参与首帧渲染会导致属性差异。
 - hydration warning 经常只报“属性不一致”，不会自动修复，且会污染调试信号。
 
+### 主题逻辑复用规则（强制）
+
+涉及主题选中态（`aria-pressed`、`data-selected`、class 切换）时，不允许在业务组件里重复实现 `mounted` 门控。
+
+必须：
+- 统一复用共享 hook（`useHydratedTheme`）获取 `isHydrated` 与 `selectedTheme`。
+- 组件在 `!isHydrated` 时渲染稳定占位或中性态，避免首帧属性漂移。
+
+反例（每个组件各自实现 mounted，行为易漂移）：
+```tsx
+const { theme } = useTheme();
+const [mounted, setMounted] = useState(false);
+useEffect(() => setMounted(true), []);
+const selectedTheme = mounted ? theme : null;
+```
+
+正例（统一走共享语义）：
+```tsx
+const { isHydrated, selectedTheme, setTheme } = useHydratedTheme();
+if (!isHydrated) return <ThemeSkeleton />;
+<button aria-pressed={selectedTheme === "suya"} onClick={() => setTheme("suya")} />;
+```
+
 ---
 
 ## 客户端轮询（SWR）
