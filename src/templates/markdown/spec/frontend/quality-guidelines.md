@@ -28,6 +28,7 @@ stage: growth
 - 不复用 `src/components/ui/*`，重复实现基础 UI 结构。
 - 在客户端 UI 组件中直接导入仅服务端模块。
 - 使用 `Link` 包裹 `Button`（或 `Button` 包裹 `Link` 但未 `asChild`），产生交互元素无效嵌套。
+- 直接使用浏览器本地状态（如主题、`localStorage`、`matchMedia`）渲染首帧关键属性，导致 SSR/CSR 属性不一致。
 
 ---
 
@@ -39,6 +40,7 @@ stage: growth
 - 使用语义化根 className（`home-page`、`layout-navbar`、`ui-card`）。
 - 图标按钮等无文本控件必须提供可访问性标签。
 - 跳转型按钮统一使用 `Button asChild + Link` 组合，禁止输出 `<a><button /></a>` 结构。
+- 浏览器本地状态影响 `className`、`aria-*`、`data-*` 时，必须先做 mounted 门控或提供服务端快照。
 - API 边界与解析边界必须有类型与校验。
 - 内部导入统一使用 `@/*` 路径别名。
 - 单元测试默认与源码同目录，命名使用 `*.test.ts` / `*.test.tsx`。
@@ -60,6 +62,7 @@ stage: growth
 7. 对涉及 `Link` 与 `Button` 改动的页面，运行：
    `rg -n -U "<Link[^>]*>\\s*\\n\\s*<Button" src`
    确认无无效嵌套。
+8. 对涉及 `next-themes` / `localStorage` 的页面，确认首帧不依赖浏览器本地值计算关键属性（必要时使用 mounted）。
 
 说明：若当前模块缺少单测基础设施，需先补齐最小可用测试框架与 coverage 报告，再视为交付完成。
 
@@ -73,6 +76,7 @@ stage: growth
 - 涉及视觉样式时是否完整覆盖 dark/light？
 - 交互控件是否满足可访问性（`aria-label`、button type）？
 - 是否存在 `Link > Button` / `button > a` 等交互元素嵌套导致的 hydration 风险？
+- 是否有浏览器本地状态直接参与 SSR 首帧属性计算（`aria`/`className`/`data-*`）？
 - API payload 与 unknown 输入是否在使用前完成校验？
 - 单元测试是否真实覆盖关键分支，而非仅堆叠无断言价值用例？
 - 覆盖率是否达到基线，并附有可复核证据？

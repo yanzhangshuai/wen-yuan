@@ -108,6 +108,29 @@ type UserView = { name: string; createdAt: string };
 - 浏览器会修正无效嵌套，导致 SSR HTML 与客户端首帧树不一致。
 - 报错位置常在后续兄弟节点，不一定在真实根因位置，排障时需先检查上游 DOM 合法性。
 
+### 错误 5：服务端首帧与浏览器本地状态契约不一致
+
+**反例**：首帧直接用 `theme`/`localStorage` 决定 `aria-pressed`、`className`
+
+**正例**：使用 mounted 门控，保证 SSR 和客户端首帧同值，再在挂载后应用本地状态
+
+```tsx
+// 反例
+const { theme } = useTheme();
+<button aria-pressed={theme === "suya"} />
+
+// 正例
+const { theme } = useTheme();
+const [mounted, setMounted] = useState(false);
+useEffect(() => setMounted(true), []);
+const selectedTheme = mounted ? theme : null;
+<button aria-pressed={selectedTheme === "suya"} />
+```
+
+原因：
+- 这是“服务端渲染层（无浏览器上下文）”与“客户端状态层（有本地持久化）”的契约缺口。
+- 该类 warning 常为“属性不一致且不会被自动修补”，会长期污染控制台并掩盖真实问题。
+
 ---
 
 ## 跨层功能检查清单
@@ -123,6 +146,7 @@ type UserView = { name: string; createdAt: string };
 - [ ] 已验证各边界错误处理
 - [ ] 已确认数据往返后不丢失关键信息
 - [ ] 涉及 UI 结构时，已确认 SSR HTML 在浏览器解析后不会因无效嵌套被重排（特别是交互元素嵌套）
+- [ ] 涉及浏览器本地状态时，已确认 SSR/CSR 首帧关键属性一致（必要时 mounted 门控）
 
 ---
 
