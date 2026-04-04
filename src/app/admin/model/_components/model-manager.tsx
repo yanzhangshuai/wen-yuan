@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -175,12 +175,11 @@ function RatingBar({ value, icon: Icon, label, variant = "primary" }: {
    Component
    ------------------------------------------------ */
 export function ModelManager({
-  initialModelsPromise
+  initialModels
 }: {
-  initialModelsPromise: Promise<AdminModelItem[]>
+  initialModels: AdminModelItem[]
 }) {
-  const initialModels = use(initialModelsPromise);
-  const { setTheme, selectedTheme } = useHydratedTheme();
+  const { setTheme, selectedTheme, isHydrated } = useHydratedTheme();
 
   const [models, setModels] = useState<AdminModelItem[]>(initialModels);
   const [drafts, setDrafts] = useState<Record<string, ModelDraftState>>(
@@ -566,17 +565,34 @@ export function ModelManager({
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
               <Label className="w-24 shrink-0 pt-1">界面主题</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
-                {THEME_OPTIONS.map((opt) => (
-                  <ThemePreviewCard
-                    key={opt.value}
-                    value={opt.value}
-                    label={opt.label}
-                    isSelected={selectedTheme === opt.value}
-                    onSelect={() => setTheme(opt.value)}
-                  />
-                ))}
-              </div>
+              {isHydrated ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+                  {THEME_OPTIONS.map((opt) => (
+                    <ThemePreviewCard
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      isSelected={selectedTheme === opt.value}
+                      onSelect={() => setTheme(opt.value)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-border opacity-60 cursor-default w-full text-left"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    >
+                      <div className="w-full rounded overflow-hidden h-14 bg-muted" />
+                      <span className="text-xs font-medium">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

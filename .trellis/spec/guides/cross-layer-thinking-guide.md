@@ -131,6 +131,29 @@ const selectedTheme = mounted ? theme : null;
 - 这是“服务端渲染层（无浏览器上下文）”与“客户端状态层（有本地持久化）”的契约缺口。
 - 该类 warning 常为“属性不一致且不会被自动修补”，会长期污染控制台并掩盖真实问题。
 
+### 错误 5.1：把服务端 Promise 直接透传给 Client Component 并在客户端 `use()`，导致 Hydration/Suspense 边界不稳定
+
+**反例**：页面层创建 `modelsPromise`，通过 props 传给 client 组件，再在 client 内 `use(modelsPromise)`，外层再包一层 `Suspense`。
+
+**正例**：在 Server Component（`page.tsx`）先 `await` 数据，传递普通可序列化数据给 client 组件。
+
+```tsx
+// 反例（page.tsx）
+const modelsPromise = listAdminModels();
+<Suspense fallback={<Skeleton />}>
+  <ModelManager initialModelsPromise={modelsPromise} />
+</Suspense>
+
+// 正例（page.tsx）
+const initialModels = await listAdminModels();
+<ModelManager initialModels={initialModels} />
+```
+
+原因：
+- 这是“RSC 数据边界”与“客户端 hydration 边界”的契约问题。
+- 当 Promise 解析时机与流式边界切换不稳定时，容易出现 `main`/`Suspense` 首帧树不一致。
+- 对首屏必需数据，优先在 server `await` 后下发稳定快照；客户端组件只做交互与局部增量请求。
+
 ### 错误 6：前端展示指标与后端运行时数据契约脱节
 
 **反例**：前端用静态评分表（hardcode）展示“速度/评分/费用”，后端已经有运行日志却未接入。
@@ -307,6 +330,7 @@ stageDefaults: { CHUNK_EXTRACTION: { aliasKey: "deepseek-v3-stable" } }
 - [ ] 已确认数据往返后不丢失关键信息
 - [ ] 涉及 UI 结构时，已确认 SSR HTML 在浏览器解析后不会因无效嵌套被重排（特别是交互元素嵌套）
 - [ ] 涉及浏览器本地状态时，已确认 SSR/CSR 首帧关键属性一致（必要时 mounted 门控）
+- [ ] 页面首屏关键数据优先在 Server Component `await`，避免 Promise 透传到 Client `use()` 形成不稳定 hydration 边界
 - [ ] 涉及统计/评分展示时，已确认前端只消费后端快照契约（无静态副本）并覆盖“无样本”语义测试
 - [ ] 涉及统计/评分展示时，已声明评分是“相对分/绝对分”口径，并覆盖 `max=min` 与“无样本=0”语义测试
 - [ ] 使用统一 API 响应包装时，已区分“传输层 success”与“业务层 success”
