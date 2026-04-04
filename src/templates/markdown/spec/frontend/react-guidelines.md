@@ -218,6 +218,25 @@ rg -n 'from "next-themes"|useTheme\\(' src --glob '!**/*.d.ts'
 rg -n 'useHydratedTheme\\(' src --glob '!**/*.d.ts'
 ```
 
+### Toaster 入口统一（强制）
+
+`Toaster` 只能通过项目封装入口 `@/components/ui/sonner` 挂载，不允许在 layout/page 中直接从 `sonner` 包导入 `Toaster`。
+
+原因：
+- 避免“同一能力多入口”导致样式、主题映射和 hydration 语义漂移。
+- 封装层统一将业务主题（`danqing/suya/diancang/xingkong`）映射到 Sonner 支持的 `light/dark`。
+
+允许：
+- 业务页面继续直接 `import { toast } from "sonner"` 触发消息。
+
+禁止：
+- `import { Toaster } from "sonner"`。
+
+建议在自检或 CR 前运行：
+```bash
+rg -n 'import\\s+\\{\\s*Toaster\\s*\\}\\s+from\\s+"sonner"' src
+```
+
 ---
 
 ## 客户端轮询（SWR）
