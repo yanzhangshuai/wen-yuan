@@ -19,6 +19,9 @@ stage: mvp
   - 聚焦/高亮/hover 等交互态仅更新现有实例样式，禁止整图 `remove + rebuild`。
 - 作为 effect 依赖的派生数组/集合（如 `filteredNodes`、`filteredEdges`）必须 `useMemo` 稳定引用。
 - 命令式库事件回调（D3 事件、第三方实例回调）必须通过 ref 同步，避免因回调 identity 变化触发重建。
+- `useEffect/useMemo/useCallback` 依赖数组必须“长度恒定、顺序恒定”：
+  - 禁止条件分支生成不同长度依赖数组；
+  - 重构依赖项时优先用 ref 承接“最新值读取”，避免把结构重绘依赖与交互依赖混放。
 - 高频交互（画布点击、hover 清空）禁止 no-op 状态写入：
   - `Set`/`Map`/对象状态在“语义未变化”时返回 `prev`；
   - 不得每次都 `new Set()`/`{ ...prev }` 导致整树重渲染。
@@ -109,6 +112,32 @@ function handleBackgroundClick() {
 - React 会按引用判断状态变化，no-op 写入会放大高频交互成本。
 - 在图谱/画布场景中，这类额外 rerender 容易触发可见闪动。
 
+## 案例 4：依赖数组长度必须恒定
+
+反例：
+```tsx
+useEffect(() => {
+  applyGraphEmphasis();
+}, debug ? [applyGraphEmphasis, renderGraph] : [applyGraphEmphasis]);
+```
+
+正例：
+```tsx
+const focusedNodeIdRef = useRef<string | null>(null);
+
+useEffect(() => {
+  focusedNodeIdRef.current = focusedNodeId;
+}, [focusedNodeId]);
+
+useEffect(() => {
+  applyGraphEmphasis();
+}, [applyGraphEmphasis]);
+```
+
+原因：
+- React 要求依赖数组长度与顺序跨 render 恒定，否则会产生 Hook 警告并污染调试信号。
+- 在命令式渲染场景里，ref 适合承接“最新状态读取”，避免把高频交互状态并入结构 effect 依赖。
+
 ---
 
 ## 原因
@@ -117,6 +146,7 @@ function handleBackgroundClick() {
 - 渲染期异步统一 `use()` 可减少闪烁与竞态。
 - selector 粒度订阅可降低无关 rerender。
 - 命令式渲染（D3/canvas）若与 React 状态边界不清晰，会造成“状态小变化 -> 全量重绘”的性能雪崩。
+- 依赖数组策略不稳定会引入 Hook 层 warning，降低故障排查信噪比。
 
 ---
 
@@ -128,4 +158,5 @@ function handleBackgroundClick() {
 - [ ] store 读取是否为最小 selector 粒度
 - [ ] D3/canvas 是否拆分“结构重建 effect”与“样式更新 effect”
 - [ ] 结构重建依赖是否只包含数据/尺寸/布局，不包含 hover/聚焦/回调 identity
+- [ ] Hook 依赖数组是否保证长度恒定、顺序恒定
 - [ ] 高频交互里是否避免 no-op 的 `Set`/对象状态写入
