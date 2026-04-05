@@ -2,6 +2,19 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（单行输入组件）：
+ * - 文件路径：`src/components/ui/input.tsx`
+ * - 所属层次：前端基础表单组件层。
+ *
+ * 核心职责：
+ * - 统一输入框视觉规范（正常/聚焦/错误/禁用）；
+ * - 支持文件输入的文本样式覆盖，保证表单场景一致性。
+ *
+ * @param className 自定义样式扩展
+ * @param type 原生输入类型（text/password/number/file 等）
+ * @param props 其他原生 input 属性
+ */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input

@@ -1,3 +1,13 @@
+/**
+ * 文件定位（服务模块单测）：
+ * - 覆盖领域服务输入校验、分支处理与输出映射契约。
+ * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
+ *
+ * 业务职责：
+ * - 保证成功路径与异常路径都可预测。
+ * - 降低重构时误改核心规则的风险。
+ */
+
 import { describe, expect, it, vi } from "vitest";
 
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
@@ -5,7 +15,9 @@ import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { createCreateBookRelationshipService } from "@/server/modules/relationships/createBookRelationship";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("createBookRelationship service", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("creates manual relationship as verified", async () => {
     const bookFindFirst = vi.fn().mockResolvedValue({ id: "book-1" });
     const chapterFindFirst = vi.fn().mockResolvedValue({ id: "chapter-1", no: 2 });
@@ -82,6 +94,7 @@ describe("createBookRelationship service", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws input error when source and target are same", async () => {
     const service = createCreateBookRelationshipService({
       $transaction: vi.fn()
@@ -95,6 +108,7 @@ describe("createBookRelationship service", () => {
     })).rejects.toBeInstanceOf(RelationshipInputError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws persona not found when one endpoint is missing", async () => {
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       book: {

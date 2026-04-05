@@ -4,6 +4,12 @@ import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 
 /**
+ * 文件定位（服务端分析任务查询层）：
+ * - 负责列出某本书的分析任务历史，用于后台任务列表、排障与回溯。
+ * - 该服务只读数据库，不改动任务状态。
+ */
+
+/**
  * 单条解析任务列表项。
  */
 export interface AnalysisJobListItem {
@@ -29,7 +35,7 @@ export interface AnalysisJobListItem {
   finishedAt    : string | null;
   /** 任务创建时间（ISO 8601）。 */
   createdAt     : string;
-      /** 使用的 AI 模型名称。 */
+  /** 最近一次阶段执行所使用的 AI 模型名称（可能为空）。 */
   aiModelName   : string | null;
 }
 
@@ -44,6 +50,7 @@ export function createListBookAnalysisJobsService(
    * 副作用：无（只读查询）。
    */
   async function listBookAnalysisJobs(bookId: string): Promise<AnalysisJobListItem[]> {
+    // 先校验书籍存在，确保“空列表”不会掩盖 bookId 无效这类调用错误。
     const book = await prismaClient.book.findFirst({
       where : { id: bookId, deletedAt: null },
       select: { id: true }
@@ -53,6 +60,7 @@ export function createListBookAnalysisJobsService(
       throw new BookNotFoundError(bookId);
     }
 
+    // phaseLogs 只取最新一条：用于展示“最后一次执行模型”，避免返回过多历史日志。
     const jobs = await prismaClient.analysisJob.findMany({
       where  : { bookId },
       orderBy: { createdAt: "desc" },
@@ -92,6 +100,7 @@ export function createListBookAnalysisJobsService(
       startedAt     : job.startedAt?.toISOString() ?? null,
       finishedAt    : job.finishedAt?.toISOString() ?? null,
       createdAt     : job.createdAt.toISOString(),
+      // 防御性判空：历史数据可能没有 phaseLogs 或 model 关联。
       aiModelName   : job.phaseLogs?.[0]?.model?.name ?? null
     }));
   }

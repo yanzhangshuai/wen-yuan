@@ -7,8 +7,14 @@ import {
   RelationshipNotFoundError
 } from "@/server/modules/relationships/errors";
 
+/**
+ * 文件定位（人物关系更新服务单测）：
+ * - 验证关系编辑流程中的字段更新、输入有效性校验与不存在资源处理。
+ * - 服务层输出会直接影响关系图边属性（类型/权重/置信度/状态）展示与后续分析结果。
+ */
 describe("updateRelationship service", () => {
   it("updates relationship fields", async () => {
+    // 场景：编辑表单常出现“带空格文本”，服务应归一化后入库，避免前后端显示不一致。
     const relationshipFindFirst = vi.fn().mockResolvedValue({ id: "rel-1" });
     const relationshipUpdate = vi.fn().mockResolvedValue({
       id         : "rel-1",
@@ -58,6 +64,7 @@ describe("updateRelationship service", () => {
   });
 
   it("throws input error when no update field provided", async () => {
+    // 防御规则：空更新请求不允许落库，这是业务规则，不是技术限制，目的是防止无意义写操作污染审计日志。
     const service = createUpdateRelationshipService({
       $transaction: vi.fn()
     } as never);
@@ -67,6 +74,7 @@ describe("updateRelationship service", () => {
   });
 
   it("throws not found when relationship does not exist", async () => {
+    // 边界条件：关系已删除/ID 错误时应快速失败，让路由层可映射为明确错误响应。
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       relationship: {
         findFirst: vi.fn().mockResolvedValue(null)

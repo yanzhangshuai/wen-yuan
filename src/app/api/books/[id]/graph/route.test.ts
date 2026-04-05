@@ -19,12 +19,23 @@ vi.mock("@/server/modules/books/errors", () => {
   return { BookNotFoundError };
 });
 
+/**
+ * 文件定位（Next.js 动态接口路由单测）：
+ * - 对应 `app/api/books/[id]/graph/route.ts`，用于返回某本书的图谱快照。
+ * - `[id]` 来自动态路由参数，`chapter` 来自 query 参数，二者共同决定查询范围。
+ *
+ * 业务职责：
+ * - 给图谱页面提供节点/边数据。
+ * - 在入口层处理参数合法性与领域错误映射（如书籍不存在）。
+ */
 describe("GET /api/books/:id/graph", () => {
   afterEach(() => {
+    // 每个用例重置 mock，确保不同错误分支不会共享调用历史。
     getBookGraphMock.mockReset();
   });
 
   it("returns graph snapshot", async () => {
+    // 成功分支：chapter 查询参数应被解析为数字并传给服务层，实现按章节过滤。
     const bookId = "36660de7-2ec6-4f73-ab2b-06fa8d7f8544";
     getBookGraphMock.mockResolvedValue({
       nodes: [
@@ -57,6 +68,7 @@ describe("GET /api/books/:id/graph", () => {
   });
 
   it("returns 400 for invalid chapter query", async () => {
+    // 防御分支：章节号必须是正整数，0 或非法值都应在路由层拦截。
     const bookId = "36660de7-2ec6-4f73-ab2b-06fa8d7f8544";
     const { GET } = await import("./route");
 
@@ -73,6 +85,7 @@ describe("GET /api/books/:id/graph", () => {
   });
 
   it("returns 404 when book is missing", async () => {
+    // 错误映射：领域层 BookNotFoundError => HTTP 404，保持前后端语义一致。
     const bookId = "36660de7-2ec6-4f73-ab2b-06fa8d7f8544";
     const { BookNotFoundError } = await import("@/server/modules/books/errors");
     getBookGraphMock.mockRejectedValue(new BookNotFoundError(bookId));

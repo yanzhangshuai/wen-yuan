@@ -1,3 +1,13 @@
+/**
+ * 文件定位（前端/同构 lib 层单测）：
+ * - 验证页面调用的服务封装与策略计算逻辑，确保请求契约和推荐结果稳定。
+ * - 该层位于 React 组件与后端 API 之间，负责把业务动作转换为可执行调用。
+ *
+ * 业务职责：
+ * - 降低页面重复拼装请求的复杂度。
+ * - 通过单测锁定关键参数与默认值，减少联调风险。
+ */
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PipelineStage } from "@/types/pipeline";
@@ -8,11 +18,13 @@ vi.mock("@/lib/client-api", () => ({
   clientFetch: clientFetchMock
 }));
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("model-strategy service", () => {
   beforeEach(() => {
     clientFetchMock.mockReset();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("fetchGlobalStrategy returns null when GLOBAL strategy not configured", async () => {
     // Arrange
     clientFetchMock.mockResolvedValue(null);
@@ -28,6 +40,7 @@ describe("model-strategy service", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("saveGlobalStrategy sends stages payload", async () => {
     // Arrange
     clientFetchMock.mockResolvedValue({
@@ -62,6 +75,7 @@ describe("model-strategy service", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("fetchBookStrategy unwraps stages payload", async () => {
     // Arrange
     const bookId = "book/001";
@@ -89,6 +103,7 @@ describe("model-strategy service", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("saveBookStrategy sends encoded path and stages payload", async () => {
     // Arrange
     clientFetchMock.mockResolvedValue({
@@ -116,6 +131,7 @@ describe("model-strategy service", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("fetchJobCostSummary reads cost summary endpoint", async () => {
     // Arrange
     const summary = {

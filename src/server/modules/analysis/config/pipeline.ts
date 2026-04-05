@@ -1,6 +1,16 @@
 import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
 
 /**
+ * 文件定位：
+ * - 人物解析流水线的静态配置中心，属于服务端“策略配置层”。
+ * - 该文件把阈值、并发、特性开关、体裁预设集中管理，避免分散硬编码。
+ *
+ * 维护边界（重要）：
+ * - 这些值直接影响召回率、精度、成本和时延，是业务规则，不是纯技术参数。
+ * - 修改前应结合离线评估与线上回归，避免“看似小改动”引发识别质量波动。
+ */
+
+/**
  * 人物解析链路统一配置。
  * 说明：集中关键阈值与并发参数，避免多处硬编码导致“改一半”风险。
  */
@@ -47,8 +57,24 @@ export const ANALYSIS_PIPELINE_CONFIG = {
   recordGrayZoneMentions       : true
 } as const;
 
+/**
+ * 默认体裁预设名称。
+ * - 作为词表/规则覆盖的默认入口；
+ * - 当书籍未显式指定体裁时使用。
+ */
 export const DEFAULT_GENRE_PRESET = "明清官场";
 
+/**
+ * 体裁预设词表覆盖。
+ *
+ * 字段业务语义：
+ * - `exemptGenericTitles`：豁免的“通用称谓”，避免被过度过滤；
+ * - `additionalTitlePatterns`：补充称谓模式，提升特定体裁召回；
+ * - `additionalPositionPatterns`：补充职位模式，增强角色关系识别。
+ *
+ * 备注：
+ * - 这里的键名（如“武侠”“宫廷家族”）会被上游体裁选择逻辑引用，随意改名会导致预设失效。
+ */
 export const GENRE_PRESETS: Record<string, BookLexiconConfig> = {
   明清官场: {},
   武侠  : {

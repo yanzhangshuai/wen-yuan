@@ -12,11 +12,30 @@ import {
   classifyPersonalization
 } from "@/server/modules/analysis/config/lexicon";
 
+/**
+ * 文件定位（Next.js 服务端领域服务）：
+ * - 位于 `src/server/modules/analysis/services`，属于章节解析流水线中的“人物消歧”核心服务。
+ * - 该文件不会直接作为 Next.js `page.tsx/route.ts` 暴露，而是被 `ChapterAnalysisService` 在服务端调用。
+ *
+ * 核心职责：
+ * - 把 AI 抽取出的名字（`extractedName`）映射到“已有 persona / 新建 persona / 幻觉过滤”三类结果。
+ * - 统一处理称谓泛化（如“皇上”“大人”）与个性化（同一称谓在本书被特指某人）的判定。
+ * - 结合名册（roster）、别名注册表（alias registry）与相似度算法，降低误建人物和误绑定风险。
+ *
+ * 业务边界与上下游：
+ * - 上游：章节解析阶段识别出的称谓字符串、章节原文、章节号、名册映射等上下文。
+ * - 下游：`ChapterAnalysisService` 根据 ResolveResult 决定创建 mention/biography/relationship 等结构化数据。
+ * - 本文件内“阈值与分支”是业务规则，不是技术限制；修改会直接影响识别准确率与审核成本。
+ */
 export const GENERIC_TITLES = new Set([
   ...Array.from(SAFETY_GENERIC_TITLES),
   ...Array.from(DEFAULT_GENERIC_TITLES)
 ]);
 
+/**
+ * 根据词法规则推断别名类型。
+ * 这里优先级固定为 TITLE > POSITION > NICKNAME，是为了优先保护“称号语义”，避免官职/尊号被降级为昵称。
+ */
 function inferAliasType(
   name: string,
   titlePattern: RegExp,
@@ -33,42 +52,84 @@ function inferAliasType(
   return "NICKNAME";
 }
 
+/**
+ * 人物解析输入参数。
+ */
 export interface ResolveInput {
+  /** 当前解析所属书籍 ID。用于限制候选范围，避免跨书污染。 */
   bookId         : string;
+  /** AI 从本段文本中抽取出的原始称谓。 */
   extractedName  : string;
+  /** 当前章节原文（用于“是否真实出现在正文”校验）。 */
   chapterContent : string;
+  /** 章节号。提供时可启用按章节范围生效的 alias 映射命中。 */
   chapterNo?     : number;
+  /** Phase 1 人物名册映射：surfaceForm -> personaId 或 GENERIC。 */
   rosterMap?     : Map<string, string>;
+  /** 本章被判定为“仅称号”的名字集合，用于决定新建 persona 的 nameType。 */
   titleOnlyNames?: Set<string>;
+  /** 书籍级词典配置（泛化称谓、硬软后缀等）。 */
   lexiconConfig? : BookLexiconConfig;
+  /** 泛化比率统计：surfaceForm -> { generic, nonGeneric }。用于灰区判定。 */
   genericRatios? : Map<string, { generic: number; nonGeneric: number }>;
 }
 
+/**
+ * 人物解析输出结果。
+ */
 export interface ResolveResult {
+  /** 解析状态：命中已有人物 / 新建人物 / 判定为幻觉。 */
   status              : "resolved" | "created" | "hallucinated";
+  /** 命中或新建的人物 ID；幻觉时为空。 */
   personaId?          : string;
+  /** 最终置信度（0-1）。用于后续过滤与审核排序。 */
   confidence          : number;
+  /** 命中的候选标准名（便于调试与审核展示）。 */
   matchedName?        : string;
+  /** 失败/降级原因码（empty_name/name_too_short/gray_zone 等）。 */
   reason?             : string;
+  /** 对“泛化称谓”判定出的个性化层级。 */
   personalizationTier?: PersonalizationTier;
+  /** 灰区判定证据；仅 gray_zone 时输出。 */
   grayZoneEvidence?   : MentionPersonalizationEvidence;
 }
 
+/**
+ * 事务适配层：只暴露当前解析流程真正需要的 Prisma 模型能力。
+ * 这样做可以在外层事务中复用该解析逻辑，避免无关模型访问带来的耦合。
+ */
 type TxLike = Pick<
   PrismaClient,
   "persona" | "profile" | "aliasMapping" | "mention"
 >;
 
+/**
+ * 候选人物的最小字段集合。
+ */
 interface CandidatePersona {
+  /** 人物主键。 */
   id     : string;
+  /** 标准人名。 */
   name   : string;
+  /** 已收敛的别名列表（含 profile.localName）。 */
   aliases: string[];
 }
 
+/**
+ * 创建人物解析器。
+ *
+ * @param prisma Prisma 客户端（默认主客户端，亦可传事务客户端）
+ * @param aliasRegistry 别名注册服务（可选，缺失时跳过 alias 快速命中与自动登记）
+ */
 export function createPersonaResolver(
   prisma: PrismaClient,
   aliasRegistry?: AliasRegistryService
 ) {
+  /**
+   * 加载候选人物：
+   * 1. 先查“直接相关”候选（名字/别名/localName 命中），优先精确与性能。
+   * 2. 若无直接命中，再退化到“本书所有人物”做兜底比对，避免漏识别。
+   */
   async function loadCandidates(client: TxLike, bookId: string, extracted: string): Promise<CandidatePersona[]> {
     const directMatches = await client.persona.findMany({
       where: {
@@ -130,6 +191,13 @@ export function createPersonaResolver(
     }));
   }
 
+  /**
+   * 收集“泛化称谓是否被个性化使用”的证据。
+   * 证据来自三条链路：
+   * - alias 映射是否稳定绑定到单一 persona；
+   * - 历史 mention 是否跨章节稳定出现；
+   * - generic/nonGeneric 统计比率是否偏向具体人物语境。
+   */
   async function collectPersonalizationEvidence(
     client: TxLike,
     surfaceForm: string,
@@ -181,12 +249,19 @@ export function createPersonaResolver(
     };
   }
 
+  /**
+   * 核心解析流程：
+   * - 先做输入防御（空值、过短、安全泛化词）；
+   * - 再按优先级依次尝试：roster 命中 -> alias 命中 -> 相似度命中；
+   * - 最后仍未命中时，按规则决定“幻觉过滤”或“新建人物”。
+   */
   async function resolve(input: ResolveInput, tx?: TxLike): Promise<ResolveResult> {
     const client = tx ?? prisma;
     const extracted = normalizeName(input.extractedName);
     const effectiveLexicon = buildEffectiveLexicon(input.lexiconConfig);
     const rawName = input.extractedName.trim();
 
+    // 空字符串直接视为无效识别，避免落库污染。
     if (!extracted) {
       return {
         status    : "hallucinated",
@@ -195,6 +270,7 @@ export function createPersonaResolver(
       };
     }
 
+    // 单字/极短字符串在中文实体识别中误报率极高，按业务规则直接过滤。
     if (extracted.length < 2) {
       return {
         status    : "hallucinated",
@@ -211,6 +287,9 @@ export function createPersonaResolver(
       };
     }
 
+    // 配置型泛化称谓：
+    // - 若关闭动态判定，直接按泛化词处理；
+    // - 若开启动态判定，则依据证据分成 personalized/generic/gray_zone。
     if (effectiveLexicon.genericTitles.has(rawName)) {
       if (!ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled) {
         return {
@@ -249,6 +328,7 @@ export function createPersonaResolver(
       }
     }
 
+    // 优先使用 Phase 1 名册结果：这是同章上下文最强信号，优先级高于全局相似度。
     if (input.rosterMap) {
       const rosterValue = input.rosterMap.get(rawName);
       if (rosterValue === "GENERIC") {
@@ -272,6 +352,8 @@ export function createPersonaResolver(
       }
     }
 
+    // 次优先级：按章节范围查询别名注册表。
+    // 这样可覆盖“同一称谓在不同章节指向不同人物”的历史变更场景。
     if (aliasRegistry && input.chapterNo !== undefined) {
       const aliasResult = await aliasRegistry.lookupAlias(input.bookId, rawName, input.chapterNo);
       if (aliasResult && aliasResult.confidence >= ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence && aliasResult.personaId) {
@@ -290,6 +372,7 @@ export function createPersonaResolver(
       }
     }
 
+    // 进入相似度匹配阶段：对候选集打分并选择最高分。
     const candidates = await loadCandidates(client, input.bookId, extracted);
     const scored = candidates
       .map((candidate) => ({
@@ -299,6 +382,7 @@ export function createPersonaResolver(
       .sort((a, b) => b.score - a.score);
     const winner = scored[0];
 
+    // 达到阈值则认定为已有人物，并顺便补齐 localName/aliases，持续增强后续命中率。
     if (winner && winner.score >= ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore) {
       await client.profile.upsert({
         where: {
@@ -319,6 +403,7 @@ export function createPersonaResolver(
       const aliasExists = winner.candidate.aliases.some(
         (a) => a.trim().toLowerCase() === normalizedExtracted
       );
+      // 只有当 extractedName 既不是标准名也不在 aliases 中时才追加，避免冗余别名膨胀。
       if (!aliasExists && winner.candidate.name.trim().toLowerCase() !== normalizedExtracted) {
         await client.persona.update({
           where: { id: winner.candidate.id },
@@ -334,6 +419,7 @@ export function createPersonaResolver(
       };
     }
 
+    // 若名字在章节原文中都不存在，说明更可能是模型臆造；宁可漏识别也不误建实体。
     if (!containsNormalizedName(input.chapterContent, input.extractedName)) {
       return {
         status     : "hallucinated",
@@ -343,6 +429,9 @@ export function createPersonaResolver(
       };
     }
 
+    // 走到这里表示“可接受的新人物”：
+    // - `TITLE_ONLY` 属于业务语义标签，不是技术限制；
+    // - 置信度使用 winner 分数兜底，默认 0.35 便于后续审核筛查。
     const nameType = input.titleOnlyNames?.has(rawName)
       ? NameType.TITLE_ONLY
       : NameType.NAMED;
@@ -364,6 +453,7 @@ export function createPersonaResolver(
       }
     });
 
+    // 对“称号/官职”类新建人物自动登记 alias mapping，便于后续章节复用。
     if (
       aliasRegistry &&
       (
@@ -400,6 +490,11 @@ export function createPersonaResolver(
   return { resolve };
 }
 
+/**
+ * 多信号匹配得分：
+ * - 在 canonicalName 与 aliases 间取最大值；
+ * - 这样可以兼顾“标准名匹配”与“别称命中”两类路径。
+ */
 function multiSignalScore(
   extractedName: string,
   candidate: CandidatePersona,
@@ -415,6 +510,13 @@ function multiSignalScore(
   return Math.max(...allNames.map((n) => scorePair(extractedName, n, hardBlockSuffixes, softBlockSuffixes)));
 }
 
+/**
+ * 两个名字的相似度评分：
+ * 1. 完全相等直接 1；
+ * 2. 子串关系使用业务化惩罚规则（硬/软后缀）；
+ * 3. 长字符串用编辑距离；
+ * 4. 短字符串用字符集合相似度。
+ */
 function scorePair(
   a: string,
   b: string,
@@ -460,6 +562,11 @@ function scorePair(
   return unionSize > 0 ? intersectionSize / unionSize : 0;
 }
 
+/**
+ * 子串匹配评分规则：
+ * - hardBlock 后缀（如明显无关词尾）直接判 0；
+ * - softBlock 后缀按系数惩罚，保留“低置信可疑命中”供后续审核。
+ */
 export function calculateSubstringMatchScore(
   longer: string,
   shorter: string,
@@ -478,10 +585,18 @@ export function calculateSubstringMatchScore(
   return normalScore;
 }
 
+/**
+ * 名字归一化：去掉空白/标点并转小写。
+ * 目标是减少文风与排版差异对匹配的影响，而不是做语义改写。
+ */
 function normalizeName(name: string): string {
   return name.replace(/[\s·•,，。！？\-—]/g, "").toLowerCase();
 }
 
+/**
+ * 判断候选名字是否真实出现在章节中（同样按归一化后匹配）。
+ * 该检查是“防幻觉”最后一道闸门。
+ */
 function containsNormalizedName(chapterContent: string, candidateName: string): boolean {
   const normalizedCandidate = normalizeName(candidateName);
   if (!normalizedCandidate) {
@@ -491,6 +606,10 @@ function containsNormalizedName(chapterContent: string, candidateName: string): 
   return normalizeName(chapterContent).includes(normalizedCandidate);
 }
 
+/**
+ * 经典 Levenshtein 编辑距离实现。
+ * 这里不引入第三方库，保持服务端路径轻量与可测试性。
+ */
 function levenshteinDistance(a: string, b: string): number {
   if (a.length < b.length) {
     [a, b] = [b, a];

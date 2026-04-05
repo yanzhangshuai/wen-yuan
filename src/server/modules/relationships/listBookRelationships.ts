@@ -1,3 +1,22 @@
+/**
+ * =============================================================================
+ * 文件定位（服务层：书籍关系列表查询）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/relationships/listBookRelationships.ts`
+ *
+ * 模块职责：
+ * - 查询指定书籍的关系数据；
+ * - 支持按类型、审核状态、来源进行筛选，服务审核工作台。
+ *
+ * 设计意图：
+ * - 在服务层统一做查询拼装与结果映射，避免路由层重复写查询逻辑；
+ * - 输出稳定 DTO，减少前端对数据库字段的直接耦合。
+ *
+ * 业务规则提示：
+ * - `status/source` 筛选语义由审核流程定义，不是纯技术过滤条件；
+ * - 关系必须落在书籍范围内，bookId 是核心数据边界。
+ * =============================================================================
+ */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { type ProcessingStatus, type RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";

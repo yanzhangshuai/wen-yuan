@@ -11,6 +11,20 @@ import { createModelStrategyResolver } from "@/server/modules/analysis/services/
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 
 /**
+ * 文件定位（Next.js 服务端任务执行层）：
+ * - 本文件位于 `src/server/modules/analysis/jobs`，是“整书解析任务”的实际执行器。
+ * - 不属于 app router 的 `route.ts/page.tsx`，而是被 API/调度器在 Node.js 侧触发。
+ *
+ * 核心职责：
+ * - 负责分析任务生命周期（QUEUED -> RUNNING -> SUCCEEDED/FAILED/CANCELED）；
+ * - 按章节并发执行解析、章节级校验、增量称号溯源，并回写书籍进度；
+ * - 在任务末尾执行全书级收尾流程（孤儿人物降权、全书校验、灰区仲裁）。
+ *
+ * 运行约束：
+ * - 这是纯服务端逻辑，依赖数据库与 AI provider，不可在 Client Component 中运行。
+ * - 其中重试、并发、阈值均是业务可调策略，变更会直接影响任务稳定性与成本。
+ */
+/**
  * 功能：定义任务执行时所需的最小章节信息载体。
  * 输入：无（类型声明）。
  * 输出：章节主键与章节序号。
@@ -25,10 +39,15 @@ interface ChapterTask {
 }
 
 interface ChapterValidationBlockResult {
+  /** 章节级验证报告 ID；降级场景可能是占位值 `validation-degraded`。 */
   reportId      : string;
+  /** 章节级 ERROR 数量（自动修复后统计值）。 */
   errorCount    : number;
+  /** 模型判定可自动修复的问题条数。 */
   autoFixable   : number;
+  /** 实际成功应用的自动修复条数。 */
   appliedAutoFix: number;
+  /** 是否仍需人工复审。true 时章节 parseStatus 会回落到 PENDING。 */
   needsReview   : boolean;
 }
 
@@ -46,7 +65,9 @@ type ChapterAnalyzer =
   Partial<Pick<ReturnType<typeof createValidationAgentService>, "validateBookResult" | "applyAutoFixes">>;
 
 interface ChapterAnalyzerFactoryInput {
+  /** 当前任务 ID。用于策略解析与阶段日志归属。 */
   jobId : string;
+  /** 当前任务所属书籍 ID。 */
   bookId: string;
 }
 

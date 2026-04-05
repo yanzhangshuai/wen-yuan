@@ -3,6 +3,20 @@ import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 
 /**
+ * 文件定位（图谱服务层）：
+ * - 本文件负责保存用户在图谱页面拖拽后的节点坐标，属于服务端数据写入逻辑。
+ * - 通常由图谱相关 API route 调用，不直接参与 React 渲染。
+ *
+ * 核心职责：
+ * - 校验图谱（与 bookId 对齐）存在；
+ * - 对输入节点坐标去重并批量 upsert 到 `profile.visualConfig`；
+ * - 返回本次新增/更新/忽略统计，供前端提示保存结果。
+ *
+ * 业务说明：
+ * - 图谱布局是“用户交互偏好数据”，不影响人物关系语义；
+ * - `ignoredPersonaIds` 用于显式反馈脏输入（不存在/已删除的人物）。
+ */
+/**
  * 图谱节点布局输入。
  */
 export interface GraphLayoutNodeInput {
@@ -50,6 +64,7 @@ function mergeVisualConfig(
   current: unknown,
   position: { x: number; y: number }
 ): Prisma.InputJsonValue {
+  // 仅在 current 是对象时保留旧字段，避免把数组/原始值错误扩散到 visualConfig。
   const baseConfig = current && typeof current === "object" && !Array.isArray(current)
     ? { ...(current as Record<string, unknown>) }
     : {};
@@ -85,6 +100,7 @@ export function createUpdateGraphLayoutService(
 
     const dedupedNodes = new Map<string, GraphLayoutNodeInput>();
     for (const node of input.nodes) {
+      // 同一 persona 多次提交时“后写覆盖前写”，以用户最后一次拖拽位置为准。
       dedupedNodes.set(node.personaId, node);
     }
 
@@ -138,6 +154,7 @@ export function createUpdateGraphLayoutService(
       for (const [personaId, node] of dedupedNodes) {
         const persona = personaMap.get(personaId);
         if (!persona) {
+          // 不存在的人物不落库，只在返回值中记录，避免事务被无效数据中断。
           continue;
         }
 

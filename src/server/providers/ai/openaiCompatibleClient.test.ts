@@ -1,3 +1,13 @@
+/**
+ * 文件定位（AI Provider 适配层单测）：
+ * - 覆盖不同模型供应商客户端封装，位于分析服务与第三方模型 API 之间。
+ * - 该层负责统一请求/响应语义，隔离供应商差异，保障上层调用稳定。
+ *
+ * 业务职责：
+ * - 校验鉴权参数、请求体组装、错误映射和响应格式标准化。
+ * - 防止供应商 SDK/协议变化直接破坏业务链路。
+ */
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OpenAiCompatibleClient } from "@/server/providers/ai/openaiCompatibleClient";
@@ -12,7 +22,9 @@ afterEach(() => {
  * 测试目标：验证标准 system/user 消息拼装、采样参数透传与 usage 映射。
  * 覆盖范围：success / empty-content failure。
  */
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("OpenAiCompatibleClient", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("sends system/user messages and maps usage", async () => {
     // Arrange
     const fetchMock = vi.fn().mockResolvedValue(
@@ -76,6 +88,7 @@ describe("OpenAiCompatibleClient", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws readable error for empty content", async () => {
     // Arrange
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
@@ -96,6 +109,7 @@ describe("OpenAiCompatibleClient", () => {
     await expect(client.generateJson({ system: "", user: "hello" })).rejects.toThrow("returned an empty response");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not send reasoning_effort when not explicitly configured", async () => {
     // Arrange
     const fetchMock = vi.fn().mockResolvedValue(

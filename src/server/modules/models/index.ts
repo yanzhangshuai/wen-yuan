@@ -1,9 +1,32 @@
+/**
+ * =============================================================================
+ * 文件定位（服务层：AI 模型配置与连通性管理）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/models/index.ts`
+ *
+ * 模块角色：
+ * - 属于服务端“模型治理”领域模块，负责模型列表、启停、默认模型切换、密钥更新、
+ *   连通性测试与性能快照组装；
+ * - 是管理后台“模型管理页”背后的核心业务实现，不直接暴露 HTTP 协议。
+ *
+ * 在系统中的上下游：
+ * - 上游：`/api/admin/models*`、`/api/admin/models/:id/test` 等 Route Handler；
+ * - 下游：Prisma（模型配置 + 调用日志统计）、加解密模块、外部模型网关探测。
+ *
+ * 关键业务约束：
+ * - API Key 必须以密文存储，读取时仅在必要路径解密；
+ * - 连通性测试必须走白名单域名校验，防止 SSRF 风险；
+ * - “默认模型唯一”是业务规则，不是技术偶然，涉及全局推理链路稳定性。
+ * =============================================================================
+ */
 import { z } from "zod";
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import { decryptValue, encryptValue, maskSensitiveValue } from "@/server/security/encryption";
 
+/** 便于测试注入的 fetch 签名类型，避免在单测里强耦合全局 fetch。 */
 type FetchImpl = typeof fetch;
+/** 平台当前支持的 AI 提供商枚举（与数据库 provider 字段取值保持一致）。 */
 type SupportedProvider = "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
 
 const providerSchema = z.enum(["deepseek", "qwen", "doubao", "gemini", "glm"]);
@@ -30,46 +53,81 @@ const updateModelInputSchema = z.object({
   ]).optional()
 });
 
+/**
+ * 数据库层模型记录快照（内部结构，不直接暴露给前端）。
+ * 字段语义强调“存储真实值”，例如 `apiKey` 可能是加密密文。
+ */
 interface AiModelRecord {
+  /** 模型记录主键 ID。 */
   id       : string;
+  /** 提供商标识（deepseek/qwen/...）。 */
   provider : string;
+  /** 管理端展示名称。 */
   name     : string;
+  /** 提供商侧模型 ID（真实调用使用）。 */
   modelId  : string;
+  /** 别名键（用于推荐与策略映射，可为空）。 */
   aliasKey : string | null;
+  /** 提供商 API Base URL。 */
   baseUrl  : string;
+  /** 密钥（存储层可为空；存在时通常为加密串）。 */
   apiKey   : string | null;
+  /** 是否启用。 */
   isEnabled: boolean;
+  /** 是否全局默认模型。 */
   isDefault: boolean;
+  /** 最近更新时间（用于缓存与变更追踪）。 */
   updatedAt: Date;
 }
 
 export interface ModelPerformanceRatings {
+  /** 速度评分（由平台策略计算，用于前端推荐展示）。 */
   speed    : number;
+  /** 稳定性评分（综合失败率/超时等信号）。 */
   stability: number;
+  /** 成本评分（相对值，越高表示越经济）。 */
   cost     : number;
 }
 
 export interface ModelPerformanceSnapshot {
+  /** 统计窗口内调用次数。 */
   callCount          : number;
+  /** 成功率（无数据时为 null，避免误导为 0）。 */
   successRate        : number | null;
+  /** 平均延迟（毫秒，缺样本时为 null）。 */
   avgLatencyMs       : number | null;
+  /** 平均输入 token（缺样本时为 null）。 */
   avgPromptTokens    : number | null;
+  /** 平均输出 token（缺样本时为 null）。 */
   avgCompletionTokens: number | null;
+  /** 面向管理端展示的可读评分。 */
   ratings            : ModelPerformanceRatings;
 }
 
 export interface ModelListItem {
+  /** 模型 ID。 */
   id             : string;
+  /** 提供商。 */
   provider       : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
+  /** 管理台显示名。 */
   name           : string;
+  /** 提供商模型标识。 */
   providerModelId: string;
+  /** 推荐/策略别名。 */
   aliasKey       : string | null;
+  /** 调用基地址。 */
   baseUrl        : string;
+  /** 是否启用。 */
   isEnabled      : boolean;
+  /** 是否默认。 */
   isDefault      : boolean;
+  /** 脱敏后的密钥（仅供回显状态，不可用于调用）。 */
   apiKeyMasked   : string | null;
+  /** 是否完成可调用配置（baseUrl + apiKey 等）。 */
   isConfigured   : boolean;
+  /** 性能快照。 */
   performance    : ModelPerformanceSnapshot;
+  /** ISO 时间字符串，便于前端直接显示。 */
   updatedAt      : string;
 }
 
@@ -79,17 +137,26 @@ export type ApiKeyChange =
   | { action: "set"; value: string };
 
 export interface UpdateModelInput {
+  /** 目标模型 ID。 */
   providerModelId?: string;
+  /** 被更新的记录 ID。 */
   id              : string;
+  /** 新 baseUrl。 */
   baseUrl?        : string;
+  /** 新启停状态。 */
   isEnabled?      : boolean;
+  /** 密钥变更动作（不变/清空/设置）。 */
   apiKey?         : ApiKeyChange;
 }
 
 export interface UpdateAdminModelPayload {
+  /** 可选覆盖的 providerModelId。 */
   providerModelId?: string;
+  /** 可选覆盖的 baseUrl。 */
   baseUrl?        : string;
+  /** 可选启停状态。 */
   isEnabled?      : boolean;
+  /** 管理端输入的明文密钥；null 表示显式清空。 */
   apiKey?         : string | null;
 }
 
@@ -100,10 +167,15 @@ export type ModelConnectivityErrorType =
   | "TIMEOUT";
 
 export interface ModelConnectivityResult {
+  /** 连通性是否成功。 */
   success      : boolean;
+  /** 请求耗时（成功时返回）。 */
   latencyMs?   : number;
+  /** 人可读结果描述（用于前端提示）。 */
   detail       : string;
+  /** 错误分类（失败时返回，供界面差异化提示）。 */
   errorType?   : ModelConnectivityErrorType;
+  /** 详细错误信息（调试用途）。 */
   errorMessage?: string;
 }
 

@@ -1,3 +1,23 @@
+/**
+ * =============================================================================
+ * 文件定位（分析服务：Prompt 构建与校验响应解析）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/analysis/services/prompts.ts`
+ *
+ * 模块职责：
+ * - 为多个分析阶段构建统一 Prompt（名册发现、章节分析、称号溯源、质量校验等）；
+ * - 维护 Prompt 输入类型契约，保证上游调用参数含义稳定；
+ * - 对模型返回的校验 JSON 做修复与结构化解析。
+ *
+ * 在链路中的位置：
+ * - 上游：章节分析服务、验证服务、aiClient；
+ * - 下游：各 Provider 客户端（仅消费字符串 Prompt）与解析器。
+ *
+ * 关键业务约束：
+ * - Prompt 文案中的规则属于业务规则，不是技术注释，改动会直接影响抽取准确率；
+ * - 同一概念（如 generic titles 示例）必须统一口径，避免多处 prompt 漂移导致结果不一致。
+ * =============================================================================
+ */
 import type { AnalysisProfileContext, TitleArbitrationEntry, TitleArbitrationInput, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
 import type { PromptMessageInput } from "@/types/pipeline";
 import {
@@ -26,13 +46,21 @@ const GENERIC_TITLES_EXAMPLE = Array.from(buildEffectiveGenericTitles(undefined)
  * 副作用：无。
  */
 export interface BuildPromptInput {
+  /** 书名，用于限定语境与减少模型跨文本幻觉。 */
   bookTitle            : string;
+  /** 当前章节号（用于输出锚定与审计定位）。 */
   chapterNo            : number;
+  /** 当前章节标题（提高语义理解准确度）。 */
   chapterTitle         : string;
+  /** 当前分段正文内容。 */
   content              : string;
+  /** 已建档人物上下文（帮助做实体对齐）。 */
   profiles             : AnalysisProfileContext[];
+  /** 当前分片序号（从 1 开始）。 */
   chunkIndex           : number;
+  /** 分片总数（用于引导模型避免跨片段臆断）。 */
   chunkCount           : number;
+  /** 可选覆盖的泛化称谓示例（测试或策略定制场景）。 */
   genericTitlesExample?: string;
 }
 
@@ -44,68 +72,118 @@ export interface BuildPromptInput {
  * 副作用：无。
  */
 export interface RosterDiscoveryInput {
+  /** 书名。 */
   bookTitle            : string;
+  /** 章节号。 */
   chapterNo            : number;
+  /** 章节标题。 */
   chapterTitle         : string;
+  /** 完整章节正文（Phase 1 需要整章观察）。 */
   content              : string;
+  /** 已建档人物列表，用于“已知/新建”判定。 */
   profiles             : AnalysisProfileContext[];
+  /** 可选覆盖泛化称谓示例。 */
   genericTitlesExample?: string;
 }
 
 export interface ChapterValidationPromptInput {
+  /** 书名。 */
   bookTitle       : string;
+  /** 章节号。 */
   chapterNo       : number;
+  /** 章节标题。 */
   chapterTitle    : string;
+  /** 章节正文（用于回溯证据）。 */
   chapterContent  : string;
+  /** 系统内当前已存在的人物候选。 */
   existingPersonas: Array<{
+    /** 人物 ID。 */
     id        : string;
+    /** 标准名。 */
     name      : string;
+    /** 别名列表。 */
     aliases   : string[];
+    /** 姓名类型（NAMED/TITLE_ONLY）。 */
     nameType  : string;
+    /** 置信度。 */
     confidence: number;
   }>;
+  /** 本轮新创建人物。 */
   newlyCreated: Array<{
+    /** 人物 ID。 */
     id        : string;
+    /** 标准名。 */
     name      : string;
+    /** 姓名类型。 */
     nameType  : string;
+    /** 置信度。 */
     confidence: number;
   }>;
+  /** 本章原文提及片段。 */
   chapterMentions: Array<{
+    /** 归一化后人物名。 */
     personaName: string;
+    /** 原文命中片段。 */
     rawText    : string;
   }>;
+  /** 本章关系抽取结果。 */
   chapterRelationships: Array<{
+    /** 起点人物名。 */
     sourceName: string;
+    /** 终点人物名。 */
     targetName: string;
+    /** 关系类型。 */
     type      : string;
   }>;
 }
 
 export interface BookValidationPromptInput {
+  /** 书名。 */
   bookTitle: string;
+  /** 全书人物摘要。 */
   personas: Array<{
+    /** 人物 ID。 */
     id          : string;
+    /** 标准名。 */
     name        : string;
+    /** 别名列表。 */
     aliases     : string[];
+    /** 姓名类型。 */
     nameType    : string;
+    /** 置信度。 */
     confidence  : number;
+    /** 提及次数（用于判断是否疑似噪声人物）。 */
     mentionCount: number;
   }>;
+  /** 全书关系聚合摘要。 */
   relationships: Array<{
+    /** 起点人物名。 */
     sourceName: string;
+    /** 终点人物名。 */
     targetName: string;
+    /** 关系类型。 */
     type      : string;
+    /** 同类关系命中次数。 */
     count     : number;
   }>;
+  /** 低置信人物集合。 */
   lowConfidencePersonas: Array<{
+    /** 人物 ID。 */
     id        : string;
+    /** 人物名。 */
     name      : string;
+    /** 置信度。 */
     confidence: number;
   }>;
+  /** 引用原文片段，供模型做证据化校验。 */
   sourceExcerpts: Array<{
+    /** 章节号。 */
     chapterNo   : number;
+    /** 章节标题。 */
     chapterTitle: string;
+    /** 该片段被选入的原因。 */
     reason      : string;
+    /** 原文摘录。 */
     excerpt     : string;
   }>;
 }

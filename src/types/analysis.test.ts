@@ -1,8 +1,20 @@
+/**
+ * 文件定位（类型与契约测试）：
+ * - 覆盖 TypeScript 类型层的业务契约与辅助行为，属于跨层公共定义验证。
+ * - 该文件用于防止类型漂移导致前后端字段语义不一致。
+ *
+ * 业务职责：
+ * - 约束关键枚举/结构在演进过程中的兼容性。
+ * - 让维护者在修改类型时能及时感知破坏性变更。
+ */
+
 import { describe, expect, it } from "vitest";
 
 import { parseChapterAnalysisResponse, parseEnhancedChapterRosterResponse, repairJson, parseTitleResolutionResponse } from "./analysis";
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parseChapterAnalysisResponse", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("normalizes valid items and drops invalid records", () => {
     const result = parseChapterAnalysisResponse(
       JSON.stringify({
@@ -112,6 +124,7 @@ describe("parseChapterAnalysisResponse", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to empty arrays when sections are missing or malformed", () => {
     const result = parseChapterAnalysisResponse(
       JSON.stringify({
@@ -128,12 +141,15 @@ describe("parseChapterAnalysisResponse", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when top-level json is not an object", () => {
     expect(() => parseChapterAnalysisResponse("[]")).toThrowError("AI response is not a JSON object");
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parseEnhancedChapterRosterResponse", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("parses alias fields when enhanced attributes are provided", () => {
     const result = parseEnhancedChapterRosterResponse(JSON.stringify([
       {
@@ -170,6 +186,7 @@ describe("parseEnhancedChapterRosterResponse", () => {
     ]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("remains backward-compatible when alias fields are absent", () => {
     const result = parseEnhancedChapterRosterResponse(JSON.stringify([
       {
@@ -209,20 +226,24 @@ describe("parseEnhancedChapterRosterResponse", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("repairJson", () => {
   
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns valid JSON unchanged", () => {
     const input = JSON.stringify([{ a: 1 }]);
     expect(repairJson(input)).toBe(input);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("strips Markdown code block wrappers", () => {
     const inner = JSON.stringify([{ b: 2 }]);
     const wrapped = "```json\n" + inner + "\n```";
     expect(JSON.parse(repairJson(wrapped))).toEqual([{ b: 2 }]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("repairs truncated array by closing brackets", () => {
     // 截断到第一个完整对象之后
     const truncated = '[{"name":"范进","id":1},{"name":"胡屠户"},"extra';
@@ -231,17 +252,20 @@ describe("repairJson", () => {
     expect(parsed).toEqual([{ name: "范进", id: 1 }, { name: "胡屠户" }]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns empty array for unrecoverable truncation", () => {
     const broken = "[{";
     expect(repairJson(broken)).toBe("[]");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns empty object for unrecoverable object truncation", () => {
     const broken = '{"key';
     expect(repairJson(broken)).toBe("{}");
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parseTitleResolutionResponse", () => {
   
 
@@ -250,6 +274,7 @@ describe("parseTitleResolutionResponse", () => {
     ["丞相", "persona-chengxiang"]
   ]);
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("parses valid resolutions with persona mapping", () => {
     const raw = JSON.stringify([
       { title: "太祖皇帝", realName: "朱元璋", confidence: 0.95, historicalNote: "明太祖" },
@@ -269,6 +294,7 @@ describe("parseTitleResolutionResponse", () => {
     expect(result[1].confidence).toBe(0.3);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips entries without matching persona ID", () => {
     const raw = JSON.stringify([
       { title: "未知称号", realName: "某人", confidence: 0.8 }
@@ -277,6 +303,7 @@ describe("parseTitleResolutionResponse", () => {
     expect(result).toHaveLength(0);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("clamps confidence to [0, 1]", () => {
     const raw = JSON.stringify([
       { title: "太祖皇帝", realName: "朱元璋", confidence: 1.5 }
@@ -285,11 +312,13 @@ describe("parseTitleResolutionResponse", () => {
     expect(result[0].confidence).toBe(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns empty array for invalid JSON", () => {
     const result = parseTitleResolutionResponse("not json", personaIdByTitle);
     expect(result).toEqual([]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns empty array for non-array JSON", () => {
     const result = parseTitleResolutionResponse('{"key":"value"}', personaIdByTitle);
     expect(result).toEqual([]);

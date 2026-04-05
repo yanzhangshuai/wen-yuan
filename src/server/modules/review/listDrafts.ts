@@ -5,6 +5,34 @@ import type { NameType } from "@/generated/prisma/enums";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 
+/**
+ * =============================================================================
+ * 文件定位（服务端领域模块：审核草稿查询）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/review/listDrafts.ts`
+ *
+ * 分层角色：
+ * - 属于服务端“领域服务层（module/service）”，位于 API/页面与数据库访问之间；
+ * - 被两类上游调用：
+ *   1) Server Component 页面：`app/admin/review/[bookId]/page.tsx`（首屏预取）；
+ *   2) Route Handler：`app/api/admin/drafts/route.ts`（客户端刷新）。
+ *
+ * 核心职责：
+ * 1) 统一校验筛选参数（bookId/tab/source）；
+ * 2) 从 `Profile/Relationship/BiographyRecord` 三条数据链路读取 DRAFT 数据；
+ * 3) 汇总 summary + 列表结果，输出给审核面板统一消费。
+ *
+ * 业务边界：
+ * - 仅提供“读取待审核草稿”能力，不负责状态写入；
+ * - 统一过滤软删除记录（`deletedAt: null`），这是数据可见性规则，不是技术限制；
+ * - 人物草稿来源于 `Profile + Persona` 组合数据，关系与传记直接来自各自表。
+ *
+ * 维护注意：
+ * - 对外类型 `AdminDraftsResult` 是前后端契约，字段变更会直接影响 `ReviewPanel`；
+ * - `tab` 分支采用“只查当前页签数据”策略，是为了控制数据库负载并缩短刷新延迟。
+ * =============================================================================
+ */
+
 /** 审核草稿页可选的 Tab 值（人物 / 关系 / 传记事件）。 */
 export const REVIEW_DRAFT_TAB_VALUES = ["PERSONA", "RELATIONSHIP", "BIOGRAPHY"] as const;
 
@@ -151,13 +179,16 @@ export interface AdminDraftsResult {
  */
 function buildPersonaWhere(filter: z.infer<typeof listDraftsFilterSchema>) {
   return {
+    // 业务规则：软删除资料不进入审核池，避免历史脏数据反复出现。
     deletedAt: null,
+    // 可选按书过滤：用于单书审核页面只看当前书数据。
     ...(filter.bookId ? { bookId: filter.bookId } : {}),
     book     : {
       deletedAt: null
     },
     persona: {
       deletedAt: null,
+      // 仅在前端显式选择来源时才加条件；不选择表示“全部来源”。
       ...(filter.source ? { recordSource: filter.source } : {})
     }
   };
@@ -172,8 +203,10 @@ function buildPersonaWhere(filter: z.infer<typeof listDraftsFilterSchema>) {
  */
 function buildRelationshipWhere(filter: z.infer<typeof listDraftsFilterSchema>) {
   return {
+    // 这里只查询待审核草稿，已确认/已拒绝不会在审核池重复出现。
     status   : ProcessingStatus.DRAFT,
     deletedAt: null,
+    // 根据是否有 bookId，拼接不同层级的 chapter->book 过滤条件。
     ...(filter.bookId ? { chapter: { bookId: filter.bookId, book: { deletedAt: null } } } : { chapter: { book: { deletedAt: null } } }),
     ...(filter.source ? { recordSource: filter.source } : {})
   };
@@ -206,17 +239,21 @@ export function createListDraftsService(
    * 副作用：无（只读查询）。
    */
   async function listAdminDrafts(filter: ListDraftsFilter = {}): Promise<AdminDraftsResult> {
+    // 第一步：统一参数校验，确保无论从页面调用还是 API 调用，规则一致。
     const parsedFilter = listDraftsFilterSchema.parse(filter);
     const personaWhere = buildPersonaWhere(parsedFilter);
     const relationshipWhere = buildRelationshipWhere(parsedFilter);
     const biographyWhere = buildBiographyWhere(parsedFilter);
 
+    // 第二步：先并发统计三类数量，summary 角标始终完整返回（不受 tab 过滤影响）。
+    // 这是业务规则：即使用户只看某个 tab，也要看到全局待审规模。
     const [personaCount, relationshipCount, biographyCount] = await Promise.all([
       prismaClient.profile.count({ where: personaWhere }),
       prismaClient.relationship.count({ where: relationshipWhere }),
       prismaClient.biographyRecord.count({ where: biographyWhere })
     ]);
 
+    // 第三步：按 tab 决定是否查询对应明细列表，避免无意义的大量明细 IO。
     const shouldListPersonas = !parsedFilter.tab || parsedFilter.tab === "PERSONA";
     const shouldListRelationships = !parsedFilter.tab || parsedFilter.tab === "RELATIONSHIP";
     const shouldListBiography = !parsedFilter.tab || parsedFilter.tab === "BIOGRAPHY";
@@ -247,6 +284,7 @@ export function createListDraftsService(
             }
           }
         })
+        // 未命中 tab 时返回空数组，保持返回结构稳定，减少前端判空分支复杂度。
         : Promise.resolve([]),
       shouldListRelationships
         ? prismaClient.relationship.findMany({
@@ -320,6 +358,8 @@ export function createListDraftsService(
         : Promise.resolve([])
     ]);
 
+    // 第四步：将数据库模型映射为前端契约模型。
+    // 注意：这里显式设置 `status: DRAFT`，是为了给前端稳定语义，不依赖底层字段推断。
     return {
       summary: {
         persona     : personaCount,

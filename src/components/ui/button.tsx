@@ -4,6 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位：
+ * - 全局 Button 原子组件，属于前端设计系统核心入口。
+ * - 业务页面应优先复用该组件，以保证交互状态与视觉规范一致。
+ */
+
+/**
+ * Button 样式变体定义。
+ * - `variant` 描述业务语义（主按钮、危险按钮、幽灵按钮等）。
+ * - `size` 描述尺寸语义（普通、小、大、图标按钮）。
+ *
+ * 维护注意：
+ * - 这些变体类名是大量页面共同依赖的契约，随意调整可能引发全站视觉回归。
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
@@ -30,12 +44,25 @@ const buttonVariants = cva(
       }
     },
     defaultVariants: {
+      // 默认组合满足绝大多数“主操作按钮”场景。
       variant: "default",
       size   : "default"
     }
   }
 );
 
+/**
+ * Button 组件。
+ *
+ * @param className 业务层扩展样式。
+ * @param variant 按钮视觉语义。
+ * @param size 按钮尺寸语义。
+ * @param asChild 是否复用子元素作为真实 DOM 节点（便于语义化标签/路由链接）。
+ * @param props 原生 button 属性（type/onClick/disabled 等）。
+ *
+ * 设计原因：
+ * - `asChild` 通过 Slot 去除不必要包裹层，保证按钮样式可复用于 `<a>`、`<Link>` 等组件。
+ */
 function Button({
   className,
   variant,
@@ -46,6 +73,7 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
+  // 当 asChild=true 时，样式与行为下沉给子节点；否则使用原生 button。
   const Comp = asChild ? Slot : "button";
 
   return (

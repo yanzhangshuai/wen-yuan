@@ -4,8 +4,17 @@ import { describe, expect, it, vi } from "vitest";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { createListBookPersonasService } from "@/server/modules/personas/listBookPersonas";
 
+/**
+ * 文件定位（人物列表服务单测）：
+ * - 验证按书籍维度聚合人物资料（persona + profile）的映射结果。
+ * - 该服务是管理端人物列表页与图谱编辑器的共同数据来源之一。
+ *
+ * 业务关注点：
+ * - 需要把跨表字段整合成前端可直接消费的结构，并正确带出来源/状态信息。
+ */
 describe("listBookPersonas service", () => {
   it("returns mapped personas for a book", async () => {
+    // 场景：书籍存在时，列表接口必须返回“业务视图模型”，而非裸 Prisma 结构。
     const findFirst = vi.fn().mockResolvedValue({ id: "book-1" });
     const findMany = vi.fn().mockResolvedValue([
       {
@@ -53,6 +62,7 @@ describe("listBookPersonas service", () => {
   });
 
   it("throws not found when book does not exist", async () => {
+    // 场景：书籍已删除或 ID 错误时，需要阻断查询并给上游明确“资源不存在”信号。
     const service = createListBookPersonasService({
       book: {
         findFirst: vi.fn().mockResolvedValue(null)

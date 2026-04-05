@@ -1,5 +1,17 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（骨架屏占位组件）：
+ * - 文件路径：`src/components/ui/skeleton.tsx`
+ * - 所属层次：前端基础 UI 反馈组件层。
+ *
+ * 核心职责：
+ * - 在数据加载期间提供结构占位，降低页面跳动感；
+ * - 使用统一样式类，保证各主题下占位观感一致。
+ *
+ * @param className 调用方扩展样式
+ * @param props 原生 `div` 属性（如 `aria-*`、`style`）
+ */
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

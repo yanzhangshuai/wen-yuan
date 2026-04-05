@@ -1,5 +1,19 @@
 import { ChapterType } from "@/generated/prisma/enums";
 
+/**
+ * 文件定位（书籍预处理层）：
+ * - 本文件负责把导入的整本原文切分成章节草稿，供 `books` 模块后续入库。
+ * - 通常在“导入书籍/确认章节”链路被调用，属于服务端数据预处理，不直接渲染页面。
+ *
+ * 核心职责：
+ * - 识别章节标题（中英文格式 + 前后记 + 非正文标题）；
+ * - 规范化原始文本（去 BOM、去元信息行、统一缩进）；
+ * - 生成 `ChapterSplitDraft[]`，并执行业务规则过滤（非正文、空章节回退策略）。
+ *
+ * 关键规则说明：
+ * - 前言/后记等“说明性内容”默认不进入正式章节，这是业务规则，不是技术限制；
+ * - 当无法识别标题时回退为“整文一章”，确保导入流程不会因格式差异中断。
+ */
 export interface ChapterSplitDraft {
   /** 章节序号（从 1 开始）。 */
   index      : number;
@@ -144,6 +158,7 @@ export function splitRawContentToChapterDrafts(rawContent: string): ChapterSplit
   });
 
   if (titleLines.length === 0) {
+    // 兜底策略：无法识别章节标题时仍要可导入，统一视为单章“正文”。
     return [
       {
         index      : 1,

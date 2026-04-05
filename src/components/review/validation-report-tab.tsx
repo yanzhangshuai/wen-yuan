@@ -1,5 +1,37 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（审核中心子组件：自检报告 Tab）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/review/validation-report-tab.tsx`
+ *
+ * 在 Next.js 项目中的定位：
+ * - 该文件是审核页面中的 Client Component；
+ * - 用于承载“模型自检报告”的浏览、展开详情、应用自动修正等交互。
+ *
+ * 业务职责：
+ * 1) 展示报告列表（范围、状态、问题统计）；
+ * 2) 懒加载单份报告详情（issues）；
+ * 3) 对可自动修正项触发“应用自动修正”；
+ * 4) 操作完成后通知父层刷新，保持列表与详情一致。
+ *
+ * 上下游关系：
+ * - 上游：父层提供 `reports`（报告摘要列表）；
+ * - 下游：调用 `fetchValidationReportDetail/applyAutoFixes` 与后端交互；
+ * - 回流：通过 `onRefresh` 触发父层重新获取报告摘要。
+ *
+ * React 渲染语义：
+ * - `expandedId` 控制“哪一份报告被展开”；
+ * - `detail/detailLoading/applyLoading` 分别控制详情数据、详情加载态、自动修正提交态；
+ * - 状态变化驱动局部重渲染，不影响后端真实业务状态。
+ *
+ * 风险提示（仅注释说明，不改逻辑）：
+ * - 当前 `detail` 只有一份，若快速切换展开项，旧请求返回可能覆盖新请求；
+ * - 这是典型竞态风险，后续可通过请求序号或 AbortController 优化。
+ * =============================================================================
+ */
+
 import { useState } from "react";
 import {
   AlertCircle,
@@ -24,11 +56,19 @@ import type { ValidationIssue, ValidationSeverity } from "@/types/validation";
    ------------------------------------------------ */
 
 const SEVERITY_CONFIG: Record<ValidationSeverity, { icon: typeof AlertCircle; color: string; label: string }> = {
+  /** ERROR：阻断级问题，通常需要优先人工处理。 */
   ERROR  : { icon: AlertCircle, color: "text-destructive", label: "错误" },
+  /** WARNING：风险提示，建议复核但不一定阻断流程。 */
   WARNING: { icon: AlertTriangle, color: "text-amber-500", label: "警告" },
+  /** INFO：信息性提示，用于辅助理解抽取质量。 */
   INFO   : { icon: Info, color: "text-blue-500", label: "信息" }
 };
 
+/**
+ * 问题类型文案映射：
+ * - 将后端枚举转换为审核员可读中文；
+ * - 不改变后端协议，仅做展示层语义翻译。
+ */
 const ISSUE_TYPE_LABELS: Record<string, string> = {
   ALIAS_AS_NEW_PERSONA      : "别名误识为新人物",
   WRONG_MERGE               : "错误合并",
@@ -55,8 +95,11 @@ const ACTION_LABELS: Record<string, string> = {
    ------------------------------------------------ */
 
 export interface ValidationReportTabProps {
+  /** 当前书籍 ID：作为报告详情查询与自动修正接口的路径参数。 */
   bookId   : string;
+  /** 报告摘要列表：由父层读取后传入。 */
   reports  : ValidationReportItem[];
+  /** 刷新回调：当子组件触发写操作后通知父层更新摘要。 */
   onRefresh: () => void;
 }
 
@@ -65,29 +108,52 @@ export interface ValidationReportTabProps {
    ------------------------------------------------ */
 
 export function ValidationReportTab({ bookId, reports, onRefresh }: ValidationReportTabProps) {
+  /** 当前展开的报告 ID。null 表示全部折叠。 */
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  /** 当前展开报告的详情数据。 */
   const [detail, setDetail] = useState<ValidationReportDetail | null>(null);
+  /** 报告详情加载中状态。 */
   const [detailLoading, setDetailLoading] = useState(false);
+  /** 正在执行“应用自动修正”的报告 ID。 */
   const [applyLoading, setApplyLoading] = useState<string | null>(null);
 
+  /**
+   * 展开/折叠某份报告，并在展开时懒加载详情。
+   * 设计原因：
+   * - 列表页先展示摘要，详情按需请求，减少首屏请求量；
+   * - 展开同一项再次点击会折叠，符合手风琴交互预期。
+   */
   async function handleToggleExpand(reportId: string) {
+    // 分支 1：点击已展开项 -> 收起并清空详情，避免显示过期数据。
     if (expandedId === reportId) {
       setExpandedId(null);
       setDetail(null);
       return;
     }
+
+    // 分支 2：切换到新项 -> 打开并拉取详情。
     setExpandedId(reportId);
     setDetailLoading(true);
     try {
       const d = await fetchValidationReportDetail(bookId, reportId);
       setDetail(d);
     } catch {
+      // 查询失败时清空详情，交由下方“加载失败”空态承接。
       setDetail(null);
     } finally {
       setDetailLoading(false);
     }
   }
 
+  /**
+   * 对指定报告应用自动修正。
+   * 业务步骤：
+   * 1) 标记按钮 loading，防止重复触发；
+   * 2) 提交自动修正请求；
+   * 3) 重新拉取该报告详情，确保详情区展示最新 issues；
+   * 4) 通知父层刷新摘要统计；
+   * 5) 清理 loading。
+   */
   async function handleApplyFixes(reportId: string) {
     setApplyLoading(reportId);
     try {
@@ -107,6 +173,11 @@ export function ValidationReportTab({ bookId, reports, onRefresh }: ValidationRe
     }
   }
 
+  /**
+   * 空态分支：
+   * - 当没有任何报告时直接展示空态，不渲染列表容器；
+   * - 减少视觉噪音并明确“当前无需审核”。
+   */
   if (reports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -121,10 +192,15 @@ export function ValidationReportTab({ bookId, reports, onRefresh }: ValidationRe
   return (
     <div className="flex flex-col gap-3">
       {reports.map(report => {
+        // 当前卡片是否展开：由 expandedId 与 report.id 比较得出。
         const isExpanded = expandedId === report.id;
+        // 摘要引用，减少 JSX 内重复访问 report.summary。
         const s = report.summary;
+        // 报告作用域转换为中文文案。
         const scopeLabel = report.scope === "CHAPTER" ? "章节级" : "全书级";
+        // 报告状态文案转换：用于 Badge 与业务语义提示。
         const statusLabel = report.status === "APPLIED" ? "已应用" : report.status === "REVIEWED" ? "已审核" : "待处理";
+        // 报告状态视觉样式：已应用 > 已审核 > 待处理。
         const statusVariant = report.status === "APPLIED" ? "default" as const : report.status === "REVIEWED" ? "secondary" as const : "outline" as const;
 
         return (
@@ -210,9 +286,12 @@ export function ValidationReportTab({ bookId, reports, onRefresh }: ValidationRe
    ------------------------------------------------ */
 
 function IssueCard({ issue }: { issue: ValidationIssue }) {
+  // 防御性兜底：未知 severity 时默认 INFO 视觉，避免渲染崩溃。
   const sev = SEVERITY_CONFIG[issue.severity] ?? SEVERITY_CONFIG.INFO;
   const SevIcon = sev.icon;
+  // 未知问题类型回退展示原始编码，便于排查后端新枚举。
   const typeLabel = ISSUE_TYPE_LABELS[issue.type] ?? issue.type;
+  // 同理：未知建议动作回退为原始 action。
   const actionLabel = ACTION_LABELS[issue.suggestion.action] ?? issue.suggestion.action;
 
   return (

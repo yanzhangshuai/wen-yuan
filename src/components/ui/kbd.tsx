@@ -1,5 +1,14 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（键盘快捷键视觉组件）：
+ * - 文件路径：`src/components/ui/kbd.tsx`
+ * - 所属层次：前端基础展示组件层。
+ *
+ * 业务职责：
+ * - `Kbd`：渲染单个按键视觉块；
+ * - `KbdGroup`：组合多个按键块，表达组合快捷键（如 `Ctrl + K`）。
+ */
 function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
   return (
     <kbd
@@ -15,6 +24,10 @@ function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
   );
 }
 
+/**
+ * 快捷键分组容器。
+ * 设计原因：统一组合键间距与排列，避免页面内各处手写样式不一致。
+ */
 function KbdGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <kbd

@@ -3,41 +3,73 @@
 import * as React from "react";
 
 /**
- * 星空Canvas背景 — xingkong 装饰
- * 深黑底 + 低密度彩色星层 + 低频流星。
- * 设计取舍：保留“深邃、五彩”但控制噪点和对比，避免画面发脏。
+ * =============================================================================
+ * 文件定位（主题装饰层 - 星空粒子背景）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/theme/decorative/star-dust.tsx`
+ *
+ * 在 Next.js 架构中的职责：
+ * - 这是纯视觉增强用的 Client Component，运行在浏览器 Canvas；
+ * - 不参与业务数据读写，不影响路由语义，仅作为主题“xingkong”动态背景层。
+ *
+ * 为什么必须 `use client`：
+ * - 依赖 `window` 尺寸、`requestAnimationFrame`、Canvas 2D API；
+ * - 这些能力仅在浏览器可用，无法在 Server Component 中执行。
+ *
+ * 维护约束：
+ * - 这里的参数（星点密度、星云透明度、流星频率）是视觉平衡结果；
+ * - 若要调整，请重点验证性能开销和文字可读性，避免“好看但影响前景内容”。
+ * =============================================================================
  */
 
 interface StarData {
+  /** 星点横坐标（像素）。 */
   x    : number;
+  /** 星点纵坐标（像素）。 */
   y    : number;
+  /** 星点半径，用于控制亮度主视觉。 */
   r    : number;
+  /** 基础透明度，决定该星点“常亮”程度。 */
   baseA: number;
+  /** 当前闪烁相位。 */
   phase: number;
+  /** 闪烁速度，值越大变化越快。 */
   speed: number;
+  /** RGB 通道，主题化星色。 */
   cr   : number;
   cg   : number;
   cb   : number;
 }
 
 interface NebulaData {
+  /** 星云中心点坐标。 */
   x     : number;
   y     : number;
+  /** 星云扩散半径。 */
   radius: number;
+  /** 星云颜色。 */
   cr    : number;
   cg    : number;
   cb    : number;
+  /** 星云透明度上限。 */
   a     : number;
 }
 
 interface MeteorData {
+  /** 流星头部起点坐标。 */
   x    : number;
   y    : number;
+  /** 轨迹长度。 */
   len  : number;
+  /** 飞行角度（弧度）。 */
   angle: number;
+  /** 飞行速度。 */
   spd  : number;
+  /** 当前透明度。 */
   a    : number;
+  /** 当前尾迹长度。 */
   tail : number;
+  /** 是否处于激活飞行态。 */
   on   : boolean;
 }
 
@@ -72,14 +104,17 @@ export function StarDust() {
       if (!cvs) return;
       W = cvs.width = window.innerWidth;
       H = cvs.height = window.innerHeight;
+      // 尺寸变化后重建粒子，避免拉伸导致噪点密度异常。
       init();
     }
 
     function init() {
+      // 星点密度按屏幕面积线性增长，保持不同设备观感接近。
       const count = Math.floor((W * H) / 5600);
       stars = [];
 
       for (let i = 0; i < count; i++) {
+        // 少量高亮星点用于制造层次，避免全体同亮度造成“噪点墙”。
         const bright = Math.random() < 0.05;
         const z = Math.random();
 
@@ -130,6 +165,7 @@ export function StarDust() {
       }
 
       nebulae = [];
+      // 第一层：随机散点星云，提供弱背景氛围。
       const scatterCount = Math.floor(W / 380);
       for (let i = 0; i < scatterCount; i++) {
         nebulae.push({
@@ -141,6 +177,7 @@ export function StarDust() {
         });
       }
 
+      // 第二层：斜向带状星云，增强“银河”方向感。
       const bandCount = Math.floor(W / 200);
       for (let i = 0; i < bandCount; i++) {
         const t = i / bandCount;
@@ -153,6 +190,7 @@ export function StarDust() {
         });
       }
 
+      // 流星数量固定为低频少量，避免喧宾夺主。
       meteors.length = 0;
       for (let i = 0; i < 2; i++) {
         meteors.push({

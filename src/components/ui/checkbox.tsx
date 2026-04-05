@@ -6,6 +6,19 @@ import { CheckIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（复选框组件）：
+ * - 文件路径：`src/components/ui/checkbox.tsx`
+ * - 所属层次：前端基础表单组件层（客户端组件）。
+ *
+ * 核心职责：
+ * - 提供“可多选”场景的统一交互控件；
+ * - 封装选中态、错误态、禁用态与视觉一致性。
+ *
+ * 维护注意：
+ * - `Indicator` 内部图标为状态核心反馈，避免随意替换为低对比度样式；
+ * - `aria-invalid` 相关样式用于表单校验反馈，是业务可用性要求。
+ */
 function Checkbox({
   className,
   ...props

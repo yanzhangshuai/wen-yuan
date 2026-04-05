@@ -4,8 +4,14 @@ import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { createListBookRelationshipsService } from "@/server/modules/relationships/listBookRelationships";
 
+/**
+ * 文件定位（关系列表服务单测）：
+ * - 验证按书籍聚合关系边数据，并输出前端图谱/列表可直接消费的结构。
+ * - 该服务承接关系筛选（type/source）逻辑，是审校页和图谱页的重要数据入口。
+ */
 describe("listBookRelationships service", () => {
   it("lists active relationships under one book", async () => {
+    // 成功场景：校验 where 条件包含 bookId 与筛选参数，防止跨书籍数据串读。
     const bookFindFirst = vi.fn().mockResolvedValue({ id: "book-1" });
     const relationshipFindMany = vi.fn().mockResolvedValue([
       {
@@ -75,6 +81,7 @@ describe("listBookRelationships service", () => {
   });
 
   it("throws not found when book is missing", async () => {
+    // 边界场景：书籍不存在时应提前失败，避免执行无意义关系查询。
     const service = createListBookRelationshipsService({
       book: {
         findFirst: vi.fn().mockResolvedValue(null)

@@ -6,12 +6,26 @@ import { ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位：
+ * - Accordion（手风琴）基础组件封装，属于前端内容组织交互层。
+ * - 使用 `use client`，因为展开/收起状态和动画由客户端事件驱动。
+ */
+
+/**
+ * 手风琴根容器。
+ * - 管理 item 的展开模式（单开/多开）、默认值、受控值等。
+ */
 function Accordion({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
   return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 
+/**
+ * 手风琴条目容器。
+ * - 默认加底边分隔，最后一项去边框，保证列表视觉节奏一致。
+ */
 function AccordionItem({
   className,
   ...props
@@ -25,6 +39,16 @@ function AccordionItem({
   );
 }
 
+/**
+ * 手风琴触发器。
+ *
+ * @param children 触发区域内容（通常是条目标题）。
+ * @param className 自定义样式扩展。
+ *
+ * 设计原因：
+ * - 把 Trigger 包在 Header 里，遵循 Radix 可访问性结构约定。
+ * - 箭头根据 `data-state=open` 自动旋转，给用户明确状态反馈。
+ */
 function AccordionTrigger({
   className,
   children,
@@ -47,6 +71,11 @@ function AccordionTrigger({
   );
 }
 
+/**
+ * 手风琴内容区。
+ * - 根据 `data-state` 使用开合动画，减少内容突兀跳变。
+ * - 内层 `div` 提供统一内边距，避免业务内容紧贴边缘。
+ */
 function AccordionContent({
   className,
   children,

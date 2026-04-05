@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - 侧边栏系统）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/sidebar.tsx`
+ *
+ * 组件定位：
+ * - 这是一个“侧边栏组件族”文件，包含 Provider、容器、菜单、分组、动作按钮等完整能力；
+ * - 在管理后台场景中承担导航骨架与信息分区职责，是页面布局层的关键基础设施。
+ *
+ * 为什么必须是 Client Component：
+ * - 依赖窗口键盘事件、移动端抽屉开关、cookie 持久化、hover tooltip 等浏览器行为；
+ * - 因此不能放在 Server Component 执行。
+ *
+ * 业务规则（不是技术限制）：
+ * - 侧边栏展开/折叠状态会写入 cookie，保证用户跨页面保持偏好；
+ * - 移动端统一使用 `Sheet` 呈现，桌面端使用固定侧栏，这一分支是产品交互规范。
+ *
+ * 维护提醒：
+ * - `data-slot` / `data-sidebar` 是主题与测试的锚点，改名会影响下游；
+ * - 该文件导出项较多，新增能力优先沿用现有分层，避免把业务逻辑直接写进基础层。
+ * =============================================================================
+ */
+
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -33,12 +57,19 @@ const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContextProps = {
+  /** 桌面态展开状态（用于样式分支）。 */
   state        : "expanded" | "collapsed"
+  /** 桌面态是否展开。 */
   open         : boolean
+  /** 设置桌面态展开状态。 */
   setOpen      : (open: boolean) => void
+  /** 移动端抽屉是否打开。 */
   openMobile   : boolean
+  /** 设置移动端抽屉状态。 */
   setOpenMobile: (open: boolean) => void
+  /** 当前是否移动端。 */
   isMobile     : boolean
+  /** 在当前终端形态下切换侧栏。 */
   toggleSidebar: () => void
 };
 
@@ -47,6 +78,7 @@ const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 function useSidebar() {
   const context = React.useContext(SidebarContext);
   if (!context) {
+    // 防御式约束：相关子组件必须挂在 SidebarProvider 内。
     throw new Error("useSidebar must be used within a SidebarProvider.");
   }
 
@@ -62,15 +94,17 @@ function SidebarProvider({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
+  /** 非受控模式默认展开状态。 */
   defaultOpen? : boolean
+  /** 受控模式展开状态。 */
   open?        : boolean
+  /** 受控模式状态变更回调。 */
   onOpenChange?: (open: boolean) => void
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
+  // 内部非受控状态；当上游传入 open/onOpenChange 时自动切换为受控模式。
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
@@ -82,18 +116,18 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
+      // 将状态写入 cookie，使跨页面导航后仍保持用户偏好。
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open]
   );
 
-  // Helper to toggle the sidebar.
+  // 统一切换入口：移动端切换抽屉，桌面端切换折叠状态。
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [isMobile, setOpen, setOpenMobile]);
 
-  // Adds a keyboard shortcut to toggle the sidebar.
+  // 全局快捷键（Cmd/Ctrl + b）用于快速展开/折叠，提高后台操作效率。
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
@@ -109,8 +143,7 @@ function SidebarProvider({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleSidebar]);
 
-  // We add a state so that we can do data-state="expanded" or "collapsed".
-  // This makes it easier to style the sidebar with Tailwind classes.
+  // 将布尔值映射为语义态字符串，便于 data-attribute 样式分支。
   const state = open ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo<SidebarContextProps>(
@@ -159,13 +192,17 @@ function Sidebar({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
+  /** 侧栏停靠方向。 */
   side?       : "left" | "right"
+  /** 展示样式：标准栏、浮层栏、内嵌栏。 */
   variant?    : "sidebar" | "floating" | "inset"
+  /** 折叠策略：移出屏幕、仅图标、不可折叠。 */
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
   if (collapsible === "none") {
+    // 业务场景：某些页面要求侧栏常驻，不允许折叠。
     return (
       <div
         data-slot="sidebar"
@@ -181,6 +218,7 @@ function Sidebar({
   }
 
   if (isMobile) {
+    // 移动端改用 Sheet，避免固定侧栏占据主内容宽度。
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
@@ -215,6 +253,7 @@ function Sidebar({
       data-slot="sidebar"
     >
       {/* This is what handles the sidebar gap on desktop */}
+      {/* 桌面占位层：确保主内容在侧栏折叠/展开时有平滑宽度过渡。 */}
       <div
         data-slot="sidebar-gap"
         className={cn(
@@ -523,6 +562,7 @@ function SidebarMenuButton({
   );
 
   if (!tooltip) {
+    // 不传 tooltip 时直接渲染按钮，减少不必要的浮层开销。
     return button;
   }
 
@@ -538,6 +578,7 @@ function SidebarMenuButton({
       <TooltipContent
         side="right"
         align="center"
+        // 仅在“桌面 + 折叠态”显示 tooltip，避免展开态重复信息噪声。
         hidden={state !== "collapsed" || isMobile}
         {...tooltip}
       />

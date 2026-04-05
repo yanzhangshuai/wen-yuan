@@ -1,5 +1,25 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - 表单字段布局原语）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/field.tsx`
+ *
+ * 业务职责：
+ * - 提供字段级布局组件（Label/Description/Error/Separator 等）；
+ * - 统一后台表单在横向/纵向/响应式场景下的信息层级和错误提示规范。
+ *
+ * 设计意图：
+ * - 该文件关注“字段壳层结构”，而非具体输入控件逻辑；
+ * - 通过 `data-slot` 与 `cva variants` 实现主题可扩展和语义化组合。
+ *
+ * 维护约束：
+ * - `orientation` 是布局策略开关，会影响标签与控件的阅读顺序；
+ * - `FieldError` 的聚合展示规则属于表单可用性约定，不建议随意改写。
+ * =============================================================================
+ */
+
 import { useMemo } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -59,12 +79,15 @@ const fieldVariants = cva(
   {
     variants: {
       orientation: {
+        // 默认竖向：适合移动端和内容较长的说明文案。
         vertical  : ["flex-col [&>*]:w-full [&>.sr-only]:w-auto"],
+        // 横向：适合后台密集表单，标签与控件同一行。
         horizontal: [
           "flex-row items-center",
           "[&>[data-slot=field-label]]:flex-auto",
           "has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px"
         ],
+        // 响应式：小屏竖排、大屏横排，平衡可读性与空间利用率。
         responsive: [
           "flex-col [&>*]:w-full [&>.sr-only]:w-auto @md/field-group:flex-row @md/field-group:items-center @md/field-group:[&>*]:w-auto",
           "@md/field-group:[&>[data-slot=field-label]]:flex-auto",
@@ -189,21 +212,26 @@ function FieldError({
   errors,
   ...props
 }: React.ComponentProps<"div"> & {
+  /** 可选错误列表；通常来自表单校验器。 */
   errors?: Array<{ message?: string } | undefined>
 }) {
   const content = useMemo(() => {
+    // 1) 调用方显式传 children 时，优先展示自定义错误内容。
     if (children) {
       return children;
     }
 
+    // 2) 未提供 errors 时返回空，避免渲染无意义警示块。
     if (!errors) {
       return null;
     }
 
+    // 3) 单条错误直接展示文案，减少视觉层级。
     if (errors.length === 1 && errors[0]?.message) {
       return errors[0].message;
     }
 
+    // 4) 多条错误转列表，保证信息完整且可扫描。
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
         {errors.map(
@@ -215,6 +243,7 @@ function FieldError({
   }, [children, errors]);
 
   if (!content) {
+    // 错误内容为空时不渲染容器，避免空白占位扰动布局。
     return null;
   }
 

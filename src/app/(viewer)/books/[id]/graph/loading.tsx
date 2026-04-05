@@ -1,5 +1,20 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * =============================================================================
+ * 文件定位（图谱子路由 loading）
+ * -----------------------------------------------------------------------------
+ * 这是 `app/(viewer)/books/[id]/graph/loading.tsx`。
+ *
+ * 框架语义：
+ * - 在 `/books/:id/graph` 页面服务端数据尚未完成时，Next.js 自动展示该骨架屏；
+ * - 数据 ready 后自动替换，不需要额外状态管理。
+ *
+ * 业务职责：
+ * - 以“工具栏 + 图谱中心 + 时间轴”三段式骨架，尽量贴近真实布局；
+ * - 降低用户对长耗时图谱加载的焦虑，避免跳闪。
+ * =============================================================================
+ */
 export default function GraphLoading() {
   return (
     <section className="graph-loading relative h-[calc(100vh-64px)] w-full overflow-hidden bg-(--color-graph-bg)">

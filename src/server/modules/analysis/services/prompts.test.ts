@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -18,7 +31,9 @@ const baseInput = {
   chunkCount  : 3
 };
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("buildChapterAnalysisPrompt", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("injects known entity context when profiles are provided", () => {
     const prompt = buildChapterAnalysisPrompt({
       ...baseInput,
@@ -39,6 +54,7 @@ describe("buildChapterAnalysisPrompt", () => {
     expect(prompt.user).toContain("范进见中举，众人态度大变。");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses fallback context text when there are no known profiles", () => {
     const prompt = buildChapterAnalysisPrompt({
       ...baseInput,
@@ -48,6 +64,7 @@ describe("buildChapterAnalysisPrompt", () => {
     expect(prompt.user).toContain("（本书目前尚无已建档人物）");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("includes at least 30 generic title examples in default prompt", () => {
     // Arrange
     const prompt = buildChapterAnalysisPrompt({
@@ -71,7 +88,9 @@ describe("buildChapterAnalysisPrompt", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("buildRosterDiscoveryPrompt", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("includes alias annotation rules and keeps output stable", () => {
     const prompt = buildRosterDiscoveryPrompt({
       ...baseInput,
@@ -94,7 +113,9 @@ describe("buildRosterDiscoveryPrompt", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("buildTitleArbitrationPrompt", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds gray-zone arbitration prompt deterministically", () => {
     const prompt = buildTitleArbitrationPrompt({
       bookTitle: "儒林外史",
@@ -117,7 +138,9 @@ describe("buildTitleArbitrationPrompt", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("buildChapterValidationPrompt", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds chapter validation prompt with deterministic structure", () => {
     const prompt = buildChapterValidationPrompt({
       bookTitle       : "儒林外史",
@@ -163,7 +186,9 @@ describe("buildChapterValidationPrompt", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("buildBookValidationPrompt", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds book validation prompt with deterministic structure", () => {
     const prompt = buildBookValidationPrompt({
       bookTitle: "儒林外史",
@@ -210,7 +235,9 @@ describe("buildBookValidationPrompt", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parseValidationResponse", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("keeps valid issues and filters invalid enum values", () => {
     const raw = JSON.stringify({
       issues: [
@@ -275,6 +302,7 @@ describe("parseValidationResponse", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("repairs and parses wrapped markdown json content", () => {
     const raw = [
       "```json",

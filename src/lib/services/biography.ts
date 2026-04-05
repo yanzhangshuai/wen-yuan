@@ -1,12 +1,29 @@
 /**
- * @module biography
- * @description 传记事件（BiographyRecord）客户端服务层
+ * =============================================================================
+ * 文件定位（传记事件客户端服务层）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/lib/services/biography.ts`
  *
- * 封装所有与传记事件相关的 HTTP 请求，对应后端路由 `/api/biography/*`。
+ * 在 Next.js 项目中的角色：
+ * - 位于前端 service 层，承接 Client Component 的数据写操作；
+ * - 对接 `app/api/biography/[id]/route.ts` 提供的 PATCH 能力；
+ * - 属于“审核链路的编辑子流程”，用于修正 AI 提取的传记事件信息。
  *
- * 包含内容：
- * - PatchBiographyBody：编辑传记事件时的请求体类型
- * - patchBiography：更新传记事件字段（差量 PATCH）
+ * 核心业务职责：
+ * - 将审核员在 UI 中对传记事件的修改（类别、标题、地点、事件描述）以差量形式提交给后端。
+ *
+ * 上游输入：
+ * - 传记记录 ID（来自草稿列表条目）；
+ * - 表单中用户修改后的字段。
+ *
+ * 下游输出：
+ * - 成功时返回 `void`，由调用方决定是否刷新列表；
+ * - 失败时抛出 Error，由上层处理提示和回滚交互态。
+ *
+ * 维护注意：
+ * - 该文件只负责请求契约，不负责字段正确性最终裁决；
+ * - 类别枚举等规则以服务端为准，前端注释仅说明当前业务约定。
+ * =============================================================================
  */
 import { clientMutate } from "@/lib/client-api";
 
@@ -15,14 +32,29 @@ import { clientMutate } from "@/lib/client-api";
    ------------------------------------------------ */
 
 /**
- * 编辑传记事件的请求体
- * 所有字段均为可选，只传需要变更的字段（差量 PATCH）。
- * category 取值范围：BIRTH / EXAM / CAREER / TRAVEL / SOCIAL / DEATH / EVENT。
+ * 编辑传记事件请求体（PATCH 差量更新）。
+ *
+ * 这是业务规则，不是技术限制：
+ * - 审核场景下，用户经常只改某一项（例如只补地点），
+ *   因此字段全部可选，避免把未改字段带回并意外覆盖。
+ *
+ * 字段语义：
+ * - `category`：事件类别编码，驱动时间线分组与标签展示；
+ * - `title`：事件标题，可选文案；`null` 表示“刻意移除标题”；
+ * - `location`：事件发生地点，`null` 表示当前无明确地点信息；
+ * - `event`：事件主体描述（通常是审核最关注的事实文本）。
+ *
+ * `category` 当前业务约定值：
+ * `BIRTH / EXAM / CAREER / TRAVEL / SOCIAL / DEATH / EVENT`
  */
 export interface PatchBiographyBody {
+  /** 事件类别编码。可选：不传表示不修改类别。 */
   category?: string;
+  /** 事件标题。可选；`null` 表示显式清空标题。 */
   title?   : string | null;
+  /** 事件地点。可选；`null` 表示显式清空地点。 */
   location?: string | null;
+  /** 事件描述正文。可选：不传表示不改正文。 */
   event?   : string;
 }
 
@@ -32,13 +64,25 @@ export interface PatchBiographyBody {
 
 /**
  * 更新传记事件字段（差量 PATCH）。
- * 对应接口：PATCH /api/biography/:id
+ * 对应接口：`PATCH /api/biography/:id`
  *
- * 调用方只传需要变更的字段，未传字段保持原值。
- * 失败时抛出 Error，message 为可直接展示给用户的文案。
+ * 业务流程位置：
+ * - 通常在审核台“传记事件编辑表单提交”时触发；
+ * - 更新成功后，上层会刷新草稿列表，使列表内容与后端状态一致。
  *
- * @param id   传记记录 UUID
- * @param body 变更字段
+ * 参数语义：
+ * @param id
+ * 传记记录主键（UUID），用于定位具体要修改的事件记录。
+ * @param body
+ * 用户本次修改的差量字段集合。
+ *
+ * 返回语义：
+ * @returns Promise<void>
+ * 表示请求已成功提交；若需要最新详情，调用方应重新请求列表或详情接口。
+ *
+ * 防御设计：
+ * - 使用 JSON body 与固定 Content-Type，确保服务端稳定解析；
+ * - 不在此层吞掉异常，保留给上游组件统一错误处理和交互恢复。
  */
 export async function patchBiography(id: string, body: PatchBiographyBody): Promise<void> {
   await clientMutate(`/api/biography/${id}`, {

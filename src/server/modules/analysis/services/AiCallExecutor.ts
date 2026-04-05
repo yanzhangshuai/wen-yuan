@@ -1,3 +1,23 @@
+/**
+ * =============================================================================
+ * 文件定位（分析服务：AI 调用执行器）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/analysis/services/AiCallExecutor.ts`
+ *
+ * 模块职责：
+ * - 封装“单次 AI 阶段调用”的通用执行策略：模型解析、重试、回退模型、日志落库；
+ * - 统一不同 Provider 的 usage 结构，保证成本统计链路口径一致；
+ * - 在失败路径上保留足够上下文，便于审计与问题追踪。
+ *
+ * 在分析链路中的位置：
+ * - 上游：章节分析/验证等业务服务通过 `callFn` 注入具体调用逻辑；
+ * - 下游：`analysis_phase_logs`、模型策略解析器、Provider 客户端。
+ *
+ * 关键业务约束：
+ * - 重试/回退策略直接影响成本与成功率，属于业务策略，不应随意改动；
+ * - 日志字段（stage/model/source/status）是运维可观测性主键，必须保持稳定。
+ * =============================================================================
+ */
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
@@ -180,8 +200,11 @@ function extractUsageFromError(error: unknown): AiUsage | null {
 }
 
 export class AiCallExhaustedError extends Error {
+  /** 当前失败发生的业务阶段（用于上游决定是否中断流水线）。 */
   readonly stage     : PipelineStage;
+  /** 失败时所使用的模型 ID（用于问题定位与告警聚类）。 */
   readonly modelId   : string;
+  /** 是否已处于 fallback 模型路径（用于区分主模型失败与兜底失败）。 */
   readonly isFallback: boolean;
 
   constructor(message: string, stage: PipelineStage, modelId: string, isFallback: boolean) {
@@ -194,20 +217,31 @@ export class AiCallExhaustedError extends Error {
 }
 
 export interface ExecuteAiCallInput<TData> {
+  /** 当前调用所属的分析阶段。 */
   stage      : PipelineStage;
+  /** 已构建好的 Prompt 消息。 */
   prompt     : PromptMessageInput;
+  /** 分析任务 ID（日志与成本统计主键）。 */
   jobId      : string;
+  /** 可选章节 ID；章节级阶段会填写。 */
   chapterId? : string | null;
+  /** 可选分片序号；分段分析场景会填写。 */
   chunkIndex?: number | null;
+  /** 模型策略解析上下文（书籍/任务范围）。 */
   context    : ResolveStageContext;
+  /** 由调用方注入的实际 AI 调用函数。 */
   callFn: (input: {
+    /** 执行时决定的具体模型（主模型或回退模型）。 */
     model : ResolvedStageModel | ResolvedFallbackModel;
+    /** 传入 Provider 的 Prompt。 */
     prompt: PromptMessageInput;
   }) => Promise<AiCallFnResult<TData>>;
 }
 
 export interface ExecuteAiCallResult<TData> extends AiCallFnResult<TData> {
+  /** 实际成功返回所使用的模型 ID。 */
   modelId   : string;
+  /** 是否由 fallback 模型完成。 */
   isFallback: boolean;
 }
 

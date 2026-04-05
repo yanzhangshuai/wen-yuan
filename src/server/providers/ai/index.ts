@@ -6,6 +6,12 @@ import { QwenClient } from "@/server/providers/ai/qwenClient";
 import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
 /**
+ * 文件定位（AI Provider 抽象与工厂层）：
+ * - 统一定义多模型提供商的调用接口，并按数据库配置创建具体客户端。
+ * - 属于后端“基础设施适配层”，在业务服务与第三方 SDK 之间提供稳定边界。
+ */
+
+/**
  * 功能：定义通用 AI Provider 抽象接口。
  * 输入：system/user 分离后的 Prompt 结构与可选采样参数。
  * 输出：模型返回的 JSON 文本与 usage。
@@ -13,15 +19,22 @@ import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
  * 副作用：由具体实现决定。
  */
 export interface AiGenerateOptions {
+  /** 采样温度，控制输出发散度。 */
   temperature?    : number;
+  /** 输出 token 上限。 */
   maxOutputTokens?: number;
+  /** nucleus sampling 参数。 */
   topP?           : number;
+  /** 是否启用模型“思考”模式。 */
   enableThinking? : boolean;
+  /** 推理强度档位。 */
   reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface AiGenerateResult {
+  /** 模型返回原始文本（约定为 JSON 字符串）。 */
   content: string;
+  /** 调用用量统计，模型不支持时可为空。 */
   usage  : AiUsage | null;
 }
 
@@ -49,9 +62,13 @@ export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao" | "glm";
  * 副作用：无。
  */
 export interface CreateAiProviderInput {
+  /** Provider 标识，决定实例化哪个 SDK 适配器。 */
   provider : AiProviderName;
+  /** 访问密钥（敏感字段，需服务端加密存储）。 */
   apiKey   : string;
+  /** 可选自定义网关地址，未配置时使用各厂商默认地址。 */
   baseUrl? : string;
+  /** 具体模型名（如 deepseek-chat、qwen-max 等）。 */
   modelName: string;
 }
 
@@ -64,6 +81,7 @@ export interface CreateAiProviderInput {
  */
 export function createAiProviderClient(input: CreateAiProviderInput): AiProviderClient {
   if (!input.modelName.trim()) {
+    // 业务防御：空模型名会导致后续请求落到厂商默认值，风险不可控，因此直接拒绝。
     throw new Error("模型标识不能为空");
   }
 

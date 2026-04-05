@@ -12,6 +12,17 @@ import {
 } from "@/server/modules/analysis/services/AliasRegistryService";
 import { ERROR_CODES } from "@/types/api";
 
+/**
+ * 文件定位（Next.js Route Handler / 别名映射审核）：
+ * - 路由 `app/api/books/[id]/alias-mappings/[mappingId]/route.ts`
+ *   映射为 `/api/books/:id/alias-mappings/:mappingId`。
+ * - 该文件仅开放 PATCH：用于审核员更新单条别名映射状态。
+ *
+ * 业务规则：
+ * - 只允许 `CONFIRMED` 与 `REJECTED`，不允许任意状态写入；
+ * - 这是审核流约束，不是 Zod 技术限制。
+ */
+
 const routeParamsSchema = z.object({
   id       : z.string().uuid("书籍 ID 不合法"),
   mappingId: z.string().uuid("映射 ID 不合法")
@@ -30,6 +41,7 @@ function badRequestJson(
   startedAt: number,
   detail: string
 ): Response {
+  // 统一 bad request 结构，保证前端能稳定按 code/message 渲染提示。
   return failJson({
     path,
     requestId,
@@ -50,14 +62,17 @@ export async function PATCH(
   const routePath = "/api/books/[id]/alias-mappings/[mappingId]";
 
   try {
+    // 审核动作需要管理员权限。
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
+    // 先校验动态路由参数，阻断非法 UUID。
     const parsedParams = routeParamsSchema.safeParse(await context.params);
     if (!parsedParams.success) {
       return badRequestJson(routePath, requestId, startedAt, parsedParams.error.issues[0]?.message ?? "路由参数不合法");
     }
 
+    // 请求体只允许携带目标审核状态，并限定可选值。
     const parsedBody = updateStatusBodySchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       return badRequestJson(routePath, requestId, startedAt, parsedBody.error.issues[0]?.message ?? "请求体不合法");
@@ -70,6 +85,7 @@ export async function PATCH(
     );
 
     if (!data) {
+      // service 返回 null 代表记录不存在：显式映射为 404，避免误判为系统异常。
       return failJson({
         path           : routePath,
         requestId,
@@ -90,6 +106,7 @@ export async function PATCH(
       data
     });
   } catch (error) {
+    // 兜底：未预期错误统一走内部错误分支。
     return failJson({
       path           : routePath,
       requestId,

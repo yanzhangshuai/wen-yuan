@@ -9,6 +9,20 @@ import {
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { BUSINESS_PIPELINE_STAGES, PipelineStage } from "@/types/pipeline";
 
+/**
+ * 文件定位（Next.js 服务端管理域）：
+ * - 本文件位于 `src/server/modules/analysis/services`，承担“模型策略后台管理”与“任务成本汇总”。
+ * - 它通常由 admin API route 调用（如 `/api/admin/model-strategy`、`/api/admin/analysis-jobs/.../cost-summary`）。
+ *
+ * 核心职责：
+ * - 读写全局/书籍级模型策略（GLOBAL / BOOK）；
+ * - 校验策略引用模型是否可用，防止保存不可执行配置；
+ * - 汇总分析任务阶段日志，输出按阶段/模型聚合的 token 与耗时成本。
+ *
+ * 关键业务规则：
+ * - 策略作用域优先级和可用模型校验属于业务规则，不是技术限制；
+ * - 成本统计按“同一调用键最终结果”归并，避免重试日志重复计数。
+ */
 const ALL_STRATEGY_STAGES: PipelineStage[] = [
   ...BUSINESS_PIPELINE_STAGES,
   PipelineStage.FALLBACK
@@ -17,56 +31,93 @@ const ALL_STRATEGY_STAGES: PipelineStage[] = [
 type StrategyScope = "GLOBAL" | "BOOK";
 
 interface StrategyRow {
+  /** 策略记录主键。 */
   id       : string;
+  /** 作用域：GLOBAL/BOOK/JOB（JOB 仅作为读取兼容）。 */
   scope    : "GLOBAL" | "BOOK" | "JOB";
+  /** 书籍维度策略对应书籍 ID；GLOBAL 为 null。 */
   bookId   : string | null;
+  /** 任务维度策略 ID（当前管理接口通常不用）。 */
   jobId    : string | null;
+  /** 阶段配置 JSON。 */
   stages   : Prisma.JsonValue;
+  /** 创建时间。 */
   createdAt: Date;
+  /** 更新时间。 */
   updatedAt: Date;
 }
 
 interface PhaseLogRow {
+  /** 流水线阶段名。 */
   stage           : string;
+  /** 章节 ID（章节级阶段有值）。 */
   chapterId       : string | null;
+  /** 分块索引（chunk 级阶段有值）。 */
   chunkIndex      : number | null;
+  /** 本条日志状态（SUCCESS/ERROR/RETRIED...）。 */
   status          : string;
+  /** 是否使用 fallback 模型。 */
   isFallback      : boolean;
+  /** 输入 token。 */
   promptTokens    : number | null;
+  /** 输出 token。 */
   completionTokens: number | null;
+  /** 调用耗时毫秒。 */
   durationMs      : number | null;
+  /** 实际调用模型 ID。 */
   modelId         : string | null;
+  /** 模型名称（模型被删时可能为 null）。 */
   model           : {
     name: string;
   } | null;
 }
 
 export interface JobCostSummaryModelItem {
+  /** 模型 ID；模型已删除时可能为 null。 */
   modelId         : string | null;
+  /** 模型名称（删除时显示占位名）。 */
   modelName       : string;
+  /** 是否兜底模型调用。 */
   isFallback      : boolean;
+  /** 调用次数。 */
   calls           : number;
+  /** 输入 token 总和。 */
   promptTokens    : number;
+  /** 输出 token 总和。 */
   completionTokens: number;
 }
 
 export interface JobCostSummaryStageItem {
+  /** 阶段名。 */
   stage           : string;
+  /** 阶段调用次数。 */
   calls           : number;
+  /** 阶段输入 token 总量。 */
   promptTokens    : number;
+  /** 阶段输出 token 总量。 */
   completionTokens: number;
+  /** 阶段平均成功耗时（仅 SUCCESS 参与平均）。 */
   avgDurationMs   : number;
+  /** 阶段内模型维度分布。 */
   models          : JobCostSummaryModelItem[];
 }
 
 export interface JobCostSummaryDto {
+  /** 任务 ID。 */
   jobId                : string;
+  /** 全任务输入 token 总量。 */
   totalPromptTokens    : number;
+  /** 全任务输出 token 总量。 */
   totalCompletionTokens: number;
+  /** 全任务总耗时（含重试累计）。 */
   totalDurationMs      : number;
+  /** 调用次数（按业务调用归并后）。 */
   totalCalls           : number;
+  /** 最终失败调用次数。 */
   failedCalls          : number;
+  /** 最终成功且走 fallback 的调用次数。 */
   fallbackCalls        : number;
+  /** 按阶段拆解明细。 */
   byStage              : JobCostSummaryStageItem[];
 }
 

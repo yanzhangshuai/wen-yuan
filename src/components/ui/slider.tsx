@@ -5,6 +5,28 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位：
+ * - Slider 基础组件封装，属于前端交互输入层。
+ * - 必须是 Client Component：拖拽手柄、实时数值反馈等行为依赖浏览器事件。
+ */
+
+/**
+ * 滑块组件。
+ *
+ * @param className 外部样式扩展。
+ * @param defaultValue 非受控初始值（数组，支持单点或区间）。
+ * @param value 受控值（数组）。
+ * @param min 最小值，默认 0。
+ * @param max 最大值，默认 100。
+ * @param props 其余 Radix Slider 参数（步长、方向、回调等）。
+ *
+ * 设计关键：
+ * - `_values` 用于计算“应渲染几个 thumb”：
+ *   1) 优先使用受控 `value`；
+ *   2) 否则回退非受控 `defaultValue`；
+ *   3) 再不行回退 `[min, max]`（双滑块），保证结构稳定。
+ */
 function Slider({
   className,
   defaultValue,
@@ -20,6 +42,8 @@ function Slider({
         : Array.isArray(defaultValue)
           ? defaultValue
           : [min, max],
+    // 依赖数组说明：
+    // - value/defaultValue/min/max 任一变化都可能影响 thumb 数量与位置，需重新计算。
     [value, defaultValue, min, max]
   );
 
@@ -49,6 +73,10 @@ function Slider({
           }
         />
       </SliderPrimitive.Track>
+      {/* 按值数量渲染 thumb：
+          - 单值场景渲染 1 个；
+          - 区间场景渲染 2 个；
+          这是业务语义映射，不是技术限制。 */}
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"

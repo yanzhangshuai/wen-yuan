@@ -7,11 +7,25 @@ import {
 import { ERROR_CODES } from "@/types/api";
 
 /**
+ * =============================================================================
+ * 文件定位（合并建议详情子路由共享错误映射）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/app/api/admin/merge-suggestions/[id]/_shared.ts`
+ *
+ * 作用：
+ * - 给 `accept/reject/defer` 三个子路由复用 404/409 响应构造逻辑；
+ * - 保证不同动作在相同错误场景下返回一致的错误码与结构。
+ *
+ * 这是协议一致性层，不承载业务状态机。
+ * =============================================================================
+ */
+
+/**
  * 功能：构造“合并建议不存在”错误响应。
  * 输入：path、requestId、startedAt、`MergeSuggestionNotFoundError`。
  * 输出：HTTP 404 响应。
- * 异常：无。
- * 副作用：无。
+ *
+ * 业务语义：客户端传入的建议 ID 在当前数据集中不存在。
  */
 export function notFoundJson(
   path: string,
@@ -38,8 +52,10 @@ export function notFoundJson(
  * 功能：构造“合并建议状态冲突”错误响应。
  * 输入：path、requestId、startedAt、状态冲突类错误对象。
  * 输出：HTTP 409 响应。
- * 异常：无。
- * 副作用：无。
+ *
+ * 业务语义：
+ * - 建议不是 PENDING（已被处理或状态不允许）；
+ * - 或执行合并时发生人物冲突（如人物已删除）。
  */
 export function conflictJson(
   path: string,

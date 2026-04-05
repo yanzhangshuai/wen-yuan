@@ -18,8 +18,18 @@ vi.mock("@/server/modules/models", () => ({
   testAdminModelConnection: testAdminModelConnectionMock
 }));
 
+/**
+ * 文件定位（Next.js 管理端模型配置接口单测）：
+ * - 覆盖 `GET /api/admin/models` 的路由行为，验证模型清单读取接口契约。
+ * - 该接口是后台“模型管理”页面的数据入口，结果会影响可选模型、默认模型展示与策略配置。
+ *
+ * 业务边界：
+ * - 仅 ADMIN 可访问（权限边界）。
+ * - 服务异常需要映射为稳定的通用错误码，便于前端统一处理。
+ */
 describe("GET /api/admin/models", () => {
   beforeEach(() => {
+    // 默认管理员身份，主流程先保障正常取数链路。
     headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.ADMIN }));
   });
 
@@ -33,6 +43,7 @@ describe("GET /api/admin/models", () => {
   });
 
   it("returns admin models list with 200", async () => {
+    // 成功分支：保证列表接口返回统一响应包，并可被前端稳定消费。
     listAdminModelsMock.mockResolvedValue([
       {
         id             : "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39",
@@ -57,6 +68,7 @@ describe("GET /api/admin/models", () => {
   });
 
   it("returns 403 when auth guard fails", async () => {
+    // 权限分支：防止非管理员查看或探测可用模型清单。
     headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.VIEWER }));
     const { GET } = await import("./route");
 
@@ -70,6 +82,7 @@ describe("GET /api/admin/models", () => {
   });
 
   it("returns 500 when service throws", async () => {
+    // 异常分支：路由层兜底服务异常，避免原始错误泄漏到客户端。
     listAdminModelsMock.mockRejectedValue(new Error("db unavailable"));
     const { GET } = await import("./route");
 

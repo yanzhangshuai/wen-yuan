@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { describe, expect, it, vi } from "vitest";
 
 import { calculateSubstringMatchScore, createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
@@ -41,7 +54,9 @@ function createPrismaMock() {
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("persona resolver", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves by alias registry fast-path when confidence is high enough", async () => {
     const { prisma, personaFindMany, profileUpsert } = createPrismaMock();
     const lookupAlias = vi.fn().mockResolvedValue({
@@ -81,6 +96,7 @@ describe("persona resolver", () => {
     expect(personaFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks empty extracted name as hallucinated", async () => {
     const { prisma, personaFindMany } = createPrismaMock();
     const resolver = createPersonaResolver(prisma);
@@ -99,6 +115,7 @@ describe("persona resolver", () => {
     expect(personaFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves to existing persona and appends alias when needed", async () => {
     const {
       prisma,
@@ -134,6 +151,7 @@ describe("persona resolver", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves without alias update when extracted name already in aliases", async () => {
     const {
       prisma,
@@ -164,6 +182,7 @@ describe("persona resolver", () => {
     expect(personaUpdate).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks as hallucinated when score is low and name is absent in chapter", async () => {
     const {
       prisma,
@@ -201,6 +220,7 @@ describe("persona resolver", () => {
     expect(profileCreate).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("creates a new persona when score is low but name appears in chapter", async () => {
     const {
       prisma,
@@ -255,6 +275,7 @@ describe("persona resolver", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses explicit transaction client when provided", async () => {
     const { prisma, personaFindMany } = createPrismaMock();
     const txPersonaFindMany = vi.fn().mockResolvedValueOnce([
@@ -290,6 +311,7 @@ describe("persona resolver", () => {
     expect(personaFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks generic titles as hallucinated without DB queries", async () => {
     const { prisma, personaFindMany } = createPrismaMock();
     const resolver = createPersonaResolver(prisma);
@@ -309,6 +331,7 @@ describe("persona resolver", () => {
     expect(personaFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("GENERIC_TITLES set contains expected common titles", () => {
     expect(GENERIC_TITLES.has("老爷")).toBe(true);
     expect(GENERIC_TITLES.has("夫人")).toBe(true);
@@ -321,6 +344,7 @@ describe("persona resolver", () => {
     expect(GENERIC_TITLES.has("蒋书办")).toBe(false);  // 有姓前缀，不是泛称
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("不将[姓名 + 亲属后缀]字符串合并到原始姓名 persona", async () => {
     const {
       prisma,
@@ -360,6 +384,7 @@ describe("persona resolver", () => {
     expect(profileCreate).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("通过 titleOnlyNames 创建 TITLE_ONLY persona", async () => {
     const {
       prisma,
@@ -398,6 +423,7 @@ describe("persona resolver", () => {
     expect(profileCreate).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves via rosterMap fast-path with high confidence", async () => {
     const { prisma, personaFindMany, profileUpsert } = createPrismaMock();
     const resolver = createPersonaResolver(prisma);
@@ -429,6 +455,7 @@ describe("persona resolver", () => {
     expect(genericResult.reason).toBe("config_generic");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("registers alias mapping when creating TITLE_ONLY persona with alias registry", async () => {
     const {
       prisma,
@@ -476,6 +503,7 @@ describe("persona resolver", () => {
     }, expect.any(Object));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies config generic title as gray_zone when evidence is uncertain", async () => {
     const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
     (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = true;
@@ -498,6 +526,7 @@ describe("persona resolver", () => {
     (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = original;
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("scorePair soft block uses normalScore × softBlockPenalty", () => {
     const normalScore = 0.60 + 0.37 * ("王五".length / "王五大人".length);
     const score = calculateSubstringMatchScore(
@@ -510,6 +539,7 @@ describe("persona resolver", () => {
     expect(score).toBeCloseTo(normalScore * ANALYSIS_PIPELINE_CONFIG.softBlockPenalty, 8);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("scorePair hard block returns 0", () => {
     const score = calculateSubstringMatchScore(
       "蘧公孙父亲",
@@ -521,6 +551,7 @@ describe("persona resolver", () => {
     expect(score).toBe(0);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("collectPersonalizationEvidence supports personalized/generic/gray_zone classification", async () => {
     const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
     (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = true;

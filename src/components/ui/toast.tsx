@@ -1,5 +1,25 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - Toast 展示层）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/toast.tsx`
+ *
+ * 组件职责：
+ * - 封装 Radix Toast 的视图层，统一通知气泡位置、动画、关闭交互和视觉变体；
+ * - 与 `use-toast.ts` 状态管理配合，实现“任意业务模块可触发统一通知”。
+ *
+ * 运行语义：
+ * - 必须客户端运行，因为 toast 依赖实时状态变化、动画和用户交互；
+ * - 该文件本身不维护全局状态，仅定义可渲染的 UI Primitive。
+ *
+ * 维护约束：
+ * - `variant` 目前承载“默认/破坏性”语义，映射业务风险等级；
+ * - `ToastViewport` 位置策略是全局通知规范，修改前需评估移动端遮挡风险。
+ * =============================================================================
+ */
+
 import * as React from "react";
 import * as ToastPrimitives from "@radix-ui/react-toast";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -29,7 +49,9 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
+        // 默认提示：信息告知，不代表失败。
         default: "border bg-background text-foreground",
+        // 破坏性提示：用于错误、失败、不可逆操作结果反馈。
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground"
       }

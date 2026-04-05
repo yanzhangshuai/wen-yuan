@@ -2,6 +2,26 @@
 // recharts v3 type incompatibility with shadcn chart component
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - 图表容器与图例/提示层）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/chart.tsx`
+ *
+ * 在项目中的职责：
+ * - 统一 Recharts 在项目中的主题色注入、Tooltip/Legend 结构与可复用配置协议；
+ * - 让业务图表只关注“数据与序列定义”，而非重复处理样式、主题切换、文案映射。
+ *
+ * 为什么是 Client Component：
+ * - 图表渲染、悬浮提示、窗口尺寸响应都依赖浏览器运行时；
+ * - 因此必须在客户端执行，服务端仅负责输出容器初始结构。
+ *
+ * 维护提示：
+ * - 本文件存在针对 recharts v3 的类型兼容折中（eslint 规则局部放宽）；
+ * - 若升级库版本，请优先回收这部分兼容代码，再评估是否恢复更严格类型约束。
+ * =============================================================================
+ */
+
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 
@@ -11,10 +31,19 @@ import { cn } from "@/lib/utils";
 const THEMES = { light: "", dark: ".dark" } as const;
 
 export type ChartConfig = {
+  /**
+   * key：序列标识（通常与 dataKey 对齐）。
+   * value：该序列在图例与 tooltip 中的展示策略。
+   */
   [k in string]: {
+    /** 该序列在 UI 中展示的文案标签。 */
     label?: React.ReactNode
+    /** 可选图标组件，用于图例与 tooltip 前缀。 */
     icon? : React.ComponentType
   } & (
+    // 两种互斥配置：
+    // 1) 直接给固定 color；
+    // 2) 按 light/dark 主题分别给色值。
     | { color?: string; theme?: never }
     | { color?: never; theme: Record<keyof typeof THEMES, string> }
   )
@@ -30,6 +59,7 @@ function useChart() {
   const context = React.useContext(ChartContext);
 
   if (!context) {
+    // 防御式错误：防止在容器外调用，避免 config 缺失导致 tooltip/legend 渲染异常。
     throw new Error("useChart must be used within a <ChartContainer />");
   }
 
@@ -49,6 +79,7 @@ function ChartContainer({
   >["children"]
 }) {
   const uniqueId = React.useId();
+  // useId 在并发渲染下可保证稳定性；替换冒号是为了拼接可用 CSS 选择器。
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
 
   return (
@@ -72,6 +103,7 @@ function ChartContainer({
 }
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  // 仅提取声明了颜色策略的序列，避免生成无意义 CSS 变量。
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color
   );
@@ -82,6 +114,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 
   return (
     <style
+      // 通过 CSS 变量给每个图表实例注入序列色值，避免业务组件硬编码颜色。
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
@@ -110,10 +143,15 @@ const ChartTooltip = RechartsPrimitive.Tooltip;
 // 这里显式使用 TooltipContentProps，避免 payload/active 等字段类型缺失。
 type ChartTooltipContentProps = React.ComponentProps<"div"> &
   RechartsPrimitive.TooltipContentProps & {
+    /** 隐藏标题行（仅保留明细项）。 */
     hideLabel?    : boolean
+    /** 隐藏颜色指示器。 */
     hideIndicator?: boolean
+    /** 指示器形态：点、线、虚线。 */
     indicator?    : "line" | "dot" | "dashed"
+    /** 指定从 payload 中读取系列名的字段。 */
     nameKey?      : string
+    /** 指定从 payload 中读取标签字段。 */
     labelKey?     : string
   };
 
@@ -135,6 +173,9 @@ function ChartTooltipContent({
   const { config } = useChart();
 
   const tooltipLabel = React.useMemo(() => {
+    // tooltip 标题在以下场景不展示：
+    // 1) 调用方显式隐藏；
+    // 2) 当前无 payload（鼠标未悬停到有效点）。
     if (hideLabel || !payload?.length) {
       return null;
     }
@@ -171,6 +212,7 @@ function ChartTooltipContent({
   ]);
 
   if (!active || !payload?.length) {
+    // inactive 直接不渲染，避免 tooltip 占位影响布局与事件命中。
     return null;
   }
 
@@ -318,6 +360,7 @@ function normalizePayloadKey(
   value: unknown,
   fallback: string | number = "value"
 ): string {
+  // payload 字段可能是 number/string/undefined，统一归一化为字符串 key。
   if (typeof value === "string" || typeof value === "number") {
     return String(value);
   }
@@ -331,6 +374,7 @@ function getPayloadConfigFromPayload(
   payload: unknown,
   key: string
 ) {
+  // payload 来源可能是不同图表组件，字段结构不一致，需要分支兼容。
   if (typeof payload !== "object" || payload === null) {
     return undefined;
   }

@@ -12,10 +12,18 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
+/**
+ * 文件定位（Client Component / 主题切换入口）：
+ * - 用于头部区域的主题切换交互，驱动全站 CSS 变量主题变更。
+ * - 依赖 `useHydratedTheme` 与点击事件，因此必须是客户端组件。
+ */
+
 export interface ThemeToggleProps {
+  /** 触发按钮额外样式类，用于在不同 header 场景定制布局。 */
   triggerClassName?: string;
 }
 
+/** 主题色圆点映射：仅用于菜单视觉辅助，不参与真实主题计算。 */
 const THEME_COLORS: Record<string, string> = {
   danqing : "bg-[#8b3a3a]",
   suya    : "bg-[#5a8a6c]",
@@ -23,6 +31,7 @@ const THEME_COLORS: Record<string, string> = {
   xingkong: "bg-[#6b8cae]"
 };
 
+/** 主题说明文案：帮助用户理解视觉风格差异。 */
 const THEME_DESCRIPTIONS: Record<string, string> = {
   danqing : "深色古风 · 朱砂红",
   suya    : "暖调浅色 · 竹青绿",
@@ -34,6 +43,7 @@ export function ThemeToggle({ triggerClassName }: ThemeToggleProps) {
   const { theme, setTheme, isHydrated } = useHydratedTheme();
 
   if (!isHydrated) {
+    // Hydration 前先渲染占位，避免服务端主题值与客户端真实值不一致造成闪烁。
     return <div className="w-9 h-9 bg-muted/20 animate-pulse rounded-md" />;
   }
 

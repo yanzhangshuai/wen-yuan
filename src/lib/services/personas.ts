@@ -1,16 +1,28 @@
 /**
- * @module personas
- * @description 人物（Persona）客户端服务层
+ * ============================================================================
+ * 文件定位：`src/lib/services/personas.ts`
+ * ----------------------------------------------------------------------------
+ * 这是前端“人物域（persona domain）”的服务层模块，位于客户端可调用的 API 封装层。
  *
- * 封装所有与人物相关的 HTTP 请求，对应后端路由 `/api/personas/*`。
- * 组件层直接调用此模块的函数，不直接使用 fetch。
+ * 在 Next.js 项目中的角色：
+ * 1) 不属于路由文件（不是 `page/layout/route`），不会被 Next.js 自动注册为路由；
+ * 2) 属于“前端数据访问层”，被 Client Component/交互组件调用；
+ * 3) 通过 `clientFetch/clientMutate` 统一访问 `/api/personas/*`，避免组件层散落 fetch 细节。
  *
- * 包含内容：
- * - PersonaSummary：人物摘要视图类型（对应后端 PersonaDetailSnapshot 子集）
- * - PatchPersonaBody：编辑人物时的请求体类型
- * - parsePersonaSummary：将 API 原始响应解析为 PersonaSummary，解析失败返回 null
- * - fetchPersonaSummary：获取单个人物摘要，失败时静默返回 null（供 use() + Suspense 使用）
- * - patchPersona：更新人物字段（差量 PATCH，只传变更字段）
+ * 解决的业务问题：
+ * - 图谱页面与人物详情侧栏需要“人物摘要/详情/编辑”能力；
+ * - 统一处理后端返回的不确定结构（unknown）与前端强类型之间的转换；
+ * - 在“只读查看”和“可编辑操作”之间提供稳定契约。
+ *
+ * 上下游关系：
+ * - 上游输入：组件传入的人物 ID、编辑表单字段；
+ * - 下游输出：返回结构化 `PersonaSummary/PersonaDetail`，供 UI 直接渲染；
+ * - 下游依赖：`/api/personas/:id`（GET/PATCH）。
+ *
+ * 维护约束（业务规则，不是技术限制）：
+ * - `fetchPersonaSummary` 失败返回 `null` 而非抛错，是为了让侧栏在 Suspense 场景下更平滑降级；
+ * - `patchPersona` 只做“差量更新”，调用方不应传整对象覆盖。
+ * ============================================================================
  */
 import { clientFetch, clientMutate } from "@/lib/client-api";
 import type { PersonaDetail } from "@/types/graph";
@@ -20,37 +32,53 @@ import type { PersonaDetail } from "@/types/graph";
    ------------------------------------------------ */
 
 /**
- * 人物摘要视图
- * 对应后端 GET /api/personas/:id 的响应 data 字段（PersonaDetailSnapshot 子集）。
- * profiles 来自跨书籍的 Profile 列表；relationshipCount / timelineCount 聚合计数。
+ * 人物摘要视图（用于轻量展示与侧栏入口）。
+ * 对应后端 `GET /api/personas/:id` 的 `data` 子集，不包含全部明细字段。
  */
 export interface PersonaSummary {
+  /** 人物主键（UUID），用于详情查询、关系跳转、编辑提交。 */
   id        : string;
+  /** 人物标准名（主显示名）。 */
   name      : string;
+  /** 人物别名列表，来源于后端结构化字段，供搜索与补充展示。 */
   aliases   : string[];
+  /** 性别，可为空；为空表示暂无可靠信息而不是“未知字符串”。 */
   gender    : string | null;
+  /** 籍贯，可为空；为空常见于原文未提及或抽取不确定。 */
   hometown  : string | null;
+  /** 跨书全局标签，服务于人物画像与筛选。 */
   globalTags: string[];
+  /** 按书维度的人物档案摘要，用于“同名人物在不同书内表现”的对照展示。 */
   profiles: {
+    /** 档案所属书籍 ID。 */
     bookId    : string;
+    /** 档案所属书名（后端冗余返回，减少前端二次查表）。 */
     bookTitle : string;
+    /** 该书中的人物简述，可为空。 */
     summary   : string | null;
+    /** 该书内讽刺指数，可为空表示暂无该维度数据。 */
     ironyIndex: number | null;
+    /** 该书内局部标签。 */
     tags      : string[];
   }[];
+  /** 关系数量（聚合计数），用于快速呈现人物“关系复杂度”。 */
   relationshipCount: number;
+  /** 时间轴事件数量（聚合计数），用于快速呈现人物“剧情活跃度”。 */
   timelineCount    : number;
 }
 
 /**
- * 编辑人物的请求体
- * 所有字段均为可选，只传需要变更的字段（差量 PATCH）。
- * confidence 为原始小数（0–1），不是百分比。
+ * 编辑人物请求体（PATCH payload）。
+ * 所有字段可选，业务上要求“只传变更项”，避免无意覆盖后端已有值。
  */
 export interface PatchPersonaBody {
+  /** 新人物名。 */
   name?      : string;
+  /** 新别名数组。 */
   aliases?   : string[];
+  /** 新籍贯；传 `null` 表示显式清空。 */
   hometown?  : string | null;
+  /** 置信度原始值，范围通常为 0~1（不是百分比）。 */
   confidence?: number;
 }
 
@@ -58,23 +86,45 @@ export interface PatchPersonaBody {
    Parsers
    内部使用，将 API unknown 响应安全转换为强类型。
    ------------------------------------------------ */
+/**
+ * 运行时类型守卫：判断 unknown 是否为“可按键访问的普通对象”。
+ * 设计目的：后端返回结构在运行时仍可能不符合声明，先做防御性收窄再读字段。
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * 把 unknown 安全读取为字符串数组。
+ * 防御意义：如果接口脏数据混入非字符串项，不抛错，直接过滤掉异常项。
+ */
 function readStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string");
 }
 
+/**
+ * 读取可选字符串。
+ * 业务约定：非字符串一律视为“缺失”，统一返回 null，避免 UI 处理 `undefined/number/object` 混乱分支。
+ */
 function readOptionalString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+/**
+ * 读取可选数值。
+ * 业务约定：仅接受 number；其他类型（例如字符串数字）不做隐式转换，避免误读。
+ */
 function readOptionalNumber(value: unknown): number | null {
   return typeof value === "number" ? value : null;
 }
 
+/**
+ * 解析跨书档案数组。
+ * 判空/跳过策略说明：
+ * - 不是数组：返回空数组，表示“暂无档案数据”；
+ * - 缺少 bookId/bookTitle：该项直接丢弃，避免生成不可定位的脏记录。
+ */
 function readPersonaProfiles(value: unknown): PersonaSummary["profiles"] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => {
@@ -92,8 +142,14 @@ function readPersonaProfiles(value: unknown): PersonaSummary["profiles"] {
 }
 
 /**
- * 将后端原始响应 data 解析为 PersonaSummary。
- * 缺少必要字段（id / name）时返回 null，不抛出异常。
+ * 把后端 `data`（unknown）转换为 `PersonaSummary`。
+ *
+ * 为什么“失败返回 null 而不是 throw”：
+ * - 该函数常用于 UI 读取路径，返回 null 可由调用层统一走空态；
+ * - 避免把“单条数据脏字段”升级为整页崩溃。
+ *
+ * @param data 后端成功响应中的 data 字段（运行时未知结构）
+ * @returns 结构合法时返回 PersonaSummary；关键字段缺失时返回 null
  */
 export function parsePersonaSummary(data: unknown): PersonaSummary | null {
   if (!isRecord(data) || typeof data.id !== "string" || typeof data.name !== "string") {
@@ -118,13 +174,14 @@ export function parsePersonaSummary(data: unknown): PersonaSummary | null {
 
 /**
  * 获取单个人物摘要。
- * 对应接口：GET /api/personas/:id
+ * 对应接口：`GET /api/personas/:id`。
  *
- * 失败时静默返回 null（不抛出），适合配合 React `use()` + Suspense 使用：
- * 父组件传入 Promise，子组件用 use() 消费，null 表示人物不存在或加载失败。
+ * 设计意图：
+ * - 返回 `PersonaSummary | null`，使调用方可用统一空态处理“网络失败/数据异常/不存在”；
+ * - 该策略对图谱交互更友好：侧栏失败不影响主图继续操作。
  *
- * @param id 人物 UUID
- * @returns PersonaSummary | null
+ * @param id 人物 UUID（来自路由节点点击、搜索命中或上下文菜单）
+ * @returns 解析成功返回摘要；任意异常返回 null
  */
 export async function fetchPersonaSummary(id: string): Promise<PersonaSummary | null> {
   try {
@@ -136,27 +193,31 @@ export async function fetchPersonaSummary(id: string): Promise<PersonaSummary | 
 }
 
 /**
- * 获取单个人物详情快照（主档 + 关系 + 时间轴）。
- * 对应接口：GET /api/personas/:id
+ * 获取单个人物详情快照（主档 + 关系 + 时间轴完整数据）。
+ * 对应接口：`GET /api/personas/:id`。
  *
- * 失败时抛出 Error，message 为可展示文案。
+ * 与 `fetchPersonaSummary` 的差异：
+ * - 该函数用于详情面板主流程，异常会抛出给上层 `AsyncErrorBoundary`；
+ * - 这样可以把“详情加载失败”明确展示为错误态，而不是静默吞掉。
  *
  * @param id 人物 UUID
- * @returns PersonaDetail
+ * @returns PersonaDetail，字段定义见 `src/types/graph.ts`
  */
 export async function fetchPersonaDetail(id: string): Promise<PersonaDetail> {
   return clientFetch<PersonaDetail>(`/api/personas/${id}`);
 }
 
 /**
- * 更新人物基本信息（差量 PATCH）。
- * 对应接口：PATCH /api/personas/:id
+ * 更新人物基础信息（差量 PATCH）。
+ * 对应接口：`PATCH /api/personas/:id`。
  *
- * 调用方只传需要变更的字段，未传字段保持原值。
- * 失败时抛出 Error，message 为可直接展示给用户的文案。
+ * 为什么使用 PATCH 而非 PUT：
+ * - 业务上支持“局部编辑”，避免未展示字段被覆盖；
+ * - 与后端 `updatePersonaBodySchema` 的“至少一个字段”约束对齐。
  *
- * @param id   人物 UUID
- * @param body 变更字段
+ * @param id 人物 UUID
+ * @param body 仅包含用户实际修改的字段
+ * @returns Promise<void>，成功即代表写入完成
  */
 export async function patchPersona(id: string, body: PatchPersonaBody): Promise<void> {
   await clientMutate(`/api/personas/${id}`, {

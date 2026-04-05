@@ -3,8 +3,20 @@ import { describe, expect, it, vi } from "vitest";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { createUpdateGraphLayoutService } from "@/server/modules/graph/updateGraphLayout";
 
+/**
+ * 文件定位（图谱布局保存服务单测）：
+ * - 验证用户在前端拖拽节点后，布局坐标可回写到 profile.visualConfig。
+ * - 服务需要兼容“已有 profile 更新”和“缺失 profile 自动创建”两种分支。
+ *
+ * 业务价值：
+ * - 保存后的坐标决定下次打开图谱时的视觉稳定性，是编辑体验关键链路。
+ */
 describe("updateGraphLayout service", () => {
   it("updates profile positions and creates missing profiles", async () => {
+    // 场景说明：
+    // - persona-1：已有 profile，更新坐标时保留原 locked 等配置。
+    // - persona-2：无 profile，按最小信息创建并写入坐标。
+    // - persona-3：书内不存在，需忽略并返回 ignoredPersonaIds 供前端提示。
     const profileUpsert = vi.fn().mockResolvedValue(null);
     const txClient = {
       profile: {
@@ -87,6 +99,7 @@ describe("updateGraphLayout service", () => {
   });
 
   it("throws when graph book does not exist", async () => {
+    // 防御边界：graphId 对应书籍不存在时不允许保存布局，避免写入孤立数据。
     const service = createUpdateGraphLayoutService({
       book: {
         findFirst: vi.fn().mockResolvedValue(null)

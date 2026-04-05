@@ -1,3 +1,13 @@
+/**
+ * 文件定位（服务模块单测）：
+ * - 覆盖领域服务输入校验、分支处理与输出映射契约。
+ * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
+ *
+ * 业务职责：
+ * - 保证成功路径与异常路径都可预测。
+ * - 降低重构时误改核心规则的风险。
+ */
+
 import { ProcessingStatus } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
@@ -33,7 +43,9 @@ function createSuggestionRow(overrides: Partial<{
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("merge suggestions service", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("lists merge suggestions with mapped fields", async () => {
     const findMany = vi.fn().mockResolvedValue([createSuggestionRow()]);
     const service = createMergeSuggestionsService({
@@ -59,6 +71,7 @@ describe("merge suggestions service", () => {
     ]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects suggestion and marks resolved time", async () => {
     const findUnique = vi.fn().mockResolvedValue({
       id    : "s-1",
@@ -90,6 +103,7 @@ describe("merge suggestions service", () => {
     }));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws state error when rejecting non-pending suggestion", async () => {
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       mergeSuggestion: {
@@ -107,6 +121,7 @@ describe("merge suggestions service", () => {
     await expect(service.rejectMergeSuggestion("s-1")).rejects.toBeInstanceOf(MergeSuggestionStateError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws not found when accepting missing suggestion", async () => {
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       mergeSuggestion: {
@@ -120,6 +135,7 @@ describe("merge suggestions service", () => {
     await expect(service.acceptMergeSuggestion("missing-id")).rejects.toBeInstanceOf(MergeSuggestionNotFoundError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws conflict when source or target persona has been deleted", async () => {
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       mergeSuggestion: {
@@ -147,6 +163,7 @@ describe("merge suggestions service", () => {
     await expect(service.acceptMergeSuggestion("s-1")).rejects.toBeInstanceOf(PersonaMergeConflictError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("accepts suggestion and redirects records in one transaction", async () => {
     const findFirst = vi.fn().mockResolvedValue(null);
     const relationshipUpdate = vi.fn().mockResolvedValue({});

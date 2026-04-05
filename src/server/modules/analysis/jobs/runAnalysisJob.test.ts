@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
@@ -118,7 +131,9 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("analysis job runner", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runs queued job and marks job/book as succeeded", async () => {
     const jobId = "job-1";
     const bookId = "book-1";
@@ -191,6 +206,7 @@ describe("analysis job runner", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when job does not exist", async () => {
     const { runner, analysisJobFindUnique, chapterFindMany } = createRunnerContext();
     analysisJobFindUnique.mockResolvedValueOnce(null);
@@ -199,6 +215,7 @@ describe("analysis job runner", () => {
     expect(chapterFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns early for terminal jobs", async () => {
     const { runner, analysisJobFindUnique, analysisJobUpdateMany } = createRunnerContext();
     analysisJobFindUnique
@@ -224,6 +241,7 @@ describe("analysis job runner", () => {
     expect(analysisJobUpdateMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns when queued job claim loses race", async () => {
     const {
       runner,
@@ -246,6 +264,7 @@ describe("analysis job runner", () => {
     expect(chapterFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns when job is no longer running after claim", async () => {
     const {
       runner,
@@ -277,6 +296,7 @@ describe("analysis job runner", () => {
     expect(chapterFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when chapter range job has invalid bounds", async () => {
     const { runner, analysisJobFindUnique } = createRunnerContext();
     analysisJobFindUnique
@@ -300,6 +320,7 @@ describe("analysis job runner", () => {
     await expect(runner.runAnalysisJobById("job-range-invalid")).rejects.toThrow("章节范围无效");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks job and book as failed when no chapters can be loaded", async () => {
     const {
       runner,
@@ -346,6 +367,7 @@ describe("analysis job runner", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks job and book as failed when chapter analyzer throws", async () => {
     const {
       runner,
@@ -402,6 +424,7 @@ describe("analysis job runner", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips PRELUDE and POSTLUDE chapters in FULL_BOOK scope", async () => {
     const { runner, analysisJobFindUnique, chapterFindMany, analyzeChapter } = createRunnerContext();
     analysisJobFindUnique
@@ -441,6 +464,7 @@ describe("analysis job runner", () => {
     expect(analyzeChapter).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runs chapter range jobs with gte/lte filters", async () => {
     const { runner, analysisJobFindUnique, chapterFindMany, analyzeChapter } = createRunnerContext();
     analysisJobFindUnique
@@ -483,6 +507,7 @@ describe("analysis job runner", () => {
     expect(analyzeChapter).toHaveBeenCalledTimes(2);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runs incremental title resolution every 5 chapters during chapter loop", async () => {
     const { runner, analysisJobFindUnique, chapterFindMany, resolvePersonaTitles, getTitleOnlyPersonaCount } = createRunnerContext();
     analysisJobFindUnique
@@ -521,6 +546,7 @@ describe("analysis job runner", () => {
     expect(resolvePersonaTitles).toHaveBeenCalledWith("book-1", { jobId: "job-incremental" });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runs gray-zone arbitration once after full book processing", async () => {
     const { runner, analysisJobFindUnique, chapterFindMany, runGrayZoneArbitration } = createRunnerContext();
     analysisJobFindUnique
@@ -551,6 +577,7 @@ describe("analysis job runner", () => {
     expect(runGrayZoneArbitration).toHaveBeenCalledWith("book-1", { jobId: "job-gray-zone" });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runs full-book validation and applies auto fixes when report is auto-fixable", async () => {
     const {
       runner,
@@ -599,6 +626,7 @@ describe("analysis job runner", () => {
     expect(applyAutoFixes).toHaveBeenCalledWith("report-1");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not abort whole job when chapter validation reports errors", async () => {
     const {
       runner,
@@ -654,6 +682,7 @@ describe("analysis job runner", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not fail main job when full-book validation throws", async () => {
     const {
       runner,
@@ -694,6 +723,7 @@ describe("analysis job runner", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runNextAnalysisJob prioritizes recoverable running job", async () => {
     const {
       runner,
@@ -737,6 +767,7 @@ describe("analysis job runner", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runNextAnalysisJob falls back to queued job and returns null when no jobs", async () => {
     const {
       runner,
@@ -779,6 +810,7 @@ describe("analysis job runner", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("markOrphanPersonas", () => {
   function createMockPrisma({
     profiles = [] as { personaId: string }[],
@@ -796,6 +828,7 @@ describe("markOrphanPersonas", () => {
     return { prismaClient, profileFindMany, mentionGroupBy, personaUpdateMany };
   }
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 0 immediately when no profiles found for book", async () => {
     const { prismaClient, mentionGroupBy, personaUpdateMany } = createMockPrisma();
     const count = await markOrphanPersonas(prismaClient, "book-empty");
@@ -804,6 +837,7 @@ describe("markOrphanPersonas", () => {
     expect(personaUpdateMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks personas with 0 mentions as orphans", async () => {
     const { prismaClient, personaUpdateMany } = createMockPrisma({
       profiles     : [{ personaId: "p-1" }, { personaId: "p-2" }],
@@ -821,6 +855,7 @@ describe("markOrphanPersonas", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks personas with exactly 1 mention as orphans", async () => {
     const { prismaClient, personaUpdateMany } = createMockPrisma({
       profiles     : [{ personaId: "p-1" }, { personaId: "p-2" }],
@@ -836,6 +871,7 @@ describe("markOrphanPersonas", () => {
     );
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not mark personas with 2+ mentions as orphans", async () => {
     const { prismaClient, personaUpdateMany } = createMockPrisma({
       profiles     : [{ personaId: "p-1" }, { personaId: "p-2" }],
@@ -850,6 +886,7 @@ describe("markOrphanPersonas", () => {
     expect(personaUpdateMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips update when all orphans already have confidence <= 0.4", async () => {
     // personaUpdateMany 的 where 条件 confidence > 0.4 会在 DB 侧过滤，这里仅验证调用参数正确。
     const { prismaClient, personaUpdateMany } = createMockPrisma({
@@ -868,6 +905,7 @@ describe("markOrphanPersonas", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("only queries mentions for personas in this book", async () => {
     const { prismaClient, mentionGroupBy } = createMockPrisma({
       profiles: [{ personaId: "p-a" }, { personaId: "p-b" }]

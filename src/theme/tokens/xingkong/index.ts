@@ -1,3 +1,11 @@
+/**
+ * 文件定位（星空主题 Token）：
+ * - 所属层次：主题设计令牌层。
+ *
+ * 业务职责：
+ * - 定义 `xingkong` 主题下的派系颜色盘；
+ * - 视觉上服务夜色/科幻语境，同时保持不同派系可区分性。
+ */
 export const xingkong = {
   id           : "xingkong" as const,
   label        : "星空",

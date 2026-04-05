@@ -3,12 +3,22 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { AiGenerateOptions, AiProviderClient } from "@/server/providers/ai";
 import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
+/**
+ * 文件定位（AI Provider 适配层 / Gemini）：
+ * - 该文件把 Gemini SDK 适配为项目统一的 `AiProviderClient` 协议。
+ * - 上游由模型工厂选择并实例化，下游由分析流水线以统一方法 `generateJson` 调用。
+ */
+
 interface GeminiUsageMetadata {
   promptTokenCount?    : number;
   candidatesTokenCount?: number;
   totalTokenCount?     : number;
 }
 
+/**
+ * 把 Gemini 的 usage 字段映射到项目统一结构。
+ * 设计原因：不同厂商字段命名不同，统一后才能做跨模型成本对比。
+ */
 function toAiUsage(usage: GeminiUsageMetadata | undefined): AiUsage {
   return {
     promptTokens    : typeof usage?.promptTokenCount === "number" ? usage.promptTokenCount : null,
@@ -37,6 +47,7 @@ export class GeminiClient implements AiProviderClient {
    */
   constructor(apiKey: string, modelName = "gemini-3.1-flash") {
     if (!apiKey) {
+      // 早失败：避免创建出“可调用但必失败”的客户端实例。
       throw new Error("Missing Gemini API key");
     }
 
@@ -74,6 +85,7 @@ export class GeminiClient implements AiProviderClient {
       }
     });
 
+    // SDK 返回的是字符串文本，后续由调用方按 JSON 协议继续解析与校验。
     const raw = result.response.text();
 
     if (!raw) {

@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { ProcessingStatus } from "@/generated/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -160,6 +173,7 @@ function createPrismaMock(chapter = buildChapter()) {
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("chapter analysis service", () => {
   const mockedCreatePersonaResolver = vi.mocked(createPersonaResolver);
   const mockedCreateAiProviderClient = vi.mocked(createAiProviderClient);
@@ -198,6 +212,7 @@ describe("chapter analysis service", () => {
     } as never);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when chapter does not exist", async () => {
     const { prismaMock } = createPrismaMock(null as never);
     const service = createChapterAnalysisService(prismaMock as never, {
@@ -207,6 +222,7 @@ describe("chapter analysis service", () => {
     await expect(service.analyzeChapter("missing-chapter")).rejects.toThrow("Chapter [missing-chapter] 不存在");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("persists deduplicated records and counts hallucinations", async () => {
     const longParagraph = "甲".repeat(3601);
     const chapter = buildChapter({
@@ -347,6 +363,7 @@ describe("chapter analysis service", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips createMany calls when ai extraction is empty", async () => {
     const { prismaMock, mentionCreateMany, biographyCreateMany, relationshipCreateMany } = createPrismaMock();
 
@@ -372,6 +389,7 @@ describe("chapter analysis service", () => {
     expect(relationshipCreateMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not retry ai errors when no job context", async () => {
     const { prismaMock } = createPrismaMock();
     const analyzeChapterChunk = vi.fn()
@@ -390,6 +408,7 @@ describe("chapter analysis service", () => {
     expect(analyzeChapterChunk).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws immediately on non-retryable ai errors", async () => {
     const { prismaMock } = createPrismaMock();
     const analyzeChapterChunk = vi.fn().mockRejectedValueOnce(new Error("invalid json payload"));
@@ -402,6 +421,7 @@ describe("chapter analysis service", () => {
     expect(analyzeChapterChunk).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to system default when configured stage model does not exist", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: "book-model" }));
     prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // JOB
@@ -422,6 +442,7 @@ describe("chapter analysis service", () => {
     }));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to system default when configured stage model is disabled", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: "book-model" }));
     prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // JOB
@@ -438,6 +459,7 @@ describe("chapter analysis service", () => {
     }));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when no enabled default model exists", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
     prismaMock.aiModel.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
@@ -448,6 +470,7 @@ describe("chapter analysis service", () => {
     );
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when provider is unsupported", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
     prismaMock.aiModel.findFirst.mockResolvedValueOnce({
@@ -464,6 +487,7 @@ describe("chapter analysis service", () => {
     await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("不支持的模型 provider: openai");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when stored api key is missing or malformed", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
     const service = createChapterAnalysisService(prismaMock as never);
@@ -493,6 +517,7 @@ describe("chapter analysis service", () => {
     );
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds runtime ai client from default model and provider config", async () => {
     const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
     prismaMock.aiModel.findFirst.mockResolvedValueOnce({
@@ -530,6 +555,7 @@ describe("chapter analysis service", () => {
     expect(runtimeAiClient.analyzeChapterChunk).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("registers high-confidence roster alias hints and passes chapterNo to resolver", async () => {
     const { prismaMock, mentionCreateMany } = createPrismaMock();
     const resolveMock = vi.fn().mockResolvedValue({
@@ -596,6 +622,7 @@ describe("chapter analysis service", () => {
     expect(mentionCreateMany).toHaveBeenCalledTimes(1);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("persists alias mapping after title resolution", async () => {
     const prismaMock = {
       book: {
@@ -694,6 +721,7 @@ describe("chapter analysis service", () => {
     }, expect.any(Object));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("merges into existing persona when duplicate found in resolvePersonaTitles", async () => {
     const prismaMock = {
       book: {
@@ -789,7 +817,9 @@ describe("chapter analysis service", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("chapter analysis merge helpers", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("deduplicates mentions when personaName/rawText/paraIndex are identical", () => {
     // Arrange
     const results = [{
@@ -814,6 +844,7 @@ describe("chapter analysis merge helpers", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("keeps mentions when paraIndex differs", () => {
     // Arrange
     const results = [{
@@ -833,6 +864,7 @@ describe("chapter analysis merge helpers", () => {
     expect(merged.mentions).toHaveLength(2);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns stable result for empty input and single-chunk input", () => {
     // Arrange
     const singleChunk = [{
@@ -860,6 +892,7 @@ describe("chapter analysis merge helpers", () => {
     expect(singleMerged).toEqual(singleChunk[0]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("merges relationships with max weight and caps evidence entries at five", () => {
     // Arrange
     const results = [{
@@ -897,6 +930,7 @@ describe("chapter analysis merge helpers", () => {
     expect(evidenceItems).toEqual(["证据1", "证据2", "证据3", "证据4", "证据5"]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("deduplicates roster by normalized name + alias type and trims whitespace", () => {
     // Arrange
     const entries = [

@@ -5,6 +5,28 @@ import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 
 /**
+ * ============================================================================
+ * 文件定位：`src/server/modules/graph/findPersonaPath.ts`
+ * ----------------------------------------------------------------------------
+ * 图谱路径查询服务（单书域最短路径）。
+ *
+ * 核心策略：
+ * - 优先使用 Neo4j `shortestPath` 执行图查询（性能与图语义更优）；
+ * - 若 Neo4j 不可用/失败，回退到 PostgreSQL 数据上的 BFS（可用性优先）；
+ * - 最终统一输出稳定 DTO（found/hopCount/nodes/edges）。
+ *
+ * 分层职责：
+ * - 不处理 HTTP，不直接返回 Response；
+ * - 对外只抛领域错误（BookNotFoundError / PersonaNotFoundError）；
+ * - 允许在服务层内做数据源切换与容灾。
+ *
+ * 关键业务边界：
+ * - 路径查询限定在“单本书图谱域”；
+ * - 只使用 `VERIFIED` 关系边，避免未审核关系污染路径结果。
+ * ============================================================================
+ */
+
+/**
  * 最短路径查询输入。
  */
 export interface FindPersonaPathInput {
@@ -58,7 +80,7 @@ export interface PersonaPathResult {
   targetPersonaId: string;
   /** 是否找到可达路径。 */
   found          : boolean;
-  /** 跳数（边数量）。 */
+  /** 跳数（即路径边数量）。 */
   hopCount       : number;
   /** 路径节点序列。 */
   nodes          : PersonaPathNode[];
@@ -66,9 +88,7 @@ export interface PersonaPathResult {
   edges          : PersonaPathEdge[];
 }
 
-/**
- * 内部图边快照（用于 BFS 与结果映射）。
- */
+/** 内部图边快照（用于 BFS 与结果映射）。 */
 interface GraphEdge {
   id       : string;
   sourceId : string;
@@ -79,54 +99,40 @@ interface GraphEdge {
   chapterNo: number;
 }
 
-/**
- * BFS 回溯所需前驱信息。
- */
+/** BFS 回溯所需前驱信息。 */
 interface PreviousStep {
   prevNodeId: string;
   edge      : GraphEdge;
 }
 
-/**
- * 人物最小快照。
- */
+/** 人物最小快照。 */
 interface PersonaSnapshot {
   id  : string;
   name: string;
 }
 
-/**
- * Neo4j 记录最小抽象（便于测试 mock）。
- */
+/** Neo4j 记录最小抽象（便于测试 mock）。 */
 interface Neo4jRecordLike {
   get(key: string): unknown;
 }
 
-/**
- * Neo4j 查询结果最小抽象。
- */
+/** Neo4j 查询结果最小抽象。 */
 interface Neo4jResultLike {
   records: Neo4jRecordLike[];
 }
 
-/**
- * Neo4j 会话最小抽象。
- */
+/** Neo4j 会话最小抽象。 */
 interface Neo4jSessionLike {
   run(query: string, params?: Record<string, unknown>): Promise<Neo4jResultLike>;
   close(): Promise<void>;
 }
 
-/**
- * Neo4j Driver 最小抽象。
- */
+/** Neo4j Driver 最小抽象。 */
 interface Neo4jDriverLike {
   session(): Neo4jSessionLike;
 }
 
-/**
- * 指定人物不存在错误（书域内）。
- */
+/** 指定人物不存在错误（在当前书域图谱内不存在）。 */
 export class PersonaNotFoundError extends Error {
   /** 不存在的人物 ID。 */
   readonly personaId: string;
@@ -141,8 +147,8 @@ export class PersonaNotFoundError extends Error {
 }
 
 /**
- * 从边列表构建无向邻接表。
- * 说明：路径查找按「关系可双向走通」处理。
+ * 从边列表构建“无向”邻接表。
+ * 业务说明：当前关系路径查询默认“可双向到达”，因此 source->target 与 target->source 都可走通。
  */
 function buildAdjacency(edges: GraphEdge[]): Map<string, Array<{ nodeId: string; edge: GraphEdge }>> {
   const adjacency = new Map<string, Array<{ nodeId: string; edge: GraphEdge }>>();
@@ -161,9 +167,7 @@ function buildAdjacency(edges: GraphEdge[]): Map<string, Array<{ nodeId: string;
   return adjacency;
 }
 
-/**
- * 将 Neo4j 返回值安全转换为字符串数组。
- */
+/** 将 Neo4j 返回值安全转换为字符串数组。 */
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -175,7 +179,11 @@ function toStringArray(value: unknown): string[] {
 }
 
 /**
- * PostgreSQL 回退方案：BFS 计算无权最短路径。
+ * PostgreSQL 回退方案：BFS 无权最短路径。
+ *
+ * 设计原因：
+ * - 回退路径首要目标是“保证可用”，而非复杂加权最优；
+ * - BFS 在无权图上可稳定找到最短 hop 路径，满足当前产品语义。
  */
 function bfsShortestPath(
   sourcePersonaId: string,
@@ -183,6 +191,7 @@ function bfsShortestPath(
   edges: GraphEdge[]
 ): { nodeIds: string[]; pathEdges: GraphEdge[] } | null {
   if (sourcePersonaId === targetPersonaId) {
+    // 起点终点相同是合法业务输入，直接返回 0 跳路径。
     return {
       nodeIds  : [sourcePersonaId],
       pathEdges: []
@@ -203,6 +212,7 @@ function bfsShortestPath(
     const neighbors = adjacency.get(currentNodeId) ?? [];
     for (const neighbor of neighbors) {
       if (visited.has(neighbor.nodeId)) {
+        // 已访问节点跳过，避免环路死循环。
         continue;
       }
 
@@ -213,6 +223,7 @@ function bfsShortestPath(
       });
 
       if (neighbor.nodeId === targetPersonaId) {
+        // 命中终点后，通过 previous 映射回溯完整路径。
         const nodeIds: string[] = [targetPersonaId];
         const pathEdges: GraphEdge[] = [];
 
@@ -241,7 +252,8 @@ function bfsShortestPath(
 }
 
 /**
- * 从 PostgreSQL 加载路径搜索所需图数据（人物 + 已审核关系）。
+ * 从 PostgreSQL 加载路径搜索所需图数据。
+ * 仅纳入 `VERIFIED` 关系，这是业务可信度规则，不是技术限制。
  */
 async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Promise<{
   personas  : PersonaSnapshot[];
@@ -305,6 +317,7 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     chapterNo: item.chapter.no
   }));
 
+  // 先用 profile 作为人物主体集合。
   const personas = profiles.map((item) => item.persona);
   const personaIdSet = new Set(personas.map((item) => item.id));
 
@@ -313,6 +326,7 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     personaIdSet.add(edge.targetId);
   }
 
+  // 关系边可能引用到尚未存在 profile 的人物，需补查避免路径节点缺名。
   const missingPersonaIds = Array.from(personaIdSet).filter((personaId) => !personas.some((item) => item.id === personaId));
   if (missingPersonaIds.length > 0) {
     const extraPersonas = await prismaClient.persona.findMany({
@@ -335,7 +349,11 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
 }
 
 /**
- * 将当前书籍图同步到 Neo4j（节点增量更新 + 边全量重建）。
+ * 将当前书籍图同步到 Neo4j。
+ *
+ * 策略说明：
+ * - 节点使用 MERGE（增量更新）；
+ * - 边先按 bookId 全删再重建，避免历史残边导致 shortestPath 污染。
  */
 async function syncNeo4jBookGraph(
   neo4jDriver: Neo4jDriverLike,
@@ -345,6 +363,7 @@ async function syncNeo4jBookGraph(
 ): Promise<void> {
   const session = neo4jDriver.session();
   try {
+    // 1) 同步节点。
     await session.run(
       `
       UNWIND $personas AS persona
@@ -357,6 +376,7 @@ async function syncNeo4jBookGraph(
       }
     );
 
+    // 2) 清理本书旧关系边。
     await session.run(
       `
       MATCH ()-[r:RELATES {bookId: $bookId}]->()
@@ -365,6 +385,7 @@ async function syncNeo4jBookGraph(
       { bookId }
     );
 
+    // 3) 以当前快照全量写回关系边。
     await session.run(
       `
       UNWIND $edges AS edge
@@ -382,6 +403,7 @@ async function syncNeo4jBookGraph(
       }
     );
   } finally {
+    // 无论成功失败都关闭 session，避免连接泄漏。
     await session.close();
   }
 }
@@ -396,6 +418,7 @@ async function findShortestPathFromNeo4j(
 ): Promise<{ nodeIds: string[]; edgeIds: string[] } | null> {
   const session = neo4jDriver.session();
   try {
+    // shortestPath 用无向关系模式 `-[:RELATES*]-`，与 BFS 回退语义保持一致。
     const result = await session.run(
       `
       MATCH (source:Persona {id: $sourcePersonaId, bookId: $bookId})
@@ -413,6 +436,7 @@ async function findShortestPathFromNeo4j(
 
     const record = result.records[0];
     if (!record) {
+      // 没有记录通常意味着 source/target 在 Neo4j 不存在或查询未命中。
       return null;
     }
 
@@ -420,6 +444,7 @@ async function findShortestPathFromNeo4j(
     const edgeIds = toStringArray(record.get("edgeIds"));
 
     if (nodeIds.length === 0) {
+      // path 为 null 时 Neo4j 返回空数组，统一视为“未找到路径”。
       return null;
     }
 
@@ -494,6 +519,7 @@ export function createFindPersonaPathService(
    * - 若 Neo4j 不可用/失败，自动回退到 PostgreSQL BFS。
    */
   async function findPersonaPath(input: FindPersonaPathInput): Promise<PersonaPathResult> {
+    // Step 1) 先校验书籍存在。
     const book = await prismaClient.book.findFirst({
       where: {
         id       : input.bookId,
@@ -505,8 +531,10 @@ export function createFindPersonaPathService(
       throw new BookNotFoundError(input.bookId);
     }
 
+    // Step 2) 加载图数据（人物 + 已审核关系）。
     const { personas, graphEdges } = await loadBookGraphData(prismaClient, input.bookId);
 
+    // Step 3) 校验起点终点是否在当前书域图谱内。
     const endpointIds = new Set(personas.map((item) => item.id));
     if (!endpointIds.has(input.sourcePersonaId)) {
       throw new PersonaNotFoundError(input.sourcePersonaId);
@@ -518,11 +546,13 @@ export function createFindPersonaPathService(
     const personaNameMap = new Map(personas.map((item) => [item.id, item.name] as const));
 
     if (input.sourcePersonaId === input.targetPersonaId) {
+      // 同一人物路径：found=true，hopCount=0。
       return buildFoundResult(input, [input.sourcePersonaId], [], personaNameMap);
     }
 
     if (neo4jDriver) {
       try {
+        // Step 4) 优先 Neo4j：先同步，再 shortestPath。
         await syncNeo4jBookGraph(neo4jDriver, input.bookId, personas, graphEdges);
         const shortestPath = await findShortestPathFromNeo4j(neo4jDriver, input);
         if (!shortestPath) {
@@ -534,6 +564,7 @@ export function createFindPersonaPathService(
           .map((edgeId) => edgeMap.get(edgeId))
           .filter((edge): edge is GraphEdge => Boolean(edge));
         if (pathEdges.length === shortestPath.edgeIds.length) {
+          // 只有当 edgeIds 都能回填到 PG 快照时才算成功，防止图数据不一致导致脏结果。
           return buildFoundResult(
             input,
             shortestPath.nodeIds,
@@ -546,6 +577,7 @@ export function createFindPersonaPathService(
       }
     }
 
+    // Step 5) 回退 PostgreSQL BFS。
     const shortestPath = bfsShortestPath(input.sourcePersonaId, input.targetPersonaId, graphEdges);
     if (!shortestPath) {
       return buildNotFoundResult(input);

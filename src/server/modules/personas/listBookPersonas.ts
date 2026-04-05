@@ -1,3 +1,22 @@
+/**
+ * =============================================================================
+ * 文件定位（服务层：书籍人物列表查询）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/personas/listBookPersonas.ts`
+ *
+ * 模块职责：
+ * - 查询指定书籍下可展示的人物档案集合；
+ * - 将底层数据映射为前端列表所需的稳定结构（含 local/global 信息）。
+ *
+ * 业务意义：
+ * - 审核与编辑页依赖该列表作为入口数据；
+ * - 保证“书内视图”与“全局人物档案”字段分层清晰，避免误展示。
+ *
+ * 输入输出边界：
+ * - 输入：bookId 与可选筛选条件；
+ * - 输出：`BookPersonaListItem[]`，作为接口层响应 DTO。
+ * =============================================================================
+ */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";

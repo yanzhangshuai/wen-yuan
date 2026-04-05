@@ -8,19 +8,31 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/services/auth";
 
+/**
+ * 文件定位（Client Component / 访客端顶部导航）：
+ * - 负责前台书库页的主导航、主题切换、登录/退出与管理入口切换。
+ * - 依赖浏览器路由状态（`usePathname`）和点击事件（登出），必须是 Client Component。
+ */
+
 export interface ViewerHeaderProps {
+  /** 当前用户是否具备管理员权限，决定右侧动作区渲染分支。 */
   isAdmin?    : boolean;
+  /** 当前页面路径，用于构造登录后回跳地址。 */
   currentPath?: string;
+  /** 预留用户信息字段（当前版本未直接使用）。 */
   user?       : { name?: string | null; image?: string | null };
 }
 
 export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) {
+  // 读取当前 pathname 以驱动导航按钮激活态。
   const pathname = usePathname();
 
   const handleLogout = () => {
+    // 退出后刷新页面：确保服务端会话态与客户端 UI 同步。
     void logout().finally(() => window.location.reload());
   };
 
+  // 登录后回跳到当前页面，减少用户操作中断。
   const loginRedirectHref = `/login?redirect=${encodeURIComponent(currentPath)}`;
 
   return (
@@ -78,6 +90,7 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
               </Button>
             </>
           ) : (
+            // 非管理员展示登录入口，且保留 redirect 参数维持阅读上下文。
             <Button asChild variant="outline" size="sm" className="gap-2">
               <Link href={loginRedirectHref}>
                 <User className="h-4 w-4" />

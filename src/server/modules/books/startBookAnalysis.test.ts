@@ -1,3 +1,13 @@
+/**
+ * 文件定位（服务模块单测）：
+ * - 覆盖领域服务输入校验、分支处理与输出映射契约。
+ * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
+ *
+ * 业务职责：
+ * - 保证成功路径与异常路径都可预测。
+ * - 降低重构时误改核心规则的风险。
+ */
+
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
@@ -27,7 +37,9 @@ function createMockPrisma() {
   return { prisma, tx };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("startBookAnalysis", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("creates analysis job and updates book processing status", async () => {
     const { prisma, tx } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
@@ -92,6 +104,7 @@ describe("startBookAnalysis", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("writes job-level strategy when modelStrategy is provided", async () => {
     const { prisma, tx } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
@@ -136,6 +149,7 @@ describe("startBookAnalysis", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws BookNotFoundError when book does not exist", async () => {
     const { prisma } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue(null);
@@ -143,6 +157,7 @@ describe("startBookAnalysis", () => {
     await expect(service.startBookAnalysis("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws AnalysisScopeInvalidError for invalid chapter range", async () => {
     const { prisma } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
@@ -157,6 +172,7 @@ describe("startBookAnalysis", () => {
     ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws AnalysisScopeInvalidError when no chapters are confirmed", async () => {
     const { prisma } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
@@ -166,6 +182,7 @@ describe("startBookAnalysis", () => {
     await expect(service.startBookAnalysis("book-1")).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("creates CHAPTER_LIST analysis job with specified chapter indices", async () => {
     const { prisma, tx } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
@@ -204,6 +221,7 @@ describe("startBookAnalysis", () => {
     expect(result.scope).toBe("CHAPTER_LIST");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws AnalysisScopeInvalidError for CHAPTER_LIST with empty indices", async () => {
     const { prisma } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });

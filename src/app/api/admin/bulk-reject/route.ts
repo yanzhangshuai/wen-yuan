@@ -11,6 +11,34 @@ import { bulkRejectDrafts, BulkReviewInputError, type BulkReviewResult } from "@
 import { ERROR_CODES } from "@/types/api";
 
 /**
+ * =============================================================================
+ * 文件定位（Next.js Route Handler：管理端批量拒绝）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/app/api/admin/bulk-reject/route.ts`
+ *
+ * 框架语义：
+ * - `route.ts` 导出的 `POST` 对应接口 `POST /api/admin/bulk-reject`；
+ * - 由 Next.js 在服务端执行，适合作为“有副作用写操作”的入口层。
+ *
+ * 业务职责：
+ * - 将一组草稿从 `DRAFT` 批量置为 `REJECTED`，用于管理员批量驳回低质量识别结果。
+ *
+ * 上游输入：
+ * - 客户端审核面板提交的 `{ ids: string[] }` 请求体；
+ * - 登录态上下文（Header/Cookie），由 `getAuthContext` 解析。
+ *
+ * 下游输出：
+ * - 调用 `bulkRejectDrafts` 执行事务更新；
+ * - 返回批量拒绝统计结果给前端刷新列表。
+ *
+ * 风险提示（仅注释说明，不改变行为）：
+ * - 与 `bulk-verify` 路由不同，这里未做“Cookie 缺失重定向登录”的兜底分支；
+ * - 当前依赖 middleware 与 `getAuthContext` 共同保障鉴权流程，一旦中间件配置变更，
+ *   可能出现两个接口在“未登录体验”上的差异。
+ * =============================================================================
+ */
+
+/**
  * 功能：批量拒绝审核草稿请求体校验。
  * 输入：`ids` 为待拒绝草稿 ID 数组（UUID），至少 1 个。
  * 输出：通过 `safeParse` 返回可安全传入 service 的强类型数据。
@@ -28,6 +56,7 @@ function badRequestJson(
   startedAt: number,
   detail: string
 ): Response {
+  // 统一 400 响应构造：让调用方始终收到同形态错误结构，便于统一提示。
   const path = "/api/admin/bulk-reject";
   const meta = createApiMeta(path, requestId, startedAt);
   return toNextJson(
@@ -57,9 +86,11 @@ export async function POST(request: Request): Promise<Response> {
   const path = "/api/admin/bulk-reject";
 
   try {
+    // 1) 校验管理员身份：拒绝非管理员对审核状态的写操作。
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
+    // 2) 校验请求体：业务规则要求至少传入一个合法 UUID。
     const parsedBody = bulkRejectBodySchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       return badRequestJson(
@@ -69,6 +100,7 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    // 3) 调用领域服务执行批量拒绝。
     const data = await bulkRejectDrafts(parsedBody.data.ids);
     return okJson<BulkReviewResult>({
       path,
@@ -79,10 +111,12 @@ export async function POST(request: Request): Promise<Response> {
       data
     });
   } catch (error) {
+    // 输入非法（如归一化后 ID 为空）属于 400 范畴，单独映射给前端。
     if (error instanceof BulkReviewInputError) {
       return badRequestJson(requestId, startedAt, error.message);
     }
 
+    // 其余异常按 500 返回，避免泄漏内部实现细节。
     return failJson({
       path,
       requestId,

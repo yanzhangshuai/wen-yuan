@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
@@ -39,11 +52,13 @@ function buildModel(input: {
  * 测试目标：验证阶段模型优先级、参数合并、降级与 fallback 来源标记。
  * 覆盖范围：success / degradation / fallback boundary。
  */
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("ModelStrategyResolver", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves stage model with JOB > BOOK > GLOBAL > SYSTEM_DEFAULT priority and merges params", async () => {
     // Arrange: 模拟三层策略与系统默认模型。
     const prismaMock = {
@@ -133,6 +148,7 @@ describe("ModelStrategyResolver", () => {
     expect(fallbackModel.params.reasoningEffort).toBe("low");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("degrades to system default when configured stage model is missing/disabled", async () => {
     // Arrange: 策略里有 modelId，但模型查询返回空，模拟配置失效。
     const prismaMock = {
@@ -169,6 +185,7 @@ describe("ModelStrategyResolver", () => {
     expect(resolved.params.reasoningEffort).toBeUndefined();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks fallback source as SYSTEM_DEFAULT when fallback slot is not configured", async () => {
     // Arrange: 三层策略都为空，fallback 也未配置。
     const prismaMock = {
@@ -193,6 +210,7 @@ describe("ModelStrategyResolver", () => {
     expect(fallback.params.reasoningEffort).toBeUndefined();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("accepts glm provider in configured stage model", async () => {
     const prismaMock = {
       modelStrategyConfig: {
@@ -230,6 +248,7 @@ describe("ModelStrategyResolver", () => {
     expect(resolved.params.enableThinking).toBe(false);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses stage-level thinking defaults when no override is configured", async () => {
     const prismaMock = {
       modelStrategyConfig: {

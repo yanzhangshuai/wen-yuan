@@ -6,6 +6,12 @@ import { MinusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（Client UI Primitive 包装层 / OTP 输入）：
+ * - 该文件基于 `input-otp` 库封装项目统一样式，供登录/验证流程复用。
+ * - 因为依赖输入焦点、光标闪烁等浏览器交互能力，必须是 Client Component。
+ */
+
 function InputOTP({
   className,
   containerClassName,
@@ -43,6 +49,7 @@ function InputOTPSlot({
 }: React.ComponentProps<"div"> & {
   index: number
 }) {
+  // 从 OTP 上下文读取当前槽位状态（字符、是否激活、是否显示伪光标）。
   const inputOTPContext = React.useContext(OTPInputContext);
   const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {};
 
@@ -58,6 +65,7 @@ function InputOTPSlot({
     >
       {char}
       {hasFakeCaret && (
+        // 未输入字符时用“伪光标”维持原生输入框体验，降低用户感知割裂。
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="animate-caret-blink bg-foreground h-4 w-px duration-1000" />
         </div>

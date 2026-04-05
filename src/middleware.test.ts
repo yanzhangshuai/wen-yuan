@@ -1,3 +1,13 @@
+/**
+ * 文件定位（Next.js middleware 单测）：
+ * - 对应项目根 middleware 的访问控制与请求预处理逻辑验证。
+ * - middleware 运行在路由处理前，是鉴权与链路控制的第一道边界。
+ *
+ * 业务职责：
+ * - 根据路径与登录态决定放行、重写或重定向。
+ * - 防止未授权访问受限页面，同时保障公开路径可正常访问。
+ */
+
 import { afterEach, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -14,6 +24,7 @@ import {
   issueAuthToken
 } from "@/server/modules/auth";
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("middleware helpers", () => {
   const originalSecret = process.env.JWT_SECRET;
   const testJwtSecret = "unit-test-secret-1234567890-abcdef";
@@ -22,18 +33,22 @@ describe("middleware helpers", () => {
     process.env.JWT_SECRET = originalSecret;
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds current path with search", () => {
     expect(buildCurrentPath("/admin/model", "?tab=keys")).toBe("/admin/model?tab=keys");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds current path directly from request url", () => {
     expect(buildCurrentPathFromUrl("http://localhost/admin/model?tab=keys")).toBe("/admin/model?tab=keys");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds login redirect target", () => {
     expect(buildRedirectTarget("/admin/model?tab=keys")).toBe("/login?redirect=%2Fadmin%2Fmodel%3Ftab%3Dkeys");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves valid token to admin and invalid token to viewer", async () => {
     process.env.JWT_SECRET = testJwtSecret;
     const token = await issueAuthToken("管理员", Math.floor(Date.now() / 1000));
@@ -46,6 +61,7 @@ describe("middleware helpers", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("middleware", () => {
   const originalSecret = process.env.JWT_SECRET;
   const testJwtSecret = "unit-test-secret-1234567890-abcdef";
@@ -54,6 +70,7 @@ describe("middleware", () => {
     process.env.JWT_SECRET = originalSecret;
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("redirects viewer access from /admin/model to login", async () => {
     const request = new NextRequest("http://localhost/admin/model?tab=keys");
 
@@ -65,6 +82,7 @@ describe("middleware", () => {
     );
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("redirects viewer access from /admin root to login with encoded redirect", async () => {
     const request = new NextRequest("http://localhost/admin");
 
@@ -74,6 +92,7 @@ describe("middleware", () => {
     expect(response.headers.get("location")).toBe("http://localhost/login?redirect=%2Fadmin");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("allows authenticated admin access to /admin/model and injects admin role header", async () => {
     process.env.JWT_SECRET = testJwtSecret;
     const token = await issueAuthToken("管理员", Math.floor(Date.now() / 1000));
@@ -91,6 +110,7 @@ describe("middleware", () => {
     expect(response.headers.get("x-middleware-request-x-auth-current-path")).toBe("/admin/model?tab=keys");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("allows viewer access to / and injects viewer role header", async () => {
     const request = new NextRequest("http://localhost/");
 
@@ -102,6 +122,7 @@ describe("middleware", () => {
     expect(response.headers.get("x-middleware-request-x-auth-current-path")).toBe("/");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("redirects unauthenticated access to /api/admin/ routes to login", async () => {
     const request = new NextRequest("http://localhost/api/admin/models");
 

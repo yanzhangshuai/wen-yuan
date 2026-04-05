@@ -17,6 +17,12 @@ import {
 } from "@/server/providers/storage/storage.utils";
 
 /**
+ * 文件定位（服务端存储 Provider 实现层）：
+ * - 这是对象存储抽象 `StorageProviderClient` 的“本地文件系统实现”。
+ * - 常用于本地开发、测试环境，生产环境可切换到云存储实现而不改上层业务代码。
+ */
+
+/**
  * 功能：将任意对象内容统一转换为 Buffer，便于写入文件系统并统计大小。
  * 输入：body，为字符串、Buffer 或 Uint8Array。
  * 输出：Buffer。
@@ -50,15 +56,18 @@ export class LocalStorageProvider implements StorageProviderClient {
     rootDirectory = process.env.STORAGE_LOCAL_ROOT || DEFAULT_STORAGE_ROOT,
     publicBaseUrl = process.env.STORAGE_PUBLIC_BASE_URL || DEFAULT_STORAGE_PUBLIC_BASE_URL
   ) {
+    // 构造期完成路径与 URL 归一化，确保后续读写行为一致、可预测。
     this.rootDirectory = resolveLocalStorageRoot(rootDirectory);
     this.publicBaseUrl = normalizeStoragePublicBaseUrl(publicBaseUrl);
   }
 
   async putObject(input: PutObjectInput): Promise<StoredObject> {
+    // 统一 key 规范，阻断路径穿越等非法输入（安全防线在 normalizeStorageKey 内）。
     const normalizedKey = normalizeStorageKey(input.key);
     const targetPath = this.resolveFilePath(normalizedKey);
     const bodyBuffer = toBuffer(input.body);
 
+    // 先确保目录存在，再写入文件，保证分层 key（如 a/b/c.txt）可落盘。
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, bodyBuffer);
 
@@ -74,6 +83,7 @@ export class LocalStorageProvider implements StorageProviderClient {
     const normalizedKey = normalizeStorageKey(key);
     const targetPath = this.resolveFilePath(normalizedKey);
 
+    // force=true 的业务含义：删除操作要求幂等，重复删除不应视为错误。
     await rm(targetPath, { force: true });
   }
 

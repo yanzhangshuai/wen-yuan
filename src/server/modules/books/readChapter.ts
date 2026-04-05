@@ -3,7 +3,29 @@ import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 
 /**
- * 原文阅读返回的段落结构。
+ * ============================================================================
+ * 文件定位：`src/server/modules/books/readChapter.ts`
+ * ----------------------------------------------------------------------------
+ * 这是“章节阅读”服务模块，负责把章节原文转换成阅读面板可消费的数据结构。
+ *
+ * 业务职责：
+ * - 校验书籍与章节归属关系；
+ * - 将章节正文按规则切分段落；
+ * - 处理可选段落定位（paraIndex）与关键词命中标记（highlight）。
+ *
+ * 上下游关系：
+ * - 上游：`GET /api/books/:id/chapters/:chapterId/read`；
+ * - 下游：Prisma 读取 `book/chapter`；
+ * - 输出：`ChapterReadSnapshot`（直接供前端阅读侧栏渲染）。
+ *
+ * 注意：
+ * - 段落切分规则属于业务体验规则，不是底层技术限制；
+ * - 当前高亮使用 `includes`（大小写敏感、非分词匹配），如需更强检索应在后续迭代扩展。
+ * ============================================================================
+ */
+
+/**
+ * 原文阅读返回段落项。
  */
 export interface ChapterReadParagraph {
   /** 段落下标（从 0 开始）。 */
@@ -30,7 +52,7 @@ export interface ChapterReadSnapshot {
   selectedParaIndex: number | null;
   /** 高亮关键词（可为空）。 */
   highlight        : string | null;
-  /** 章节段落数组。 */
+  /** 章节段落数组（按正文顺序）。 */
   paragraphs       : ChapterReadParagraph[];
 }
 
@@ -82,15 +104,19 @@ export interface ReadChapterInput {
   bookId    : string;
   /** 章节 ID。 */
   chapterId : string;
-  /** 可选段落下标。 */
+  /** 可选段落下标（从 0 开始，常由证据跳转传入）。 */
   paraIndex?: number;
-  /** 可选高亮关键词。 */
+  /** 可选高亮关键词（空白字符串会被归一为 null）。 */
   highlight?: string;
 }
 
 /**
- * 将章节正文切分成段落。
- * 优先按空行切分，若无空行则按单行切分。
+ * 将章节正文切分为段落数组。
+ *
+ * 规则分支说明：
+ * 1) 先统一换行并 trim；
+ * 2) 优先按“空行块”切分（更符合传统文本段落语义）；
+ * 3) 若只有单块，则降级按单行切分（兼容没有空行的文本来源）。
  */
 function splitChapterToParagraphs(content: string): string[] {
   const normalized = content.replace(/\r\n/g, "\n").trim();
@@ -127,6 +153,7 @@ export function createReadChapterService(
    * 副作用：无（只读查询）。
    */
   async function readChapter(input: ReadChapterInput): Promise<ChapterReadSnapshot> {
+    // Step 1) 校验书籍存在，形成服务层明确错误语义。
     const book = await prismaClient.book.findFirst({
       where: {
         id       : input.bookId,
@@ -138,6 +165,7 @@ export function createReadChapterService(
       throw new BookNotFoundError(input.bookId);
     }
 
+    // Step 2) 校验章节存在且属于该书，避免跨书读取。
     const chapter = await prismaClient.chapter.findFirst({
       where: {
         id    : input.chapterId,
@@ -154,12 +182,15 @@ export function createReadChapterService(
       throw new ChapterNotFoundError(input.bookId, input.chapterId);
     }
 
+    // Step 3) 正文切段并校验 paraIndex 边界。
     const paragraphs = splitChapterToParagraphs(chapter.content);
+    // 空章节时 maxIndex 置为 0，用于错误提示统一输出范围。
     const maxIndex = paragraphs.length > 0 ? paragraphs.length - 1 : 0;
     if (typeof input.paraIndex === "number" && (input.paraIndex < 0 || input.paraIndex >= paragraphs.length)) {
       throw new ParaIndexOutOfRangeError(input.paraIndex, maxIndex);
     }
 
+    // Step 4) 归一化高亮关键词：空字符串视为“不启用高亮”。
     const normalizedHighlight = input.highlight?.trim() ? input.highlight.trim() : null;
     return {
       bookId           : input.bookId,
@@ -168,6 +199,7 @@ export function createReadChapterService(
       chapterTitle     : chapter.title,
       selectedParaIndex: typeof input.paraIndex === "number" ? input.paraIndex : null,
       highlight        : normalizedHighlight,
+      // Step 5) 生成段落视图模型，包含高亮命中布尔值。
       paragraphs       : paragraphs.map((item, index) => ({
         index,
         text             : item,

@@ -1,4 +1,14 @@
 /**
+ * 文件定位：
+ * - 传记模块（biography）领域错误定义文件，位于服务端业务层。
+ * - 负责把“可预期业务失败”与“系统异常”区分开，供 Route 层映射为合适 HTTP 状态码。
+ *
+ * 设计原因：
+ * - 使用专用 Error 子类而非字符串判断，可让上层 `instanceof` 精准分支，降低误判风险。
+ * - 这类错误名称和字段属于跨层契约，下游路由和前端错误提示可能依赖，不能随意改名。
+ */
+
+/**
  * 功能：表示“目标传记事件不存在”业务异常。
  * 输入：`biographyId: string`（缺失记录主键）。
  * 输出：标准 Error 对象（message + biographyId）。
@@ -13,6 +23,7 @@ export class BiographyRecordNotFoundError extends Error {
    * @param biographyId 传记记录主键 ID（UUID 字符串）。
    */
   constructor(biographyId: string) {
+    // message 面向日志/排障，biographyId 字段面向程序化分支（如 404 回包构造）。
     super(`Biography record not found: ${biographyId}`);
     this.biographyId = biographyId;
   }
@@ -30,6 +41,7 @@ export class BiographyInputError extends Error {
    * @param message 业务可读错误信息（string）。
    */
   constructor(message: string) {
+    // 保持 message 直通，目的是把上游校验失败原因无损传递给 API 层。
     super(message);
   }
 }

@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（阅读端首页 - 书库聚合视图）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/library/library-home.tsx`
+ *
+ * 在 Next.js 项目中的角色：
+ * - 这是阅读端首页的 Client Component 容器，用于接收上游已获取的书籍列表并渲染；
+ * - 自身不发起数据请求，不承担路由定义，属于“前端渲染层（展示 + 轻计算）”。
+ *
+ * 业务职责：
+ * - 根据书籍状态展示空态、统计概览、书卡网格和项目说明；
+ * - 将“可阅读（已完成解析）”与“解析中”两类书籍在同一视图中分层呈现。
+ *
+ * 上下游关系：
+ * - 上游：页面或服务层提供 `books`（通常由 Server Component 拉取后下发）；
+ * - 下游：`BookCard` 子组件负责单本书的可点击行为和细节展示。
+ *
+ * 维护约束（业务规则，不是技术限制）：
+ * - `status === "COMPLETED"` 才可视为可阅读，这是产品流程约束；
+ * - 顶部统计口径依赖“已完成书籍集合”，修改前需同步产品口径和后端字段定义。
+ * =============================================================================
+ */
+
 import { BookOpen, Users, GitBranch, Info } from "lucide-react";
 
 import { BookCard } from "@/components/library/book-card";
@@ -15,6 +39,11 @@ import type { BookLibraryListItem } from "@/types/book";
 export interface LibraryBookCardData extends BookLibraryListItem {}
 
 export interface LibraryHomeProps {
+  /**
+   * 书库首页数据源。
+   * - 来源：上游页面/容器组件注入；
+   * - 语义：包含展示书卡与计算概览统计所需的全部字段。
+   */
   books: LibraryBookCardData[];
 }
 
@@ -38,12 +67,16 @@ function LibraryEmptyState() {
 }
 
 export function LibraryHome({ books }: LibraryHomeProps) {
+  // 空数组或未传值都视为“暂无可阅读内容”。
+  // 这里提前返回可避免后续统计计算对 undefined 进行处理。
   if (!books || books.length === 0) {
     return <LibraryEmptyState />;
   }
 
+  // 业务规则：只有 COMPLETED 进入阅读链路，其他状态统一视为“待完成”。
   const completedBooks = books.filter((book) => book.status === "COMPLETED");
   const pendingBooks = books.filter((book) => book.status !== "COMPLETED");
+  // personaCount 允许为空，使用 0 兜底以确保统计值稳定可渲染。
   const totalPersonas = completedBooks.reduce((acc, book) => acc + (book.personaCount ?? 0), 0);
 
   return (

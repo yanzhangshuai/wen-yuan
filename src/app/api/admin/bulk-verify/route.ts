@@ -11,6 +11,34 @@ import { bulkVerifyDrafts, BulkReviewInputError, type BulkReviewResult } from "@
 import { ERROR_CODES } from "@/types/api";
 
 /**
+ * =============================================================================
+ * 文件定位（Next.js Route Handler：管理端批量确认）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/app/api/admin/bulk-verify/route.ts`
+ *
+ * 框架语义：
+ * - 该文件是 App Router 下的接口路由实现，对应 `POST /api/admin/bulk-verify`；
+ * - 运行在服务端，请求到达时由 Next.js 调用导出的 `POST` 函数；
+ * - 主要承担“入参校验 + 鉴权 + 调用领域服务 + 协议化返回”职责。
+ *
+ * 业务目标：
+ * - 将一组 `DRAFT` 状态草稿批量改为 `VERIFIED`，用于管理员快速通过审核。
+ *
+ * 上游输入：
+ * - 客户端 `ReviewPanel` 发起的 JSON 请求体 `{ ids: string[] }`；
+ * - 鉴权中间件/请求头提供的登录上下文。
+ *
+ * 下游输出：
+ * - 调用 `server/modules/review/bulkReview.ts` 完成批量状态更新；
+ * - 以统一 API 响应结构返回批量统计结果。
+ *
+ * 维护约束：
+ * - 路径、错误码、响应结构均为前后端契约，属于业务规则，不应随意变更；
+ * - 当前包含“Cookie 缺失时跳登录”的接口级兜底逻辑，用于覆盖 middleware 漏配场景。
+ * =============================================================================
+ */
+
+/**
  * 功能：批量确认审核草稿请求体校验。
  * 输入：`ids` 为待确认草稿 ID 数组（UUID），至少 1 个。
  * 输出：通过 `safeParse` 返回可安全传入 service 的强类型数据。
@@ -28,6 +56,7 @@ function badRequestJson(
   startedAt: number,
   detail: string
 ): Response {
+  // 统一的 400 构造器：确保该接口所有参数错误都返回同一消息模板，方便前端稳定处理。
   const path = "/api/admin/bulk-verify";
   const meta = createApiMeta(path, requestId, startedAt);
   return toNextJson(
@@ -45,6 +74,8 @@ function badRequestJson(
 }
 
 function hasAuthCookie(cookieHeader: string | null): boolean {
+  // 仅做“是否存在登录 Cookie”快速判断，不在这里解析 token 合法性；
+  // 真正鉴权依然交给 `getAuthContext`，此处是路由层面的 UX 兜底。
   if (!cookieHeader) {
     return false;
   }
@@ -55,11 +86,13 @@ function hasAuthCookie(cookieHeader: string | null): boolean {
 }
 
 function buildCurrentPath(requestUrl: string): string {
+  // 将当前路径（含 query）编码到登录回跳参数，确保登录后能返回原审核页面。
   const parsed = new URL(requestUrl);
   return `${parsed.pathname}${parsed.search}`;
 }
 
 function redirectToLogin(request: Request): Response {
+  // 307 保留原方法语义；这里用于未登录时统一回到登录页，而不是直接返回 401 文本。
   const redirectTarget = `/login?redirect=${encodeURIComponent(buildCurrentPath(request.url))}`;
   return Response.redirect(new URL(redirectTarget, request.url), 307);
 }
@@ -77,6 +110,7 @@ export async function POST(request: Request): Promise<Response> {
   const path = "/api/admin/bulk-verify";
 
   try {
+    // 1) 读取请求头，优先利用 middleware 注入的角色信息，减少重复解析成本。
     const requestHeaders = await headers();
     const roleHeader = requestHeaders.get("x-auth-role");
     const cookieHeader = requestHeaders.get("cookie") ?? request.headers.get("cookie");
@@ -89,6 +123,7 @@ export async function POST(request: Request): Promise<Response> {
     const auth = await getAuthContext(requestHeaders);
     requireAdmin(auth);
 
+    // 2) 读取并校验 JSON body，拒绝空数组与非法 UUID，避免把脏数据写入批量更新逻辑。
     const parsedBody = bulkVerifyBodySchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       return badRequestJson(
@@ -98,6 +133,7 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    // 3) 执行领域服务：将符合条件的草稿状态改为 VERIFIED。
     const data = await bulkVerifyDrafts(parsedBody.data.ids);
     return okJson<BulkReviewResult>({
       path,
@@ -108,10 +144,12 @@ export async function POST(request: Request): Promise<Response> {
       data
     });
   } catch (error) {
+    // 4) 输入异常转 400：比如 ID 经过 normalize 后为空，属于调用方参数问题。
     if (error instanceof BulkReviewInputError) {
       return badRequestJson(requestId, startedAt, error.message);
     }
 
+    // 5) 其他异常统一走 500，保持响应格式稳定。
     return failJson({
       path,
       requestId,

@@ -31,6 +31,20 @@ import type {
 } from "@/types/analysis";
 import { PipelineStage } from "@/types/pipeline";
 
+/**
+ * 文件定位（Next.js 服务端分析核心）：
+ * - 本文件是章节解析流水线的主服务，位于 `src/server/modules/analysis/services`。
+ * - 它不直接承载路由，而是由 `runAnalysisJob` 在服务端调用，完成“章节 -> 人物/提及/关系/生平”结构化入库。
+ *
+ * 核心职责：
+ * - 组织 Prompt、调用 AI、合并分段结果，并把结果映射成数据库实体；
+ * - 与 PersonaResolver / AliasRegistry / ValidationAgent / ModelStrategyResolver 协同，完成识别、纠偏与策略执行；
+ * - 提供称号真名溯源、灰区仲裁等后处理能力，降低泛化称谓误识别风险。
+ *
+ * 运行环境与边界：
+ * - 仅在 Node.js 服务端运行（依赖 Prisma 与外部模型调用），不可在客户端执行。
+ * - 文件中的阈值、去重键、证据截断等规则是业务规则，改动会影响数据质量与审核成本。
+ */
 // 同时解析的分段数，避免触发 API 频控，同时控制单章处理时长。
 const AI_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chunkAiConcurrency;
 // 文档要求泛化称谓示例 >= 30，章节分析阶段与 prompt 构建阶段保持同口径。
@@ -54,20 +68,31 @@ const GENERIC_IRONY_PATTERNS: readonly RegExp[] = [
  * 副作用：无。
  */
 export interface ChapterAnalysisResult {
+  /** 本次完成解析的章节 ID。 */
   chapterId         : string;
+  /** 章节被拆分成的 AI 分段数量。 */
   chunkCount        : number;
+  /** 被判定为幻觉并过滤的实体数量。 */
   hallucinationCount: number;
+  /** 本章实际新增数据计数（写库后统计）。 */
   created: {
+    /** 新建 persona 数量。 */
     personas     : number;
+    /** 新建 mention 数量。 */
     mentions     : number;
+    /** 新建 biography 数量。 */
     biographies  : number;
+    /** 新建 relationship 数量。 */
     relationships: number;
   };
+  /** 灰区称谓数量（仅启用灰区判定时返回）。 */
   grayZoneCount?: number;
 }
 
 export interface GrayZoneMentionRecord {
+  /** 灰区称谓原文。 */
   surfaceForm: string;
+  /** 灰区判定证据（出现章节数、绑定稳定性、泛化比率等）。 */
   evidence   : MentionPersonalizationEvidence;
 }
 

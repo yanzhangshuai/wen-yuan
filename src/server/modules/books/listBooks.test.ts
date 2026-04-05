@@ -1,3 +1,13 @@
+/**
+ * 文件定位（服务模块单测）：
+ * - 覆盖领域服务输入校验、分支处理与输出映射契约。
+ * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
+ *
+ * 业务职责：
+ * - 保证成功路径与异常路径都可预测。
+ * - 降低重构时误改核心规则的风险。
+ */
+
 import { describe, expect, it, vi } from "vitest";
 
 import { createListBooksService } from "@/server/modules/books/listBooks";
@@ -40,7 +50,9 @@ function createBookRow(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("listBooks", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns books in library view shape with source file snapshot", async () => {
     const findMany = vi.fn().mockResolvedValue([createBookRow()]);
     const service = createListBooksService({ book: { findMany } } as never);
@@ -93,6 +105,7 @@ describe("listBooks", () => {
     ]);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses latest analysis model as currentModel", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -119,6 +132,7 @@ describe("listBooks", () => {
     expect(item.currentModel).toBe("Gemini Flash");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("prefers book-level errorLog over analysis error", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -146,6 +160,7 @@ describe("listBooks", () => {
     expect(item.lastErrorSummary).toBe("book error");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to analysis error when book-level errorLog is empty", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -173,6 +188,7 @@ describe("listBooks", () => {
     expect(item.lastErrorSummary).toBe("analysis error");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses analysis updatedAt when finishedAt is missing", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -199,6 +215,7 @@ describe("listBooks", () => {
     expect(item.lastAnalyzedAt).toBe("2026-03-24T10:06:00.000Z");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns null lastAnalyzedAt for pending book without analysis jobs", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -213,6 +230,7 @@ describe("listBooks", () => {
     expect(item.lastAnalyzedAt).toBeNull();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to book updatedAt for non-pending book without analysis jobs", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -228,6 +246,7 @@ describe("listBooks", () => {
     expect(item.lastAnalyzedAt).toBe("2026-03-24T11:00:00.000Z");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("normalizes unknown status to PENDING", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({
@@ -243,6 +262,7 @@ describe("listBooks", () => {
     expect(item.lastAnalyzedAt).toBeNull();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("keeps nullable source file fields when no source is attached", async () => {
     const findMany = vi.fn().mockResolvedValue([
       createBookRow({

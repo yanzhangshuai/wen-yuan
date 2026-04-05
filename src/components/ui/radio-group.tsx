@@ -6,6 +6,19 @@ import { CircleIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位：
+ * - 单选组基础组件封装，属于前端表单交互层。
+ * - 必须为 Client Component：用户选择行为需要浏览器事件驱动，且状态实时反馈 UI。
+ */
+
+/**
+ * 单选组容器。
+ *
+ * @param className 业务层自定义布局样式。
+ * @param props Radix RadioGroup Root 参数（value/defaultValue/onValueChange 等）。
+ * @returns 单选组选项集合容器。
+ */
 function RadioGroup({
   className,
   ...props
@@ -19,6 +32,17 @@ function RadioGroup({
   );
 }
 
+/**
+ * 单选项组件。
+ *
+ * 业务语义：
+ * - 表示“互斥选项”中的一个候选值。
+ * - 与 `RadioGroup` 搭配后，同一组只能有一个 active 项。
+ *
+ * 设计原因：
+ * - `Indicator` 内部使用 `CircleIcon`，通过视觉点位强化“已选中”状态反馈。
+ * - 保留 `...props` 透传，确保禁用态、可访问性属性、值绑定不被封装层截断。
+ */
 function RadioGroupItem({
   className,
   ...props

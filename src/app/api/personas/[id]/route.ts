@@ -22,6 +22,32 @@ import {
 import { ERROR_CODES } from "@/types/api";
 import { NameType } from "@/generated/prisma/enums";
 
+/**
+ * ============================================================================
+ * 文件定位：`src/app/api/personas/[id]/route.ts`
+ * ----------------------------------------------------------------------------
+ * Next.js Route Handler，映射同一路径下的多 HTTP 方法：
+ * - `GET /api/personas/:id`：查询人物详情
+ * - `PATCH /api/personas/:id`：更新人物
+ * - `DELETE /api/personas/:id`：删除人物
+ *
+ * 框架语义：
+ * - 同一 `route.ts` 内按导出函数名（GET/PATCH/DELETE）区分 HTTP 方法；
+ * - `context.params` 提供动态路由段 `[id]`；
+ * - 运行在服务端，适合做鉴权、参数校验和领域服务调用。
+ *
+ * 业务职责：
+ * - 对人物详情、编辑、删除提供统一入口；
+ * - PATCH/DELETE 需要管理员权限（`requireAdmin`）；
+ * - 保持统一响应 contract（okJson / failJson / errorResponse）。
+ *
+ * 不可轻易修改的规则（业务规则）：
+ * - 写操作必须先鉴权再执行业务；
+ * - 空 PATCH（无任何字段）必须拒绝，防止“无意义写请求”污染审计与日志。
+ * ============================================================================
+ */
+
+/** 路由参数校验：人物 ID 必须是 UUID。 */
 const personaRouteParamsSchema = z.object({
   id: z.string().uuid("人物 ID 不合法")
 });
@@ -49,9 +75,14 @@ const updatePersonaBodySchema = z.object({
 });
 
 interface PersonaRouteContext {
+  /** Next.js 动态参数（Promise 形式）。 */
   params: Promise<{ id: string }>;
 }
 
+/**
+ * 构造人物不存在响应（404）。
+ * 统一 detail 结构，便于前端与日志平台按类型聚合。
+ */
 function notFoundJson(requestId: string, startedAt: number, personaId: string) {
   const meta = createApiMeta(`/api/personas/${personaId}`, requestId, startedAt);
   return toNextJson(
@@ -83,6 +114,7 @@ export async function GET(
   const requestId = randomUUID();
 
   try {
+    // Step 1) 校验动态参数。
     const params = await context.params;
     const parsedParams = personaRouteParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -101,7 +133,10 @@ export async function GET(
       );
     }
 
+    // Step 2) 查询人物详情。
     const data = await getPersonaById(parsedParams.data.id);
+
+    // Step 3) 返回标准成功响应。
     return okJson<PersonaDetailSnapshot>({
       path   : `/api/personas/${parsedParams.data.id}`,
       requestId,
@@ -115,6 +150,7 @@ export async function GET(
       return notFoundJson(requestId, startedAt, error.personaId);
     }
 
+    // 兜底异常统一走 failJson，避免泄露内部错误细节。
     return failJson({
       path           : "/api/personas/:id",
       requestId,
@@ -142,9 +178,11 @@ export async function PATCH(
   const path = "/api/personas/:id";
 
   try {
+    // Step 1) 写操作先鉴权：必须为管理员。
     const auth = await getAuthContext(request.headers);
     requireAdmin(auth);
 
+    // Step 2) 校验路由参数。
     const params = await context.params;
     const parsedParams = personaRouteParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -163,6 +201,7 @@ export async function PATCH(
       );
     }
 
+    // Step 3) 校验请求体（局部更新字段 + 至少一个字段）。
     const parsedBody = updatePersonaBodySchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       const meta = createApiMeta(path, requestId, startedAt);
@@ -180,6 +219,7 @@ export async function PATCH(
       );
     }
 
+    // Step 4) 执行更新并返回结果。
     const data = await updatePersona(parsedParams.data.id, parsedBody.data);
     return okJson<UpdatePersonaResult>({
       path   : `/api/personas/${parsedParams.data.id}`,
@@ -194,6 +234,7 @@ export async function PATCH(
       return notFoundJson(requestId, startedAt, error.personaId);
     }
 
+    // 鉴权失败、未知异常等均由 failJson 统一映射。
     return failJson({
       path,
       requestId,
@@ -221,9 +262,11 @@ export async function DELETE(
   const path = "/api/personas/:id";
 
   try {
+    // Step 1) 删除属于高风险写操作，必须管理员身份。
     const auth = await getAuthContext(request.headers);
     requireAdmin(auth);
 
+    // Step 2) 校验参数。
     const params = await context.params;
     const parsedParams = personaRouteParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -242,6 +285,7 @@ export async function DELETE(
       );
     }
 
+    // Step 3) 执行软删除及关联数据处理。
     const data = await deletePersona(parsedParams.data.id);
     return okJson<DeletePersonaResult>({
       path   : `/api/personas/${parsedParams.data.id}`,
@@ -256,6 +300,7 @@ export async function DELETE(
       return notFoundJson(requestId, startedAt, error.personaId);
     }
 
+    // 兜底异常。
     return failJson({
       path,
       requestId,

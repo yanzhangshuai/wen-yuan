@@ -4,8 +4,17 @@ import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { createGetBookGraphService } from "@/server/modules/books/getBookGraph";
 
+/**
+ * 文件定位（图谱构建服务单测）：
+ * - 验证 `getBookGraph` 将关系、提及、画像等多源数据合并为统一图结构（nodes/edges）。
+ * - 该服务是图谱可视化页面的数据核心，输出字段稳定性直接决定前端渲染正确性。
+ *
+ * 业务关注：
+ * - 节点状态、影响力、坐标、边情感等属于派生结果，需要在服务层统一收敛。
+ */
 describe("getBookGraph service", () => {
   it("returns graph nodes and edges for a book", async () => {
+    // 场景：验证存在显式关系 + mention 补全人物时，服务能返回完整节点集合并附带默认状态。
     const service = createGetBookGraphService({
       book: {
         findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
@@ -84,6 +93,7 @@ describe("getBookGraph service", () => {
   });
 
   it("throws when book does not exist", async () => {
+    // 边界：无效 bookId 应快速抛出 BookNotFoundError，避免下游继续执行多表查询。
     const service = createGetBookGraphService({
       book: {
         findFirst: vi.fn().mockResolvedValue(null)

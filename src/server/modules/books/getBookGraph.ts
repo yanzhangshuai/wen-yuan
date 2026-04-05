@@ -3,6 +3,27 @@ import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 
+/**
+ * ============================================================================
+ * 文件定位：`src/server/modules/books/getBookGraph.ts`
+ * ----------------------------------------------------------------------------
+ * 这是图谱读取核心服务：根据书籍与可选章节上限，返回图谱快照（nodes + edges）。
+ *
+ * 分层角色：
+ * - server module（服务端逻辑层）；
+ * - 被 `GET /api/books/:id/graph` 调用；
+ * - 负责跨表聚合（relationship/profile/persona/mention）与前端友好字段计算。
+ *
+ * 业务目标：
+ * - 支持“全书视图”与“按章节回放视图”；
+ * - 提供前端渲染直接可用的字段（sentiment/factionIndex/influence/x/y）。
+ *
+ * 关键约束：
+ * - 图谱中节点不仅来自 profile，还可能来自 mention/relationship（历史数据兼容）；
+ * - 章节过滤下若某人物仅在关系或提及中出现，也必须补节点，避免悬空边。
+ * ============================================================================
+ */
+
 type RelationSentiment = "positive" | "negative" | "neutral";
 
 /**
@@ -35,13 +56,11 @@ const RELATION_SENTIMENT_MAP: Readonly<Record<string, RelationSentiment>> = {
   其他 : "neutral"
 };
 
-/**
- * 图谱查询输入参数。
- */
+/** 图谱查询输入参数。 */
 export interface GetBookGraphInput {
-  /** 书籍 ID。 */
+  /** 书籍 ID（图谱域边界）。 */
   bookId  : string;
-  /** 可选截止章节号（用于时间轴过滤）。 */
+  /** 可选截止章节号（时间轴过滤上限，包含该章节）。 */
   chapter?: number;
 }
 
@@ -55,11 +74,11 @@ export interface BookGraphNode {
   name        : string;
   /** 人名类型（NAMED/TITLE_ONLY）。 */
   nameType    : string;
-  /** 审核状态。 */
+  /** 节点审核状态。 */
   status      : ProcessingStatus;
   /** 派系颜色索引（前端着色用）。 */
   factionIndex: number;
-  /** 影响力分值。 */
+  /** 影响力分值（当前实现为“关系计数 * 讽刺指数”）。 */
   influence   : number;
   /** 可选 X 坐标（持久化布局）。 */
   x?          : number;
@@ -83,7 +102,7 @@ export interface BookGraphEdge {
   weight   : number;
   /** 情感极性（正/负/中性）。 */
   sentiment: RelationSentiment;
-  /** 审核状态。 */
+  /** 关系审核状态。 */
   status   : ProcessingStatus;
 }
 
@@ -99,6 +118,7 @@ export interface BookGraphSnapshot {
 
 /**
  * 根据关系类型推导情感极性。
+ * 未命中映射时回落 neutral，保证新增关系类型不会导致前端渲染中断。
  */
 function resolveSentiment(type: string): BookGraphEdge["sentiment"] {
   return RELATION_SENTIMENT_MAP[type] ?? "neutral";
@@ -106,6 +126,7 @@ function resolveSentiment(type: string): BookGraphEdge["sentiment"] {
 
 /**
  * 由数据来源推导默认节点状态。
+ * 业务意图：人工录入默认可信（VERIFIED），AI 产出默认待审核（DRAFT）。
  */
 function resolveNodeStatus(recordSource: RecordSource): ProcessingStatus {
   if (recordSource === RecordSource.MANUAL) {
@@ -116,7 +137,8 @@ function resolveNodeStatus(recordSource: RecordSource): ProcessingStatus {
 }
 
 /**
- * 对 personaId 做稳定 hash，用于生成派系色索引。
+ * 对 personaId 做稳定 hash，生成 0~11 的派系颜色索引。
+ * 目的：同一人物跨刷新保持颜色一致，提升图谱视觉连续性。
  */
 function hashFactionIndex(personaId: string): number {
   let hash = 0;
@@ -128,7 +150,8 @@ function hashFactionIndex(personaId: string): number {
 }
 
 /**
- * 从 `visualConfig` 中安全提取节点坐标。
+ * 从 profile.visualConfig 中安全提取坐标。
+ * 防御原因：历史数据或脏数据可能不是对象，必须先做运行时收窄。
  */
 function parseNodePosition(visualConfig: unknown): { x?: number; y?: number } {
   if (!visualConfig || typeof visualConfig !== "object" || Array.isArray(visualConfig)) {
@@ -153,6 +176,7 @@ export function createGetBookGraphService(
    * 副作用：无（只读查询）。
    */
   async function getBookGraph(input: GetBookGraphInput): Promise<BookGraphSnapshot> {
+    // Step 1) 先验证书籍存在，避免后续多表查询无意义执行。
     const book = await prismaClient.book.findFirst({
       where: {
         id       : input.bookId,
@@ -164,6 +188,7 @@ export function createGetBookGraphService(
       throw new BookNotFoundError(input.bookId);
     }
 
+    // Step 2) 查询关系边（可按章节截断）。
     const relationships = await prismaClient.relationship.findMany({
       where: {
         deletedAt: null,
@@ -202,6 +227,9 @@ export function createGetBookGraphService(
       })
       : [];
 
+    // Step 3) 收集所有“应出现在图中的人物 ID”：
+    // - 关系两端人物；
+    // - 被提及人物（即使暂时无关系边，也应保留为孤立节点）。
     const relationshipPersonaIds = new Set<string>();
     for (const relation of relationships) {
       relationshipPersonaIds.add(relation.sourceId);
@@ -215,6 +243,7 @@ export function createGetBookGraphService(
       ? Array.from(relationshipPersonaIds)
       : undefined;
 
+    // Step 4) 读取 profile 作为主节点来源（包含 ironyIndex 与 visualConfig）。
     const profiles = await prismaClient.profile.findMany({
       where: {
         bookId   : input.bookId,
@@ -246,8 +275,10 @@ export function createGetBookGraphService(
       relationCountMap.set(relation.targetId, (relationCountMap.get(relation.targetId) ?? 0) + 1);
     }
 
+    // Step 5) 先从 profile 构建节点。
     const nodes: BookGraphNode[] = profiles.map((profile) => {
       const relationCount = relationCountMap.get(profile.personaId) ?? 0;
+      // 影响力是前端展示指标，当前采用线性乘积并保留两位小数。
       const influence = Number((relationCount * profile.ironyIndex).toFixed(2));
       const position = parseNodePosition(profile.visualConfig);
 
@@ -262,6 +293,7 @@ export function createGetBookGraphService(
       };
     });
 
+    // Step 6) 补齐“只有关系/提及但无 profile”的缺失节点，避免出现边指向不存在节点。
     const existingNodeIds = new Set(nodes.map((item) => item.id));
     const missingPersonaIds = Array.from(relationshipPersonaIds).filter((item) => !existingNodeIds.has(item));
     if (missingPersonaIds.length > 0) {
@@ -285,11 +317,13 @@ export function createGetBookGraphService(
           nameType    : persona.nameType,
           status      : resolveNodeStatus(persona.recordSource),
           factionIndex: hashFactionIndex(persona.id),
+          // 缺失 profile 时没有 ironyIndex，退化为纯关系计数。
           influence   : relationCountMap.get(persona.id) ?? 0
         });
       }
     }
 
+    // Step 7) 构建边结构并附带情感极性。
     const edges: BookGraphEdge[] = relationships.map((relation) => ({
       id       : relation.id,
       source   : relation.sourceId,
@@ -300,6 +334,7 @@ export function createGetBookGraphService(
       status   : relation.status
     }));
 
+    // Step 8) 返回图谱快照。
     return {
       nodes,
       edges

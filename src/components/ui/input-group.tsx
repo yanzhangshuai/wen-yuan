@@ -1,5 +1,25 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - 复合输入框 InputGroup）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/input-group.tsx`
+ *
+ * 业务职责：
+ * - 封装“输入控件 + 前后缀/按钮/说明”的组合模式；
+ * - 统一搜索框、带单位输入、带操作按钮输入等高频 UI 场景。
+ *
+ * React 语义：
+ * - 通过 `data-slot` 和 `data-align` 组织内部布局，使样式能根据子元素结构自适应；
+ * - 子组件（Addon/Button/Input/Textarea）保持可组合，减少业务层重复样式代码。
+ *
+ * 维护约束：
+ * - 焦点态和错误态由容器统一承载，属于一致性交互规则，不建议在子控件分散实现；
+ * - Addon 的点击聚焦逻辑是可用性增强，删除会降低可编辑区域命中体验。
+ * =============================================================================
+ */
+
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
@@ -40,12 +60,16 @@ const inputGroupAddonVariants = cva(
   {
     variants: {
       align: {
+        // 行内前缀：常见于金额/搜索图标。
         "inline-start":
           "order-first pl-3 has-[>button]:ml-[-0.45rem] has-[>kbd]:ml-[-0.35rem]",
+        // 行内后缀：常见于单位、清空按钮。
         "inline-end":
           "order-last pr-3 has-[>button]:mr-[-0.4rem] has-[>kbd]:mr-[-0.35rem]",
+        // 块级前缀：适合多行输入顶部辅助信息。
         "block-start":
           "order-first w-full justify-start px-3 pt-3 [.border-b]:pb-3 group-has-[>input]/input-group:pt-2.5",
+        // 块级后缀：适合多行输入底部动作区。
         "block-end":
           "order-last w-full justify-start px-3 pb-3 [.border-t]:pt-3 group-has-[>input]/input-group:pb-2.5"
       }
@@ -68,6 +92,7 @@ function InputGroupAddon({
       data-align={align}
       className={cn(inputGroupAddonVariants({ align }), className)}
       onClick={(e) => {
+        // 点击 addon 空白区时，把焦点转交给输入框，减少“点击无反馈”体验问题。
         if ((e.target as HTMLElement).closest("button")) {
           return;
         }

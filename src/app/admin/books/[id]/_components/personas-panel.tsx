@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * ============================================================================
+ * 文件定位：`src/app/admin/books/[id]/_components/personas-panel.tsx`
+ * ----------------------------------------------------------------------------
+ * 这是书籍详情页“人物列表”面板（客户端组件）。
+ *
+ * 核心职责：
+ * - 按书籍维度拉取人物抽取结果；
+ * - 展示人物基础档案、别名、标签、讽刺指数与审核状态；
+ * - 提供“解析完成后人物结果”可视化入口。
+ *
+ * 设计说明：
+ * - 组件本身是展示容器，不负责人物编辑；
+ * - 审核状态、讽刺指数条形图属于阅读辅助，不改变数据真值。
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -13,10 +30,20 @@ import {
 } from "@/components/ui/card";
 import { fetchBookPersonas, type BookPersonaListItem } from "@/lib/services/books";
 
+/**
+ * 面板入参。
+ */
 interface PersonasPanelProps {
+  /** 书籍 ID，用于查询该书下的人物结果。 */
   bookId: string;
 }
 
+/**
+ * 人物审核状态徽标。
+ *
+ * @param status 人物状态
+ * @returns 对应状态标签
+ */
 function PersonaStatusBadge({ status }: { status: string }) {
   if (status === "VERIFIED") {
     return <Badge variant="success">已审核</Badge>;
@@ -27,9 +54,15 @@ function PersonaStatusBadge({ status }: { status: string }) {
   if (status === "REJECTED") {
     return <Badge variant="destructive">已拒绝</Badge>;
   }
+  // 未知状态兜底输出原值，减少“新状态不可见”的排障成本。
   return <Badge variant="default">{status}</Badge>;
 }
 
+/**
+ * 讽刺指数可视化条。
+ *
+ * @param value 讽刺指数（约定 0~10）
+ */
 function IronyBar({ value }: { value: number }) {
   const pct = Math.round((value / 10) * 100);
   return (
@@ -45,10 +78,19 @@ function IronyBar({ value }: { value: number }) {
   );
 }
 
+/**
+ * 人物面板组件（容器型客户端组件）。
+ */
 export function PersonasPanel({ bookId }: PersonasPanelProps) {
+  /** 人物列表；null 代表初始加载中。 */
   const [personas, setPersonas] = useState<BookPersonaListItem[] | null>(null);
+  /** 加载错误信息。 */
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * 根据 bookId 拉取人物列表。
+   * 使用 cancelled 防止页面快速切换导致旧请求回写。
+   */
   useEffect(() => {
     let cancelled = false;
     fetchBookPersonas(bookId)

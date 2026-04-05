@@ -2,6 +2,16 @@ import type { AiGenerateOptions, AiProviderClient } from "@/server/providers/ai"
 import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
 /**
+ * 文件定位（AI Provider 适配层）：
+ * - 本文件是“OpenAI 兼容协议”客户端实现，供分析流水线复用。
+ * - 属于服务端基础设施层，不是 Next.js 路由文件；被 `createAiProviderClient` 工厂调用。
+ *
+ * 核心职责：
+ * - 用统一请求格式对接不同兼容网关（如各厂商 OpenAI-compatible API）；
+ * - 统一抽取文本与 usage 字段，保证上游 `AiProviderClient` 契约稳定；
+ * - 在异常场景输出带 providerName 的错误，便于多供应商环境排障。
+ */
+/**
  * OpenAI 兼容接口的最小响应子集。
  * 这里只声明当前业务真正会读取的字段，避免把第三方协议细节扩散到调用层。
  */
@@ -21,6 +31,7 @@ interface OpenAiLikeResponse {
   };
 }
 
+/** 把供应商 usage 字段映射到平台统一结构，缺失值统一置 null。 */
 function toAiUsage(usage: OpenAiLikeResponse["usage"]): AiUsage {
   return {
     promptTokens    : typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
@@ -29,6 +40,7 @@ function toAiUsage(usage: OpenAiLikeResponse["usage"]): AiUsage {
   };
 }
 
+/** 兼容 `string` 与“分片数组”两种 content 形态，并在空文本时返回 null。 */
 function extractTextContent(content: string | Array<{ text?: string; type?: string }> | undefined): string | null {
   if (typeof content === "string") {
     const text = content.trim();
@@ -51,9 +63,13 @@ function extractTextContent(content: string | Array<{ text?: string; type?: stri
  * `providerName` 仅用于错误提示，让不同供应商的故障信息更容易排查。
  */
 export interface OpenAiCompatibleConfig {
+  /** 供应商名，仅用于错误信息与日志可读性。 */
   providerName: string;
+  /** API Key（缺失即抛错，防止以匿名请求误调用生产网关）。 */
   apiKey      : string | undefined;
+  /** 兼容网关基地址。 */
   baseUrl     : string;
+  /** 默认模型名。 */
   modelName   : string;
 }
 
@@ -87,6 +103,7 @@ export class OpenAiCompatibleClient implements AiProviderClient {
     options?: AiGenerateOptions
   ): Promise<{ content: string; usage: AiUsage | null }> {
     const messages: Array<{ role: "system" | "user"; content: string }> = [];
+    // system 为空时不传，避免给部分兼容网关发送空系统消息导致校验失败。
     if (input.system.trim().length > 0) {
       messages.push({ role: "system", content: input.system });
     }

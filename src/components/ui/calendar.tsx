@@ -1,5 +1,25 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - 日历输入控件）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/calendar.tsx`
+ *
+ * 角色与职责：
+ * - 基于 `react-day-picker` 的二次封装，统一日历在项目中的样式和行为；
+ * - 支持单选/范围选择等场景，通常配合筛选面板、表单日期字段使用。
+ *
+ * Next.js/React 语义：
+ * - 这是 Client Component，因为日历交互依赖用户点击、键盘导航、焦点控制；
+ * - 上游通过 props 控制选中值，该组件负责将状态映射为视觉结构。
+ *
+ * 维护约束：
+ * - 默认 `showOutsideDays = true` 是可用性策略，帮助用户在月视图中连续感知日期；
+ * - `components` / `classNames` 是扩展点，业务侧优先通过这些入口定制，不建议直接 fork。
+ * =============================================================================
+ */
+
 import * as React from "react";
 import {
   ChevronDownIcon,
@@ -21,8 +41,10 @@ function Calendar({
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
+  /** 导航按钮样式变体，默认与轻量日历场景匹配。 */
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
+  // 先取上游库默认 class，再叠加项目设计系统 class，避免升级库后样式完全漂移。
   const defaultClassNames = getDefaultClassNames();
 
   return (
@@ -182,6 +204,8 @@ function CalendarDayButton({
 
   const ref = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
+    // 当 DayPicker 把某天标记为 focused 时，主动同步真实 DOM 焦点。
+    // 目的：保证键盘导航与屏幕阅读器提示一致。
     if (modifiers.focused) ref.current?.focus();
   }, [modifiers.focused]);
 

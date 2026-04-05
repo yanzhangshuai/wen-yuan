@@ -1,8 +1,20 @@
+/**
+ * 文件定位（服务模块单测）：
+ * - 覆盖领域服务输入校验、分支处理与输出映射契约。
+ * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
+ *
+ * 业务职责：
+ * - 保证成功路径与异常路径都可预测。
+ * - 降低重构时误改核心规则的风险。
+ */
+
 import { describe, expect, it, vi } from "vitest";
 
 import { createCreateBookService } from "@/server/modules/books/createBook";
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("createBook", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("stores source file buffer and creates book record without chapters", async () => {
     // Arrange
     const fileContent = Buffer.from("第1回 范进中举\n正文一\n第2回 周进入学\n正文二");
@@ -90,6 +102,7 @@ describe("createBook", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to the original file name when title is omitted", async () => {
     // Arrange
     const service = createCreateBookService(
@@ -133,6 +146,7 @@ describe("createBook", () => {
     expect(result.title).toBe("红楼梦");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("removes the stored object when the database write fails", async () => {
     // Arrange
     const putObject = vi.fn().mockResolvedValue({

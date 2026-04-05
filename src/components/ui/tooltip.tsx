@@ -5,6 +5,18 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位：
+ * - Tooltip 基础组件封装，属于前端交互提示层。
+ * - 依赖 hover/focus 事件与浮层定位，因此必须是 Client Component。
+ */
+
+/**
+ * TooltipProvider：
+ * - 统一控制 tooltip 触发延迟，避免每个 tooltip 单独配置造成体验不一致。
+ *
+ * @param delayDuration 悬停到显示的延迟毫秒，默认 0（即时反馈）。
+ */
 function TooltipProvider({
   delayDuration = 0,
   ...props
@@ -18,6 +30,11 @@ function TooltipProvider({
   );
 }
 
+/**
+ * Tooltip 根组件。
+ * - 内部自动包一层 `TooltipProvider`，确保即使单独使用也有一致的延迟策略。
+ * - 注意：若页面外层已有统一 Provider，这里嵌套通常仍可工作，但建议保持单一来源以简化维护。
+ */
 function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
@@ -28,12 +45,27 @@ function Tooltip({
   );
 }
 
+/**
+ * Tooltip 触发器。
+ * - 常用于图标按钮、缩写文本、禁用操作说明等“轻提示”场景。
+ */
 function TooltipTrigger({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
+/**
+ * Tooltip 内容层。
+ *
+ * @param sideOffset 内容与触发器间距，默认 0（由箭头与样式共同控制观感）。
+ * @param className 外部样式扩展。
+ * @param children 提示文本或轻量结构。
+ *
+ * 设计原因：
+ * - 使用 Portal 避免被父级布局裁剪；
+ * - 内置箭头提升提示来源感知，减少用户理解成本。
+ */
 function TooltipContent({
   className,
   sideOffset = 0,

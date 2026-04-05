@@ -1,3 +1,23 @@
+/**
+ * =============================================================================
+ * 文件定位（分析服务：阶段模型策略解析器）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/server/modules/analysis/services/ModelStrategyResolver.ts`
+ *
+ * 模块职责：
+ * - 解析分析任务各阶段应使用的模型与参数；
+ * - 合并三层策略来源：任务级（JOB）> 书籍级（BOOK）> 全局级（GLOBAL）；
+ * - 在配置缺失时回退系统默认模型，并输出可直接调用 Provider 的配置。
+ *
+ * 业务价值：
+ * - 让“每个阶段用哪个模型、用什么参数”成为可管理配置而非硬编码；
+ * - 为重试/fallback/成本控制提供统一决策入口。
+ *
+ * 关键约束：
+ * - 策略优先级是业务规则，不可随意颠倒；
+ * - API Key 只在解析结果中短暂以明文存在，用于调用链，不应写日志。
+ * =============================================================================
+ */
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
@@ -18,43 +38,67 @@ const ALL_PIPELINE_STAGES: PipelineStage[] = [
   PipelineStage.FALLBACK
 ];
 
+/** 策略层级：任务 > 书籍 > 全局。用于构建优先级链。 */
 type StrategyLayer = "JOB" | "BOOK" | "GLOBAL";
 
 interface LoadedModel {
+  /** 模型配置主键。 */
   id       : string;
+  /** provider 原始值（数据库字段）。 */
   provider : string;
+  /** 管理端显示名。 */
   name     : string;
+  /** provider 侧模型 ID。 */
   modelId  : string;
+  /** API Base URL。 */
   baseUrl  : string;
+  /** 加密后的 API Key（解析时解密）。 */
   apiKey   : string | null;
+  /** 是否启用。 */
   isEnabled: boolean;
+  /** 是否默认模型。 */
   isDefault: boolean;
+  /** 更新时间。 */
   updatedAt: Date;
 }
 
 interface LayerSnapshot {
+  /** 任务级覆盖（优先级最高）。 */
   JOB   : StrategyStagesDto | null;
+  /** 书籍级配置（中间层）。 */
   BOOK  : StrategyStagesDto | null;
+  /** 全局配置（最低层）。 */
   GLOBAL: StrategyStagesDto | null;
 }
 
 export interface ResolveStageContext {
+  /** 当前任务关联书籍 ID；用于读取 BOOK 层策略。 */
   bookId?: string | null;
+  /** 当前分析任务 ID；用于读取 JOB 层策略。 */
   jobId? : string | null;
 }
 
 export interface ResolvedStageModel {
+  /** 模型记录 ID。 */
   modelId    : string;
+  /** 归一化 provider。 */
   provider   : AiProviderName;
+  /** provider 侧模型标识。 */
   modelName  : string;
+  /** 展示名（便于日志与管理端展示）。 */
   displayName: string;
+  /** 请求基地址。 */
   baseUrl    : string;
+  /** 解密后的调用密钥。 */
   apiKey     : string;
+  /** 来源层级（JOB/BOOK/GLOBAL/SYSTEM_DEFAULT）。 */
   source     : Exclude<StageModelSource, "FALLBACK">;
+  /** 阶段参数（温度、重试等）。 */
   params     : StageParams;
 }
 
 export interface ResolvedFallbackModel extends Omit<ResolvedStageModel, "source"> {
+  /** fallback 来源标识（用于日志区分主路径与兜底路径）。 */
   source: StageModelSource;
 }
 
@@ -148,6 +192,7 @@ function mergeStageParams(base: StageParams, input: StrategyStagesDto[PipelineSt
 }
 
 function toModelSource(layer: StrategyLayer): Exclude<StageModelSource, "FALLBACK"> {
+  // 显式 switch 可在新增层级时保持穷尽检查，避免静默落入错误默认值。
   switch (layer) {
     case "JOB":
       return "JOB";
@@ -178,6 +223,7 @@ function toResolvedModel(
 }
 
 function contextCacheKey(context: ResolveStageContext): string {
+  // 缓存键把缺失值统一映射为 "_"，保证 `undefined/null` 不会拆分为两套缓存。
   const jobPart = context.jobId ?? "_";
   const bookPart = context.bookId ?? "_";
   return `${jobPart}:${bookPart}`;

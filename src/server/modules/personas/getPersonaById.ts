@@ -3,6 +3,27 @@ import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 
+/**
+ * ============================================================================
+ * 文件定位：`src/server/modules/personas/getPersonaById.ts`
+ * ----------------------------------------------------------------------------
+ * 人物详情聚合查询服务。
+ *
+ * 分层角色：
+ * - server module（服务端逻辑层）；
+ * - 被 `GET /api/personas/:id` 调用；
+ * - 聚合 persona 主档、profiles、biographyRecords、relationships 四类数据。
+ *
+ * 业务目标：
+ * - 输出图谱侧栏/审核页可直接渲染的“人物详情快照”；
+ * - 避免前端二次拼接，减少接口数量与并发请求复杂度。
+ *
+ * 关键规则：
+ * - 仅返回未软删除的数据（deletedAt=null）；
+ * - 状态字段采用“recordSource -> 默认状态”的映射，保证历史数据可展示。
+ * ============================================================================
+ */
+
 export interface PersonaTimelineItem {
   /** `BiographyRecord.id`，时间轴事件主键。 */
   id          : string;
@@ -97,9 +118,9 @@ export interface PersonaDetailSnapshot {
   status       : ProcessingStatus;
   /** 按书维度展开的档案数据。 */
   profiles     : PersonaBookProfile[];
-  /** 生平时间轴事件列表。 */
+  /** 生平时间轴事件列表（按 chapterNo 升序）。 */
   timeline     : PersonaTimelineItem[];
-  /** 与该人物相关的关系列表。 */
+  /** 与该人物相关的关系列表（按更新时间倒序）。 */
   relationships: PersonaRelationshipItem[];
 }
 
@@ -129,6 +150,7 @@ export function createGetPersonaByIdService(
    * 副作用：无（只读查询）。
    */
   async function getPersonaById(personaId: string): Promise<PersonaDetailSnapshot> {
+    // Step 1) 查询人物主档与书内 profiles。
     const persona = await prismaClient.persona.findFirst({
       where: {
         id       : personaId,
@@ -170,6 +192,7 @@ export function createGetPersonaByIdService(
       throw new PersonaNotFoundError(personaId);
     }
 
+    // Step 2) 并发查询时间轴与关系，减少总响应时延。
     const [biographyRecords, relationships] = await Promise.all([
       prismaClient.biographyRecord.findMany({
         where: {
@@ -251,6 +274,7 @@ export function createGetPersonaByIdService(
       })
     ]);
 
+    // Step 3) 映射为统一快照结构。
     return {
       id          : persona.id,
       name        : persona.name,
@@ -285,6 +309,9 @@ export function createGetPersonaByIdService(
         status      : item.status
       })),
       relationships: relationships.map((item) => {
+        // 方向是相对“当前人物”定义的业务语义：
+        // - sourceId===personaId -> outgoing
+        // - 否则 -> incoming
         const isOutgoing = item.sourceId === personaId;
         const counterpart = isOutgoing ? item.target : item.source;
 

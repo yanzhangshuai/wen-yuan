@@ -1,5 +1,25 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（设计系统 - 轮播容器）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/components/ui/carousel.tsx`
+ *
+ * 组件定位：
+ * - 对 Embla Carousel 的项目级封装，统一方向、按钮、键盘导航与上下文分发；
+ * - 业务层只需组织内容项，不必重复处理滚动能力与状态同步。
+ *
+ * 为什么使用 Context：
+ * - `CarouselContent/Item/Prev/Next` 需要共享同一个 Embla 实例状态；
+ * - 通过 Context 可避免 props 层层透传，降低组合组件使用复杂度。
+ *
+ * 维护约束（业务规则，不是技术限制）：
+ * - 键盘左右键切换属于无障碍操作路径，不能因样式调整而移除；
+ * - `orientation` 决定布局和按键语义，调用方应与内容结构保持一致。
+ * =============================================================================
+ */
+
 import * as React from "react";
 import useEmblaCarousel, {
   type UseEmblaCarouselType
@@ -15,18 +35,28 @@ type CarouselOptions = UseCarouselParameters[0];
 type CarouselPlugin = UseCarouselParameters[1];
 
 type CarouselProps = {
+  /** Embla 选项，来自业务层的行为配置。 */
   opts?       : CarouselOptions
+  /** Embla 插件集合（如自动播放）。 */
   plugins?    : CarouselPlugin
+  /** 轮播方向：横向或纵向。 */
   orientation?: "horizontal" | "vertical"
+  /** 可选回调：将 Embla API 暴露给上游组件。 */
   setApi?     : (api: CarouselApi) => void
 };
 
 type CarouselContextProps = {
+  /** 根容器 ref，供 Embla 挂载滚动视口。 */
   carouselRef  : ReturnType<typeof useEmblaCarousel>[0]
+  /** Embla API 实例，初始化前可能为空。 */
   api          : ReturnType<typeof useEmblaCarousel>[1]
+  /** 向前滚动动作。 */
   scrollPrev   : () => void
+  /** 向后滚动动作。 */
   scrollNext   : () => void
+  /** 是否还能继续向前滚动。 */
   canScrollPrev: boolean
+  /** 是否还能继续向后滚动。 */
   canScrollNext: boolean
 } & CarouselProps;
 
@@ -36,6 +66,7 @@ function useCarousel() {
   const context = React.useContext(CarouselContext);
 
   if (!context) {
+    // 防御式约束：子组件必须放在 CarouselProvider 范围内。
     throw new Error("useCarousel must be used within a <Carousel />");
   }
 
@@ -77,6 +108,7 @@ function Carousel({
 
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
+      // 键盘导航是轮播的核心可访问性要求。
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         scrollPrev();
@@ -89,12 +121,14 @@ function Carousel({
   );
 
   React.useEffect(() => {
+    // 将底层 API 透出给上层，支持外部联动控制（例如自定义指示器）。
     if (!api || !setApi) return;
     setApi(api);
   }, [api, setApi]);
 
   React.useEffect(() => {
     if (!api) return;
+    // 初始化与选中变化都需要刷新按钮可用态，避免显示与行为不一致。
     onSelect(api);
     api.on("reInit", onSelect);
     api.on("select", onSelect);

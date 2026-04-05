@@ -5,6 +5,19 @@ import * as SwitchPrimitive from "@radix-ui/react-switch";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（开关组件）：
+ * - 文件路径：`src/components/ui/switch.tsx`
+ * - 所属层次：前端基础表单组件层（客户端组件）。
+ *
+ * 核心职责：
+ * - 封装布尔型输入交互（开/关）；
+ * - 统一聚焦态、禁用态、深浅色主题表现。
+ *
+ * React/Radix 语义：
+ * - 由 `data-[state=checked|unchecked]` 驱动样式切换；
+ * - 透传 props，允许下游以受控/非受控方式使用。
+ */
 function Switch({
   className,
   ...props
@@ -20,6 +33,7 @@ function Switch({
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
+        // 位移规则体现状态变化：checked 时滑块移动到右侧终点。
         className={
           "bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
         }

@@ -2,6 +2,12 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（空态展示组件族）：
+ * - 统一承载“无数据/无结果/待初始化”场景的页面片段。
+ * - 通过分槽位导出（header/title/description/media/content），便于按业务拼装不同空态。
+ */
+
 function Empty({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -52,6 +58,7 @@ function EmptyMedia({
     <div
       data-slot="empty-icon"
       data-variant={variant}
+      // 通过 variant 区分“纯图标”与“无背景媒体”两种视觉语义。
       className={cn(emptyMediaVariants({ variant, className }))}
       {...props}
     />

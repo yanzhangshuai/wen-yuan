@@ -6,8 +6,17 @@ import {
   PersonaNotFoundError
 } from "@/server/modules/personas/getPersonaById";
 
+/**
+ * 文件定位（人物详情聚合服务单测）：
+ * - 验证服务可按人物 ID 聚合基础档案、时间线（biography）、关系网络（relationship）。
+ * - 该服务通常服务于人物详情页，是跨模块读模型（read model）的典型实现。
+ *
+ * 业务重点：
+ * - 输出不仅包含人物基础字段，还包含“关系方向”“时间线状态”等前端展示关键派生语义。
+ */
 describe("getPersonaById service", () => {
   it("returns persona detail snapshot", async () => {
+    // 成功场景：同时存在生平与关系时，应输出完整快照，供详情页一次渲染。
     const service = createGetPersonaByIdService({
       persona: {
         findFirst: vi.fn().mockResolvedValue({
@@ -88,6 +97,7 @@ describe("getPersonaById service", () => {
   });
 
   it("throws not found when persona is missing", async () => {
+    // 防御分支：目标人物不存在时抛领域错误，避免上游页面把 null 误解为空态而继续渲染错误信息。
     const service = createGetPersonaByIdService({
       persona: {
         findFirst: vi.fn().mockResolvedValue(null)

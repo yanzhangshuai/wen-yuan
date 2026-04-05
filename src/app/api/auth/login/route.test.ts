@@ -1,3 +1,17 @@
+/**
+ * 文件定位（Next.js Route Handler 单测）：
+ * - 本文件对应 app/ 目录下的 route.ts（或其动态路由变体）测试，验证接口层契约是否稳定。
+ * - 在 Next.js 中，route.ts 由文件系统路由自动注册为 HTTP 接口；本测试通过直接调用导出的 HTTP 方法函数复现服务端执行语义。
+ *
+ * 业务职责：
+ * - 约束请求参数校验、鉴权分支、服务层调用参数、错误码映射、统一响应包结构。
+ * - 保护上下游协作边界：上游是浏览器/管理端请求，下游是各领域 service 与数据访问层。
+ *
+ * 维护注意：
+ * - 这是接口契约测试，断言字段和状态码属于外部约定，不能随意改动。
+ * - 若未来调整路由/错误码，请同步更新前端调用方与文档，否则会造成线上联调回归。
+ */
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppRole } from "@/generated/prisma/enums";
@@ -36,6 +50,7 @@ vi.mock("@/server/modules/auth/login-rate-limit", () => ({
   clearLoginFailures           : clearLoginFailuresMock
 }));
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("POST /api/auth/login", () => {
   const originalNodeEnv = process.env.NODE_ENV;
 
@@ -66,6 +81,7 @@ describe("POST /api/auth/login", () => {
     Reflect.set(process.env, "NODE_ENV", originalNodeEnv);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 200 and sets auth cookie on successful login", async () => {
     authenticateAdminMock.mockResolvedValue({
       id      : "user-1",
@@ -124,6 +140,7 @@ describe("POST /api/auth/login", () => {
     expect(setCookie).toMatch(/samesite=strict/i);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 400 when request body validation fails", async () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const response = await POST(new Request("http://localhost/api/auth/login", {
@@ -147,6 +164,7 @@ describe("POST /api/auth/login", () => {
     expect(authenticateAdminMock).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 401 when authentication fails", async () => {
     authenticateAdminMock.mockRejectedValue(
       new MockAuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误")
@@ -174,6 +192,7 @@ describe("POST /api/auth/login", () => {
     expect(recordLoginFailureMock).toHaveBeenCalledWith("203.0.113.1");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to root when redirect is not an in-site path", async () => {
     authenticateAdminMock.mockResolvedValue({
       id      : "user-1",
@@ -206,6 +225,7 @@ describe("POST /api/auth/login", () => {
     expect(sanitizeRedirectPathMock).toHaveBeenCalledWith("https://evil.example");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 403 when origin header is missing", async () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const response = await POST(new Request("http://localhost/api/auth/login", {
@@ -222,6 +242,7 @@ describe("POST /api/auth/login", () => {
     expect(authenticateAdminMock).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 403 when origin host mismatches request host", async () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const response = await POST(new Request("http://localhost/api/auth/login", {
@@ -239,6 +260,7 @@ describe("POST /api/auth/login", () => {
     expect(payload.message).toBe("非法请求来源");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 403 when origin is malformed", async () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const response = await POST(new Request("http://localhost/api/auth/login", {
@@ -255,6 +277,7 @@ describe("POST /api/auth/login", () => {
     expect(payload.code).toBe(ERROR_CODES.AUTH_FORBIDDEN);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 429 immediately when ip is already locked", async () => {
     getLoginLockRetryAfterSecondsMock.mockReturnValue(321);
 
@@ -273,6 +296,7 @@ describe("POST /api/auth/login", () => {
     expect(authenticateAdminMock).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("applies pre-lock before origin checks", async () => {
     getLoginLockRetryAfterSecondsMock.mockReturnValue(120);
 
@@ -290,6 +314,7 @@ describe("POST /api/auth/login", () => {
     expect(authenticateAdminMock).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 429 when unauthorized attempt triggers lock", async () => {
     authenticateAdminMock.mockRejectedValue(
       new MockAuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误")
@@ -315,6 +340,7 @@ describe("POST /api/auth/login", () => {
     expect(payload.code).toBe(ERROR_CODES.COMMON_RATE_LIMITED);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 500 for unexpected auth errors", async () => {
     authenticateAdminMock.mockRejectedValue(new Error("db unavailable"));
 
@@ -335,6 +361,7 @@ describe("POST /api/auth/login", () => {
     expect(payload.error.type).toBe("InternalError");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 403 for non-unauthorized auth errors and does not count failures", async () => {
     authenticateAdminMock.mockRejectedValue(
       new MockAuthError(ERROR_CODES.AUTH_FORBIDDEN, "forbidden")
@@ -356,6 +383,7 @@ describe("POST /api/auth/login", () => {
     expect(recordLoginFailureMock).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks cookie as secure in production", async () => {
     Reflect.set(process.env, "NODE_ENV", "production");
     authenticateAdminMock.mockResolvedValue({
@@ -382,6 +410,7 @@ describe("POST /api/auth/login", () => {
     expect(response.headers.get("set-cookie")).toContain("Secure");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("passes undefined redirect through sanitizer when not provided", async () => {
     authenticateAdminMock.mockResolvedValue({
       id      : "user-1",
@@ -407,6 +436,7 @@ describe("POST /api/auth/login", () => {
     expect(sanitizeRedirectPathMock).toHaveBeenCalledWith(undefined);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 400 when body is invalid JSON", async () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const response = await POST(new Request("http://localhost/api/auth/login", {
@@ -423,6 +453,7 @@ describe("POST /api/auth/login", () => {
     expect(payload.code).toBe(ERROR_CODES.COMMON_BAD_REQUEST);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not set Retry-After header for plain 401 unauthorized", async () => {
     authenticateAdminMock.mockRejectedValue(
       new MockAuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误")

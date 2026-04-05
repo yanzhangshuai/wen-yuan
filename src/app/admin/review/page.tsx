@@ -8,11 +8,37 @@ import {
   PageHeader
 } from "@/components/layout/page-header";
 
+/**
+ * =============================================================================
+ * 文件定位（Next.js 页面路由：审核中心首页）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`app/admin/review/page.tsx`
+ *
+ * 框架语义：
+ * - `page.tsx` 是 App Router 的页面入口文件；
+ * - 对应路由为 `GET /admin/review`；
+ * - 默认是 Server Component，会在服务端执行数据查询并输出初始 HTML。
+ *
+ * 业务职责：
+ * 1) 展示“可进入审核”的书籍列表；
+ * 2) 作为审核流程的路由入口，点击书籍跳转到 `/admin/review/[bookId]`；
+ * 3) 在无书籍时展示空态引导，避免用户进入空白页面。
+ *
+ * 上游依赖：
+ * - `listBooks()` 返回可管理书籍清单（含章节数、人物数等摘要信息）。
+ *
+ * 下游影响：
+ * - 产出的链接会把用户导向具体书籍审核页；
+ * - 是审核业务链路的一级入口页，不承载具体审核操作。
+ * =============================================================================
+ */
 export const metadata: Metadata = {
+  // `metadata` 是 Next.js 的页面级 SEO 声明，服务端渲染时会写入文档头。
   title: "审核中心"
 };
 
 export default async function AdminReviewPage() {
+  // Server Component 中直接查数据，首屏即可拿到书籍列表，减少客户端二次请求。
   const books = await listBooks();
 
   return (
@@ -23,6 +49,7 @@ export default async function AdminReviewPage() {
       />
 
       {books.length === 0 ? (
+        // 空态分支：当前系统还没有可审核书籍，提示先进入书库管理创建数据。
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
           <div className="mb-6 p-4 rounded-full bg-primary/10">
             <ClipboardCheck className="w-10 h-10 text-primary" />
@@ -35,6 +62,7 @@ export default async function AdminReviewPage() {
           </p>
         </div>
       ) : (
+        // 正常分支：展示书籍卡片，点击后进入具体书籍的审核面板。
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => (
             <Link

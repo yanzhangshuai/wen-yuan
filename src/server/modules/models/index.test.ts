@@ -1,3 +1,13 @@
+/**
+ * 文件定位（服务模块单测）：
+ * - 覆盖领域服务输入校验、分支处理与输出映射契约。
+ * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
+ *
+ * 业务职责：
+ * - 保证成功路径与异常路径都可预测。
+ * - 降低重构时误改核心规则的风险。
+ */
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { decryptValue, encryptValue } from "@/server/security/encryption";
@@ -31,6 +41,7 @@ function createAiModelRecord(overrides: Partial<{
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("models module", () => {
   const originalEncryptionKey = process.env.APP_ENCRYPTION_KEY;
   const originalModelTestAllowedHosts = process.env.MODEL_TEST_ALLOWED_HOSTS;
@@ -41,6 +52,7 @@ describe("models module", () => {
     vi.restoreAllMocks();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("lists models with masked api key and isConfigured flag", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
     const groupByMock = vi.fn()
@@ -140,6 +152,7 @@ describe("models module", () => {
     expect(groupByMock).toHaveBeenCalledTimes(2);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns empty performance snapshot when model has no runtime logs", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -174,6 +187,7 @@ describe("models module", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("updates model and encrypts api key before persisting", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -216,6 +230,7 @@ describe("models module", () => {
     expect(result.apiKeyMasked).toBe("secr******-key");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects enabling a model when api key is missing", async () => {
     const prismaClient = {
       aiModel: {
@@ -235,6 +250,7 @@ describe("models module", () => {
     })).rejects.toThrow("启用模型前请先配置 API Key");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("clears api key when requested", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -269,6 +285,7 @@ describe("models module", () => {
     expect(result.apiKeyMasked).toBeNull();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("sets only one default model in a transaction", async () => {
     const findUniqueMock = vi.fn().mockResolvedValue({ id: "model-2" });
     const updateManyMock = vi.fn().mockResolvedValue({ count: 1 });
@@ -304,6 +321,7 @@ describe("models module", () => {
     expect(result.isDefault).toBe(true);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("tests openai-compatible model connectivity", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -347,6 +365,7 @@ describe("models module", () => {
     expect(result.errorType).toBeUndefined();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("treats http 200 with provider error payload as failed connectivity", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -376,6 +395,7 @@ describe("models module", () => {
     expect(result.errorMessage).toBe("invalid api key");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("treats http 200 without choices as failed connectivity", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -403,6 +423,7 @@ describe("models module", () => {
     expect(result.errorMessage).toBe("响应缺少 choices，无法确认模型可用");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("tests gemini model connectivity with generateContent endpoint", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -442,6 +463,7 @@ describe("models module", () => {
     expect(result.errorMessage).toBe("quota exceeded");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("tests glm model connectivity with openai-compatible endpoint", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -488,6 +510,7 @@ describe("models module", () => {
     expect(result.errorType).toBeUndefined();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws a readable error when api key is missing during connectivity test", async () => {
     const prismaClient = {
       aiModel: {
@@ -502,6 +525,7 @@ describe("models module", () => {
     await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("模型未配置 API Key");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects connectivity test when base url host is not in allowlist", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -521,6 +545,7 @@ describe("models module", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies auth failures as AUTH_ERROR", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -550,6 +575,7 @@ describe("models module", () => {
     expect(result.errorMessage).toBe("invalid api key");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when list API detects unsupported provider", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -570,6 +596,7 @@ describe("models module", () => {
     await expect(modelsModule.listModels()).rejects.toThrow();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when list API detects plaintext api key in storage", async () => {
     const prismaClient = {
       aiModel: {
@@ -588,6 +615,7 @@ describe("models module", () => {
     await expect(modelsModule.listModels()).rejects.toThrow("非法 API Key 存储格式");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("keeps existing encrypted apiKey when action is unchanged", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -614,6 +642,7 @@ describe("models module", () => {
     expect(updateMock.mock.calls[0][0].data.apiKey).toBe(existingApiKey);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("trims provider model id, api key and base url in update payload", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -649,6 +678,7 @@ describe("models module", () => {
     expect(decryptValue(persistedApiKey)).toBe("trimmed-key");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects update when model record does not exist", async () => {
     const prismaClient = {
       aiModel: {
@@ -661,6 +691,7 @@ describe("models module", () => {
     await expect(modelsModule.updateModel({ id: "not-found" })).rejects.toThrow("模型不存在");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects update with empty model id", async () => {
     const prismaClient = {
       aiModel: {
@@ -673,6 +704,7 @@ describe("models module", () => {
     await expect(modelsModule.updateModel({ id: "   " })).rejects.toThrow("模型 ID 不能为空");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects setDefaultModel when target model does not exist", async () => {
     const transactionClient = {
       aiModel: {
@@ -691,6 +723,7 @@ describe("models module", () => {
     await expect(modelsModule.setDefaultModel("missing-id")).rejects.toThrow("模型不存在");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects setDefaultModel with empty model id", async () => {
     const prismaClient = {
       $transaction: vi.fn()
@@ -700,6 +733,7 @@ describe("models module", () => {
     await expect(modelsModule.setDefaultModel("   ")).rejects.toThrow("模型 ID 不能为空");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects connectivity test when base url is invalid", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -716,6 +750,7 @@ describe("models module", () => {
     await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("BaseURL 不合法");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects connectivity test when base url is not https", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -732,6 +767,7 @@ describe("models module", () => {
     await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试仅支持 HTTPS BaseURL");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("allows hosts from MODEL_TEST_ALLOWED_HOSTS env", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
     process.env.MODEL_TEST_ALLOWED_HOSTS = " INTERNAL.EXAMPLE.com ";
@@ -766,6 +802,7 @@ describe("models module", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies timeout HTTP statuses as TIMEOUT", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -788,6 +825,7 @@ describe("models module", () => {
     expect(result.detail).toBe("gateway timeout");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies 404 HTTP status as MODEL_UNAVAILABLE", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -810,6 +848,7 @@ describe("models module", () => {
     expect(result.detail).toBe("not found");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies unknown HTTP errors as NETWORK_ERROR", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -832,6 +871,7 @@ describe("models module", () => {
     expect(result.errorMessage).toBe("bad request");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("extracts detail from top-level message field in JSON error", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -859,6 +899,7 @@ describe("models module", () => {
     expect(result.errorType).toBe("MODEL_UNAVAILABLE");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to HTTP status detail when JSON parsing fails", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -883,6 +924,7 @@ describe("models module", () => {
     expect(result.detail).toBe("HTTP 502");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies thrown abort errors as TIMEOUT", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -903,6 +945,7 @@ describe("models module", () => {
     expect(result.errorMessage).toContain("aborted");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies thrown network errors as NETWORK_ERROR", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -923,6 +966,7 @@ describe("models module", () => {
     expect(result.errorMessage).toBe("network down");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies thrown timeout messages as TIMEOUT", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
@@ -943,6 +987,7 @@ describe("models module", () => {
     expect(result.errorMessage).toContain("timeout");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects connectivity test when stored api key is plaintext", async () => {
     const prismaClient = {
       aiModel: {

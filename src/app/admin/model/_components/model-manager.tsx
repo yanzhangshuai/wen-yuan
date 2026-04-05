@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 文件定位（Admin 客户端容器组件）
+ * -----------------------------------------------------------------------------
+ * 文件路径：`src/app/admin/model/_components/model-manager.tsx`
+ *
+ * 组件角色：
+ * - 这是模型管理页的核心 Client Component（容器组件）；
+ * - 负责承接管理员交互：编辑模型配置、设置默认模型、连通性测试、排序筛选与保存提交。
+ *
+ * 为什么必须是 `use client`：
+ * - 该组件依赖 `useState/useEffect`、实时表单输入、按钮异步 loading、toast 反馈；
+ * - 这些都属于浏览器交互行为，不能放在 Server Component 中执行。
+ *
+ * 上下游关系：
+ * - 上游：`/app/admin/model/page.tsx` 页面入口；
+ * - 下游：`@/lib/services/models`（调用后端 Route Handler）与 UI 基础组件库。
+ *
+ * 维护边界：
+ * - 此文件承载较多“页面交互状态机”逻辑，字段联动（是否可启用/是否可保存）是业务规则；
+ * - 调整默认值或按钮可用条件前，需要同步验证后端契约与管理员操作路径。
+ * =============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -47,13 +71,37 @@ import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_component
 /* ------------------------------------------------
    Types
    ------------------------------------------------ */
+/**
+ * 当前模型卡片正在执行的异步动作类型。
+ *
+ * 业务语义：
+ * - `save`：保存模型配置；
+ * - `default`：设置为默认模型；
+ * - `test`：执行连通性测试；
+ * - `null`：空闲态。
+ *
+ * 设计原因：
+ * - 使用离散联合类型而不是布尔值，可以避免“同一时刻多个按钮 loading 冲突”的歧义。
+ */
 type LoadingAction = "save" | "default" | "test" | null;
 
+/**
+ * 模型草稿态（仅存在前端，用于编辑未提交的数据）。
+ *
+ * 与后端模型实体的关系：
+ * - 后端 `AdminModelItem` 是已保存的真实状态；
+ * - `ModelDraftState` 是用户在当前页面会话中的临时编辑态。
+ */
 interface ModelDraftState {
+  /** 模型标识（例如 deepseek-chat / qwen-plus），由管理员输入并提交给后端。 */
   providerModelId: string;
+  /** 自定义 API 网关地址；为空表示使用后端默认地址。 */
   baseUrl        : string;
+  /** 新输入的 API Key（仅前端暂存，不回填已保存明文）。 */
   apiKey         : string;
+  /** 是否清空已保存 API Key；用于显式表达“删除密钥”这一操作意图。 */
   clearApiKey    : boolean;
+  /** 是否启用该模型；会受“是否已配置密钥”业务规则约束。 */
   isEnabled      : boolean;
 }
 
@@ -61,6 +109,13 @@ interface ModelDraftState {
    Helpers
    ------------------------------------------------ */
 function buildInitialDraft(model: AdminModelItem): ModelDraftState {
+  /**
+   * 业务目的：
+   * - 以当前后端模型快照初始化前端草稿态，保证“编辑前即真实状态”。
+   *
+   * 关键设计：
+   * - `apiKey` 初始置空，而不是回显后端值，这是安全边界（避免密钥泄露到前端）。
+   */
   return {
     providerModelId: model.providerModelId,
     baseUrl        : model.baseUrl,
@@ -71,11 +126,20 @@ function buildInitialDraft(model: AdminModelItem): ModelDraftState {
 }
 
 function resolveCanEnable(model: AdminModelItem, draft: ModelDraftState): boolean {
+  /**
+   * 业务规则（不是技术限制）：
+   * - 当用户勾选“清空 API Key”时，必须禁止启用模型；
+   * - 只有“已配置过密钥”或“本次输入了新密钥”才能启用。
+   */
   if (draft.clearApiKey) return false;
   return model.isConfigured || draft.apiKey.trim().length > 0;
 }
 
 function formatSuccessRate(successRate: number | null): string {
+  /**
+   * 防御性处理：
+   * - `null` 表示后端暂无样本数据，不能误导展示为 `0%`（含义不同）。
+   */
   if (successRate === null) {
     return "暂无数据";
   }
@@ -83,6 +147,16 @@ function formatSuccessRate(successRate: number | null): string {
 }
 
 function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState): number {
+  /**
+   * 排序分桶策略（业务规则）：
+   * 1. 默认模型优先展示；
+   * 2. 其次展示已启用模型（方便高频运维）；
+   * 3. 再展示已配置但未启用模型；
+   * 4. 最后是未配置模型。
+   *
+   * 设计原因：
+   * - 管理后台优先满足“先看关键模型”的运维效率，而非纯字母序。
+   */
   const isEnabled = draft ? draft.isEnabled : model.isEnabled;
   const hasDraftApiKey = Boolean(draft?.apiKey.trim());
   const isConfigured = model.isConfigured || hasDraftApiKey;
@@ -97,7 +171,9 @@ function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState): numb
    主题预览配置（对齐 sheji 模型设置截图）
    ------------------------------------------------ */
 const THEME_PREVIEW_CONFIG: Record<string, {
+  /** 主题说明文案，用于帮助管理员理解视觉风格差异。 */
   description: string;
+  /** 预览卡片中的三段色条：背景层 / 表面层 / 强调色。 */
   barColors  : [string, string, string];
 }> = {
   danqing : { description: "深色古风，紫檀深褐，朱砂点缀", barColors: ["bg-[#3d1a1a]", "bg-[#5c2828]", "bg-[#a03030]"] },
@@ -113,11 +189,19 @@ function ThemePreviewCard({
   isSelected,
   onSelect
 }: {
+  /** 主题唯一值（与 `THEME_OPTIONS` 的 value 对齐）。 */
   value     : string;
+  /** 主题展示名称。 */
   label     : string;
+  /** 当前是否已选中该主题，用于驱动选中态样式与 aria 状态。 */
   isSelected: boolean;
+  /** 用户点击卡片时触发的主题切换回调。 */
   onSelect  : () => void;
 }) {
+  /**
+   * 防御性回退：
+   * - 若主题值暂未配置预览信息，降级到中性色方案，避免界面崩溃。
+   */
   const config = THEME_PREVIEW_CONFIG[value] ?? { description: "", barColors: ["bg-muted", "bg-muted", "bg-primary"] };
   const [bg, surface, accent] = config.barColors;
 
@@ -155,9 +239,13 @@ function ThemePreviewCard({
    评分条组件（对齐 sheji：5 格小方块）
    ------------------------------------------------ */
 function RatingBar({ value, icon: Icon, label, variant = "primary" }: {
+  /** 评分值（1~5），由后端性能画像计算后下发。 */
   value   : number;
+  /** 指标图标组件（速度/稳定/费用）。 */
   icon    : React.ElementType;
+  /** 指标名称。 */
   label   : string;
+  /** 视觉语义：`destructive` 用于费用等“越高越需要警惕”的指标。 */
   variant?: "primary" | "destructive";
 }) {
   return (
@@ -189,22 +277,38 @@ function RatingBar({ value, icon: Icon, label, variant = "primary" }: {
 export function ModelManager({
   initialModels
 }: {
+  /**
+   * 页面首屏模型列表（来自上游 Server Component）。
+   *
+   * Next.js 链路语义：
+   * - 由服务端先拿到初始数据再注入客户端容器，减少首屏空白等待。
+   */
   initialModels: AdminModelItem[]
 }) {
   const { setTheme, selectedTheme, isHydrated } = useHydratedTheme();
 
+  /** 当前模型真实快照（以“保存成功后的后端返回”作为最终真值）。 */
   const [models, setModels] = useState<AdminModelItem[]>(initialModels);
+  /** 每个模型的前端草稿态，key 为模型 id。 */
   const [drafts, setDrafts] = useState<Record<string, ModelDraftState>>(
     () => Object.fromEntries(initialModels.map(m => [m.id, buildInitialDraft(m)]))
   );
+  /** 每个模型当前正在执行的异步动作，用于精准控制按钮 loading/disabled。 */
   const [loadingActions, setLoadingActions] = useState<Record<string, LoadingAction>>(
     () => Object.fromEntries(initialModels.map(m => [m.id, null]))
   );
+  /** API Key 显示/隐藏状态，仅影响本地 UI，不参与业务提交。 */
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
+  /** 全局策略表单数据；`null` 表示尚未获取完成。 */
   const [globalStrategy, setGlobalStrategy] = useState<ModelStrategyInput | null>(null);
+  /** 全局策略加载状态；用于展示加载态与避免提前渲染表单。 */
   const [globalStrategyLoading, setGlobalStrategyLoading] = useState(true);
 
   useEffect(() => {
+    /**
+     * `cancelled` 防御目的：
+     * - 防止组件卸载后异步请求回写状态，避免 React 警告与潜在内存泄漏。
+     */
     let cancelled = false;
     async function loadGlobalStrategy() {
       setGlobalStrategyLoading(true);
@@ -215,6 +319,11 @@ export function ModelManager({
         }
         setGlobalStrategy(data);
       } catch (error) {
+        /**
+         * 错误处理策略：
+         * - 不中断页面其余功能，仅通过 toast 提示管理员；
+         * - 这是“局部失败可降级”的后台可用性设计。
+         */
         if (!cancelled) {
           toast.error(error instanceof Error ? error.message : "全局策略加载失败");
         }
@@ -229,6 +338,10 @@ export function ModelManager({
   }, []);
 
   const sortedModels = [...models].sort((left, right) => {
+    /**
+     * 排序规则优先按业务分桶，再按中文名称排序。
+     * - 先保障“操作优先级”，再保障“查找效率”。
+     */
     const leftBucket = resolveSortBucket(left, drafts[left.id]);
     const rightBucket = resolveSortBucket(right, drafts[right.id]);
     if (leftBucket !== rightBucket) {
@@ -238,6 +351,10 @@ export function ModelManager({
   });
 
   function updateDraft(modelId: string, updater: (draft: ModelDraftState) => ModelDraftState) {
+    /**
+     * 防御性分支：
+     * - 若草稿不存在（极端情况下的状态不同步），保持原状态不抛错，避免页面中断。
+     */
     setDrafts(currentDrafts => {
       const currentDraft = currentDrafts[modelId];
       if (!currentDraft) return currentDrafts;
@@ -246,10 +363,16 @@ export function ModelManager({
   }
 
   function setLoading(modelId: string, action: LoadingAction) {
+    /** 统一 loading 写入口，确保同一模型按钮状态变更一致。 */
     setLoadingActions(prev => ({ ...prev, [modelId]: action }));
   }
 
   function replaceModel(nextModel: AdminModelItem) {
+    /**
+     * 保存成功后的状态回写策略：
+     * - 以服务端返回覆盖本地模型字段，避免前后端状态漂移；
+     * - `performance` 保留旧值，避免后端未回传画像时导致页面信息闪烁。
+     */
     setModels(currentModels =>
       currentModels.map((model) => (model.id === nextModel.id
         ? { ...nextModel, performance: model.performance }
@@ -262,18 +385,22 @@ export function ModelManager({
   }
 
   function toggleApiKeyVisibility(modelId: string) {
+    /** 切换密钥可见性仅影响 UI，不触发任何网络请求。 */
     setShowApiKeys(prev => ({ ...prev, [modelId]: !prev[modelId] }));
   }
 
   async function handleSave(model: AdminModelItem) {
     const draft = drafts[model.id];
+    /** 防御性判空：草稿不存在时直接退出，避免提交脏数据。 */
     if (!draft) return;
 
+    /** 业务校验：模型标识是后端识别目标模型的核心字段，必须非空。 */
     if (!draft.providerModelId.trim()) {
       toast.error("模型标识不能为空");
       return;
     }
 
+    /** 业务校验：启用模型前必须保证密钥可用，防止运行时请求失败。 */
     if (draft.isEnabled && !resolveCanEnable(model, draft)) {
       toast.error("请先配置 API Key，再启用模型");
       return;
@@ -286,6 +413,11 @@ export function ModelManager({
       baseUrl        : draft.baseUrl.trim(),
       isEnabled      : draft.isEnabled
     };
+    /**
+     * 分支语义：
+     * - `clearApiKey` 为真时明确传 `null`，表示“删除密钥”；
+     * - 否则仅在用户输入了新密钥时传递，避免无意覆盖。
+     */
     if (draft.clearApiKey) body.apiKey = null;
     else if (draft.apiKey.trim()) body.apiKey = draft.apiKey.trim();
 
@@ -294,6 +426,7 @@ export function ModelManager({
       replaceModel(updatedModel);
       toast.success("保存成功");
     } catch (error) {
+      /** 异常兜底：优先展示后端可读错误，其次展示通用提示。 */
       toast.error(error instanceof Error ? error.message : "保存失败");
     } finally {
       setLoading(model.id, null);
@@ -301,11 +434,16 @@ export function ModelManager({
   }
 
   async function handleSetDefault(modelId: string) {
+    /** 业务动作：将某模型设为全局默认，影响“新书籍导入”的默认解析模型。 */
     setLoading(modelId, "default");
 
     try {
       const updatedModel = await setDefaultModel(modelId);
       setModels(currentModels =>
+        /**
+         * 业务约束：默认模型全局唯一。
+         * - 因此采用“全量重算 isDefault”而不是只更新单项。
+         */
         currentModels.map(m => ({ ...m, isDefault: m.id === updatedModel.id }))
       );
       toast.success("已设为默认模型");
@@ -317,16 +455,19 @@ export function ModelManager({
   }
 
   async function handleTest(modelId: string) {
+    /** 业务动作：验证模型连通性，降低管理员误配置带来的线上故障风险。 */
     setLoading(modelId, "test");
 
     try {
       const result = await testModel(modelId);
       if (result.success) {
+        /** 仅在后端回传耗时时拼接文案，避免出现“undefined ms”噪音。 */
         const latencyMessage = typeof result.latencyMs === "number"
           ? `，耗时 ${result.latencyMs} ms`
           : "";
         toast.success(`连通性测试成功${latencyMessage}`);
       } else {
+        /** 优先展示后端细粒度错误，帮助管理员定位配置问题。 */
         toast.error(result.errorMessage ?? result.detail);
       }
     } catch (error) {
@@ -337,6 +478,10 @@ export function ModelManager({
   }
 
   if (sortedModels.length === 0) {
+    /**
+     * 空态分支：
+     * - 当后端未配置任何可管理模型时，提供明确说明而不是空白页面。
+     */
     return (
       <Card>
         <CardContent className="py-8 text-sm text-muted-foreground text-center">
@@ -347,6 +492,10 @@ export function ModelManager({
   }
 
   const enabledModels = sortedModels.filter(m => {
+    /**
+     * 这里使用草稿态优先，是为了让“默认模型下拉”实时反映当前页面上的启用切换，
+     * 提升所见即所得体验。
+     */
     const draft = drafts[m.id];
     return draft ? draft.isEnabled : m.isEnabled;
   });
@@ -360,6 +509,7 @@ export function ModelManager({
       aliasKey       : model.aliasKey
     }));
   async function handleSaveGlobalStrategy(strategy: ModelStrategyInput) {
+    /** 保存“多阶段解析策略”的全局默认配置。 */
     try {
       await saveGlobalStrategy(strategy);
       setGlobalStrategy(strategy);
@@ -370,6 +520,10 @@ export function ModelManager({
   }
 
   return (
+    /**
+     * 业务约定：
+     * - 默认进入“模型配置”而非“解析策略”，因为这是管理员最高频入口。
+     */
     <Tabs
       defaultValue="model-config"
       className="space-y-6"
@@ -395,6 +549,11 @@ export function ModelManager({
               const ratings = model.performance.ratings;
 
               return (
+                /**
+                 * 视觉降权策略：
+                 * - 未启用模型并非不可用，只是当前不参与业务流程；
+                 * - 使用透明度区分状态，帮助管理员快速识别“生效集合”。
+                 */
                 <Card
                   key={model.id}
                   className={cn("relative", !draft.isEnabled && "opacity-60")}
@@ -413,6 +572,11 @@ export function ModelManager({
                           <CardDescription>{model.provider}</CardDescription>
                         </div>
                       </div>
+                      {/**
+                        * 禁用原因：
+                        * - 当模型不可启用（未配置密钥）且当前又是关闭状态时，禁止直接打开开关；
+                        * - 这是业务规则，避免用户误以为模型已可用。
+                        */}
                       <Switch
                         checked={draft.isEnabled}
                         disabled={!resolveCanEnable(model, draft) && !draft.isEnabled}
@@ -458,6 +622,11 @@ export function ModelManager({
                       <Label>API Key</Label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
+                          {/**
+                            * 占位文案语义：
+                            * - 已配置场景显示脱敏提示，强调“系统已有密钥”；
+                            * - 未配置场景提示用户输入。
+                            */}
                           <Input
                             type={showApiKeys[model.id] ? "text" : "password"}
                             value={draft.apiKey}
@@ -574,6 +743,10 @@ export function ModelManager({
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <Label className="w-24 shrink-0 pt-1">界面主题</Label>
+                {/**
+                  * 仅在 hydration 完成后展示真实可交互主题选择，
+                  * 避免 SSR 与 CSR 的主题差异造成闪烁或 hydration mismatch。
+                  */}
                 {isHydrated ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
                     {THEME_OPTIONS.map((opt) => (
@@ -587,6 +760,9 @@ export function ModelManager({
                     ))}
                   </div>
                 ) : (
+                  /**
+                   * 未 hydration 前展示骨架占位，保证首屏结构稳定且不触发可交互操作。
+                   */
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
                     {THEME_OPTIONS.map((opt) => (
                       <button
@@ -614,6 +790,10 @@ export function ModelManager({
           description="配置各解析阶段默认使用的 AI 模型"
         >
           {globalStrategyLoading ? (
+            /**
+             * 加载态分支：
+             * - 在策略数据未就绪前不渲染表单，避免用户编辑到无效初始值。
+             */
             <Card>
               <CardContent className="py-8 text-sm text-muted-foreground text-center">
                 正在加载全局模型策略...

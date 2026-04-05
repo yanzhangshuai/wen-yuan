@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
@@ -117,6 +130,7 @@ function createPrismaMock() {
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("ValidationAgentService", () => {
   const mockedCreateMergePersonasService = vi.mocked(createMergePersonasService);
   const mockedCreateAiProviderClient = vi.mocked(createAiProviderClient);
@@ -127,6 +141,7 @@ describe("ValidationAgentService", () => {
     mockedCreateAiProviderClient.mockReset();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("validateChapterResult filters low-confidence issues and persists report", async () => {
     const {
       prisma,
@@ -230,6 +245,7 @@ describe("ValidationAgentService", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("validateBookResult builds full-book prompt and persists report", async () => {
     const {
       prisma,
@@ -324,6 +340,7 @@ describe("ValidationAgentService", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("applyAutoFixes executes MERGE/ADD_ALIAS/UPDATE_NAME and marks report applied", async () => {
     const {
       prisma,
@@ -433,6 +450,7 @@ describe("ValidationAgentService", () => {
     expect(appliedCount).toBe(3);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("applyAutoFixes skips self-merge and deleted personas", async () => {
     const { prisma, validationReportFindUnique, validationReportUpdate, personaFindUnique } = createPrismaMock();
 
@@ -481,6 +499,7 @@ describe("ValidationAgentService", () => {
     expect(appliedCount).toBe(0);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("listValidationReports returns reports ordered by createdAt", async () => {
     const { prisma, validationReportFindMany } = createPrismaMock();
 
@@ -519,6 +538,7 @@ describe("ValidationAgentService", () => {
     expect(reports[1].scope).toBe("CHAPTER");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("getValidationReportDetail returns null when not found", async () => {
     const { prisma, validationReportFindFirst } = createPrismaMock();
 
@@ -530,6 +550,7 @@ describe("ValidationAgentService", () => {
     expect(detail).toBeNull();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("getValidationReportDetail returns structured data for existing report", async () => {
     const { prisma, validationReportFindFirst } = createPrismaMock();
 

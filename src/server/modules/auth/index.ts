@@ -16,34 +16,86 @@ import {
   verifyAuthToken as verifyAuthTokenWithJose
 } from "./token";
 
+/**
+ * =============================================================================
+ * 文件定位（Auth 聚合服务入口）
+ * -----------------------------------------------------------------------------
+ * 本文件是服务端鉴权模块的统一出口，负责把“登录认证、Token、权限断言、上下文解析”
+ * 聚合成可供 middleware / layout / route handlers 直接调用的 API。
+ *
+ * 在 Next.js 应用中的角色：
+ * - 被 `middleware.ts`、`app/admin/layout.tsx`、`app/api/[...]/route.ts` 共同依赖；
+ * - 属于“服务端逻辑层”，不直接参与 UI 渲染，但决定是否允许访问管理能力。
+ *
+ * 业务目标：
+ * 1) 管理员登录校验（users 表 + 密码哈希校验）；
+ * 2) 统一产出 AuthContext，供下游判断角色/登录态；
+ * 3) 提供强约束权限守卫（requireAdmin）；
+ * 4) 提供安全的 redirect 清洗，防止开放重定向。
+ *
+ * 上游输入：
+ * - request headers（middleware 注入的 x-auth-* + cookie）
+ * - 登录表单输入 identifier/password
+ * - JWT token 字符串
+ *
+ * 下游输出：
+ * - AuthContext（role/userId/name/isAuthenticated）
+ * - AuthError（统一错误码）
+ * - 认证通过的管理员快照与 token
+ *
+ * 维护注意：
+ * - `getAuthContext` 兼容“有中间件头”与“仅 cookie”两类场景，这是有意设计；
+ * - `sanitizeRedirectPath` 是安全边界函数，禁止放宽为任意绝对 URL；
+ * - `requireAdmin` 的错误码对 API 响应映射有直接影响，属于跨层契约。
+ * =============================================================================
+ */
 export interface AuthContext {
-  /** 当前请求关联用户 ID；未识别时为 `null`。 */
+  /**
+   * 当前请求关联用户 ID；未识别时为 `null`。
+   * 字段性质：鉴权上下文字段。
+   * 说明：当前中间件尚未解析具体 userId，因此常见为 null 或空串占位。
+   */
   userId         : string | null;
-  /** 当前请求角色：`ADMIN` 或 `VIEWER`。 */
+  /**
+   * 当前请求角色：`ADMIN` 或 `VIEWER`。
+   * 字段性质：权限决策核心字段。
+   */
   role           : AuthRole;
-  /** 管理员展示名（Token 中得）；非管理员时为 `null`。 */
+  /**
+   * 管理员展示名（Token 中得）；非管理员时为 `null`。
+   * 字段性质：展示字段（如 AdminHeader）。
+   */
   name           : string | null;
-  /** 是否已通过有效 JWT 认证（未登录时为 false）。 */
+  /**
+   * 是否已通过有效 JWT 认证（未登录时为 false）。
+   * 字段性质：会话状态字段，用于区分“游客角色”与“真实登录态”。
+   */
   isAuthenticated: boolean;
 }
 
 export interface LoginInput {
-  /** 登录标识，支持用户名或邮箱。 */
+  /**
+   * 登录标识，支持用户名或邮箱。
+   * 字段来源：用户输入。
+   */
   identifier: string;
-  /** 登录明文密码（服务端使用 Argon2id 验证）。 */
+  /**
+   * 登录明文密码（服务端使用 Argon2id 验证）。
+   * 字段来源：用户输入。
+   */
   password  : string;
 }
 
 export interface AuthenticatedAdminUser {
-  /** 用户主键 ID（UUID）。 */
+  /** 用户主键 ID（UUID），来自 users 表。 */
   id      : string;
-  /** 用户名（唯一）。 */
+  /** 用户名（唯一），可用于后续登录。 */
   username: string;
   /** 邮箱（唯一）。 */
   email   : string;
-  /** 展示名称。 */
+  /** 展示名称（用于后台 UI 展示）。 */
   name    : string;
-  /** 角色，固定为管理员。 */
+  /** 角色，固定为管理员。属于业务规则，不是技术限制。 */
   role    : typeof AUTH_ADMIN_ROLE;
 }
 
@@ -73,10 +125,12 @@ export class AuthError extends Error {
  */
 export function sanitizeRedirectPath(redirect: string | null | undefined): string {
   if (!redirect) {
+    // 空值回首页：保证登录成功后始终有稳定去向。
     return "/";
   }
 
   if (!redirect.startsWith("/") || redirect.startsWith("//")) {
+    // 防御重点：拒绝外链与协议相对地址，避免开放重定向攻击。
     return "/";
   }
 
@@ -91,13 +145,15 @@ export function sanitizeRedirectPath(redirect: string | null | undefined): strin
  * 副作用：可能读取并校验 Cookie token（纯计算，无写操作）。
  */
 export async function getAuthContext(headers: Headers): Promise<AuthContext> {
+  // 先读取中间件注入头：这是请求链路上最轻量、最统一的鉴权上下文来源。
   const roleHeader = headers.get("x-auth-role");
   const userIdHeader = headers.get("x-auth-user-id");
+  // 同时读取 cookie 作为兜底，覆盖“API 未命中 middleware”或“直接调用”的场景。
   const token = readCookieValue(headers.get("cookie"), AUTH_COOKIE_NAME);
   const payload = token ? await verifyAuthToken(token) : null;
 
   if (roleHeader === AUTH_ADMIN_ROLE) {
-    // 中间件已验证 JWT 有效，此处信任头注入。
+    // 分支原因：命中该分支意味着上游中间件已完成管理员校验，可直接信任角色头。
     return {
       userId         : userIdHeader,
       role           : AUTH_ADMIN_ROLE,
@@ -107,6 +163,7 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   }
 
   if (payload?.role === AUTH_ADMIN_ROLE) {
+    // 分支原因：当中间件头缺失或不可信时，以 token 校验结果作为后备真实来源。
     return {
       userId         : userIdHeader,
       role           : AUTH_ADMIN_ROLE,
@@ -116,6 +173,7 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   }
 
   if (roleHeader === AUTH_VIEWER_ROLE) {
+    // 分支原因：显式访客头，直接返回最小访客上下文。
     return {
       userId         : userIdHeader,
       role           : AUTH_VIEWER_ROLE,
@@ -124,6 +182,7 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
     };
   }
 
+  // 最终兜底：任何无法识别的情况都降级为访客，避免异常导致越权。
   return {
     userId         : userIdHeader,
     role           : AUTH_VIEWER_ROLE,
@@ -141,6 +200,7 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
  */
 export function requireAdmin(auth: AuthContext): void {
   if (auth.role !== AUTH_ADMIN_ROLE) {
+    // 这里抛业务错误而非返回 boolean，是为了强制调用方显式处理权限失败分支。
     throw new AuthError(ERROR_CODES.AUTH_FORBIDDEN, "当前用户没有管理员权限");
   }
 }
@@ -156,6 +216,7 @@ export async function authenticateAdmin(
   input: LoginInput,
   prismaClient: PrismaClient = prisma
 ): Promise<AuthenticatedAdminUser> {
+  // 第 1 步：根据“用户名或邮箱”检索用户，支持两种登录标识。
   const user = await prismaClient.user.findFirst({
     where: {
       OR: [{ email: input.identifier }, { username: input.identifier }]
@@ -163,19 +224,23 @@ export async function authenticateAdmin(
   });
 
   if (!user || !user.isActive || user.role !== AppRole.ADMIN) {
+    // 业务安全规则：返回统一错误文案，避免暴露“账号不存在/被禁用/角色不符”的细节。
     throw new AuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误");
   }
 
+  // 第 2 步：密码哈希校验。
   const passwordMatched = await verifyPassword(input.password, user.password);
   if (!passwordMatched) {
     throw new AuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "账号或密码错误");
   }
 
+  // 第 3 步：登录成功后更新最后登录时间，供审计与运营查看活跃度。
   await prismaClient.user.update({
     where: { id: user.id },
     data : { lastLoginAt: new Date() }
   });
 
+  // 第 4 步：返回“无敏感信息”的管理员快照给上游响应层。
   return {
     id      : user.id,
     username: user.username,
@@ -193,6 +258,7 @@ export async function authenticateAdmin(
  * 副作用：无。
  */
 export async function issueAuthToken(name: string, now = Math.floor(Date.now() / 1000)): Promise<string> {
+  // 仅做聚合转发，保持调用方只依赖 auth/index，不耦合底层 token 文件路径。
   return issueAuthTokenWithJose(name, now);
 }
 
@@ -207,6 +273,7 @@ export async function verifyAuthToken(
   token: string,
   now = Math.floor(Date.now() / 1000)
 ): Promise<AuthTokenPayload | null> {
+  // 统一透传到 token 实现，保持模块边界清晰。
   return verifyAuthTokenWithJose(token, now);
 }
 
@@ -222,6 +289,7 @@ function readCookieValue(cookieHeader: string | null, cookieName: string): strin
     return null;
   }
 
+  // Cookie 头格式：k1=v1; k2=v2; ...
   const items = cookieHeader.split(";");
   for (const item of items) {
     const [namePart, ...valueParts] = item.split("=");
@@ -232,12 +300,15 @@ function readCookieValue(cookieHeader: string | null, cookieName: string): strin
 
     const rawValue = valueParts.join("=").trim();
     if (!rawValue) {
+      // 出现空值时按“无有效 cookie”处理，避免把空串误当作已登录凭证。
       return null;
     }
 
     try {
+      // 正常路径：cookie 值经 URL 编码后存储，读取时解码。
       return decodeURIComponent(rawValue);
     } catch {
+      // 解码失败兜底返回原值，避免因为单个非法编码导致整个鉴权链路异常。
       return rawValue;
     }
   }

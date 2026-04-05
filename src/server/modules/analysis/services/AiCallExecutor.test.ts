@@ -1,3 +1,16 @@
+/**
+ * 文件定位（分析流水线模块单测）：
+ * - 覆盖 analysis 域服务/作业/配置解析能力，属于服务端核心业务逻辑层。
+ * - 该模块是小说结构化解析的主链路，直接影响人物、关系、生平等下游数据质量。
+ *
+ * 业务职责：
+ * - 验证模型调用策略、提示词拼装、结果归并、异常降级与任务状态流转。
+ * - 约束输入归一化与输出契约，避免分析链路重构时出现隐性行为漂移。
+ *
+ * 维护提示：
+ * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
+ */
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AiCallExhaustedError, createAiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
@@ -43,11 +56,13 @@ const FALLBACK_MODEL = {
  * 测试目标：验证重试日志、fallback 切换和反递归保护。
  * 覆盖范围：retry success / fallback success / fallback boundary failure。
  */
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("AiCallExecutor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("retries retryable errors and writes phase logs", async () => {
     // Arrange: 首次调用返回限流错误，第二次成功。
     const phaseLogCreate = vi.fn().mockResolvedValue(undefined);
@@ -109,6 +124,7 @@ describe("AiCallExecutor", () => {
     }));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("records RETRIED usage when retryable error payload includes token usage", async () => {
     // Arrange: Provider 可能在 429/timeout 错误中返回 usage，执行器应写入 RETRIED 日志。
     const phaseLogCreate = vi.fn().mockResolvedValue(undefined);
@@ -178,6 +194,7 @@ describe("AiCallExecutor", () => {
     }));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("switches to fallback model after primary failure", async () => {
     // Arrange: 主模型不允许重试，首次失败后应切到 fallback。
     const phaseLogCreate = vi.fn().mockResolvedValue(undefined);
@@ -255,6 +272,7 @@ describe("AiCallExecutor", () => {
     }));
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws AiCallExhaustedError when fallback equals primary model", async () => {
     // Arrange: fallback 与主模型相同，应触发反递归保护。
     const resolverMock: ModelStrategyResolver = {

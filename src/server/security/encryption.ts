@@ -1,5 +1,15 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
+/**
+ * 文件定位（服务端安全基础设施层）：
+ * - 提供敏感字段的对称加解密与脱敏能力。
+ * - 主要给模型密钥、第三方凭证等“需要落库但不可明文存储”的场景使用。
+ *
+ * 安全边界：
+ * - 仅可在服务端调用（依赖环境变量主密钥）；
+ * - 前端绝不能接触 `APP_ENCRYPTION_KEY`。
+ */
+
 const ENCRYPTED_VALUE_PREFIX = "enc:v1";
 
 /**
@@ -12,6 +22,7 @@ const ENCRYPTED_VALUE_PREFIX = "enc:v1";
 function getEncryptionKeyMaterial(): string {
   const keyMaterial = process.env.APP_ENCRYPTION_KEY;
   if (!keyMaterial) {
+    // 明确失败而不是静默降级：缺失主密钥时继续运行会导致密文不可逆或伪安全。
     throw new Error("Missing encryption key: APP_ENCRYPTION_KEY");
   }
 
@@ -38,6 +49,7 @@ function deriveAesKey(keyMaterial: string): Buffer {
  */
 export function encryptValue(plainText: string): string {
   if (!plainText) {
+    // 空值直接返回，避免把“未配置”错误地编码成密文格式，影响调用方判空语义。
     return plainText;
   }
 
@@ -64,12 +76,14 @@ export function encryptValue(plainText: string): string {
  */
 export function decryptValue(cipherText: string): string {
   if (!cipherText) {
+    // 与 encryptValue 对称：空值表示“无配置”，不是异常密文。
     return cipherText;
   }
 
   const [prefixHead, prefixVersion, ivEncoded, tagEncoded, payloadEncoded] = cipherText.split(":");
   const prefix = prefixHead && prefixVersion ? `${prefixHead}:${prefixVersion}` : "";
   if (prefix !== ENCRYPTED_VALUE_PREFIX || !ivEncoded || !tagEncoded || !payloadEncoded) {
+    // 版本前缀校验用于兼容后续密文格式升级；不匹配时拒绝解密，防止误处理脏数据。
     throw new Error("Invalid encrypted payload format");
   }
 
@@ -97,6 +111,7 @@ export function maskSensitiveValue(value: string | null): string | null {
   }
 
   if (value.length <= 8) {
+    // 短值全掩码，避免“前后保留位”导致过度泄露。
     return "*".repeat(value.length);
   }
 

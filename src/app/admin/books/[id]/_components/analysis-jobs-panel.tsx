@@ -1,5 +1,23 @@
 "use client";
 
+/**
+ * ============================================================================
+ * 文件定位：`src/app/admin/books/[id]/_components/analysis-jobs-panel.tsx`
+ * ----------------------------------------------------------------------------
+ * 这是书籍详情页“解析任务历史”面板（客户端组件）。
+ *
+ * 核心职责：
+ * - 拉取并展示解析任务列表（状态、范围、模型、耗时）；
+ * - 支持展开单条任务查看成本与阶段明细；
+ * - 对任务成本做“粗略人民币估算”（仅命中内置价目表的模型）。
+ *
+ * React/业务设计要点：
+ * - 列表在组件挂载后请求一次；
+ * - 单行详情按需加载（首次展开才拉成本），减少初始开销；
+ * - 折叠再展开复用缓存，避免重复请求造成抖动。
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 
@@ -14,18 +32,32 @@ import {
 import { fetchBookJobs, type AnalysisJobListItem } from "@/lib/services/books";
 import { fetchJobCostSummary, type JobCostSummary } from "@/lib/services/model-strategy";
 
+/**
+ * 面板入参。
+ */
 interface AnalysisJobsPanelProps {
+  /** 书籍 ID，用于查询该书所有解析任务。 */
   bookId: string;
 }
 
+/**
+ * 任务状态到展示文案/颜色的映射。
+ * 属于管理端运营语义映射，不建议在各组件散落重复定义。
+ */
 const JOB_STATUS_META: Record<string, { label: string; variant: "secondary" | "warning" | "success" | "destructive" | "default" }> = {
-  SUCCEEDED: { label: "成功", variant: "success" },
-  FAILED   : { label: "失败", variant: "destructive" },
-  RUNNING  : { label: "运行中", variant: "warning" },
-  QUEUED   : { label: "排队中", variant: "secondary" },
-  CANCELED : { label: "已取消", variant: "default" }
+  SUCCEEDED: { label: "成功",   variant: "success"     },
+  FAILED   : { label: "失败",   variant: "destructive" },
+  RUNNING  : { label: "运行中", variant: "warning"     },
+  QUEUED   : { label: "排队中", variant: "secondary"   },
+  CANCELED : { label: "已取消", variant: "default"     }
 };
 
+/**
+ * 将任务范围字段转换为可读文案。
+ *
+ * @param job 单条任务
+ * @returns 范围描述字符串
+ */
 function formatScope(job: AnalysisJobListItem): string {
   if (job.scope === "FULL_BOOK") return "全书";
   if (job.scope === "CHAPTER_RANGE") {
@@ -34,20 +66,34 @@ function formatScope(job: AnalysisJobListItem): string {
   if (job.scope === "CHAPTER_LIST" && job.chapterIndices.length > 0) {
     return `第 ${job.chapterIndices.join(", ")} 章`;
   }
+  // 兜底显示原始 scope，便于排查后端新增值未同步的情况。
   return job.scope;
 }
 
+/**
+ * 格式化任务耗时。
+ *
+ * @param startedAt 开始时间
+ * @param finishedAt 结束时间
+ * @returns 可读耗时；缺失任一时间返回“—”
+ */
 function formatDuration(startedAt: string | null, finishedAt: string | null): string {
   if (!startedAt || !finishedAt) return "—";
+
   const ms = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
   if (ms < 1000) return `${ms}ms`;
+
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
+
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}m ${secs}s`;
 }
 
+/**
+ * 日期时间格式化。
+ */
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("zh-CN", {
     month : "2-digit",
@@ -59,23 +105,39 @@ function formatDateTime(iso: string): string {
   });
 }
 
+/**
+ * 任务状态徽标。
+ */
 function JobStatusBadge({ status }: { status: string }) {
   const meta = JOB_STATUS_META[status] ?? { label: status, variant: "default" as const };
   return <Badge variant={meta.variant}>{meta.label}</Badge>;
 }
 
+/**
+ * 模型单价表（按百万 token 人民币估算）。
+ *
+ * 注意：
+ * - 这是“展示层估算规则”，不是账单结算规则；
+ * - 若模型不在表内会被跳过，目的是“宁可少估，不做误导性精确”。
+ */
 const MODEL_PRICING_CNY_PER_1M: Record<string, { prompt: number; completion: number }> = {
-  "deepseek v3"  : { prompt: 2, completion: 8 },
-  "deepseek chat": { prompt: 2, completion: 8 },
+  "deepseek v3"  : { prompt: 2,   completion: 8   },
+  "deepseek chat": { prompt: 2,   completion: 8   },
   "gemini flash" : { prompt: 0.7, completion: 2.1 },
   "glm 4.6"      : { prompt: 1.2, completion: 2.8 },
   "glm-4.6"      : { prompt: 1.2, completion: 2.8 },
-  "通义千问 max"     : { prompt: 4, completion: 12 },
-  "通义千问 plus"    : { prompt: 1, completion: 3 },
-  "qwen max"     : { prompt: 4, completion: 12 },
-  "qwen plus"    : { prompt: 1, completion: 3 }
+  "通义千问 max"     : { prompt: 4,   completion: 12  },
+  "通义千问 plus"    : { prompt: 1,   completion: 3   },
+  "qwen max"     : { prompt: 4,   completion: 12  },
+  "qwen plus"    : { prompt: 1,   completion: 3   }
 };
 
+/**
+ * 根据模型名匹配价目表。
+ *
+ * @param modelName 实际任务记录中的模型名
+ * @returns 命中价格则返回单价，否则返回 null
+ */
 function inferPricing(modelName: string): { prompt: number; completion: number } | null {
   const normalized = modelName.toLowerCase();
   const entry = Object.entries(MODEL_PRICING_CNY_PER_1M).find(([key]) => normalized.includes(key));
@@ -83,8 +145,10 @@ function inferPricing(modelName: string): { prompt: number; completion: number }
 }
 
 /**
- * 按阶段-模型聚合后的 token 进行粗略人民币估算。
- * 仅对内置价目表能命中的模型计费，未知模型直接跳过，避免误报高精度成本。
+ * 根据成本汇总估算人民币费用。
+ *
+ * @param summary 成本汇总
+ * @returns 估算金额；若无任何可匹配模型则返回 null
  */
 function estimateCostCny(summary: JobCostSummary): number | null {
   let hasKnownPricing = false;
@@ -106,16 +170,26 @@ function estimateCostCny(summary: JobCostSummary): number | null {
   return hasKnownPricing ? totalCost : null;
 }
 
+/**
+ * 单条任务行（含可展开详情）。
+ */
 function JobRow({ job }: { job: AnalysisJobListItem }) {
+  /** 当前行是否展开详情。 */
   const [expanded, setExpanded] = useState(false);
+  /** 任务成本汇总缓存。 */
   const [summary, setSummary] = useState<JobCostSummary | null>(null);
+  /** 成本汇总加载错误。 */
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  /** 成本汇总加载中。 */
   const [summaryLoading, setSummaryLoading] = useState(false);
 
+  /**
+   * 点击行切换展开状态。
+   * 只在“第一次展开且没有缓存”时启动成本请求，避免重复开销。
+   */
   function handleToggleExpand() {
     setExpanded((previous) => {
       const nextExpanded = !previous;
-      // 只在第一次展开时触发加载，后续折叠/展开复用缓存，避免列表频繁抖动请求。
       if (nextExpanded && !summary && !summaryLoading) {
         setSummaryLoading(true);
         setSummaryError(null);
@@ -124,12 +198,15 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
     });
   }
 
+  /**
+   * 当需要加载且已展开时请求成本汇总。
+   * 使用 cancelled 防止快速折叠/卸载后回写状态。
+   */
   useEffect(() => {
     if (!expanded || summary || !summaryLoading) {
       return;
     }
 
-    // 组件卸载或行快速折叠时终止状态写入，避免 React 警告和脏状态覆盖。
     let cancelled = false;
     fetchJobCostSummary(job.id)
       .then((data) => {
@@ -179,9 +256,11 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
           {formatDuration(job.startedAt, job.finishedAt)}
         </td>
       </tr>
+
       {expanded && (
         <tr className="border-t border-border bg-muted/10">
           <td colSpan={6} className="px-4 py-3 text-sm space-y-2">
+            {/* 一级摘要：便于快速读时序与重试情况 */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-muted-foreground">
               <span>开始时间</span>
               <span>{job.startedAt ? formatDateTime(job.startedAt) : "—"}</span>
@@ -204,6 +283,7 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
 
             {summary && (
               <div className="space-y-3">
+                {/* 二级摘要卡：把常用指标放在一屏内 */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="rounded border border-border p-2">
                     <p className="text-xs text-muted-foreground">Token 消耗</p>
@@ -229,6 +309,7 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
                   </div>
                 </div>
 
+                {/* 阶段明细：用于排查“哪个阶段最慢/最贵/fallback 最多” */}
                 <div className="rounded border border-border overflow-hidden">
                   <table className="w-full text-xs">
                     <thead className="bg-muted/40 text-muted-foreground">
@@ -274,6 +355,7 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
               </div>
             )}
 
+            {/* 错误日志保留原文，便于复制排查。 */}
             {job.errorLog && (
               <div className="mt-2">
                 <p className="text-xs text-muted-foreground mb-1 font-medium">错误日志</p>
@@ -289,12 +371,20 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
   );
 }
 
+/**
+ * 解析任务历史面板。
+ */
 export function AnalysisJobsPanel({ bookId }: AnalysisJobsPanelProps) {
+  /** 任务列表；null 表示首屏加载中。 */
   const [jobs, setJobs] = useState<AnalysisJobListItem[] | null>(null);
+  /** 列表加载错误。 */
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * bookId 变化时重新拉取任务列表。
+   * 使用 cancelled 防止慢请求把旧书籍数据回写到新页面。
+   */
   useEffect(() => {
-    // bookId 变化时重新拉取任务列表，并防止慢请求回写过期书籍的数据。
     let cancelled = false;
     fetchBookJobs(bookId)
       .then(data => { if (!cancelled) setJobs(data); })

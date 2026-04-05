@@ -4,6 +4,12 @@ import { ChevronRight, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 文件定位（导航辅助 UI Primitive / Breadcrumb）：
+ * - 提供无业务耦合的面包屑组件族，用于表达页面层级和可回溯路径。
+ * - 组件通过 `data-slot` 暴露稳定语义槽位，便于主题样式覆盖和测试定位。
+ */
+
 function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
 }
@@ -55,6 +61,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       data-slot="breadcrumb-page"
       role="link"
       aria-disabled="true"
+      // aria-current 用于声明“当前页”，避免读屏软件把它当作可跳转链接。
       aria-current="page"
       className={cn("text-foreground font-normal", className)}
       {...props}
@@ -93,6 +100,7 @@ function BreadcrumbEllipsis({
       {...props}
     >
       <MoreHorizontal className="size-4" />
+      {/* 仅读屏可见：补充省略号图标语义。 */}
       <span className="sr-only">More</span>
     </span>
   );

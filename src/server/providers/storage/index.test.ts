@@ -1,3 +1,13 @@
+/**
+ * 文件定位（存储 Provider 单测）：
+ * - 覆盖文件存储抽象层行为，连接业务模块与具体存储实现（本地/云）。
+ * - 该层保障资源读写、路径处理与元数据解析的一致性。
+ *
+ * 业务职责：
+ * - 约束存储键语义、文件存在性判断与异常处理分支。
+ * - 降低更换存储后端时对上层业务的影响范围。
+ */
+
 import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -26,7 +36,9 @@ function createFakeClient(): StorageProviderClient {
   };
 }
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("provideStorage", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses local as default provider when provider is empty", () => {
     // Arrange
     const localFactory = vi.fn(createFakeClient);
@@ -44,6 +56,7 @@ describe("provideStorage", () => {
     expect(ossFactory).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("normalizes provider name before routing", () => {
     // Arrange
     const localFactory = vi.fn(createFakeClient);
@@ -61,6 +74,7 @@ describe("provideStorage", () => {
     expect(ossFactory).not.toHaveBeenCalled();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws explicit error for unsupported provider", () => {
     // Arrange
     const factories: Record<string, StorageClientFactory> = {
@@ -71,6 +85,7 @@ describe("provideStorage", () => {
     expect(() => provideStorage("unknown", factories)).toThrowError("Unsupported STORAGE_PROVIDER: unknown");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("routes to oss provider factory when oss provider is selected", () => {
     // Arrange
     const localFactory = vi.fn(createFakeClient);
@@ -89,6 +104,7 @@ describe("provideStorage", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("LocalStorageProvider", () => {
   let storageRoot: string | null = null;
 
@@ -99,6 +115,7 @@ describe("LocalStorageProvider", () => {
     }
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("writes object to disk and returns logical metadata", async () => {
     // Arrange
     storageRoot = await mkdtemp(path.join(tmpdir(), "wen-yuan-storage-"));
@@ -123,6 +140,7 @@ describe("LocalStorageProvider", () => {
     expect(savedContent).toBe("hello world");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("deletes object from disk", async () => {
     // Arrange
     storageRoot = await mkdtemp(path.join(tmpdir(), "wen-yuan-storage-"));
@@ -142,6 +160,7 @@ describe("LocalStorageProvider", () => {
     await expect(access(path.join(storageRoot, key))).rejects.toThrow();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("builds object urls without exposing physical paths", () => {
     // Arrange
     const provider = new LocalStorageProvider("/tmp/wen-yuan-storage", "https://assets.example.com/files/");
@@ -153,6 +172,7 @@ describe("LocalStorageProvider", () => {
     expect(objectUrl).toBe("https://assets.example.com/files/books/book-1/images/page-1.jpg");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects unsafe object keys", async () => {
     // Arrange
     storageRoot = await mkdtemp(path.join(tmpdir(), "wen-yuan-storage-"));
@@ -165,7 +185,9 @@ describe("LocalStorageProvider", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("OssStorageProvider", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uploads object and returns derived metadata", async () => {
     // Arrange
     const put = vi.fn().mockResolvedValue(undefined);
@@ -203,6 +225,7 @@ describe("OssStorageProvider", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("ignores delete for missing object", async () => {
     // Arrange
     const provider = new OssStorageProvider({
@@ -222,6 +245,7 @@ describe("OssStorageProvider", () => {
     await expect(provider.deleteObject("books/20260328/missing.txt")).resolves.toBeUndefined();
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when mandatory OSS config is missing", () => {
     // Arrange / Act / Assert
     expect(() => new OssStorageProvider({

@@ -1,3 +1,13 @@
+/**
+ * 文件定位（服务端 HTTP 工具单测）：
+ * - 覆盖 server/http 层通用能力，位于业务模块与 Next.js Route Handler 之间的基础设施层。
+ * - 该层不直接承载业务页面，但会影响所有 API 路由的输入解析与响应格式。
+ *
+ * 业务职责：
+ * - 保证请求读取、参数处理、统一响应封装、异常映射等通用规则稳定。
+ * - 降低各接口重复实现风险，确保全局 API 行为一致。
+ */
+
 import { describe, expect, it } from "vitest";
 
 import { ERROR_CODES } from "@/types/api";
@@ -9,7 +19,9 @@ import { AuthError } from "../modules/auth";
  * 路由工具直接决定分页容错和 API 错误响应格式。
  * 这些测试用于锁定公共行为，避免后续重构影响所有 HTTP handler。
  */
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parsePagination", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses defaults when params are missing", () => {
     // Arrange
     const params = new URLSearchParams();
@@ -21,6 +33,7 @@ describe("parsePagination", () => {
     expect(pagination).toEqual({ page: 1, pageSize: 20 });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("normalizes invalid values and floors decimals", () => {
     // Arrange
     const params = new URLSearchParams({
@@ -35,6 +48,7 @@ describe("parsePagination", () => {
     expect(pagination).toEqual({ page: 1, pageSize: 20 });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("clamps page_size to 100 and floors numbers", () => {
     // Arrange
     const params = new URLSearchParams({
@@ -49,6 +63,7 @@ describe("parsePagination", () => {
     expect(pagination).toEqual({ page: 2, pageSize: 100 });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to defaults for non-finite values", () => {
     // Arrange
     const params = new URLSearchParams({
@@ -63,6 +78,7 @@ describe("parsePagination", () => {
     expect(pagination).toEqual({ page: 1, pageSize: 20 });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("parses whitespace-wrapped numbers", () => {
     const params = new URLSearchParams({
       page     : " 3 ",
@@ -74,6 +90,7 @@ describe("parsePagination", () => {
     expect(pagination).toEqual({ page: 3, pageSize: 25 });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("keeps page_size at boundary 100", () => {
     const params = new URLSearchParams({
       page     : "5",
@@ -86,7 +103,9 @@ describe("parsePagination", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("okJson", () => {
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns success envelope with default 200 status", async () => {
     const response = okJson({
       path     : "/api/books",
@@ -108,6 +127,7 @@ describe("okJson", () => {
     expect(payload.meta.durationMs).toBeGreaterThanOrEqual(0);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("includes pagination metadata and custom status", async () => {
     const response = okJson({
       path      : "/api/books",
@@ -135,6 +155,7 @@ describe("okJson", () => {
     });
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not include pagination metadata when not provided", async () => {
     const response = okJson({
       path     : "/api/books",
@@ -150,6 +171,7 @@ describe("okJson", () => {
   });
 });
 
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("failJson", () => {
   const commonArgs = {
     path     : "/api/analyze",
@@ -157,6 +179,7 @@ describe("failJson", () => {
     startedAt: Date.now() - 12
   };
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("maps unauthorized auth error to 401", async () => {
     // Act
     const response = failJson({
@@ -172,6 +195,7 @@ describe("failJson", () => {
     expect(payload.error?.type).toBe("AuthError");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("maps non-auth errors to 500 with fallback code", async () => {
     // Act
     const response = failJson({
@@ -190,6 +214,7 @@ describe("failJson", () => {
     expect(payload.error?.detail).toBe("boom");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("maps forbidden auth error to 403", async () => {
     const response = failJson({
       ...commonArgs,
@@ -202,6 +227,7 @@ describe("failJson", () => {
     expect(payload.error?.type).toBe("AuthError");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("uses default fallback values when not provided", async () => {
     const response = failJson({
       ...commonArgs,
@@ -215,6 +241,7 @@ describe("failJson", () => {
     expect(payload.error?.detail).toBe("Unknown error");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("supports custom status override for non-auth errors", async () => {
     const response = failJson({
       ...commonArgs,
@@ -228,6 +255,7 @@ describe("failJson", () => {
     expect(payload.error?.detail).toBe("bad gateway");
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("keeps auth error status mapping even when custom status is provided", async () => {
     const response = failJson({
       ...commonArgs,
@@ -240,6 +268,7 @@ describe("failJson", () => {
     expect(payload.code).toBe(ERROR_CODES.AUTH_UNAUTHORIZED);
   });
 
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("falls back to unknown detail when error is a primitive", async () => {
     const response = failJson({
       ...commonArgs,
