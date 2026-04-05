@@ -404,6 +404,36 @@ GET /api/admin/books/:id/model-strategy
 - 运行时解析器按 `JOB > BOOK > GLOBAL > SYSTEM_DEFAULT` 生效，因此任务可正确使用导入时模型，但 BOOK 面板仍可能为空。
 - 若不显式区分“写入作用域”与“展示作用域”，就会持续出现“看起来未配置、实际已生效”的认知冲突。
 
+### 错误 17：别名“审核状态”与“解析消费状态”绑定在同一字段，导致同一人物被拆成多个 persona
+
+**反例**：
+- Phase 1 已抽取到高置信别名线索（如“马二先生”→“马纯上”），但因为置信度未达人工确认阈值，只写入 `PENDING`。
+- Resolver 查询别名时仅消费 `CONFIRMED/LLM_INFERRED`，`PENDING` 不参与命中。
+- 跨章节再次出现该称谓时，系统走“相似度/新建”路径，最终产生重复人物。
+
+**正例**：
+- 拆分两条语义，不再复用一个字段承载两种职责：
+  - `reviewStatus`：`PENDING/CONFIRMED/REJECTED`（给审核台）
+  - `resolverStatus`：`ACTIVE/BLOCKED`（给解析器）
+- 对“有已知 persona + 高置信 + 有上下文证据”的别名，可设置 `reviewStatus=PENDING` 但 `resolverStatus=ACTIVE`，允许解析先复用实体。
+- 发生冲突证据时自动降级为 `resolverStatus=BLOCKED` 并进入人工审核，避免错误扩散。
+- 全书校验与自动合并（`DUPLICATE_PERSONA -> MERGE`）只作为兜底，不应承担主防线职责。
+
+```ts
+// 反例：一个状态同时承载“审核语义”和“解析可用语义”
+status = confidence >= 0.9 ? "CONFIRMED" : "PENDING";
+resolverConsumes = status in ["CONFIRMED", "LLM_INFERRED"];
+
+// 正例：语义拆分
+reviewStatus = confidence >= 0.9 ? "CONFIRMED" : "PENDING";
+resolverStatus = confidence >= 0.85 && hasPersonaId && hasEvidence ? "ACTIVE" : "BLOCKED";
+```
+
+原因：
+- 这是“Phase 1 名册抽取层”→“AliasRegistry 存储层”→“PersonaResolver 命中层”的三层契约错位。
+- 审核阈值与在线解析阈值本质不同：前者强调可解释与可追责，后者强调召回稳定与重复实体预防。
+- 不拆分语义会导致“已发现线索但不能被解析器使用”，最终把问题推迟到后置合并阶段，增加治理成本。
+
 ---
 
 ## 跨层功能检查清单
@@ -433,6 +463,8 @@ GET /api/admin/books/:id/model-strategy
 - [ ] 高密度设置页已按任务流进行信息分区（如 Tab），避免“资源配置”与“策略编排”混杂
 - [ ] 状态新增语义已覆盖“写入层/查询层/UI层”全链路；避免复用旧状态值承载新语义，并确认历史数据兼容策略
 - [ ] 涉及多作用域策略（JOB/BOOK/GLOBAL）时，已声明“写入作用域”与“展示作用域”映射，并覆盖“详情展示与运行生效”一致性验证
+- [ ] 别名映射已区分“审核状态”和“解析消费状态”，避免高置信 `PENDING` 线索无法复用而重复建人
+- [ ] 同一别名跨章节出现冲突时，已定义自动降级与人工复核回路（先停用解析消费，再审核）
 
 ---
 

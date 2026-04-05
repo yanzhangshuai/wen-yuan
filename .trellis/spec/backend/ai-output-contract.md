@@ -175,6 +175,35 @@ Prompt 要求 AI 输出的 JSON 结构，必须与 `chapterAnalysisResponseSchem
 
 ---
 
+## 7. 别名映射的“双状态契约”（防止同人拆分）
+
+在人物解析链路中，别名映射至少有两种语义，禁止复用同一个字段：
+
+- `reviewStatus`：审核语义（`PENDING / CONFIRMED / REJECTED`），用于审核台与人工流程。
+- `resolverStatus`：解析消费语义（`ACTIVE / BLOCKED`），用于 `PersonaResolver` 是否可命中复用。
+
+### 设计要求
+
+1. `reviewStatus` 与 `resolverStatus` 必须独立存储和更新，避免“审核未确认”直接等价于“解析不可用”。
+2. 满足以下条件的线索可 `resolverStatus=ACTIVE`（即使 `reviewStatus=PENDING`）：
+   - 已绑定明确 `personaId`
+   - 置信度达到在线命中阈值（例如 `>= 0.85`）
+   - 有章节上下文证据（`evidence/contextHash`）
+3. 发生冲突证据（同别名指向不同 persona）时，必须先降级 `resolverStatus=BLOCKED`，再进入人工复核。
+4. `DUPLICATE_PERSONA -> MERGE` 属于兜底治理，不可替代前置命中防重。
+
+```typescript
+// 反例：一个 status 同时承载“审核”与“解析可用”
+status = confidence >= 0.9 ? "CONFIRMED" : "PENDING";
+resolverConsumes = status === "CONFIRMED" || status === "LLM_INFERRED";
+
+// 正例：双状态解耦
+reviewStatus = confidence >= 0.9 ? "CONFIRMED" : "PENDING";
+resolverStatus = confidence >= 0.85 && hasPersonaId && hasEvidence ? "ACTIVE" : "BLOCKED";
+```
+
+---
+
 ## 禁用模式
 
 - `chapterAnalysisResponseSchema.parse()`（校验失败时直接抛错，中断整章分析）。
@@ -182,3 +211,4 @@ Prompt 要求 AI 输出的 JSON 结构，必须与 `chapterAnalysisResponseSchem
 - 多个模型使用不同的输出 schema。
 - 幻觉错误上抛导致事务回滚。
 - 改 schema 但不同步更新 prompt。
+- 把 `PENDING` 视为“解析一律不可用”，导致跨章节重复创建 persona。
