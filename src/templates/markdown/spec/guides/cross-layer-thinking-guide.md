@@ -353,6 +353,30 @@ function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState) {
 - 当页面同时承载“接入配置”和“策略编排”两类任务时，不分区会放大误操作概率，也增加回归测试范围。
 - 使用稳定 Tab 边界能把状态变更影响面收敛到当前上下文，提高可维护性。
 
+### 错误 15：复用同一状态值承载“未开始”和“待复核”两种语义，导致书级与章级状态冲突
+
+**反例**：
+- 章节已解析但需人工复核时，仍写入 `PENDING`；
+- 书级状态显示 `COMPLETED`（100%），章节却展示“等待中”，形成“完成但未开始”的矛盾。
+
+**正例**：
+- 为“已解析但需人工复核”定义独立状态（如 `REVIEW_PENDING`）；
+- 保持跨层一致传播：`job runner` 写入状态、`status service` 返回状态、UI 文案与可操作按钮同步支持；
+- 对历史数据提供兼容映射（如按最近成功任务范围将遗留 `PENDING` 映射为 `REVIEW_PENDING`）。
+
+```ts
+// 反例：同一个状态承载两种语义
+parseStatus = needsReview ? "PENDING" : "SUCCEEDED";
+
+// 正例：语义拆分
+parseStatus = needsReview ? "REVIEW_PENDING" : "SUCCEEDED";
+```
+
+原因：
+- 这是“任务执行层”→“状态查询层”→“前端展示层”的跨层契约歧义。
+- 状态枚举一旦承载多重语义，任何一层都会按自己的理解渲染，最终出现互相矛盾的状态展示。
+- 修复必须覆盖全链路，并显式定义历史数据迁移/兼容策略，否则线上旧数据会持续误导用户。
+
 ---
 
 ## 跨层功能检查清单
@@ -380,6 +404,7 @@ function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState) {
 - [ ] 推荐默认跨层契约已统一为 `stageDefaults.*.aliasKey`（配置/UI 展示）
 - [ ] 状态型列表（默认/启用/未启用/未配置）排序规则已集中在单一 helper，并有明确次级排序规则
 - [ ] 高密度设置页已按任务流进行信息分区（如 Tab），避免“资源配置”与“策略编排”混杂
+- [ ] 状态新增语义已覆盖“写入层/查询层/UI层”全链路；避免复用旧状态值承载新语义，并确认历史数据兼容策略
 
 ---
 

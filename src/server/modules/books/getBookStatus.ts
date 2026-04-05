@@ -1,3 +1,4 @@
+import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
@@ -29,11 +30,45 @@ const BOOK_STATUS_SELECT = {
     orderBy: { no: "asc" as const },
     select : {
       no         : true,
+      type       : true,
       title      : true,
       parseStatus: true
     }
   }
 } satisfies Prisma.BookSelect;
+
+const SUCCEEDED_JOB_SCOPE_SELECT = {
+  scope         : true,
+  chapterStart  : true,
+  chapterEnd    : true,
+  chapterIndices: true
+} satisfies Prisma.AnalysisJobSelect;
+
+type SucceededJobScope = Prisma.AnalysisJobGetPayload<{ select: typeof SUCCEEDED_JOB_SCOPE_SELECT }>;
+type BookChapterRow = Prisma.BookGetPayload<{ select: typeof BOOK_STATUS_SELECT }>["chapters"][number];
+
+function isChapterCoveredBySucceededJob(chapter: BookChapterRow, job: SucceededJobScope | null): boolean {
+  if (!job || chapter.type !== "CHAPTER") {
+    return false;
+  }
+
+  if (job.scope === "FULL_BOOK") {
+    return true;
+  }
+
+  if (job.scope === "CHAPTER_RANGE") {
+    if (job.chapterStart == null || job.chapterEnd == null) {
+      return false;
+    }
+    return chapter.no >= job.chapterStart && chapter.no <= job.chapterEnd;
+  }
+
+  if (job.scope === "CHAPTER_LIST") {
+    return job.chapterIndices.includes(chapter.no);
+  }
+
+  return false;
+}
 
 /**
  * 书籍解析状态快照。
@@ -78,6 +113,26 @@ export function createGetBookStatusService(
     // 仅取最新任务的错误日志作为书级 errorLog 的补充信息，防止 UI 空展示。
     const latestJob = book.analysisJobs[0];
     const latestJobErrorLog = latestJob?.errorLog ?? undefined;
+    const latestSucceededJob = await prismaClient.analysisJob.findFirst({
+      where: {
+        bookId,
+        status: AnalysisJobStatus.SUCCEEDED
+      },
+      orderBy: [
+        { finishedAt: "desc" },
+        { updatedAt: "desc" }
+      ],
+      select: SUCCEEDED_JOB_SCOPE_SELECT
+    });
+
+    // 兼容历史数据：旧版本将“需复核”写成 PENDING，这里按最近一次成功任务覆盖范围映射为 REVIEW_PENDING。
+    const normalizedChapters = book.chapters.map(chapter => ({
+      no         : chapter.no,
+      title      : chapter.title,
+      parseStatus: chapter.parseStatus === "PENDING" && isChapterCoveredBySucceededJob(chapter, latestSucceededJob)
+        ? "REVIEW_PENDING"
+        : chapter.parseStatus
+    }));
 
     return {
       status  : book.status,
@@ -85,7 +140,7 @@ export function createGetBookStatusService(
       // parseStage 可能为 null，这里统一转为 undefined，保持前端可选字段语义一致。
       stage   : book.parseStage ?? undefined,
       errorLog: book.errorLog ?? latestJobErrorLog,
-      chapters: book.chapters
+      chapters: normalizedChapters
     };
   }
 

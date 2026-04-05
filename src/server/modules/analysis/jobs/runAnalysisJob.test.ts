@@ -674,7 +674,7 @@ describe("analysis job runner", () => {
     await expect(runner.runAnalysisJobById("job-validation-errors")).resolves.toBeUndefined();
     expect(chapterUpdate).toHaveBeenCalledWith({
       where: { id: "chapter-1" },
-      data : { parseStatus: "PENDING" }
+      data : { parseStatus: "REVIEW_PENDING" }
     });
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: "job-validation-errors" },

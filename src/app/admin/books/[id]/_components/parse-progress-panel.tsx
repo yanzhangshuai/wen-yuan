@@ -9,7 +9,7 @@
  * 核心职责：
  * - 周期性拉取书籍解析状态快照；
  * - 展示总体进度条与阶段信息；
- * - 展示章节级解析状态，并支持对失败/成功章节触发“重新解析”。
+ * - 展示章节级解析状态，并支持对失败/成功/待复核章节触发“重新解析”。
  *
  * React / Next.js 语义：
  * - `"use client"` 必须保留：轮询、点击事件、局部重试均依赖浏览器运行时；
@@ -17,15 +17,16 @@
  *
  * 关键业务规则：
  * - 当书籍状态进入 `COMPLETED` 或 `ERROR` 时自动停止轮询，降低无效请求；
- * - 仅允许 `FAILED` / `SUCCEEDED` 章节重跑：
+ * - 仅允许 `FAILED` / `SUCCEEDED` / `REVIEW_PENDING` 章节重跑：
  *   1) `FAILED` 需要修复；
  *   2) `SUCCEEDED` 允许人工复跑提升质量；
- *   3) `PROCESSING`/等待中的章节禁止重复触发，避免并发冲突。
+ *   3) `REVIEW_PENDING` 表示章节已解析但需人工复核，可直接重跑；
+ *   4) `PROCESSING`/等待中的章节禁止重复触发，避免并发冲突。
  * ============================================================================
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 
 import {
   Card,
@@ -75,6 +76,14 @@ function ChapterStatusBadge({ status }: { status: string }) {
     return (
       <span className="inline-flex items-center gap-1 text-destructive text-xs font-medium">
         <XCircle className="w-3.5 h-3.5" /> 失败
+      </span>
+    );
+  }
+
+  if (status === "REVIEW_PENDING") {
+    return (
+      <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
+        <AlertCircle className="w-3.5 h-3.5" /> 待复核
       </span>
     );
   }
@@ -276,8 +285,10 @@ export function ParseProgressPanel({ bookId, initialStatus }: ParseProgressPanel
                     const isPending = reanalyzingChapters.has(ch.no);
                     const errMsg = reanalyzeErrors.get(ch.no);
 
-                    // 当前业务允许：失败重跑 + 已成功重跑；处理中/等待中禁用。
-                    const canReanalyze = ch.parseStatus === "FAILED" || ch.parseStatus === "SUCCEEDED";
+                    // 当前业务允许：失败重跑 + 已成功重跑 + 待复核重跑；处理中/等待中禁用。
+                    const canReanalyze = ch.parseStatus === "FAILED"
+                      || ch.parseStatus === "SUCCEEDED"
+                      || ch.parseStatus === "REVIEW_PENDING";
 
                     return (
                       <tr key={ch.no} className="border-t border-border">

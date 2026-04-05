@@ -47,7 +47,7 @@ interface ChapterValidationBlockResult {
   autoFixable   : number;
   /** 实际成功应用的自动修复条数。 */
   appliedAutoFix: number;
-  /** 是否仍需人工复审。true 时章节 parseStatus 会回落到 PENDING。 */
+  /** 是否仍需人工复审。true 时章节 parseStatus 会标记为 REVIEW_PENDING。 */
   needsReview   : boolean;
 }
 
@@ -680,10 +680,10 @@ export function createAnalysisJobRunner(
 
           doneCount += 1;
           await prismaClient.$transaction([
-              prismaClient.chapter.update({
-                where: { id: chapter.id },
-                data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "PENDING" : "SUCCEEDED") : "FAILED" }
-              }),
+            prismaClient.chapter.update({
+              where: { id: chapter.id },
+              data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "REVIEW_PENDING" : "SUCCEEDED") : "FAILED" }
+            }),
             prismaClient.book.update({
               where: { id: runningJob.bookId },
               data : {

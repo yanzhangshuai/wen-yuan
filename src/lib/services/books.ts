@@ -135,7 +135,7 @@ export interface BookStatusSnapshot {
   stage?   : string;
   /** 错误摘要，可选。 */
   errorLog?: string;
-  /** 章节级状态列表，可选。 */
+  /** 章节级状态列表，可选（parseStatus: PENDING/PROCESSING/SUCCEEDED/FAILED/REVIEW_PENDING）。 */
   chapters?: Array<{ no: number; title: string; parseStatus: string }>;
 }
 

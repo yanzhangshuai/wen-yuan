@@ -218,6 +218,128 @@ html {
 }
 
 /* =========================================
+   Graph loading: book opening transition
+   ========================================= */
+@keyframes graph-book-halo {
+  0%, 100% { opacity: 0.28; transform: scale(0.94); }
+  50%      { opacity: 0.52; transform: scale(1.03); }
+}
+
+@keyframes graph-book-shadow {
+  0%, 100% { opacity: 0.56; transform: translateX(-50%) scaleX(0.92); }
+  50%      { opacity: 0.82; transform: translateX(-50%) scaleX(1.03); }
+}
+
+@keyframes graph-book-cover-left-open {
+  0%   { transform: translateX(-98%) rotateY(0deg); }
+  65%  { transform: translateX(-98%) rotateY(-82deg); }
+  100% { transform: translateX(-98%) rotateY(-72deg); }
+}
+
+@keyframes graph-book-cover-right-open {
+  0%   { transform: translateX(-2%) rotateY(0deg); }
+  65%  { transform: translateX(-2%) rotateY(82deg); }
+  100% { transform: translateX(-2%) rotateY(72deg); }
+}
+
+@keyframes graph-book-pages-glow {
+  0%   { opacity: 0.56; transform: translateX(-50%) scaleY(0.96); }
+  45%  { opacity: 0.95; transform: translateX(-50%) scaleY(1.02); }
+  100% { opacity: 0.88; transform: translateX(-50%) scaleY(1); }
+}
+
+@keyframes graph-book-lines-shift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 22px; }
+}
+
+@keyframes graph-loading-dot {
+  0%, 80%, 100% { opacity: 0.32; transform: translateY(0); }
+  40%           { opacity: 1; transform: translateY(-3px); }
+}
+
+.graph-loading-center::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 26% at 50% 56%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%),
+    radial-gradient(62% 40% at 50% 65%, color-mix(in srgb, var(--card) 58%, transparent), transparent 72%);
+}
+
+.graph-loading-book-stage {
+  transform-style: preserve-3d;
+}
+
+.graph-loading-book-halo {
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 24%, transparent) 0%, transparent 72%);
+  animation: graph-book-halo 1400ms ease-in-out infinite;
+}
+
+.graph-loading-book-shadow {
+  animation: graph-book-shadow 1400ms ease-in-out infinite;
+}
+
+.graph-loading-book-pages {
+  animation: graph-book-pages-glow 920ms ease-out both;
+}
+
+.graph-loading-book-pages-lines {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--foreground) 15%, transparent) 0,
+      color-mix(in srgb, var(--foreground) 15%, transparent) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  animation: graph-book-lines-shift 1800ms linear infinite;
+}
+
+.graph-loading-book-cover-left {
+  backface-visibility: hidden;
+  animation: graph-book-cover-left-open 920ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.graph-loading-book-cover-right {
+  backface-visibility: hidden;
+  animation: graph-book-cover-right-open 920ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.graph-loading-book-dots span {
+  animation: graph-loading-dot 1050ms ease-in-out infinite;
+}
+
+.graph-loading-book-dots span:nth-child(2) {
+  animation-delay: 130ms;
+}
+
+.graph-loading-book-dots span:nth-child(3) {
+  animation-delay: 260ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-loading-book-halo,
+  .graph-loading-book-shadow,
+  .graph-loading-book-pages,
+  .graph-loading-book-pages-lines,
+  .graph-loading-book-cover-left,
+  .graph-loading-book-cover-right,
+  .graph-loading-book-dots span {
+    animation: none !important;
+  }
+
+  .graph-loading-book-cover-left {
+    transform: translateX(-98%) rotateY(-66deg);
+  }
+
+  .graph-loading-book-cover-right {
+    transform: translateX(-2%) rotateY(66deg);
+  }
+}
+
+/* =========================================
    Glassmorphism utility
    ========================================= */
 .glass {

@@ -25,17 +25,37 @@ export default function GraphLoading() {
         ))}
       </div>
 
-      {/* Central graph skeleton */}
-      <div className="flex h-full items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative h-48 w-48">
-            <Skeleton className="absolute left-1/2 top-1/4 h-10 w-10 -translate-x-1/2 rounded-full" />
-            <Skeleton className="absolute left-1/4 top-1/2 h-8 w-8 rounded-full" />
-            <Skeleton className="absolute right-1/4 top-1/2 h-8 w-8 rounded-full" />
-            <Skeleton className="absolute bottom-1/4 left-1/3 h-6 w-6 rounded-full" />
-            <Skeleton className="absolute bottom-1/4 right-1/3 h-6 w-6 rounded-full" />
+      {/* Central "book opening" loading stage */}
+      <div className="graph-loading-center relative flex h-full items-center justify-center">
+        <div
+          className="graph-loading-book-open relative flex flex-col items-center gap-5"
+          role="status"
+          aria-live="polite"
+          aria-label="正在展开书籍并加载人物图谱"
+        >
+          <div className="graph-loading-book-stage relative h-52 w-[min(82vw,22rem)] [perspective:1200px]">
+            <div className="graph-loading-book-halo absolute inset-x-0 top-1/2 h-24 -translate-y-1/2 rounded-full" />
+            <div className="graph-loading-book-shadow absolute bottom-3 left-1/2 h-6 w-[72%] -translate-x-1/2 rounded-full bg-foreground/15 blur-xl" />
+            <div className="graph-loading-book-spine absolute bottom-6 left-1/2 z-20 h-28 w-3 -translate-x-1/2 rounded-sm bg-foreground/24" />
+
+            <div className="graph-loading-book-pages absolute bottom-7 left-1/2 z-10 h-24 w-[68%] -translate-x-1/2 overflow-hidden rounded-[4px] border border-border/35 bg-card/80">
+              <div className="graph-loading-book-pages-lines absolute inset-2 rounded-[2px]" />
+            </div>
+
+            <div className="graph-loading-book-cover-left absolute bottom-6 left-1/2 z-30 h-28 w-[34%] origin-right -translate-x-[98%] rounded-l-md border border-border/45 bg-linear-to-br from-card/95 via-card/85 to-muted/75 shadow-lg" />
+            <div className="graph-loading-book-cover-right absolute bottom-6 left-1/2 z-30 h-28 w-[34%] origin-left translate-x-[-2%] rounded-r-md border border-border/45 bg-linear-to-bl from-card/95 via-card/85 to-muted/75 shadow-lg" />
           </div>
-          <Skeleton className="h-4 w-32" />
+
+          <div className="flex flex-col items-center gap-2">
+            <p className="graph-loading-book-caption text-sm font-medium text-foreground/90">
+              书卷展开中，正在载入人物图谱
+            </p>
+            <div className="graph-loading-book-dots flex items-center gap-1.5" aria-hidden="true">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+            </div>
+          </div>
         </div>
       </div>
 
