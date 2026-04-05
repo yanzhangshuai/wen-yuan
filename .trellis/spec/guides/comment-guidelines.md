@@ -5,6 +5,12 @@ stage: mvp
 # 注释规范（含单元测试）
 
 > 目标：让注释提供代码本身无法传达的信息——**为什么**，而不是**做了什么**。
+>
+> 模式说明：
+> - 默认开发任务使用本规范（强调“必要且高价值注释”）。
+> - 若任务是“Next.js 全量注释补全/注释收尾巡检”，切换到
+>   [`../frontend/nextjs-detailed-commenting.md`](../frontend/nextjs-detailed-commenting.md)，
+>   该规范优先级更高，要求文件级、类型级、分支级全覆盖。
 
 ---
 

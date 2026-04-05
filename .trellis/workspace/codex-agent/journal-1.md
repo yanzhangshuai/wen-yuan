@@ -187,3 +187,49 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: 全项目注释规范写入 Trellis 并归档 04-04
+
+**Date**: 2026-04-05
+**Task**: 全项目注释规范写入 Trellis 并归档 04-04
+
+### Summary
+
+完成 04-04-full-project-commenting 归档，并将 Next.js 超详细注释规则写入 Trellis 规范体系（索引已接入）
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Task Archive | 已归档 `04-04-full-project-commenting` 到 `.trellis/tasks/archive/2026-04/04-04-full-project-commenting/` |
+| Archive Commit | 归档脚本自动生成提交：`d3fc196`（`chore(task): archive 04-04-full-project-commenting`） |
+| New Spec | 新增 `.trellis/spec/frontend/nextjs-detailed-commenting.md`，沉淀“先分析后重注释、全覆盖注释、保持逻辑不变”的专项规则 |
+| Frontend Index | 更新 `.trellis/spec/frontend/index.md`，加入“Next.js 超详细注释规范”入口 |
+| Guides Index | 更新 `.trellis/spec/guides/index.md`，加入规范入口与触发清单（全项目注释/注释收尾巡检） |
+| Comment Mode Switch | 更新 `.trellis/spec/guides/comment-guidelines.md`，增加模式说明：默认精简注释；注释专项任务切换到新规范且其优先级更高 |
+
+**Scope**:
+- 本次仅落地规范文档与任务归档，不改业务代码逻辑。
+
+**Note**:
+- 按 record-session 约束，本次使用 `--no-commit` 记录会话，未触发任何 AI 提交动作。
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d3fc196` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

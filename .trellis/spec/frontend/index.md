@@ -31,6 +31,7 @@ stage: mvp
 | [性能规范](./performance-guidelines.md) | 渲染成本、列表性能、状态订阅规范 | 已就绪 |
 | [质量规范](./quality-guidelines.md) | 代码标准与禁用模式 | 已就绪 |
 | [类型安全](./type-safety.md) | 类型模式与校验规则 | 已就绪 |
+| [Next.js 超详细注释规范](./nextjs-detailed-commenting.md) | 注释专项任务的文件级/类型级/分支级注释标准 | 已就绪 |
 
 ---
 

@@ -34,6 +34,7 @@ stage: mvp
 | [模块边界规范](./module-boundary-guidelines.md) | 分层依赖方向与禁止导入 | 设计与评审时 |
 | [风险预演指南](./risk-preflight-guide.md) | 变更前风险识别与缓解 | 实施前 |
 | [注释规范（含单元测试）](./comment-guidelines.md) | 统一详细注释与测试注释模板 | 新增/修改代码与测试时 |
+| [Next.js 超详细注释规范](../frontend/nextjs-detailed-commenting.md) | 注释专项任务的全量重注释标准（分析 + 重注释 + 巡检） | 全项目注释/交接强化时 |
 | [ADR Lite 模板](./adr-lite-template.md) | 关键决策最小记录模板 | 涉及重要取舍时 |
 | [代码复用思考指南](./code-reuse-thinking-guide.md) | 识别可复用模式，减少重复 | 发现重复模式时 |
 | [跨层思考指南](./cross-layer-thinking-guide.md) | 梳理跨层数据流 | 功能跨越多个层时 |
@@ -70,6 +71,14 @@ stage: mvp
 - [ ] 你在评审中无法快速看出“为什么这样实现/这样断言”
 
 → 阅读 [注释规范（含单元测试）](./comment-guidelines.md)
+
+### 何时应用 Next.js 超详细注释规范
+
+- [ ] 任务明确要求“全项目注释”或“注释收尾巡检”
+- [ ] 需要把 Next.js 路由语义、渲染语义、类型语义写成交接级文档
+- [ ] 目标是显著降低新人误改风险，而不是最小注释量
+
+→ 阅读 [Next.js 超详细注释规范](../frontend/nextjs-detailed-commenting.md)
 
 ---
 
