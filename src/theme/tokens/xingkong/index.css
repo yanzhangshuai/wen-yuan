@@ -75,8 +75,8 @@
   --chart-5: oklch(0.65 0.03 150);
 
   /* --- wen-yuan 扩展：图谱细分色 --- */
-  /* 图谱画布背景：比主背景更深 */
-  --color-graph-bg: oklch(0.03 0.003 240);
+  /* 图谱画布在星空主题下保持透明，直接透出底层星空背景。 */
+  --color-graph-bg: transparent;
   --color-graph-edge-positive: oklch(0.58 0.06 200);
   --color-graph-edge-negative: oklch(0.50 0.10 25);
   --color-graph-draft: oklch(0.50 0.04 220 / 0.4);

@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export default function GraphLoading() {
   return (
-    <section className="graph-loading relative h-[calc(100vh-64px)] w-full overflow-hidden bg-(--color-graph-bg)">
+    <section className="graph-loading relative left-1/2 h-[calc(100vh-64px)] w-screen -translate-x-1/2 overflow-hidden bg-(--color-graph-bg)">
       {/* Toolbar skeleton */}
       <div className="absolute left-4 top-4 z-10 flex flex-col gap-1 rounded-lg border border-border bg-card p-2">
         {Array.from({ length: 6 }).map((_, i) => (

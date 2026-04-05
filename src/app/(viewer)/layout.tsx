@@ -42,7 +42,7 @@ export default async function ViewerLayout({
   return (
     <div className="flex flex-col min-h-screen">
       <ViewerHeader isAdmin={isAdmin} currentPath={currentPath} />
-      <main className="mx-auto w-full max-w-[1440px] flex-1 animate-page-enter">
+      <main className="viewer-layout-main mx-auto w-full max-w-[1440px] flex-1 animate-page-enter">
         {children}
       </main>
     </div>

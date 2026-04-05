@@ -37,7 +37,7 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
 
   return (
     <header className="viewer-header sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6">
+      <div className="viewer-header-inner mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
