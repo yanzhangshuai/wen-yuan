@@ -61,6 +61,8 @@ stage: mvp
 - 根 DOM 元素 className 必须包含语义化 class token（领域导向 kebab-case）。
 - 条件样式分支需保持可读，分支表达简短明确。
 - 涉及颜色时必须同时覆盖 light/dark mode。
+- 共享 layout 中的 `max-width` / `padding` 约束必须对沉浸式页面（图谱、阅读器、全屏画布）提供显式逃生口；不要假设子页面写 `w-full` 就能突破父容器限制。
+- 主题化场景视觉（如星空图谱、博物馆首页）必须挂在语义化页面 class 上做局部覆盖，不要为修单一路由而全局扭动整个主题 token。
 
 真实示例：
 - 语义化根 class：`home-page`、`layout-navbar`、`ui-button`
@@ -69,6 +71,45 @@ stage: mvp
 
 校验入口：
 - 通过 `pnpm lint` + 代码评审检查语义化根 className 约定是否满足
+
+---
+
+### 共享布局与沉浸式页面
+
+场景：同一个路由组既承载常规内容页，也承载沉浸式大画布页。
+
+反例（禁止）：
+```tsx
+// layout.tsx
+<main className="mx-auto w-full max-w-[1440px]">{children}</main>
+
+// graph page
+<section className="w-full">{/* 这里的 w-full 无法突破父级 max-width */}</section>
+```
+
+正例（必须）：
+```tsx
+const isImmersiveRoute = /^\/books\/[^/]+\/graph\/?$/.test(currentPath);
+
+<main
+  className={
+    isImmersiveRoute
+      ? "viewer-layout-main w-full"
+      : "viewer-layout-main mx-auto w-full max-w-[1440px]"
+  }
+>
+  {children}
+</main>
+```
+
+配套要求：
+- 沉浸式页面自身必须补语义化根 class（如 `graph-page-immersive`、`graph-view-immersive`）。
+- 主题样式优先挂在这些 class 上，避免把首页、登录页、图谱页的视觉需求混成同一组全局 token。
+
+原因：
+- 父级 `max-width` 是布局约束，子级 `w-full` 只能填满“被限制后的宽度”，不能反向突破。
+- 在共享 layout 显式识别沉浸式路由，能从结构上避免“页面明明要求全宽，却一直像没生效”的反复排障。
+- 语义化场景 class 能让主题覆盖保持局部、可审查、可回归验证。
 
 ---
 
