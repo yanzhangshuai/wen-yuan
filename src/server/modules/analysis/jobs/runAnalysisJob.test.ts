@@ -33,6 +33,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const chapterUpdate = vi.fn().mockResolvedValue({});
   const bookFindUnique = vi.fn().mockResolvedValue({ title: "儒林外史" });
   const bookUpdate = vi.fn().mockResolvedValue({});
+  const bookUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
   const transaction = vi.fn(async (operationsOrCallback: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>)) => {
     if (typeof operationsOrCallback === "function") {
       return await operationsOrCallback({} as never);
@@ -94,7 +95,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
       update    : analysisJobUpdate
     },
     chapter     : { findMany: chapterFindMany, findUnique: chapterFindUnique, updateMany: chapterUpdateMany, update: chapterUpdate },
-    book        : { findUnique: bookFindUnique, update: bookUpdate },
+    book        : { findUnique: bookFindUnique, update: bookUpdate, updateMany: bookUpdateMany },
     profile     : { findMany: profileFindMany },
     mention     : { groupBy: mentionGroupBy, findMany: mentionFindMany },
     relationship: { findMany: relationshipFindMany },
@@ -114,6 +115,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     chapterUpdate,
     bookFindUnique,
     bookUpdate,
+    bookUpdateMany,
     transaction,
     analyzeChapter,
     resolvePersonaTitles,
@@ -145,7 +147,8 @@ describe("analysis job runner", () => {
       chapterFindMany,
       transaction,
       analyzeChapter,
-      chapterUpdate
+      chapterUpdate,
+      bookUpdateMany
     } = createRunnerContext();
 
     // cancel checks: 1 extra findUnique per chapter
@@ -196,10 +199,69 @@ describe("analysis job runner", () => {
       where: { id: "chapter-1" },
       data : { parseStatus: "SUCCEEDED" }
     }));
-    // 1 $transaction per chapter (book progress + chapter PROCESSING) + 1 final success
-    expect(transaction).toHaveBeenCalledTimes(3);
+    expect(bookUpdateMany).toHaveBeenCalledTimes(2);
+    expect(bookUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        id           : "book-1",
+        parseProgress: expect.objectContaining({ lt: expect.any(Number) })
+      }),
+      data: expect.objectContaining({
+        parseProgress: expect.any(Number),
+        parseStage   : expect.stringContaining("实体提取（已完成")
+      })
+    }));
+    // 章节循环不再使用事务；仅在任务收尾时使用一次事务提交 job/book 终态。
+    expect(transaction).toHaveBeenCalledTimes(1);
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: jobId },
+      data : expect.objectContaining({
+        status: AnalysisJobStatus.SUCCEEDED
+      })
+    });
+  });
+
+  // 用例语义：章节已成功落库时，进度写入异常不应中断整书任务。
+  it("keeps job successful when incremental book progress write fails", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      bookUpdateMany,
+      chapterUpdate,
+      analysisJobUpdate
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-progress-write-fail",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-progress-write-fail",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    bookUpdateMany.mockRejectedValueOnce(new Error("transaction timed out"));
+
+    await expect(runner.runAnalysisJobById("job-progress-write-fail")).resolves.toBeUndefined();
+
+    expect(chapterUpdate).toHaveBeenCalledWith({
+      where: { id: "chapter-1" },
+      data : { parseStatus: "SUCCEEDED" }
+    });
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-progress-write-fail" },
       data : expect.objectContaining({
         status: AnalysisJobStatus.SUCCEEDED
       })
@@ -404,8 +466,8 @@ describe("analysis job runner", () => {
 
     // 单章全部失败时，任务整体失败并抛出汇总错误
     await expect(runner.runAnalysisJobById("job-failed")).rejects.toThrow("所有章节解析失败");
-    // 1 $transaction per chapter (book+chapter PROCESSING) + 1 failure
-    expect(transaction).toHaveBeenCalledTimes(2);
+    // 章节循环不再使用事务；失败时仅在 catch 收尾事务里写一次 FAILED/ERROR。
+    expect(transaction).toHaveBeenCalledTimes(1);
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: "job-failed" },
       data : expect.objectContaining({

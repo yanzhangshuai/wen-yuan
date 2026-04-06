@@ -82,6 +82,32 @@ export interface PatchPersonaBody {
   confidence?: number;
 }
 
+/**
+ * 手动合并人物请求体。
+ */
+export interface MergePersonasBody {
+  /** 被并入的人物 ID。 */
+  sourceId: string;
+  /** 保留的人物 ID。 */
+  targetId: string;
+}
+
+/**
+ * 手动拆分人物请求体。
+ */
+export interface SplitPersonaBody {
+  /** 原人物 ID。 */
+  sourceId  : string;
+  /** 所属书籍 ID。 */
+  bookId    : string;
+  /** 需要迁移的章节号列表。 */
+  chapterNos: number[];
+  /** 新人物名称。 */
+  name      : string;
+  /** 可选别名。 */
+  aliases?  : string[];
+}
+
 /* ------------------------------------------------
    Parsers
    内部使用，将 API unknown 响应安全转换为强类型。
@@ -222,6 +248,30 @@ export async function fetchPersonaDetail(id: string): Promise<PersonaDetail> {
 export async function patchPersona(id: string, body: PatchPersonaBody): Promise<void> {
   await clientMutate(`/api/personas/${id}`, {
     method : "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
+/**
+ * 手动执行人物合并。
+ * 对应接口：`POST /api/personas/merge`。
+ */
+export async function mergePersonas(body: MergePersonasBody): Promise<void> {
+  await clientMutate("/api/personas/merge", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
+/**
+ * 手动执行人物拆分（按章节迁移）。
+ * 对应接口：`POST /api/personas/split`。
+ */
+export async function splitPersona(body: SplitPersonaBody): Promise<void> {
+  await clientMutate("/api/personas/split", {
+    method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(body)
   });

@@ -245,11 +245,32 @@ export function GraphView({
    * - 若只清空其中一项，用户会看到残留高亮/菜单，形成状态错觉。
    */
   function handleBackgroundClick() {
-    setSelectedPersona(null);
-    setFocusedNodeId(null);
-    setContextMenu(null);
-    setHighlightPathIds(new Set());
+    // 背景点击是高频操作：仅在状态非空时才提交更新，避免 no-op 触发整树重渲染。
+    setSelectedPersona(prev => prev === null ? prev : null);
+    setFocusedNodeId(prev => prev === null ? prev : null);
+    setContextMenu(prev => prev === null ? prev : null);
+    setHighlightPathIds(prev => prev.size === 0 ? prev : new Set());
   }
+
+  /** 清空路径高亮（仅在当前存在高亮时更新状态）。 */
+  const clearHighlightPath = useCallback(() => {
+    setHighlightPathIds(prev => prev.size === 0 ? prev : new Set());
+  }, []);
+
+  /** 设置路径高亮（与当前集合一致时保持引用，避免无意义 rerender）。 */
+  const setHighlightPath = useCallback((nextPathNodeIds: Set<string>) => {
+    setHighlightPathIds(prev => {
+      if (prev.size !== nextPathNodeIds.size) {
+        return nextPathNodeIds;
+      }
+      for (const nodeId of nextPathNodeIds) {
+        if (!prev.has(nodeId)) {
+          return nextPathNodeIds;
+        }
+      }
+      return prev;
+    });
+  }, []);
 
   /**
    * 通过人物名查找节点 ID。
@@ -289,7 +310,7 @@ export function GraphView({
       const targetPersonaId = findPersonaIdByName(targetName);
       if (!sourcePersonaId || !targetPersonaId) {
         // 任一端映射失败都清空旧高亮，避免保留上一次成功路径造成误导。
-        setHighlightPathIds(new Set());
+        clearHighlightPath();
         return;
       }
 
@@ -301,7 +322,7 @@ export function GraphView({
         });
         if (result.found) {
           const pathNodeIds = new Set<string>(result.nodes.map(node => node.id));
-          setHighlightPathIds(pathNodeIds);
+          setHighlightPath(pathNodeIds);
           return;
         }
       } catch {
@@ -309,7 +330,7 @@ export function GraphView({
       }
 
       // 未找到路径或查询失败统一回落为空高亮。
-      setHighlightPathIds(new Set());
+      clearHighlightPath();
     })();
   }
 

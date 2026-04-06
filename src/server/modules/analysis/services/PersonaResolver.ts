@@ -4,6 +4,7 @@ import type { AliasRegistryService } from "@/server/modules/analysis/services/Al
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import {
   type BookLexiconConfig,
+  type EffectiveLexicon,
   type MentionPersonalizationEvidence,
   type PersonalizationTier,
   SAFETY_GENERIC_TITLES,
@@ -50,6 +51,84 @@ function inferAliasType(
   }
 
   return "NICKNAME";
+}
+
+const RANKED_HONORIFIC_PATTERN = /^([\u4e00-\u9fa5])[一二三四五六七八九十百千万两\d]{1,3}(先生|老爷|相公|公子|大人)$/;
+const CHINESE_NAME_PATTERN = /^[\u4e00-\u9fa5]{2,4}$/;
+
+interface ScoredCandidate {
+  candidate: CandidatePersona;
+  score    : number;
+}
+
+function parseRankedHonorificAlias(normalizedName: string): { surname: string } | null {
+  const matched = RANKED_HONORIFIC_PATTERN.exec(normalizedName);
+  if (!matched) {
+    return null;
+  }
+  return { surname: matched[1] };
+}
+
+function isLikelyCanonicalChineseName(
+  normalizedName: string,
+  effectiveLexicon: EffectiveLexicon
+): boolean {
+  if (!CHINESE_NAME_PATTERN.test(normalizedName)) {
+    return false;
+  }
+  if (effectiveLexicon.genericTitles.has(normalizedName)) {
+    return false;
+  }
+  if (effectiveLexicon.titlePattern.test(normalizedName) || effectiveLexicon.positionPattern.test(normalizedName)) {
+    return false;
+  }
+  for (const suffix of effectiveLexicon.hardBlockSuffixes) {
+    if (normalizedName.endsWith(suffix)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * “姓氏 + 排行 + 敬称”变体（如“马二先生”）的保守加权策略：
+ * - 仅当候选中存在且仅存在 1 个“同姓且像正式姓名”的人物时才提升分值；
+ * - 若同姓候选超过 1 个，不做加权，避免把“马二先生”误并到错误人物。
+ */
+function applyRankedHonorificBoost(
+  extractedName: string,
+  scored: ScoredCandidate[],
+  effectiveLexicon: EffectiveLexicon
+): ScoredCandidate[] {
+  const hint = parseRankedHonorificAlias(extractedName);
+  if (!hint || scored.length === 0) {
+    return scored;
+  }
+
+  const matchedIndexes: number[] = [];
+  for (const [index, item] of scored.entries()) {
+    const normalizedCandidateName = normalizeName(item.candidate.name);
+    if (!normalizedCandidateName.startsWith(hint.surname)) {
+      continue;
+    }
+    if (!isLikelyCanonicalChineseName(normalizedCandidateName, effectiveLexicon)) {
+      continue;
+    }
+    matchedIndexes.push(index);
+  }
+
+  if (matchedIndexes.length !== 1) {
+    return scored;
+  }
+
+  const boosted = [...scored];
+  const targetIndex = matchedIndexes[0];
+  const boostFloor = ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore + 0.06;
+  boosted[targetIndex] = {
+    ...boosted[targetIndex],
+    score: Math.max(boosted[targetIndex].score, boostFloor)
+  };
+  return boosted;
 }
 
 /**
@@ -374,11 +453,12 @@ export function createPersonaResolver(
 
     // 进入相似度匹配阶段：对候选集打分并选择最高分。
     const candidates = await loadCandidates(client, input.bookId, extracted);
-    const scored = candidates
+    const baseScored: ScoredCandidate[] = candidates
       .map((candidate) => ({
         candidate,
         score: multiSignalScore(extracted, candidate, effectiveLexicon.hardBlockSuffixes, effectiveLexicon.softBlockSuffixes)
-      }))
+      }));
+    const scored = applyRankedHonorificBoost(extracted, baseScored, effectiveLexicon)
       .sort((a, b) => b.score - a.score);
     const winner = scored[0];
 

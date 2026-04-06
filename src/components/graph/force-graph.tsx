@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { drag, type D3DragEvent } from "d3-drag";
 import {
   forceCenter,
@@ -66,8 +66,6 @@ const MAX_NODE_RADIUS = 32;
 const EDGE_OPACITY_BASE = 0.6;
 /** 聚焦/高亮模式下非目标元素的降权透明度。 */
 const FOCUS_DIM_OPACITY = 0.1;
-/** 元素显隐过渡时长（毫秒）。 */
-const TRANSITION_DURATION = 400;
 
 /* ------------------------------------------------
    Props
@@ -235,9 +233,38 @@ export function ForceGraph({
   const simulationRef = useRef<Simulation<SimulationNode, SimulationEdge> | null>(null);
   /** 画布尺寸状态；初始为 0，等待 ResizeObserver 首次回调。 */
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  /** 节点坐标缓存：重绘时复用位置，避免随机初始点位导致“闪跳”。 */
+  const nodePositionCacheRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  /** 事件回调 refs：避免父组件函数 identity 变化触发整图重建。 */
+  const onNodeClickRef = useRef(onNodeClick);
+  const onNodeDoubleClickRef = useRef(onNodeDoubleClick);
+  const onNodeRightClickRef = useRef(onNodeRightClick);
+  const onEdgeHoverRef = useRef(onEdgeHover);
+  const onBackgroundClickRef = useRef(onBackgroundClick);
+  /** 交互高亮态 refs：用于命令式渲染逻辑读取，避免依赖抖动触发重建。 */
+  const focusedNodeIdRef = useRef(focusedNodeId);
+  const highlightPathIdsRef = useRef(highlightPathIds);
+
+  useEffect(() => {
+    onNodeClickRef.current = onNodeClick;
+    onNodeDoubleClickRef.current = onNodeDoubleClick;
+    onNodeRightClickRef.current = onNodeRightClick;
+    onEdgeHoverRef.current = onEdgeHover;
+    onBackgroundClickRef.current = onBackgroundClick;
+    focusedNodeIdRef.current = focusedNodeId;
+    highlightPathIdsRef.current = highlightPathIds;
+  }, [
+    onNodeClick,
+    onNodeDoubleClick,
+    onNodeRightClick,
+    onEdgeHover,
+    onBackgroundClick,
+    focusedNodeId,
+    highlightPathIds
+  ]);
 
   /** 根据主题生成派系配色表，保证暗/亮主题下可读性。 */
-  const factionColors = getFactionColorsForTheme(theme);
+  const factionColors = useMemo(() => getFactionColorsForTheme(theme), [theme]);
 
   // 监听容器尺寸变化。
   useEffect(() => {
@@ -255,17 +282,23 @@ export function ForceGraph({
     return () => ro.disconnect();
   }, []);
 
-  // 先过滤节点，再基于可见节点过滤边，确保图数据闭合。
-  const filteredNodes = snapshot.nodes.filter(n => shouldIncludeNode(n, filter));
-  const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
-  const filteredEdges = snapshot.edges.filter(e => shouldIncludeEdge(e, filter, visibleNodeIds));
+  // 过滤结果按数据变化 memo，避免父组件轻量 rerender 时重新触发整图渲染。
+  const { filteredNodes, filteredEdges, maxInfluence } = useMemo(() => {
+    const nextFilteredNodes = snapshot.nodes.filter(n => shouldIncludeNode(n, filter));
+    const visibleNodeIds = new Set(nextFilteredNodes.map(n => n.id));
+    const nextFilteredEdges = snapshot.edges.filter(e => shouldIncludeEdge(e, filter, visibleNodeIds));
 
-  // 最大影响力至少为 1，避免后续除法出现 0 分母。
-  const maxInfluence = Math.max(1, ...filteredNodes.map(n => n.influence));
+    return {
+      filteredNodes: nextFilteredNodes,
+      filteredEdges: nextFilteredEdges,
+      // 最大影响力至少为 1，避免后续除法出现 0 分母。
+      maxInfluence : Math.max(1, ...nextFilteredNodes.map(n => n.influence))
+    };
+  }, [snapshot, filter]);
 
   /**
    * D3 主渲染流程。
-   * 触发条件：尺寸变化、数据变化、布局变化、高亮/聚焦状态变化。
+   * 触发条件：尺寸变化、数据变化、布局变化。
    */
   const renderGraph = useCallback(() => {
     const svg = svgRef.current;
@@ -316,15 +349,15 @@ export function ForceGraph({
     // 背景点击用于“退出局部操作态”（选中、菜单等）。
     sel.on("click", (event: MouseEvent) => {
       if (event.target === svg) {
-        onBackgroundClick?.();
+        onBackgroundClickRef.current?.();
       }
     });
 
-    // simulation 节点：若无持久化坐标则随机散开，避免初始重叠成一点。
+    // simulation 节点：优先复用上次收敛后的坐标，避免状态变化时节点随机跳闪。
     const simNodes: SimulationNode[] = filteredNodes.map(n => ({
       ...n,
-      x: n.x ?? width / 2 + (Math.random() - 0.5) * width * 0.6,
-      y: n.y ?? height / 2 + (Math.random() - 0.5) * height * 0.6
+      x: nodePositionCacheRef.current.get(n.id)?.x ?? n.x ?? width / 2 + (Math.random() - 0.5) * width * 0.6,
+      y: nodePositionCacheRef.current.get(n.id)?.y ?? n.y ?? height / 2 + (Math.random() - 0.5) * height * 0.6
     }));
 
     const nodeMap = new Map<string, SimulationNode>();
@@ -352,7 +385,7 @@ export function ForceGraph({
       .attr("marker-end", "url(#arrowhead)")
       .on("mouseenter", function (_event, d) {
         // 把 SimulationEdge 还原为 GraphEdge 形态回传给上层。
-        onEdgeHover?.({
+        onEdgeHoverRef.current?.({
           id       : d.id,
           source   : d.source.id,
           target   : d.target.id,
@@ -365,7 +398,7 @@ export function ForceGraph({
         select(this).attr("stroke-width", d.weight * 2 + 2);
       })
       .on("mouseleave", function (_event, d) {
-        onEdgeHover?.(null);
+        onEdgeHoverRef.current?.(null);
         select(this).attr("stroke-width", Math.max(1, Math.min(d.weight * 1.5, 6)));
       });
 
@@ -433,9 +466,6 @@ export function ForceGraph({
       .attr("stroke-width", d => d.status === "DRAFT" ? 2 : 1.5)
       .attr("stroke-dasharray", d => d.status === "DRAFT" ? "3,3" : "none")
       .attr("filter", d => d.status === "VERIFIED" ? "url(#glow)" : "none")
-      .attr("opacity", 0)
-      .transition()
-      .duration(TRANSITION_DURATION)
       .attr("opacity", 1);
 
     // 节点标签：影响力高的节点字体稍大，优先强调关键人物。
@@ -451,16 +481,16 @@ export function ForceGraph({
     nodeSelection
       .on("click", (event: MouseEvent, d) => {
         event.stopPropagation();
-        onNodeClick?.(d);
+        onNodeClickRef.current?.(d);
       })
       .on("dblclick", (event: MouseEvent, d) => {
         event.stopPropagation();
-        onNodeDoubleClick?.(d);
+        onNodeDoubleClickRef.current?.(d);
       })
       .on("contextmenu", (event: MouseEvent, d) => {
         event.preventDefault();
         event.stopPropagation();
-        onNodeRightClick?.(d, { x: event.clientX, y: event.clientY });
+        onNodeRightClickRef.current?.(d, { x: event.clientX, y: event.clientY });
       })
       .on("mouseenter", function () {
         // hover 统一加 glow，增强可发现性。
@@ -472,41 +502,38 @@ export function ForceGraph({
           .attr("filter", d.status === "VERIFIED" ? "url(#glow)" : "none");
       });
 
-    // 聚焦模式：仅保留“目标节点 + 一跳邻居”高亮。
-    if (focusedNodeId) {
-      const connectedIds = new Set<string>();
-      connectedIds.add(focusedNodeId);
+    // 结构重绘后立即应用一次交互强调，避免“焦点存在但视觉样式丢失”。
+    const currentFocusedNodeId = focusedNodeIdRef.current;
+    const currentHighlightPathIds = highlightPathIdsRef.current;
 
-      for (const e of simEdges) {
-        if (e.source.id === focusedNodeId) connectedIds.add(e.target.id);
-        if (e.target.id === focusedNodeId) connectedIds.add(e.source.id);
+    if (currentFocusedNodeId) {
+      const connectedIds = new Set<string>();
+      connectedIds.add(currentFocusedNodeId);
+
+      for (const edge of edgeSelection.data()) {
+        if (edge.source.id === currentFocusedNodeId) connectedIds.add(edge.target.id);
+        if (edge.target.id === currentFocusedNodeId) connectedIds.add(edge.source.id);
       }
 
-      nodeSelection.select("path")
+      nodeSelection.select<SVGPathElement>("path")
         .attr("opacity", d => connectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
-      nodeSelection.select("text")
+      nodeSelection.select<SVGTextElement>("text")
         .attr("opacity", d => connectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
-      edgeSelection
-        .attr("stroke-opacity", d => (connectedIds.has(d.source.id) && connectedIds.has(d.target.id))
-          ? EDGE_OPACITY_BASE
-          : FOCUS_DIM_OPACITY * 0.5);
+      edgeSelection.attr("stroke-opacity", d => (
+        connectedIds.has(d.source.id) && connectedIds.has(d.target.id)
+      ) ? EDGE_OPACITY_BASE : FOCUS_DIM_OPACITY * 0.5);
     }
 
-    // 路径高亮：优先级高于普通显示，用于“最短路径查找结果”强调。
-    if (highlightPathIds && highlightPathIds.size > 0) {
-      nodeSelection.select("path")
-        .attr("opacity", d => highlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+    if (currentHighlightPathIds && currentHighlightPathIds.size > 0) {
+      nodeSelection.select<SVGPathElement>("path")
+        .attr("opacity", d => currentHighlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
       edgeSelection
-        .attr("stroke-opacity", d =>
-          highlightPathIds.has(d.source.id) && highlightPathIds.has(d.target.id)
-            ? 1
-            : FOCUS_DIM_OPACITY * 0.5
-        )
-        .attr("stroke-width", d =>
-          highlightPathIds.has(d.source.id) && highlightPathIds.has(d.target.id)
-            ? d.weight * 2 + 3
-            : Math.max(1, d.weight * 1.5)
-        );
+        .attr("stroke-opacity", d => (
+          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
+        ) ? 1 : FOCUS_DIM_OPACITY * 0.5)
+        .attr("stroke-width", d => (
+          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
+        ) ? d.weight * 2 + 3 : Math.max(1, d.weight * 1.5));
     }
 
     // 力导向 simulation：连边约束 + 电荷斥力 + 居中 + 防重叠。
@@ -538,6 +565,11 @@ export function ForceGraph({
           .attr("y", d => (d.source.y + d.target.y) / 2);
 
         nodeSelection.attr("transform", d => `translate(${d.x},${d.y})`);
+
+        // 持续缓存坐标，供后续局部重绘复用，降低“重算后全图跳位”感知。
+        for (const node of simNodes) {
+          nodePositionCacheRef.current.set(node.id, { x: node.x, y: node.y });
+        }
       });
 
     simulationRef.current = simulation;
@@ -569,10 +601,74 @@ export function ForceGraph({
       }
     });
   }, [
-    dimensions, filteredNodes, filteredEdges, factionColors, maxInfluence,
-    focusedNodeId, highlightPathIds, layoutMode,
-    onNodeClick, onNodeDoubleClick, onNodeRightClick, onEdgeHover, onBackgroundClick
+    dimensions,
+    filteredNodes,
+    filteredEdges,
+    factionColors,
+    maxInfluence,
+    layoutMode
   ]);
+
+  /**
+   * 交互态高亮（聚焦/最短路径）单独更新：
+   * 避免每次右侧面板状态变化都触发整图 remove + rebuild。
+   */
+  const applyGraphEmphasis = useCallback(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const graphRoot = select(svg).select<SVGGElement>("g.graph-main");
+    if (graphRoot.empty()) return;
+
+    const nodeSelection = graphRoot
+      .select<SVGGElement>("g.nodes")
+      .selectAll<SVGGElement, SimulationNode>("g.graph-node");
+    const edgeSelection = graphRoot
+      .select<SVGGElement>("g.edges")
+      .selectAll<SVGLineElement, SimulationEdge>("line");
+
+    // 先重置到基础视觉态，再叠加聚焦/路径高亮。
+    nodeSelection.select<SVGPathElement>("path").attr("opacity", 1);
+    nodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
+    edgeSelection
+      .attr("stroke-opacity", EDGE_OPACITY_BASE)
+      .attr("stroke-width", d => Math.max(1, Math.min(d.weight * 1.5, 6)));
+
+    const currentFocusedNodeId = focusedNodeIdRef.current;
+    const currentHighlightPathIds = highlightPathIdsRef.current;
+
+    // 聚焦模式：仅保留“目标节点 + 一跳邻居”高亮。
+    if (currentFocusedNodeId) {
+      const connectedIds = new Set<string>();
+      connectedIds.add(currentFocusedNodeId);
+
+      for (const edge of edgeSelection.data()) {
+        if (edge.source.id === currentFocusedNodeId) connectedIds.add(edge.target.id);
+        if (edge.target.id === currentFocusedNodeId) connectedIds.add(edge.source.id);
+      }
+
+      nodeSelection.select<SVGPathElement>("path")
+        .attr("opacity", d => connectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      nodeSelection.select<SVGTextElement>("text")
+        .attr("opacity", d => connectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      edgeSelection.attr("stroke-opacity", d => (
+        connectedIds.has(d.source.id) && connectedIds.has(d.target.id)
+      ) ? EDGE_OPACITY_BASE : FOCUS_DIM_OPACITY * 0.5);
+    }
+
+    // 路径高亮优先级更高，覆盖聚焦态。
+    if (currentHighlightPathIds && currentHighlightPathIds.size > 0) {
+      nodeSelection.select<SVGPathElement>("path")
+        .attr("opacity", d => currentHighlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      edgeSelection
+        .attr("stroke-opacity", d => (
+          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
+        ) ? 1 : FOCUS_DIM_OPACITY * 0.5)
+        .attr("stroke-width", d => (
+          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
+        ) ? d.weight * 2 + 3 : Math.max(1, d.weight * 1.5));
+    }
+  }, []);
 
   // 当渲染依赖变化时重绘；卸载时停止 simulation，防止后台持续占用 CPU。
   useEffect(() => {
@@ -581,6 +677,11 @@ export function ForceGraph({
       simulationRef.current?.stop();
     };
   }, [renderGraph]);
+
+  // 聚焦与路径高亮变更时只更新视觉样式，不重建 simulation。
+  useEffect(() => {
+    applyGraphEmphasis();
+  }, [applyGraphEmphasis]);
 
   return (
     <div

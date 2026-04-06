@@ -60,6 +60,7 @@ import { PersonaEditForm } from "@/components/review/persona-edit-form";
 import { RelationshipEditForm } from "@/components/review/relationship-edit-form";
 import { BiographyEditForm } from "@/components/review/biography-edit-form";
 import { EntityMergeTool } from "@/components/review/entity-merge-tool";
+import { ManualEntityTool } from "@/components/review/manual-entity-tool";
 import { AliasReviewTab } from "@/components/review/alias-review-tab";
 import { ValidationReportTab } from "@/components/review/validation-report-tab";
 import type { PersonaSummary } from "@/lib/services/personas";
@@ -768,6 +769,15 @@ export function ReviewPanel({
           这里处理“疑似同人”建议，支持拒绝/暂缓，或进入精细化合并工具。 */}
       {!loading && activeTab === "merge" && (
         <div className="flex flex-col gap-2">
+          <ManualEntityTool
+            bookId={bookId}
+            onDone={() => {
+              setMergePreview(null);
+              void fetchMerge();
+              void fetchDrafts(sourceFilter);
+            }}
+          />
+
           {mergeSuggestions.length === 0 && (
             <EmptyState text="暂无合并建议" />
           )}

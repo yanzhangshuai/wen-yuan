@@ -182,6 +182,92 @@ describe("persona resolver", () => {
     expect(personaUpdate).not.toHaveBeenCalled();
   });
 
+  it("boosts ranked honorific alias to unique same-surname canonical candidate", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaUpdate,
+      profileUpsert
+    } = createPrismaMock();
+
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-machunshang",
+          name    : "马纯上",
+          aliases : [],
+          profiles: [{ localName: "马纯上" }]
+        },
+        {
+          id      : "persona-fanjin",
+          name    : "范进",
+          aliases : [],
+          profiles: [{ localName: "范进" }]
+        }
+      ]);
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "马二先生",
+      chapterContent: "马二先生摇头叹气。"
+    });
+
+    expect(result.status).toBe("resolved");
+    expect(result.personaId).toBe("persona-machunshang");
+    expect(result.matchedName).toBe("马纯上");
+    expect(result.confidence).toBeGreaterThanOrEqual(ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore);
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+    expect(personaUpdate).toHaveBeenCalledWith({
+      where: { id: "persona-machunshang" },
+      data : { aliases: { push: "马二先生" } }
+    });
+  });
+
+  it("does not boost ranked honorific alias when same-surname canonical candidates are ambiguous", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate,
+      personaUpdate,
+      profileCreate
+    } = createPrismaMock();
+
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-machunshang",
+          name    : "马纯上",
+          aliases : [],
+          profiles: [{ localName: "马纯上" }]
+        },
+        {
+          id      : "persona-majingzhai",
+          name    : "马静斋",
+          aliases : [],
+          profiles: [{ localName: "马静斋" }]
+        }
+      ]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-maerxiansheng",
+      name: "马二先生"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "马二先生",
+      chapterContent: "马二先生在县学门口等候。"
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-maerxiansheng");
+    expect(personaUpdate).not.toHaveBeenCalled();
+    expect(profileCreate).toHaveBeenCalledTimes(1);
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks as hallucinated when score is low and name is absent in chapter", async () => {
     const {

@@ -14,7 +14,8 @@
  *
  * 所属层次：
  * - 前端渲染层（页面 + 交互容器）；
- * - 通过 `src/lib/services/books.ts` 调用接口，间接驱动后端创建书籍、确认章节、启动解析。
+ * - 通过 `src/lib/services/books.ts` 与 `src/lib/services/model-strategy.ts` 调用接口，
+ *   间接驱动后端创建书籍、确认章节、保存书籍策略、启动解析。
  *
  * 核心业务目标：
  * - 以“4 步向导”降低一次性操作复杂度：上传信息 -> 确认章节 -> 配置解析 -> 查看进度。
@@ -26,6 +27,7 @@
  *   - `createBook`：创建书籍 + 上传源文件
  *   - `fetchChapterPreview`：AI 章节切分预览
  *   - `confirmBookChapters`：确认章节结构
+ *   - `saveBookStrategy`：保存书籍级阶段模型策略
  *   - `startAnalysis`：启动解析任务
  * - 下游展示：第 4 步复用 `BookDetailTabs`，直接承接详情页的实时面板。
  *
@@ -63,7 +65,10 @@ import {
 import { BookDetailTabs } from "@/app/admin/books/[id]/_components/book-detail-tabs";
 import { fetchModels, type AdminModelItem } from "@/lib/services/models";
 import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
-import type { ModelStrategyInput } from "@/lib/services/model-strategy";
+import {
+  saveBookStrategy,
+  type ModelStrategyInput
+} from "@/lib/services/model-strategy";
 import { cn } from "@/lib/utils";
 
 /**
@@ -380,6 +385,11 @@ export default function AdminImportPage() {
         ? { stages: jobStrategy }
         : undefined;
 
+      // 导入流程配置的阶段模型应成为书籍级默认策略，避免“任务已生效但书籍面板仍显示继承默认”。
+      if (requestModelStrategy) {
+        await saveBookStrategy(createdBook.id, requestModelStrategy.stages);
+      }
+
       if (scope === "CHAPTER_RANGE") {
         const parsedStart = parsePositiveInteger(chapterStart);
         const parsedEnd = parsePositiveInteger(chapterEnd);
@@ -418,7 +428,11 @@ export default function AdminImportPage() {
 
       await startAnalysis(createdBook.id, body);
       setStep(4);
-      toast.success("解析任务已启动！");
+      if (requestModelStrategy) {
+        toast.success("解析任务已启动，书籍模型策略已同步");
+      } else {
+        toast.success("解析任务已启动！");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "启动失败");
     } finally {

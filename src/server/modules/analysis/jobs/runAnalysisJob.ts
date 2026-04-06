@@ -111,6 +111,45 @@ function buildProgressStage(index: number, total: number): string {
 function buildCompletedStage(done: number, total: number): string {
   return `实体提取（已完成${done}/${total}章）`;
 }
+
+async function updateBookProgressSafely(
+  prismaClient: PrismaClient,
+  input: {
+    bookId       : string;
+    progress     : number;
+    completedText: string;
+    doneCount    : number;
+    totalChapters: number;
+    jobId        : string;
+  }
+): Promise<void> {
+  try {
+    // 仅允许进度单调递增，避免并发 worker 的乱序写入把 parseProgress 回退。
+    await prismaClient.book.updateMany({
+      where: {
+        id           : input.bookId,
+        parseProgress: { lt: input.progress }
+      },
+      data: {
+        parseProgress: input.progress,
+        parseStage   : input.completedText
+      }
+    });
+  } catch (error) {
+    // 进度写入失败不应让整书任务失败；最终状态会在收尾事务中统一落盘。
+    console.warn(
+      "[analysis.runner] book.progress.write.failed",
+      JSON.stringify({
+        jobId        : input.jobId,
+        bookId       : input.bookId,
+        doneCount    : input.doneCount,
+        totalChapters: input.totalChapters,
+        progress     : input.progress,
+        error        : String(error).slice(0, 500)
+      })
+    );
+  }
+}
 /** 单章节失败后最多重试次数（不含首次）。 */
 const CHAPTER_MAX_RETRIES = 2;
 
@@ -679,19 +718,21 @@ export function createAnalysisJobRunner(
           }
 
           doneCount += 1;
-          await prismaClient.$transaction([
-            prismaClient.chapter.update({
-              where: { id: chapter.id },
-              data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "REVIEW_PENDING" : "SUCCEEDED") : "FAILED" }
-            }),
-            prismaClient.book.update({
-              where: { id: runningJob.bookId },
-              data : {
-                parseProgress: Math.floor((doneCount / chapters.length) * 100),
-                parseStage   : buildCompletedStage(doneCount, chapters.length)
-              }
-            })
-          ]);
+          const progress = Math.floor((doneCount / chapters.length) * 100);
+          const completedText = buildCompletedStage(doneCount, chapters.length);
+
+          await prismaClient.chapter.update({
+            where: { id: chapter.id },
+            data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "REVIEW_PENDING" : "SUCCEEDED") : "FAILED" }
+          });
+          await updateBookProgressSafely(prismaClient, {
+            jobId        : runningJob.id,
+            bookId       : runningJob.bookId,
+            progress,
+            completedText,
+            doneCount,
+            totalChapters: chapters.length
+          });
 
           if (chapterSucceeded) {
             await scheduleIncrementalTitleResolution(chapter.no);
