@@ -434,6 +434,34 @@ resolverStatus = confidence >= 0.85 && hasPersonaId && hasEvidence ? "ACTIVE" : 
 - 审核阈值与在线解析阈值本质不同：前者强调可解释与可追责，后者强调召回稳定与重复实体预防。
 - 不拆分语义会导致“已发现线索但不能被解析器使用”，最终把问题推迟到后置合并阶段，增加治理成本。
 
+### 错误 18：并发 worker 在短事务里竞争同一聚合行（hot row），触发 Prisma 事务超时
+
+**反例**：
+- 章节并发处理时，每章完成都执行 `chapter.update + book.update(parseProgress)` 同一事务；
+- 多个 worker 同时抢占同一本书的 `book` 行锁，队列等待超过 Prisma 默认事务超时（5s），报错 `expired transaction`。
+
+**正例**：
+- 把“章节终态写入”与“书籍进度写入”解耦：
+  - `chapter.parseStatus` 保持强一致（失败则中断）；
+  - `book.parseProgress/parseStage` 改为幂等、单调递增、可降级（写失败记日志，不中断主任务）。
+- 对聚合进度使用单调保护，避免并发乱序回退。
+
+```ts
+// 章节终态：强一致
+await prisma.chapter.update({ where: { id: chapterId }, data: { parseStatus } });
+
+// 书籍进度：单调 + 幂等（并发安全）
+await prisma.book.updateMany({
+  where: { id: bookId, parseProgress: { lt: progress } },
+  data : { parseProgress: progress, parseStage: completedText }
+});
+```
+
+原因：
+- 这是“任务并发执行层”→“数据库事务层”→“进度展示层”的跨层契约问题。
+- `parseProgress` 属于高频聚合写，不应与章节终态绑定在同一短事务里反复争用锁。
+- 对“可重算的进度字段”采用幂等单调写，可以把一致性要求与可用性要求分层处理，避免因进度写入抖动拖垮主流程。
+
 ---
 
 ## 跨层功能检查清单
@@ -465,6 +493,8 @@ resolverStatus = confidence >= 0.85 && hasPersonaId && hasEvidence ? "ACTIVE" : 
 - [ ] 涉及多作用域策略（JOB/BOOK/GLOBAL）时，已声明“写入作用域”与“展示作用域”映射，并覆盖“详情展示与运行生效”一致性验证
 - [ ] 别名映射已区分“审核状态”和“解析消费状态”，避免高置信 `PENDING` 线索无法复用而重复建人
 - [ ] 同一别名跨章节出现冲突时，已定义自动降级与人工复核回路（先停用解析消费，再审核）
+- [ ] 并发 worker 涉及同一聚合行（如书籍进度）时，已避免“每项一次多语句事务”写法，改为幂等单调更新或批量刷写
+- [ ] Prisma 事务中未包含高竞争热点写；对可重算字段已设计降级路径（写失败日志告警，不阻断主流程）
 
 ---
 
