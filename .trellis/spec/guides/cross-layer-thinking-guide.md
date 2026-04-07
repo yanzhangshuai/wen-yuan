@@ -462,6 +462,35 @@ await prisma.book.updateMany({
 - `parseProgress` 属于高频聚合写，不应与章节终态绑定在同一短事务里反复争用锁。
 - 对“可重算的进度字段”采用幂等单调写，可以把一致性要求与可用性要求分层处理，避免因进度写入抖动拖垮主流程。
 
+### 错误 19：把“触发动作”误当“业务成功”，导致面板提前关闭且失败静默
+
+**反例**：
+- Toolbar 的 `onPathFind` 定义为 `void`，点击后立即关闭面板；
+- Graph 层失败分支（姓名未匹配/无路径/异常）只清空高亮，不给可见反馈；
+- 用户感知为“点了没反应”，且输入上下文丢失。
+
+**正例**：
+- 把跨组件回调契约升级为结果语义（`Promise<boolean>`）；
+- 仅在 `true`（业务成功）时关闭面板；
+- `false`（未命中/无路径/异常）保留面板，并提供明确反馈（toast 或 inline error）。
+
+```ts
+// 反例：fire-and-forget，UI 无法区分成功与失败
+type OnPathFind = (sourceName: string, targetName: string) => void;
+onPathFind(source, target);
+setActivePanel(null);
+
+// 正例：结果语义回传，UI 可据此决定是否收起
+type OnPathFind = (sourceName: string, targetName: string) => Promise<boolean>;
+const found = await onPathFind(source, target);
+if (found) setActivePanel(null);
+```
+
+原因：
+- 这是“交互编排层（Toolbar）”→“业务查询层（Graph Service）”→“反馈层（Toast/面板状态）”的跨层契约缺口。
+- `void` 回调只能表达“事件发起”，不能表达“业务是否成功”，UI 只能盲目推进状态，造成体验错误。
+- 将“成功/失败/可重试”语义纳入回调契约，可同时避免状态误推进与失败静默。
+
 ---
 
 ## 跨层功能检查清单
@@ -495,6 +524,8 @@ await prisma.book.updateMany({
 - [ ] 同一别名跨章节出现冲突时，已定义自动降级与人工复核回路（先停用解析消费，再审核）
 - [ ] 并发 worker 涉及同一聚合行（如书籍进度）时，已避免“每项一次多语句事务”写法，改为幂等单调更新或批量刷写
 - [ ] Prisma 事务中未包含高竞争热点写；对可重算字段已设计降级路径（写失败日志告警，不阻断主流程）
+- [ ] 异步交互回调已声明结果语义（如 `Promise<boolean>`），避免仅凭“事件触发”推进 UI 状态
+- [ ] 失败路径（未命中/空结果/异常）均有可见反馈，并保留可继续操作的上下文（不应立即收起输入面板）
 
 ---
 
