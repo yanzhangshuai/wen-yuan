@@ -38,7 +38,7 @@
  * =============================================================================
  */
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, Suspense, type ReactNode } from "react";
 import {
   Check,
   X as XIcon,
@@ -50,12 +50,14 @@ import {
   GitMerge,
   Loader2,
   Tags,
-  ShieldCheck
+  ShieldCheck,
+  BookOpen
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
 import { PersonaEditForm } from "@/components/review/persona-edit-form";
 import { RelationshipEditForm } from "@/components/review/relationship-edit-form";
 import { BiographyEditForm } from "@/components/review/biography-edit-form";
@@ -63,6 +65,9 @@ import { EntityMergeTool } from "@/components/review/entity-merge-tool";
 import { ManualEntityTool } from "@/components/review/manual-entity-tool";
 import { AliasReviewTab } from "@/components/review/alias-review-tab";
 import { ValidationReportTab } from "@/components/review/validation-report-tab";
+import { TextReaderPanel } from "@/components/graph";
+import { fetchChapterContent } from "@/lib/services/books";
+import type { ChapterContent } from "@/lib/services/books";
 import type { PersonaSummary } from "@/lib/services/personas";
 import { fetchPersonaSummary } from "@/lib/services/personas";
 import {
@@ -175,7 +180,14 @@ export function ReviewPanel({
     sourcePromise: Promise<PersonaSummary | null>;
     targetPromise: Promise<PersonaSummary | null>;
   } | null>(null);
-
+  /**
+   * FG-07: 原文阅读面板状态。
+   * 点击关系/传记草稿的"查看原文"时触发，携带章节内容 Promise 与可选段落高亮。
+   */
+  const [textReader, setTextReader] = useState<{
+    promise   : Promise<ChapterContent>;
+    paraIndex?: number;
+  } | null>(null);
   useEffect(() => {
     /* 模块切换时重置本地状态，避免旧书籍的筛选/选中态遗留到新 bookId。 */
     // 这里依赖 `bookId + initial*`，是因为从左侧切书时不仅路由变，首屏注入数据也会整体替换。
@@ -636,6 +648,15 @@ export function ReviewPanel({
               <div className="flex shrink-0 gap-1">
                 <button
                   type="button"
+                  onClick={() => setTextReader({ promise: fetchChapterContent(bookId, rel.chapterId) })}
+                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                  aria-label="查看原文"
+                  title="查看原文"
+                >
+                  <BookOpen size={16} />
+                </button>
+                <button
+                  type="button"
                   onClick={() => { void handleBulkAction([rel.id], "verify"); }}
                   className="rounded p-1.5 text-success hover:bg-success/10"
                   aria-label="确认"
@@ -733,6 +754,15 @@ export function ReviewPanel({
               <div className="flex shrink-0 gap-1">
                 <button
                   type="button"
+                  onClick={() => setTextReader({ promise: fetchChapterContent(bookId, bio.chapterId) })}
+                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                  aria-label="查看原文"
+                  title="查看原文"
+                >
+                  <BookOpen size={16} />
+                </button>
+                <button
+                  type="button"
                   onClick={() => { void handleBulkAction([bio.id], "verify"); }}
                   className="rounded p-1.5 text-success hover:bg-success/10"
                   aria-label="确认"
@@ -789,6 +819,8 @@ export function ReviewPanel({
                 sourcePromise={mergePreview.sourcePromise}
                 targetPromise={mergePreview.targetPromise}
                 suggestionId={sug.id}
+                reason={sug.reason}
+                confidence={sug.confidence}
                 onDone={() => {
                   // 合并完成后同时刷新建议与草稿列表：
                   // - 建议状态会从 PENDING 变更；
@@ -875,6 +907,20 @@ export function ReviewPanel({
           reports={validationReports}
           onRefresh={() => { void fetchValidation(); }}
         />
+      )}
+
+      {/* FG-07: 原文阅读侧栏（关系/传记草稿点击"查看原文"时显示）。 */}
+      {textReader && (
+        <AsyncErrorBoundary fallback={<div className="fixed right-0 top-0 h-full w-96 bg-background p-4 text-sm text-destructive shadow-lg">原文加载失败</div>}>
+          <Suspense fallback={<div className="fixed right-0 top-0 h-full w-96 bg-background p-4 text-sm text-muted-foreground shadow-lg">原文加载中...</div>}>
+            <TextReaderPanel
+              bookId={bookId}
+              chapterPromise={textReader.promise}
+              highlightParaIndex={textReader.paraIndex}
+              onClose={() => setTextReader(null)}
+            />
+          </Suspense>
+        </AsyncErrorBoundary>
       )}
     </div>
   );

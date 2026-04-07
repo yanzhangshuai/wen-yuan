@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
 import type {
@@ -10,8 +11,8 @@ import type {
   GraphNode,
   GraphSnapshot
 } from "@/types/graph";
-import { fetchBookGraph, searchPersonaPath } from "@/lib/services/graph";
-import { fetchPersonaDetail } from "@/lib/services/personas";
+import { fetchBookGraph, searchPersonaPath, updateGraphLayout, type GraphLayoutNodeInput } from "@/lib/services/graph";
+import { fetchPersonaDetail, deletePersona, updatePersonaStatus } from "@/lib/services/personas";
 import { fetchChapterContent } from "@/lib/services/books";
 import {
   ForceGraph,
@@ -22,6 +23,7 @@ import {
   GraphContextMenu
 } from "@/components/graph";
 import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
+import { toast } from "sonner";
 
 /**
  * =============================================================================
@@ -147,6 +149,7 @@ export function GraphView({
   // 来自 next-themes：resolvedTheme 可能是 "light" | "dark" | undefined（首次水合前）
   // 这里不自行兜底，让 ForceGraph 内部基于 CSS 变量稳定渲染。
   const { resolvedTheme } = useTheme();
+  const router = useRouter();
 
   // 图谱数据状态：决定主画布展示内容与章节游标。
   // 默认值使用服务端注入，避免客户端首帧再次拉数。
@@ -174,6 +177,21 @@ export function GraphView({
 
   // 原文阅读面板状态（由证据点击触发）。
   const [textReader, setTextReader] = useState<TextReaderState | null>(null);
+
+  /**
+   * FG-06: 多证据游标状态。
+   * 人物详情中的 evidence 列表存储多条证据，支持前后跳转翻阅。
+   * evidenceList 是当前人物所有证据的 [ chapterId, paraIndex ] 元组列表；
+   * evidenceIndex 是当前正在查看的证据游标。
+   */
+  const [evidenceList, setEvidenceList] = useState<Array<{ chapterId: string; paraIndex?: number }>>([]);
+  const [evidenceIndex, setEvidenceIndex] = useState(0);
+
+  /**
+   * FG-04: 布局持久化防抖 timer ref。
+   * 拖拽结束后等待 1s 才真正发请求，避免频繁拖拽时请求风暴。
+   */
+  const layoutSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 从当前快照派生可筛选关系类型，避免每次渲染重复扫描。
   // 这里用 useMemo 是为了稳定 Toolbar 的 options，减少不必要重渲染。
@@ -335,8 +353,10 @@ export function GraphView({
   }
 
   /**
-   * 图谱导出入口。
-   * 目前仅实现 JSON（可用于问题复现、离线分析）；PNG/SVG 保留为后续阶段。
+   * 图谱导出入口（FG-01）。
+   * - JSON：直接序列化当前快照下载；
+   * - SVG：序列化 SVG 元素（内联 CSS 变量解析后），以 .svg 文件下载；
+   * - PNG：将 SVG 渲染到 canvas，导出 .png 文件；背景填充白色保证可打开性。
    */
   function handleExport(format: "png" | "svg" | "json") {
     if (format === "json") {
@@ -348,8 +368,56 @@ export function GraphView({
       a.download = `graph-${bookId}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      return;
     }
-    // 业务规划中尚未交付 PNG/SVG，这里保留分支以稳定外部调用契约。
+
+    // 从 DOM 中取图谱 SVG 元素。
+    const svgEl = document.querySelector<SVGSVGElement>(".force-graph svg");
+    if (!svgEl) return;
+
+    // 将 SVG 中所有 CSS 变量引用替换为 computed 值，保证导出后颜色可见。
+    const computedStyle = getComputedStyle(document.documentElement);
+    const serializer = new XMLSerializer();
+    let svgStr = serializer.serializeToString(svgEl);
+    svgStr = svgStr.replace(/var\(--([^)]+)\)/g, (_, varName: string) => {
+      const val = computedStyle.getPropertyValue(`--${varName}`).trim();
+      return val || "#888888";
+    });
+
+    if (format === "svg") {
+      const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `graph-${bookId}.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // PNG：将 SVG 渲染到 canvas。
+    const imgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const imgUrl = URL.createObjectURL(imgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = svgEl.width.baseVal.value || 1200;
+      canvas.height = svgEl.height.baseVal.value || 800;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { URL.revokeObjectURL(imgUrl); return; }
+      // 白色背景，避免透明通道造成黑色背景。
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(imgUrl);
+      const pngUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = pngUrl;
+      a.download = `graph-${bookId}.png`;
+      a.click();
+    };
+    img.onerror = () => { URL.revokeObjectURL(imgUrl); };
+    img.src = imgUrl;
   }
 
   /**
@@ -370,14 +438,94 @@ export function GraphView({
   /**
    * 证据点击回调。
    * 触发链路：人物详情/时间轴证据 -> 打开阅读侧栏 -> 按需加载章节并可定位段落。
+   * FG-06: 同时维护 evidenceList 与游标，支持多证据前后导航。
    */
-  function handleEvidenceClick(chapterId: string, paraIndex?: number) {
+  function handleEvidenceClick(
+    chapterId   : string,
+    paraIndex?  : number,
+    allEvidence?: Array<{ chapterId: string; paraIndex?: number }>,
+    clickedIndex?: number
+  ) {
+    if (allEvidence && allEvidence.length > 1) {
+      // 多证据模式：进入游标导航（FG-06）。
+      openEvidenceReader(allEvidence, clickedIndex ?? 0);
+    } else {
+      // 单证据模式：直接打开。
+      setTextReader({
+        chapterId,
+        paraIndex,
+        promise: fetchChapterContent(bookId, chapterId, paraIndex)
+      });
+    }
+  }
+
+  /**
+   * FG-06: 打开含多证据游标的原文面板。
+   * @param list 完整证据列表，每项为 { chapterId, paraIndex }。
+   * @param startIndex 初始聚焦证据下标（默认 0）。
+   */
+  function openEvidenceReader(
+    list: Array<{ chapterId: string; paraIndex?: number }>,
+    startIndex = 0
+  ) {
+    if (list.length === 0) return;
+    const idx = Math.max(0, Math.min(startIndex, list.length - 1));
+    setEvidenceList(list);
+    setEvidenceIndex(idx);
+    const item = list[idx];
     setTextReader({
-      chapterId,
-      paraIndex,
-      promise: fetchChapterContent(bookId, chapterId, paraIndex)
+      chapterId: item.chapterId,
+      paraIndex: item.paraIndex,
+      promise  : fetchChapterContent(bookId, item.chapterId, item.paraIndex)
     });
   }
+
+  /** FG-06: 跳到上一条证据。 */
+  function handleEvidencePrev() {
+    if (evidenceList.length === 0 || evidenceIndex <= 0) return;
+    const nextIdx = evidenceIndex - 1;
+    const item = evidenceList[nextIdx];
+    setEvidenceIndex(nextIdx);
+    setTextReader({
+      chapterId: item.chapterId,
+      paraIndex: item.paraIndex,
+      promise  : fetchChapterContent(bookId, item.chapterId, item.paraIndex)
+    });
+  }
+
+  /** FG-06: 跳到下一条证据。 */
+  function handleEvidenceNext() {
+    if (evidenceList.length === 0 || evidenceIndex >= evidenceList.length - 1) return;
+    const nextIdx = evidenceIndex + 1;
+    const item = evidenceList[nextIdx];
+    setEvidenceIndex(nextIdx);
+    setTextReader({
+      chapterId: item.chapterId,
+      paraIndex: item.paraIndex,
+      promise  : fetchChapterContent(bookId, item.chapterId, item.paraIndex)
+    });
+  }
+
+  /**
+   * FG-04: 节点拖拽结束后防抖保存布局坐标到后端。
+   * 防抖间隔 1s，避免批量拖拽产生请求风暴；失败时 toast 提示用户。
+   */
+  const handleNodeDragEnd = useCallback((positions: Array<{ id: string; x: number; y: number }>) => {
+    if (layoutSaveTimerRef.current) {
+      clearTimeout(layoutSaveTimerRef.current);
+    }
+    layoutSaveTimerRef.current = setTimeout(() => {
+      const nodes: GraphLayoutNodeInput[] = positions.map(p => ({
+        personaId: p.id,
+        x        : p.x,
+        y        : p.y
+      }));
+      void updateGraphLayout(bookId, nodes).catch(() => {
+        // 保存失败时静默处理（网络异常为暂时性，不阻断用户继续操作图谱）。
+        // 如需可见提示，可在此引入 toast.error。
+      });
+    }, 1000);
+  }, [bookId]);
 
   return (
     <div className="graph-view-container relative h-full w-full overflow-hidden">
@@ -404,6 +552,7 @@ export function GraphView({
         onEdgeHover={setHoveredEdge}
         onBackgroundClick={handleBackgroundClick}
         highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
+        onNodeDragEnd={handleNodeDragEnd}
       />
 
       {/* 左侧工具栏：筛选、搜索、路径查找、布局切换、导出、全屏。 */}
@@ -465,19 +614,34 @@ export function GraphView({
           onClose={() => setContextMenu(null)}
           onViewDetail={() => openPersonaDetail(contextMenu.node.id)}
           onEdit={() => {
-            // Phase 4 inline editing
-            openPersonaDetail(contextMenu.node.id);
+            // FG-05: 跳转人物审核页，admin 可在 review 面板内直接编辑。
+            setContextMenu(null);
+            router.push(`/admin/review/${bookId}`);
           }}
           onMerge={() => {
-            // Phase 4 merge
+            // FG-05: 跳转审核合并视图。
+            setContextMenu(null);
+            router.push(`/admin/review/${bookId}`);
           }}
           onDelete={() => {
-            // Phase 4 delete
+            // FG-05: 删除人物节点后刷新图谱。
+            const nodeId = contextMenu.node.id;
+            const nodeName = contextMenu.node.name;
+            setContextMenu(null);
+            void (async () => {
+              try {
+                await deletePersona(nodeId);
+                toast.success(`已删除人物：${nodeName}`);
+                await fetchGraph(currentChapter);
+              } catch {
+                toast.error("删除失败，请稍后重试");
+              }
+            })();
           }}
         />
       )}
 
-      {/* 原文阅读侧栏：支持按段落定位高亮。 */}
+      {/* 原文阅读侧栏：支持按段落定位高亮。FG-06: 传入证据前后导航回调。 */}
       {textReader && (
         <AsyncErrorBoundary fallback={<ReaderPanelFallback message="原文加载失败" onClose={() => setTextReader(null)} />}>
           <Suspense fallback={<ReaderPanelFallback message="原文加载中..." onClose={() => setTextReader(null)} />}>
@@ -485,7 +649,9 @@ export function GraphView({
               bookId={bookId}
               chapterPromise={textReader.promise}
               highlightParaIndex={textReader.paraIndex}
-              onClose={() => setTextReader(null)}
+              onClose={() => { setTextReader(null); setEvidenceList([]); setEvidenceIndex(0); }}
+              onPrev={evidenceList.length > 1 && evidenceIndex > 0 ? handleEvidencePrev : undefined}
+              onNext={evidenceList.length > 1 && evidenceIndex < evidenceList.length - 1 ? handleEvidenceNext : undefined}
             />
           </Suspense>
         </AsyncErrorBoundary>

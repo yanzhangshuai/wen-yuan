@@ -9,6 +9,8 @@ import {
   forceManyBody,
   forceRadial,
   forceSimulation,
+  forceX,
+  forceY,
   type Simulation
 } from "d3-force";
 import { select } from "d3-selection";
@@ -117,8 +119,11 @@ export interface ForceGraphProps {
    * 最短路径高亮节点 ID 集合。
    * 传入时将覆盖普通显示优先级（用于“路径查找结果强调”）。
    */
-  highlightPathIds? : Set<string>;
-}
+  highlightPathIds? : Set<string>;  /**
+   * 节点拖拽结束回调（FG-04 布局持久化）。
+   * 接收当前所有可见节点的最新坐标，调用方负责防抖后保存到后端。
+   */
+  onNodeDragEnd?    : (positions: Array<{ id: string; x: number; y: number }>) => void; }
 
 /* ------------------------------------------------
    Helpers
@@ -223,7 +228,8 @@ export function ForceGraph({
   onNodeRightClick,
   onEdgeHover,
   onBackgroundClick,
-  highlightPathIds
+  highlightPathIds,
+  onNodeDragEnd
 }: ForceGraphProps) {
   /** SVG 根节点引用，用于 D3 接管。 */
   const svgRef = useRef<SVGSVGElement>(null);
@@ -241,6 +247,8 @@ export function ForceGraph({
   const onNodeRightClickRef = useRef(onNodeRightClick);
   const onEdgeHoverRef = useRef(onEdgeHover);
   const onBackgroundClickRef = useRef(onBackgroundClick);
+  /** 拖拽结束回调 ref（FG-04 布局持久化）：避免 renderGraph 闭包过期。 */
+  const onNodeDragEndRef = useRef(onNodeDragEnd);
   /** 交互高亮态 refs：用于命令式渲染逻辑读取，避免依赖抖动触发重建。 */
   const focusedNodeIdRef = useRef(focusedNodeId);
   const highlightPathIdsRef = useRef(highlightPathIds);
@@ -251,6 +259,7 @@ export function ForceGraph({
     onNodeRightClickRef.current = onNodeRightClick;
     onEdgeHoverRef.current = onEdgeHover;
     onBackgroundClickRef.current = onBackgroundClick;
+    onNodeDragEndRef.current = onNodeDragEnd;
     focusedNodeIdRef.current = focusedNodeId;
     highlightPathIdsRef.current = highlightPathIds;
   }, [
@@ -259,6 +268,7 @@ export function ForceGraph({
     onNodeRightClick,
     onEdgeHover,
     onBackgroundClick,
+    onNodeDragEnd,
     focusedNodeId,
     highlightPathIds
   ]);
@@ -444,9 +454,15 @@ export function ForceGraph({
           if (simulationRef.current) {
             simulationRef.current.alphaTarget(0);
           }
-          // 拖拽结束后释放固定，让节点重新参与力学演化。
-          d.fx = null;
-          d.fy = null;
+          // FG-04: 拖拽结束后保留固定位置，确保刷新前用户手动排布的节点不会漂移。
+          // 通知外层容器（GraphView）保存全量坐标至后端（调用方负责防抖）。
+          d.fx = d.x;
+          d.fy = d.y;
+          if (onNodeDragEndRef.current && simNodes.length > 0) {
+            onNodeDragEndRef.current(
+              simNodes.map(n => ({ id: n.id, x: n.x ?? 0, y: n.y ?? 0 }))
+            );
+          }
         })
       );
 
@@ -454,8 +470,8 @@ export function ForceGraph({
     nodeSelection.append("path")
       .attr("d", d => {
         const r = nodeRadius(d.influence, maxInfluence);
-        // 风险提示：当前 nameType 分支被固定为 PERSON；未来若要按类型绘制需同步产品规则。
-        return nodePath(d.nameType === "TITLE_ONLY" ? "PERSON" : "PERSON", r);
+        // FG-03: 根据实体类型选择形状：LOCATION=菱形，ORGANIZATION=六边形，默认（PERSON）=圆形。
+        return nodePath(d.entityType, r);
       })
       .attr("fill", d => factionColors[d.factionIndex % factionColors.length])
       .attr("stroke", d => {
@@ -582,6 +598,71 @@ export function ForceGraph({
         width / 2,
         height / 2
       ).strength(0.8));
+    }
+
+    // FG-02: 层级树布局：通过 BFS 分配层级，用 forceX/forceY 约束节点位置。
+    if (layoutMode === "tree") {
+      // 选取影响力最高的节点作为根节点。
+      const rootNode = simNodes.reduce((max, n) => n.influence > max.influence ? n : max, simNodes[0]);
+
+      // BFS 分配层级（无法到达时归入末层+1）。
+      const levels = new Map<string, number>();
+      const bfsQueue: string[] = [];
+      if (rootNode) {
+        levels.set(rootNode.id, 0);
+        bfsQueue.push(rootNode.id);
+      }
+      while (bfsQueue.length > 0) {
+        const currId = bfsQueue.shift()!;
+        const currLevel = levels.get(currId)!;
+        for (const edge of simEdges) {
+          if (edge.source.id === currId && !levels.has(edge.target.id)) {
+            levels.set(edge.target.id, currLevel + 1);
+            bfsQueue.push(edge.target.id);
+          }
+          if (edge.target.id === currId && !levels.has(edge.source.id)) {
+            levels.set(edge.source.id, currLevel + 1);
+            bfsQueue.push(edge.source.id);
+          }
+        }
+      }
+      // 孤立/未被 BFS 触达的节点归入末层。
+      const maxLevel = Math.max(...levels.values(), 0);
+      for (const node of simNodes) {
+        if (!levels.has(node.id)) levels.set(node.id, maxLevel + 1);
+      }
+
+      // 按层级分组，计算每层节点的目标 x 坐标。
+      const levelGroups = new Map<number, SimulationNode[]>();
+      for (const node of simNodes) {
+        const lvl = levels.get(node.id) ?? 0;
+        if (!levelGroups.has(lvl)) levelGroups.set(lvl, []);
+        levelGroups.get(lvl)!.push(node);
+      }
+      const totalLevels = Math.max(...levelGroups.keys(), 0) + 1;
+      const vSpacing = height / (totalLevels + 1);
+
+      // 设置初始坐标，减少 simulation 初始抖动。
+      for (const [lvl, nodesInLevel] of levelGroups) {
+        const hSpacing = width / (nodesInLevel.length + 1);
+        nodesInLevel.forEach((node, i) => {
+          node.x = hSpacing * (i + 1);
+          node.y = vSpacing * (lvl + 1);
+        });
+      }
+
+      // 用目标位置约束力替代中心力，使节点按层维持纵列。
+      simulation.force("center", null);
+      simulation.force("x", forceX<SimulationNode>(d => {
+        const lvl = levels.get(d.id) ?? 0;
+        const nodesInLevel = levelGroups.get(lvl) ?? [];
+        const idx = nodesInLevel.indexOf(d);
+        return width / (nodesInLevel.length + 1) * (idx + 1);
+      }).strength(0.8));
+      simulation.force("y", forceY<SimulationNode>(d => {
+        const lvl = levels.get(d.id) ?? 0;
+        return vSpacing * (lvl + 1);
+      }).strength(0.9));
     }
 
     // 初始自适应缩放：让图形尽可能“首屏可见”。

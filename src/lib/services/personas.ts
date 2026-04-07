@@ -276,3 +276,24 @@ export async function splitPersona(body: SplitPersonaBody): Promise<void> {
     body   : JSON.stringify(body)
   });
 }
+
+/**
+ * 删除人物（FG-05）。
+ * 对应接口：`DELETE /api/personas/:id`。
+ * 需要管理员权限，非管理员调用会得到 403 错误。
+ */
+export async function deletePersona(id: string): Promise<void> {
+  await clientMutate(`/api/personas/${id}`, { method: "DELETE" });
+}
+
+/**
+ * 更新人物审核状态（FG-05 状态流转）。
+ * 对应接口：`PATCH /api/personas/:id`，传入 status 字段。
+ */
+export async function updatePersonaStatus(id: string, status: "VERIFIED" | "REJECTED"): Promise<void> {
+  await clientMutate(`/api/personas/${id}`, {
+    method : "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ status })
+  });
+}

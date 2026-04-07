@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getBookById } from "@/server/modules/books/getBookById";
@@ -32,6 +33,32 @@ interface BookGraphPageProps {
    * 在当前项目中使用 Promise 形式的 `params`，需先 `await` 再读取 `id`。
    */
   params: Promise<{ id: string }>;
+}
+
+/**
+ * 动态页面 metadata（FG-12）。
+ * 标题格式：{书名} · 人物图谱 — 文渊；包含 OG 封面（有时）。
+ */
+export async function generateMetadata({ params }: BookGraphPageProps): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const book = await getBookById(id);
+    const title = `${book.title} · 人物图谱 — 文渊`;
+    const description = `探索《${book.title}》中的人物关系网络，发现角色之间的复杂连接。`;
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        // 有封面时注入 OG 图片，否则回退到全局 opengraph-image。
+        ...(book.coverUrl ? { images: [{ url: book.coverUrl }] } : {})
+      }
+    };
+  } catch {
+    // metadata 生成失败不应阻断页面渲染，回退到默认标题。
+    return { title: "人物图谱 — 文渊" };
+  }
 }
 
 export default async function BookGraphPage({

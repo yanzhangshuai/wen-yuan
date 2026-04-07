@@ -74,3 +74,33 @@ export async function searchPersonaPath(body: SearchPersonaPathBody): Promise<Pa
     body   : JSON.stringify(body)
   });
 }
+
+/**
+ * 单节点布局坐标（FG-04 持久化接口入参单元）。
+ */
+export interface GraphLayoutNodeInput {
+  /** 人物 ID（UUID）。 */
+  personaId: string;
+  /** 拖拽后的 X 坐标。 */
+  x        : number;
+  /** 拖拽后的 Y 坐标。 */
+  y        : number;
+}
+
+/**
+ * 批量保存图谱节点布局坐标（FG-04）。
+ * 对应后端 `PATCH /api/graphs/:id/layout`。
+ *
+ * @param graphId 书籍/图谱 ID（UUID）。
+ * @param nodes 需要保存位置的节点列表（至少 1 个）。
+ */
+export async function updateGraphLayout(
+  graphId: string,
+  nodes: GraphLayoutNodeInput[]
+): Promise<void> {
+  await clientFetch<unknown>(`/api/graphs/${graphId}/layout`, {
+    method : "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ nodes })
+  });
+}

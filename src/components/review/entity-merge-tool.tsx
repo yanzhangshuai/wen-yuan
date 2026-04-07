@@ -73,8 +73,10 @@ export interface EntityMergeToolProps {
   /** 目标人物摘要 Promise（通常是“将被保留”的一方）。 */
   targetPromise: Promise<PersonaSummary | null>;
   /** 合并建议 ID，用于调用接受接口。 */
-  suggestionId : string;
-  /** 合并成功回调：通知父组件刷新数据并退出本面板。 */
+  suggestionId : string;  /** FG-08: 建议合并理由（来自 AI 判断），用于审核员参考。 */
+  reason?      : string;
+  /** FG-08: 建议置信度（0~1）。 */
+  confidence?  : number;  /** 合并成功回调：通知父组件刷新数据并退出本面板。 */
   onDone       : () => void;
   /** 取消回调：关闭本面板并返回上一视图。 */
   onCancel     : () => void;
@@ -87,6 +89,8 @@ export function EntityMergeTool({
   sourcePromise,
   targetPromise,
   suggestionId,
+  reason,
+  confidence,
   onDone,
   onCancel
 }: EntityMergeToolProps) {
@@ -165,6 +169,19 @@ export function EntityMergeTool({
         <PersonaCard persona={source} label="来源（将被合并）" variant="source" />
         <PersonaCard persona={target} label="目标（保留）" variant="target" />
       </div>
+
+      {/* FG-08: 合并依据（AI 给出的合并理由与置信度）。 */}
+      {reason && (
+        <div className="mt-3 rounded-md border border-border bg-muted/40 p-3 text-xs">
+          <p className="mb-1 font-medium text-foreground">合并依据</p>
+          <p className="text-muted-foreground">{reason}</p>
+          {confidence !== undefined && (
+            <p className="mt-1 text-muted-foreground">
+              置信度：<span className="font-medium text-foreground">{(confidence * 100).toFixed(0)}%</span>
+            </p>
+          )}
+        </div>
+      )}
 
       {/*
         合并结果预览（前端估算）：

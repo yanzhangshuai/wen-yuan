@@ -74,6 +74,8 @@ export interface BookGraphNode {
   name        : string;
   /** 人名类型（NAMED/TITLE_ONLY）。 */
   nameType    : string;
+  /** 实体类型（PERSON/LOCATION/ORGANIZATION），用于前端节点形状区分。 */
+  entityType  : string;
   /** 节点审核状态。 */
   status      : ProcessingStatus;
   /** 派系颜色索引（前端着色用）。 */
@@ -263,6 +265,7 @@ export function createGetBookGraphService(
             id          : true,
             name        : true,
             nameType    : true,
+            type        : true,
             recordSource: true
           }
         }
@@ -286,6 +289,7 @@ export function createGetBookGraphService(
         id          : profile.persona.id,
         name        : profile.persona.name,
         nameType    : profile.persona.nameType,
+        entityType  : profile.persona.type,
         status      : resolveNodeStatus(profile.persona.recordSource),
         factionIndex: hashFactionIndex(profile.persona.id),
         influence,
@@ -306,6 +310,7 @@ export function createGetBookGraphService(
           id          : true,
           name        : true,
           nameType    : true,
+          type        : true,
           recordSource: true
         }
       });
@@ -315,6 +320,7 @@ export function createGetBookGraphService(
           id          : persona.id,
           name        : persona.name,
           nameType    : persona.nameType,
+          entityType  : persona.type,
           status      : resolveNodeStatus(persona.recordSource),
           factionIndex: hashFactionIndex(persona.id),
           // 缺失 profile 时没有 ironyIndex，退化为纯关系计数。

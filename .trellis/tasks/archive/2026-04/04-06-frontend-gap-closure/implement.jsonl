@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "docs/v1/task-frontend.md", "reason": "PRD 前端需求权威来源"}
+{"file": ".trellis/tasks/04-06-frontend-gap-closure/prd.md", "reason": "本任务执行 PRD"}
+{"file": ".trellis/tasks/04-06-frontend-gap-closure/task-frontend.md", "reason": "本任务执行拆解"}

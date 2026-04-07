@@ -33,6 +33,8 @@ export interface GraphNode {
   name        : string;
   /** 姓名类型（如 NAMED/TITLE_ONLY），用于节点样式区分。 */
   nameType    : string;
+  /** 实体类型（PERSON/LOCATION/ORGANIZATION），用于前端节点形状区分。 */
+  entityType  : string;
   /** 审核状态。 */
   status      : ProcessingStatus;
   /** 派系颜色索引，前端可据此生成稳定配色。 */

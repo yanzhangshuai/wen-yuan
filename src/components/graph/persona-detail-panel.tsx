@@ -56,10 +56,17 @@ export interface PersonaDetailPanelProps {
   /** 关闭面板回调。 */
   onClose         : () => void;
   /**
-   * 点击证据回调。
-   * 参数：chapterId + 可选 paraIndex，用于打开原文面板并定位段落。
+   * 点击证据回调（FG-06 增强）。
+   * - chapterId / paraIndex：当前被点击的证据定位；
+   * - allEvidence：该人物所有可用证据列表（可选），用于前后导航；
+   * - clickedIndex：当前点击证据在 allEvidence 中的下标（可选）。
    */
-  onEvidenceClick?: (chapterId: string, paraIndex?: number) => void;
+  onEvidenceClick?: (
+    chapterId   : string,
+    paraIndex?  : number,
+    allEvidence?: Array<{ chapterId: string; paraIndex?: number }>,
+    clickedIndex?: number
+  ) => void;
   /** 点击编辑回调（可选，某些只读场景可能不开放编辑）。 */
   onEditClick?    : (personaId: string) => void;
 }
@@ -132,6 +139,14 @@ export function PersonaDetailPanel({
   /** 当前书籍范围内的时间轴事件。 */
   const bookTimeline = persona?.timeline
     .filter(t => t.bookId === bookId) ?? [];
+
+  /**
+   * 当前书籍所有可阅读证据列表（FG-06）。
+   * 每条事件有 chapterId 即可作为证据入口，可选 paraIndex（暂时不传）。
+   */
+  const allEvidenceList = bookTimeline
+    .filter(t => Boolean(t.chapterId))
+    .map(t => ({ chapterId: t.chapterId }));
 
   /** 当前书籍范围内的人物档案（称谓、简介、标签等）。 */
   const bookProfile = persona?.profiles.find(p => p.bookId === bookId);
@@ -280,7 +295,11 @@ export function PersonaDetailPanel({
                       </div>
                       <button
                         type="button"
-                        onClick={() => onEvidenceClick?.(evt.chapterId)}
+                        onClick={() => {
+                          // FG-06: 传入完整证据列表和当前下标，支持前后导航。
+                          const clickedIdx = allEvidenceList.findIndex(e => e.chapterId === evt.chapterId);
+                          onEvidenceClick?.(evt.chapterId, undefined, allEvidenceList, clickedIdx >= 0 ? clickedIdx : 0);
+                        }}
                         className="ml-1 shrink-0 rounded p-1 text-muted-foreground hover:text-primary"
                         aria-label="查看原文"
                         title="查看原文"

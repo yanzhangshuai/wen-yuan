@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, CheckCircle, Settings2, LogOut, LayoutDashboard } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { logout } from "@/lib/services/auth";
 
 /**
  * 文件定位（Client Component / 管理后台顶部导航）：
@@ -32,6 +33,22 @@ const adminLinks = [
 export function AdminHeader({ userName }: AdminHeaderProps) {
   // usePathname 在客户端读取当前路径，用于计算导航高亮。
   const pathname = usePathname();
+  // useRouter 用于退出后导航到登录页。
+  const router = useRouter();
+
+  /**
+   * 执行管理后台退出登录。
+   * 调用 /api/auth/logout 清除服务端会话，成功后跳转到登录页。
+   * 失败时仍跳转，确保用户离开受保护域。
+   */
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch {
+      // 无论 API 是否成功，都要跳转到登录页以防止继续操作后台。
+    }
+    router.push("/login");
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -88,11 +105,9 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
             </span>
           )}
 
-          <Button asChild variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-            <Link href="/">
-              <LogOut className="h-4 w-4" />
-              退出管理
-            </Link>
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground" onClick={() => { void handleLogout(); }}>
+            <LogOut className="h-4 w-4" />
+            退出管理
           </Button>
         </div>
       </div>

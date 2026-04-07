@@ -332,6 +332,35 @@ export default function AdminImportPage() {
   }
 
   /**
+   * FG-09: 更新指定章节的标题。
+   */
+  function updatePreviewTitle(idx: number, value: string) {
+    setPreviewItems(prev => prev.map((item, i) => i === idx ? { ...item, title: value } : item));
+  }
+
+  /**
+   * FG-09: 更新指定章节的章节类型。
+   */
+  function updatePreviewChapterType(idx: number, value: string) {
+    setPreviewItems(prev => prev.map((item, i) => i === idx ? { ...item, chapterType: value } : item));
+  }
+
+  /**
+   * FG-09: 将 idx 位置的章节合并到上一个章节。
+   * 合并策略：保留上一章的 index 与 title，字数求和，移除当前章节行。
+   */
+  function mergeWithPrevious(idx: number) {
+    if (idx === 0) return;
+    setPreviewItems(prev => {
+      const next = [...prev];
+      const merged = { ...next[idx - 1], wordCount: next[idx - 1].wordCount + next[idx].wordCount };
+      next[idx - 1] = merged;
+      next.splice(idx, 1);
+      return next;
+    });
+  }
+
+  /**
    * 第 2 步提交：确认章节结构。
    *
    * 业务意义：
@@ -614,16 +643,50 @@ export default function AdminImportPage() {
                       <thead className="bg-muted/10 sticky top-0 backdrop-blur">
                         <tr>
                           <th className="px-4 py-2 text-left w-12">序</th>
+                          <th className="px-4 py-2 text-left w-24">类型</th>
                           <th className="px-4 py-2 text-left">标题</th>
-                          <th className="px-4 py-2 text-right">字数</th>
+                          <th className="px-4 py-2 text-right w-20">字数</th>
+                          <th className="px-4 py-2 w-16"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {previewItems.map((item, idx) => (
                           <tr key={idx} className="border-t border-border">
                             <td className="px-4 py-2 text-muted-foreground">{item.index}</td>
-                            <td className="px-4 py-2 font-medium">{item.title}</td>
+                            <td className="px-4 py-2">
+                              {/* FG-09: 章节类型可修改 */}
+                              <select
+                                className="w-full rounded border border-border bg-transparent px-1 py-0.5 text-xs"
+                                value={item.chapterType}
+                                onChange={e => updatePreviewChapterType(idx, e.target.value)}
+                              >
+                                <option value="PRELUDE">序章</option>
+                                <option value="CHAPTER">正文</option>
+                                <option value="POSTLUDE">尾声</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-2">
+                              {/* FG-09: 标题内联编辑 */}
+                              <Input
+                                className="h-7 text-sm font-medium px-2 py-0"
+                                value={item.title}
+                                onChange={e => updatePreviewTitle(idx, e.target.value)}
+                              />
+                            </td>
                             <td className="px-4 py-2 text-right opacity-70">{item.wordCount}</td>
+                            <td className="px-4 py-2 text-right">
+                              {/* FG-09: 合并到上一章 */}
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                  title="合并到上一章"
+                                  onClick={() => mergeWithPrevious(idx)}
+                                >
+                                  合并↑
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

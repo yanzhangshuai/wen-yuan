@@ -58,19 +58,8 @@ export function BookCard({ book }: BookCardProps) {
   const isError = book.status === "ERROR";
   const href = `/books/${book.id}/graph`;
 
-  const statusBadge = !isCompleted ? (
-    <div className="library-book-card-status absolute top-3 left-3 z-30">
-      <Badge
-        variant="outline"
-        className={cn(
-          "border-border/60 bg-background/80 text-xs backdrop-blur-sm",
-          isError && "border-destructive/55 text-destructive"
-        )}
-      >
-        {isError ? "解析失败" : "解析中"}
-      </Badge>
-    </div>
-  ) : null;
+  // FG-10: 前台书库不展示解析状态 Badge（COMPLETED 外的书籍以灰度不可点击表达状态）。
+  const statusBadge = null;
 
   const hoverPanel = isCompleted ? (
     <div className={cn(
