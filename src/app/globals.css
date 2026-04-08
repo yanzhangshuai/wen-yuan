@@ -80,6 +80,7 @@
   --color-graph-node-secondary: var(--graph-node-secondary);
   --color-graph-edge: var(--graph-edge);
   --color-graph-highlight: var(--graph-highlight);
+  --color-graph-node-hover: var(--graph-node-hover);
 }
 
 /* =========================================
@@ -178,31 +179,24 @@ html {
    Graph visual effects
    ========================================= */
 
-/* VERIFIED node glow — driven by D3 adding class="verified-glow" */
+/* VERIFIED 节点发光：仅作用于节点 path，避免文字被连带滤镜污染。 */
 @keyframes verified-pulse {
-  0%, 100% { filter: drop-shadow(0 0 4px var(--color-graph-verified-glow)); }
-  50%      { filter: drop-shadow(0 0 10px var(--color-graph-verified-glow)); }
+  0%, 100% { filter: drop-shadow(0 0 4px var(--graph-node-halo-color, var(--color-graph-verified-glow))); }
+  50%      { filter: drop-shadow(0 0 10px var(--graph-node-halo-color, var(--color-graph-verified-glow))); }
 }
 
-.graph-node-verified {
+.graph-node-verified > path {
   animation: verified-pulse 2.5s ease-in-out infinite;
 }
 
 /* diancang theme: stronger glow */
-[data-theme="diancang"] .graph-node-verified {
+[data-theme="diancang"] .graph-node-verified > path {
   animation: verified-pulse-strong 2s ease-in-out infinite;
 }
 
 @keyframes verified-pulse-strong {
-  0%, 100% { filter: drop-shadow(0 0 6px var(--color-graph-verified-glow)) drop-shadow(0 0 12px var(--color-graph-verified-glow)); }
-  50%      { filter: drop-shadow(0 0 14px var(--color-graph-verified-glow)) drop-shadow(0 0 24px var(--color-graph-verified-glow)); }
-}
-
-/* DRAFT node dashed outline indicator */
-.graph-node-draft {
-  stroke-dasharray: 4 2;
-  stroke: var(--color-graph-draft);
-  stroke-width: 2;
+  0%, 100% { filter: drop-shadow(0 0 6px var(--graph-node-halo-color, var(--color-graph-verified-glow))) drop-shadow(0 0 12px var(--graph-node-halo-color, var(--color-graph-verified-glow))); }
+  50%      { filter: drop-shadow(0 0 14px var(--graph-node-halo-color, var(--color-graph-verified-glow))) drop-shadow(0 0 24px var(--graph-node-halo-color, var(--color-graph-verified-glow))); }
 }
 
 /* =========================================

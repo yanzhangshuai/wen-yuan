@@ -58,7 +58,11 @@ export function getNeo4jDriver(): Driver | null {
 
   const driver = neo4j.driver(config.uri, neo4j.auth.basic(config.user, config.password), {
     // 关闭 Neo4j Integer 包装，减少上层序列化与数值转换负担。
-    disableLosslessIntegers: true
+    disableLosslessIntegers     : true,
+    // Neo4j 未启动或网络不可达时快速失败，尽快回退到 PostgreSQL 路径搜索。
+    connectionTimeout           : 1_500,
+    connectionAcquisitionTimeout: 1_500,
+    maxTransactionRetryTime     : 1_000
   });
 
   if (process.env.NODE_ENV !== "production") {

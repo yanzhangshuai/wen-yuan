@@ -22,7 +22,7 @@ import { BookNotFoundError } from "@/server/modules/books/errors";
  *
  * 关键业务边界：
  * - 路径查询限定在“单本书图谱域”；
- * - 只使用 `VERIFIED` 关系边，避免未审核关系污染路径结果。
+ * - 关系边口径与图谱展示对齐：纳入 `DRAFT` + `VERIFIED`，排除 `REJECTED`。
  * ============================================================================
  */
 
@@ -111,6 +111,21 @@ interface PersonaSnapshot {
   name: string;
 }
 
+/**
+ * 路径搜索关系状态白名单：
+ * - 与图谱展示口径保持一致，避免“图上有边但路径不可达”的认知冲突。
+ */
+const PATH_SEARCH_RELATIONSHIP_STATUSES: ProcessingStatus[] = [
+  ProcessingStatus.DRAFT,
+  ProcessingStatus.VERIFIED
+];
+
+/**
+ * Neo4j 路径查询软超时：
+ * - 目标是避免图数据库不可达时卡住接口，超时后快速回退 PG BFS。
+ */
+const NEO4J_PATH_QUERY_TIMEOUT_MS = 2_000;
+
 /** Neo4j 记录最小抽象（便于测试 mock）。 */
 interface Neo4jRecordLike {
   get(key: string): unknown;
@@ -176,6 +191,29 @@ function toStringArray(value: unknown): string[] {
   return value
     .map((item) => String(item))
     .filter((item) => item.length > 0);
+}
+
+/**
+ * 给异步操作增加超时保护。
+ * 超时后抛错，由上层统一走降级逻辑。
+ */
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_resolve, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
 }
 
 /**
@@ -253,7 +291,7 @@ function bfsShortestPath(
 
 /**
  * 从 PostgreSQL 加载路径搜索所需图数据。
- * 仅纳入 `VERIFIED` 关系，这是业务可信度规则，不是技术限制。
+ * 纳入路径搜索白名单状态（当前为 `DRAFT` + `VERIFIED`）。
  */
 async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Promise<{
   personas  : PersonaSnapshot[];
@@ -263,7 +301,7 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     prismaClient.relationship.findMany({
       where: {
         deletedAt: null,
-        status   : ProcessingStatus.VERIFIED,
+        status   : { in: PATH_SEARCH_RELATIONSHIP_STATUSES },
         chapter  : {
           bookId
         },
@@ -531,7 +569,7 @@ export function createFindPersonaPathService(
       throw new BookNotFoundError(input.bookId);
     }
 
-    // Step 2) 加载图数据（人物 + 已审核关系）。
+    // Step 2) 加载图数据（人物 + 路径白名单关系）。
     const { personas, graphEdges } = await loadBookGraphData(prismaClient, input.bookId);
 
     // Step 3) 校验起点终点是否在当前书域图谱内。
@@ -553,8 +591,13 @@ export function createFindPersonaPathService(
     if (neo4jDriver) {
       try {
         // Step 4) 优先 Neo4j：先同步，再 shortestPath。
-        await syncNeo4jBookGraph(neo4jDriver, input.bookId, personas, graphEdges);
-        const shortestPath = await findShortestPathFromNeo4j(neo4jDriver, input);
+        const shortestPath = await withTimeout(
+          (async () => {
+            await syncNeo4jBookGraph(neo4jDriver, input.bookId, personas, graphEdges);
+            return findShortestPathFromNeo4j(neo4jDriver, input);
+          })(),
+          NEO4J_PATH_QUERY_TIMEOUT_MS
+        );
         if (!shortestPath) {
           return buildNotFoundResult(input);
         }

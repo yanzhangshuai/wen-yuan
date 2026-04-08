@@ -55,6 +55,8 @@
   --graph-node-secondary: oklch(0.62 0.06 70);
   --graph-edge: oklch(0.25 0.004 220);
   --graph-highlight: oklch(0.78 0.08 180);
+  /* 节点 hover：冷蓝高亮，贴合星空主题且不过曝。 */
+  --graph-node-hover: oklch(0.74 0.07 198);
 
   /* --- 侧边栏：最深的纯黑 --- */
   --sidebar: oklch(0.02 0.002 240);

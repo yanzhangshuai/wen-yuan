@@ -57,6 +57,8 @@
   --graph-edge: oklch(0.60 0.05 90);
   /* 高亮：朱砂暖红（与浅色背景形成对比） */
   --graph-highlight: oklch(0.55 0.15 25);
+  /* 节点 hover：沿用竹青主色系，浅色背景下保持清晰边界。 */
+  --graph-node-hover: oklch(0.42 0.11 165);
 
   /* --- 侧边栏 --- */
   --sidebar: oklch(0.96 0.01 88);

@@ -55,7 +55,7 @@ export interface GraphToolbarProps {
   /** 布局模式变更回调。 */
   onLayoutChange        : (mode: GraphLayoutMode) => void;
   /** 路径查找触发回调，参数为起点/终点人物名称。 */
-  onPathFind            : (sourceName: string, targetName: string) => void;
+  onPathFind            : (sourceName: string, targetName: string) => Promise<boolean>;
   /** 导出回调（支持 png/svg/json 三种外部契约格式）。 */
   onExport              : (format: "png" | "svg" | "json") => void;
   /** 全屏切换回调（由上层决定具体作用元素）。 */
@@ -95,6 +95,8 @@ export function GraphToolbar({
   const [pathSource, setPathSource] = useState("");
   /** 路径查找终点输入。 */
   const [pathTarget, setPathTarget] = useState("");
+  /** 路径查找中的按钮禁用态。 */
+  const [pathFinding, setPathFinding] = useState(false);
 
   /**
    * 面板切换逻辑：
@@ -114,11 +116,18 @@ export function GraphToolbar({
    * 提交路径查找。
    * 防御目的：要求起点和终点都非空，避免触发无意义请求。
    */
-  function handlePathSubmit() {
-    if (pathSource && pathTarget) {
-      onPathFind(pathSource, pathTarget);
-      // 成功触发后自动收起面板，避免遮挡图谱视图。
-      setActivePanel(null);
+  async function handlePathSubmit() {
+    if (!pathSource || !pathTarget || pathFinding) return;
+
+    setPathFinding(true);
+    try {
+      const found = await onPathFind(pathSource.trim(), pathTarget.trim());
+      // 仅查找成功时自动收起，失败时保留面板方便用户继续调整输入。
+      if (found) {
+        setActivePanel(null);
+      }
+    } finally {
+      setPathFinding(false);
     }
   }
 
@@ -308,10 +317,10 @@ export function GraphToolbar({
               />
               <Button
                 size="sm"
-                onClick={handlePathSubmit}
-                disabled={!pathSource || !pathTarget}
+                onClick={() => { void handlePathSubmit(); }}
+                disabled={!pathSource || !pathTarget || pathFinding}
               >
-                查找路径
+                {pathFinding ? "查找中..." : "查找路径"}
               </Button>
             </div>
           )}

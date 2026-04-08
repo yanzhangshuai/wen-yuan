@@ -12,7 +12,7 @@ import type {
   GraphSnapshot
 } from "@/types/graph";
 import { fetchBookGraph, searchPersonaPath, updateGraphLayout, type GraphLayoutNodeInput } from "@/lib/services/graph";
-import { fetchPersonaDetail, deletePersona, updatePersonaStatus } from "@/lib/services/personas";
+import { fetchPersonaDetail, deletePersona } from "@/lib/services/personas";
 import { fetchChapterContent } from "@/lib/services/books";
 import {
   ForceGraph,
@@ -76,6 +76,22 @@ interface PanelFallbackProps {
   message: string;
   /** 关闭面板回调，统一由父组件清理对应状态。 */
   onClose: () => void;
+}
+
+/**
+ * 比较两个字符串集合内容是否完全一致（忽略引用，只比较值）。
+ * 用于避免 setState 时因为新 Set 引用导致无意义重渲染。
+ */
+function isSameIdSet(current: Set<string>, next: Set<string>): boolean {
+  if (current.size !== next.size) {
+    return false;
+  }
+  for (const value of next) {
+    if (!current.has(value)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -165,7 +181,7 @@ export function GraphView({
   const [contextMenu, setContextMenu] = useState<{ node: GraphNode; position: { x: number; y: number } } | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<GraphEdge | null>(null);
 
-  // 工具栏状态：筛选条件、布局模式、路径高亮节点集合。
+  // 工具栏状态：筛选条件、布局模式、路径高亮（节点 + 边）集合。
   const [filter, setFilter] = useState<GraphFilter>({
     relationTypes : [],
     statuses      : [],
@@ -174,6 +190,8 @@ export function GraphView({
   });
   const [layoutMode, setLayoutMode] = useState<GraphLayoutMode>("force");
   const [highlightPathIds, setHighlightPathIds] = useState<Set<string>>(new Set());
+  const [highlightPathEdgeIds, setHighlightPathEdgeIds] = useState<Set<string>>(new Set());
+  const [pathAutoFitVersion, setPathAutoFitVersion] = useState(0);
 
   // 原文阅读面板状态（由证据点击触发）。
   const [textReader, setTextReader] = useState<TextReaderState | null>(null);
@@ -268,26 +286,19 @@ export function GraphView({
     setFocusedNodeId(prev => prev === null ? prev : null);
     setContextMenu(prev => prev === null ? prev : null);
     setHighlightPathIds(prev => prev.size === 0 ? prev : new Set());
+    setHighlightPathEdgeIds(prev => prev.size === 0 ? prev : new Set());
   }
 
   /** 清空路径高亮（仅在当前存在高亮时更新状态）。 */
   const clearHighlightPath = useCallback(() => {
     setHighlightPathIds(prev => prev.size === 0 ? prev : new Set());
+    setHighlightPathEdgeIds(prev => prev.size === 0 ? prev : new Set());
   }, []);
 
   /** 设置路径高亮（与当前集合一致时保持引用，避免无意义 rerender）。 */
-  const setHighlightPath = useCallback((nextPathNodeIds: Set<string>) => {
-    setHighlightPathIds(prev => {
-      if (prev.size !== nextPathNodeIds.size) {
-        return nextPathNodeIds;
-      }
-      for (const nodeId of nextPathNodeIds) {
-        if (!prev.has(nodeId)) {
-          return nextPathNodeIds;
-        }
-      }
-      return prev;
-    });
+  const setHighlightPath = useCallback((nextPathNodeIds: Set<string>, nextPathEdgeIds: Set<string>) => {
+    setHighlightPathIds(prev => isSameIdSet(prev, nextPathNodeIds) ? prev : nextPathNodeIds);
+    setHighlightPathEdgeIds(prev => isSameIdSet(prev, nextPathEdgeIds) ? prev : nextPathEdgeIds);
   }, []);
 
   /**
@@ -319,37 +330,41 @@ export function GraphView({
    * 路径查找：
    * 1) 把用户输入姓名映射为节点 ID；
    * 2) 若映射失败，直接清空高亮并返回；
-   * 3) 调后端查询最短路径，成功则高亮路径节点；
+   * 3) 调后端查询最短路径，成功则高亮路径节点与关系边；
    * 4) 查询失败或未找到路径时清空高亮，避免显示过期状态。
    */
-  function handlePathFind(sourceName: string, targetName: string) {
-    void (async () => {
-      const sourcePersonaId = findPersonaIdByName(sourceName);
-      const targetPersonaId = findPersonaIdByName(targetName);
-      if (!sourcePersonaId || !targetPersonaId) {
-        // 任一端映射失败都清空旧高亮，避免保留上一次成功路径造成误导。
-        clearHighlightPath();
-        return;
-      }
-
-      try {
-        const result = await searchPersonaPath({
-          bookId,
-          sourcePersonaId,
-          targetPersonaId
-        });
-        if (result.found) {
-          const pathNodeIds = new Set<string>(result.nodes.map(node => node.id));
-          setHighlightPath(pathNodeIds);
-          return;
-        }
-      } catch {
-        // 异常时不抛出到 UI 层，保持主视图稳定。
-      }
-
-      // 未找到路径或查询失败统一回落为空高亮。
+  async function handlePathFind(sourceName: string, targetName: string): Promise<boolean> {
+    const sourcePersonaId = findPersonaIdByName(sourceName);
+    const targetPersonaId = findPersonaIdByName(targetName);
+    if (!sourcePersonaId || !targetPersonaId) {
+      // 任一端映射失败都清空旧高亮，避免保留上一次成功路径造成误导。
       clearHighlightPath();
-    })();
+      toast.warning("未匹配到输入人物，请检查姓名后重试");
+      return false;
+    }
+
+    try {
+      const result = await searchPersonaPath({
+        bookId,
+        sourcePersonaId,
+        targetPersonaId
+      });
+      if (result.found) {
+        const pathNodeIds = new Set<string>(result.nodes.map(node => node.id));
+        const pathEdgeIds = new Set<string>(result.edges.map(edge => edge.id));
+        setHighlightPath(pathNodeIds, pathEdgeIds);
+        setPathAutoFitVersion(prev => prev + 1);
+        return true;
+      }
+      clearHighlightPath();
+      toast.info("两者之间暂未找到可达路径");
+      return false;
+    } catch {
+      // 异常时不抛出到 UI 层，保持主视图稳定。
+      clearHighlightPath();
+      toast.error("路径查找失败，请稍后重试");
+      return false;
+    }
   }
 
   /**
@@ -546,12 +561,15 @@ export function GraphView({
         filter={filter}
         layoutMode={layoutMode}
         focusedNodeId={focusedNodeId}
+        activeNodeId={selectedPersona?.id ?? null}
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeRightClick={handleNodeRightClick}
         onEdgeHover={setHoveredEdge}
         onBackgroundClick={handleBackgroundClick}
         highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
+        highlightPathEdgeIds={highlightPathEdgeIds.size > 0 ? highlightPathEdgeIds : undefined}
+        pathAutoFitVersion={pathAutoFitVersion}
         onNodeDragEnd={handleNodeDragEnd}
       />
 

@@ -16,7 +16,7 @@ import {
 import { select } from "d3-selection";
 import { symbol, symbolCircle } from "d3-shape";
 import "d3-transition";
-import { zoom, zoomIdentity, type D3ZoomEvent } from "d3-zoom";
+import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } from "d3-zoom";
 
 import type {
   GraphEdge,
@@ -68,6 +68,20 @@ const MAX_NODE_RADIUS = 32;
 const EDGE_OPACITY_BASE = 0.6;
 /** 聚焦/高亮模式下非目标元素的降权透明度。 */
 const FOCUS_DIM_OPACITY = 0.1;
+/** 路径高亮边颜色（由主题 token 驱动，自动适配明暗主题）。 */
+const PATH_EDGE_HIGHLIGHT_COLOR = "var(--color-graph-highlight)";
+/** 关系方向箭头 marker（默认隐藏，仅在 hover/路径高亮显示）。 */
+const EDGE_ARROW_MARKER_URL = "url(#arrowhead)";
+/** 节点填充/光晕兜底色（当派系色不可用时使用）。 */
+const NODE_FILL_FALLBACK_COLOR = "var(--color-graph-node)";
+/** 节点高亮混合色（主题自适配）。 */
+const NODE_HIGHLIGHT_MIX_COLOR = "var(--color-graph-node-hover)";
+/** 节点高亮混色比例：提高可辨识度，同时保持与原色一致。 */
+const NODE_HIGHLIGHT_BASE_WEIGHT = 82;
+const NODE_HIGHLIGHT_ACCENT_WEIGHT = 18;
+/** 交互态缩放：hover 轻微放大，active/focused 再略高一档。 */
+const NODE_HOVER_SCALE = 1.1;
+const NODE_ACTIVE_SCALE = 1.2;
 
 /* ------------------------------------------------
    Props
@@ -77,53 +91,70 @@ export interface ForceGraphProps {
    * 图谱快照（上游服务端或客户端请求得到的最终数据）。
    * 业务含义：这是当前章节切片下“可被渲染”的完整节点与边集合。
    */
-  snapshot          : GraphSnapshot;
+  snapshot             : GraphSnapshot;
   /**
    * 当前主题名（来自主题系统），用于派系颜色映射。
    * 可为空：首次 hydration 前主题尚未解析时允许兜底。
    */
-  theme             : string | undefined;
+  theme                : string | undefined;
   /**
    * 章节上限（当前版本未直接在本组件使用，保留接口稳定性）。
    * 这是对外契约，不是技术限制；删除会影响上游调用一致性。
    */
-  chapterCap?       : number;
+  chapterCap?          : number;
   /**
    * 图谱筛选条件（关系类型、状态、关键词等）。
    * 若为空表示展示 snapshot 全量数据。
    */
-  filter?           : GraphFilter;
+  filter?              : GraphFilter;
   /**
    * 布局模式：
    * - `force`：经典力导向；
    * - `radial`：同心径向；
    * - `tree`：当前暂未单独实现，保留枚举兼容。
    */
-  layoutMode?       : GraphLayoutMode;
+  layoutMode?          : GraphLayoutMode;
   /**
    * 当前聚焦节点 ID（用于“只突出目标及其邻居”）。
    * 为 `null/undefined` 表示不启用聚焦降噪。
    */
-  focusedNodeId?    : string | null;
+  focusedNodeId?       : string | null;
+  /**
+   * 当前激活节点 ID（通常来自单击选中）。
+   * 与 `focusedNodeId` 的区别：仅强调该节点本身，不触发邻居降噪。
+   */
+  activeNodeId?        : string | null;
   /** 节点单击回调：用于打开人物详情等业务动作。 */
-  onNodeClick?      : (node: GraphNode) => void;
+  onNodeClick?         : (node: GraphNode) => void;
   /** 节点双击回调：用于切换聚焦。 */
-  onNodeDoubleClick?: (node: GraphNode) => void;
+  onNodeDoubleClick?   : (node: GraphNode) => void;
   /** 节点右键回调：用于弹出上下文菜单，附带屏幕坐标。 */
-  onNodeRightClick? : (node: GraphNode, position: { x: number; y: number }) => void;
+  onNodeRightClick?    : (node: GraphNode, position: { x: number; y: number }) => void;
   /** 边 hover 回调：用于在外层显示关系信息浮层。 */
-  onEdgeHover?      : (edge: GraphEdge | null) => void;
+  onEdgeHover?         : (edge: GraphEdge | null) => void;
   /** 背景点击回调：用于关闭面板、重置临时状态。 */
-  onBackgroundClick?: () => void;
+  onBackgroundClick?   : () => void;
   /**
    * 最短路径高亮节点 ID 集合。
    * 传入时将覆盖普通显示优先级（用于“路径查找结果强调”）。
    */
-  highlightPathIds? : Set<string>;  /**
+  highlightPathIds?    : Set<string>;
+  /**
+   * 最短路径高亮边 ID 集合。
+   * 优先使用边 ID 精确高亮，避免仅按“节点都在路径上”导致误高亮。
+   */
+  highlightPathEdgeIds?: Set<string>;
+  /**
+   * 路径查询成功后的自增版本号。
+   * 用于触发“同一条路径重复查询”时的再次自动适配缩放。
+   */
+  pathAutoFitVersion?  : number;
+  /**
    * 节点拖拽结束回调（FG-04 布局持久化）。
    * 接收当前所有可见节点的最新坐标，调用方负责防抖后保存到后端。
    */
-  onNodeDragEnd?    : (positions: Array<{ id: string; x: number; y: number }>) => void; }
+  onNodeDragEnd?       : (positions: Array<{ id: string; x: number; y: number }>) => void;
+}
 
 /* ------------------------------------------------
    Helpers
@@ -175,6 +206,88 @@ function edgeColor(sentiment: string): string {
   return "var(--muted-foreground)";
 }
 
+/** 边基础线宽（常态）。 */
+function edgeBaseWidth(weight: number): number {
+  return Math.max(1, Math.min(weight * 1.5, 6));
+}
+
+/** 边强调线宽（路径高亮）。 */
+function edgeEmphasisWidth(weight: number): number {
+  return Math.max(3, Math.min(weight * 2 + 3, 11));
+}
+
+/** 节点常态描边色。 */
+function nodeBaseStrokeColor(status: GraphNode["status"]): string {
+  if (status === "DRAFT") return "var(--color-graph-draft)";
+  if (status === "VERIFIED") return "var(--color-graph-verified-glow)";
+  return "transparent";
+}
+
+/** 节点常态描边宽度。 */
+function nodeBaseStrokeWidth(status: GraphNode["status"]): number {
+  return status === "DRAFT" ? 2 : 1.5;
+}
+
+/** 节点常态描边虚线。 */
+function nodeBaseStrokeDasharray(): string {
+  // 去掉 DRAFT 虚线，避免在缩放/抗锯齿下出现“梯形碎影”。
+  return "none";
+}
+
+/** 节点派系色：用于节点填充与光晕色的一致性。 */
+function nodeFactionColor(
+  node: Pick<GraphNode, "factionIndex">,
+  factionColors: readonly string[]
+): string | null {
+  if (factionColors.length === 0) {
+    return null;
+  }
+  const normalizedIndex = ((node.factionIndex % factionColors.length) + factionColors.length) % factionColors.length;
+  return factionColors[normalizedIndex] ?? null;
+}
+
+/** 节点常态填充色。 */
+function nodeBaseFillColor(
+  node: Pick<GraphNode, "factionIndex">,
+  factionColors: readonly string[]
+): string {
+  return nodeFactionColor(node, factionColors) ?? NODE_FILL_FALLBACK_COLOR;
+}
+
+/** 节点高亮填充色：在保留原色的前提下，轻微增强可辨识度。 */
+function nodeHighlightFillColor(
+  node: Pick<GraphNode, "factionIndex">,
+  factionColors: readonly string[]
+): string {
+  const baseColor = nodeBaseFillColor(node, factionColors);
+  return `color-mix(in oklab, ${baseColor} ${NODE_HIGHLIGHT_BASE_WEIGHT}%, ${NODE_HIGHLIGHT_MIX_COLOR} ${NODE_HIGHLIGHT_ACCENT_WEIGHT}%)`;
+}
+
+/** 节点缩放变换（交互高亮用）。 */
+function nodeScaleTransform(scale: number): string {
+  return `scale(${scale})`;
+}
+
+/**
+ * 判断当前边是否属于“路径高亮边”。
+ * 优先使用显式边集合；当未提供边集合时回退到旧策略（两端节点都在路径节点集合）。
+ */
+function isPathEdge(
+  edge: SimulationEdge,
+  highlightPathNodeIds: Set<string> | undefined,
+  highlightPathEdgeIds: Set<string> | undefined
+): boolean {
+  if (highlightPathEdgeIds && highlightPathEdgeIds.size > 0) {
+    return highlightPathEdgeIds.has(edge.id);
+  }
+
+  if (highlightPathNodeIds && highlightPathNodeIds.size > 0) {
+    return highlightPathNodeIds.has(edge.source.id) && highlightPathNodeIds.has(edge.target.id);
+  }
+
+  return false;
+}
+
 /**
  * 节点筛选逻辑。
  * 说明：这里仅做“可见性过滤”，不会改动原始 snapshot 数据。
@@ -223,12 +336,15 @@ export function ForceGraph({
   filter,
   layoutMode = "force",
   focusedNodeId,
+  activeNodeId,
   onNodeClick,
   onNodeDoubleClick,
   onNodeRightClick,
   onEdgeHover,
   onBackgroundClick,
   highlightPathIds,
+  highlightPathEdgeIds,
+  pathAutoFitVersion = 0,
   onNodeDragEnd
 }: ForceGraphProps) {
   /** SVG 根节点引用，用于 D3 接管。 */
@@ -237,6 +353,10 @@ export function ForceGraph({
   const containerRef = useRef<HTMLDivElement>(null);
   /** 当前运行中的 D3 simulation（便于重绘前 stop）。 */
   const simulationRef = useRef<Simulation<SimulationNode, SimulationEdge> | null>(null);
+  /** 缩放行为引用：供“路径查询完成后自动适配视口”复用。 */
+  const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  /** 已处理的路径自动适配版本号（保证每次查询成功只触发一次视口动画）。 */
+  const pathAutoFitHandledVersionRef = useRef(0);
   /** 画布尺寸状态；初始为 0，等待 ResizeObserver 首次回调。 */
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   /** 节点坐标缓存：重绘时复用位置，避免随机初始点位导致“闪跳”。 */
@@ -251,7 +371,9 @@ export function ForceGraph({
   const onNodeDragEndRef = useRef(onNodeDragEnd);
   /** 交互高亮态 refs：用于命令式渲染逻辑读取，避免依赖抖动触发重建。 */
   const focusedNodeIdRef = useRef(focusedNodeId);
+  const activeNodeIdRef = useRef(activeNodeId);
   const highlightPathIdsRef = useRef(highlightPathIds);
+  const highlightPathEdgeIdsRef = useRef(highlightPathEdgeIds);
 
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
@@ -261,7 +383,9 @@ export function ForceGraph({
     onBackgroundClickRef.current = onBackgroundClick;
     onNodeDragEndRef.current = onNodeDragEnd;
     focusedNodeIdRef.current = focusedNodeId;
+    activeNodeIdRef.current = activeNodeId;
     highlightPathIdsRef.current = highlightPathIds;
+    highlightPathEdgeIdsRef.current = highlightPathEdgeIds;
   }, [
     onNodeClick,
     onNodeDoubleClick,
@@ -270,7 +394,9 @@ export function ForceGraph({
     onBackgroundClick,
     onNodeDragEnd,
     focusedNodeId,
-    highlightPathIds
+    activeNodeId,
+    highlightPathIds,
+    highlightPathEdgeIds
   ]);
 
   /** 根据主题生成派系配色表，保证暗/亮主题下可读性。 */
@@ -324,25 +450,20 @@ export function ForceGraph({
     // 定义 SVG 特效资源（发光、箭头等）。
     const defs = sel.append("defs");
 
-    // 已审核节点发光效果。
-    const glowFilter = defs.append("filter").attr("id", "glow");
-    glowFilter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "blur");
-    const merge = glowFilter.append("feMerge");
-    merge.append("feMergeNode").attr("in", "blur");
-    merge.append("feMergeNode").attr("in", "SourceGraphic");
-
-    // 关系箭头定义（有向边视觉表达）。
+    // 关系箭头定义（有向边视觉表达，仅在 hover/路径高亮时显示）。
     defs.append("marker")
       .attr("id", "arrowhead")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 20)
+      .attr("viewBox", "0 -2.5 6 5")
+      .attr("refX", 18)
       .attr("refY", 0)
-      .attr("markerWidth", 6)
-      .attr("markerHeight", 6)
+      .attr("markerWidth", 4)
+      .attr("markerHeight", 4)
+      .attr("markerUnits", "userSpaceOnUse")
       .attr("orient", "auto")
       .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--muted-foreground)");
+      .attr("d", "M0,-2.2L6,0L0,2.2")
+      // 使用 context-stroke 让箭头颜色自动跟随边色/路径高亮色。
+      .attr("fill", "context-stroke");
 
     // 主分组：缩放/平移只作用于该组，不影响 SVG 自身尺寸。
     const g = sel.append("g").attr("class", "graph-main");
@@ -353,6 +474,7 @@ export function ForceGraph({
       .on("zoom", (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
         g.attr("transform", event.transform.toString());
       });
+    zoomBehaviorRef.current = zoomBehavior;
 
     sel.call(zoomBehavior);
 
@@ -389,10 +511,11 @@ export function ForceGraph({
       .enter()
       .append("line")
       .attr("stroke", d => edgeColor(d.sentiment))
-      .attr("stroke-width", d => Math.max(1, Math.min(d.weight * 1.5, 6)))
+      .attr("stroke-width", d => edgeBaseWidth(d.weight))
       .attr("stroke-opacity", EDGE_OPACITY_BASE)
       .attr("stroke-dasharray", d => d.status === "DRAFT" ? "4,4" : "none")
-      .attr("marker-end", "url(#arrowhead)")
+      // 常态隐藏箭头，降低视觉噪声；仅在 hover / 路径高亮显示方向。
+      .attr("marker-end", "none")
       .on("mouseenter", function (_event, d) {
         // 把 SimulationEdge 还原为 GraphEdge 形态回传给上层。
         onEdgeHoverRef.current?.({
@@ -405,11 +528,23 @@ export function ForceGraph({
           status   : d.status
         });
         // hover 加粗边，提升当前关系辨识度。
-        select(this).attr("stroke-width", d.weight * 2 + 2);
+        select(this)
+          .attr("stroke-width", d.weight * 2 + 2)
+          .attr("marker-end", EDGE_ARROW_MARKER_URL);
       })
       .on("mouseleave", function (_event, d) {
         onEdgeHoverRef.current?.(null);
-        select(this).attr("stroke-width", Math.max(1, Math.min(d.weight * 1.5, 6)));
+        const currentHighlightPathIds = highlightPathIdsRef.current;
+        const currentHighlightPathEdgeIds = highlightPathEdgeIdsRef.current;
+        const isHighlightedPathEdge = isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds);
+        select(this)
+          .attr(
+            "stroke-width",
+            isHighlightedPathEdge
+              ? edgeEmphasisWidth(d.weight)
+              : edgeBaseWidth(d.weight)
+          )
+          .attr("marker-end", isHighlightedPathEdge ? EDGE_ARROW_MARKER_URL : "none");
       });
 
     // 边标签（默认透明，可由样式控制何时显示）。
@@ -473,15 +608,13 @@ export function ForceGraph({
         // FG-03: 根据实体类型选择形状：LOCATION=菱形，ORGANIZATION=六边形，默认（PERSON）=圆形。
         return nodePath(d.entityType, r);
       })
-      .attr("fill", d => factionColors[d.factionIndex % factionColors.length])
-      .attr("stroke", d => {
-        if (d.status === "DRAFT") return "var(--color-graph-draft)";
-        if (d.status === "VERIFIED") return "var(--color-graph-verified-glow)";
-        return "transparent";
-      })
-      .attr("stroke-width", d => d.status === "DRAFT" ? 2 : 1.5)
-      .attr("stroke-dasharray", d => d.status === "DRAFT" ? "3,3" : "none")
-      .attr("filter", d => d.status === "VERIFIED" ? "url(#glow)" : "none")
+      .attr("transform", nodeScaleTransform(1))
+      .attr("fill", d => nodeBaseFillColor(d, factionColors))
+      // 节点级光晕变量：verified 动画优先读取它，实现“光晕跟随节点颜色”。
+      .style("--graph-node-halo-color", d => nodeBaseFillColor(d, factionColors))
+      .attr("stroke", d => nodeBaseStrokeColor(d.status))
+      .attr("stroke-width", d => nodeBaseStrokeWidth(d.status))
+      .attr("stroke-dasharray", () => nodeBaseStrokeDasharray())
       .attr("opacity", 1);
 
     // 节点标签：影响力高的节点字体稍大，优先强调关键人物。
@@ -508,19 +641,38 @@ export function ForceGraph({
         event.stopPropagation();
         onNodeRightClickRef.current?.(d, { x: event.clientX, y: event.clientY });
       })
-      .on("mouseenter", function () {
-        // hover 统一加 glow，增强可发现性。
-        select(this).select("path").attr("filter", "url(#glow)");
+      .on("mouseenter", function (_event, d) {
+        // hover 仅做轻微放大，不改节点视觉语言（颜色/描边规则保持不变）。
+        const highlightedScale = (
+          activeNodeIdRef.current === d.id || focusedNodeIdRef.current === d.id
+        ) ? NODE_ACTIVE_SCALE : NODE_HOVER_SCALE;
+        select(this).select("path")
+          .attr("transform", nodeScaleTransform(highlightedScale))
+          .attr("fill", nodeHighlightFillColor(d, factionColors));
       })
       .on("mouseleave", function (_, d) {
-        // 退出 hover 后仅保留“已审核”节点的发光。
+        const shouldKeepActiveHighlight = (
+          activeNodeIdRef.current === d.id
+          || focusedNodeIdRef.current === d.id
+        );
+        if (shouldKeepActiveHighlight) {
+          // 激活/聚焦节点在鼠标离开后仍保持轻微放大。
+          select(this).select("path")
+            .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+            .attr("fill", nodeHighlightFillColor(d, factionColors));
+          return;
+        }
+        // 退出 hover 后恢复到常态尺寸。
         select(this).select("path")
-          .attr("filter", d.status === "VERIFIED" ? "url(#glow)" : "none");
+          .attr("transform", nodeScaleTransform(1))
+          .attr("fill", nodeBaseFillColor(d, factionColors));
       });
 
     // 结构重绘后立即应用一次交互强调，避免“焦点存在但视觉样式丢失”。
     const currentFocusedNodeId = focusedNodeIdRef.current;
+    const currentActiveNodeId = activeNodeIdRef.current;
     const currentHighlightPathIds = highlightPathIdsRef.current;
+    const currentHighlightPathEdgeIds = highlightPathEdgeIdsRef.current;
 
     if (currentFocusedNodeId) {
       const connectedIds = new Set<string>();
@@ -538,18 +690,55 @@ export function ForceGraph({
       edgeSelection.attr("stroke-opacity", d => (
         connectedIds.has(d.source.id) && connectedIds.has(d.target.id)
       ) ? EDGE_OPACITY_BASE : FOCUS_DIM_OPACITY * 0.5);
+
+      const focusedNodeSelection = nodeSelection.filter(d => d.id === currentFocusedNodeId);
+      focusedNodeSelection.select<SVGPathElement>("path")
+        .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+        .attr("fill", d => nodeHighlightFillColor(d, factionColors))
+        .attr("opacity", 1);
+      focusedNodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
     }
 
-    if (currentHighlightPathIds && currentHighlightPathIds.size > 0) {
-      nodeSelection.select<SVGPathElement>("path")
-        .attr("opacity", d => currentHighlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+    if (
+      (currentHighlightPathIds && currentHighlightPathIds.size > 0)
+      || (currentHighlightPathEdgeIds && currentHighlightPathEdgeIds.size > 0)
+    ) {
+      if (currentHighlightPathIds && currentHighlightPathIds.size > 0) {
+        nodeSelection.select<SVGPathElement>("path")
+          .attr("opacity", d => currentHighlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      }
+
       edgeSelection
+        .attr("stroke", d => (
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? PATH_EDGE_HIGHLIGHT_COLOR
+            : edgeColor(d.sentiment)
+        ))
         .attr("stroke-opacity", d => (
-          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
-        ) ? 1 : FOCUS_DIM_OPACITY * 0.5)
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? 1
+            : FOCUS_DIM_OPACITY * 0.5
+        ))
         .attr("stroke-width", d => (
-          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
-        ) ? d.weight * 2 + 3 : Math.max(1, d.weight * 1.5));
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? edgeEmphasisWidth(d.weight)
+            : edgeBaseWidth(d.weight)
+        ))
+        .attr("marker-end", d => (
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? EDGE_ARROW_MARKER_URL
+            : "none"
+        ));
+    }
+
+    // 单击激活节点：仅高亮该节点，不影响全图降噪策略。
+    if (currentActiveNodeId) {
+      const activeNodeSelection = nodeSelection.filter(d => d.id === currentActiveNodeId);
+      activeNodeSelection.select<SVGPathElement>("path")
+        .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+        .attr("fill", d => nodeHighlightFillColor(d, factionColors))
+        .attr("opacity", 1);
+      activeNodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
     }
 
     // 力导向 simulation：连边约束 + 电荷斥力 + 居中 + 防重叠。
@@ -709,14 +898,25 @@ export function ForceGraph({
       .selectAll<SVGLineElement, SimulationEdge>("line");
 
     // 先重置到基础视觉态，再叠加聚焦/路径高亮。
-    nodeSelection.select<SVGPathElement>("path").attr("opacity", 1);
+    nodeSelection.select<SVGPathElement>("path")
+      .attr("opacity", 1)
+      .attr("transform", nodeScaleTransform(1))
+      .attr("fill", d => nodeBaseFillColor(d, factionColors))
+      .attr("stroke", d => nodeBaseStrokeColor(d.status))
+      .attr("stroke-width", d => nodeBaseStrokeWidth(d.status))
+      .attr("stroke-opacity", 1)
+      .attr("stroke-dasharray", nodeBaseStrokeDasharray());
     nodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
     edgeSelection
+      .attr("stroke", d => edgeColor(d.sentiment))
       .attr("stroke-opacity", EDGE_OPACITY_BASE)
-      .attr("stroke-width", d => Math.max(1, Math.min(d.weight * 1.5, 6)));
+      .attr("stroke-width", d => edgeBaseWidth(d.weight))
+      .attr("marker-end", "none");
 
     const currentFocusedNodeId = focusedNodeIdRef.current;
+    const currentActiveNodeId = activeNodeIdRef.current;
     const currentHighlightPathIds = highlightPathIdsRef.current;
+    const currentHighlightPathEdgeIds = highlightPathEdgeIdsRef.current;
 
     // 聚焦模式：仅保留“目标节点 + 一跳邻居”高亮。
     if (currentFocusedNodeId) {
@@ -735,21 +935,58 @@ export function ForceGraph({
       edgeSelection.attr("stroke-opacity", d => (
         connectedIds.has(d.source.id) && connectedIds.has(d.target.id)
       ) ? EDGE_OPACITY_BASE : FOCUS_DIM_OPACITY * 0.5);
+
+      const focusedNodeSelection = nodeSelection.filter(d => d.id === currentFocusedNodeId);
+      focusedNodeSelection.select<SVGPathElement>("path")
+        .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+        .attr("fill", d => nodeHighlightFillColor(d, factionColors))
+        .attr("opacity", 1);
+      focusedNodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
     }
 
     // 路径高亮优先级更高，覆盖聚焦态。
-    if (currentHighlightPathIds && currentHighlightPathIds.size > 0) {
-      nodeSelection.select<SVGPathElement>("path")
-        .attr("opacity", d => currentHighlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+    if (
+      (currentHighlightPathIds && currentHighlightPathIds.size > 0)
+      || (currentHighlightPathEdgeIds && currentHighlightPathEdgeIds.size > 0)
+    ) {
+      if (currentHighlightPathIds && currentHighlightPathIds.size > 0) {
+        nodeSelection.select<SVGPathElement>("path")
+          .attr("opacity", d => currentHighlightPathIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      }
+
       edgeSelection
+        .attr("stroke", d => (
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? PATH_EDGE_HIGHLIGHT_COLOR
+            : edgeColor(d.sentiment)
+        ))
         .attr("stroke-opacity", d => (
-          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
-        ) ? 1 : FOCUS_DIM_OPACITY * 0.5)
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? 1
+            : FOCUS_DIM_OPACITY * 0.5
+        ))
         .attr("stroke-width", d => (
-          currentHighlightPathIds.has(d.source.id) && currentHighlightPathIds.has(d.target.id)
-        ) ? d.weight * 2 + 3 : Math.max(1, d.weight * 1.5));
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? edgeEmphasisWidth(d.weight)
+            : edgeBaseWidth(d.weight)
+        ))
+        .attr("marker-end", d => (
+          isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
+            ? EDGE_ARROW_MARKER_URL
+            : "none"
+        ));
     }
-  }, []);
+
+    // 单击激活节点：仅高亮该节点，不改变邻居透明度。
+    if (currentActiveNodeId) {
+      const activeNodeSelection = nodeSelection.filter(d => d.id === currentActiveNodeId);
+      activeNodeSelection.select<SVGPathElement>("path")
+        .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+        .attr("fill", d => nodeHighlightFillColor(d, factionColors))
+        .attr("opacity", 1);
+      activeNodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
+    }
+  }, [factionColors]);
 
   // 当渲染依赖变化时重绘；卸载时停止 simulation，防止后台持续占用 CPU。
   useEffect(() => {
@@ -760,9 +997,81 @@ export function ForceGraph({
   }, [renderGraph]);
 
   // 聚焦与路径高亮变更时只更新视觉样式，不重建 simulation。
+  // 说明：依赖项显式包含交互态，确保路径查询成功后能立即触发高亮重绘。
   useEffect(() => {
     applyGraphEmphasis();
-  }, [applyGraphEmphasis]);
+  }, [applyGraphEmphasis, focusedNodeId, activeNodeId, highlightPathIds, highlightPathEdgeIds]);
+
+  // 路径查询成功后自动适配视口到“路径节点包围盒”。
+  // 使用 version 触发，确保同一路径重复查询也会再次执行缩放。
+  useEffect(() => {
+    if (
+      pathAutoFitVersion <= 0
+      || pathAutoFitVersion === pathAutoFitHandledVersionRef.current
+      || dimensions.width <= 0
+      || dimensions.height <= 0
+    ) {
+      return;
+    }
+
+    const svg = svgRef.current;
+    const zoomBehavior = zoomBehaviorRef.current;
+    const currentHighlightPathIds = highlightPathIdsRef.current;
+    if (!svg || !zoomBehavior || !currentHighlightPathIds || currentHighlightPathIds.size === 0) {
+      return;
+    }
+
+    const graphRoot = select(svg).select<SVGGElement>("g.graph-main");
+    if (graphRoot.empty()) {
+      return;
+    }
+
+    const visiblePathNodes = graphRoot
+      .select<SVGGElement>("g.nodes")
+      .selectAll<SVGGElement, SimulationNode>("g.graph-node")
+      .data()
+      .filter(node => currentHighlightPathIds.has(node.id));
+
+    if (visiblePathNodes.length === 0) {
+      return;
+    }
+
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (const node of visiblePathNodes) {
+      const radius = nodeRadius(node.influence, maxInfluence);
+      const nodeX = node.x ?? dimensions.width / 2;
+      const nodeY = node.y ?? dimensions.height / 2;
+      minX = Math.min(minX, nodeX - radius);
+      maxX = Math.max(maxX, nodeX + radius);
+      minY = Math.min(minY, nodeY - radius);
+      // 标签在节点下方，额外预留空间避免裁切。
+      maxY = Math.max(maxY, nodeY + radius + 16);
+    }
+
+    const boundsWidth = Math.max(maxX - minX, 1);
+    const boundsHeight = Math.max(maxY - minY, 1);
+    const padding = Math.max(60, Math.min(dimensions.width, dimensions.height) * 0.16);
+    const scaleX = (dimensions.width - padding * 2) / boundsWidth;
+    const scaleY = (dimensions.height - padding * 2) / boundsHeight;
+    const scale = Math.max(0.25, Math.min(scaleX, scaleY, 2.5));
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const tx = dimensions.width / 2 - centerX * scale;
+    const ty = dimensions.height / 2 - centerY * scale;
+
+    const sel = select(svg);
+    sel
+      .transition()
+      .duration(500)
+      .call(transition => {
+        zoomBehavior.transform(transition, zoomIdentity.translate(tx, ty).scale(scale));
+      });
+    pathAutoFitHandledVersionRef.current = pathAutoFitVersion;
+  }, [pathAutoFitVersion, dimensions, maxInfluence]);
 
   return (
     <div
