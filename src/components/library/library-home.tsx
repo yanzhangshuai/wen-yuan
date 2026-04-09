@@ -48,9 +48,11 @@ export interface LibraryHomeProps {
   books: LibraryBookCardData[];
 }
 
-function LibraryEmptyState() {
+interface LibraryEmptyStateProps {}
+
+function LibraryEmptyState({}: LibraryEmptyStateProps) {
   return (
-    <section className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 text-center">
+    <section className="library-empty-state flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 rounded-full bg-primary-subtle p-6">
         <BookOpen className="h-12 w-12 text-primary" strokeWidth={1.5} />
       </div>

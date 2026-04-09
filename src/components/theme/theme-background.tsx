@@ -37,7 +37,9 @@ interface MeteorData {
   on   : boolean;
 }
 
-function StarfieldCanvas() {
+interface StarfieldCanvasProps {}
+
+function StarfieldCanvas({}: StarfieldCanvasProps) {
   const ref = React.useRef<HTMLCanvasElement>(null);
   const raf = React.useRef(0);
 
@@ -309,16 +311,21 @@ function StarfieldCanvas() {
   return (
     <canvas
       ref={ref}
-      className="fixed inset-0 z-0 pointer-events-none"
+      className="theme-background-canvas fixed inset-0 z-0 pointer-events-none"
       style={{ background: "linear-gradient(to bottom, #000103 0%, #02040a 48%, #000208 100%)" }}
       aria-hidden="true"
     />
   );
 }
 
-function DanqingBackground() {
+interface DanqingBackgroundProps {}
+
+function DanqingBackground({}: DanqingBackgroundProps) {
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div
+      className="theme-background-layer theme-background-layer-danqing fixed inset-0 z-0 overflow-hidden pointer-events-none"
+      aria-hidden="true"
+    >
       <div
         className="absolute -top-32 -right-32 h-[600px] w-[600px] rounded-full opacity-[0.07]"
         style={{
@@ -352,9 +359,14 @@ function DanqingBackground() {
   );
 }
 
-function SuyaBackground() {
+interface SuyaBackgroundProps {}
+
+function SuyaBackground({}: SuyaBackgroundProps) {
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div
+      className="theme-background-layer theme-background-layer-suya fixed inset-0 z-0 overflow-hidden pointer-events-none"
+      aria-hidden="true"
+    >
       <svg className="absolute inset-0 h-full w-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
         <filter id="pg">
           <feTurbulence type="fractalNoise" baseFrequency="0.65 0.45" numOctaves="4" seed="8" result="n" />
@@ -379,9 +391,14 @@ function SuyaBackground() {
   );
 }
 
-function DiancangBackground() {
+interface DiancangBackgroundProps {}
+
+function DiancangBackground({}: DiancangBackgroundProps) {
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div
+      className="theme-background-layer theme-background-layer-diancang fixed inset-0 z-0 overflow-hidden pointer-events-none"
+      aria-hidden="true"
+    >
       <div
         className="absolute top-0 right-0 h-[700px] w-[700px] opacity-[0.06]"
         style={{
@@ -409,7 +426,9 @@ function DiancangBackground() {
   );
 }
 
-export function ThemeBackground() {
+interface ThemeBackgroundProps {}
+
+export function ThemeBackground({}: ThemeBackgroundProps) {
   const { selectedTheme } = useHydratedTheme();
 
   return (
