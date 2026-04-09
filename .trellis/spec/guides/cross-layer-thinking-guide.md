@@ -259,6 +259,28 @@ else toast.error(result.errorMessage ?? result.detail);
 
 **反例**：所有模型统一发送 `enable_thinking` / `reasoning_effort`，假设各厂商都兼容。
 
+### 错误 11：共享导航壳层的路由契约散落在多个组件里
+
+**反例**：后台 Logo、后台概览按钮、退出后跳转、登录回跳各自硬编码目标路由；某处改成“返回主站”后，其他入口仍沿用旧值。
+
+**正例**：把路由语义收敛到壳层组件本身；对只在该组件里出现的少量固定路径，直接写死在使用点，只有跨多个独立模块长期复用时才继续抽象。
+
+```tsx
+// AdminHeader.tsx
+<Link href="/" aria-label="返回主站">文淵</Link>
+router.push("/login");
+
+// ViewerHeader.tsx
+<Link href={isAdmin ? "/admin" : `/login?redirect=${encodeURIComponent("/admin")}`}>
+  Admin
+</Link>
+```
+
+原因：
+- 这是“产品语义层（品牌入口/后台入口）”与“前端壳层实现层（Header/Button/Link）”的跨层契约问题。
+- 当路由字面量分散在多个组件里时，任何一次产品语义调整都容易只改到表层文案，漏掉真实跳转目标。
+- 对少量固定路由，直接把字面量留在壳层组件里，反而更容易审查真实跳转语义，也能避免为了几处字符串制造额外抽象层。
+
 **正例**：引入 provider 参数能力矩阵，并在 provider 层做映射或降级：
 - DeepSeek：`thinking: { type: "enabled" | "disabled" }`
 - OpenAI-compatible（如 Qwen）：按兼容参数发送（并关注厂商文档是否忽略/限制）

@@ -31,10 +31,6 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
     void logout().finally(() => window.location.reload());
   };
 
-  // 登录后回跳到当前页面，减少用户操作中断。
-  const loginRedirectHref = `/login?redirect=${encodeURIComponent(currentPath)}`;
-  const adminHref = isAdmin ? "/admin" : `/login?redirect=${encodeURIComponent("/admin")}`;
-
   return (
     <header className="viewer-header sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="viewer-header-inner mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-6">
@@ -70,27 +66,36 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
           <ThemeToggle triggerClassName="viewer-header-theme-toggle" />
 
           <Button asChild variant="ghost" size="sm" className="gap-2">
-            <Link href={adminHref}>
+            <Link
+              href={isAdmin ? "/admin" : `/login?redirect=${encodeURIComponent("/admin")}`}
+              aria-label={isAdmin ? "进入管理后台" : "登录后进入管理后台"}
+              title={isAdmin ? "进入管理后台" : "登录后进入管理后台"}
+            >
               <Settings className="h-4 w-4" />
               <span className="hidden lg:inline">Admin</span>
             </Link>
           </Button>
 
           {isAdmin ? (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-destructive"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground hover:text-destructive"
+              aria-label="退出登录"
+              title="退出登录"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           ) : (
             // 非管理员展示登录入口，且保留 redirect 参数维持阅读上下文。
             <Button asChild variant="outline" size="sm" className="gap-2">
-              <Link href={loginRedirectHref}>
+              <Link
+                href={`/login?redirect=${encodeURIComponent(currentPath)}`}
+                aria-label="登录"
+                title="登录"
+              >
                 <User className="h-4 w-4" />
                 <span className="hidden lg:inline">登录</span>
               </Link>

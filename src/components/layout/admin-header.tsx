@@ -50,10 +50,10 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-6">
+    <header className="admin-header sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="admin-header-inner mx-auto flex h-14 max-w-[1440px] items-center justify-between px-6">
         {/* Logo */}
-        <Link href="/admin" className="flex items-center gap-3 group">
+        <Link href="/" aria-label="返回主站" className="flex items-center gap-3 group">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 border border-primary/20">
             <span className="text-lg font-bold text-primary font-serif">淵</span>
           </div>
@@ -102,9 +102,9 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
             </span>
           )}
 
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground" onClick={() => { void handleLogout(); }}>
+          <Button type="button" variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground" onClick={() => { void handleLogout(); }}>
             <LogOut className="h-4 w-4" />
-            退出管理
+            退出
           </Button>
         </div>
       </div>

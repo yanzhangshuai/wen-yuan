@@ -64,6 +64,43 @@ stage: mvp
 - 共享 layout 中的 `max-width` / `padding` 约束必须对沉浸式页面（图谱、阅读器、全屏画布）提供显式逃生口；不要假设子页面写 `w-full` 就能突破父容器限制。
 - 主题化场景视觉（如星空图谱、博物馆首页）必须挂在语义化页面 class 上做局部覆盖，不要为修单一路由而全局扭动整个主题 token。
 
+### 壳层导航路由契约
+
+- 必须区分“品牌 Logo 返回主站”和“后台概览入口”两个语义；即使都显示在后台头部，也不能默认共用同一个 href。
+- 少量只服务于单个壳层组件的固定路由值，优先直接写在该组件内；不要为了 2 到 3 个字符串额外创建全局路由文件，也不要再包一层局部常量。
+- `redirect` 登录回跳链接如果只在单个壳层用到 1 到 2 次，优先就近直接拼接；只有出现真实复用或复杂分支时，才考虑抽 helper。
+
+反例（禁止）：
+```tsx
+// routes.ts
+export const VIEWER_HOME_HREF = "/";
+export const ADMIN_HOME_HREF = "/admin";
+export const LOGIN_HREF = "/login";
+
+// ViewerHeader.tsx
+function buildLoginRedirectHref(targetPath: string) {
+  return `/login?redirect=${encodeURIComponent(targetPath)}`;
+}
+```
+
+正例（必须）：
+```tsx
+// AdminHeader.tsx
+<Link href="/" aria-label="返回主站">文淵</Link>
+router.push("/login");
+
+// ViewerHeader.tsx
+<Link href={isAdmin ? "/admin" : `/login?redirect=${encodeURIComponent("/admin")}`}>
+  Admin
+</Link>
+```
+
+原因：
+- 导航错误往往不是组件内部逻辑问题，而是“壳层语义”和“路由实现”在不同文件里各自猜测的结果。
+- 对这种只在单个壳层出现的少量固定路径，直接写死更接近产品语义，也更利于阅读时一眼确认真实去向。
+- 过早抽成全局文件、局部常量或 helper，会增加跳转阅读成本，却不一定带来实际复用收益。
+- 这类契约适合被组件测试直接锁定，避免“文案改了，目标路由却悄悄漂移”。
+
 真实示例：
 - 语义化根 class：`home-page`、`layout-navbar`、`ui-button`
 - 导航条件样式：`src/components/layout/Navbar.tsx`
