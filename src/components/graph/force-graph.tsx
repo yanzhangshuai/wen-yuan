@@ -28,6 +28,8 @@ import type {
   SimulationNode
 } from "@/types/graph";
 import { getFactionColorsForTheme } from "@/theme";
+import { buildTreeLayoutPlan } from "@/components/graph/tree-layout";
+import { buildRadialHopPlan } from "@/components/graph/radial-layout";
 
 /**
  * =============================================================================
@@ -82,6 +84,14 @@ const NODE_HIGHLIGHT_ACCENT_WEIGHT = 18;
 /** 交互态缩放：hover 轻微放大，active/focused 再略高一档。 */
 const NODE_HOVER_SCALE = 1.1;
 const NODE_ACTIVE_SCALE = 1.2;
+/** tree 布局中“非树节点泳道”底色（主题自适配）。 */
+const TREE_LANE_FILL_COLOR = "color-mix(in oklab, var(--color-graph-bg) 80%, var(--foreground) 20%)";
+/** tree 布局中“非树节点泳道”边框色（主题自适配）。 */
+const TREE_LANE_STROKE_COLOR = "color-mix(in oklab, var(--foreground) 55%, transparent 45%)";
+/** 同心圆布局外圈半径占比（相对画布短边）。 */
+const RADIAL_OUTER_RADIUS_RATIO = 0.44;
+/** 同心圆布局最小外圈半径，避免小屏时圈层过度压缩。 */
+const RADIAL_OUTER_RADIUS_MIN = 160;
 
 /* ------------------------------------------------
    Props
@@ -110,8 +120,8 @@ export interface ForceGraphProps {
   /**
    * 布局模式：
    * - `force`：经典力导向；
-   * - `radial`：同心径向；
-   * - `tree`：当前暂未单独实现，保留枚举兼容。
+   * - `radial`：以选中节点为中心，按最短路径跳数分圈；
+   * - `tree`：分量分层层级树。
    */
   layoutMode?          : GraphLayoutMode;
   /**
@@ -433,6 +443,43 @@ export function ForceGraph({
   }, [snapshot, filter]);
 
   /**
+   * 计算 radial 布局中心节点（锚点）。
+   * 优先级约定：
+   * 1) 用户显式单击激活的节点；
+   * 2) 当前聚焦节点；
+   * 3) 数据侧兜底：选择影响力最高节点（同分时按 ID 稳定排序）。
+   *
+   * 这样可以保证：
+   * - 交互上“用户刚操作的节点”总是在中心；
+   * - 首次进入 radial 模式时，不会因随机中心导致视觉漂移或每次刷新中心变化。
+   */
+  const radialAnchorNodeId = useMemo(() => {
+    if (layoutMode !== "radial" || filteredNodes.length === 0) {
+      return null;
+    }
+    const visibleNodeIds = new Set(filteredNodes.map(node => node.id));
+    if (activeNodeId && visibleNodeIds.has(activeNodeId)) {
+      return activeNodeId;
+    }
+    if (focusedNodeId && visibleNodeIds.has(focusedNodeId)) {
+      return focusedNodeId;
+    }
+
+    const [firstNode, ...restNodes] = filteredNodes;
+    if (!firstNode) {
+      return null;
+    }
+    const fallbackNode = restNodes.reduce((best, current) => {
+      if (current.influence !== best.influence) {
+        return current.influence > best.influence ? current : best;
+      }
+      // 同影响力时使用字典序，确保中心选择可复现（避免“同数据不同渲染”）。
+      return current.id.localeCompare(best.id) < 0 ? current : best;
+    }, firstNode);
+    return fallbackNode.id;
+  }, [layoutMode, filteredNodes, activeNodeId, focusedNodeId]);
+
+  /**
    * D3 主渲染流程。
    * 触发条件：尺寸变化、数据变化、布局变化。
    */
@@ -496,13 +543,84 @@ export function ForceGraph({
     for (const n of simNodes) nodeMap.set(n.id, n);
 
     // 仅保留两端节点都存在的边，防止异常数据导致渲染崩溃。
-    const simEdges: SimulationEdge[] = filteredEdges
-      .filter(e => nodeMap.has(e.source) && nodeMap.has(e.target))
-      .map(e => ({
-        ...e,
-        source: nodeMap.get(e.source)!,
-        target: nodeMap.get(e.target)!
-      }));
+    // 这里不用 `!` 非空断言，是为了把“脏边”当作数据问题显式吞掉，
+    // 避免把异常传播到 D3 simulation（出现 NaN 坐标、tick 报错或整图卡死）。
+    const simEdges: SimulationEdge[] = [];
+    for (const edge of filteredEdges) {
+      const sourceNode = nodeMap.get(edge.source);
+      const targetNode = nodeMap.get(edge.target);
+      if (!sourceNode || !targetNode) {
+        continue;
+      }
+      simEdges.push({
+        ...edge,
+        source: sourceNode,
+        target: targetNode
+      });
+    }
+
+    // 所有布局计划都基于“已过滤 + 已校验连边”的图，避免布局阶段再处理脏数据。
+    const treeLayoutPlan = layoutMode === "tree"
+      ? buildTreeLayoutPlan({
+        nodes: simNodes.map((node) => ({ id: node.id, influence: node.influence })),
+        edges: simEdges.map((edge) => ({ source: edge.source.id, target: edge.target.id })),
+        width,
+        height
+      })
+      : null;
+    const radialHopPlan = layoutMode === "radial"
+      ? buildRadialHopPlan({
+        nodeIds     : simNodes.map((node) => node.id),
+        edges       : simEdges.map((edge) => ({ source: edge.source.id, target: edge.target.id })),
+        anchorNodeId: radialAnchorNodeId
+      })
+      : null;
+
+    if (treeLayoutPlan) {
+      // 先写入目标坐标，减少 tree 模式首帧抖动。
+      for (const node of simNodes) {
+        const targetPosition = treeLayoutPlan.positions.get(node.id);
+        if (!targetPosition) {
+          continue;
+        }
+        node.x = targetPosition.x;
+        node.y = targetPosition.y;
+      }
+
+      if (treeLayoutPlan.isolatedLaneBounds) {
+        const laneGroup = g.append("g")
+          .attr("class", "tree-isolated-lane")
+          .attr("pointer-events", "none");
+        laneGroup.append("rect")
+          .attr("x", treeLayoutPlan.isolatedLaneBounds.x)
+          .attr("y", treeLayoutPlan.isolatedLaneBounds.y)
+          .attr("width", treeLayoutPlan.isolatedLaneBounds.width)
+          .attr("height", treeLayoutPlan.isolatedLaneBounds.height)
+          .attr("rx", 14)
+          .attr("ry", 14)
+          .attr("fill", TREE_LANE_FILL_COLOR)
+          .attr("fill-opacity", 0.22)
+          .attr("stroke", TREE_LANE_STROKE_COLOR)
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "5,4");
+        laneGroup.append("text")
+          .attr("x", treeLayoutPlan.isolatedLaneBounds.x + 12)
+          .attr("y", treeLayoutPlan.isolatedLaneBounds.y + 18)
+          .attr("font-size", "11px")
+          .attr("font-weight", 600)
+          .attr("fill", "var(--muted-foreground)")
+          .text("非树节点");
+      }
+    }
+
+    if (layoutMode === "radial" && radialAnchorNodeId) {
+      const anchorNode = nodeMap.get(radialAnchorNodeId);
+      if (anchorNode) {
+        // 选中节点作为圈层中心，首帧直接放到画布中心避免漂移感。
+        anchorNode.x = width / 2;
+        anchorNode.y = height / 2;
+      }
+    }
 
     // 绘制关系边。
     const edgeGroup = g.append("g").attr("class", "edges");
@@ -779,79 +897,54 @@ export function ForceGraph({
 
     simulationRef.current = simulation;
 
-    // 径向布局：在保留力学稳定性的同时用半径表达层次。
+    // 径向布局：以选中节点为中心，按最短路径 hop 分圈。
     if (layoutMode === "radial") {
       simulation.force("center", null);
+      const maxHop = Math.max(1, radialHopPlan?.maxHop ?? 0);
+      const outerRadius = Math.max(
+        RADIAL_OUTER_RADIUS_MIN,
+        Math.min(width, height) * RADIAL_OUTER_RADIUS_RATIO
+      );
       simulation.force("radial", forceRadial<SimulationNode>(
-        d => 120 + (1 - d.influence / maxInfluence) * 200,
+        (node) => {
+          const hop = radialHopPlan?.hopByNodeId.get(node.id) ?? maxHop;
+          if (hop <= 0) {
+            return 0;
+          }
+          return outerRadius * (hop / maxHop);
+        },
         width / 2,
         height / 2
-      ).strength(0.8));
+      ).strength(0.95));
+
+      if (radialAnchorNodeId) {
+        // 单独增强中心节点的回归力，确保“选中人物在圆心”稳定可见。
+        simulation.force("radial-anchor-x", forceX<SimulationNode>(width / 2)
+          .strength((node) => (node.id === radialAnchorNodeId ? 1 : 0)));
+        simulation.force("radial-anchor-y", forceY<SimulationNode>(height / 2)
+          .strength((node) => (node.id === radialAnchorNodeId ? 1 : 0)));
+      } else {
+        simulation.force("radial-anchor-x", null);
+        simulation.force("radial-anchor-y", null);
+      }
+      simulation.alpha(0.9);
     }
 
-    // FG-02: 层级树布局：通过 BFS 分配层级，用 forceX/forceY 约束节点位置。
-    if (layoutMode === "tree") {
-      // 选取影响力最高的节点作为根节点。
-      const rootNode = simNodes.reduce((max, n) => n.influence > max.influence ? n : max, simNodes[0]);
-
-      // BFS 分配层级（无法到达时归入末层+1）。
-      const levels = new Map<string, number>();
-      const bfsQueue: string[] = [];
-      if (rootNode) {
-        levels.set(rootNode.id, 0);
-        bfsQueue.push(rootNode.id);
-      }
-      while (bfsQueue.length > 0) {
-        const currId = bfsQueue.shift()!;
-        const currLevel = levels.get(currId)!;
-        for (const edge of simEdges) {
-          if (edge.source.id === currId && !levels.has(edge.target.id)) {
-            levels.set(edge.target.id, currLevel + 1);
-            bfsQueue.push(edge.target.id);
-          }
-          if (edge.target.id === currId && !levels.has(edge.source.id)) {
-            levels.set(edge.source.id, currLevel + 1);
-            bfsQueue.push(edge.source.id);
-          }
-        }
-      }
-      // 孤立/未被 BFS 触达的节点归入末层。
-      const maxLevel = Math.max(...levels.values(), 0);
-      for (const node of simNodes) {
-        if (!levels.has(node.id)) levels.set(node.id, maxLevel + 1);
-      }
-
-      // 按层级分组，计算每层节点的目标 x 坐标。
-      const levelGroups = new Map<number, SimulationNode[]>();
-      for (const node of simNodes) {
-        const lvl = levels.get(node.id) ?? 0;
-        if (!levelGroups.has(lvl)) levelGroups.set(lvl, []);
-        levelGroups.get(lvl)!.push(node);
-      }
-      const totalLevels = Math.max(...levelGroups.keys(), 0) + 1;
-      const vSpacing = height / (totalLevels + 1);
-
-      // 设置初始坐标，减少 simulation 初始抖动。
-      for (const [lvl, nodesInLevel] of levelGroups) {
-        const hSpacing = width / (nodesInLevel.length + 1);
-        nodesInLevel.forEach((node, i) => {
-          node.x = hSpacing * (i + 1);
-          node.y = vSpacing * (lvl + 1);
-        });
-      }
-
-      // 用目标位置约束力替代中心力，使节点按层维持纵列。
+    // FG-02: 层级树布局（分量分层）：按连通分量独立分层，并把非树节点放入独立泳道。
+    if (layoutMode === "tree" && treeLayoutPlan) {
       simulation.force("center", null);
-      simulation.force("x", forceX<SimulationNode>(d => {
-        const lvl = levels.get(d.id) ?? 0;
-        const nodesInLevel = levelGroups.get(lvl) ?? [];
-        const idx = nodesInLevel.indexOf(d);
-        return width / (nodesInLevel.length + 1) * (idx + 1);
-      }).strength(0.8));
-      simulation.force("y", forceY<SimulationNode>(d => {
-        const lvl = levels.get(d.id) ?? 0;
-        return vSpacing * (lvl + 1);
-      }).strength(0.9));
+      // tree 模式以“规划坐标”优先，弱化 link/charge 对层级结构的拉扯。
+      simulation.force("link", null);
+      simulation.force("charge", null);
+      simulation.force("x", forceX<SimulationNode>((node) => {
+        const targetPosition = treeLayoutPlan.positions.get(node.id);
+        return targetPosition?.x ?? width / 2;
+      }).strength(1));
+      simulation.force("y", forceY<SimulationNode>((node) => {
+        const targetPosition = treeLayoutPlan.positions.get(node.id);
+        return targetPosition?.y ?? height / 2;
+      }).strength(1));
+      simulation.alpha(0.9);
     }
 
     // 初始自适应缩放：让图形尽可能“首屏可见”。
@@ -876,7 +969,8 @@ export function ForceGraph({
     filteredEdges,
     factionColors,
     maxInfluence,
-    layoutMode
+    layoutMode,
+    radialAnchorNodeId
   ]);
 
   /**
@@ -1005,6 +1099,7 @@ export function ForceGraph({
   // 路径查询成功后自动适配视口到“路径节点包围盒”。
   // 使用 version 触发，确保同一路径重复查询也会再次执行缩放。
   useEffect(() => {
+    // 这些前置条件任何一个不满足，都应直接跳过，避免“重复动画”或“空路径缩放”。
     if (
       pathAutoFitVersion <= 0
       || pathAutoFitVersion === pathAutoFitHandledVersionRef.current
@@ -1026,6 +1121,7 @@ export function ForceGraph({
       return;
     }
 
+    // 直接从当前渲染节点数据中提取路径节点，保证与画布上的实际可见集合一致。
     const visiblePathNodes = graphRoot
       .select<SVGGElement>("g.nodes")
       .selectAll<SVGGElement, SimulationNode>("g.graph-node")
@@ -1054,6 +1150,9 @@ export function ForceGraph({
 
     const boundsWidth = Math.max(maxX - minX, 1);
     const boundsHeight = Math.max(maxY - minY, 1);
+    // padding + scale 上下限是为了兼顾大屏与小屏：
+    // - 防止路径节点贴边裁切；
+    // - 防止极短路径被放得过大导致用户失去全局语境。
     const padding = Math.max(60, Math.min(dimensions.width, dimensions.height) * 0.16);
     const scaleX = (dimensions.width - padding * 2) / boundsWidth;
     const scaleY = (dimensions.height - padding * 2) / boundsHeight;
@@ -1070,6 +1169,7 @@ export function ForceGraph({
       .call(transition => {
         zoomBehavior.transform(transition, zoomIdentity.translate(tx, ty).scale(scale));
       });
+    // 记录“本次版本已处理”，防止同一次响应触发重复缩放动画。
     pathAutoFitHandledVersionRef.current = pathAutoFitVersion;
   }, [pathAutoFitVersion, dimensions, maxInfluence]);
 

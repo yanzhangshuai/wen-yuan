@@ -233,3 +233,57 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 图谱视觉优化与路径交互阶段记录
+
+**Date**: 2026-04-09
+**Task**: 图谱视觉优化与路径交互阶段记录
+
+### Summary
+
+归档箭头与节点 hover 视觉优化任务，记录主题自适配和路径高亮联动的阶段成果
+
+### Main Changes
+
+| 模块 | 变更 |
+|------|------|
+| 图谱箭头视觉 | 关系箭头改为更小更细，颜色随边色/高亮色；常态隐藏，仅在 hover 或路径高亮时显示，降低视觉噪声并保留方向语义。 |
+| 节点 hover 视觉 | 移除节点梯形伪影来源（虚线描边），hover 采用清晰描边高亮；新增主题级节点 hover token。 |
+| 主题适配 | 在 `danqing/suya/diancang/xingkong` 主题补充 `--graph-node-hover`，并在 `globals.css` 建立 bridge `--color-graph-node-hover`。 |
+| 路径交互协同 | 路径查找高亮与边方向表达联动，保证路径态的可读性。 |
+
+**任务归档**:
+- `.trellis/tasks/archive/2026-04/04-08-brainstorm-graph-arrow-visual/`
+- `.trellis/tasks/archive/2026-04/04-08-brainstorm-node-hover-theme/`
+
+**关键文件**:
+- `src/components/graph/force-graph.tsx`
+- `src/app/globals.css`
+- `src/theme/tokens/danqing/index.css`
+- `src/theme/tokens/suya/index.css`
+- `src/theme/tokens/diancang/index.css`
+- `src/theme/tokens/xingkong/index.css`
+
+**说明**:
+- 当前工作区仍有 tree/radial 相关未提交联调改动，本次记录仅覆盖已提交并完成归档的视觉优化阶段成果。
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4e34955` | (see git log) |
+| `1f27ed6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

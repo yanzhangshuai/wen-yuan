@@ -24,7 +24,6 @@ import Link from "next/link";
 import { Users, FileText, Clock, Cpu, Info } from "lucide-react";
 
 import { BookCover } from "@/components/library/book-cover";
-import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -54,13 +53,14 @@ function formatStableDate(value: string): string {
 }
 
 export function BookCard({ book }: BookCardProps) {
+  // 书库入口策略：只有 COMPLETED 才允许进入图谱，避免用户进入空图或半成品数据。
   const isCompleted = book.status === "COMPLETED";
-  const isError = book.status === "ERROR";
   const href = `/books/${book.id}/graph`;
 
   // FG-10: 前台书库不展示解析状态 Badge（COMPLETED 外的书籍以灰度不可点击表达状态）。
   const statusBadge = null;
 
+  // hover 面板只在可进入图谱的书籍显示，避免“不可点击却给可交互暗示”。
   const hoverPanel = isCompleted ? (
     <div className={cn(
       "library-book-card-hover absolute inset-[2px] z-30 flex flex-col rounded-[5px] p-4",
@@ -105,6 +105,7 @@ export function BookCard({ book }: BookCardProps) {
             <button
               type="button"
               className="mt-auto flex items-center gap-1 text-xs text-primary hover:underline"
+              // 按钮位于 Link 容器中，阻止默认跳转，让用户可以停留阅读 tooltip。
               onClick={(event) => event.preventDefault()}
             >
               <Info className="h-3 w-3" />
@@ -173,6 +174,7 @@ export function BookCard({ book }: BookCardProps) {
     </>
   );
 
+  // 已完成：整个卡片可点击进入图谱。
   if (isCompleted) {
     return (
       <Link
@@ -185,6 +187,7 @@ export function BookCard({ book }: BookCardProps) {
     );
   }
 
+  // 未完成：保持同样信息密度，但去掉链接语义并给出禁用光学反馈。
   return (
     <div className="library-book-card group relative block cursor-not-allowed">
       {cardCore}

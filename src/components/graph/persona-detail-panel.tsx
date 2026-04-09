@@ -67,8 +67,11 @@ export interface PersonaDetailPanelProps {
     allEvidence?: Array<{ chapterId: string; paraIndex?: number }>,
     clickedIndex?: number
   ) => void;
-  /** 点击编辑回调（可选，某些只读场景可能不开放编辑）。 */
-  onEditClick?    : (personaId: string) => void;
+  /**
+   * 点击编辑回调（可选，某些只读场景可能不开放编辑）。
+   * 仅暴露 `personaId`，由上层决定跳转路由/权限校验，避免详情面板耦合业务流程。
+   */
+  onEditClick?: (personaId: string) => void;
 }
 
 /* ------------------------------------------------
@@ -144,6 +147,7 @@ export function PersonaDetailPanel({
    * 当前书籍所有可阅读证据列表（FG-06）。
    * 每条事件有 chapterId 即可作为证据入口，可选 paraIndex（暂时不传）。
    */
+  // 保留时间轴天然顺序，让“上一条/下一条证据”与用户阅读顺序一致。
   const allEvidenceList = bookTimeline
     .filter(t => Boolean(t.chapterId))
     .map(t => ({ chapterId: t.chapterId }));
@@ -152,6 +156,7 @@ export function PersonaDetailPanel({
   const bookProfile = persona?.profiles.find(p => p.bookId === bookId);
 
   /** 当前书籍内所有关系类型（供筛选按钮渲染）。 */
+  // Set 会保持原出现顺序，筛选按钮顺序与用户看到的关系条目语义一致。
   const relTypes = [...new Set(persona?.relationships.filter(r => r.bookId === bookId).map(r => r.type) ?? [])];
 
   return (
@@ -297,6 +302,8 @@ export function PersonaDetailPanel({
                         type="button"
                         onClick={() => {
                           // FG-06: 传入完整证据列表和当前下标，支持前后导航。
+                          // 当前按 chapterId 反查下标：在同章多事件场景会落到首个匹配项，
+                          // 这是现阶段证据定位协议（chapter 级）下的可接受行为。
                           const clickedIdx = allEvidenceList.findIndex(e => e.chapterId === evt.chapterId);
                           onEvidenceClick?.(evt.chapterId, undefined, allEvidenceList, clickedIdx >= 0 ? clickedIdx : 0);
                         }}
