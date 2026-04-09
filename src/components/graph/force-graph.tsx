@@ -336,6 +336,46 @@ function shouldIncludeEdge(edge: GraphEdge, filter?: GraphFilter, visibleNodeIds
   return true;
 }
 
+/**
+ * 计算 radial 布局中心节点（锚点）。
+ *
+ * 设计约束：
+ * - 仅允许“会改变布局语义”的状态参与（如 focusedNodeId）；
+ * - 不让 active/hover 这类视觉态驱动锚点变化，避免点击节点时触发整图重建与视口回跳。
+ */
+export function resolveRadialAnchorNodeId({
+  layoutMode,
+  nodes,
+  focusedNodeId
+}: {
+  layoutMode   : GraphLayoutMode;
+  nodes        : Array<Pick<GraphNode, "id" | "influence">>;
+  focusedNodeId: string | null | undefined;
+}): string | null {
+  if (layoutMode !== "radial" || nodes.length === 0) {
+    return null;
+  }
+
+  const visibleNodeIds = new Set(nodes.map(node => node.id));
+  if (focusedNodeId && visibleNodeIds.has(focusedNodeId)) {
+    return focusedNodeId;
+  }
+
+  const [firstNode, ...restNodes] = nodes;
+  if (!firstNode) {
+    return null;
+  }
+
+  const fallbackNode = restNodes.reduce((best, current) => {
+    if (current.influence !== best.influence) {
+      return current.influence > best.influence ? current : best;
+    }
+    // 同影响力时使用字典序，确保中心选择可复现（避免“同数据不同渲染”）。
+    return current.id.localeCompare(best.id) < 0 ? current : best;
+  }, firstNode);
+  return fallbackNode.id;
+}
+
 /* ------------------------------------------------
    Component
    ------------------------------------------------ */
@@ -445,39 +485,19 @@ export function ForceGraph({
   /**
    * 计算 radial 布局中心节点（锚点）。
    * 优先级约定：
-   * 1) 用户显式单击激活的节点；
-   * 2) 当前聚焦节点；
-   * 3) 数据侧兜底：选择影响力最高节点（同分时按 ID 稳定排序）。
+   * 1) 当前聚焦节点（双击触发，属于“布局语义变更”）；
+   * 2) 数据侧兜底：选择影响力最高节点（同分时按 ID 稳定排序）。
    *
-   * 这样可以保证：
-   * - 交互上“用户刚操作的节点”总是在中心；
-   * - 首次进入 radial 模式时，不会因随机中心导致视觉漂移或每次刷新中心变化。
+   * 注意：这里故意不使用 activeNodeId。
+   * 单击节点仅用于详情/高亮，不应触发布局重建，否则会造成“点击即整图刷新”的跳变体验。
    */
   const radialAnchorNodeId = useMemo(() => {
-    if (layoutMode !== "radial" || filteredNodes.length === 0) {
-      return null;
-    }
-    const visibleNodeIds = new Set(filteredNodes.map(node => node.id));
-    if (activeNodeId && visibleNodeIds.has(activeNodeId)) {
-      return activeNodeId;
-    }
-    if (focusedNodeId && visibleNodeIds.has(focusedNodeId)) {
-      return focusedNodeId;
-    }
-
-    const [firstNode, ...restNodes] = filteredNodes;
-    if (!firstNode) {
-      return null;
-    }
-    const fallbackNode = restNodes.reduce((best, current) => {
-      if (current.influence !== best.influence) {
-        return current.influence > best.influence ? current : best;
-      }
-      // 同影响力时使用字典序，确保中心选择可复现（避免“同数据不同渲染”）。
-      return current.id.localeCompare(best.id) < 0 ? current : best;
-    }, firstNode);
-    return fallbackNode.id;
-  }, [layoutMode, filteredNodes, activeNodeId, focusedNodeId]);
+    return resolveRadialAnchorNodeId({
+      layoutMode,
+      nodes: filteredNodes,
+      focusedNodeId
+    });
+  }, [layoutMode, filteredNodes, focusedNodeId]);
 
   /**
    * D3 主渲染流程。
