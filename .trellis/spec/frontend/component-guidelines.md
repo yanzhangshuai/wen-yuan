@@ -62,6 +62,7 @@ stage: mvp
 - 条件样式分支需保持可读，分支表达简短明确。
 - 涉及颜色时必须同时覆盖 light/dark mode。
 - 共享 layout 中的 `max-width` / `padding` 约束必须对沉浸式页面（图谱、阅读器、全屏画布）提供显式逃生口；不要假设子页面写 `w-full` 就能突破父容器限制。
+- 当主题系统通过 root/provider 向 `body` 或应用根节点挂载全局 `fixed` 背景/装饰层时，每个一级路由壳层都必须显式建立高于背景层的 stacking context（如 `relative z-[1]`）；不要假设内容在 DOM 里写得更靠后就天然可见。
 - 主题化场景视觉（如星空图谱、博物馆首页）必须挂在语义化页面 class 上做局部覆盖，不要为修单一路由而全局扭动整个主题 token。
 
 ### 壳层导航路由契约
@@ -147,6 +148,38 @@ const isImmersiveRoute = /^\/books\/[^/]+\/graph\/?$/.test(currentPath);
 - 父级 `max-width` 是布局约束，子级 `w-full` 只能填满“被限制后的宽度”，不能反向突破。
 - 在共享 layout 显式识别沉浸式路由，能从结构上避免“页面明明要求全宽，却一直像没生效”的反复排障。
 - 语义化场景 class 能让主题覆盖保持局部、可审查、可回归验证。
+
+### 全局主题背景与路由壳层
+
+场景：主题系统会在根层通过 portal 挂载全屏 `fixed` 背景（如星空 canvas），而业务内容分散在多个一级路由 layout（viewer、admin、login）。
+
+反例（禁止）：
+```tsx
+// app/admin/layout.tsx
+<div className="flex min-h-screen flex-col bg-(--color-admin-content-bg)">
+  <AdminHeader />
+  <main>{children}</main>
+</div>
+```
+
+正例（必须）：
+```tsx
+// app/admin/layout.tsx
+<div className="admin-layout-shell relative z-[1] flex min-h-screen flex-col bg-(--color-admin-content-bg)">
+  <AdminHeader />
+  <main className="admin-layout-main flex-1">{children}</main>
+</div>
+```
+
+配套要求：
+- 根层主题背景如果是 `fixed` 且覆盖全屏，路由壳层必须显式声明自己的层级契约；至少在根容器上补 `relative` + 非默认 `z-index`。
+- 新增或改造全局背景/装饰层时，必须同时检查所有 sibling layout，而不是只验证当前正在改的那一个页面组。
+- 对一级壳层补回归测试，锁定根容器语义 class 与层级 class，避免“视觉空白但 DOM 实际已渲染”的回归。
+
+原因：
+- 全局背景层属于“主题基础设施”，一级 layout 属于“业务壳层”；两者虽然不在同一个文件里，却共享同一视觉堆叠上下文。
+- 一旦某个壳层遗漏层级保护，就会出现“页面实际渲染成功，但被不透明背景整层盖住”的假空白问题。
+- 把层级契约写死在壳层根节点上，比依赖样式插入顺序或偶然的 DOM 顺序更稳定、更容易审查。
 
 ---
 

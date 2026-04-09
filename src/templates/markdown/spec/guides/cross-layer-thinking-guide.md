@@ -154,6 +154,29 @@ const initialModels = await listAdminModels();
 - 当 Promise 解析时机与流式边界切换不稳定时，容易出现 `main`/`Suspense` 首帧树不一致。
 - 对首屏必需数据，优先在 server `await` 后下发稳定快照；客户端组件只做交互与局部增量请求。
 
+### 错误 5.2：根级主题背景层与业务壳层没有显式 stacking 契约
+
+**反例**：主题系统在 root/provider 中通过 portal 向 `body` 挂载全屏 `fixed` 星空 canvas；viewer layout 根节点带 `relative z-[1]`，但 admin layout 没有，结果 `/admin/**` DOM 已渲染却被背景层整页盖住。
+
+**正例**：把“一级路由壳层必须高于根级背景层”写成显式契约，并在每个 sibling layout 的根节点上直接兑现。
+
+```tsx
+// 反例
+<div className="flex min-h-screen flex-col bg-(--color-admin-content-bg)">
+  <main>{children}</main>
+</div>
+
+// 正例
+<div className="admin-layout-shell relative z-[1] flex min-h-screen flex-col bg-(--color-admin-content-bg)">
+  <main className="admin-layout-main flex-1">{children}</main>
+</div>
+```
+
+原因：
+- 这是“主题基础设施层（root/provider/portal 背景）”与“路由壳层（admin/viewer/login layout）”之间的跨层契约问题。
+- 背景层一旦脱离当前 layout、直接挂到 `body`，就不再受局部 DOM 顺序保护；任何 sibling shell 漏掉 stacking context，都可能出现“内容实际存在、视觉上像空白”的假象。
+- 这类问题不能只在当前路由组里修补，必须把“新增全局装饰层时同步审查所有一级壳层”写进开发约束，并用壳层级回归测试锁定。
+
 ### 错误 6：前端展示指标与后端运行时数据契约脱节
 
 **反例**：前端用静态评分表（hardcode）展示“速度/评分/费用”，后端已经有运行日志却未接入。
