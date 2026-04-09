@@ -48,6 +48,16 @@
   --radius: 0.375rem;
   /* 主色透明背景（bg-primary-subtle） */
   --primary-subtle: oklch(0.45 0.10 160 / 0.10);
+  /* 交互层级：hover 保持纸面轻染，active 再更明确一些。 */
+  --interactive-hover-bg: oklch(0.45 0.10 160 / 0.10);
+  --interactive-hover-fg: oklch(0.25 0.02 45);
+  --interactive-hover-border: oklch(0.45 0.10 160 / 0.18);
+  --interactive-active-bg: oklch(0.45 0.10 160 / 0.18);
+  --interactive-active-fg: oklch(0.22 0.02 45);
+  --interactive-active-border: oklch(0.45 0.10 160 / 0.26);
+  --interactive-active-hover-bg: oklch(0.45 0.10 160 / 0.24);
+  --interactive-link-hover-fg: oklch(0.45 0.10 160 / 0.86);
+  --interactive-link-active-fg: oklch(0.45 0.10 160);
 
   /* --- 图谱专用色 --- */
   /* 节点主色：竹青 / 辅色：暖绿 */

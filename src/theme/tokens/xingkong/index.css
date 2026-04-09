@@ -49,6 +49,16 @@
   --radius: 0.375rem;
   /* 主色透明背景（bg-primary-subtle） */
   --primary-subtle: oklch(0.72 0.04 210 / 0.12);
+  /* 交互层级：hover 维持很轻的星云染色，active 才真正亮起来。 */
+  --interactive-hover-bg: oklch(0.22 0.025 228 / 0.18);
+  --interactive-hover-fg: oklch(0.90 0.008 220);
+  --interactive-hover-border: oklch(0.58 0.03 210 / 0.18);
+  --interactive-active-bg: oklch(0.28 0.04 230 / 0.42);
+  --interactive-active-fg: oklch(0.93 0.008 220);
+  --interactive-active-border: oklch(0.60 0.04 210 / 0.30);
+  --interactive-active-hover-bg: oklch(0.31 0.04 230 / 0.50);
+  --interactive-link-hover-fg: oklch(0.72 0.04 210 / 0.86);
+  --interactive-link-active-fg: oklch(0.72 0.04 210);
 
   /* --- 图谱专用色：冷暖微妙对比 --- */
   --graph-node: oklch(0.70 0.05 200);
@@ -117,21 +127,28 @@
   isolation: isolate;
   position: relative;
   background-color: transparent;
-  /* 与 sheji 的节奏一致：只给一层低对比“深空幕布”，避免内容直接贴在星点上。 */
+  /* 继续压暗首页幕布，保留极弱银蓝层次，避免“亮灰雾”观感。 */
   background-image:
     linear-gradient(
       180deg,
-      oklch(0.04 0.003 240 / 0.56) 0%,
-      oklch(0.04 0.003 242 / 0.70) 34%,
-      oklch(0.04 0.003 244 / 0.82) 100%
+      oklch(0.028 0.002 240 / 0.72) 0%,
+      oklch(0.028 0.002 242 / 0.82) 34%,
+      oklch(0.026 0.002 244 / 0.92) 100%
     ),
-    radial-gradient(54% 36% at 18% 12%, oklch(0.46 0.08 220 / 0.10) 0%, transparent 82%),
-    radial-gradient(46% 30% at 84% 18%, oklch(0.52 0.07 185 / 0.08) 0%, transparent 84%);
+    radial-gradient(54% 36% at 18% 12%, oklch(0.42 0.06 220 / 0.05) 0%, transparent 82%),
+    radial-gradient(46% 30% at 84% 18%, oklch(0.44 0.05 185 / 0.04) 0%, transparent 84%);
 }
 
-/* 关闭首页白雾遮罩，保持星空背景直出。 */
+/* 恢复极轻的暗角遮罩，拉深纵深感，但不盖死星点。 */
 [data-theme='xingkong'] .library-ambient::before {
-  content: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(120% 88% at 50% -10%, transparent 0%, oklch(0.01 0.001 240 / 0.20) 62%, oklch(0.01 0.001 240 / 0.36) 100%),
+    radial-gradient(88% 120% at 50% 52%, transparent 42%, oklch(0.01 0.001 240 / 0.30) 100%);
 }
 
 [data-theme='xingkong'] .library-ambient > * {
@@ -141,33 +158,33 @@
 
 /* --- 星空主题 Hero section：取消毛玻璃，保留透明边界分隔 --- */
 [data-theme='xingkong'] .library-hero {
-  background-color: oklch(0.05 0.003 236 / 0.28);
+  background-color: transparent;
   border-bottom-color: oklch(1 0 0 / 0.08);
   box-shadow: none;
 }
 
 /* --- 星空主题书库网格区：去玻璃化，直接透出背景 --- */
 [data-theme='xingkong'] .library-section {
-  border: 1px solid oklch(1 0 0 / 0.12);
-  border-radius: 1.1rem;
-  background-color: oklch(0.06 0.003 235 / 0.28);
-  box-shadow: 0 14px 30px oklch(0.02 0.003 235 / 0.22);
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 /* --- 书库卡片主题化（星空）---
    保持星空底图透出，同时用深空蓝面板保证封面和文字层级清晰。 */
 [data-theme='xingkong'] .library-book-card-surface {
   /* 进一步压深卡片底色，强化“深邃星空黑”而非灰雾感。 */
-  background-color: oklch(0.058 0.003 232 / 0.93);
+  background-color: oklch(0.05 0.003 232 / 0.95);
   border-color: oklch(1 0 0 / 0.16);
-  box-shadow: 0 10px 24px oklch(0.02 0.003 230 / 0.30);
+  box-shadow: 0 12px 28px oklch(0.01 0.002 230 / 0.34);
 }
 
 [data-theme='xingkong'] .library-book-card:hover .library-book-card-surface {
   /* hover 提亮幅度收敛，避免从底色到高亮的跳变过硬。 */
-  background-color: oklch(0.066 0.003 232 / 0.94);
+  background-color: oklch(0.058 0.003 232 / 0.96);
   border-color: oklch(1 0 0 / 0.16);
-  box-shadow: 0 14px 30px oklch(0.02 0.003 230 / 0.32);
+  box-shadow: 0 16px 32px oklch(0.01 0.002 230 / 0.36);
 }
 
 /* 书卡底部光晕在深色背景下容易显脏，星空主题关闭。 */
@@ -186,7 +203,7 @@
 }
 
 [data-theme='xingkong'] .library-book-card-hover {
-  background-color: oklch(0.05 0.003 235 / 0.58);
+  background-color: oklch(0.04 0.003 235 / 0.68);
 }
 
 [data-theme='xingkong'] .library-book-card-status [data-slot='badge'] {
@@ -194,55 +211,29 @@
   background-color: oklch(0.05 0.003 235 / 0.80);
 }
 
-/* --- 星空头部按钮 ---
-   选中态使用更深的宇宙蓝，避免出现偏暖色按钮。 */
+/* --- 星空头部容器 ---
+   仅控制头部整体边界与幕布感，具体按钮交互交给共享交互层。 */
 [data-theme='xingkong'] .viewer-header {
   border-bottom-color: oklch(1 0 0 / 0.14);
   background-color: oklch(0.04 0.003 240 / 0.78);
 }
 
-[data-theme='xingkong'] .viewer-header-nav-button[data-active='true'] {
-  border: 1px solid oklch(0.58 0.04 210 / 0.36);
-  background-color: oklch(0.26 0.05 240 / 0.74);
-  color: oklch(0.92 0.008 220);
-}
-
-[data-theme='xingkong'] .viewer-header-nav-button[data-active='true']:hover {
-  background-color: oklch(0.30 0.05 240 / 0.78);
-}
-
-[data-theme='xingkong'] .viewer-header-nav-button:not([data-active='true']):hover,
-[data-theme='xingkong'] .viewer-header-theme-toggle:hover {
-  background-color: oklch(0.20 0.03 240 / 0.36);
-  color: oklch(0.92 0.008 220);
-}
-
 /* --- 星空主题选择菜单 ---
-   hover 去边框，仅靠透明底色表达高亮；选中态透明度更高保证区分。 */
+   保留浮层面板质感，选中和 hover 强弱交由共享交互层统一控制。 */
 [data-theme='xingkong'] .theme-toggle-menu {
   border-color: oklch(1 0 0 / 0.14);
   background-color: oklch(0.05 0.003 238 / 0.94);
 }
 
-[data-theme='xingkong'] .theme-toggle-option[data-selected='true'] {
-  background-color: oklch(0.30 0.05 240 / 0.58);
-  color: oklch(0.92 0.008 220);
-}
-
-[data-theme='xingkong'] .theme-toggle-option[data-highlighted],
-[data-theme='xingkong'] .theme-toggle-option:focus-visible {
-  background-color: oklch(0.72 0.04 210 / 0.14);
-}
-
 /* --- 星空主题通用卡片：取消毛玻璃，改为轻微暗色面板保证可读性 --- */
 [data-theme='xingkong'] .card {
-  background-color: oklch(0.08 0.004 230 / 0.80);
+  background-color: oklch(0.07 0.004 230 / 0.84);
   border-color: oklch(1 0 0 / 0.16);
-  box-shadow: 0 10px 24px oklch(0.02 0.003 230 / 0.20);
+  box-shadow: 0 12px 28px oklch(0.01 0.002 230 / 0.24);
 }
 
 [data-theme='xingkong'] .card:hover {
-  background-color: oklch(0.10 0.004 230 / 0.86);
+  background-color: oklch(0.082 0.004 230 / 0.88);
   border-color: oklch(1 0 0 / 0.20);
 }
 
@@ -253,8 +244,8 @@
   background-color: var(--background);
   /* 登录页保留“多彩星云”但降低层数与透明度，避免灰脏。 */
   background-image:
-    radial-gradient(900px circle at 32% 50%, rgba(178, 205, 252, 0.10) 0%, transparent 72%),
-    radial-gradient(700px circle at 82% 20%, rgba(162, 182, 232, 0.08) 0%, transparent 66%);
+    radial-gradient(900px circle at 32% 50%, rgba(178, 205, 252, 0.07) 0%, transparent 72%),
+    radial-gradient(700px circle at 82% 20%, rgba(162, 182, 232, 0.05) 0%, transparent 66%);
 }
 
 /* 登录页同样关闭白雾层，直接使用星空底图。 */

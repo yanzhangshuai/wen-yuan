@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
 import { THEME_IDS } from "@/theme";
-import { ThemeProvider, DecorativeLayer } from "@/components/theme";
+import { ThemeProvider, ClientThemeBackground } from "@/components/theme";
 import "./globals.css";
 
 /**
@@ -67,7 +67,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={monoFont.variable}
     >
-      <body className="font-serif antialiased" suppressHydrationWarning>
+      <body className="min-w-[1280px] font-serif antialiased" suppressHydrationWarning>
         <ThemeProvider
           // 使用 data-theme 驱动主题变量，避免 className 冲突。
           attribute="data-theme"
@@ -77,11 +77,10 @@ export default function RootLayout({
           enableSystem={false}
           storageKey="wen-yuan-theme"
         >
-          {/* 全局视觉装饰层：为所有页面提供统一背景氛围。 */}
-          <DecorativeLayer />
           {/* 全局消息提示：任意页面都可调用 toast。 */}
           <Toaster position="top-right" richColors closeButton />
           {children}
+          <ClientThemeBackground />
         </ThemeProvider>
       </body>
     </html>

@@ -197,7 +197,7 @@ export function BookListClient({ books }: BookListClientProps) {
                         */}
                         <Link
                           href={`/admin/books/${book.id}`}
-                          className="hover:underline"
+                          className="interactive-text-link hover:underline"
                         >
                           {book.title}
                         </Link>

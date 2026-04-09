@@ -24,6 +24,7 @@ import Link from "next/link";
 import { Users, FileText, Clock, Cpu, Info } from "lucide-react";
 
 import { BookCover } from "@/components/library/book-cover";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -52,96 +53,37 @@ function formatStableDate(value: string): string {
   return `${year}-${month}-${day}`;
 }
 
+function getBookDescription(book: BookLibraryListItem): string {
+  if (book.lastErrorSummary) {
+    return book.lastErrorSummary;
+  }
+
+  if (book.personaCount > 0) {
+    return `已解析 ${book.personaCount} 位人物，${book.chapterCount} 个章回。数据由 AI 自动生成，仅供参考。`;
+  }
+
+  return "数据由 AI 自动解析生成，可能存在误差，欢迎校对纠正。";
+}
+
 export function BookCard({ book }: BookCardProps) {
   // 书库入口策略：只有 COMPLETED 才允许进入图谱，避免用户进入空图或半成品数据。
   const isCompleted = book.status === "COMPLETED";
   const href = `/books/${book.id}/graph`;
+  const description = getBookDescription(book);
 
-  // FG-10: 前台书库不展示解析状态 Badge（COMPLETED 外的书籍以灰度不可点击表达状态）。
-  const statusBadge = null;
-
-  // hover 面板只在可进入图谱的书籍显示，避免“不可点击却给可交互暗示”。
-  const hoverPanel = isCompleted ? (
-    <div className={cn(
-      "library-book-card-hover absolute inset-[2px] z-30 flex flex-col rounded-[5px] p-4",
-      // hover 信息层不再整面“盖死”封面，保留外沿/书脊可见，维持书本立体感。
-      "bg-linear-to-b from-background/44 via-background/54 to-background/66 backdrop-blur-[1.25px]",
-      "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-20px_40px_rgba(0,0,0,0.22)]",
-      "pointer-events-none translate-y-[4px] scale-[0.988] opacity-0 transition-[opacity,transform] duration-[340ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-      "group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100"
-    )}>
-      <h3 className="mb-1 line-clamp-2 text-base leading-tight font-semibold">{book.title}</h3>
-      <p className="mb-4 text-sm text-muted-foreground">
-        {book.author || "佚名"}
-        {book.dynasty ? ` · ${book.dynasty}` : ""}
-      </p>
-
-      <div className="space-y-2 text-sm/5">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <FileText className="h-4 w-4 shrink-0" />
-          <span>{book.chapterCount} 章回</span>
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Users className="h-4 w-4 shrink-0" />
-          <span>{book.personaCount} 人物</span>
-        </div>
-        {book.lastAnalyzedAt && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="h-4 w-4 shrink-0" />
-            <span>{formatStableDate(book.lastAnalyzedAt)}</span>
-          </div>
-        )}
-        {book.currentModel && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Cpu className="h-4 w-4 shrink-0" />
-            <span>{book.currentModel}</span>
-          </div>
-        )}
-      </div>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className="mt-auto flex items-center gap-1 text-xs text-primary hover:underline"
-              // 按钮位于 Link 容器中，阻止默认跳转，让用户可以停留阅读 tooltip。
-              onClick={(event) => event.preventDefault()}
-            >
-              <Info className="h-3 w-3" />
-              数据说明
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            <p className="text-sm">
-              {book.personaCount > 0
-                ? `已解析 ${book.personaCount} 位人物，${book.chapterCount} 个章回。数据由 AI 自动生成，仅供参考。`
-                : "数据由 AI 自动解析生成，可能存在误差，欢迎校对纠正。"}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  ) : null;
-
-  const cardCore = (
+  const cardContent = (
     <>
-      {/* 与 sheji 对齐：恢复书脊 + 底部阴影，让书卡 hover 更有“上浮翻页”感。 */}
       <div
         className={cn(
-          "library-book-card-surface relative aspect-[2/3] overflow-hidden rounded-sm",
-          // 进一步收敛位移/旋转幅度，保持“虚浮”但避免过度摆动导致生硬。
-          "transform-gpu will-change-transform [transform:translate3d(0,0,0)_rotate(0deg)_scale(1)]",
-          "transition-[transform,box-shadow,filter,background-color,border-color] duration-[380ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-          "shadow-lg",
-          isCompleted
-            ? "group-hover:[transform:translate3d(0,-8px,0)_rotate(0.72deg)_scale(1.012)] group-hover:shadow-2xl group-active:[transform:translate3d(0,-4px,0)_rotate(0.45deg)_scale(1.006)]"
-            : "opacity-50 grayscale-[30%]"
+          "library-book-card-surface relative aspect-[2/3] overflow-hidden rounded-sm transition-all duration-300",
+          "shadow-lg hover:shadow-xl",
+          isCompleted ? "group-hover:-translate-y-2 group-hover:rotate-1" : "opacity-50 grayscale-[30%]"
         )}
         style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
       >
         <div
-          className="pointer-events-none absolute top-0 left-0 z-20 h-full w-3 bg-linear-to-r from-black/36 via-black/16 to-transparent"
+          className="absolute top-0 left-0 z-10 h-full w-3"
+          style={{ background: "linear-gradient(to right, rgba(0,0,0,0.3), transparent)" }}
           aria-hidden="true"
         />
 
@@ -152,45 +94,97 @@ export function BookCard({ book }: BookCardProps) {
           dynasty={book.dynasty}
           coverUrl={book.coverUrl}
           disabled={!isCompleted}
-          className="h-full w-full rounded-none"
+          className="absolute inset-0"
         />
+
+        {isCompleted && (
+          <Link
+            href={href}
+            aria-label={`查看「${book.title}」人物图谱`}
+            className="absolute inset-0 z-10 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          />
+        )}
 
         <div
-          className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/28 via-transparent to-white/10"
-          aria-hidden="true"
-        />
+          className={cn(
+            "library-book-card-hover pointer-events-none absolute inset-0 z-20 flex flex-col bg-background/95 p-4 pb-11 transition-opacity duration-300",
+            "opacity-0 group-hover:opacity-100",
+            !isCompleted && "group-hover:opacity-0"
+          )}
+        >
+          <h3 className="mb-1 text-base font-semibold">{book.title}</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
+            {book.author || "佚名"}
+            {book.dynasty ? ` · ${book.dynasty}` : ""}
+          </p>
 
-        {statusBadge}
-        {hoverPanel}
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <FileText className="h-4 w-4" />
+              <span>{book.chapterCount} 章回</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>{book.personaCount} 人物</span>
+            </div>
+            {book.lastAnalyzedAt && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>{formatStableDate(book.lastAnalyzedAt)}</span>
+              </div>
+            )}
+            {book.currentModel && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Cpu className="h-4 w-4" />
+                <span>{book.currentModel}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {isCompleted && (
+          <div className="absolute inset-x-4 bottom-4 z-30 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="interactive-text-link flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Info className="h-3 w-3" />
+                  数据说明
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <p className="text-sm">{description}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
       </div>
 
       <div
         className={cn(
-          "pointer-events-none absolute -bottom-2 left-2 right-2 h-4 rounded-full bg-foreground/10 opacity-70 blur-md transition-[filter,background-color,opacity,transform] duration-[380ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isCompleted && "group-hover:translate-y-[3px] group-hover:blur-2xl group-hover:bg-foreground/24 group-hover:opacity-100"
+          "absolute -bottom-2 left-2 right-2 h-4 rounded-full bg-foreground/10 blur-md transition-all duration-300",
+          isCompleted && "group-hover:bg-foreground/15 group-hover:blur-lg"
         )}
         aria-hidden="true"
       />
+
+      {!isCompleted && (
+        <div className="library-book-card-status absolute top-3 left-3">
+          <Badge variant="outline" className="bg-background/80 text-xs">
+            解析中
+          </Badge>
+        </div>
+      )}
     </>
   );
 
-  // 已完成：整个卡片可点击进入图谱。
-  if (isCompleted) {
-    return (
-      <Link
-        href={href}
-        aria-label={`查看「${book.title}」人物图谱`}
-        className="library-book-card group relative block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        {cardCore}
-      </Link>
-    );
-  }
-
-  // 未完成：保持同样信息密度，但去掉链接语义并给出禁用光学反馈。
   return (
-    <div className="library-book-card group relative block cursor-not-allowed">
-      {cardCore}
-    </div>
+    <TooltipProvider>
+      <div className={cn("library-book-card group relative block", !isCompleted && "cursor-not-allowed")}>
+        {cardContent}
+      </div>
+    </TooltipProvider>
   );
 }

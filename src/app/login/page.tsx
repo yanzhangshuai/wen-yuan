@@ -252,7 +252,7 @@ function LoginForm() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label htmlFor="password">密码</Label>
-                          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                          <Link href="/forgot-password" className="interactive-text-link text-sm text-primary hover:underline">
                             忘记密码？
                           </Link>
                         </div>
@@ -354,11 +354,11 @@ function LoginForm() {
                         <Checkbox id="terms" />
                         <Label htmlFor="terms" className="text-sm font-normal">
                           我同意{" "}
-                          <Link href="/terms" className="text-primary hover:underline">
+                          <Link href="/terms" className="interactive-text-link text-primary hover:underline">
                             服务条款
                           </Link>
                           {" "}和{" "}
-                          <Link href="/privacy" className="text-primary hover:underline">
+                          <Link href="/privacy" className="interactive-text-link text-primary hover:underline">
                             隐私政策
                           </Link>
                         </Label>
@@ -396,9 +396,9 @@ function LoginForm() {
         <div className="p-6 text-center text-sm text-muted-foreground">
           <p>
             继续即表示您同意我们的{" "}
-            <Link href="/terms" className="text-primary hover:underline">服务条款</Link>
+            <Link href="/terms" className="interactive-text-link text-primary hover:underline">服务条款</Link>
             {" "}和{" "}
-            <Link href="/privacy" className="text-primary hover:underline">隐私政策</Link>
+            <Link href="/privacy" className="interactive-text-link text-primary hover:underline">隐私政策</Link>
           </p>
         </div>
       </div>

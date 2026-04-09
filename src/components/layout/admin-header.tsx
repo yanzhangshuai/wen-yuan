@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, CheckCircle, Settings2, LogOut, LayoutDashboard } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { logout } from "@/lib/services/auth";
 
 /**
@@ -80,10 +79,8 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
                 asChild
                 variant="ghost"
                 size="sm"
-                className={cn(
-                  "gap-2 h-9",
-                  isActive && "bg-accent text-accent-foreground"
-                )}
+                data-active={isActive ? "true" : "false"}
+                className="admin-header-nav-button gap-2 h-9"
               >
                 <Link href={link.href}>
                   <Icon className="h-4 w-4" />

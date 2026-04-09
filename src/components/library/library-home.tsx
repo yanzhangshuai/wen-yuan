@@ -27,6 +27,7 @@
 import { BookOpen, Users, GitBranch, Info } from "lucide-react";
 
 import { BookCard } from "@/components/library/book-card";
+// import { ThemeToggle } from "@/components/theme";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -49,7 +50,7 @@ export interface LibraryHomeProps {
 
 function LibraryEmptyState() {
   return (
-    <section className="library-ambient flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 text-center">
+    <section className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 rounded-full bg-primary-subtle p-6">
         <BookOpen className="h-12 w-12 text-primary" strokeWidth={1.5} />
       </div>
@@ -80,9 +81,9 @@ export function LibraryHome({ books }: LibraryHomeProps) {
   const totalPersonas = completedBooks.reduce((acc, book) => acc + (book.personaCount ?? 0), 0);
 
   return (
-    <div className="library-ambient min-h-[calc(100vh-64px)]">
-      <section className="library-hero mb-12 border-b border-border py-12 text-center">
-        <div className="mx-auto max-w-[1440px] px-6">
+    <div className="library-home library-ambient min-h-[calc(100vh-64px)]">
+      <div className="library-home-inner mx-auto max-w-[1440px] px-6 py-8">
+        <section className="library-hero mb-12 border-b border-border py-12 text-center">
           <h1 className="mb-4 text-3xl font-bold tracking-tight text-balance">中国古典文学人物关系图谱</h1>
           <p className="mx-auto max-w-2xl leading-relaxed text-muted-foreground">
             通过 AI 技术从古代长篇小说中提取人物、关系、事件与时间线，
@@ -135,48 +136,53 @@ export function LibraryHome({ books }: LibraryHomeProps) {
             <Info className="h-3 w-3" />
             <span>数据由 AI 自动解析生成，可能存在误差，欢迎校对纠正</span>
           </div>
-        </div>
-      </section>
 
-      <section className="library-section mx-auto max-w-[1440px] px-6 py-8">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-semibold">
-              书库
-              <span className="text-sm font-normal text-muted-foreground">{books.length} 部典藏</span>
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">点击书籍封面进入人物关系图谱</p>
-          </div>
+          {/* <div className="mt-6 flex items-center justify-center gap-2">
+            <span className="text-xs text-muted-foreground">切换主题风格：</span>
+            <ThemeToggle />
+          </div> */}
+        </section>
 
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="px-3 py-1 font-normal">
-              {completedBooks.length} 已完成
-            </Badge>
-            {pendingBooks.length > 0 && (
-              <Badge variant="secondary" className="px-3 py-1 font-normal">
-                {pendingBooks.length} 解析中
+        <section className="library-section p-6 md:p-8">
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-semibold">
+                书库
+                <span className="text-sm font-normal text-muted-foreground">{books.length} 部典籍</span>
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">点击书籍封面进入人物关系图谱</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="px-3 py-1 font-normal">
+                {completedBooks.length} 已完成
               </Badge>
-            )}
+              {pendingBooks.length > 0 && (
+                <Badge variant="secondary" className="px-3 py-1 font-normal">
+                  {pendingBooks.length} 解析中
+                </Badge>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-          {books.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
-        </div>
-      </section>
+          <div className="library-grid grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+            {books.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+        </section>
 
-      <footer className="mx-auto mt-16 max-w-[1440px] border-t border-border px-6 pt-8 pb-12 text-center">
-        <div className="mx-auto max-w-xl">
-          <h3 className="mb-2 text-sm font-medium">关于文淵</h3>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            「文淵」是一个非商业化的个人爱好项目，旨在利用 AI 技术构建中国古典文学的人物知识图谱。
-            项目持续开发中，数据仅供研究与学习参考使用。
-          </p>
-          <div className="mt-4 text-xs text-muted-foreground/60">© 2024 Wen Yuan Project</div>
-        </div>
-      </footer>
+        <footer className="mt-16 border-t border-border pt-8 text-center">
+          <div className="mx-auto max-w-xl">
+            <h3 className="mb-2 text-sm font-medium">关于文淵</h3>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              「文淵」是一个非商业化的个人爱好项目，旨在利用 AI 技术构建中国古典文学的人物知识图谱。
+              项目持续开发中，数据仅供研究与学习参考使用。
+            </p>
+            <div className="mt-4 text-xs text-muted-foreground/60">© 2024 Wen Yuan Project</div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

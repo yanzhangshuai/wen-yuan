@@ -1,6 +1,6 @@
 "use client";
 
-import { Palette, Check } from "lucide-react";
+import { Palette } from "lucide-react";
 import { THEME_OPTIONS } from "@/theme";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,10 @@ const THEME_COLORS: Record<string, string> = {
 
 /** 主题说明文案：帮助用户理解视觉风格差异。 */
 const THEME_DESCRIPTIONS: Record<string, string> = {
-  danqing : "深色古风 · 朱砂红",
-  suya    : "暖调浅色 · 竹青绿",
-  diancang: "博物馆暗色 · 黄铜金",
-  xingkong: "深邃宇宙 · 星辉银蓝"
+  danqing : "深色古风，紫檀深褐，朱砂点缀",
+  suya    : "暖调浅色，象牙纸底，竹青清雅",
+  diancang: "暗色博物馆，深胡桃黑，黄铜金",
+  xingkong: "深空暗色，宇宙黑底，银蓝星辉"
 };
 
 export function ThemeToggle({ triggerClassName }: ThemeToggleProps) {
@@ -44,7 +44,7 @@ export function ThemeToggle({ triggerClassName }: ThemeToggleProps) {
 
   if (!isHydrated) {
     // Hydration 前先渲染占位，避免服务端主题值与客户端真实值不一致造成闪烁。
-    return <div className="w-9 h-9 bg-muted/20 animate-pulse rounded-md" />;
+    return <div className="h-9 w-9 animate-pulse rounded-md bg-muted/20" />;
   }
 
   const current = THEME_OPTIONS.find((o) => o.value === theme);
@@ -67,20 +67,13 @@ export function ThemeToggle({ triggerClassName }: ThemeToggleProps) {
             key={opt.value}
             onClick={() => setTheme(opt.value)}
             data-selected={theme === opt.value ? "true" : "false"}
-            className={cn(
-              "theme-toggle-option group/theme-item flex cursor-pointer flex-col items-start gap-1 rounded-md py-3",
-              /* hover 无边框，仅用透明底色表达；选中态保留更高不透明度。 */
-              theme === opt.value
-                ? "bg-accent/44 text-accent-foreground focus:bg-accent/44 data-[highlighted]:bg-accent/44 data-[highlighted]:text-accent-foreground"
-                : "focus:bg-accent/20 data-[highlighted]:bg-accent/20 data-[highlighted]:text-accent-foreground"
-            )}
+            className="theme-toggle-option flex cursor-pointer flex-col items-start gap-1 py-3"
           >
-            <div className="flex w-full items-center gap-2">
+            <div className="flex items-center gap-2">
               <span className={cn("w-3 h-3 rounded-full", THEME_COLORS[opt.value] || "bg-primary")} />
               <span className="font-medium">{opt.label}</span>
-              {theme === opt.value && <Check className="h-3 w-3 ml-auto" />}
             </div>
-            <span className="text-xs text-muted-foreground pl-5">
+            <span className="pl-5 text-xs text-muted-foreground">
               {THEME_DESCRIPTIONS[opt.value] ?? ""}
             </span>
           </DropdownMenuItem>

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { BookOpen, Settings, User, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { logout } from "@/lib/services/auth";
 
 /**
@@ -34,6 +33,7 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
 
   // 登录后回跳到当前页面，减少用户操作中断。
   const loginRedirectHref = `/login?redirect=${encodeURIComponent(currentPath)}`;
+  const adminHref = isAdmin ? "/admin" : `/login?redirect=${encodeURIComponent("/admin")}`;
 
   return (
     <header className="viewer-header sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -56,10 +56,7 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
             variant="ghost"
             size="sm"
             data-active={pathname === "/" ? "true" : "false"}
-            className={cn(
-              "viewer-header-nav-button gap-2",
-              pathname === "/" && "bg-accent/52 text-accent-foreground"
-            )}
+            className="viewer-header-nav-button gap-2"
           >
             <Link href="/">
               <BookOpen className="h-4 w-4" />
@@ -72,14 +69,15 @@ export function ViewerHeader({ isAdmin, currentPath = "/" }: ViewerHeaderProps) 
         <div className="flex items-center gap-2">
           <ThemeToggle triggerClassName="viewer-header-theme-toggle" />
 
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link href={adminHref}>
+              <Settings className="h-4 w-4" />
+              <span className="hidden lg:inline">Admin</span>
+            </Link>
+          </Button>
+
           {isAdmin ? (
             <>
-              <Button asChild variant="ghost" size="sm" className="gap-2">
-                <Link href="/admin">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden lg:inline">管理后台</span>
-                </Link>
-              </Button>
               <Button
                 variant="ghost"
                 size="sm"

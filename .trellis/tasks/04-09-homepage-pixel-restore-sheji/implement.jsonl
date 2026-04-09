@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "src/components/library/library-home.tsx", "reason": "Homepage structure to align with sheji"}
+{"file": "src/components/library/book-card.tsx", "reason": "Book card fidelity work"}
+{"file": ".trellis/tasks/archive/2026-03/03-29-ui-merge-sheji/prd.md", "reason": "Historical UI merge principles"}
+{"file": "src/components/layout/viewer-header.tsx", "reason": "Viewer nav alignment with sheji"}

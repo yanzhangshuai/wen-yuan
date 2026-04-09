@@ -215,7 +215,7 @@ export default async function AdminHomePage() {
                       <div className="flex items-center gap-3">
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <Link href={`/admin/books/${book.id}`} className="text-sm font-medium hover:underline">
+                          <Link href={`/admin/books/${book.id}`} className="interactive-text-link text-sm font-medium hover:underline">
                             {book.title}
                           </Link>
                           <span className="text-xs text-muted-foreground ml-2">

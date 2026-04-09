@@ -22,7 +22,7 @@
   --popover-foreground: oklch(0.88 0.02 85);
 
   /* --- 语义色 --- */
-  /* 主色：黄铜金——取自古铜器和博物馆展品光泽 */
+  /* 主色：黄铜金，取自古铜器和博物馆展品光泽 */
   --primary: oklch(0.72 0.12 85);
   --primary-foreground: oklch(0.15 0.01 60);
   /* 次要：深灰胡桃中间色 */
@@ -48,6 +48,16 @@
   --radius: 0.375rem;
   /* 主色透明背景（bg-primary-subtle） */
   --primary-subtle: oklch(0.72 0.12 85 / 0.12);
+  /* 交互层级：hover 只给轻度黄铜染色，active 才更实一些。 */
+  --interactive-hover-bg: oklch(0.72 0.12 85 / 0.10);
+  --interactive-hover-fg: oklch(0.92 0.02 86);
+  --interactive-hover-border: oklch(0.72 0.12 85 / 0.18);
+  --interactive-active-bg: oklch(0.72 0.12 85 / 0.22);
+  --interactive-active-fg: oklch(0.95 0.02 88);
+  --interactive-active-border: oklch(0.72 0.12 85 / 0.30);
+  --interactive-active-hover-bg: oklch(0.72 0.12 85 / 0.28);
+  --interactive-link-hover-fg: oklch(0.72 0.12 85 / 0.86);
+  --interactive-link-active-fg: oklch(0.72 0.12 85);
 
   /* --- 图谱专用色 --- */
   /* 节点主色：黄铜金 / 辅色：暖铜 */
@@ -57,8 +67,8 @@
   --graph-edge: oklch(0.40 0.05 60);
   /* 高亮：明亮金色 */
   --graph-highlight: oklch(0.80 0.15 90);
-  /* 节点 hover：更亮黄铜描边，保证暗底下的可辨识度。 */
-  --graph-node-hover: oklch(0.82 0.12 88);
+  /* 节点 hover：比常态更亮，但仍保持展柜式克制。 */
+  --graph-node-hover: oklch(0.78 0.14 88);
 
   /* --- 侧边栏 --- */
   /* 侧边栏背景：最深的胡桃色 */
@@ -112,7 +122,6 @@
 
 /* --- 首页氛围背景 ---
    典藏主题采用克制底色 + 单层黄铜光晕，避免纹理叠加导致“脏/花”。 */
-
 [data-theme='diancang'] .library-ambient {
   background-color: var(--background);
   background-image:
@@ -131,14 +140,14 @@
 
 /* 首页主内容加轻量展柜底，解决背景与卡片层级冲突。 */
 [data-theme='diancang'] .library-hero {
-  background-color: oklch(0.18 0.015 56 / 0.24);
-  border-bottom-color: oklch(0.32 0.022 56 / 0.46);
+  background-color: transparent;
+  border-bottom-color: oklch(0.30 0.02 56 / 0.34);
 }
 
 [data-theme='diancang'] .library-section {
-  border: 1px solid oklch(0.31 0.022 56 / 0.48);
-  background-color: oklch(0.19 0.015 56 / 0.26);
-  box-shadow: 0 16px 30px oklch(0.10 0.008 58 / 0.22);
+  border: 0;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 /* --- 书库卡片主题化（典藏）---

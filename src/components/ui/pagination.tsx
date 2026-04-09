@@ -68,14 +68,19 @@ function PaginationLink({
   size = "icon",
   ...props
 }: PaginationLinkProps) {
+  const variant = isActive ? "outline" : "ghost";
+
   return (
     <a
       aria-current={isActive ? "page" : undefined}
       data-slot="pagination-link"
       data-active={isActive}
+      data-variant={variant}
+      data-size={size}
       className={cn(
+        "ui-button",
         buttonVariants({
-          variant: isActive ? "outline" : "ghost",
+          variant,
           size
         }),
         className

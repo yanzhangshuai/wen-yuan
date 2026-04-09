@@ -496,7 +496,7 @@ export default function AdminImportPage() {
           <h1 className="text-3xl font-bold text-foreground">导入书籍</h1>
           <p className="text-muted-foreground mt-1">按照向导完成书籍导入与解析配置</p>
         </div>
-        <Link href="/admin/books" className="text-sm font-medium text-primary hover:underline">
+        <Link href="/admin/books" className="interactive-text-link text-sm font-medium text-primary hover:underline">
           返回书库列表
         </Link>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 import { cn, getStringHash } from "@/lib/utils";
 
 /**
@@ -30,66 +31,69 @@ interface BookCoverProps {
   disabled? : boolean;
 }
 
+const FALLBACK_COVER_COLORS = [
+  "#8b3a3a",
+  "#4a5568",
+  "#744210",
+  "#5a8a6c",
+  "#c9a227",
+  "#2d4a3e",
+  "#8a5b44",
+  "#5a6f8b"
+] as const;
+
 export function BookCover({ id, title, author, dynasty, coverUrl, className, disabled }: BookCoverProps) {
-  // 哈希取模 12：与 CSS 中 --book-cover-faction-* 变量槽位对齐。
   const hash = getStringHash(id);
-  const colorIndex = hash % 12;
-  const bgColor = `var(--book-cover-faction-${colorIndex}, var(--muted))`;
-  // 无封面时用竖排短标题，最多 8 字，防止卡片拥挤。
-  const verticalTitle = title.replace(/\s+/g, "").slice(0, 8).split("");
-  // 统一 trim，避免仅包含空格的 URL 被误判为有效封面。
+  const backgroundColor = FALLBACK_COVER_COLORS[hash % FALLBACK_COVER_COLORS.length];
+  const verticalTitle = title.replace(/\s+/g, "").split("");
   const normalizedCoverUrl = coverUrl?.trim() || null;
   const hasCover = normalizedCoverUrl !== null;
 
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden rounded-md transition-[opacity,filter,background-color] duration-[320ms]",
+        "relative h-full w-full overflow-hidden transition-[opacity,filter,background-color] duration-[320ms]",
         disabled && "grayscale opacity-80",
         className
       )}
-      style={!hasCover ? { backgroundColor: bgColor } : undefined}
+      style={!hasCover ? { backgroundColor } : undefined}
     >
       {hasCover ? (
-        // 有封面时走图片分支：Next/Image 可获得自动优化、懒加载与尺寸控制收益。
         <Image
           src={normalizedCoverUrl}
           alt={title}
           fill
-          className="object-cover transition-transform duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.018]"
+          className="h-full w-full object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       ) : (
-        <>
-          {/* 无封面书籍：使用主题色块 + 细纹理 + 竖排标题，保证与实封面混排时层次统一 */}
-          <div className="absolute inset-0 bg-linear-to-br from-white/14 via-transparent to-black/25" aria-hidden="true" />
-          <div className="absolute inset-0 texture-paper opacity-25" aria-hidden="true" />
-          <div className="relative z-20 flex h-full flex-col p-4 text-card-foreground select-none">
-            <div className="self-end rounded-full bg-black/22 px-2 py-0.5 text-[10px] tracking-wide text-white/80">
-              {dynasty || "典籍"}
-            </div>
-            <div className="flex flex-1 items-center justify-center py-3">
-              <h2
-                className="text-[1.55rem] font-bold tracking-[0.18em] text-white/95 drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)]"
-                style={{ fontFamily: "var(--font-serif)" }}
-              >
-                {verticalTitle.map((char, index) => (
-                  <span key={`${char}-${index}`} className="block leading-tight">
-                    {char}
-                  </span>
-                ))}
-              </h2>
-            </div>
-            <p className="line-clamp-1 text-center text-xs text-white/80">
-              {/* 作者为空时展示“佚名”是业务兜底文案，不是技术限制。 */}
-              {author || "佚名"}
-            </p>
-          </div>
-        </>
+        <div className="absolute inset-0 texture-paper opacity-30" aria-hidden="true" />
       )}
 
-      {/* 平面封面仅保留轻微高光，避免产生“立体书脊”观感。 */}
-      <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-black/8 via-transparent to-white/15" />
+      <div className="relative flex h-full flex-col items-center justify-center p-6 text-center text-card-foreground">
+        <div className="absolute top-4 right-4">
+          <Badge
+            variant="secondary"
+            className="border-0 bg-background/20 text-[10px] font-normal text-card-foreground/90 backdrop-blur-sm"
+          >
+            {dynasty || "典籍"}
+          </Badge>
+        </div>
+
+        <div className="flex flex-1 items-center justify-center">
+          <h3 className="text-xl font-bold tracking-wider">
+            {verticalTitle.map((char, index) => (
+              <span key={`${char}-${index}`} className="block">
+                {char}
+              </span>
+            ))}
+          </h3>
+        </div>
+
+        <div className="mt-auto">
+          <p className="text-sm text-card-foreground/80">{author || "佚名"}</p>
+        </div>
+      </div>
     </div>
   );
 }

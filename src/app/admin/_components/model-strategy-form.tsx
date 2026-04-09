@@ -456,7 +456,7 @@ export function ModelStrategyForm({
            */
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground space-y-2">
             <p>暂无可用模型，请先在模型管理中启用至少一个模型。</p>
-            <Link href="/admin/model" className="text-primary hover:underline">
+            <Link href="/admin/model" className="interactive-text-link text-primary hover:underline">
               前往模型管理
             </Link>
           </div>

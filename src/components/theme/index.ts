@@ -20,4 +20,6 @@ export { ThemeProvider } from "./provider";
 export { ThemeToggle } from "./toggle";
 export { useHydratedTheme } from "../../hooks/use-hydrated-theme";
 export { DecorativeLayer } from "./decorative/decorative-layer";
+export { ClientThemeBackground } from "./client-theme-background";
+export { ThemeBackground } from "./theme-background";
 export { WenYuanSeal } from "./decorative/web-seal";
