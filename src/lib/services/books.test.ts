@@ -26,6 +26,76 @@ describe("books service", () => {
     clientMutateMock.mockReset();
   });
 
+  it("createBook uploads form data and returns created book data", async () => {
+    // Arrange
+    const created = { id: "book-1", title: "儒林外史" };
+    const formData = new FormData();
+    formData.set("title", "儒林外史");
+    clientFetchMock.mockResolvedValue(created);
+    const { createBook } = await import("@/lib/services/books");
+
+    // Act
+    const result = await createBook(formData);
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books", {
+      method: "POST",
+      body  : formData
+    });
+    expect(result).toEqual(created);
+  });
+
+  it("fetchChapterPreview unwraps preview items and encodes the book id", async () => {
+    // Arrange
+    clientFetchMock.mockResolvedValue({
+      items: [
+        {
+          index      : 1,
+          chapterType: "CHAPTER",
+          title      : "第一回",
+          wordCount  : 1200
+        }
+      ]
+    });
+    const { fetchChapterPreview } = await import("@/lib/services/books");
+
+    // Act
+    const result = await fetchChapterPreview("book/001");
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F001/chapters/preview");
+    expect(result).toEqual([
+      {
+        index      : 1,
+        chapterType: "CHAPTER",
+        title      : "第一回",
+        wordCount  : 1200
+      }
+    ]);
+  });
+
+  it("confirmBookChapters posts the confirmed chapter payload", async () => {
+    // Arrange
+    clientMutateMock.mockResolvedValue(undefined);
+    const { confirmBookChapters } = await import("@/lib/services/books");
+    const items = [{
+      index      : 1,
+      chapterType: "CHAPTER" as const,
+      title      : "第一回",
+      content    : "正文"
+    }];
+
+    // Act
+    await confirmBookChapters("book/001", items);
+
+    // Assert
+    expect(clientMutateMock).toHaveBeenCalledWith("/api/books/book%2F001/chapters/confirm", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ items })
+    });
+  });
+
   it("startAnalysis sends task-level modelStrategy payload", async () => {
     // 业务规则：分析任务支持按阶段覆盖模型策略，前端必须原样透传，不可在客户端静默裁剪字段。
     // Arrange
@@ -75,6 +145,156 @@ describe("books service", () => {
       method : "POST",
       headers: { "Content-Type": "application/json" },
       body   : JSON.stringify({})
+    });
+  });
+
+  it("fetchBookStatus reads the status snapshot for a book", async () => {
+    // Arrange
+    const snapshot = {
+      status  : "PROCESSING",
+      progress: 45,
+      stage   : "实体提取（第3/8章）",
+      chapters: [{ no: 3, title: "第三回", parseStatus: "PROCESSING" }]
+    };
+    clientFetchMock.mockResolvedValue(snapshot);
+    const { fetchBookStatus } = await import("@/lib/services/books");
+
+    // Act
+    const result = await fetchBookStatus("book/001");
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F001/status");
+    expect(result).toEqual(snapshot);
+  });
+
+  it("reanalyzeChapters sends a chapter-list payload", async () => {
+    // Arrange
+    clientMutateMock.mockResolvedValue(undefined);
+    const { reanalyzeChapters } = await import("@/lib/services/books");
+
+    // Act
+    await reanalyzeChapters("book/001", [2, 4, 8]);
+
+    // Assert
+    expect(clientMutateMock).toHaveBeenCalledWith("/api/books/book%2F001/analyze", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ scope: "CHAPTER_LIST", chapterIndices: [2, 4, 8] })
+    });
+  });
+
+  it("deleteBookById issues a delete request", async () => {
+    // Arrange
+    clientMutateMock.mockResolvedValue(undefined);
+    const { deleteBookById } = await import("@/lib/services/books");
+
+    // Act
+    await deleteBookById("book/001");
+
+    // Assert
+    expect(clientMutateMock).toHaveBeenCalledWith("/api/books/book%2F001", {
+      method: "DELETE"
+    });
+  });
+
+  it("fetchBookJobs requests the jobs list", async () => {
+    // Arrange
+    const jobs = [{
+      id            : "job-1",
+      status        : "SUCCEEDED",
+      scope         : "FULL_BOOK",
+      chapterStart  : null,
+      chapterEnd    : null,
+      chapterIndices: [],
+      attempt       : 1,
+      errorLog      : null,
+      startedAt     : "2026-04-10T09:00:00.000Z",
+      finishedAt    : "2026-04-10T09:10:00.000Z",
+      createdAt     : "2026-04-10T08:59:00.000Z",
+      aiModelName   : "DeepSeek V3"
+    }];
+    clientFetchMock.mockResolvedValue(jobs);
+    const { fetchBookJobs } = await import("@/lib/services/books");
+
+    // Act
+    const result = await fetchBookJobs("book/001");
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F001/jobs");
+    expect(result).toEqual(jobs);
+  });
+
+  it("fetchBookPersonas requests the persona list", async () => {
+    // Arrange
+    const personas = [{
+      id           : "persona-1",
+      profileId    : "profile-1",
+      bookId       : "book-1",
+      name         : "范进",
+      localName    : "范进",
+      aliases      : ["范举人"],
+      gender       : "MALE",
+      hometown     : "广东",
+      nameType     : "NAMED",
+      globalTags   : [],
+      localTags    : ["举人"],
+      officialTitle: "举人",
+      localSummary : "中举人物",
+      ironyIndex   : 0.2,
+      confidence   : 0.9,
+      recordSource : "AI",
+      status       : "ACTIVE"
+    }];
+    clientFetchMock.mockResolvedValue(personas);
+    const { fetchBookPersonas } = await import("@/lib/services/books");
+
+    // Act
+    const result = await fetchBookPersonas("book/001");
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F001/personas");
+    expect(result).toEqual(personas);
+  });
+
+  it("fetchChapterContent maps the reading payload and includes paraIndex when provided", async () => {
+    // Arrange
+    clientFetchMock.mockResolvedValue({
+      chapterNo   : 3,
+      chapterTitle: "第三回",
+      paragraphs  : [{ text: "甲" }, { text: "乙" }]
+    });
+    const { fetchChapterContent } = await import("@/lib/services/books");
+
+    // Act
+    const result = await fetchChapterContent("book/001", "chapter/003", 7);
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F001/chapters/chapter%2F003/read?paraIndex=7");
+    expect(result).toEqual({
+      title     : "第三回",
+      chapterNo : 3,
+      paragraphs: ["甲", "乙"]
+    });
+  });
+
+  it("fetchChapterContent omits the query string when paraIndex is absent", async () => {
+    // Arrange
+    clientFetchMock.mockResolvedValue({
+      chapterNo   : 1,
+      chapterTitle: "第一回",
+      paragraphs  : [{ text: "正文" }]
+    });
+    const { fetchChapterContent } = await import("@/lib/services/books");
+
+    // Act
+    const result = await fetchChapterContent("book-1", "chapter-1");
+
+    // Assert
+    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book-1/chapters/chapter-1/read");
+    expect(result).toEqual({
+      title     : "第一回",
+      chapterNo : 1,
+      paragraphs: ["正文"]
     });
   });
 });

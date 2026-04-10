@@ -793,8 +793,7 @@ describe("persona resolver", () => {
     const {
       prisma,
       personaFindMany,
-      personaCreate,
-      profileCreate
+      personaCreate
     } = createPrismaMock();
 
     personaFindMany

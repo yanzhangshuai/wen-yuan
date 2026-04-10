@@ -263,7 +263,7 @@ export function createChapterAnalysisService(
   const runtimeAiClientCache = new Map<string, AiAnalysisClient>();
 
   interface AnalysisExecutionContext {
-    jobId?: string;
+    jobId?             : string;
     /** Pass 2 全局消歧后的映射表（surfaceForm → personaId），提供时跳过 ROSTER_DISCOVERY。 */
     externalPersonaMap?: Map<string, string>;
   }
@@ -1324,12 +1324,12 @@ export function createChapterAnalysisService(
     }
 
     const result = await stageAiCallExecutor.execute({
-      stage    : PipelineStage.INDEPENDENT_EXTRACTION,
+      stage  : PipelineStage.INDEPENDENT_EXTRACTION,
       prompt,
-      jobId    : stageContext.jobId,
+      jobId  : stageContext.jobId,
       chapterId,
-      context  : stageContext,
-      callFn   : async ({ model }) => {
+      context: stageContext,
+      callFn : async ({ model }) => {
         const providerClient = createAiProviderClient({
           provider : model.provider,
           apiKey   : model.apiKey,

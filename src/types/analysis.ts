@@ -696,7 +696,7 @@ export interface ChapterEntityList {
  */
 export interface EntityCandidateGroup {
   /** 候选组 ID（自增序号）。 */
-  groupId : number;
+  groupId: number;
   /** 该组包含的所有称谓及其来源章节。 */
   members : Array<{
     name       : string;
@@ -710,15 +710,15 @@ export interface EntityCandidateGroup {
  */
 export interface EntityResolutionDecision {
   /** 对应输入的 groupId。 */
-  groupId     : number;
+  groupId      : number;
   /** 是否应合并为同一人。 */
-  shouldMerge : boolean;
+  shouldMerge  : boolean;
   /** 合并后的正式名称。 */
-  mergedName  : string;
+  mergedName   : string;
   /** 合并后的所有别名（包括非正式名称）。 */
   mergedAliases: string[];
   /** 判断理由（≤30字）。 */
-  reason      : string;
+  reason       : string;
 }
 
 /**
@@ -770,17 +770,17 @@ export function parseIndependentExtractionResponse(raw: string): IndependentEnti
     .filter(isRecord)
     .filter((item) =>
       typeof item.name === "string" &&
-      (item.name as string).trim().length >= 2 &&
-      (item.name as string).trim().length <= 10  // 防垃圾实体：超过 10 字符的"人名"几乎都是提取错误
+      (item.name).trim().length >= 2 &&
+      (item.name).trim().length <= 10  // 防垃圾实体：超过 10 字符的"人名"几乎都是提取错误
     )
     .map((item) => ({
-      name       : (item.name as string).trim(),
-      aliases    : Array.isArray(item.aliases)
+      name   : (item.name as string).trim(),
+      aliases: Array.isArray(item.aliases)
         ? (item.aliases as unknown[])
             .filter((a): a is string => typeof a === "string" && a.trim().length >= 2 && a.trim().length <= 10)
             .map(a => a.trim())
         : [],
-      description: typeof item.description === "string" ? (item.description as string).trim().slice(0, 100) : "",
+      description: typeof item.description === "string" ? (item.description).trim().slice(0, 100) : "",
       category   : item.category === "MENTIONED_ONLY" ? "MENTIONED_ONLY" : "PERSON"
     }));
 }

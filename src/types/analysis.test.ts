@@ -10,7 +10,16 @@
 
 import { describe, expect, it } from "vitest";
 
-import { parseChapterAnalysisResponse, parseEnhancedChapterRosterResponse, repairJson, parseTitleResolutionResponse } from "./analysis";
+import {
+  parseChapterAnalysisResponse,
+  parseChapterRosterResponse,
+  parseEnhancedChapterRosterResponse,
+  parseEntityResolutionResponse,
+  parseIndependentExtractionResponse,
+  parseTitleArbitrationResponse,
+  parseTitleResolutionResponse,
+  repairJson
+} from "./analysis";
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parseChapterAnalysisResponse", () => {
@@ -322,5 +331,211 @@ describe("parseTitleResolutionResponse", () => {
   it("returns empty array for non-array JSON", () => {
     const result = parseTitleResolutionResponse('{"key":"value"}', personaIdByTitle);
     expect(result).toEqual([]);
+  });
+});
+
+describe("parseTitleArbitrationResponse", () => {
+  it("normalizes valid arbitration items and drops invalid rows", () => {
+    const result = parseTitleArbitrationResponse(JSON.stringify([
+      {
+        surfaceForm   : " 太祖皇帝 ",
+        isPersonalized: true,
+        confidence    : 1.5,
+        reason        : "高频稳定称谓"
+      },
+      {
+        surfaceForm   : "丞相",
+        isPersonalized: false,
+        confidence    : -0.2
+      },
+      {
+        surfaceForm   : "   ",
+        isPersonalized: true
+      },
+      {
+        surfaceForm: "无效项"
+      }
+    ]));
+
+    expect(result).toEqual([
+      {
+        surfaceForm   : "太祖皇帝",
+        isPersonalized: true,
+        confidence    : 1,
+        reason        : "高频稳定称谓"
+      },
+      {
+        surfaceForm   : "丞相",
+        isPersonalized: false,
+        confidence    : 0,
+        reason        : undefined
+      }
+    ]);
+  });
+
+  it("returns empty array when arbitration payload is invalid", () => {
+    expect(parseTitleArbitrationResponse("not json")).toEqual([]);
+    expect(parseTitleArbitrationResponse('{"key":"value"}')).toEqual([]);
+  });
+});
+
+describe("parseChapterRosterResponse", () => {
+  it("normalizes alias metadata and context hints", () => {
+    const result = parseChapterRosterResponse(JSON.stringify([
+      {
+        surfaceForm        : " 太祖皇帝 ",
+        entityId           : 7,
+        isNew              : true,
+        generic            : false,
+        isTitleOnly        : true,
+        aliasType          : "TITLE",
+        contextHint        : " 明朝开国皇帝 ",
+        suggestedRealName  : " 朱元璋 ",
+        aliasConfidence    : 1.2,
+        coOccurringPersonas: ["刘伯温", 42]
+      },
+      {
+        surfaceForm      : "范举人",
+        aliasType        : "INVALID",
+        aliasConfidence  : 0.8,
+        suggestedRealName: "  "
+      },
+      {
+        surfaceForm: "   "
+      }
+    ]));
+
+    expect(result).toEqual([
+      {
+        surfaceForm      : "太祖皇帝",
+        entityId         : 7,
+        isNew            : true,
+        generic          : false,
+        isTitleOnly      : true,
+        aliasType        : "TITLE",
+        suggestedRealName: "朱元璋",
+        aliasConfidence  : 1,
+        contextHint      : {
+          alias              : "太祖皇帝",
+          aliasType          : "TITLE",
+          coOccurringPersonas: ["刘伯温"],
+          contextClue        : "明朝开国皇帝",
+          suggestedRealName  : "朱元璋",
+          confidence         : 1
+        }
+      },
+      {
+        surfaceForm      : "范举人",
+        entityId         : undefined,
+        isNew            : false,
+        generic          : false,
+        isTitleOnly      : false,
+        aliasType        : undefined,
+        suggestedRealName: undefined,
+        aliasConfidence  : undefined,
+        contextHint      : undefined
+      }
+    ]);
+  });
+
+  it("returns empty array for invalid or non-array roster payloads", () => {
+    expect(parseChapterRosterResponse("not json")).toEqual([]);
+    expect(parseChapterRosterResponse('{"key":"value"}')).toEqual([]);
+  });
+});
+
+describe("parseEntityResolutionResponse", () => {
+  it("parses valid merge decisions and filters invalid aliases", () => {
+    const result = parseEntityResolutionResponse(JSON.stringify([
+      {
+        groupId      : 1,
+        shouldMerge  : true,
+        mergedName   : " 范进 ",
+        mergedAliases: [" 范进 ", "范举人", 42],
+        reason       : "同一人物"
+      },
+      {
+        groupId      : 2,
+        shouldMerge  : false,
+        mergedName   : "王惠",
+        mergedAliases: null
+      },
+      {
+        groupId    : "bad",
+        shouldMerge: true,
+        mergedName : "无效"
+      }
+    ]));
+
+    expect(result).toEqual([
+      {
+        groupId      : 1,
+        shouldMerge  : true,
+        mergedName   : "范进",
+        mergedAliases: ["范进", "范举人"],
+        reason       : "同一人物"
+      },
+      {
+        groupId      : 2,
+        shouldMerge  : false,
+        mergedName   : "王惠",
+        mergedAliases: [],
+        reason       : ""
+      }
+    ]);
+  });
+
+  it("returns empty array when the resolution payload is invalid", () => {
+    expect(parseEntityResolutionResponse("not json")).toEqual([]);
+    expect(parseEntityResolutionResponse('{"key":"value"}')).toEqual([]);
+  });
+});
+
+describe("parseIndependentExtractionResponse", () => {
+  it("filters invalid entities and normalizes aliases, descriptions and category", () => {
+    const result = parseIndependentExtractionResponse(JSON.stringify([
+      {
+        name       : " 范进 ",
+        aliases    : [" 范举人 ", "老", "这是一个明显过长的人名测试字段", 1],
+        description: "  ".repeat(10) + "中举人物".repeat(30),
+        category   : "MENTIONED_ONLY"
+      },
+      {
+        name       : "胡",
+        aliases    : [],
+        description: "太短人名"
+      },
+      {
+        name       : "这是一个超过十个字的错误人名样本",
+        aliases    : [],
+        description: "应过滤"
+      },
+      {
+        name       : "胡屠户",
+        aliases    : [" 胡老爹 "],
+        description: " 卖肉营生 ",
+        category   : "OTHER"
+      }
+    ]));
+
+    expect(result).toEqual([
+      {
+        name       : "范进",
+        aliases    : ["范举人"],
+        description: ("中举人物".repeat(30)).slice(0, 100),
+        category   : "MENTIONED_ONLY"
+      },
+      {
+        name       : "胡屠户",
+        aliases    : ["胡老爹"],
+        description: "卖肉营生",
+        category   : "PERSON"
+      }
+    ]);
+  });
+
+  it("returns empty array when the extraction payload is invalid", () => {
+    expect(parseIndependentExtractionResponse("not json")).toEqual([]);
+    expect(parseIndependentExtractionResponse('{"key":"value"}')).toEqual([]);
   });
 });

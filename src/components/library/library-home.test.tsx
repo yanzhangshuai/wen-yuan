@@ -85,6 +85,19 @@ function buildBook(partial: Partial<LibraryBookCardData>): LibraryBookCardData {
 }
 
 describe("LibraryHome", () => {
+  it("renders the empty state when there are no readable books", () => {
+    // Arrange
+    render(<LibraryHome books={[]} />);
+
+    // Assert
+    expect(screen.getByText("暂无可阅读书籍")).toBeInTheDocument();
+    expect(screen.getByText((_, element) => (
+      element?.tagName.toLowerCase() === "p"
+      && element.textContent?.includes("请联系管理员在后台导入并解析书籍。")
+    ))).toBeInTheDocument();
+    expect(screen.queryByText("书库")).toBeNull();
+  });
+
   it("allows navigation to graph when book is completed", () => {
     // Arrange: 构造“已完成”的书籍卡片。
     render(<LibraryHome books={[buildBook({ id: "book-completed", status: "COMPLETED" })]} />);
@@ -101,8 +114,7 @@ describe("LibraryHome", () => {
 
     // Assert: 不应渲染图谱跳转入口，且应提示处理中状态。
     expect(screen.queryByRole("link", { name: "查看「儒林外史」人物图谱" })).toBeNull();
-    // 采用正则 + /u，兼容文案中额外修饰词（如“解析中...”）与中文匹配边界。
-    expect(screen.getByText(/解析中/u)).toBeInTheDocument();
+    expect(screen.getByText("解析中")).toBeInTheDocument();
   });
 
   it("displays book count and section header", () => {
@@ -111,6 +123,6 @@ describe("LibraryHome", () => {
 
     // Assert: 标题与数量文案都应可见。
     expect(screen.getByText("书库")).toBeInTheDocument();
-    expect(screen.getByText("2 部典藏")).toBeInTheDocument();
+    expect(screen.getByText("2 部典籍")).toBeInTheDocument();
   });
 });

@@ -37,8 +37,8 @@ import { toast } from "sonner";
      0 → 亲属  1 → 友好  2 → 对立  3 → 从属  4 → 其他（兜底）
 ----------------------------------------------------------------------- */
 const RELATION_GROUP_RULES: Array<{
-  label : string;
-  idx   : 0 | 1 | 2 | 3;
+  label   : string;
+  idx     : 0 | 1 | 2 | 3;
   keywords: readonly string[];
 }> = [
   {

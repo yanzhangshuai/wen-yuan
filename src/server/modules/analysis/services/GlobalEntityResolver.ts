@@ -84,6 +84,12 @@ interface GlobalEntityInfo {
   allNames     : Set<string>;
 }
 
+interface EntityResolutionMergeDecision {
+  shouldMerge  : boolean;
+  mergedName   : string;
+  mergedAliases: string[];
+}
+
 /**
  * 创建全书实体消歧服务。
  */
@@ -253,8 +259,8 @@ export function createGlobalEntityResolver(
     bookTitle: string,
     groups: EntityCandidateGroup[],
     stageContext: { bookId: string; jobId: string }
-  ): Promise<Map<number, { shouldMerge: boolean; mergedName: string; mergedAliases: string[] }>> {
-    const decisions = new Map<number, { shouldMerge: boolean; mergedName: string; mergedAliases: string[] }>();
+  ): Promise<Map<number, EntityResolutionMergeDecision>> {
+    const decisions = new Map<number, EntityResolutionMergeDecision>();
 
     // 分批处理，避免单次请求过大
     for (let i = 0; i < groups.length; i += RESOLUTION_BATCH_SIZE) {
@@ -327,9 +333,9 @@ export function createGlobalEntityResolver(
     }));
 
     // Step 3: LLM 消歧（仅对有歧义的多成员组）
-    const decisions = candidateGroups.length > 0
+    const decisions: Map<number, EntityResolutionMergeDecision> = candidateGroups.length > 0
       ? await resolveCandidateGroupsWithLLM(bookTitle, candidateGroups, stageContext)
-      : new Map();
+      : new Map<number, EntityResolutionMergeDecision>();
 
     // Step 4: 构建合并后的全局实体列表
     // 先处理 LLM 决策的合并组

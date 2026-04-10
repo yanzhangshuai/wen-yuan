@@ -41,6 +41,20 @@ function createAiModelRecord(overrides: Partial<{
   };
 }
 
+/**
+ * 为默认导出包装函数提供隔离的 prisma/fetch 注入：
+ * - 包装函数内部会动态 import `@/server/db/prisma`；
+ * - 这里在每个用例中重置模块缓存并重新 mock，避免不同用例互相污染。
+ */
+async function importModelsModuleWithDefaults(prismaMock: unknown, fetchMock?: typeof fetch) {
+  vi.resetModules();
+  vi.doMock("@/server/db/prisma", () => ({
+    prisma: prismaMock
+  }));
+  vi.stubGlobal("fetch", (fetchMock ?? vi.fn()) as typeof fetch);
+  return import("./index");
+}
+
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("models module", () => {
   const originalEncryptionKey = process.env.APP_ENCRYPTION_KEY;
@@ -49,7 +63,9 @@ describe("models module", () => {
   afterEach(() => {
     process.env.APP_ENCRYPTION_KEY = originalEncryptionKey;
     process.env.MODEL_TEST_ALLOWED_HOSTS = originalModelTestAllowedHosts;
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    vi.resetModules();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -987,6 +1003,397 @@ describe("models module", () => {
     expect(result.errorMessage).toContain("timeout");
   });
 
+  // 用例语义：OpenAI-compatible 的 content-array 也是有效成功响应，应视为连接成功。
+  it("accepts openai-compatible content arrays with text parts", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: [
+              null,
+              { type: "text", text: "pong" }
+            ]
+          }
+        }
+      ]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(true);
+    expect(result.detail).toBe("连接成功");
+  });
+
+  // 用例语义：200 JSON 若不是 object payload，应落入“无法确认可用”的语义失败分支。
+  it("treats null JSON payloads as unavailable model responses", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("null", {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+    expect(result.errorMessage).toBe("响应不是合法 JSON，无法确认模型可用");
+  });
+
+  // 用例语义：choices/message 结构存在但没有可读文本时，应返回稳定的语义错误。
+  it("treats payloads without readable content as unavailable", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: { text: "pong" }
+          }
+        }
+      ]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+    expect(result.errorMessage).toBe("响应缺少可读内容，无法确认模型可用");
+  });
+
+  // 用例语义：choices 首项不是对象时，应稳态落入“缺少可读内容”的失败分支。
+  it("treats non-record choices items as unavailable", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [null]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorMessage).toBe("响应缺少可读内容，无法确认模型可用");
+  });
+
+  // 用例语义：message 缺失时也要返回稳定语义错误，而不是把结构异常冒泡给调用层。
+  it("treats choices without message objects as unavailable", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{}]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorMessage).toBe("响应缺少可读内容，无法确认模型可用");
+  });
+
+  // 用例语义：当抛出的并非 Error 实例时，用户仍应看到稳定兜底文案。
+  it("falls back to the default message when connectivity throws a non-Error value", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockRejectedValue("boom");
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("NETWORK_ERROR");
+    expect(result.errorMessage).toBe("模型连通性测试失败");
+  });
+
+  // 用例语义：异常信息包含 fetch 关键字时，也应归类为网络错误而非未知失败。
+  it("classifies thrown fetch keyword errors as NETWORK_ERROR", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockRejectedValue(new Error("fetch failed"));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("NETWORK_ERROR");
+    expect(result.errorMessage).toBe("fetch failed");
+  });
+
+  // 用例语义：纯文本错误体若为空，应回退到 HTTP 状态描述，避免前端拿到空文案。
+  it("falls back to HTTP status detail for empty text responses", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("", {
+      status : 503,
+      headers: {
+        "content-type": "text/plain"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(false);
+    expect(result.detail).toBe("HTTP 503");
+    expect(result.errorType).toBe("MODEL_UNAVAILABLE");
+  });
+
+  // 用例语义：额外白名单 env 为空串时，应按“未配置”处理，而不是污染 allowlist 解析。
+  it("treats empty MODEL_TEST_ALLOWED_HOSTS as no extra allowlist hosts", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+    process.env.MODEL_TEST_ALLOWED_HOSTS = "";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: "pong"
+          }
+        }
+      ]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(true);
+  });
+
+  // 用例语义：空模型列表不应再继续查询运行日志，避免无意义 groupBy。
+  it("returns an empty model list without querying performance logs", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const groupByMock = vi.fn();
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([])
+      },
+      analysisPhaseLog: {
+        groupBy: groupByMock
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.listModels();
+
+    expect(result).toEqual([]);
+    expect(groupByMock).not.toHaveBeenCalled();
+  });
+
+  // 用例语义：日志聚合中偶发的 null modelId 不应污染有效模型的性能统计。
+  it("ignores null model ids in performance buckets", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const groupByMock = vi.fn()
+      .mockResolvedValueOnce([
+        { modelId: null, status: "SUCCESS", _count: { _all: 99 } },
+        { modelId: "model-1", status: "SUCCESS", _count: { _all: 3 } }
+      ])
+      .mockResolvedValueOnce([
+        {
+          modelId: null,
+          _count : { _all: 99 },
+          _avg   : {
+            durationMs      : 9999,
+            promptTokens    : 999,
+            completionTokens: 999
+          }
+        },
+        {
+          modelId: "model-1",
+          _count : { _all: 3 },
+          _avg   : {
+            durationMs      : 1200,
+            promptTokens    : 200,
+            completionTokens: 100
+          }
+        }
+      ]);
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            apiKey: encryptValue("secret-api-key")
+          })
+        ])
+      },
+      analysisPhaseLog: {
+        groupBy: groupByMock
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    const [result] = await modelsModule.listModels();
+
+    expect(result?.performance.callCount).toBe(3);
+    expect(result?.performance.avgLatencyMs).toBe(1200);
+  });
+
+  // 用例语义：运行日志均值缺失时，性能快照应输出 null/0，而不是 NaN 或污染评分。
+  it("maps null performance averages to stable null and zero ratings", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const groupByMock = vi.fn()
+      .mockResolvedValueOnce([
+        { modelId: "model-1", status: "SUCCESS", _count: { _all: 1 } }
+      ])
+      .mockResolvedValueOnce([
+        {
+          modelId: "model-1",
+          _count : { _all: 1 },
+          _avg   : {
+            durationMs      : null,
+            promptTokens    : null,
+            completionTokens: null
+          }
+        }
+      ]);
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            apiKey: encryptValue("secret-api-key")
+          })
+        ])
+      },
+      analysisPhaseLog: {
+        groupBy: groupByMock
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    const [result] = await modelsModule.listModels();
+
+    expect(result?.performance.avgLatencyMs).toBeNull();
+    expect(result?.performance.avgPromptTokens).toBeNull();
+    expect(result?.performance.avgCompletionTokens).toBeNull();
+    expect(result?.performance.ratings.speed).toBe(0);
+    expect(result?.performance.ratings.cost).toBe(0);
+  });
+
+  // 用例语义：Gemini 成功探活时不走 OpenAI 语义校验分支，避免误判返回结构。
+  it("skips openai semantic validation for successful gemini probes", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ candidates: [] }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          provider: "gemini",
+          modelId : "gemini-2.0-flash",
+          baseUrl : "https://generativelanguage.googleapis.com/",
+          apiKey  : encryptValue("gemini-secret")
+        }))
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(true);
+    expect(result.detail).toBe("连接成功");
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("rejects connectivity test when stored api key is plaintext", async () => {
     const prismaClient = {
@@ -999,5 +1406,170 @@ describe("models module", () => {
 
     const modelsModule = createModelsModule(prismaClient);
     await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("非法 API Key 存储格式");
+  });
+
+  // 用例语义：默认导出包装函数应通过动态 prisma 注入走通 listModels/listAdminModels。
+  it("delegates list wrappers through the default prisma module", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            apiKey: encryptValue("secret-api-key")
+          })
+        ])
+      },
+      analysisPhaseLog: {
+        groupBy: vi.fn().mockResolvedValue([])
+      }
+    };
+    const modelsModule = await importModelsModuleWithDefaults(prismaClient);
+
+    const result = await modelsModule.listModels();
+    const adminResult = await modelsModule.listAdminModels();
+
+    expect(result).toHaveLength(1);
+    expect(adminResult).toHaveLength(1);
+    expect(result[0]?.apiKeyMasked).toBe("secr******-key");
+  });
+
+  // 用例语义：update wrappers 既要复用默认模块，也要覆盖 admin payload 到 ApiKeyChange 的转换分支。
+  it("supports direct and admin update wrappers with all api key mapping modes", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const existingApiKey = encryptValue("existing-secret");
+    const updateMock = vi.fn().mockImplementation(async ({ data }: { data: Record<string, unknown> }) => createAiModelRecord({
+      modelId  : typeof data.modelId === "string" ? data.modelId : "deepseek-chat",
+      baseUrl  : typeof data.baseUrl === "string" ? data.baseUrl : "https://api.deepseek.com",
+      apiKey   : typeof data.apiKey === "string" ? data.apiKey : data.apiKey === null ? null : existingApiKey,
+      isEnabled: typeof data.isEnabled === "boolean" ? data.isEnabled : false
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: existingApiKey
+        })),
+        update: updateMock
+      }
+    };
+    const modelsModule = await importModelsModuleWithDefaults(prismaClient);
+
+    await modelsModule.updateModel({
+      id    : "model-1",
+      apiKey: {
+        action: "set",
+        value : "direct-secret"
+      }
+    });
+    await modelsModule.updateAdminModel("model-1", {});
+    await modelsModule.updateAdminModel("model-1", { apiKey: "   " });
+    await modelsModule.updateAdminModel("model-1", { apiKey: null });
+    await modelsModule.updateAdminModel("model-1", { apiKey: "  admin-secret  " });
+
+    const directPersistedApiKey = updateMock.mock.calls[0][0].data.apiKey;
+    if (typeof directPersistedApiKey !== "string") {
+      throw new Error("expected direct wrapper to persist encrypted api key");
+    }
+
+    expect(decryptValue(directPersistedApiKey)).toBe("direct-secret");
+    expect(updateMock.mock.calls[1][0].data.apiKey).toBe(existingApiKey);
+    expect(updateMock.mock.calls[2][0].data.apiKey).toBe(existingApiKey);
+    expect(updateMock.mock.calls[3][0].data.apiKey).toBeNull();
+
+    const adminPersistedApiKey = updateMock.mock.calls[4][0].data.apiKey;
+    if (typeof adminPersistedApiKey !== "string") {
+      throw new Error("expected admin wrapper to persist encrypted api key");
+    }
+    expect(decryptValue(adminPersistedApiKey)).toBe("admin-secret");
+  });
+
+  // 用例语义：当 payload 省略 apiKey 时，不应把旧值重复写回数据库。
+  it("omits apiKey patch when update payload does not include apiKey", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const updateMock = vi.fn().mockResolvedValue(createAiModelRecord({
+      apiKey: encryptValue("existing-secret")
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("existing-secret")
+        })),
+        update: updateMock
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await modelsModule.updateModel({
+      id       : "model-1",
+      isEnabled: false
+    });
+
+    expect(updateMock.mock.calls[0][0].data).not.toHaveProperty("apiKey");
+  });
+
+  // 用例语义：default/admin 的默认模型包装函数都应复用同一事务逻辑。
+  it("delegates default-model wrappers through the default prisma module", async () => {
+    const findUniqueMock = vi.fn().mockResolvedValue({ id: "model-1" });
+    const updateManyMock = vi.fn().mockResolvedValue({ count: 1 });
+    const updateMock = vi.fn().mockResolvedValue(createAiModelRecord({
+      isDefault: true
+    }));
+    const transactionClient = {
+      aiModel: {
+        findUnique: findUniqueMock,
+        updateMany: updateManyMock,
+        update    : updateMock
+      }
+    };
+    const prismaClient = {
+      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof transactionClient) => Promise<unknown>) => {
+        return callback(transactionClient);
+      })
+    };
+    const modelsModule = await importModelsModuleWithDefaults(prismaClient);
+
+    const directResult = await modelsModule.setDefaultModel("model-1");
+    const adminResult = await modelsModule.setDefaultAdminModel("model-1");
+
+    expect(directResult.isDefault).toBe(true);
+    expect(adminResult.isDefault).toBe(true);
+    expect(updateManyMock).toHaveBeenCalledTimes(2);
+  });
+
+  // 用例语义：default/admin 的连通性包装函数都应透传到底层探活逻辑。
+  it("delegates connectivity wrappers through the default prisma module", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: "pong"
+          }
+        }
+      ]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          apiKey: encryptValue("secret-api-key")
+        }))
+      }
+    };
+    const modelsModule = await importModelsModuleWithDefaults(prismaClient, fetchMock as typeof fetch);
+
+    const directResult = await modelsModule.testModelConnectivity("model-1");
+    const adminResult = await modelsModule.testAdminModelConnection("model-1");
+
+    expect(directResult.success).toBe(true);
+    expect(adminResult.success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

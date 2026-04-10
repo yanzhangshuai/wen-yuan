@@ -16,8 +16,10 @@ import { Prisma } from "@/generated/prisma/client";
 
 import {
   AnalysisJobNotFoundError,
+  ModelStrategyValidationError,
   createModelStrategyAdminService
 } from "@/server/modules/analysis/services/modelStrategyAdminService";
+import { PipelineStage } from "@/types/pipeline";
 
 function createPrismaMock() {
   // 只构造当前测试路径需要的最小 Prisma 读写面，避免无关 mock 干扰断言。
@@ -40,6 +42,31 @@ function createPrismaMock() {
     book: {
       findFirst: vi.fn()
     }
+  };
+}
+
+const ENABLED_MODEL_ID = "11111111-1111-4111-8111-111111111111";
+
+function createStrategyRow(overrides: Partial<{
+  id       : string;
+  scope    : "GLOBAL" | "BOOK" | "JOB";
+  bookId   : string | null;
+  jobId    : string | null;
+  stages   : Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}> = {}) {
+  const now = new Date("2026-04-03T00:00:00.000Z");
+
+  return {
+    id       : "strategy-1",
+    scope    : "GLOBAL" as const,
+    bookId   : null,
+    jobId    : null,
+    stages   : {},
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
   };
 }
 
@@ -279,5 +306,225 @@ describe("modelStrategyAdminService.saveGlobalStrategy", () => {
       scope : "GLOBAL",
       stages: {}
     });
+  });
+
+  it("rejects strategies that reference disabled or missing models", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.aiModel.findMany.mockResolvedValue([]);
+    const service = createModelStrategyAdminService(prismaMock as never);
+
+    await expect(service.saveGlobalStrategy({
+      [PipelineStage.ROSTER_DISCOVERY]: {
+        modelId: ENABLED_MODEL_ID
+      }
+    })).rejects.toBeInstanceOf(ModelStrategyValidationError);
+  });
+});
+
+describe("modelStrategyAdminService.strategy queries", () => {
+  it("returns null when the global strategy does not exist", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(null);
+    const service = createModelStrategyAdminService(prismaMock as never);
+
+    await expect(service.getGlobalStrategy()).resolves.toBeNull();
+  });
+
+  it("normalizes invalid stage json to an empty dto when reading global strategy", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(createStrategyRow({
+      stages: {
+        [PipelineStage.ROSTER_DISCOVERY]: {
+          modelId: "not-a-uuid"
+        }
+      }
+    }));
+    const service = createModelStrategyAdminService(prismaMock as never);
+
+    await expect(service.getGlobalStrategy()).resolves.toMatchObject({
+      id    : "strategy-1",
+      scope : "GLOBAL",
+      stages: {}
+    });
+  });
+
+  it("throws when reading a book strategy for a missing book", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.book.findFirst.mockResolvedValue(null);
+    const service = createModelStrategyAdminService(prismaMock as never);
+
+    await expect(service.getBookStrategy("missing-book")).rejects.toThrow("Book not found: missing-book");
+  });
+
+  it("returns the book strategy dto when the book exists", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(createStrategyRow({
+      id    : "strategy-book-1",
+      scope : "BOOK",
+      bookId: "book-1",
+      stages: {
+        [PipelineStage.ROSTER_DISCOVERY]: {
+          modelId: ENABLED_MODEL_ID
+        }
+      }
+    }));
+    const service = createModelStrategyAdminService(prismaMock as never);
+
+    await expect(service.getBookStrategy("book-1")).resolves.toMatchObject({
+      id    : "strategy-book-1",
+      scope : "BOOK",
+      bookId: "book-1",
+      stages: {
+        [PipelineStage.ROSTER_DISCOVERY]: {
+          modelId: ENABLED_MODEL_ID
+        }
+      }
+    });
+  });
+});
+
+describe("modelStrategyAdminService.saveBookStrategy", () => {
+  it("creates a new book strategy after validating the book and model ids", async () => {
+    const prismaMock = createPrismaMock();
+    const row = createStrategyRow({
+      id    : "strategy-book-1",
+      scope : "BOOK",
+      bookId: "book-1",
+      stages: {
+        [PipelineStage.ROSTER_DISCOVERY]: {
+          modelId: ENABLED_MODEL_ID
+        }
+      }
+    });
+
+    prismaMock.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prismaMock.aiModel.findMany.mockResolvedValue([{ id: ENABLED_MODEL_ID, name: "DeepSeek V3" }]);
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(null);
+    prismaMock.modelStrategyConfig.create.mockResolvedValue(row);
+
+    const service = createModelStrategyAdminService(prismaMock as never);
+    const result = await service.saveBookStrategy("book-1", {
+      [PipelineStage.ROSTER_DISCOVERY]: {
+        modelId: ENABLED_MODEL_ID
+      }
+    });
+
+    expect(prismaMock.modelStrategyConfig.create).toHaveBeenCalledWith({
+      data: {
+        scope : "BOOK",
+        bookId: "book-1",
+        stages: {
+          [PipelineStage.ROSTER_DISCOVERY]: {
+            modelId: ENABLED_MODEL_ID
+          }
+        }
+      },
+      select: expect.any(Object)
+    });
+    expect(result).toMatchObject({
+      id    : "strategy-book-1",
+      scope : "BOOK",
+      bookId: "book-1"
+    });
+  });
+
+  it("updates an existing book strategy when one already exists", async () => {
+    const prismaMock = createPrismaMock();
+    const existing = createStrategyRow({
+      id    : "strategy-book-1",
+      scope : "BOOK",
+      bookId: "book-1"
+    });
+
+    prismaMock.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(existing);
+    prismaMock.modelStrategyConfig.update.mockResolvedValue(existing);
+
+    const service = createModelStrategyAdminService(prismaMock as never);
+    const result = await service.saveBookStrategy("book-1", {});
+
+    expect(prismaMock.aiModel.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.modelStrategyConfig.update).toHaveBeenCalledWith({
+      where : { id: "strategy-book-1" },
+      data  : { stages: {} },
+      select: expect.any(Object)
+    });
+    expect(result).toMatchObject({
+      id    : "strategy-book-1",
+      scope : "BOOK",
+      bookId: "book-1"
+    });
+  });
+});
+
+describe("modelStrategyAdminService.getJobCostSummary edge cases", () => {
+  it("uses deleted-model placeholders and keeps avgDuration at zero when a stage has no success logs", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.analysisJob.findUnique.mockResolvedValue({ id: "job-edge" });
+    prismaMock.analysisPhaseLog.findMany.mockResolvedValue([
+      {
+        stage           : "CUSTOM_STAGE",
+        chapterId       : null,
+        chunkIndex      : null,
+        status          : "ERROR",
+        isFallback      : false,
+        promptTokens    : null,
+        completionTokens: null,
+        durationMs      : 12,
+        modelId         : null,
+        model           : null
+      },
+      {
+        stage           : "ROSTER_DISCOVERY",
+        chapterId       : null,
+        chunkIndex      : null,
+        status          : "ERROR",
+        isFallback      : false,
+        promptTokens    : 5,
+        completionTokens: 0,
+        durationMs      : 10,
+        modelId         : null,
+        model           : null
+      }
+    ]);
+
+    const service = createModelStrategyAdminService(prismaMock as never);
+    const summary = await service.getJobCostSummary("job-edge");
+
+    expect(summary.totalCalls).toBe(2);
+    expect(summary.failedCalls).toBe(2);
+    expect(summary.byStage).toEqual([
+      {
+        stage           : "ROSTER_DISCOVERY",
+        calls           : 1,
+        promptTokens    : 5,
+        completionTokens: 0,
+        avgDurationMs   : 0,
+        models          : [{
+          modelId         : null,
+          modelName       : "(已删除)",
+          isFallback      : false,
+          calls           : 1,
+          promptTokens    : 5,
+          completionTokens: 0
+        }]
+      },
+      {
+        stage           : "CUSTOM_STAGE",
+        calls           : 1,
+        promptTokens    : 0,
+        completionTokens: 0,
+        avgDurationMs   : 0,
+        models          : [{
+          modelId         : null,
+          modelName       : "(已删除)",
+          isFallback      : false,
+          calls           : 1,
+          promptTokens    : 0,
+          completionTokens: 0
+        }]
+      }
+    ]);
   });
 });

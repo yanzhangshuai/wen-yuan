@@ -113,10 +113,6 @@ function buildProgressStage(index: number, total: number): string {
   return `实体提取（第${index + 1}/${total}章）`;
 }
 
-function buildCompletedStage(done: number, total: number): string {
-  return `实体提取（已完成${done}/${total}章）`;
-}
-
 async function updateBookProgressSafely(
   prismaClient: PrismaClient,
   input: {
