@@ -20,6 +20,7 @@ import { classifyPersonalization, DEFAULT_SOFT_BLOCK_SUFFIXES, HARD_BLOCK_SUFFIX
 
 function createPrismaMock() {
   const personaFindMany = vi.fn();
+  const personaFindUnique = vi.fn().mockResolvedValue(null);
   const personaUpdate = vi.fn().mockResolvedValue({});
   const personaCreate = vi.fn().mockResolvedValue({
     id  : "new-persona-id",
@@ -33,9 +34,10 @@ function createPrismaMock() {
   return {
     prisma: {
       persona: {
-        findMany: personaFindMany,
-        update  : personaUpdate,
-        create  : personaCreate
+        findMany  : personaFindMany,
+        findUnique: personaFindUnique,
+        update    : personaUpdate,
+        create    : personaCreate
       },
       profile: {
         upsert: profileUpsert,
@@ -45,6 +47,7 @@ function createPrismaMock() {
       mention     : { findMany: mentionFindMany }
     } as never,
     personaFindMany,
+    personaFindUnique,
     personaUpdate,
     personaCreate,
     profileUpsert,
@@ -511,8 +514,14 @@ describe("persona resolver", () => {
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves via rosterMap fast-path with high confidence", async () => {
-    const { prisma, personaFindMany, profileUpsert } = createPrismaMock();
+    const { prisma, personaFindMany, personaFindUnique, profileUpsert } = createPrismaMock();
     const resolver = createPersonaResolver(prisma);
+
+    // rosterMap 名义检查需要 persona.findUnique 返回匹配的 persona
+    personaFindUnique.mockResolvedValue({
+      name   : "范进",
+      aliases: ["范举人"]
+    });
 
     const rosterMap = new Map<string, string>([
       ["范举人", "persona-fangjin-uuid"],
@@ -689,5 +698,129 @@ describe("persona resolver", () => {
     expect(gray.reason).toBe("gray_zone");
 
     (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = original;
+  });
+
+  it("boosts surname+title alias to unique same-surname canonical candidate", async () => {
+    // "范举人" = "范" (姓) + "举人" (泛称) → 应与唯一同姓正式人名"范进"合并
+    const {
+      prisma,
+      personaFindMany,
+      personaUpdate,
+      profileUpsert
+    } = createPrismaMock();
+
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-fanjin",
+          name    : "范进",
+          aliases : [],
+          profiles: [{ localName: "范进" }]
+        },
+        {
+          id      : "persona-zhoupuzheng",
+          name    : "周蒲正",
+          aliases : [],
+          profiles: [{ localName: "周蒲正" }]
+        }
+      ]);
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范举人",
+      chapterContent: "范举人今日风光无限。"
+    });
+
+    expect(result.status).toBe("resolved");
+    expect(result.personaId).toBe("persona-fanjin");
+    expect(result.matchedName).toBe("范进");
+    expect(result.confidence).toBeGreaterThanOrEqual(ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore);
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+    expect(personaUpdate).toHaveBeenCalledWith({
+      where: { id: "persona-fanjin" },
+      data : { aliases: { push: "范举人" } }
+    });
+  });
+
+  it("does not boost surname+title when same-surname candidates are ambiguous", async () => {
+    // "贾太太"有两个贾姓候选（贾政、贾赦）→ 不加权，新建 persona
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate,
+      personaUpdate,
+      profileCreate
+    } = createPrismaMock();
+
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-jiazheng",
+          name    : "贾政",
+          aliases : [],
+          profiles: [{ localName: "贾政" }]
+        },
+        {
+          id      : "persona-jiashe",
+          name    : "贾赦",
+          aliases : [],
+          profiles: [{ localName: "贾赦" }]
+        }
+      ]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-jiataitai",
+      name: "贾太太"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "贾太太",
+      chapterContent: "贾太太在堂上落座。"
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-jiataitai");
+    expect(personaUpdate).not.toHaveBeenCalled();
+    expect(profileCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not boost surname+hardBlockSuffix (e.g. 范之父)", async () => {
+    // "范之父" 中"之父"是 hardBlockSuffix → 不应触发 surname+title boost
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate,
+      profileCreate
+    } = createPrismaMock();
+
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-fanjin",
+          name    : "范进",
+          aliases : [],
+          profiles: [{ localName: "范进" }]
+        }
+      ]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-fanzhifu",
+      name: "范之父"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范之父",
+      chapterContent: "范之父在家等候消息。"
+    });
+
+    // 不应合并到"范进"，应新建
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-fanzhifu");
   });
 });

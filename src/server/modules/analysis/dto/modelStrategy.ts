@@ -44,13 +44,15 @@ export const stageModelConfigSchema = z.object({
  * - 每个阶段可选：未配置时由执行层回退默认策略，这是业务规则，不是技术限制。
  */
 export const strategyStagesSchema = z.object({
-  [PipelineStage.ROSTER_DISCOVERY]     : stageModelConfigSchema.optional(),
-  [PipelineStage.CHUNK_EXTRACTION]     : stageModelConfigSchema.optional(),
-  [PipelineStage.CHAPTER_VALIDATION]   : stageModelConfigSchema.optional(),
-  [PipelineStage.TITLE_RESOLUTION]     : stageModelConfigSchema.optional(),
-  [PipelineStage.GRAY_ZONE_ARBITRATION]: stageModelConfigSchema.optional(),
-  [PipelineStage.BOOK_VALIDATION]      : stageModelConfigSchema.optional(),
-  [PipelineStage.FALLBACK]             : stageModelConfigSchema.optional()
+  [PipelineStage.ROSTER_DISCOVERY]       : stageModelConfigSchema.optional(),
+  [PipelineStage.CHUNK_EXTRACTION]       : stageModelConfigSchema.optional(),
+  [PipelineStage.CHAPTER_VALIDATION]     : stageModelConfigSchema.optional(),
+  [PipelineStage.TITLE_RESOLUTION]       : stageModelConfigSchema.optional(),
+  [PipelineStage.GRAY_ZONE_ARBITRATION]  : stageModelConfigSchema.optional(),
+  [PipelineStage.BOOK_VALIDATION]        : stageModelConfigSchema.optional(),
+  [PipelineStage.INDEPENDENT_EXTRACTION] : stageModelConfigSchema.optional(),
+  [PipelineStage.ENTITY_RESOLUTION]      : stageModelConfigSchema.optional(),
+  [PipelineStage.FALLBACK]               : stageModelConfigSchema.optional()
 });
 
 /**

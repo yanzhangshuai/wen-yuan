@@ -41,6 +41,7 @@ export type BookMinAggregateOutputType = {
   title: string | null
   author: string | null
   dynasty: string | null
+  genre: string | null
   description: string | null
   coverUrl: string | null
   sourceFileKey: string | null
@@ -62,6 +63,7 @@ export type BookMaxAggregateOutputType = {
   title: string | null
   author: string | null
   dynasty: string | null
+  genre: string | null
   description: string | null
   coverUrl: string | null
   sourceFileKey: string | null
@@ -83,6 +85,7 @@ export type BookCountAggregateOutputType = {
   title: number
   author: number
   dynasty: number
+  genre: number
   description: number
   coverUrl: number
   sourceFileKey: number
@@ -116,6 +119,7 @@ export type BookMinAggregateInputType = {
   title?: true
   author?: true
   dynasty?: true
+  genre?: true
   description?: true
   coverUrl?: true
   sourceFileKey?: true
@@ -137,6 +141,7 @@ export type BookMaxAggregateInputType = {
   title?: true
   author?: true
   dynasty?: true
+  genre?: true
   description?: true
   coverUrl?: true
   sourceFileKey?: true
@@ -158,6 +163,7 @@ export type BookCountAggregateInputType = {
   title?: true
   author?: true
   dynasty?: true
+  genre?: true
   description?: true
   coverUrl?: true
   sourceFileKey?: true
@@ -266,6 +272,7 @@ export type BookGroupByOutputType = {
   title: string
   author: string | null
   dynasty: string | null
+  genre: string | null
   description: string | null
   coverUrl: string | null
   sourceFileKey: string | null
@@ -310,6 +317,7 @@ export type BookWhereInput = {
   title?: Prisma.StringFilter<"Book"> | string
   author?: Prisma.StringNullableFilter<"Book"> | string | null
   dynasty?: Prisma.StringNullableFilter<"Book"> | string | null
+  genre?: Prisma.StringNullableFilter<"Book"> | string | null
   description?: Prisma.StringNullableFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
   sourceFileKey?: Prisma.StringNullableFilter<"Book"> | string | null
@@ -338,6 +346,7 @@ export type BookOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   author?: Prisma.SortOrderInput | Prisma.SortOrder
   dynasty?: Prisma.SortOrderInput | Prisma.SortOrder
+  genre?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceFileKey?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -369,6 +378,7 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"Book"> | string
   author?: Prisma.StringNullableFilter<"Book"> | string | null
   dynasty?: Prisma.StringNullableFilter<"Book"> | string | null
+  genre?: Prisma.StringNullableFilter<"Book"> | string | null
   description?: Prisma.StringNullableFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
   sourceFileKey?: Prisma.StringNullableFilter<"Book"> | string | null
@@ -397,6 +407,7 @@ export type BookOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   author?: Prisma.SortOrderInput | Prisma.SortOrder
   dynasty?: Prisma.SortOrderInput | Prisma.SortOrder
+  genre?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceFileKey?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -426,6 +437,7 @@ export type BookScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"Book"> | string
   author?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   dynasty?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  genre?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   coverUrl?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   sourceFileKey?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
@@ -447,6 +459,7 @@ export type BookCreateInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -475,6 +488,7 @@ export type BookUncheckedCreateInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -503,6 +517,7 @@ export type BookUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -531,6 +546,7 @@ export type BookUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -559,6 +575,7 @@ export type BookCreateManyInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -580,6 +597,7 @@ export type BookUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -601,6 +619,7 @@ export type BookUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -622,6 +641,7 @@ export type BookCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   author?: Prisma.SortOrder
   dynasty?: Prisma.SortOrder
+  genre?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
   sourceFileKey?: Prisma.SortOrder
@@ -648,6 +668,7 @@ export type BookMaxOrderByAggregateInput = {
   title?: Prisma.SortOrder
   author?: Prisma.SortOrder
   dynasty?: Prisma.SortOrder
+  genre?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
   sourceFileKey?: Prisma.SortOrder
@@ -669,6 +690,7 @@ export type BookMinOrderByAggregateInput = {
   title?: Prisma.SortOrder
   author?: Prisma.SortOrder
   dynasty?: Prisma.SortOrder
+  genre?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
   sourceFileKey?: Prisma.SortOrder
@@ -821,6 +843,7 @@ export type BookCreateWithoutChaptersInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -848,6 +871,7 @@ export type BookUncheckedCreateWithoutChaptersInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -891,6 +915,7 @@ export type BookUpdateWithoutChaptersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -918,6 +943,7 @@ export type BookUncheckedUpdateWithoutChaptersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -945,6 +971,7 @@ export type BookCreateWithoutProfilesInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -972,6 +999,7 @@ export type BookUncheckedCreateWithoutProfilesInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1015,6 +1043,7 @@ export type BookUpdateWithoutProfilesInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1042,6 +1071,7 @@ export type BookUncheckedUpdateWithoutProfilesInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1069,6 +1099,7 @@ export type BookCreateWithoutAnalysisJobsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1096,6 +1127,7 @@ export type BookUncheckedCreateWithoutAnalysisJobsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1139,6 +1171,7 @@ export type BookUpdateWithoutAnalysisJobsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1166,6 +1199,7 @@ export type BookUncheckedUpdateWithoutAnalysisJobsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1193,6 +1227,7 @@ export type BookCreateWithoutModelStrategiesInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1220,6 +1255,7 @@ export type BookUncheckedCreateWithoutModelStrategiesInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1263,6 +1299,7 @@ export type BookUpdateWithoutModelStrategiesInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1290,6 +1327,7 @@ export type BookUncheckedUpdateWithoutModelStrategiesInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1317,6 +1355,7 @@ export type BookCreateWithoutAliasMappingsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1344,6 +1383,7 @@ export type BookUncheckedCreateWithoutAliasMappingsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1387,6 +1427,7 @@ export type BookUpdateWithoutAliasMappingsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1414,6 +1455,7 @@ export type BookUncheckedUpdateWithoutAliasMappingsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1441,6 +1483,7 @@ export type BookCreateWithoutValidationReportsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1468,6 +1511,7 @@ export type BookUncheckedCreateWithoutValidationReportsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1511,6 +1555,7 @@ export type BookUpdateWithoutValidationReportsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1538,6 +1583,7 @@ export type BookUncheckedUpdateWithoutValidationReportsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1565,6 +1611,7 @@ export type BookCreateWithoutMergeSuggestionsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1592,6 +1639,7 @@ export type BookUncheckedCreateWithoutMergeSuggestionsInput = {
   title: string
   author?: string | null
   dynasty?: string | null
+  genre?: string | null
   description?: string | null
   coverUrl?: string | null
   sourceFileKey?: string | null
@@ -1635,6 +1683,7 @@ export type BookUpdateWithoutMergeSuggestionsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1662,6 +1711,7 @@ export type BookUncheckedUpdateWithoutMergeSuggestionsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  genre?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1774,6 +1824,7 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   title?: boolean
   author?: boolean
   dynasty?: boolean
+  genre?: boolean
   description?: boolean
   coverUrl?: boolean
   sourceFileKey?: boolean
@@ -1803,6 +1854,7 @@ export type BookSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   title?: boolean
   author?: boolean
   dynasty?: boolean
+  genre?: boolean
   description?: boolean
   coverUrl?: boolean
   sourceFileKey?: boolean
@@ -1824,6 +1876,7 @@ export type BookSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   title?: boolean
   author?: boolean
   dynasty?: boolean
+  genre?: boolean
   description?: boolean
   coverUrl?: boolean
   sourceFileKey?: boolean
@@ -1845,6 +1898,7 @@ export type BookSelectScalar = {
   title?: boolean
   author?: boolean
   dynasty?: boolean
+  genre?: boolean
   description?: boolean
   coverUrl?: boolean
   sourceFileKey?: boolean
@@ -1861,7 +1915,7 @@ export type BookSelectScalar = {
   updatedAt?: boolean
 }
 
-export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "description" | "coverUrl" | "sourceFileKey" | "sourceFileUrl" | "sourceFileName" | "sourceFileMime" | "sourceFileSize" | "deletedAt" | "status" | "errorLog" | "parseProgress" | "parseStage" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
+export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "genre" | "description" | "coverUrl" | "sourceFileKey" | "sourceFileUrl" | "sourceFileName" | "sourceFileMime" | "sourceFileSize" | "deletedAt" | "status" | "errorLog" | "parseProgress" | "parseStage" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
 export type BookInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
   profiles?: boolean | Prisma.Book$profilesArgs<ExtArgs>
@@ -1891,6 +1945,7 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     title: string
     author: string | null
     dynasty: string | null
+    genre: string | null
     description: string | null
     coverUrl: string | null
     sourceFileKey: string | null
@@ -2339,6 +2394,7 @@ export interface BookFieldRefs {
   readonly title: Prisma.FieldRef<"Book", 'String'>
   readonly author: Prisma.FieldRef<"Book", 'String'>
   readonly dynasty: Prisma.FieldRef<"Book", 'String'>
+  readonly genre: Prisma.FieldRef<"Book", 'String'>
   readonly description: Prisma.FieldRef<"Book", 'String'>
   readonly coverUrl: Prisma.FieldRef<"Book", 'String'>
   readonly sourceFileKey: Prisma.FieldRef<"Book", 'String'>

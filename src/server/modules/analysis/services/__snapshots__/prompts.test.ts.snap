@@ -24,33 +24,10 @@ exports[`buildBookValidationPrompt > builds book validation prompt with determin
 ## 抽样原文证据
 - 第1章「第一回」(代表性样本)：范进见中举，众人态度大变。
 
-## 输出格式（仅输出 JSON，不加任何说明）
-{
-  "issues": [
-    {
-      "type": "DUPLICATE_PERSONA",
-      "severity": "WARNING",
-      "confidence": 0.9,
-      "description": "同一人物可能存在重复记录",
-      "evidence": "全书别名与关系指向高度重叠",
-      "affectedPersonaIds": [
-        "persona-id-1",
-        "persona-id-2"
-      ],
-      "suggestion": {
-        "action": "MERGE",
-        "targetPersonaId": "persona-id-1",
-        "sourcePersonaId": "persona-id-2",
-        "reason": "建议合并重复实体"
-      }
-    }
-  ]
-}
-
-## 重要提醒
-- 若无问题返回 {"issues": []}
-- confidence < 0.6 的问题不要输出
-- 只输出有明确证据的问题",
+## 输出格式（仅输出 JSON）
+{"issues":[{"type":"DUPLICATE_PERSONA","severity":"WARNING","confidence":0.9,"description":"描述","evidence":"证据","affectedPersonaIds":["id1","id2"],"suggestion":{"action":"MERGE","targetPersonaId":"id1","sourcePersonaId":"id2","reason":"理由"}}]}
+type: DUPLICATE_PERSONA|ALIAS_AS_NEW_PERSONA|WRONG_MERGE|MISSING_NAME_MAPPING|INVALID_RELATIONSHIP
+无问题返回{"issues":[]}。confidence<0.6不输出。仅输出有明确证据的问题。",
 }
 `;
 
@@ -89,95 +66,37 @@ exports[`buildChapterValidationPrompt > builds chapter validation prompt with de
 ## 原文片段（重点段落）
 范进与周学道在文会上再会。
 
-## 输出格式（仅输出 JSON，不加任何说明或 Markdown 代码块）
-{
-  "issues": [
-    {
-      "type": "ALIAS_AS_NEW_PERSONA | WRONG_MERGE | MISSING_NAME_MAPPING | INVALID_RELATIONSHIP | SAME_NAME_DIFFERENT_PERSON | DUPLICATE_PERSONA",
-      "severity": "ERROR | WARNING | INFO",
-      "confidence": 0.85,
-      "description": "问题的具体描述",
-      "evidence": "原文证据或数据矛盾点",
-      "affectedPersonaIds": [
-        "persona-id-1"
-      ],
-      "suggestion": {
-        "action": "MERGE | SPLIT | UPDATE_NAME | ADD_ALIAS | DELETE | ADD_MAPPING | MANUAL_REVIEW",
-        "targetPersonaId": "target-id (如适用)",
-        "sourcePersonaId": "source-id (如适用)",
-        "newName": "建议的新名称 (如适用)",
-        "newAlias": "建议添加的别名 (如适用)",
-        "reason": "修正理由"
-      }
-    }
-  ]
-}
-
-## 重要提醒
-- 如果检查结果没有发现任何问题，返回 {"issues": []}
-- confidence < 0.6 的问题不要报告
-- 每个问题的 evidence 必须来自原文或上述数据，不可编造",
+## 输出格式（仅输出 JSON）
+{"issues":[{"type":"ALIAS_AS_NEW_PERSONA","severity":"ERROR","confidence":0.85,"description":"描述","evidence":"证据","affectedPersonaIds":["id"],"suggestion":{"action":"MERGE","targetPersonaId":"id","sourcePersonaId":"id","newName":"名","newAlias":"别名","reason":"理由"}}]}
+type: ALIAS_AS_NEW_PERSONA|WRONG_MERGE|MISSING_NAME_MAPPING|INVALID_RELATIONSHIP|SAME_NAME_DIFFERENT_PERSON|DUPLICATE_PERSONA
+severity: ERROR|WARNING|INFO; action: MERGE|SPLIT|UPDATE_NAME|ADD_ALIAS|DELETE|ADD_MAPPING|MANUAL_REVIEW
+无问题返回{"issues":[]}。confidence<0.6不报告。evidence必须来自原文，不可编造。",
 }
 `;
 
 exports[`buildRosterDiscoveryPrompt > includes alias annotation rules and keeps output stable 1`] = `
 {
-  "system": "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。",
+  "system": "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。重点：同一人物的不同称呼（姓名、字、号、官衔、亲属称呼）都应映射到同一 entityId。",
   "user": "## 任务
-阅读《儒林外史》第 1 章「说楔子敷陈大义 借名流隐括全文」的完整正文。
-建立**本章人物名册**：枚举本章原文中所有明确出现的人物称谓（姓名、官衔称呼、亲属称呼等）。
+枚举《儒林外史》第1章「说楔子敷陈大义 借名流隐括全文」原文中所有人物称谓（姓名、官衔、亲属称呼等）。
 
-## 已知人物档案（Known Entities）
-[1] 范进 | 别名: 范老爷, 范相公 | 小传: 晚年中举
+## 已知人物档案
+[1] 范进|范老爷,范相公
 
-## 输出规则
-1. 每个条目的 **surfaceForm** 必须是原文精确字符串，不得修改或翻译
-2. 若 surfaceForm 对应已知人物 → 填入该人物的档案序号（entityId，如 1、2、3）
-3. 若 surfaceForm 确认为本书**全新故事人物** → 填 "isNew": true
-4. 若 surfaceForm 是**泛化称谓**（如 按察司、把总、彼、布政司、参将、此人、大家、弟弟、都司、尔、夫人、父亲、公子、管家、家丁、姐姐、进士、举人、来人、老父、老管家、老母、老娘、老太太、老学究、老爷、妹妹、门房、门子、某人等，无法唯一指向某人）→ 填 "generic": true
-5. 相同称谓只输出**一次**（去重）
-6. **不要**凭想象补充原文中未出现的人物
-7. **只列举书中的叙事故事人物（虚构角色）**，严格排除以下类型：
-   - 本书作者（如吴敬梓）、整理者、评注者、推荐序作者（如惺园退士）
-   - 在序言、题跋、附录中出现的真实历史人物（非故事角色）
-   - 现代文学批评家、学者（如鲁迅等）
-8. 单独出现的姓氏（如"顾"、"夏"、"荀"等单字），若无法确认是独立人物，标记为 generic
-9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），且原文无法直接得知其真实姓名：若该称号可对应已知人物档案 → 填 entityId 并标记 "isTitleOnly": true；若确认为全新未知人物 → 填 "isNew": true 并标记 "isTitleOnly": true
-10. 若 surfaceForm 是别名/称号/封号/职位称呼类型，额外标注:
-    - "aliasType": "TITLE"(封号/尊号) | "POSITION"(职位称呼) | "KINSHIP"(亲属代称) | "NICKNAME"(绰号) | "COURTESY_NAME"(字号)
-    - "contextHint": 简述该称呼在本章上下文中的线索（≤100字），包括共现人物、相关事件
-    - "suggestedRealName": 如果上下文能推断出对应的真实人名，填写；否则省略
-    - "aliasConfidence": 对 suggestedRealName 的确信度（0-1）
+## 规则
+1. 原文中的文字必须精确引用（surfaceForm/rawText），禁止编造或改写。
+2. 优先匹配已知人物档案中的标准名(canonicalName)；仅确认全新人物时才创建新 personaName。
+3. 泛化称谓（按察司、把总、彼、布政司、参将、此人、大家、弟弟、都司、尔、夫人、父亲、公子、管家、家丁、姐姐、进士、举人、来人、老父、老管家、老母、老娘、老太太、老学究、老爷、妹妹、门房、门子、某人等）禁止作为独立人物名。单独姓氏无法确认具体人物时标记为 generic。
+4. 仅提取虚构角色，排除作者、评注者、真实历史人物、批评家。
+5. personaName 使用规范人名，禁止附加"大人""老爷"等泛称后缀。
+6. 已知别名须映射回标准名（如"范举人"→ 范进），不得重复创建。
+7. 不确定时宁可忽略，避免误建幻觉人物。
+8. 同一人物在同一片段中的多种称呼（姓名、官衔、别号）都应识别并映射到同一实体。
+9. 尊号/帝号/封号：可对应已知人物→填entityId+isTitleOnly:true；新人物→isNew+isTitleOnly:true。
+10. 别名/称号/职位类型额外标注: aliasType(TITLE|POSITION|KINSHIP|NICKNAME|COURTESY_NAME), contextHint(≤100字), suggestedRealName, aliasConfidence(0-1)。
 
-## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）
-[
-  {
-    "surfaceForm": "范举人",
-    "entityId": 1
-  },
-  {
-    "surfaceForm": "范老爷",
-    "entityId": 1,
-    "aliasType": "NICKNAME"
-  },
-  {
-    "surfaceForm": "严监生",
-    "isNew": true
-  },
-  {
-    "surfaceForm": "太祖皇帝",
-    "isNew": true,
-    "isTitleOnly": true,
-    "aliasType": "TITLE",
-    "contextHint": "文中提及明朝开国，与朱元璋事迹吻合",
-    "suggestedRealName": "朱元璋",
-    "aliasConfidence": 0.9
-  },
-  {
-    "surfaceForm": "那老者",
-    "generic": true
-  }
-]
+## 输出格式（仅输出 JSON 数组）
+[{"surfaceForm":"范举人","entityId":1},{"surfaceForm":"范老爷","entityId":1,"aliasType":"NICKNAME"},{"surfaceForm":"严监生","isNew":true},{"surfaceForm":"太祖皇帝","isNew":true,"isTitleOnly":true,"aliasType":"TITLE","contextHint":"明朝开国","suggestedRealName":"朱元璋","aliasConfidence":0.9},{"surfaceForm":"那老者","generic":true}]
 
 ## 本章正文
 范进见中举，众人态度大变。",

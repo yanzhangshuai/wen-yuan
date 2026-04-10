@@ -78,6 +78,7 @@ const createBookFormSchema = z.object({
   title      : optionalTextField,
   author     : optionalTextField,
   dynasty    : optionalTextField,
+  genre      : optionalTextField,
   description: optionalLongTextField,
   file       : z.instanceof(File)
     .refine((file) => file.size > 0, "请上传书籍文件")
@@ -136,6 +137,7 @@ export async function POST(request: Request): Promise<Response> {
       title      : formData.get("title"),
       author     : formData.get("author"),
       dynasty    : formData.get("dynasty"),
+      genre      : formData.get("genre"),
       description: formData.get("description"),
       file       : formData.get("file")
     });
@@ -150,6 +152,7 @@ export async function POST(request: Request): Promise<Response> {
       title      : parsedResult.data.title,
       author     : parsedResult.data.author,
       dynasty    : parsedResult.data.dynasty,
+      genre      : parsedResult.data.genre,
       description: parsedResult.data.description,
       fileName   : parsedResult.data.file.name,
       fileMime   : parsedResult.data.file.type,

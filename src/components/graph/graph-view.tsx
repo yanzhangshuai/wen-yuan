@@ -22,8 +22,63 @@ import {
   TextReaderPanel,
   GraphContextMenu
 } from "@/components/graph";
+import { GraphPageHeader } from "@/components/graph/graph-page-header";
+import { GraphLegend } from "@/components/graph/graph-legend";
+import { getEdgeTypeColorsForTheme } from "@/theme";
 import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
 import { toast } from "sonner";
+
+/* -----------------------------------------------------------------------
+   关系类型归一化
+   将数据中任意粒度的原始关系类型映射到 5 个语义分组，
+   保证图例始终只显示 5 种含义清晰、颜色强区分的条目。
+   
+   分组顺序与 theme edgeTypeColors[0..4] 一一对应：
+     0 → 亲属  1 → 友好  2 → 对立  3 → 从属  4 → 其他（兜底）
+----------------------------------------------------------------------- */
+const RELATION_GROUP_RULES: Array<{
+  label : string;
+  idx   : 0 | 1 | 2 | 3;
+  keywords: readonly string[];
+}> = [
+  {
+    label   : "亲属",
+    idx     : 0,
+    keywords: ["夫妻", "父子", "母子", "兄弟", "姐妹", "姻亲", "亲属", "亲戚", "家族", "父女", "母女", "子女", "婚", "兄", "弟", "姊", "妹"]
+  },
+  {
+    label   : "友好",
+    idx     : 1,
+    keywords: ["朋友", "知己", "盟友", "旧识", "同窗", "友谊", "友好", "情谊"]
+  },
+  {
+    label   : "对立",
+    idx     : 2,
+    keywords: ["敌对", "竞争", "对立", "冲突", "仇敌", "宿敌", "敌"]
+  },
+  {
+    label   : "从属",
+    idx     : 3,
+    keywords: ["师徒", "主仆", "君臣", "雇佣", "资助", "教导", "门客", "属下", "侍"]
+  }
+];
+const CANONICAL_GROUPS: Array<{ label: string; idx: number }> = [
+  ...RELATION_GROUP_RULES.map(g => ({ label: g.label, idx: g.idx })),
+  { label: "其他", idx: 4 }
+];
+
+/**
+ * 将原始关系类型字符串映射到分组索引（0~4）。
+ * 匹配策略：遍历各组关键词，命中即返回；均未命中则返回 4（其他）。
+ */
+function normalizeRelationIdx(rawType: string): number {
+  for (const rule of RELATION_GROUP_RULES) {
+    if (rule.keywords.some(kw => rawType.includes(kw))) {
+      return rule.idx;
+    }
+  }
+  return 4;
+}
 
 /**
  * =============================================================================
@@ -149,8 +204,17 @@ export interface GraphViewProps {
   initialSnapshot: GraphSnapshot;
   /** 该书总章节数，用于时间轴边界。 */
   totalChapters  : number;
-  /** 章节单位文案，默认“回”。 */
+  /** 章节单位文案，默认"回"。 */
   chapterUnit?   : string;
+  /** 书籍标题，用于图谱专属头部展示。 */
+  bookTitle      : string;
+  /** 书籍作者，用于图谱头部副标题。 */
+  bookAuthor?    : string;
+  /**
+   * 书籍已解析的人物总数。
+   * 与 snapshot 节点数不同：snapshot 可能按章节切片，这里反映全书总人物规模。
+   */
+  personaCount?  : number;
 }
 
 /* ------------------------------------------------
@@ -160,7 +224,10 @@ export function GraphView({
   bookId,
   initialSnapshot,
   totalChapters,
-  chapterUnit = "回"
+  chapterUnit = "回",
+  bookTitle,
+  bookAuthor,
+  personaCount
 }: GraphViewProps) {
   // 来自 next-themes：resolvedTheme 可能是 "light" | "dark" | undefined（首次水合前）
   // 这里不自行兜底，让 ForceGraph 内部基于 CSS 变量稳定渲染。
@@ -217,6 +284,33 @@ export function GraphView({
     () => [...new Set(snapshot.edges.map(e => e.type))],
     [snapshot.edges]
   );
+
+  /**
+   * 关系类型到主题颜色的映射表。
+   * 按出现顺序从当前主题的 edgeTypeColors 调色板中依次分配颜色，循环使用。
+   * 随 snapshot.edges 或主题变更而重算，保证颜色与图谱内容同步。
+   */
+  const edgeTypeColorMap = useMemo<ReadonlyMap<string, string>>(() => {
+    const palette = getEdgeTypeColorsForTheme(resolvedTheme);
+    const types = [...new Set(snapshot.edges.map(e => e.type))];
+    // 将每种原始类型归到 5 个分组之一，取对应颜色；不再循环，避免不同类型同色。
+    return new Map(types.map(type => [type, palette[normalizeRelationIdx(type)] ?? palette[0]]));
+  }, [snapshot.edges, resolvedTheme]);
+
+  /**
+   * 图例专用映射：只显示 5 个语义分组（当前快照中实际出现的那些）。
+   * 键为语义分组标签，值为对应颜色，与 edgeTypeColorMap 保持一致调色板。
+   */
+  const legendColorMap = useMemo<ReadonlyMap<string, string>>(() => {
+    const palette = getEdgeTypeColorsForTheme(resolvedTheme);
+    // 计算快照中实际出现了哪些分组
+    const presentIdxs = new Set(snapshot.edges.map(e => normalizeRelationIdx(e.type)));
+    return new Map(
+      CANONICAL_GROUPS
+        .filter(g => presentIdxs.has(g.idx))
+        .map(g => [g.label, palette[g.idx] ?? palette[0]])
+    );
+  }, [snapshot.edges, resolvedTheme]);
 
   /**
    * 按章节号刷新图谱快照。
@@ -543,65 +637,83 @@ export function GraphView({
   }, [bookId]);
 
   return (
-    <div className="graph-view-container relative h-full w-full overflow-hidden">
-      {/* 切章节时的局部加载遮罩：避免误触并提示数据正在刷新。 */}
-      {loading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-(--color-graph-bg)/50">
-          <div className="rounded-lg bg-card px-4 py-2 text-sm text-foreground shadow-lg">
-            加载中...
+    <div className="graph-view-container flex h-full w-full flex-col overflow-hidden">
+      {/* 图谱专属顶部信息头：展示书籍名称、作者、节点数、关系数与章节进度。 */}
+      <GraphPageHeader
+        bookTitle={bookTitle}
+        bookAuthor={bookAuthor}
+        characterCount={personaCount}
+        nodeCount={snapshot.nodes.length}
+        edgeCount={snapshot.edges.length}
+        currentChapter={currentChapter}
+        totalChapters={totalChapters}
+        chapterUnit={chapterUnit}
+      />
+
+      {/* 图谱画布区域：相对定位容器，承载所有绝对定位的子组件。 */}
+      <div className="relative flex-1 overflow-hidden">
+        {/* 切章节时的局部加载遮罩：避免误触并提示数据正在刷新。 */}
+        {loading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-(--color-graph-bg)/50">
+            <div className="rounded-lg bg-card px-4 py-2 text-sm text-foreground shadow-lg">
+              加载中...
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 图谱主画布：节点/边渲染与核心交互事件都由该组件承接。 */}
-      <ForceGraph
-        snapshot={snapshot}
-        theme={resolvedTheme}
-        chapterCap={currentChapter}
-        filter={filter}
-        layoutMode={layoutMode}
-        focusedNodeId={focusedNodeId}
-        activeNodeId={selectedPersona?.id ?? null}
-        onNodeClick={handleNodeClick}
-        onNodeDoubleClick={handleNodeDoubleClick}
-        onNodeRightClick={handleNodeRightClick}
-        onEdgeHover={setHoveredEdge}
-        onBackgroundClick={handleBackgroundClick}
-        highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
-        highlightPathEdgeIds={highlightPathEdgeIds.size > 0 ? highlightPathEdgeIds : undefined}
-        pathAutoFitVersion={pathAutoFitVersion}
-        onNodeDragEnd={handleNodeDragEnd}
-      />
+        {/* 图谱主画布：节点/边渲染与核心交互事件都由该组件承接。 */}
+        <ForceGraph
+          snapshot={snapshot}
+          theme={resolvedTheme}
+          chapterCap={currentChapter}
+          filter={filter}
+          layoutMode={layoutMode}
+          focusedNodeId={focusedNodeId}
+          activeNodeId={selectedPersona?.id ?? null}
+          onNodeClick={handleNodeClick}
+          onNodeDoubleClick={handleNodeDoubleClick}
+          onNodeRightClick={handleNodeRightClick}
+          onEdgeHover={setHoveredEdge}
+          onBackgroundClick={handleBackgroundClick}
+          highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
+          highlightPathEdgeIds={highlightPathEdgeIds.size > 0 ? highlightPathEdgeIds : undefined}
+          pathAutoFitVersion={pathAutoFitVersion}
+          onNodeDragEnd={handleNodeDragEnd}
+          edgeTypeColorMap={edgeTypeColorMap}
+        />
 
-      {/* 左侧工具栏：筛选、搜索、路径查找、布局切换、导出、全屏。 */}
-      <GraphToolbar
-        filter={filter}
-        onFilterChange={setFilter}
-        layoutMode={layoutMode}
-        onLayoutChange={setLayoutMode}
-        onPathFind={handlePathFind}
-        onExport={handleExport}
-        onFullscreen={handleFullscreen}
-        availableRelationTypes={availableRelationTypes}
-      />
+        {/* 左侧工具栏：筛选、搜索、路径查找、布局切换、导出、全屏。 */}
+        <GraphToolbar
+          filter={filter}
+          onFilterChange={setFilter}
+          layoutMode={layoutMode}
+          onLayoutChange={setLayoutMode}
+          onPathFind={handlePathFind}
+          onExport={handleExport}
+          onFullscreen={handleFullscreen}
+          availableRelationTypes={availableRelationTypes}
+        />
 
-      {/* 边悬停提示：显示关系类型与权重。悬浮提示设置 pointer-events-none，避免挡住画布事件。 */}
-      {hoveredEdge && (
-        <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-md bg-card px-3 py-1.5 text-xs shadow-md"
-          style={{ borderColor: "var(--color-border)", borderWidth: 1 }}
-        >
-          <span className="text-foreground">{hoveredEdge.type}</span>
-          <span className="ml-2 text-muted-foreground">
-            权重 {hoveredEdge.weight}
-          </span>
-        </div>
-      )}
+        {/* 左下角关系类型图例：直观展示 5 种语义分组与对应颜色。 */}
+        <GraphLegend edgeTypeColorMap={legendColorMap} />
 
-      {/* 底部章节时间轴：控制图谱时间切片。只有章节数 > 1 才展示，避免无意义控件。 */}
-      {totalChapters > 1 && (
-        <ChapterTimeline
-          totalChapters={totalChapters}
-          currentChapter={currentChapter}
+        {/* 边悬停提示：显示关系类型与权重。悬浮提示设置 pointer-events-none，避免挡住画布事件。 */}
+        {hoveredEdge && (
+          <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-md bg-card px-3 py-1.5 text-xs shadow-md"
+            style={{ borderColor: "var(--color-border)", borderWidth: 1 }}
+          >
+            <span className="text-foreground">{hoveredEdge.type}</span>
+            <span className="ml-2 text-muted-foreground">
+              权重 {hoveredEdge.weight}
+            </span>
+          </div>
+        )}
+
+        {/* 底部章节时间轴：控制图谱时间切片。只有章节数 > 1 才展示，避免无意义控件。 */}
+        {totalChapters > 1 && (
+          <ChapterTimeline
+            totalChapters={totalChapters}
+            currentChapter={currentChapter}
           onChapterChange={handleChapterChange}
           chapterUnit={chapterUnit}
         />
@@ -674,6 +786,7 @@ export function GraphView({
           </Suspense>
         </AsyncErrorBoundary>
       )}
+      </div>
     </div>
   );
 }

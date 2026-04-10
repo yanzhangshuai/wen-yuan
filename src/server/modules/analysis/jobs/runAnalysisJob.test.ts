@@ -696,7 +696,8 @@ describe("analysis job runner", () => {
       chapterFindMany,
       validateChapterResult,
       chapterUpdate,
-      analysisJobUpdate
+      analysisJobUpdate,
+      analyzeChapter
     } = createRunnerContext({ withValidation: true });
 
     analysisJobFindUnique
@@ -720,6 +721,13 @@ describe("analysis job runner", () => {
       })
       .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
     chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    // 模拟高风险章节（新建 persona >= 风险阈值），确保触发 CHAPTER_VALIDATION。
+    analyzeChapter.mockResolvedValueOnce({
+      chapterId         : "chapter-1",
+      chunkCount        : 1,
+      hallucinationCount: 0,
+      created           : { personas: 5, mentions: 3, biographies: 2, relationships: 1 }
+    });
     validateChapterResult.mockResolvedValueOnce({
       id     : "chapter-r-1",
       issues : [{ id: "i1" }],

@@ -155,6 +155,7 @@ export default function AdminImportPage() {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [dynasty, setDynasty] = useState("");
+  const [genre, setGenre] = useState("");
   const [description, setDescription] = useState("");
 
   // Step 2：章节预览与确认所需状态
@@ -318,6 +319,7 @@ export default function AdminImportPage() {
       if (title) formData.set("title", title);
       if (author) formData.set("author", author);
       if (dynasty) formData.set("dynasty", dynasty);
+      if (genre) formData.set("genre", genre);
       if (description) formData.set("description", description);
 
       const data = await createBook(formData);
@@ -580,6 +582,25 @@ export default function AdminImportPage() {
                 <div className="space-y-2">
                   <label htmlFor="dynasty" className="text-sm font-medium">朝代</label>
                   <Input id="dynasty" value={dynasty} onChange={e => setDynasty(e.target.value)} placeholder="例如：清代" />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="genre" className="text-sm font-medium">体裁</label>
+                  <select
+                    id="genre"
+                    className="w-full h-10 rounded-md border border-border bg-transparent px-3 text-sm"
+                    value={genre}
+                    onChange={e => setGenre(e.target.value)}
+                  >
+                    <option value="">自动（可选）</option>
+                    <option value="明清官场">明清官场</option>
+                    <option value="武侠">武侠</option>
+                    <option value="宫廷家族">宫廷家族</option>
+                    <option value="英雄传奇">英雄传奇</option>
+                    <option value="历史演义">历史演义</option>
+                    <option value="家族世情">家族世情</option>
+                    <option value="神魔小说">神魔小说</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">

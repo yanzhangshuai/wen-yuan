@@ -48,9 +48,9 @@ describe("buildChapterAnalysisPrompt", () => {
     });
 
     expect(prompt.system).toContain("结构化提取专家");
-    expect(prompt.user).toContain("## Known Entities (Context)");
-    expect(prompt.user).toContain("[1] 范进 | 别名: 范老爷, 范相公 | 小传: 晚年中举");
-    expect(prompt.user).toContain("第 1/3 段");
+    expect(prompt.user).toContain("## Known Entities");
+    expect(prompt.user).toContain("[1] 范进|范老爷,范相公");
+    expect(prompt.user).toContain(`${baseInput.chunkIndex + 1}/${baseInput.chunkCount}`);
     expect(prompt.user).toContain("范进见中举，众人态度大变。");
   });
 
@@ -74,7 +74,7 @@ describe("buildChapterAnalysisPrompt", () => {
 
     // Act
     // 从规则行提取示例串，验证“>=30”的文档约束是否真正写入 prompt 文本。
-    const match = prompt.user.match(/GENERIC TITLES:\s*(.+?)无法唯一指向具体人物/);
+    const match = prompt.user.match(/泛化称谓[\(（](.+?)[）\)]禁止/);
     const titles = (match?.[1] ?? "")
       .replace(/等$/, "")
       .split("、")

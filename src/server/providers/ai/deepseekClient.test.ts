@@ -76,7 +76,9 @@ describe("DeepSeekClient", () => {
       usage  : {
         promptTokens    : 64,
         completionTokens: 18,
-        totalTokens     : 82
+        totalTokens     : 82,
+        cacheHitTokens  : null,
+        cacheMissTokens : null
       }
     });
   });

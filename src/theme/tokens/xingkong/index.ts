@@ -7,8 +7,19 @@
  * - 视觉上服务夜色/科幻语境，同时保持不同派系可区分性。
  */
 export const xingkong = {
-  id           : "xingkong" as const,
-  label        : "星空",
+  id            : "xingkong" as const,
+  label         : "星空",
+  /**
+   * 关系类型颜色盘：5 个语义分组，一一对应。
+   * 索引语义：[0]亲属 [1]友好 [2]对立 [3]从属 [4]其他
+   */
+  edgeTypeColors: [
+    "#C45858", // 星火红（亲属，色相 ~3°）
+    "#4A9AC8", // 星蓝（友好，色相 ~200°）
+    "#C0904A", // 金星橙（对立，色相 ~35°）
+    "#5AAE7A", // 星绿（从属，色相 ~145°）
+    "#8A7ABE"  // 星紫（其他，色相 ~270°）
+  ] as readonly string[],
   factionColors: [
     "#7B90AF", // 星辉银蓝（主角）
     "#5AA5BE", // 冷青蓝（盟友）

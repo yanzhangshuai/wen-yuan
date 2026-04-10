@@ -164,6 +164,12 @@ export interface ForceGraphProps {
    * 接收当前所有可见节点的最新坐标，调用方负责防抖后保存到后端。
    */
   onNodeDragEnd?       : (positions: Array<{ id: string; x: number; y: number }>) => void;
+  /**
+   * 关系类型到颜色的映射表（由 GraphView 计算并传入）。
+   * key = 边的 `type` 字段；value = 对应主题颜色字符串。
+   * 未传入时退化到原有情感极性着色逻辑，保持向后兼容。
+   */
+  edgeTypeColorMap?    : ReadonlyMap<string, string>;
 }
 
 /* ------------------------------------------------
@@ -207,10 +213,22 @@ function nodePath(type: string, r: number): string {
 }
 
 /**
- * 关系情感到边颜色的映射。
- * 业务价值：帮助审阅者快速分辨正负关系氛围。
+ * 关系类型优先的边颜色解析。
+ * 优先从 `edgeTypeColorMap` 按关系类型查找；类型未命中时按情感极性兜底，
+ * 确保新类型出现时不会显示无样式边，也不破坏已定义类型的视觉一致性。
+ *
+ * @param type         - 边的关系类型字符串（如"父子"、"君臣"）
+ * @param sentiment    - 边的情感极性（positive/negative/neutral）
+ * @param typeColorMap - 类型到颜色的映射表（来自 ForceGraph prop，随主题变化）
  */
-function edgeColor(sentiment: string): string {
+function resolveEdgeColor(
+  type      : string,
+  sentiment : string,
+  typeColorMap: ReadonlyMap<string, string>
+): string {
+  const fromMap = typeColorMap.get(type);
+  if (fromMap) return fromMap;
+  // 情感极性兜底：无类型映射时使用主题自适配的语义颜色变量。
   if (sentiment === "positive") return "var(--color-graph-edge-positive)";
   if (sentiment === "negative") return "var(--color-graph-edge-negative)";
   return "var(--muted-foreground)";
@@ -395,7 +413,8 @@ export function ForceGraph({
   highlightPathIds,
   highlightPathEdgeIds,
   pathAutoFitVersion = 0,
-  onNodeDragEnd
+  onNodeDragEnd,
+  edgeTypeColorMap
 }: ForceGraphProps) {
   /** SVG 根节点引用，用于 D3 接管。 */
   const svgRef = useRef<SVGSVGElement>(null);
@@ -424,6 +443,11 @@ export function ForceGraph({
   const activeNodeIdRef = useRef(activeNodeId);
   const highlightPathIdsRef = useRef(highlightPathIds);
   const highlightPathEdgeIdsRef = useRef(highlightPathEdgeIds);
+  /**
+   * 边类型颜色映射 ref：让 applyGraphEmphasis 能在不加入 dep 的情况下读取最新颜色表。
+   * renderGraph 通过 useCallback dep 直接闭包最新值；applyGraphEmphasis 通过此 ref 读取。
+   */
+  const edgeTypeColorMapRef = useRef<ReadonlyMap<string, string> | undefined>(edgeTypeColorMap);
 
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
@@ -436,6 +460,7 @@ export function ForceGraph({
     activeNodeIdRef.current = activeNodeId;
     highlightPathIdsRef.current = highlightPathIds;
     highlightPathEdgeIdsRef.current = highlightPathEdgeIds;
+    edgeTypeColorMapRef.current = edgeTypeColorMap;
   }, [
     onNodeClick,
     onNodeDoubleClick,
@@ -446,7 +471,8 @@ export function ForceGraph({
     focusedNodeId,
     activeNodeId,
     highlightPathIds,
-    highlightPathEdgeIds
+    highlightPathEdgeIds,
+    edgeTypeColorMap
   ]);
 
   /** 根据主题生成派系配色表，保证暗/亮主题下可读性。 */
@@ -648,7 +674,7 @@ export function ForceGraph({
       .data(simEdges, (d) => d.id)
       .enter()
       .append("line")
-      .attr("stroke", d => edgeColor(d.sentiment))
+      .attr("stroke", d => resolveEdgeColor(d.type, d.sentiment, edgeTypeColorMap ?? new Map()))
       .attr("stroke-width", d => edgeBaseWidth(d.weight))
       .attr("stroke-opacity", EDGE_OPACITY_BASE)
       .attr("stroke-dasharray", d => d.status === "DRAFT" ? "4,4" : "none")
@@ -850,7 +876,7 @@ export function ForceGraph({
         .attr("stroke", d => (
           isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
             ? PATH_EDGE_HIGHLIGHT_COLOR
-            : edgeColor(d.sentiment)
+            : resolveEdgeColor(d.type, d.sentiment, edgeTypeColorMapRef.current ?? new Map())
         ))
         .attr("stroke-opacity", d => (
           isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
@@ -990,7 +1016,8 @@ export function ForceGraph({
     factionColors,
     maxInfluence,
     layoutMode,
-    radialAnchorNodeId
+    radialAnchorNodeId,
+    edgeTypeColorMap
   ]);
 
   /**
@@ -1022,7 +1049,7 @@ export function ForceGraph({
       .attr("stroke-dasharray", nodeBaseStrokeDasharray());
     nodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
     edgeSelection
-      .attr("stroke", d => edgeColor(d.sentiment))
+      .attr("stroke", d => resolveEdgeColor(d.type, d.sentiment, edgeTypeColorMapRef.current ?? new Map()))
       .attr("stroke-opacity", EDGE_OPACITY_BASE)
       .attr("stroke-width", d => edgeBaseWidth(d.weight))
       .attr("marker-end", "none");
@@ -1072,7 +1099,7 @@ export function ForceGraph({
         .attr("stroke", d => (
           isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
             ? PATH_EDGE_HIGHLIGHT_COLOR
-            : edgeColor(d.sentiment)
+            : resolveEdgeColor(d.type, d.sentiment, edgeTypeColorMapRef.current ?? new Map())
         ))
         .attr("stroke-opacity", d => (
           isPathEdge(d, currentHighlightPathIds, currentHighlightPathEdgeIds)
@@ -1091,8 +1118,42 @@ export function ForceGraph({
         ));
     }
 
-    // 单击激活节点：仅高亮该节点，不改变邻居透明度。
-    if (currentActiveNodeId) {
+    // 单击激活节点：同时暗淡无关节点/边，高亮该节点及其直接关系线。
+    // 与 focusedNodeId（双击）不同的是，单击不切换布局，不改变 simulation；
+    // 但视觉上同样需要强调选中人物的关系网络，降低背景噪声。
+    if (currentActiveNodeId && !currentFocusedNodeId) {
+      // 收集与激活节点直接相连的节点 ID（一跳邻居）。
+      const activeConnectedIds = new Set<string>();
+      activeConnectedIds.add(currentActiveNodeId);
+      for (const edge of edgeSelection.data()) {
+        if (edge.source.id === currentActiveNodeId) activeConnectedIds.add(edge.target.id);
+        if (edge.target.id === currentActiveNodeId) activeConnectedIds.add(edge.source.id);
+      }
+
+      // 暗淡非邻居节点。
+      nodeSelection.select<SVGPathElement>("path")
+        .attr("opacity", d => activeConnectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      nodeSelection.select<SVGTextElement>("text")
+        .attr("opacity", d => activeConnectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+
+      // 激活节点的直接关系边保持正常不变，其余边暗淡降噪。
+      edgeSelection
+        .attr("stroke-opacity", d => (
+          d.source.id === currentActiveNodeId || d.target.id === currentActiveNodeId
+            ? EDGE_OPACITY_BASE
+            : FOCUS_DIM_OPACITY * 0.4
+        ))
+        .attr("stroke-width", d => edgeBaseWidth(d.weight));
+
+      // 激活节点本身放大 + 填色高亮。
+      const activeNodeSelection = nodeSelection.filter(d => d.id === currentActiveNodeId);
+      activeNodeSelection.select<SVGPathElement>("path")
+        .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+        .attr("fill", d => nodeHighlightFillColor(d, factionColors))
+        .attr("opacity", 1);
+      activeNodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
+    } else if (currentActiveNodeId && currentFocusedNodeId) {
+      // 聚焦模式已经处理了整体暗淡；这里只叠加激活节点的放大 + 填色效果。
       const activeNodeSelection = nodeSelection.filter(d => d.id === currentActiveNodeId);
       activeNodeSelection.select<SVGPathElement>("path")
         .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))

@@ -18,9 +18,13 @@ interface DeepSeekChatResponse {
     };
   }>;
   usage?: {
-    prompt_tokens?    : number;
-    completion_tokens?: number;
-    total_tokens?     : number;
+    prompt_tokens?           : number;
+    completion_tokens?       : number;
+    total_tokens?            : number;
+    /** DeepSeek 自动前缀缓存：命中的 token 数（服务端自动启用，无需客户端配置）。 */
+    prompt_cache_hit_tokens? : number;
+    /** DeepSeek 自动前缀缓存：未命中的 token 数。 */
+    prompt_cache_miss_tokens?: number;
   };
   error?: {
     message?: string;
@@ -32,7 +36,9 @@ function toAiUsage(usage: DeepSeekChatResponse["usage"]): AiUsage {
   return {
     promptTokens    : typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
     completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,
-    totalTokens     : typeof usage?.total_tokens === "number" ? usage.total_tokens : null
+    totalTokens     : typeof usage?.total_tokens === "number" ? usage.total_tokens : null,
+    cacheHitTokens  : typeof usage?.prompt_cache_hit_tokens === "number" ? usage.prompt_cache_hit_tokens : null,
+    cacheMissTokens : typeof usage?.prompt_cache_miss_tokens === "number" ? usage.prompt_cache_miss_tokens : null
   };
 }
 

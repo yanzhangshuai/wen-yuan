@@ -398,6 +398,45 @@ function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState) {
 - 当页面同时承载“接入配置”和“策略编排”两类任务时，不分区会放大误操作概率，也增加回归测试范围。
 - 使用稳定 Tab 边界能把状态变更影响面收敛到当前上下文，提高可维护性。
 
+### 错误 15：浏览器 Fullscreen API 可见域与 React Portal 渲染根契约错位
+
+**反例**：`DropdownMenuContent` 通过 Portal 渲染到 `document.body`；进入全屏后只有全屏元素子树可见，Portal 内容不可见却不报错，表现为"点击没反应"。
+
+**正例**：在全屏元素内部提供 Portal 容器，监听 `fullscreenchange` 事件动态切换：
+
+```tsx
+// toggle.tsx — 自包含修复，无需上层传 ref
+const [fsContainer, setFsContainer] = useState<HTMLElement | null>(null);
+useEffect(() => {
+  function onFsChange() {
+    setFsContainer((document.fullscreenElement as HTMLElement | null) ?? null);
+  }
+  document.addEventListener("fullscreenchange", onFsChange);
+  return () => document.removeEventListener("fullscreenchange", onFsChange);
+}, []);
+
+// 非全屏时 fsContainer=null → 渲染到 body（正常）
+// 全屏时 fsContainer=全屏元素 → 渲染在全屏子树内
+<DropdownMenuPortal container={fsContainer ?? undefined}>
+  <DropdownMenuContent>{...}</DropdownMenuContent>
+</DropdownMenuPortal>
+```
+
+检测信号（容易察觉）：
+- 全屏模式下点击按钮没任何响应，但退出全屏后恢复正常；
+- React DevTools 能找到 DropdownMenuContent，但 DOM 位置在全屏元素外。
+
+检测信号（不易察觉）：
+- 非全屏时完全正常，只有少数用户进入全屏才复现；
+
+影响范围：
+- 凡是使用 Radix UI Portal（DropdownMenu/Select/Dialog/Tooltip 等）的交互组件，在全屏容器内部都有此风险。
+- 修复应在组件内自包含，不应要求调用方知道当前是否全屏。
+
+规则：
+- 任何在"沉浸式/全屏"容器内使用的交互组件，如果内部包含 Portal，**必须**处理 `fullscreenchange`，确保 Portal 容器在全屏子树内。
+
+
 ### 错误 15：复用同一状态值承载“未开始”和“待复核”两种语义，导致书级与章级状态冲突
 
 **反例**：

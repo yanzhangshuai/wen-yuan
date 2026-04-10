@@ -8,7 +8,11 @@
  * - 统一 AI 调用参数与 usage 统计结构，保证多模型 Provider 行为可比较。
  */
 export enum PipelineStage {
-  /** 角色发现阶段：从文本中识别人物候选。 */
+  /**
+   * 角色发现阶段：从文本中识别人物候选。
+   * @deprecated 两遍式架构下该阶段不再执行——Pass 3 使用全局消歧后的 externalPersonaMap，跳过名册发现。
+   * 保留枚举值以兼容旧任务日志与单遍回退路径。
+   */
   ROSTER_DISCOVERY = "ROSTER_DISCOVERY",
   /** 分块抽取阶段：按章节/片段抽取结构化线索。 */
   CHUNK_EXTRACTION = "CHUNK_EXTRACTION",
@@ -20,6 +24,10 @@ export enum PipelineStage {
   GRAY_ZONE_ARBITRATION = "GRAY_ZONE_ARBITRATION",
   /** 全书终检阶段：产出最终可入库结论。 */
   BOOK_VALIDATION = "BOOK_VALIDATION",
+  /** 两遍式架构 Pass 1：独立章节实体提取（不带历史 profiles）。 */
+  INDEPENDENT_EXTRACTION = "INDEPENDENT_EXTRACTION",
+  /** 两遍式架构 Pass 2：全书实体消歧（LLM 辅助判断候选组是否同一人）。 */
+  ENTITY_RESOLUTION = "ENTITY_RESOLUTION",
   /** 兜底阶段：当策略缺失时用于容错映射。 */
   FALLBACK = "FALLBACK"
 }
@@ -34,7 +42,9 @@ export const BUSINESS_PIPELINE_STAGES: PipelineStage[] = [
   PipelineStage.CHAPTER_VALIDATION,
   PipelineStage.TITLE_RESOLUTION,
   PipelineStage.GRAY_ZONE_ARBITRATION,
-  PipelineStage.BOOK_VALIDATION
+  PipelineStage.BOOK_VALIDATION,
+  PipelineStage.INDEPENDENT_EXTRACTION,
+  PipelineStage.ENTITY_RESOLUTION
 ];
 
 export interface StageParams {
@@ -109,6 +119,22 @@ export const DEFAULT_STAGE_PARAMS: Record<PipelineStage, StageParams> = {
     retryBaseMs    : 1000,
     enableThinking : true
   },
+  [PipelineStage.INDEPENDENT_EXTRACTION]: {
+    temperature    : 0.15,
+    maxOutputTokens: 8192,
+    topP           : 1,
+    maxRetries     : 2,
+    retryBaseMs    : 600,
+    enableThinking : false
+  },
+  [PipelineStage.ENTITY_RESOLUTION]: {
+    temperature    : 0.2,
+    maxOutputTokens: 8192,
+    topP           : 1,
+    maxRetries     : 2,
+    retryBaseMs    : 800,
+    enableThinking : true
+  },
   [PipelineStage.FALLBACK]: {
     temperature    : 0.2,
     maxOutputTokens: 8192,
@@ -144,6 +170,10 @@ export interface AiUsage {
   completionTokens: number | null;
   /** 总 token 数；模型不返回时为 null。 */
   totalTokens     : number | null;
+  /** 缓存命中 token 数（DeepSeek 自动前缀缓存）；不支持时为 null。 */
+  cacheHitTokens? : number | null;
+  /** 缓存未命中 token 数；不支持时为 null。 */
+  cacheMissTokens?: number | null;
 }
 
 export interface AiCallFnResult<TData> {

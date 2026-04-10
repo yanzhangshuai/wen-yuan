@@ -661,3 +661,126 @@ export function parseTitleResolutionResponse(
 
   return results;
 }
+
+// ─── Two-Pass Architecture Types ────────────────────────────────────────────
+
+/**
+ * Pass 1 独立章节提取输出：单个人物条目。
+ * 不依赖任何已有 persona 数据，完全由 LLM 从原文中独立提取。
+ */
+export interface IndependentEntityEntry {
+  /** 人物最可能的正式姓名（如"范进"）。 */
+  name       : string;
+  /** 本章出现的其他称谓（如["范举人","范老爷"]）。 */
+  aliases    : string[];
+  /** 简短人物描述（如"落魄书生，后中举人"），≤50字。 */
+  description: string;
+  /** 分类：PERSON=有名人物，MENTIONED_ONLY=仅被提及的历史/虚构人物。 */
+  category   : "PERSON" | "MENTIONED_ONLY";
+}
+
+/**
+ * Pass 1 单章提取结果。
+ */
+export interface ChapterEntityList {
+  /** 章节 ID。 */
+  chapterId: string;
+  /** 章节号。 */
+  chapterNo: number;
+  /** 本章提取的人物列表。 */
+  entities : IndependentEntityEntry[];
+}
+
+/**
+ * Pass 2 全局消歧：候选合并组（输入给 LLM 判断）。
+ */
+export interface EntityCandidateGroup {
+  /** 候选组 ID（自增序号）。 */
+  groupId : number;
+  /** 该组包含的所有称谓及其来源章节。 */
+  members : Array<{
+    name       : string;
+    description: string;
+    chapterNos : number[];
+  }>;
+}
+
+/**
+ * Pass 2 LLM 返回：合并决策。
+ */
+export interface EntityResolutionDecision {
+  /** 对应输入的 groupId。 */
+  groupId     : number;
+  /** 是否应合并为同一人。 */
+  shouldMerge : boolean;
+  /** 合并后的正式名称。 */
+  mergedName  : string;
+  /** 合并后的所有别名（包括非正式名称）。 */
+  mergedAliases: string[];
+  /** 判断理由（≤30字）。 */
+  reason      : string;
+}
+
+/**
+ * Pass 2 解析 AI 返回的实体消歧 JSON。
+ */
+export function parseEntityResolutionResponse(raw: string): EntityResolutionDecision[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(repairJson(raw));
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter(isRecord)
+    .filter((item) =>
+      typeof item.groupId === "number" &&
+      typeof item.shouldMerge === "boolean" &&
+      typeof item.mergedName === "string"
+    )
+    .map((item) => ({
+      groupId      : item.groupId as number,
+      shouldMerge  : item.shouldMerge as boolean,
+      mergedName   : (item.mergedName as string).trim(),
+      mergedAliases: Array.isArray(item.mergedAliases)
+        ? (item.mergedAliases as unknown[]).filter((a): a is string => typeof a === "string").map(a => a.trim())
+        : [],
+      reason: typeof item.reason === "string" ? item.reason : ""
+    }));
+}
+
+/**
+ * Pass 1 解析 AI 返回的独立实体提取 JSON。
+ * 增加 name 长度校验：> 10 字符的 name 视为垃圾实体（整句话被提取为人名）。
+ */
+export function parseIndependentExtractionResponse(raw: string): IndependentEntityEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(repairJson(raw));
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter(isRecord)
+    .filter((item) =>
+      typeof item.name === "string" &&
+      (item.name as string).trim().length >= 2 &&
+      (item.name as string).trim().length <= 10  // 防垃圾实体：超过 10 字符的"人名"几乎都是提取错误
+    )
+    .map((item) => ({
+      name       : (item.name as string).trim(),
+      aliases    : Array.isArray(item.aliases)
+        ? (item.aliases as unknown[])
+            .filter((a): a is string => typeof a === "string" && a.trim().length >= 2 && a.trim().length <= 10)
+            .map(a => a.trim())
+        : [],
+      description: typeof item.description === "string" ? (item.description as string).trim().slice(0, 100) : "",
+      category   : item.category === "MENTIONED_ONLY" ? "MENTIONED_ONLY" : "PERSON"
+    }));
+}

@@ -18,7 +18,7 @@
  * - 同一概念（如 generic titles 示例）必须统一口径，避免多处 prompt 漂移导致结果不一致。
  * =============================================================================
  */
-import type { AnalysisProfileContext, TitleArbitrationEntry, TitleArbitrationInput, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
+import type { AnalysisProfileContext, EntityCandidateGroup, TitleArbitrationEntry, TitleArbitrationInput, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
 import type { PromptMessageInput } from "@/types/pipeline";
 import {
   type ValidationIssue,
@@ -27,10 +27,13 @@ import {
   type ValidationSuggestionAction
 } from "@/types/validation";
 import { repairJson } from "@/types/analysis";
-import { buildEffectiveGenericTitles } from "@/server/modules/analysis/config/lexicon";
-
-// 文档要求泛化称谓示例 >= 30；使用常量避免多个 prompt 构建点口径漂移。
-const GENERIC_TITLES_PROMPT_LIMIT = 30;
+import {
+  buildEffectiveGenericTitles,
+  ENTITY_EXTRACTION_RULES,
+  GENERIC_TITLES_PROMPT_LIMIT,
+  RELATIONSHIP_EXTRACTION_RULES,
+  formatRulesSection
+} from "@/server/modules/analysis/config/lexicon";
 
 /**
  * 从 GENERIC_TITLES 生成 prompt 使用的示例列表。
@@ -201,9 +204,8 @@ function buildEntityContextLines(profiles: AnalysisProfileContext[]): string {
     .map((p, idx) => {
       const id = idx + 1;
       const uniqueAliases = p.aliases.filter((a) => a !== p.canonicalName);
-      const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(", ") : "（无）";
-      const summaryStr = p.localSummary ? ` | 小传: ${p.localSummary}` : "";
-      return `[${id}] ${p.canonicalName} | 别名: ${aliasStr}${summaryStr}`;
+      const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(",") : "无";
+      return `[${id}] ${p.canonicalName}|${aliasStr}`;
     })
     .join("\n");
 }
@@ -222,48 +224,40 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): PromptM
       : "（本书目前尚无已建档人物）";
 
   const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
+
+  // 通用实体抽取规则 + ROSTER 特有规则合并为编号列表
+  const rosterSpecificRules: readonly string[] = [
+    "尊号/帝号/封号：可对应已知人物→填entityId+isTitleOnly:true；新人物→isNew+isTitleOnly:true。",
+    "别名/称号/职位类型额外标注: aliasType(TITLE|POSITION|KINSHIP|NICKNAME|COURTESY_NAME), contextHint(≤100字), suggestedRealName, aliasConfidence(0-1)。"
+  ];
+  const allRules = [...ENTITY_EXTRACTION_RULES, ...rosterSpecificRules];
+  const rulesSection = formatRulesSection(allRules, { genericTitles: genericTitlesExample });
+
   const user = [
     "## 任务",
-    `阅读《${input.bookTitle}》第 ${input.chapterNo} 章「${input.chapterTitle}」的完整正文。`,
-    "建立**本章人物名册**：枚举本章原文中所有明确出现的人物称谓（姓名、官衔称呼、亲属称呼等）。",
+    `枚举《${input.bookTitle}》第${input.chapterNo}章「${input.chapterTitle}」原文中所有人物称谓（姓名、官衔、亲属称呼等）。`,
     "",
-    "## 已知人物档案（Known Entities）",
+    "## 已知人物档案",
     entityContextLines,
     "",
-    "## 输出规则",
-    "1. 每个条目的 **surfaceForm** 必须是原文精确字符串，不得修改或翻译",
-    "2. 若 surfaceForm 对应已知人物 → 填入该人物的档案序号（entityId，如 1、2、3）",
-    '3. 若 surfaceForm 确认为本书**全新故事人物** → 填 "isNew": true',
-    `4. 若 surfaceForm 是**泛化称谓**（如 ${genericTitlesExample}，无法唯一指向某人）→ 填 "generic": true`,
-    "5. 相同称谓只输出**一次**（去重）",
-    "6. **不要**凭想象补充原文中未出现的人物",
-    "7. **只列举书中的叙事故事人物（虚构角色）**，严格排除以下类型：",
-    "   - 本书作者（如吴敬梓）、整理者、评注者、推荐序作者（如惺园退士）",
-    "   - 在序言、题跋、附录中出现的真实历史人物（非故事角色）",
-    "   - 现代文学批评家、学者（如鲁迅等）",
-    "8. 单独出现的姓氏（如\"顾\"、\"夏\"、\"荀\"等单字），若无法确认是独立人物，标记为 generic",
-    "9. 若 surfaceForm 是尊号/帝号/王号/封号（如太祖皇帝、吴王、太后），且原文无法直接得知其真实姓名：若该称号可对应已知人物档案 → 填 entityId 并标记 \"isTitleOnly\": true；若确认为全新未知人物 → 填 \"isNew\": true 并标记 \"isTitleOnly\": true",
-    "10. 若 surfaceForm 是别名/称号/封号/职位称呼类型，额外标注:",
-    "    - \"aliasType\": \"TITLE\"(封号/尊号) | \"POSITION\"(职位称呼) | \"KINSHIP\"(亲属代称) | \"NICKNAME\"(绰号) | \"COURTESY_NAME\"(字号)",
-    "    - \"contextHint\": 简述该称呼在本章上下文中的线索（≤100字），包括共现人物、相关事件",
-    "    - \"suggestedRealName\": 如果上下文能推断出对应的真实人名，填写；否则省略",
-    "    - \"aliasConfidence\": 对 suggestedRealName 的确信度（0-1）",
+    "## 规则",
+    rulesSection,
     "",
-    "## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）",
+    "## 输出格式（仅输出 JSON 数组）",
     JSON.stringify([
       { surfaceForm: "范举人", entityId: 1 },
       { surfaceForm: "范老爷", entityId: 1, aliasType: "NICKNAME" },
       { surfaceForm: "严监生", isNew: true },
-      { surfaceForm: "太祖皇帝", isNew: true, isTitleOnly: true, aliasType: "TITLE", contextHint: "文中提及明朝开国，与朱元璋事迹吻合", suggestedRealName: "朱元璋", aliasConfidence: 0.9 },
+      { surfaceForm: "太祖皇帝", isNew: true, isTitleOnly: true, aliasType: "TITLE", contextHint: "明朝开国", suggestedRealName: "朱元璋", aliasConfidence: 0.9 },
       { surfaceForm: "那老者", generic: true }
-    ], null, 2),
+    ]),
     "",
     "## 本章正文",
     input.content
   ].join("\n");
 
   return {
-    system: "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。",
+    system: "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。重点：同一人物的不同称呼（姓名、字、号、官衔、亲属称呼）都应映射到同一 entityId。",
     user
   };
 }
@@ -283,73 +277,146 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): PromptMessa
       : "（本书目前尚无已建档人物）";
 
   const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
+
+  // 分析特有规则(前置) + 通用实体规则 + 关系规则 → 统一编号
+  const analysisPreRules: readonly string[] = [
+    "仅输出原始 JSON，禁止 markdown 代码块。"
+  ];
+  const analysisPostRules: readonly string[] = [
+    "biography.category 限定: BIRTH|EXAM|CAREER|TRAVEL|SOCIAL|DEATH|EVENT。",
+    "rawText 必须精准截取原文；event 客观描述，禁止抒情。不跨段推测，缺失则返回[]。"
+  ];
+  const allRules = [...analysisPreRules, ...ENTITY_EXTRACTION_RULES, ...analysisPostRules, ...RELATIONSHIP_EXTRACTION_RULES];
+  const rulesSection = formatRulesSection(allRules, { genericTitles: genericTitlesExample });
+
   const user = [
     "## Task",
-    `分析书籍《${input.bookTitle}》第${input.chapterNo}章/回（${input.chapterTitle}）的文本片段（第 ${input.chunkIndex + 1}/${input.chunkCount} 段）。`,
-    "将非结构化叙事转换为结构化 JSON 数据，涵盖：生平/关键事件 (biographies)、实体提及 (mentions)、实体间动态关系 (relationships)。",
+    `分析《${input.bookTitle}》第${input.chapterNo}回（${input.chapterTitle}）片段（${input.chunkIndex + 1}/${input.chunkCount}），提取 biographies/mentions/relationships。`,
     "",
-    "## Strict Rules",
-    "1. OUTPUT: Return raw JSON only. Do not use markdown code blocks (` ` `json).",
-    "2. ENTITY RESOLUTION: 必须优先匹配 [Known Entities]。若文中出现的称谓在已知档案的别名中，必须统一映射回该档案的标准名（canonicalName）。仅当确认为全新人物时才创建新 personaName。",
-    "3. CATEGORY: biography.category 必须严格限制在 [BIRTH, EXAM, CAREER, TRAVEL, SOCIAL, DEATH, EVENT] 范围内。",
-    "4. VERACITY: rawText 必须是原文的精准截取。event 描述需客观，避免主观抒情。",
-    "5. FRAGMENTATION: 若当前片段不包含特定数据类型，对应数组返回 []。不要跨段推测。",
-    "6. RELATION: relationship.description 只写结构化关系结论；relationship.evidence 单独填写原文证据短句（<=120字）。",
-    "7. IRONY: ironyNote 为可选字段，仅在本段存在可直接引用的讽刺证据时填写；禁止泛化评价（如\"批判社会\"）。",
-    "8. UNCERTAINTY: 不确定的人物或关系不要猜测，直接忽略。",
-    `9. GENERIC TITLES: ${genericTitlesExample}无法唯一指向具体人物的泛化称谓，禁止作为独立 personaName 输出，直接忽略。`,
-    "10. ALIAS MAPPING: 若原文使用官衔或亲属称谓指代已知人物（如\"范举人\"指代档案中的\"范进\"），personaName 必须填写该人物的标准名（canonicalName），而非原文称谓。",
-    "11. VERBATIM NAME: personaName 必须为规范人名，不得在人名后附加\"大人\"\"老爷\"等称谓后缀。",
-    "12. STORY CHARS ONLY: 只提取书中叙事故事人物（虚构角色）。严禁提取：作者（如吴敬梓）、评注者（如惺园退士）、序言里的真实历史人物、现代批评家（如鲁迅）、单独姓氏（如\"顾\"\"夏\"\"荀\"不可作为独立人物）。",
+    "## Rules",
+    rulesSection,
     "",
-    "## Known Entities (Context)",
+    "## Known Entities",
     entityContext,
     "",
-    "## JSON Output Format",
+    "## JSON Format",
     JSON.stringify({
-      biographies: [
-        {
-          personaName: "实体标准名（对应 Known Entities 中的 canonicalName，或新人物名）",
-          category   : "枚举值",
-          event      : "简述发生的关键行为或状态变更",
-          title      : "当时的头衔/身份/职业",
-          location   : "发生的具体地理位置",
-          virtualYear: "文中提到的时间点（如: 万历三十年, 2077年, 秋天）",
-          ironyNote  : "仅填写本段可证据化的讽刺点；若无则省略"
-        }
-      ],
-      mentions: [
-        {
-          personaName: "实体标准名",
-          rawText    : "原文片段",
-          summary    : "此段落中实体的状态描述",
-          paraIndex  : 0
-        }
-      ],
-      relationships: [
-        {
-          sourceName : "发起者标准名",
-          targetName : "接收者标准名",
-          type       : "关系类型（如: 师生, 敌对, 盟友, 家属）",
-          weight     : 0.5,
-          description: "结构化关系结论（不要复制原文）",
-          evidence   : "支持该关系结论的原文短句"
-        }
-      ]
-    }, null, 2),
+      biographies  : [{ personaName: "标准名", category: "枚举", event: "行为", title: "头衔", location: "地点", virtualYear: "时间", ironyNote: "可选" }],
+      mentions     : [{ personaName: "标准名", rawText: "原文", summary: "状态", paraIndex: 0 }],
+      relationships: [{ sourceName: "发起者", targetName: "接收者", type: "关系类型", weight: 0.5, description: "结论", evidence: "原文证据" }]
+    }),
     "",
     "## Source Text",
     input.content
   ].join("\n");
 
   return {
-    system: "你是一个通用的叙事文学结构化提取专家，能够精准识别复杂文本中的实体轨迹与社交网络。",
+    system: "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。重点：优先将称谓映射到已知人物，避免重复创建同一角色。",
     user
   };
 }
 
+/** * 功能：生成 Pass 1"独立章节实体提取"Prompt。
+ * 不传入任何已有 profiles，让 LLM 纯粹从原文中提取人物。
+ * 消除 entityId 数字编号选错导致的级联合并错误。
+ */
+export interface IndependentExtractionInput {
+  /** 书名。 */
+  bookTitle   : string;
+  /** 章节号。 */
+  chapterNo   : number;
+  /** 章节标题。 */
+  chapterTitle: string;
+  /** 章节正文。 */
+  content     : string;
+}
+
+export function buildIndependentExtractionPrompt(input: IndependentExtractionInput): PromptMessageInput {
+  const genericTitlesExample = GENERIC_TITLES_EXAMPLE;
+
+  const rules = [
+    "仅输出原始 JSON 数组，禁止 markdown 代码块。",
+    "name 填写人物最可能的完整姓名（如有名有姓优先用全名）。",
+    "aliases 填写本章出现的其他称谓（官衔、字号、亲属称呼等），每个别名 ≤10 字。",
+    `泛化称谓（如${genericTitlesExample}）如果在本章特指某一人物，则作为该人物的 alias；否则忽略。`,
+    "同一人物在本章即使有多个称谓，也只输出一条记录，所有称谓放入 aliases。",
+    "description 用一句话概括人物在本章的角色/行为，≤50字。",
+    "category: PERSON=有名有姓的人物或有明确身份的角色；MENTIONED_ONLY=仅在对话或叙述中被提及但未直接出场。",
+    "不要提取地名、物品名、组织名等非人物实体。",
+    "name 和每个 alias 长度必须 ≤10 个中文字符，超过说明提取有误。"
+  ];
+
+  const rulesText = rules.map((r, i) => `${i + 1}. ${r}`).join("\n");
+
+  const user = [
+    "## 任务",
+    `列出《${input.bookTitle}》第${input.chapterNo}回「${input.chapterTitle}」中出现的所有人物。`,
+    "",
+    "## 规则",
+    rulesText,
+    "",
+    "## 输出格式（仅输出 JSON 数组）",
+    JSON.stringify([
+      { name: "范进", aliases: ["范举人", "范老爷"], description: "落魄书生，考中举人后喜极而疯", category: "PERSON" },
+      { name: "朱元璋", aliases: ["吴王", "太祖"], description: "被提及的历史人物", category: "MENTIONED_ONLY" }
+    ]),
+    "",
+    "## 原文",
+    input.content
+  ].join("\n");
+
+  return {
+    system: "你是中国古典文学命名实体识别专家。请从给定章节中精准提取所有人物，注意区分人物的不同称谓并合并为同一条记录。",
+    user
+  };
+}
+
+
 /**
- * 功能：生成“称号人物真名溯源” Phase 5 Prompt。
+ * 功能：生成 Pass 2"实体消歧"Prompt。
+ * 每次发送一批候选组，让 LLM 判断组内称谓是否指同一人。
+ */
+export function buildEntityResolutionPrompt(
+  bookTitle: string,
+  groups: EntityCandidateGroup[]
+): PromptMessageInput {
+  const groupsText = groups.map(g => {
+    const membersText = g.members.map(m =>
+      `  - "${m.name}"${m.description ? `（${m.description}）` : ""}，出现于第${m.chapterNos.join("、")}回`
+    ).join("\n");
+    return `### 候选组 ${g.groupId}\n${membersText}`;
+  }).join("\n\n");
+
+  const user = [
+    "## 任务",
+    `以下是从《${bookTitle}》各章节独立提取的人物候选组。每组内的人物名称可能指同一人（但也可能不是）。`,
+    "请逐组判断：组内这些称谓是否指同一个人？",
+    "",
+    "## 规则",
+    "1. shouldMerge=true 仅当你确信组内所有称谓都指同一人（例如 范进/范举人/范老爷 是同一人）。",
+    "2. shouldMerge=false 当组内存在不同人物的称谓（例如 娄三公子/娄四公子 是兄弟俩，不是同一人）。",
+    "3. mergedName 填写最正式的全名。",
+    "4. mergedAliases 包含所有确实属于该人物的称谓（包括 mergedName 本身）。",
+    "5. 若 shouldMerge=false，mergedName 填组内第一个名字，mergedAliases 只含该名字。",
+    "6. reason 简述判断依据，≤30字。",
+    "",
+    "## 候选组",
+    groupsText,
+    "",
+    "## 输出格式（仅输出 JSON 数组，每组一条）",
+    JSON.stringify([
+      { groupId: 1, shouldMerge: true, mergedName: "范进", mergedAliases: ["范进", "范举人", "范老爷"], reason: "同一人物的不同称呼" },
+      { groupId: 2, shouldMerge: false, mergedName: "娄三公子", mergedAliases: ["娄三公子"], reason: "娄三公子和娄四公子是兄弟二人" }
+    ])
+  ].join("\n");
+
+  return {
+    system: "你是中国古典文学人物消歧专家。你的任务是判断从不同章节提取的人物称谓是否指向同一个人。注意：同姓但不同人（如兄弟、父子）不应合并。",
+    user
+  };
+}
+
+/** * 功能：生成“称号人物真名溯源” Phase 5 Prompt。
  * 输入：input - 书名与待溯源称号列表。
  * 输出：可直接发送给模型的字符串 Prompt。
  * 异常：无。
@@ -535,32 +602,13 @@ export function buildChapterValidationPrompt(input: ChapterValidationPromptInput
     "## 原文片段（重点段落）",
     input.chapterContent.slice(0, 3000),
     "",
-    "## 输出格式（仅输出 JSON，不加任何说明或 Markdown 代码块）",
+    "## 输出格式（仅输出 JSON）",
     JSON.stringify({
-      issues: [
-        {
-          type              : "ALIAS_AS_NEW_PERSONA | WRONG_MERGE | MISSING_NAME_MAPPING | INVALID_RELATIONSHIP | SAME_NAME_DIFFERENT_PERSON | DUPLICATE_PERSONA",
-          severity          : "ERROR | WARNING | INFO",
-          confidence        : 0.85,
-          description       : "问题的具体描述",
-          evidence          : "原文证据或数据矛盾点",
-          affectedPersonaIds: ["persona-id-1"],
-          suggestion        : {
-            action         : "MERGE | SPLIT | UPDATE_NAME | ADD_ALIAS | DELETE | ADD_MAPPING | MANUAL_REVIEW",
-            targetPersonaId: "target-id (如适用)",
-            sourcePersonaId: "source-id (如适用)",
-            newName        : "建议的新名称 (如适用)",
-            newAlias       : "建议添加的别名 (如适用)",
-            reason         : "修正理由"
-          }
-        }
-      ]
-    }, null, 2),
-    "",
-    "## 重要提醒",
-    "- 如果检查结果没有发现任何问题，返回 {\"issues\": []}",
-    "- confidence < 0.6 的问题不要报告",
-    "- 每个问题的 evidence 必须来自原文或上述数据，不可编造"
+      issues: [{ type: "ALIAS_AS_NEW_PERSONA", severity: "ERROR", confidence: 0.85, description: "描述", evidence: "证据", affectedPersonaIds: ["id"], suggestion: { action: "MERGE", targetPersonaId: "id", sourcePersonaId: "id", newName: "名", newAlias: "别名", reason: "理由" } }]
+    }),
+    "type: ALIAS_AS_NEW_PERSONA|WRONG_MERGE|MISSING_NAME_MAPPING|INVALID_RELATIONSHIP|SAME_NAME_DIFFERENT_PERSON|DUPLICATE_PERSONA",
+    "severity: ERROR|WARNING|INFO; action: MERGE|SPLIT|UPDATE_NAME|ADD_ALIAS|DELETE|ADD_MAPPING|MANUAL_REVIEW",
+    "无问题返回{\"issues\":[]}。confidence<0.6不报告。evidence必须来自原文，不可编造。"
   ].join("\n");
 
   return {
@@ -600,30 +648,12 @@ export function buildBookValidationPrompt(input: BookValidationPromptInput): Pro
       `- 第${item.chapterNo}章「${item.chapterTitle}」(${item.reason})：${item.excerpt}`
     ),
     "",
-    "## 输出格式（仅输出 JSON，不加任何说明）",
+    "## 输出格式（仅输出 JSON）",
     JSON.stringify({
-      issues: [
-        {
-          type              : "DUPLICATE_PERSONA",
-          severity          : "WARNING",
-          confidence        : 0.9,
-          description       : "同一人物可能存在重复记录",
-          evidence          : "全书别名与关系指向高度重叠",
-          affectedPersonaIds: ["persona-id-1", "persona-id-2"],
-          suggestion        : {
-            action         : "MERGE",
-            targetPersonaId: "persona-id-1",
-            sourcePersonaId: "persona-id-2",
-            reason         : "建议合并重复实体"
-          }
-        }
-      ]
-    }, null, 2),
-    "",
-    "## 重要提醒",
-    "- 若无问题返回 {\"issues\": []}",
-    "- confidence < 0.6 的问题不要输出",
-    "- 只输出有明确证据的问题"
+      issues: [{ type: "DUPLICATE_PERSONA", severity: "WARNING", confidence: 0.9, description: "描述", evidence: "证据", affectedPersonaIds: ["id1", "id2"], suggestion: { action: "MERGE", targetPersonaId: "id1", sourcePersonaId: "id2", reason: "理由" } }]
+    }),
+    "type: DUPLICATE_PERSONA|ALIAS_AS_NEW_PERSONA|WRONG_MERGE|MISSING_NAME_MAPPING|INVALID_RELATIONSHIP",
+    "无问题返回{\"issues\":[]}。confidence<0.6不输出。仅输出有明确证据的问题。"
   ].join("\n");
 
   return {

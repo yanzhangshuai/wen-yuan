@@ -13,22 +13,25 @@ import {
 } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
-import { buildChapterAnalysisPrompt, buildRosterDiscoveryPrompt, buildTitleArbitrationPrompt, buildTitleResolutionPrompt } from "@/server/modules/analysis/services/prompts";
+import { buildChapterAnalysisPrompt, buildIndependentExtractionPrompt, buildRosterDiscoveryPrompt, buildTitleArbitrationPrompt, buildTitleResolutionPrompt } from "@/server/modules/analysis/services/prompts";
 import {
   type BookLexiconConfig,
   type MentionPersonalizationEvidence,
-  buildEffectiveGenericTitles
+  buildEffectiveGenericTitles,
+  GENERIC_TITLES_PROMPT_LIMIT
 } from "@/server/modules/analysis/config/lexicon";
 import { ANALYSIS_PIPELINE_CONFIG, DEFAULT_GENRE_PRESET, GENRE_PRESETS } from "@/server/modules/analysis/config/pipeline";
 import type {
   AnalysisProfileContext,
   BioCategoryValue,
   ChapterAnalysisResponse,
+  ChapterEntityList,
   EnhancedChapterRosterEntry,
   TitleArbitrationInput,
   TitleResolutionInput,
   RegisterAliasInput
 } from "@/types/analysis";
+import { parseIndependentExtractionResponse } from "@/types/analysis";
 import { PipelineStage } from "@/types/pipeline";
 
 /**
@@ -47,8 +50,6 @@ import { PipelineStage } from "@/types/pipeline";
  */
 // 同时解析的分段数，避免触发 API 频控，同时控制单章处理时长。
 const AI_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chunkAiConcurrency;
-// 文档要求泛化称谓示例 >= 30，章节分析阶段与 prompt 构建阶段保持同口径。
-const GENERIC_TITLES_PROMPT_LIMIT = 30;
 // relationship evidence 仅保留前 5 条，避免异常长证据链污染最终结构化结果。
 const RELATIONSHIP_EVIDENCE_LIMIT = 5;
 const GENERIC_IRONY_PATTERNS: readonly RegExp[] = [
@@ -263,6 +264,8 @@ export function createChapterAnalysisService(
 
   interface AnalysisExecutionContext {
     jobId?: string;
+    /** Pass 2 全局消歧后的映射表（surfaceForm → personaId），提供时跳过 ROSTER_DISCOVERY。 */
+    externalPersonaMap?: Map<string, string>;
   }
 
   function toGenerateOptions(model: ResolvedStageModel | ResolvedFallbackModel) {
@@ -578,7 +581,7 @@ export function createChapterAnalysisService(
       ),
       localSummary: p.localSummary
     }));
-    const bookLexiconConfig = resolveBookLexiconConfig(chapter.book.title);
+    const bookLexiconConfig = resolveBookLexiconConfig(chapter.book.genre);
     const effectiveGenericTitles = buildEffectiveGenericTitles(bookLexiconConfig);
     const genericTitlesExample = Array.from(effectiveGenericTitles).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等";
 
@@ -587,71 +590,111 @@ export function createChapterAnalysisService(
       jobId : executionContext.jobId
     };
 
-    // Phase 1: 全章人物名册发现——AI 读完整章节，输出本章所有称谓的预解析映射。
-    // 此调用比 chunk 分析便宜（只识别称谓名单，不提取事件/关系），但能解决跨段指代歧义。
-    const roster = await discoverRosterWithProtection({
-      chapterId     : chapter.id,
-      chapterContent: chapter.content,
-      stageContext,
-      rosterInput   : {
-        bookTitle   : chapter.book.title,
-        chapterNo   : chapter.no,
-        chapterTitle: chapter.title,
-        profiles,
-        genericTitlesExample
+    // Pass 3 模式：externalPersonaMap 由全局消歧阶段提供，跳过 ROSTER_DISCOVERY。
+    const useExternalMap = executionContext.externalPersonaMap && executionContext.externalPersonaMap.size > 0;
+
+    let rosterMap: Map<string, string>;
+    let titleOnlyNames: Set<string>;
+    let pendingRosterAliasMappings: RegisterAliasInput[];
+    let resolvedGenericRatios: Map<string, { generic: number; nonGeneric: number }>;
+    let chapterProfiles: AnalysisProfileContext[];
+
+    if (useExternalMap) {
+      // Pass 3: 使用全局消歧后的映射，无需 roster discovery
+      rosterMap = executionContext.externalPersonaMap!;
+      titleOnlyNames = new Set<string>();
+      pendingRosterAliasMappings = [];
+      resolvedGenericRatios = new Map();
+
+      // 根据外部映射过滤 profiles 注入范围
+      const referencedPersonaIds = new Set<string>();
+      for (const [, value] of rosterMap) {
+        if (value !== "GENERIC") referencedPersonaIds.add(value);
       }
-    });
-    const resolvedGenericRatios = collectGenericRatiosFromRoster(roster);
+      const floorSize = ANALYSIS_PIPELINE_CONFIG.chunkProfileFloor;
+      const floorPersonaIds = new Set(profiles.slice(0, floorSize).map(p => p.personaId));
+      chapterProfiles = referencedPersonaIds.size > 0
+        ? profiles.filter(p => referencedPersonaIds.has(p.personaId) || floorPersonaIds.has(p.personaId))
+        : profiles;
 
-    log("analysis.roster_discovered", { chapterId, rosterSize: roster.length });
-
-    // 将名册结果转换为 rosterMap（surfaceForm → personaId | "GENERIC"）。
-    const entityIdMap = buildEntityIdMap(profiles);
-    const profileLookup = buildProfileLookupMap(profiles);
-    const rosterMap = new Map<string, string>();
-    const titleOnlyNames = new Set<string>();
-    const pendingRosterAliasMappings: RegisterAliasInput[] = [];
-    for (const entry of roster) {
-      if (entry.generic) {
-        rosterMap.set(entry.surfaceForm, "GENERIC");
-      } else if (entry.entityId !== undefined) {
-        const personaId = entityIdMap.get(entry.entityId);
-        if (personaId) {
-          rosterMap.set(entry.surfaceForm, personaId);
+      log("analysis.pass3_external_map", { chapterId, mapSize: rosterMap.size, profileCount: chapterProfiles.length });
+    } else {
+      // 原始模式：Phase 1 全章人物名册发现
+      const roster = await discoverRosterWithProtection({
+        chapterId     : chapter.id,
+        chapterContent: chapter.content,
+        stageContext,
+        rosterInput   : {
+          bookTitle   : chapter.book.title,
+          chapterNo   : chapter.no,
+          chapterTitle: chapter.title,
+          profiles,
+          genericTitlesExample
         }
-      } else if (entry.isNew && entry.isTitleOnly) {
-        // isTitleOnly: true 且为新建实体 → 记录到集合供 PersonaResolver 写入 nameType = TITLE_ONLY
-        titleOnlyNames.add(entry.surfaceForm);
-      }
+      });
+      resolvedGenericRatios = collectGenericRatiosFromRoster(roster);
 
-      if (
-        aliasRegistry &&
-        entry.aliasType &&
-        typeof entry.aliasConfidence === "number" &&
-        entry.aliasConfidence >= ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence &&
-        entry.suggestedRealName
-      ) {
-        const suggestedKey = normalizeLookupKey(entry.suggestedRealName);
-        const matchedProfile = profileLookup.get(suggestedKey);
-        const confidence = entry.aliasConfidence;
+      log("analysis.roster_discovered", { chapterId, rosterSize: roster.length });
 
-        pendingRosterAliasMappings.push({
-          bookId      : chapter.bookId,
-          personaId   : matchedProfile?.personaId,
-          alias       : entry.surfaceForm,
-          resolvedName: matchedProfile?.canonicalName ?? entry.suggestedRealName.trim(),
-          aliasType   : entry.aliasType,
-          confidence,
-          evidence    : entry.contextHint?.contextClue ?? "Phase1 名册别名线索",
-          chapterStart: chapter.no,
-          status      : confidence >= 0.9 ? "CONFIRMED" : "PENDING"
-        });
+      // 将名册结果转换为 rosterMap（surfaceForm → personaId | "GENERIC"）。
+      const entityIdMap = buildEntityIdMap(profiles);
+      const profileLookup = buildProfileLookupMap(profiles);
+      rosterMap = new Map<string, string>();
+      titleOnlyNames = new Set<string>();
+      pendingRosterAliasMappings = [];
+      for (const entry of roster) {
+        if (entry.generic) {
+          rosterMap.set(entry.surfaceForm, "GENERIC");
+        } else if (entry.entityId !== undefined) {
+          const personaId = entityIdMap.get(entry.entityId);
+          if (personaId) {
+            rosterMap.set(entry.surfaceForm, personaId);
+          }
+        } else if (entry.isNew && entry.isTitleOnly) {
+          titleOnlyNames.add(entry.surfaceForm);
+        }
 
-        if (matchedProfile?.personaId && confidence >= 0.85) {
-          rosterMap.set(entry.surfaceForm, matchedProfile.personaId);
+        if (
+          aliasRegistry &&
+          entry.aliasType &&
+          typeof entry.aliasConfidence === "number" &&
+          entry.aliasConfidence >= ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence &&
+          entry.suggestedRealName
+        ) {
+          const suggestedKey = normalizeLookupKey(entry.suggestedRealName);
+          const matchedProfile = profileLookup.get(suggestedKey);
+          const confidence = entry.aliasConfidence;
+
+          pendingRosterAliasMappings.push({
+            bookId      : chapter.bookId,
+            personaId   : matchedProfile?.personaId,
+            alias       : entry.surfaceForm,
+            resolvedName: matchedProfile?.canonicalName ?? entry.suggestedRealName.trim(),
+            aliasType   : entry.aliasType,
+            confidence,
+            evidence    : entry.contextHint?.contextClue ?? "Phase1 名册别名线索",
+            chapterStart: chapter.no,
+            status      : confidence >= 0.9 ? "CONFIRMED" : "PENDING"
+          });
+
+          if (matchedProfile?.personaId && confidence >= 0.85) {
+            rosterMap.set(entry.surfaceForm, matchedProfile.personaId);
+          }
         }
       }
-      // isNew: true 且非 TITLE_ONLY → 不加入 rosterMap，走正常 resolver 创建新 persona 流程
+
+      // [Cost opt C] 按 Roster 结果收缩 profiles 注入范围
+      const rosterReferencedPersonaIds = new Set<string>();
+      for (const [, value] of rosterMap) {
+        if (value !== "GENERIC") {
+          rosterReferencedPersonaIds.add(value);
+        }
+      }
+      const floorSize = ANALYSIS_PIPELINE_CONFIG.chunkProfileFloor;
+      const floorPersonaIds = new Set(profiles.slice(0, floorSize).map(p => p.personaId));
+      chapterProfiles = rosterReferencedPersonaIds.size > 0
+        ? profiles.filter(p => rosterReferencedPersonaIds.has(p.personaId) || floorPersonaIds.has(p.personaId))
+        : profiles;
     }
 
     const chunks = splitContentIntoChunks(
@@ -672,7 +715,7 @@ export function createChapterAnalysisService(
           chapterNo   : chapter.no,
           chapterTitle: chapter.title,
           content     : chunk,
-          profiles,
+          profiles    : chapterProfiles,
           chunkIndex  : i + idx,
           chunkCount  : chunks.length,
           genericTitlesExample
@@ -1239,7 +1282,75 @@ export function createChapterAnalysisService(
     return written;
   }
 
-  return { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, collectGrayZoneMentions, clearGrayZoneMentions, runGrayZoneArbitration };
+  /**
+   * Pass 1 独立章节实体提取：不注入任何已有 profiles，LLM 纯粹从原文提取人物。
+   * 输入：chapterId - 章节主键。
+   * 输出：ChapterEntityList（本章人物列表）。
+   * 异常：章节不存在、AI 调用失败时抛错。
+   * 副作用：无（不写库）。
+   */
+  async function extractChapterEntities(
+    chapterId: string,
+    executionContext: AnalysisExecutionContext = {}
+  ): Promise<ChapterEntityList> {
+    const chapter = await prismaClient.chapter.findUnique({
+      where  : { id: chapterId },
+      include: { book: { select: { title: true } } }
+    });
+    if (!chapter) throw new Error(`Chapter [${chapterId}] 不存在`);
+
+    const prompt = buildIndependentExtractionPrompt({
+      bookTitle   : chapter.book.title,
+      chapterNo   : chapter.no,
+      chapterTitle: chapter.title,
+      content     : chapter.content
+    });
+
+    const stageContext = { bookId: chapter.bookId, jobId: executionContext.jobId };
+
+    if (!stageContext.jobId) {
+      const model = await strategyResolver.resolveForStage(PipelineStage.INDEPENDENT_EXTRACTION, {
+        bookId: chapter.bookId
+      });
+      const providerClient = createAiProviderClient({
+        provider : model.provider,
+        apiKey   : model.apiKey,
+        baseUrl  : model.baseUrl,
+        modelName: model.modelName
+      });
+      const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
+      const entities = parseIndependentExtractionResponse(aiResult.content);
+      return { chapterId, chapterNo: chapter.no, entities };
+    }
+
+    const result = await stageAiCallExecutor.execute({
+      stage    : PipelineStage.INDEPENDENT_EXTRACTION,
+      prompt,
+      jobId    : stageContext.jobId,
+      chapterId,
+      context  : stageContext,
+      callFn   : async ({ model }) => {
+        const providerClient = createAiProviderClient({
+          provider : model.provider,
+          apiKey   : model.apiKey,
+          baseUrl  : model.baseUrl,
+          modelName: model.modelName
+        });
+        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
+        const entities = parseIndependentExtractionResponse(aiResult.content);
+        return { data: entities, usage: aiResult.usage };
+      }
+    });
+
+    log("analysis.independent_extraction", {
+      chapterId,
+      entityCount: result.data.length
+    });
+
+    return { chapterId, chapterNo: chapter.no, entities: result.data };
+  }
+
+  return { analyzeChapter, extractChapterEntities, resolvePersonaTitles, getTitleOnlyPersonaCount, collectGrayZoneMentions, clearGrayZoneMentions, runGrayZoneArbitration };
 }
 
 export const chapterAnalysisService = createChapterAnalysisService(prisma, undefined, aliasRegistryService);
@@ -1286,12 +1397,14 @@ function buildProfileLookupMap(
   return lookup;
 }
 
-function resolveBookLexiconConfig(_bookTitle: string): BookLexiconConfig {
+function resolveBookLexiconConfig(genre: string | null | undefined): BookLexiconConfig {
   if (!ANALYSIS_PIPELINE_CONFIG.enableGenrePresetOverride) {
     return GENRE_PRESETS[DEFAULT_GENRE_PRESET] ?? {};
   }
 
-  return GENRE_PRESETS[DEFAULT_GENRE_PRESET] ?? {};
+  // 优先使用书籍显式指定的体裁；未指定时回退默认预设
+  const key = genre && genre in GENRE_PRESETS ? genre : DEFAULT_GENRE_PRESET;
+  return GENRE_PRESETS[key] ?? {};
 }
 
 function collectGenericRatiosFromRoster(

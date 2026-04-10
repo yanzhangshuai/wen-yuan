@@ -122,6 +122,7 @@ export const BookScalarFieldEnum = {
   title: 'title',
   author: 'author',
   dynasty: 'dynasty',
+  genre: 'genre',
   description: 'description',
   coverUrl: 'coverUrl',
   sourceFileKey: 'sourceFileKey',

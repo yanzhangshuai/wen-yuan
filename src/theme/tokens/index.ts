@@ -20,11 +20,16 @@ import { xingkong } from "./xingkong";
  */
 export interface ThemeTokens {
   /** 主题唯一 ID：必须与 ThemeId 对齐，作为映射主键参与查表。 */
-  readonly id           : ThemeId;
+  readonly id            : ThemeId;
   /** 主题在选择器中的中文名称，仅用于展示。 */
-  readonly label        : string;
+  readonly label         : string;
   /** 派系颜色盘：按业务约定顺序对应派系槽位，顺序本身是业务规则。 */
-  readonly factionColors: readonly string[];
+  readonly factionColors : readonly string[];
+  /**
+   * 关系类型颜色盘：按索引顺序依次分配给图谱中出现的关系类型。
+   * 用于前端 ForceGraph 边着色与图例展示；顺序稳定后不建议调整，以免颜色突变。
+   */
+  readonly edgeTypeColors: readonly string[];
 }
 
 /**
@@ -57,4 +62,21 @@ export function getFactionColorsForTheme(theme: string | undefined): readonly st
   }
   // 无效值统一回退到 `suya`：这是产品默认主题策略，不是技术限制。
   return THEME_TOKENS["suya"].factionColors;
+}
+
+/**
+ * 按主题获取关系类型颜色盘。
+ *
+ * @param theme 主题 ID（可能来自 URL、localStorage 或用户设置，允许为空）
+ * @returns 对应主题的边类型颜色数组；若参数无效则回退到 `suya` 默认配色
+ *
+ * 分支说明：
+ * - `theme` 存在且命中映射：返回对应主题颜色；
+ * - 其余情况回退默认主题：这是防御式容错，避免异常输入导致 UI 崩溃。
+ */
+export function getEdgeTypeColorsForTheme(theme: string | undefined): readonly string[] {
+  if (theme && theme in THEME_TOKENS) {
+    return THEME_TOKENS[theme as ThemeId].edgeTypeColors;
+  }
+  return THEME_TOKENS["suya"].edgeTypeColors;
 }

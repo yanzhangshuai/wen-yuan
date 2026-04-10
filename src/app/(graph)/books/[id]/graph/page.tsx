@@ -96,6 +96,9 @@ export default async function BookGraphPage({
         // 章节数为空时兜底 0，避免下游时间轴组件出现 NaN/负值逻辑。
         totalChapters={book.chapterCount ?? 0}
         chapterUnit="回"
+        bookTitle={book.title}
+        bookAuthor={book.author ?? undefined}
+        personaCount={book.personaCount}
       />
     </section>
   );

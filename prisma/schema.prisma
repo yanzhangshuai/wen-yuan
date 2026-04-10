@@ -164,6 +164,7 @@ model Book {
   title          String // 书名，如《儒林外史》
   author         String? // 作者，如"吴敬梓"
   dynasty        String? // 背景朝代
+  genre          String? // 体裁预设键名（如"武侠""宫廷家族"），对应 GENRE_PRESETS，影响词典覆盖
   description    String? @db.Text // 作品简介
   coverUrl       String? @map("cover_url") // 3D 看板所需的封面图
   sourceFileKey  String? @map("source_file_key") // 原始导入文件的对象存储 key

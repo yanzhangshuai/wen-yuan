@@ -78,13 +78,15 @@ const STAGES_FOR_FORM: PipelineStage[] = [
  * 业务语义：用于管理员可读展示，不影响后端真实阶段键。
  */
 const STAGE_LABELS: Record<PipelineStage, string> = {
-  [PipelineStage.ROSTER_DISCOVERY]     : "名册发现",
-  [PipelineStage.CHUNK_EXTRACTION]     : "分片提取",
-  [PipelineStage.CHAPTER_VALIDATION]   : "章节验证",
-  [PipelineStage.TITLE_RESOLUTION]     : "称号溯源",
-  [PipelineStage.GRAY_ZONE_ARBITRATION]: "灰区仲裁",
-  [PipelineStage.BOOK_VALIDATION]      : "全书验证",
-  [PipelineStage.FALLBACK]             : "降级兜底（全阶段共享）"
+  [PipelineStage.ROSTER_DISCOVERY]      : "名册发现",
+  [PipelineStage.CHUNK_EXTRACTION]      : "分片提取",
+  [PipelineStage.CHAPTER_VALIDATION]    : "章节验证",
+  [PipelineStage.TITLE_RESOLUTION]      : "称号溯源",
+  [PipelineStage.GRAY_ZONE_ARBITRATION] : "灰区仲裁",
+  [PipelineStage.BOOK_VALIDATION]       : "全书验证",
+  [PipelineStage.INDEPENDENT_EXTRACTION]: "独立实体提取",
+  [PipelineStage.ENTITY_RESOLUTION]     : "全局实体消歧",
+  [PipelineStage.FALLBACK]              : "降级兜底（全阶段共享）"
 };
 
 export interface EnabledModelItem {
@@ -214,13 +216,15 @@ export function ModelStrategyForm({
   const recommendedByStage = useMemo(() => {
     // 每个阶段推荐到“当前可用模型”中的具体实体；若推荐模型未启用则为 null。
     const mapping: Record<PipelineStage, EnabledModelItem | null> = {
-      [PipelineStage.ROSTER_DISCOVERY]     : null,
-      [PipelineStage.CHUNK_EXTRACTION]     : null,
-      [PipelineStage.CHAPTER_VALIDATION]   : null,
-      [PipelineStage.TITLE_RESOLUTION]     : null,
-      [PipelineStage.GRAY_ZONE_ARBITRATION]: null,
-      [PipelineStage.BOOK_VALIDATION]      : null,
-      [PipelineStage.FALLBACK]             : null
+      [PipelineStage.ROSTER_DISCOVERY]      : null,
+      [PipelineStage.CHUNK_EXTRACTION]      : null,
+      [PipelineStage.CHAPTER_VALIDATION]    : null,
+      [PipelineStage.TITLE_RESOLUTION]      : null,
+      [PipelineStage.GRAY_ZONE_ARBITRATION] : null,
+      [PipelineStage.BOOK_VALIDATION]       : null,
+      [PipelineStage.INDEPENDENT_EXTRACTION]: null,
+      [PipelineStage.ENTITY_RESOLUTION]     : null,
+      [PipelineStage.FALLBACK]              : null
     };
 
     for (const stage of STAGES_FOR_FORM) {
@@ -489,6 +493,11 @@ export function ModelStrategyForm({
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-medium">{STAGE_LABELS[stage]}</h4>
                       {isFallback && <Badge variant="secondary">FALLBACK</Badge>}
+                      {stage === PipelineStage.ROSTER_DISCOVERY && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          两遍式架构下不使用
+                        </Badge>
+                      )}
                     </div>
                     {selectedIsRecommended && (
                       // 已选模型命中推荐时给正向反馈，帮助管理员快速校准配置。

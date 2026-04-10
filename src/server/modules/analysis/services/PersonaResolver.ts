@@ -10,7 +10,8 @@ import {
   SAFETY_GENERIC_TITLES,
   DEFAULT_GENERIC_TITLES,
   buildEffectiveLexicon,
-  classifyPersonalization
+  classifyPersonalization,
+  extractSurname
 } from "@/server/modules/analysis/config/lexicon";
 
 /**
@@ -120,6 +121,58 @@ function applyRankedHonorificBoost(
   if (matchedIndexes.length !== 1) {
     return scored;
   }
+
+  const boosted = [...scored];
+  const targetIndex = matchedIndexes[0];
+  const boostFloor = ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore + 0.06;
+  boosted[targetIndex] = {
+    ...boosted[targetIndex],
+    score: Math.max(boosted[targetIndex].score, boostFloor)
+  };
+  return boosted;
+}
+
+/**
+ * "姓+泛称"类称谓加权（如"范举人""贾太太""王大人"）：
+ * - 当称谓 = 已知姓氏 + 泛称/称号后缀时，查找候选中同姓的正式人名
+ * - 仅有 1 个同姓候选 → 提升至合并阈值之上（与 applyRankedHonorificBoost 保持同等保守策略）
+ * - 同姓候选 > 1 → 不加权，避免"贾太太"在贾政/贾赦之间误选
+ * - 剩余部分命中 hardBlockSuffixes（如"之父"）→ 不加权，因为是关系描述不是别名
+ */
+function applySurnameTitleBoost(
+  extractedName: string,
+  scored: ScoredCandidate[],
+  effectiveLexicon: EffectiveLexicon
+): ScoredCandidate[] {
+  if (scored.length === 0) return scored;
+
+  const normalizedExtracted = normalizeName(extractedName);
+  const surname = extractSurname(normalizedExtracted);
+  if (!surname) return scored;
+
+  const remainder = normalizedExtracted.slice(surname.length);
+  if (!remainder) return scored;
+
+  // 关系描述词尾（如"之父""之妻"）不做加权
+  if (effectiveLexicon.hardBlockSuffixes.has(remainder)) return scored;
+
+  // 剩余部分必须是泛称或称号才属于"姓+泛称"模式
+  const isTitleLike =
+    effectiveLexicon.genericTitles.has(remainder) ||
+    effectiveLexicon.titlePattern.test(remainder) ||
+    effectiveLexicon.positionPattern.test(remainder) ||
+    effectiveLexicon.softBlockSuffixes.has(remainder);
+  if (!isTitleLike) return scored;
+
+  const matchedIndexes: number[] = [];
+  for (const [index, item] of scored.entries()) {
+    const normalizedCandidateName = normalizeName(item.candidate.name);
+    if (!normalizedCandidateName.startsWith(surname)) continue;
+    if (!isLikelyCanonicalChineseName(normalizedCandidateName, effectiveLexicon)) continue;
+    matchedIndexes.push(index);
+  }
+
+  if (matchedIndexes.length !== 1) return scored;
 
   const boosted = [...scored];
   const targetIndex = matchedIndexes[0];
@@ -358,6 +411,16 @@ export function createPersonaResolver(
       };
     }
 
+    // 超长名字是垃圾提取（整句话或短语被当成人名），直接过滤。
+    // 中文人名一般 2-4 字，加上称号最多 6-8 字，> 10 字几乎不可能是合法人名。
+    if (extracted.length > 10) {
+      return {
+        status    : "hallucinated",
+        confidence: 0,
+        reason    : "name_too_long"
+      };
+    }
+
     if (SAFETY_GENERIC_TITLES.has(rawName)) {
       return {
         status    : "hallucinated",
@@ -408,6 +471,7 @@ export function createPersonaResolver(
     }
 
     // 优先使用 Phase 1 名册结果：这是同章上下文最强信号，优先级高于全局相似度。
+    // 安全层：增加名字相似度校验，防止 LLM 返回错误的 entityId 导致级联合并。
     if (input.rosterMap) {
       const rosterValue = input.rosterMap.get(rawName);
       if (rosterValue === "GENERIC") {
@@ -418,16 +482,50 @@ export function createPersonaResolver(
         };
       }
       if (rosterValue) {
-        await client.profile.upsert({
-          where : { personaId_bookId: { personaId: rosterValue, bookId: input.bookId } },
-          update: { localName: input.extractedName },
-          create: { personaId: rosterValue, bookId: input.bookId, localName: input.extractedName }
+        // 校验：surfaceForm 与目标 persona 的名字/别名是否有合理关联。
+        // 当 LLM 返回 { surfaceForm: "景兰江", entityId: 1 } 但 persona 1 是"范进"时，
+        // 名字无任何相似度 → 拒绝映射，让后续相似度匹配流程正确处理。
+        const targetPersona = await client.persona.findUnique({
+          where : { id: rosterValue },
+          select: { name: true, aliases: true }
         });
-        return {
-          status    : "resolved",
-          personaId : rosterValue,
-          confidence: 0.97
-        };
+        if (targetPersona) {
+          const allTargetNames = [targetPersona.name, ...targetPersona.aliases];
+          const hasReasonableMatch = allTargetNames.some(targetName => {
+            const normalizedTarget = normalizeName(targetName);
+            const normalizedSurface = normalizeName(rawName);
+            // 精确匹配或子串包含（如"范举人"包含"范"，"范进"以"范"开头）
+            if (normalizedTarget === normalizedSurface) return true;
+            if (normalizedTarget.includes(normalizedSurface) || normalizedSurface.includes(normalizedTarget)) return true;
+            // 同姓校验
+            const targetSurname = extractSurname(normalizedTarget);
+            const surfaceSurname = extractSurname(normalizedSurface);
+            if (targetSurname && surfaceSurname && targetSurname === surfaceSurname) return true;
+            return false;
+          });
+
+          if (!hasReasonableMatch) {
+            // 名字完全无关联 → 拒绝 rosterMap 映射，记录日志，继续走后续匹配逻辑
+            console.warn("[PersonaResolver] roster.mapping.rejected.name_mismatch", JSON.stringify({
+              bookId     : input.bookId,
+              surfaceForm: rawName,
+              targetName : targetPersona.name,
+              personaId  : rosterValue
+            }));
+            // 不立即 return，fallthrough 到后续相似度匹配
+          } else {
+            await client.profile.upsert({
+              where : { personaId_bookId: { personaId: rosterValue, bookId: input.bookId } },
+              update: { localName: input.extractedName },
+              create: { personaId: rosterValue, bookId: input.bookId, localName: input.extractedName }
+            });
+            return {
+              status    : "resolved",
+              personaId : rosterValue,
+              confidence: 0.97
+            };
+          }
+        }
       }
     }
 
@@ -458,7 +556,11 @@ export function createPersonaResolver(
         candidate,
         score: multiSignalScore(extracted, candidate, effectiveLexicon.hardBlockSuffixes, effectiveLexicon.softBlockSuffixes)
       }));
-    const scored = applyRankedHonorificBoost(extracted, baseScored, effectiveLexicon)
+    // 两种加权策略依次应用，互补覆盖不同别名模式：
+    // - RankedHonorific: "姓+排行+敬称"（如"马二先生"）
+    // - SurnameTitle: "姓+泛称/称号"（如"范举人""贾太太"）
+    const boostedRanked = applyRankedHonorificBoost(extracted, baseScored, effectiveLexicon);
+    const scored = applySurnameTitleBoost(rawName, boostedRanked, effectiveLexicon)
       .sort((a, b) => b.score - a.score);
     const winner = scored[0];
 

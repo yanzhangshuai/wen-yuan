@@ -263,3 +263,57 @@ export function AnalyzeButton({ disabled = false }: AnalyzeButtonProps) {
 原因：
 - 显式 props + 语义化 className 让 lint、review、重构都有稳定锚点。
 - 统一组件骨架可降低 UI 行为漂移和样式重复实现。
+
+---
+
+## 可视化数据归一化
+
+场景：将原始业务数据的细粒度枚举映射到"有限可辨识视觉分类"（颜色、图例、标签）时。
+
+### 规则：图例/颜色映射先归一化，不直接消费原始枚举
+
+**反例（禁止）**：
+
+```tsx
+// ❌ 直接把所有原始类型映射到调色板，颜色循环导致不同类型同色
+const types = [...new Set(edges.map(e => e.type))]; // 可能有 20+ 种
+const colorMap = new Map(types.map((t, i) => [t, palette[i % palette.length]]));
+<Legend map={colorMap} /> // 图例显示 20 行，颜色从第 5 条开始重复
+```
+
+**正例（必须）**：
+
+```tsx
+// ✅ 先归一化到 N 个语义分组，每组独立颜色；原始细粒度类型仍用于精确渲染
+// 组定义与关键词在模块外层（非 render 函数内）定义，避免重复构造
+const RELATION_GROUPS = [...]; // 5 个语义组
+
+function normalizeRelationIdx(raw: string): number { ... }
+
+// edgeTypeColorMap：raw type → canonical color（传给渲染引擎）
+const edgeTypeColorMap = useMemo(() =>
+  new Map(uniqueTypes.map(t => [t, palette[normalizeRelationIdx(t)]])),
+[edges, theme]);
+
+// legendColorMap：canonical label → color（传给图例组件）
+const legendColorMap = useMemo(() =>
+  new Map(CANONICAL_GROUPS
+    .filter(g => presentIdxs.has(g.idx))   // 只显示实际出现的分组
+    .map(g => [g.label, palette[g.idx]])),
+[edges, theme]);
+
+<RenderEngine edgeColorMap={edgeTypeColorMap} />
+<Legend colorMap={legendColorMap} />  // 始终 ≤ N 行，无同色项
+```
+
+配套要求：
+- 分组规则（关键词列表）必须在**组件外层常量**中定义，不能在 useMemo/render 内构造。
+- 归一化函数必须有明确的兜底分组（"其他"），不能返回 undefined。
+- 颜色数组长度必须 === 分组数（不多不少），保证 `palette[idx]` 不会越界。
+- 图例组件只负责展示，不负责归一化逻辑——归一化在父组件（容器）中完成。
+
+原因：
+- 当原始类型数量超过颜色盘大小时，直接循环会使不同类型视觉相同，用户无法区分。
+- 分组归一化把"无限原始枚举"映射到"有限固定视觉集合"，是视觉可读性的架构级保证。
+- 渲染引擎与图例各自消费不同映射（原始类型/分组标签），两者职责清晰，互不耦合。
+

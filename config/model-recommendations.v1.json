@@ -21,6 +21,8 @@
     "TITLE_RESOLUTION": "qwen-max-stable",
     "GRAY_ZONE_ARBITRATION": "qwen-plus-stable",
     "BOOK_VALIDATION": "qwen-max-stable",
+    "INDEPENDENT_EXTRACTION": "deepseek-v3-stable",
+    "ENTITY_RESOLUTION": "qwen-max-stable",
     "FALLBACK": "qwen-plus-stable"
   },
   "notes": "阶段默认模型仅通过 aliasKey 决定；推荐配置不再携带 providerModelId，具体供应商模型由数据库模型表（aliasKey -> UUID/provider/modelId）决定。"

@@ -92,6 +92,100 @@ export const DEFAULT_POSITION_STEMS = [
   "丞相", "太守", "知府", "知县", "尚书", "侍郎", "将军", "巡抚", "总督", "学道"
 ];
 
+/**
+ * 百家姓常用姓氏表（含常见复姓），覆盖古典文学主要人物姓氏。
+ * PersonaResolver 通过此表做"姓+称号"类称谓匹配（如"范举人"→范进），
+ * 提升同姓别名对齐准确率，同时避免不同姓人物误合并。
+ */
+export const CHINESE_SURNAME_LIST: ReadonlySet<string> = new Set([
+  // 复姓（优先匹配，避免被单字姓氏截断）
+  "欧阳", "司马", "上官", "诸葛", "公孙", "令狐", "皇甫", "尉迟",
+  "长孙", "慕容", "夏侯", "轩辕", "端木", "百里", "东方", "南宫", "西门",
+  // 单姓（百家姓高频，覆盖古典文学 99%+ 人物）
+  "赵", "钱", "孙", "李", "周", "吴", "郑", "王", "冯", "陈",
+  "褚", "卫", "蒋", "沈", "韩", "杨", "朱", "秦", "尤", "许",
+  "何", "吕", "施", "张", "孔", "曹", "严", "华", "金", "魏",
+  "陶", "姜", "戚", "谢", "邹", "喻", "柏", "水", "窦", "章",
+  "云", "苏", "潘", "葛", "奚", "范", "彭", "郎", "鲁", "韦",
+  "昌", "马", "苗", "凤", "花", "方", "俞", "任", "袁", "柳",
+  "刘", "关", "鲍", "史", "唐", "费", "廉", "岑", "薛", "雷",
+  "贺", "倪", "汤", "滕", "殷", "罗", "毕", "郝", "安", "常",
+  "乐", "于", "时", "傅", "皮", "卞", "齐", "康", "伍", "余",
+  "元", "卜", "顾", "孟", "平", "黄", "穆", "萧", "尹", "姚",
+  "邵", "湛", "汪", "祁", "毛", "禹", "狄", "米", "贝", "明",
+  "臧", "计", "温", "曾", "简", "饶", "文", "寇", "连", "沙",
+  "成", "戴", "谈", "宋", "茅", "庞", "熊", "纪", "舒", "屈",
+  "项", "祝", "董", "梁", "杜", "阮", "蓝", "闵", "席", "季",
+  "强", "贾", "路", "娄", "危", "江", "童", "颜", "郭", "梅",
+  "盛", "林", "刁", "钟", "徐", "邱", "骆", "高", "夏", "蔡",
+  "田", "樊", "胡", "凌", "霍", "虞", "万", "支", "柯", "管",
+  "卢", "莫", "经", "房", "缪", "干", "解", "应", "宗", "丁",
+  "宣", "邓", "郁", "单", "杭", "洪", "包", "诸", "左", "石",
+  "崔", "吉", "龚", "程", "邢", "裴", "陆", "荣", "翁", "荀",
+  "羊", "惠", "甄", "曲", "封", "储", "靳", "伏"
+]);
+
+/**
+ * 从姓名中提取姓氏。优先匹配复姓（2 字），再匹配单姓（1 字）。
+ * 未命中已知姓氏时返回 null，不做猜测。
+ */
+export function extractSurname(name: string): string | null {
+  if (name.length >= 2) {
+    const twoChar = name.slice(0, 2);
+    if (CHINESE_SURNAME_LIST.has(twoChar)) return twoChar;
+  }
+  if (name.length >= 1) {
+    const oneChar = name.slice(0, 1);
+    if (CHINESE_SURNAME_LIST.has(oneChar)) return oneChar;
+  }
+  return null;
+}
+
+/**
+ * 通用实体抽取规则。所有涉及实体识别的 prompt 共用此数组，杜绝多处 prompt 规则漂移。
+ * 含 `{genericTitles}` 占位符，构建 prompt 时动态替换为当前有效泛称列表。
+ */
+export const ENTITY_EXTRACTION_RULES: readonly string[] = [
+  "原文中的文字必须精确引用（surfaceForm/rawText），禁止编造或改写。",
+  "优先匹配已知人物档案中的标准名(canonicalName)；仅确认全新人物时才创建新 personaName。",
+  "泛化称谓（{genericTitles}）禁止作为独立人物名。单独姓氏无法确认具体人物时标记为 generic。",
+  "仅提取虚构角色，排除作者、评注者、真实历史人物、批评家。",
+  'personaName 使用规范人名，禁止附加"大人""老爷"等泛称后缀。',
+  '已知别名须映射回标准名（如"范举人"→ 范进），不得重复创建。',
+  "不确定时宁可忽略，避免误建幻觉人物。",
+  "同一人物在同一片段中的多种称呼（姓名、官衔、别号）都应识别并映射到同一实体。"
+];
+
+/** 关系抽取规则。buildChapterAnalysisPrompt 等使用。 */
+export const RELATIONSHIP_EXTRACTION_RULES: readonly string[] = [
+  "description 写结论，evidence 填原文短句（≤120字）。",
+  "不跨段推测，当前片段无证据则不输出该关系。",
+  "ironyNote 仅在有直接讽刺/反语证据时填写。",
+  "避免自关系（source 与 target 不得相同）。"
+];
+
+/**
+ * 将规则数组格式化为编号列表，并替换占位符。
+ * 用于 prompt 构建，保证所有 prompt 共用同一份规则文本。
+ */
+export function formatRulesSection(
+  rules: readonly string[],
+  replacements?: Record<string, string>,
+  startIndex = 1
+): string {
+  return rules
+    .map((rule, i) => {
+      let text = rule;
+      if (replacements) {
+        for (const [key, value] of Object.entries(replacements)) {
+          text = text.replaceAll(`{${key}}`, value);
+        }
+      }
+      return `${startIndex + i}. ${text}`;
+    })
+    .join("\n");
+}
+
 function escapeRegex(value: string): string {
   // 防止词项中的正则元字符污染整体 pattern。
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -179,3 +273,9 @@ export function classifyPersonalization(evidence: MentionPersonalizationEvidence
   // 规则 3：其余灰区交由后续流程（模型或人工）继续判定。
   return "gray_zone";
 }
+
+/**
+ * Prompt 中泛化称谓示例的截取数量上限。
+ * 全局统一使用此常量，避免 ChapterAnalysisService 和 prompts.ts 各自硬编码导致口径漂移。
+ */
+export const GENERIC_TITLES_PROMPT_LIMIT = 30;

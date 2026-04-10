@@ -51,13 +51,15 @@ const RecommendationAliasSchema = z.object({
  * - 在配置加载时提前发现漏配问题，而不是运行时静默失败。
  */
 const StageAliasesSchema = z.object({
-  [PipelineStage.ROSTER_DISCOVERY]     : z.string().trim().min(1),
-  [PipelineStage.CHUNK_EXTRACTION]     : z.string().trim().min(1),
-  [PipelineStage.CHAPTER_VALIDATION]   : z.string().trim().min(1),
-  [PipelineStage.TITLE_RESOLUTION]     : z.string().trim().min(1),
-  [PipelineStage.GRAY_ZONE_ARBITRATION]: z.string().trim().min(1),
-  [PipelineStage.BOOK_VALIDATION]      : z.string().trim().min(1),
-  [PipelineStage.FALLBACK]             : z.string().trim().min(1)
+  [PipelineStage.ROSTER_DISCOVERY]       : z.string().trim().min(1),
+  [PipelineStage.CHUNK_EXTRACTION]       : z.string().trim().min(1),
+  [PipelineStage.CHAPTER_VALIDATION]     : z.string().trim().min(1),
+  [PipelineStage.TITLE_RESOLUTION]       : z.string().trim().min(1),
+  [PipelineStage.GRAY_ZONE_ARBITRATION]  : z.string().trim().min(1),
+  [PipelineStage.BOOK_VALIDATION]        : z.string().trim().min(1),
+  [PipelineStage.INDEPENDENT_EXTRACTION] : z.string().trim().min(1),
+  [PipelineStage.ENTITY_RESOLUTION]      : z.string().trim().min(1),
+  [PipelineStage.FALLBACK]               : z.string().trim().min(1)
 });
 
 /**
@@ -106,13 +108,15 @@ export interface StageRecommendedModel extends RecommendationAlias {
  */
 function createEmptyStageRecommendationMap(): Record<PipelineStage, StageRecommendedModel | null> {
   return {
-    [PipelineStage.ROSTER_DISCOVERY]     : null,
-    [PipelineStage.CHUNK_EXTRACTION]     : null,
-    [PipelineStage.CHAPTER_VALIDATION]   : null,
-    [PipelineStage.TITLE_RESOLUTION]     : null,
-    [PipelineStage.GRAY_ZONE_ARBITRATION]: null,
-    [PipelineStage.BOOK_VALIDATION]      : null,
-    [PipelineStage.FALLBACK]             : null
+    [PipelineStage.ROSTER_DISCOVERY]       : null,
+    [PipelineStage.CHUNK_EXTRACTION]       : null,
+    [PipelineStage.CHAPTER_VALIDATION]     : null,
+    [PipelineStage.TITLE_RESOLUTION]       : null,
+    [PipelineStage.GRAY_ZONE_ARBITRATION]  : null,
+    [PipelineStage.BOOK_VALIDATION]        : null,
+    [PipelineStage.INDEPENDENT_EXTRACTION] : null,
+    [PipelineStage.ENTITY_RESOLUTION]      : null,
+    [PipelineStage.FALLBACK]               : null
   };
 }
 
