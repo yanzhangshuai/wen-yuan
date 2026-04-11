@@ -63,9 +63,9 @@ npm run dev
 
 - 原则：测试有效性优先，覆盖率用于门禁，不允许“只追数字”。
 - 执行门禁：每次变更都必须运行项目约定的单元测试与 coverage 校验。
-- 强制阈值：Statements >= 85%、Branches >= 85%、Functions >= 85%、Lines >= 85%。
+- 强制阈值：Statements >= 90%、Branches >= 90%、Functions >= 90%、Lines >= 90%。
 - 任一指标未达标时，任务判定未完成，不得交付或合并。
-- 高风险模块（安全、计费、核心数据链路）建议 >= 90%。
+- 高风险模块（安全、计费、核心数据链路）建议 >= 95%。
 - 若当前仓库尚无单测框架，必须先补齐最小可用框架与 coverage 报告能力。
 
 ## 测试文件组织约定
@@ -111,7 +111,7 @@ npm run dev
 2. ✅ Success/Failure/Boundary 三路径都已记录
 3. ✅ 每条路径都包含可复现证据
 4. ✅ 不包含占位文本（TODO、TBD 等）
-5. ✅ 单元测试覆盖关键分支，且覆盖率四项（Statements/Branches/Functions/Lines）全部 >= 85%
+5. ✅ 单元测试覆盖关键分支，且覆盖率四项（Statements/Branches/Functions/Lines）全部 >= 90%
 6. ✅ 代码与测试注释符合 `comment-guidelines.md` 规范
 
 ## 快速验证命令

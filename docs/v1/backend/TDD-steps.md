@@ -1216,10 +1216,10 @@ cat coverage/unit/lcov.info | grep -E "^(SF|LH|LF)" | \
 2. 找到未覆盖的分支（红色代码行）
 3. 添加对应测试用例覆盖该分支
 4. 重新运行 pnpm test:unit，直到所有阈值通过：
-   - lines    ≥ 80%
-   - branches ≥ 70%
-   - functions ≥ 80%
-   - statements ≥ 80%
+   - lines    ≥ 90%
+   - branches ≥ 85%
+   - functions ≥ 90%
+   - statements ≥ 90%
 ```
 
 **注意**：以下路径被排除在覆盖率统计之外（`vitest.config.ts` 配置）：

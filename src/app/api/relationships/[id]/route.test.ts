@@ -131,6 +131,22 @@ describe("PATCH /api/relationships/:id", () => {
     expect(updateRelationshipMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 for invalid route id", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request("http://localhost/api/relationships/invalid-id", {
+      method : "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({ type: "师生" })
+    }), { params: Promise.resolve({ id: "invalid-id" }) });
+
+    expect(response.status).toBe(400);
+    expect(updateRelationshipMock).not.toHaveBeenCalled();
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 404 when relationship missing", async () => {
     const relationshipId = "c3f1f87e-f8e5-4f40-b6c9-eec52f4eaf77";
@@ -150,6 +166,45 @@ describe("PATCH /api/relationships/:id", () => {
     expect(response.status).toBe(404);
     const payload = await response.json();
     expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 400 when the service rejects the relationship payload", async () => {
+    const relationshipId = "c3f1f87e-f8e5-4f40-b6c9-eec52f4eaf77";
+    const { RelationshipInputError } = await import("@/server/modules/relationships/errors");
+    updateRelationshipMock.mockRejectedValue(new RelationshipInputError("关系类型不能为空"));
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request(`http://localhost/api/relationships/${relationshipId}`, {
+      method : "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({ type: "师生" })
+    }), { params: Promise.resolve({ id: relationshipId }) });
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 500 for unexpected update failures", async () => {
+    const relationshipId = "c3f1f87e-f8e5-4f40-b6c9-eec52f4eaf77";
+    updateRelationshipMock.mockRejectedValue(new Error("db unavailable"));
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request(`http://localhost/api/relationships/${relationshipId}`, {
+      method : "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({ type: "师生" })
+    }), { params: Promise.resolve({ id: relationshipId }) });
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
   });
 });
 
@@ -216,5 +271,36 @@ describe("DELETE /api/relationships/:id", () => {
     expect(response.status).toBe(404);
     const payload = await response.json();
     expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 400 for invalid route id", async () => {
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(new Request("http://localhost/api/relationships/invalid-id", {
+      method : "DELETE",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      }
+    }), { params: Promise.resolve({ id: "invalid-id" }) });
+
+    expect(response.status).toBe(400);
+    expect(deleteRelationshipMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 for unexpected delete failures", async () => {
+    const relationshipId = "c3f1f87e-f8e5-4f40-b6c9-eec52f4eaf77";
+    deleteRelationshipMock.mockRejectedValue(new Error("db unavailable"));
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(new Request(`http://localhost/api/relationships/${relationshipId}`, {
+      method : "DELETE",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      }
+    }), { params: Promise.resolve({ id: relationshipId }) });
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
   });
 });

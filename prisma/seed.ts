@@ -3,6 +3,8 @@ import argon2 from "argon2";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
+import { seedKnowledgeBaseFromFile } from "../scripts/init-knowledge-base.ts";
+import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
 
 /**
  * 文件定位（数据初始化层 / 运维脚本层）：
@@ -12,6 +14,7 @@ import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
  * 核心业务职责：
  * 1. 初始化管理员账号（后台登录入口所依赖的首个账号）。
  * 2. 初始化 AI 模型配置列表（后台“模型管理/模型策略”上游依赖）。
+ * 3. 初始化知识库基础种子（书籍类型、种子知识包、姓氏、泛化称谓、NER 规则、提示词模板基线）。
  *
  * 上下游关系：
  * - 上游输入：`.env` 中的数据库连接与管理员账号配置。
@@ -171,9 +174,9 @@ const defaultAiModels = [
  * 2. 在一个事务内写入管理员与模型清单；
  * 3. 输出可读日志，方便本地和 CI 诊断。
  *
- * 为什么只初始化“管理员 + 模型”：
- * - 书籍/章节/人物属于业务数据，通常应由测试脚本或人工导入生成；
- * - seed 仅负责“系统可启动”的最小闭环，避免污染开发数据。
+ * 为什么初始化“管理员 + 模型 + 知识库基础种子”：
+ * - 后台知识库已成为解析链路的运行时依赖，仅有管理员与模型已不足以支撑完整验收；
+ * - 这里仍只写入基础配置与可幂等知识种子，不注入书籍/章节解析结果等业务运行数据。
  */
 async function main() {
   console.log("🌱 开始录入种子数据...");
@@ -226,9 +229,17 @@ async function main() {
     };
   });
 
+  const knowledgeInitPath = resolve(process.cwd(), "data/knowledge-base/book-types.init.json");
+  console.log(`📚 导入知识库 JSON 种子: ${knowledgeInitPath}`);
+  await seedKnowledgeBaseFromFile(prisma, knowledgeInitPath);
+
+  console.log("🧩 导入知识库 Phase 6 基础词库与模板...");
+  await seedKnowledgePhase6(prisma);
+
   console.log("✅ 种子数据录入成功！");
   console.log(`- 已预设模型数: ${result.modelCount}`);
   console.log(`- 已初始化管理员: ${result.adminUsername}`);
+  console.log("- 已完成知识库基础种子初始化");
 }
 
 main()

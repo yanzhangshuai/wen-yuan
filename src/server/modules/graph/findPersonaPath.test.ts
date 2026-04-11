@@ -187,4 +187,283 @@ describe("findPersonaPath service", () => {
     expect(runMock).toHaveBeenCalledTimes(4);
     expect(closeMock).toHaveBeenCalledTimes(2);
   });
+
+  it("returns zero-hop path when source and target are the same persona", async () => {
+    const prismaClient = createPrismaStub();
+    prismaClient.profile.findMany.mockResolvedValueOnce([
+      { persona: { id: "p1", name: "王冕" } },
+      { persona: { id: "p2", name: "周进" } }
+    ]);
+    prismaClient.relationship.findMany.mockResolvedValueOnce([
+      {
+        id       : "r-extra",
+        sourceId : "p1",
+        targetId : "p3",
+        type     : "同乡",
+        weight   : 1,
+        chapterId: "c1",
+        chapter  : { no: 1 }
+      }
+    ]);
+    prismaClient.persona.findMany
+      .mockResolvedValueOnce([{ id: "p3", name: "范进" }]);
+
+    const service = createFindPersonaPathService(prismaClient as never, null);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p1"
+    });
+
+    expect(result.found).toBe(true);
+    expect(result.hopCount).toBe(0);
+    expect(result.nodes).toEqual([{ id: "p1", name: "王冕" }]);
+    expect(result.edges).toEqual([]);
+    expect(prismaClient.persona.findMany).toHaveBeenCalledWith({
+      where : { id: { in: ["p3"] }, deletedAt: null },
+      select: { id: true, name: true }
+    });
+  });
+
+  it("skips extra persona lookup when profiles already cover every path endpoint", async () => {
+    const prismaClient = createPrismaStub();
+    const service = createFindPersonaPathService(prismaClient as never, null);
+
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result.found).toBe(true);
+    expect(prismaClient.persona.findMany).not.toHaveBeenCalled();
+  });
+
+  it("throws the missing source persona id when the source endpoint is absent", async () => {
+    const prismaClient = createPrismaStub();
+    prismaClient.profile.findMany.mockResolvedValueOnce([
+      { persona: { id: "p2", name: "周进" } },
+      { persona: { id: "p3", name: "范进" } }
+    ]);
+    prismaClient.relationship.findMany.mockResolvedValueOnce([]);
+
+    const service = createFindPersonaPathService(prismaClient as never, null);
+
+    await expect(service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    })).rejects.toMatchObject({
+      personaId: "p1"
+    });
+  });
+
+  it("returns found=false when Neo4j yields no record", async () => {
+    const runMock = vi.fn()
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] });
+    const closeMock = vi.fn().mockResolvedValue(undefined);
+    const neo4jDriver = {
+      session: vi.fn().mockReturnValue({
+        run  : runMock,
+        close: closeMock
+      })
+    };
+
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result).toMatchObject({
+      found   : false,
+      hopCount: 0,
+      nodes   : [],
+      edges   : []
+    });
+    expect(closeMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns found=false when Neo4j returns an empty path payload", async () => {
+    const runMock = vi.fn()
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({
+        records: [{
+          get: (key: string) => {
+            if (key === "nodeIds") {
+              return [];
+            }
+            if (key === "edgeIds") {
+              return ["r1"];
+            }
+            return [];
+          }
+        }]
+      });
+    const neo4jDriver = {
+      session: vi.fn().mockReturnValue({
+        run  : runMock,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
+    };
+
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result).toMatchObject({
+      found   : false,
+      hopCount: 0,
+      nodes   : [],
+      edges   : []
+    });
+  });
+
+  it("treats malformed Neo4j node ids as not found", async () => {
+    const runMock = vi.fn()
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({
+        records: [{
+          get: (key: string) => {
+            if (key === "nodeIds") {
+              return "p1,p2,p3";
+            }
+            if (key === "edgeIds") {
+              return ["r1", "r2"];
+            }
+            return [];
+          }
+        }]
+      });
+    const neo4jDriver = {
+      session: vi.fn().mockReturnValue({
+        run  : runMock,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
+    };
+
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result.found).toBe(false);
+    expect(result.nodes).toEqual([]);
+  });
+
+  it("uses empty string when a Neo4j path node name is missing from the persona map", async () => {
+    const runMock = vi.fn()
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({
+        records: [{
+          get: (key: string) => {
+            if (key === "nodeIds") {
+              return ["p1", "ghost", "p3"];
+            }
+            if (key === "edgeIds") {
+              return ["r1", "r2"];
+            }
+            return [];
+          }
+        }]
+      });
+    const neo4jDriver = {
+      session: vi.fn().mockReturnValue({
+        run  : runMock,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
+    };
+
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result.found).toBe(true);
+    expect(result.nodes).toEqual([
+      { id: "p1", name: "王冕" },
+      { id: "ghost", name: "" },
+      { id: "p3", name: "范进" }
+    ]);
+  });
+
+  it("falls back to PostgreSQL BFS when Neo4j returns unmapped edge ids", async () => {
+    const runMock = vi.fn()
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({
+        records: [{
+          get: (key: string) => {
+            if (key === "nodeIds") {
+              return ["p1", "p2", "p3"];
+            }
+            if (key === "edgeIds") {
+              return ["missing-edge"];
+            }
+            return [];
+          }
+        }]
+      });
+    const neo4jDriver = {
+      session: vi.fn().mockReturnValue({
+        run  : runMock,
+        close: vi.fn().mockResolvedValue(undefined)
+      })
+    };
+
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result.found).toBe(true);
+    expect(result.hopCount).toBe(2);
+    expect(result.edges.map((item) => item.id)).toEqual(["r1", "r2"]);
+  });
+
+  it("falls back to PostgreSQL BFS when Neo4j throws", async () => {
+    const runMock = vi.fn()
+      .mockResolvedValueOnce({ records: [] })
+      .mockResolvedValueOnce({ records: [] })
+      .mockRejectedValueOnce(new Error("neo4j offline"));
+    const closeMock = vi.fn().mockResolvedValue(undefined);
+    const neo4jDriver = {
+      session: vi.fn().mockReturnValue({
+        run  : runMock,
+        close: closeMock
+      })
+    };
+
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const result = await service.findPersonaPath({
+      bookId         : "book-1",
+      sourcePersonaId: "p1",
+      targetPersonaId: "p3"
+    });
+
+    expect(result.found).toBe(true);
+    expect(result.hopCount).toBe(2);
+    expect(result.nodes.map((item) => item.id)).toEqual(["p1", "p2", "p3"]);
+    expect(closeMock).toHaveBeenCalled();
+  });
 });

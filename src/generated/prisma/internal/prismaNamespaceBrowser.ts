@@ -65,7 +65,17 @@ export const ModelName = {
   AnalysisPhaseLog: 'AnalysisPhaseLog',
   AliasMapping: 'AliasMapping',
   ValidationReport: 'ValidationReport',
-  MergeSuggestion: 'MergeSuggestion'
+  MergeSuggestion: 'MergeSuggestion',
+  BookType: 'BookType',
+  KnowledgePack: 'KnowledgePack',
+  KnowledgeEntry: 'KnowledgeEntry',
+  BookKnowledgePack: 'BookKnowledgePack',
+  SurnameEntry: 'SurnameEntry',
+  GenericTitleEntry: 'GenericTitleEntry',
+  PromptTemplate: 'PromptTemplate',
+  PromptTemplateVersion: 'PromptTemplateVersion',
+  ExtractionRule: 'ExtractionRule',
+  KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -135,6 +145,7 @@ export const BookScalarFieldEnum = {
   errorLog: 'errorLog',
   parseProgress: 'parseProgress',
   parseStage: 'parseStage',
+  bookTypeId: 'bookTypeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -362,6 +373,161 @@ export const MergeSuggestionScalarFieldEnum = {
 } as const
 
 export type MergeSuggestionScalarFieldEnum = (typeof MergeSuggestionScalarFieldEnum)[keyof typeof MergeSuggestionScalarFieldEnum]
+
+
+export const BookTypeScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  name: 'name',
+  presetConfig: 'presetConfig',
+  description: 'description',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookTypeScalarFieldEnum = (typeof BookTypeScalarFieldEnum)[keyof typeof BookTypeScalarFieldEnum]
+
+
+export const KnowledgePackScalarFieldEnum = {
+  id: 'id',
+  bookTypeId: 'bookTypeId',
+  name: 'name',
+  description: 'description',
+  version: 'version',
+  isActive: 'isActive',
+  scope: 'scope',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgePackScalarFieldEnum = (typeof KnowledgePackScalarFieldEnum)[keyof typeof KnowledgePackScalarFieldEnum]
+
+
+export const KnowledgeEntryScalarFieldEnum = {
+  id: 'id',
+  packId: 'packId',
+  canonicalName: 'canonicalName',
+  aliases: 'aliases',
+  entryType: 'entryType',
+  confidence: 'confidence',
+  source: 'source',
+  sourceDetail: 'sourceDetail',
+  reviewStatus: 'reviewStatus',
+  reviewNote: 'reviewNote',
+  reviewedAt: 'reviewedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgeEntryScalarFieldEnum = (typeof KnowledgeEntryScalarFieldEnum)[keyof typeof KnowledgeEntryScalarFieldEnum]
+
+
+export const BookKnowledgePackScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  packId: 'packId',
+  priority: 'priority',
+  createdAt: 'createdAt'
+} as const
+
+export type BookKnowledgePackScalarFieldEnum = (typeof BookKnowledgePackScalarFieldEnum)[keyof typeof BookKnowledgePackScalarFieldEnum]
+
+
+export const SurnameEntryScalarFieldEnum = {
+  id: 'id',
+  surname: 'surname',
+  isCompound: 'isCompound',
+  priority: 'priority',
+  description: 'description',
+  bookTypeId: 'bookTypeId',
+  isActive: 'isActive',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SurnameEntryScalarFieldEnum = (typeof SurnameEntryScalarFieldEnum)[keyof typeof SurnameEntryScalarFieldEnum]
+
+
+export const GenericTitleEntryScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  tier: 'tier',
+  exemptInGenres: 'exemptInGenres',
+  description: 'description',
+  isActive: 'isActive',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GenericTitleEntryScalarFieldEnum = (typeof GenericTitleEntryScalarFieldEnum)[keyof typeof GenericTitleEntryScalarFieldEnum]
+
+
+export const PromptTemplateScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  description: 'description',
+  codeRef: 'codeRef',
+  isActive: 'isActive',
+  activeVersionId: 'activeVersionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromptTemplateScalarFieldEnum = (typeof PromptTemplateScalarFieldEnum)[keyof typeof PromptTemplateScalarFieldEnum]
+
+
+export const PromptTemplateVersionScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  versionNo: 'versionNo',
+  systemPrompt: 'systemPrompt',
+  userPrompt: 'userPrompt',
+  genreKey: 'genreKey',
+  changeNote: 'changeNote',
+  createdBy: 'createdBy',
+  isBaseline: 'isBaseline',
+  createdAt: 'createdAt'
+} as const
+
+export type PromptTemplateVersionScalarFieldEnum = (typeof PromptTemplateVersionScalarFieldEnum)[keyof typeof PromptTemplateVersionScalarFieldEnum]
+
+
+export const ExtractionRuleScalarFieldEnum = {
+  id: 'id',
+  sortOrder: 'sortOrder',
+  ruleType: 'ruleType',
+  content: 'content',
+  genreKey: 'genreKey',
+  isActive: 'isActive',
+  changeNote: 'changeNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ExtractionRuleScalarFieldEnum = (typeof ExtractionRuleScalarFieldEnum)[keyof typeof ExtractionRuleScalarFieldEnum]
+
+
+export const KnowledgeAuditLogScalarFieldEnum = {
+  id: 'id',
+  objectType: 'objectType',
+  objectId: 'objectId',
+  objectName: 'objectName',
+  action: 'action',
+  before: 'before',
+  after: 'after',
+  operatorId: 'operatorId',
+  operatorNote: 'operatorNote',
+  relatedBookId: 'relatedBookId',
+  createdAt: 'createdAt'
+} as const
+
+export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
 
 
 export const SortOrder = {

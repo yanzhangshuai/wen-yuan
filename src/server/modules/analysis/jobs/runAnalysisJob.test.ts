@@ -12,11 +12,17 @@
  */
 
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { buildAliasLookupFromDb, loadAnalysisRuntimeConfig } from "@/server/modules/knowledge/load-book-knowledge";
 import { createAnalysisJobRunner, markOrphanPersonas } from "@/server/modules/analysis/jobs/runAnalysisJob";
 
-function createRunnerContext(options: { withValidation?: boolean } = {}) {
+vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
+  buildAliasLookupFromDb   : vi.fn(),
+  loadAnalysisRuntimeConfig: vi.fn()
+}));
+
+function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: boolean } = {}) {
   const analysisJobFindUnique = vi.fn();
   const analysisJobFindFirst = vi.fn();
   const analysisJobUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
@@ -49,6 +55,14 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   // Phase 5 真名溯源：默认返回 0（无 TITLE_ONLY persona），不影响既有测试断言。
   const resolvePersonaTitles = vi.fn().mockResolvedValue(0);
   const getTitleOnlyPersonaCount = vi.fn().mockResolvedValue(0);
+  const extractChapterEntities = vi.fn().mockImplementation(async (chapterId: string) => ({
+    chapterId,
+    chapterNo: Number(chapterId.split("-").at(-1) ?? 1),
+    entities : []
+  }));
+  const resolveGlobalEntities = vi.fn().mockResolvedValue({
+    globalPersonaMap: new Map<string, string>([["范进", "persona-existing"]])
+  });
   const validateBookResult = vi.fn().mockResolvedValue({
     id     : "report-default",
     issues : [],
@@ -86,6 +100,9 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const chapterAnalyzer = options.withValidation
     ? { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult, validateBookResult, applyAutoFixes }
     : { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult };
+  const resolvedChapterAnalyzer = options.withTwoPass
+    ? { ...chapterAnalyzer, extractChapterEntities, resolveGlobalEntities }
+    : chapterAnalyzer;
 
   const runner = createAnalysisJobRunner({
     analysisJob: {
@@ -101,7 +118,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     relationship: { findMany: relationshipFindMany },
     persona     : { findMany: personaFindMany, updateMany: personaUpdateMany },
     $transaction: transaction
-  } as never, chapterAnalyzer as never);
+  } as never, resolvedChapterAnalyzer as never);
 
   return {
     runner,
@@ -120,6 +137,8 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     analyzeChapter,
     resolvePersonaTitles,
     getTitleOnlyPersonaCount,
+    extractChapterEntities,
+    resolveGlobalEntities,
     validateBookResult,
     validateChapterResult,
     applyAutoFixes,
@@ -135,6 +154,19 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("analysis job runner", () => {
+  const mockedBuildAliasLookupFromDb = vi.mocked(buildAliasLookupFromDb);
+  const mockedLoadAnalysisRuntimeConfig = vi.mocked(loadAnalysisRuntimeConfig);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedBuildAliasLookupFromDb.mockResolvedValue(new Map());
+    mockedLoadAnalysisRuntimeConfig.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runs queued job and marks job/book as succeeded", async () => {
     const jobId = "job-1";
@@ -382,6 +414,53 @@ describe("analysis job runner", () => {
     await expect(runner.runAnalysisJobById("job-range-invalid")).rejects.toThrow("章节范围无效");
   });
 
+  it("fails CHAPTER_LIST job when chapterIndices is empty", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      analysisJobUpdate,
+      bookUpdate
+    } = createRunnerContext();
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-empty-list",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "CHAPTER_LIST",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-empty-list",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "CHAPTER_LIST",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      });
+
+    await expect(runner.runAnalysisJobById("job-empty-list")).rejects.toThrow("章节列表为空");
+
+    expect(chapterFindMany).not.toHaveBeenCalled();
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-empty-list" },
+      data : expect.objectContaining({
+        status  : AnalysisJobStatus.FAILED,
+        errorLog: expect.stringContaining("章节列表为空")
+      })
+    });
+    expect(bookUpdate).toHaveBeenCalledWith({
+      where: { id: "book-1" },
+      data : expect.objectContaining({
+        status    : "ERROR",
+        parseStage: "解析失败"
+      })
+    });
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks job and book as failed when no chapters can be loaded", async () => {
     const {
@@ -562,6 +641,48 @@ describe("analysis job runner", () => {
           gte: 2,
           lte: 3
         }
+      },
+      orderBy: { no: "asc" },
+      select : { id: true, no: true }
+    });
+    expect(analyzeChapter).toHaveBeenCalledTimes(2);
+  });
+
+  it("runs chapter list jobs with in filters", async () => {
+    const { runner, analysisJobFindUnique, chapterFindMany, analyzeChapter } = createRunnerContext();
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-list",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "CHAPTER_LIST",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: [2, 4]
+      })
+      .mockResolvedValueOnce({
+        id            : "job-list",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "CHAPTER_LIST",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: [2, 4]
+      })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([
+      { id: "chapter-2", no: 2 },
+      { id: "chapter-4", no: 4 }
+    ]);
+
+    await runner.runAnalysisJobById("job-list");
+
+    expect(chapterFindMany).toHaveBeenCalledWith({
+      where: {
+        bookId: "book-1",
+        type  : { notIn: ["PRELUDE", "POSTLUDE"] },
+        no    : { in: [2, 4] }
       },
       orderBy: { no: "asc" },
       select : { id: true, no: true }
@@ -752,6 +873,209 @@ describe("analysis job runner", () => {
     });
   });
 
+  it("builds chapter validation payload with fallback defaults from database rows", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      analyzeChapter,
+      validateChapterResult,
+      personaFindMany,
+      mentionFindMany,
+      relationshipFindMany,
+      profileFindMany
+    } = createRunnerContext({ withValidation: true });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-validation-fallbacks",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-validation-fallbacks",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    analyzeChapter.mockResolvedValueOnce({
+      chapterId         : "chapter-1",
+      chunkCount        : 1,
+      hallucinationCount: 0,
+      created           : { personas: 3, mentions: 1, biographies: 1, relationships: 1 }
+    });
+    personaFindMany
+      .mockResolvedValueOnce([
+        {
+          id        : "persona-new",
+          name      : "王五",
+          confidence: null,
+          nameType  : null
+        }
+      ])
+      .mockResolvedValueOnce([
+        { id: "persona-new", name: "王五" },
+        { id: "persona-related", name: "李四" }
+      ]);
+    mentionFindMany.mockResolvedValueOnce([
+      { personaId: "persona-missing", rawText: "陌生人" }
+    ]);
+    relationshipFindMany.mockResolvedValueOnce([
+      { sourceId: "persona-related", targetId: "persona-missing", type: "RIVAL" }
+    ]);
+    profileFindMany.mockResolvedValueOnce([
+      {
+        personaId   : "persona-profile",
+        localName   : "本地称谓",
+        localSummary: "只在地方志出现",
+        persona     : { name: undefined, aliases: "not-an-array" } as never
+      }
+    ]);
+
+    await expect(runner.runAnalysisJobById("job-validation-fallbacks")).resolves.toBeUndefined();
+
+    expect(validateChapterResult).toHaveBeenCalledWith(expect.objectContaining({
+      bookId     : "book-1",
+      chapterId  : "chapter-1",
+      chapterNo  : 1,
+      jobId      : "job-validation-fallbacks",
+      newPersonas: [{
+        id        : "persona-new",
+        name      : "王五",
+        confidence: 0.5,
+        nameType  : "NAMED"
+      }],
+      newMentions: [{
+        personaId: "persona-missing",
+        rawText  : "persona-missing: 陌生人"
+      }],
+      newRelationships: [{
+        sourceId: "persona-related",
+        targetId: "persona-missing",
+        type    : "RIVAL"
+      }],
+      existingProfiles: [{
+        personaId    : "persona-profile",
+        canonicalName: "本地称谓",
+        aliases      : [],
+        localSummary : "只在地方志出现"
+      }]
+    }));
+  });
+
+  it("treats gray-zone titles as high risk and runs chapter validation", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      analyzeChapter,
+      validateChapterResult,
+      chapterUpdate
+    } = createRunnerContext({ withValidation: true });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-gray-zone-risk",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-gray-zone-risk",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    analyzeChapter.mockResolvedValueOnce({
+      chapterId         : "chapter-1",
+      chunkCount        : 1,
+      hallucinationCount: 0,
+      grayZoneCount     : 2,
+      created           : { personas: 1, mentions: 1, biographies: 1, relationships: 0 }
+    });
+
+    await expect(runner.runAnalysisJobById("job-gray-zone-risk")).resolves.toBeUndefined();
+
+    expect(validateChapterResult).toHaveBeenCalledTimes(1);
+    expect(chapterUpdate).toHaveBeenCalledWith({
+      where: { id: "chapter-1" },
+      data : { parseStatus: "SUCCEEDED" }
+    });
+  });
+
+  it("degrades chapter validation when validation keeps throwing", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      validateChapterResult,
+      chapterUpdate,
+      analysisJobUpdate,
+      analyzeChapter
+    } = createRunnerContext({ withValidation: true });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-validation-degraded",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-validation-degraded",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    analyzeChapter.mockResolvedValueOnce({
+      chapterId         : "chapter-1",
+      chunkCount        : 1,
+      hallucinationCount: 0,
+      grayZoneCount     : 0,
+      created           : { personas: 4, mentions: 1, biographies: 1, relationships: 1 }
+    });
+    validateChapterResult
+      .mockRejectedValueOnce(new Error("validation service unavailable"))
+      .mockRejectedValueOnce(new Error("validation service unavailable"));
+
+    await expect(runner.runAnalysisJobById("job-validation-degraded")).resolves.toBeUndefined();
+
+    expect(validateChapterResult).toHaveBeenCalledTimes(2);
+    expect(chapterUpdate).toHaveBeenCalledWith({
+      where: { id: "chapter-1" },
+      data : { parseStatus: "REVIEW_PENDING" }
+    });
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-validation-degraded" },
+      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
+    });
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not fail main job when full-book validation throws", async () => {
     const {
@@ -790,6 +1114,277 @@ describe("analysis job runner", () => {
       data : expect.objectContaining({
         status: AnalysisJobStatus.SUCCEEDED
       })
+    });
+  });
+
+  it("retries retryable chapter failures and eventually succeeds", async () => {
+    vi.useFakeTimers();
+
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      analyzeChapter,
+      chapterUpdate,
+      analysisJobUpdate
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-retry",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-retry",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    analyzeChapter
+      .mockRejectedValueOnce(new Error("network timeout"))
+      .mockResolvedValueOnce({
+        chapterId         : "chapter-1",
+        chunkCount        : 1,
+        hallucinationCount: 0,
+        created           : { personas: 1, mentions: 1, biographies: 1, relationships: 1 }
+      });
+
+    const runPromise = runner.runAnalysisJobById("job-retry");
+    await vi.advanceTimersByTimeAsync(3000);
+    await expect(runPromise).resolves.toBeUndefined();
+
+    expect(analyzeChapter).toHaveBeenCalledTimes(2);
+    expect(chapterUpdate).toHaveBeenCalledWith({
+      where: { id: "chapter-1" },
+      data : { parseStatus: "SUCCEEDED" }
+    });
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-retry" },
+      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
+    });
+  });
+
+  it("runs two-pass extraction and injects preloaded knowledge into chapter analysis", async () => {
+    const aliasLookup = new Map<string, string>([["范老爷", "范进"]]);
+    const preloadedLexiconConfig = {
+      entityExtractionRules: ["提取历史人物真名"]
+    };
+    const globalPersonaMap = new Map<string, string>([["范进", "persona-fan"]]);
+
+    mockedBuildAliasLookupFromDb.mockResolvedValueOnce(aliasLookup);
+    mockedLoadAnalysisRuntimeConfig.mockResolvedValueOnce(preloadedLexiconConfig);
+
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      bookFindUnique,
+      extractChapterEntities,
+      resolveGlobalEntities,
+      analyzeChapter,
+      analysisJobUpdate
+    } = createRunnerContext({ withTwoPass: true });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-two-pass",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-two-pass",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([
+      { id: "chapter-1", no: 1 },
+      { id: "chapter-2", no: 2 }
+    ]);
+    bookFindUnique.mockResolvedValueOnce({
+      title     : "儒林外史",
+      genre     : "历史演义",
+      bookTypeId: null,
+      bookType  : null
+    });
+    resolveGlobalEntities.mockResolvedValueOnce({ globalPersonaMap });
+    analyzeChapter.mockImplementation(async (_chapterId, context) => {
+      expect(context).toMatchObject({
+        jobId             : "job-two-pass",
+        externalPersonaMap: globalPersonaMap,
+        preloadedLexiconConfig
+      });
+      return {
+        chapterId         : "chapter-1",
+        chunkCount        : 1,
+        hallucinationCount: 0,
+        created           : { personas: 1, mentions: 1, biographies: 1, relationships: 1 }
+      };
+    });
+
+    await expect(runner.runAnalysisJobById("job-two-pass")).resolves.toBeUndefined();
+
+    expect(extractChapterEntities).toHaveBeenCalledTimes(2);
+    expect(resolveGlobalEntities).toHaveBeenCalledWith(
+      "book-1",
+      "儒林外史",
+      [
+        { chapterId: "chapter-1", chapterNo: 1, entities: [] },
+        { chapterId: "chapter-2", chapterNo: 2, entities: [] }
+      ],
+      { bookId: "book-1", jobId: "job-two-pass" },
+      aliasLookup
+    );
+    expect(mockedBuildAliasLookupFromDb).toHaveBeenCalledWith("book-1", "历史演义", expect.any(Object));
+    expect(mockedLoadAnalysisRuntimeConfig).toHaveBeenCalledWith("历史演义", expect.any(Object));
+    expect(analyzeChapter).toHaveBeenCalledTimes(2);
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-two-pass" },
+      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
+    });
+  });
+
+  it("stops pass-one retries immediately for non-retryable extraction errors", async () => {
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      bookFindUnique,
+      extractChapterEntities,
+      resolveGlobalEntities,
+      analysisJobUpdate
+    } = createRunnerContext({ withTwoPass: true });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-two-pass-non-retryable",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-two-pass-non-retryable",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    bookFindUnique.mockResolvedValueOnce({
+      title     : "儒林外史",
+      genre     : "历史演义",
+      bookTypeId: null,
+      bookType  : null
+    });
+    extractChapterEntities.mockRejectedValueOnce(new Error("schema mismatch"));
+
+    await expect(runner.runAnalysisJobById("job-two-pass-non-retryable")).resolves.toBeUndefined();
+
+    expect(extractChapterEntities).toHaveBeenCalledTimes(1);
+    expect(resolveGlobalEntities).toHaveBeenCalledWith(
+      "book-1",
+      "儒林外史",
+      [],
+      { bookId: "book-1", jobId: "job-two-pass-non-retryable" },
+      expect.any(Map)
+    );
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-two-pass-non-retryable" },
+      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
+    });
+  });
+
+  it("retries retryable pass-one extraction errors before continuing", async () => {
+    vi.useFakeTimers();
+
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      bookFindUnique,
+      extractChapterEntities,
+      resolveGlobalEntities,
+      analysisJobUpdate
+    } = createRunnerContext({ withTwoPass: true });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-two-pass-retry",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-two-pass-retry",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    bookFindUnique.mockResolvedValueOnce({
+      title     : "儒林外史",
+      genre     : "历史演义",
+      bookTypeId: null,
+      bookType  : null
+    });
+    extractChapterEntities
+      .mockRejectedValueOnce(new Error("network timeout"))
+      .mockResolvedValueOnce({
+        chapterId: "chapter-1",
+        chapterNo: 1,
+        entities : [{ id: "entity-1", name: "范进" }]
+      });
+
+    const runPromise = runner.runAnalysisJobById("job-two-pass-retry");
+    await vi.advanceTimersByTimeAsync(3000);
+    await expect(runPromise).resolves.toBeUndefined();
+
+    expect(extractChapterEntities).toHaveBeenCalledTimes(2);
+    expect(resolveGlobalEntities).toHaveBeenCalledWith(
+      "book-1",
+      "儒林外史",
+      [{
+        chapterId: "chapter-1",
+        chapterNo: 1,
+        entities : [{ id: "entity-1", name: "范进" }]
+      }],
+      { bookId: "book-1", jobId: "job-two-pass-retry" },
+      expect.any(Map)
+    );
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-two-pass-retry" },
+      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
     });
   });
 

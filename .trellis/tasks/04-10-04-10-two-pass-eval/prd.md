@@ -110,11 +110,11 @@
 
 ### 当前状态
 
-1. **体裁预设已覆盖 7 种**：明清官场、武侠、宫廷家族、英雄传奇、历史演义、家族世情、神魔小说
+1. **书籍类型预设已覆盖 7 种**：明清官场、武侠、宫廷家族、英雄传奇、历史演义、家族世情、神魔小说
 2. **但选择机制是硬编码**：`resolveBookLexiconConfig()` 始终返回 `明清官场` 预设, 参数 `_bookTitle` 被忽略
-3. **DB 没有 genre 字段**：Book 模型无体裁字段, 无法存储/选择预设
-4. **Pass 1 prompt 是通用的**：`buildIndependentExtractionPrompt` 只传书名+正文, 无体裁特化逻辑, 通用性好
-5. **Pass 2 消歧是通用的**：Union-Find + 编辑距离 + LLM 判断, 不依赖体裁
+3. **DB 没有 genre 字段**：Book 模型无书籍类型字段, 无法存储/选择预设
+4. **Pass 1 prompt 是通用的**：`buildIndependentExtractionPrompt` 只传书名+正文, 无书籍类型特化逻辑, 通用性好
+5. **Pass 2 消歧是通用的**：Union-Find + 编辑距离 + LLM 判断, 不依赖书籍类型
 
 ### 各书挑战分析
 
@@ -129,7 +129,7 @@
 
 ### 跨书通用性瓶颈
 
-1. **体裁选择未打通**：有预设但不会被激活（`_bookTitle` 被忽略）
+1. **书籍类型选择未打通**：有预设但不会被激活（`_bookTitle` 被忽略）
 2. **人物规模天花板**：三国演义 1000+ 人物 → Pass 2 候选组爆炸, LLM 消歧调用可能达 50-100 批
 3. **领域知识缺失**：字/号/谥系统需要额外规则（如"诸葛亮"="孔明"="卧龙"不能仅靠编辑距离）
 4. **称谓上下文**：红楼梦中"太太"在不同章节指不同人, 仅靠全局消歧无法处理
@@ -138,11 +138,11 @@
 
 ## 可优化方向
 
-### A. 激活体裁预设绑定（低成本, 高收益）
+### A. 激活书籍类型预设绑定（低成本, 高收益）
 
 - 给 Book 增加 `genre` 字段
 - `resolveBookLexiconConfig()` 根据 genre 选择预设
-- 新书上传或开始解析时, 用 LLM 一次性判定体裁（或用户选择）
+- 新书上传或开始解析时, 用 LLM 一次性判定书籍类型（或用户选择）
 - **预期收益**：准确率 +2-5% (减少泛化称谓误杀)，无额外成本
 
 ### B. Pass 1 章节摘要注入（中成本, 中收益）
@@ -186,5 +186,5 @@
 - 文件 `resolveBookLexiconConfig()` 在 ChapterAnalysisService.ts:1401, 当前硬编码返回 `明清官场`
 - DB schema 中 Book 没有 genre 字段
 - GENRE_PRESETS 已有 7 个预设, 但无选择逻辑
-- Pass 1 prompt (`buildIndependentExtractionPrompt`) 不含体裁特化, 通用性好
+- Pass 1 prompt (`buildIndependentExtractionPrompt`) 不含书籍类型特化, 通用性好
 - Pass 2 `buildCandidateGroups()` 用 Union-Find + 编辑距离, 对字号体系效果有限

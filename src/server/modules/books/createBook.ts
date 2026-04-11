@@ -34,7 +34,7 @@ export interface CreateBookInput {
   author?     : string;
   /** 朝代（可选）。 */
   dynasty?    : string;
-  /** 体裁预设键名（可选），对应 GENRE_PRESETS 中的键，如"武侠""家族世情"。 */
+  /** 书籍类型预设键名（可选），对应 GENRE_PRESETS 中的键，如"武侠""家族世情"。 */
   genre?      : string;
   /** 简介（可选）。 */
   description?: string;

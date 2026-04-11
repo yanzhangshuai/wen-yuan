@@ -21,6 +21,10 @@
 export interface BookLexiconConfig {
   /** 书籍私有的泛称补充列表（在默认集合上追加）。 */
   additionalGenericTitles?     : string[];
+  /** 从数据库预加载的 SAFETY 泛称集合，未提供时回退到代码常量。 */
+  safetyGenericTitles?         : string[];
+  /** 从数据库预加载的 DEFAULT 泛称集合，未提供时回退到代码常量。 */
+  defaultGenericTitles?        : string[];
   /** 书籍私有的泛称豁免列表（从最终泛称集合中移除）。 */
   exemptGenericTitles?         : string[];
   /** 硬阻断关系后缀补充（例如“之父”“之妻”这类关系词尾）。 */
@@ -31,6 +35,14 @@ export interface BookLexiconConfig {
   additionalTitlePatterns?     : string[];
   /** 额外职位模式补充（用于 positionPattern）。 */
   additionalPositionPatterns?  : string[];
+  /** 从数据库预加载的实体抽取规则，未提供时回退到代码常量。 */
+  entityExtractionRules?       : string[];
+  /** 从数据库预加载的关系抽取规则，未提供时回退到代码常量。 */
+  relationshipExtractionRules? : string[];
+  /** 从数据库预加载的复姓列表，优先匹配。 */
+  surnameCompounds?            : string[];
+  /** 从数据库预加载的单姓列表。 */
+  surnameSingles?              : string[];
 }
 
 export interface MentionPersonalizationEvidence {
@@ -129,14 +141,17 @@ export const CHINESE_SURNAME_LIST: ReadonlySet<string> = new Set([
  * 从姓名中提取姓氏。优先匹配复姓（2 字），再匹配单姓（1 字）。
  * 未命中已知姓氏时返回 null，不做猜测。
  */
-export function extractSurname(name: string): string | null {
+export function extractSurname(name: string, bookConfig?: BookLexiconConfig): string | null {
+  const compoundSet = new Set(bookConfig?.surnameCompounds?.filter(Boolean) ?? Array.from(CHINESE_SURNAME_LIST));
+  const singleSet = new Set(bookConfig?.surnameSingles?.filter(Boolean) ?? Array.from(CHINESE_SURNAME_LIST));
+
   if (name.length >= 2) {
     const twoChar = name.slice(0, 2);
-    if (CHINESE_SURNAME_LIST.has(twoChar)) return twoChar;
+    if (compoundSet.has(twoChar)) return twoChar;
   }
   if (name.length >= 1) {
     const oneChar = name.slice(0, 1);
-    if (CHINESE_SURNAME_LIST.has(oneChar)) return oneChar;
+    if (singleSet.has(oneChar)) return oneChar;
   }
   return null;
 }
@@ -197,9 +212,11 @@ function toUniqueSortedList(values: Iterable<string>): string[] {
 }
 
 export function buildEffectiveGenericTitles(bookConfig?: BookLexiconConfig, includeSafety = true): Set<string> {
+  const safetyTitles = bookConfig?.safetyGenericTitles ?? Array.from(SAFETY_GENERIC_TITLES);
+  const defaultTitles = bookConfig?.defaultGenericTitles ?? Array.from(DEFAULT_GENERIC_TITLES);
   const merged = new Set<string>([
-    ...(includeSafety ? Array.from(SAFETY_GENERIC_TITLES) : []),
-    ...Array.from(DEFAULT_GENERIC_TITLES),
+    ...(includeSafety ? safetyTitles : []),
+    ...defaultTitles,
     ...(bookConfig?.additionalGenericTitles ?? [])
   ]);
 

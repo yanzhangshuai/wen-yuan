@@ -13,7 +13,11 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AiCallExhaustedError, createAiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
+import {
+  AiCallExhaustedError,
+  aiCallExecutorTesting,
+  createAiCallExecutor
+} from "@/server/modules/analysis/services/AiCallExecutor";
 import type { ModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { PipelineStage } from "@/types/pipeline";
 
@@ -304,5 +308,176 @@ describe("AiCallExecutor", () => {
         throw new Error("invalid json payload");
       }
     })).rejects.toBeInstanceOf(AiCallExhaustedError);
+  });
+
+  it("covers helper branches for retry detection, nested reads and usage normalization", () => {
+    const longMessage = "x".repeat(1205);
+
+    expect(aiCallExecutorTesting.isRetryableError(new Error("socket hang up"))).toBe(true);
+    expect(aiCallExecutorTesting.isRetryableError("Temporarily unavailable")).toBe(true);
+    expect(aiCallExecutorTesting.isRetryableError(new Error("schema mismatch"))).toBe(false);
+
+    expect(aiCallExecutorTesting.toErrorMessage(new Error(longMessage))).toBe("x".repeat(1000));
+    expect(aiCallExecutorTesting.toErrorMessage(42)).toBe("42");
+
+    expect(aiCallExecutorTesting.toRecord({ ok: true })).toEqual({ ok: true });
+    expect(aiCallExecutorTesting.toRecord("text")).toBeNull();
+    expect(aiCallExecutorTesting.toRecord(null)).toBeNull();
+
+    expect(aiCallExecutorTesting.getNestedValue({ a: { b: { c: 3 } } }, ["a", "b", "c"])).toBe(3);
+    expect(aiCallExecutorTesting.getNestedValue({ a: 1 }, ["a", "b"])).toBeNull();
+    expect(aiCallExecutorTesting.getNestedValue({ a: { b: 1 } }, ["a", "missing"])).toBeNull();
+
+    expect(aiCallExecutorTesting.normalizeUsage({
+      promptTokens    : 11,
+      completionTokens: 7,
+      totalTokens     : 18
+    })).toEqual({
+      promptTokens    : 11,
+      completionTokens: 7,
+      totalTokens     : 18
+    });
+    expect(aiCallExecutorTesting.normalizeUsage({
+      prompt_tokens    : 13,
+      completion_tokens: 5,
+      total_tokens     : 18
+    })).toEqual({
+      promptTokens    : 13,
+      completionTokens: 5,
+      totalTokens     : 18
+    });
+    expect(aiCallExecutorTesting.normalizeUsage({
+      promptTokenCount    : 17,
+      candidatesTokenCount: 9,
+      totalTokenCount     : 26
+    })).toEqual({
+      promptTokens    : 17,
+      completionTokens: 9,
+      totalTokens     : 26
+    });
+    expect(aiCallExecutorTesting.normalizeUsage({ unrelated: true })).toBeNull();
+    expect(aiCallExecutorTesting.normalizeUsage("invalid")).toBeNull();
+  });
+
+  it("extracts usage from nested provider error payloads", () => {
+    expect(aiCallExecutorTesting.extractUsageFromError({
+      usage: {
+        promptTokens    : 5,
+        completionTokens: 4,
+        totalTokens     : 9
+      }
+    })).toEqual({
+      promptTokens    : 5,
+      completionTokens: 4,
+      totalTokens     : 9
+    });
+
+    expect(aiCallExecutorTesting.extractUsageFromError({
+      response: {
+        data: {
+          usageMetadata: {
+            promptTokenCount    : 8,
+            candidatesTokenCount: 6,
+            totalTokenCount     : 14
+          }
+        }
+      }
+    })).toEqual({
+      promptTokens    : 8,
+      completionTokens: 6,
+      totalTokens     : 14
+    });
+
+    expect(aiCallExecutorTesting.extractUsageFromError({
+      cause: {
+        response: {
+          data: {
+            usage: {
+              prompt_tokens    : 12,
+              completion_tokens: 2,
+              total_tokens     : 14
+            }
+          }
+        }
+      }
+    })).toEqual({
+      promptTokens    : 12,
+      completionTokens: 2,
+      totalTokens     : 14
+    });
+
+    expect(aiCallExecutorTesting.extractUsageFromError({
+      cause: { response: { data: { usage: { bad: true } } } }
+    })).toBeNull();
+  });
+
+  it("does not recurse to fallback when the stage is already FALLBACK", async () => {
+    const resolveFallback = vi.fn().mockResolvedValue(FALLBACK_MODEL);
+    const resolverMock: ModelStrategyResolver = {
+      resolveForStage: vi.fn().mockResolvedValue({
+        ...PRIMARY_MODEL,
+        params: { ...PRIMARY_MODEL.params, maxRetries: 0 }
+      }),
+      resolveFallback,
+      preloadStrategy       : vi.fn(),
+      clearPreloadedStrategy: vi.fn()
+    };
+    const prismaMock = {
+      analysisPhaseLog: {
+        create: vi.fn().mockResolvedValue(undefined)
+      }
+    };
+    const executor = createAiCallExecutor(prismaMock as never, resolverMock);
+
+    await expect(executor.execute({
+      stage  : PipelineStage.FALLBACK,
+      prompt : { system: "s", user: "u" },
+      jobId  : "job-fallback-stage",
+      context: { jobId: "job-fallback-stage", bookId: "book-1" },
+      callFn : async () => {
+        throw new Error("bad request");
+      }
+    })).rejects.toMatchObject({
+      isFallback: false,
+      modelId   : PRIMARY_MODEL.modelId,
+      stage     : PipelineStage.FALLBACK
+    });
+
+    expect(resolveFallback).not.toHaveBeenCalled();
+  });
+
+  it("marks the exhausted error as fallback when the fallback model also fails", async () => {
+    const resolverMock: ModelStrategyResolver = {
+      resolveForStage: vi.fn().mockResolvedValue({
+        ...PRIMARY_MODEL,
+        params: { ...PRIMARY_MODEL.params, maxRetries: 0 }
+      }),
+      resolveFallback: vi.fn().mockResolvedValue({
+        ...FALLBACK_MODEL,
+        params: { ...FALLBACK_MODEL.params, maxRetries: 0 }
+      }),
+      preloadStrategy       : vi.fn(),
+      clearPreloadedStrategy: vi.fn()
+    };
+    const prismaMock = {
+      analysisPhaseLog: {
+        create: vi.fn().mockResolvedValue(undefined)
+      }
+    };
+    const executor = createAiCallExecutor(prismaMock as never, resolverMock);
+
+    await expect(executor.execute({
+      stage  : PipelineStage.CHUNK_EXTRACTION,
+      prompt : { system: "s", user: "u" },
+      jobId  : "job-fallback-failed",
+      context: { jobId: "job-fallback-failed", bookId: "book-1" },
+      callFn : async ({ model }) => {
+        throw new Error(`model ${model.modelId} failed`);
+      }
+    })).rejects.toMatchObject({
+      isFallback: true,
+      modelId   : FALLBACK_MODEL.modelId,
+      stage     : PipelineStage.CHUNK_EXTRACTION
+    });
   });
 });

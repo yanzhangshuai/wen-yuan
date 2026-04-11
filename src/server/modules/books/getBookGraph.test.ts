@@ -102,4 +102,99 @@ describe("getBookGraph service", () => {
 
     await expect(service.getBookGraph({ bookId: "missing-book" })).rejects.toBeInstanceOf(BookNotFoundError);
   });
+
+  it("builds full-book graph without mention fallback and maps negative or unknown sentiments", async () => {
+    const mentionFindMany = vi.fn();
+    const personaFindMany = vi.fn();
+    const service = createGetBookGraphService({
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      relationship: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id      : "rel-neg",
+            sourceId: "persona-1",
+            targetId: "persona-2",
+            type    : "敌对",
+            weight  : 0.8,
+            status  : ProcessingStatus.VERIFIED
+          },
+          {
+            id      : "rel-neutral",
+            sourceId: "persona-2",
+            targetId: "persona-1",
+            type    : "陌生",
+            weight  : 0.2,
+            status  : ProcessingStatus.DRAFT
+          }
+        ])
+      },
+      mention: {
+        findMany: mentionFindMany
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            personaId   : "persona-1",
+            ironyIndex  : 1.25,
+            visualConfig: { x: 18 },
+            persona     : {
+              id          : "persona-1",
+              name        : "周进",
+              nameType    : "NAMED",
+              type        : "PERSON",
+              recordSource: RecordSource.MANUAL
+            }
+          },
+          {
+            personaId   : "persona-2",
+            ironyIndex  : 0.5,
+            visualConfig: [],
+            persona     : {
+              id          : "persona-2",
+              name        : "范进",
+              nameType    : "NAMED",
+              type        : "PERSON",
+              recordSource: RecordSource.AI
+            }
+          }
+        ])
+      },
+      persona: {
+        findMany: personaFindMany
+      }
+    } as never);
+
+    const result = await service.getBookGraph({ bookId: "book-1" });
+
+    expect(mentionFindMany).not.toHaveBeenCalled();
+    expect(personaFindMany).not.toHaveBeenCalled();
+    expect(result.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id       : "rel-neg",
+        sentiment: "negative"
+      }),
+      expect.objectContaining({
+        id       : "rel-neutral",
+        sentiment: "neutral"
+      })
+    ]));
+
+    const manualNode = result.nodes.find((node) => node.id === "persona-1");
+    const aiNode = result.nodes.find((node) => node.id === "persona-2");
+    expect(manualNode).toEqual(expect.objectContaining({
+      id       : "persona-1",
+      influence: 2.5,
+      status   : ProcessingStatus.VERIFIED,
+      x        : 18
+    }));
+    expect(aiNode).toEqual(expect.objectContaining({
+      id       : "persona-2",
+      influence: 1,
+      status   : ProcessingStatus.DRAFT
+    }));
+    expect(aiNode && "x" in aiNode).toBe(false);
+    expect(aiNode && "y" in aiNode).toBe(false);
+  });
 });

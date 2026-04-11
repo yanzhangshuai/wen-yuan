@@ -11,6 +11,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
+import { BookNotFoundError } from "@/server/modules/books/errors";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { createCreateBookRelationshipService } from "@/server/modules/relationships/createBookRelationship";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
@@ -134,5 +135,163 @@ describe("createBookRelationship service", () => {
       targetId : "persona-b",
       type     : "师生"
     })).rejects.toBeInstanceOf(PersonaNotFoundError);
+  });
+
+  it("throws book not found when target book does not exist", async () => {
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      book: {
+        findFirst: vi.fn().mockResolvedValue(null)
+      }
+    }));
+    const service = createCreateBookRelationshipService({
+      $transaction: transaction
+    } as never);
+
+    await expect(service.createBookRelationship("missing-book", {
+      chapterId: "chapter-1",
+      sourceId : "persona-a",
+      targetId : "persona-b",
+      type     : "师生"
+    })).rejects.toBeInstanceOf(BookNotFoundError);
+  });
+
+  it("throws input error when chapter does not belong to book", async () => {
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      chapter: {
+        findFirst: vi.fn().mockResolvedValue(null)
+      }
+    }));
+    const service = createCreateBookRelationshipService({
+      $transaction: transaction
+    } as never);
+
+    await expect(service.createBookRelationship("book-1", {
+      chapterId: "chapter-404",
+      sourceId : "persona-a",
+      targetId : "persona-b",
+      type     : "师生"
+    })).rejects.toBeInstanceOf(RelationshipInputError);
+  });
+
+  it("throws persona not found when source persona is missing", async () => {
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      chapter: {
+        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 1 })
+      },
+      persona: {
+        findMany: vi.fn().mockResolvedValue([{ id: "persona-b" }])
+      },
+      relationship: {
+        findFirst: vi.fn()
+      }
+    }));
+    const service = createCreateBookRelationshipService({
+      $transaction: transaction
+    } as never);
+
+    await expect(service.createBookRelationship("book-1", {
+      chapterId: "chapter-1",
+      sourceId : "persona-a",
+      targetId : "persona-b",
+      type     : "师生"
+    })).rejects.toBeInstanceOf(PersonaNotFoundError);
+  });
+
+  it("throws input error when manual relationship already exists", async () => {
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      chapter: {
+        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 2 })
+      },
+      persona: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "persona-a" },
+          { id: "persona-b" }
+        ])
+      },
+      relationship: {
+        findFirst: vi.fn().mockResolvedValue({ id: "rel-existing" })
+      }
+    }));
+    const service = createCreateBookRelationshipService({
+      $transaction: transaction
+    } as never);
+
+    await expect(service.createBookRelationship("book-1", {
+      chapterId: "chapter-1",
+      sourceId : "persona-a",
+      targetId : "persona-b",
+      type     : "同盟"
+    })).rejects.toBeInstanceOf(RelationshipInputError);
+  });
+
+  it("defaults numeric fields and normalizes optional text fields", async () => {
+    const relationshipCreate = vi.fn().mockResolvedValue({
+      id          : "rel-2",
+      chapterId   : "chapter-1",
+      sourceId    : "persona-a",
+      targetId    : "persona-b",
+      type        : "同盟",
+      weight      : 1,
+      description : null,
+      evidence    : null,
+      confidence  : 1,
+      recordSource: RecordSource.MANUAL,
+      status      : ProcessingStatus.VERIFIED
+    });
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      chapter: {
+        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 2 })
+      },
+      persona: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "persona-a" },
+          { id: "persona-b" }
+        ])
+      },
+      relationship: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create   : relationshipCreate
+      }
+    }));
+    const service = createCreateBookRelationshipService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.createBookRelationship("book-1", {
+      chapterId  : "chapter-1",
+      sourceId   : "persona-a",
+      targetId   : "persona-b",
+      type       : " 同盟 ",
+      description: "   ",
+      evidence   : "\n"
+    });
+
+    expect(relationshipCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        type       : "同盟",
+        weight     : 1,
+        description: null,
+        evidence   : null,
+        confidence : 1
+      })
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      weight     : 1,
+      description: null,
+      evidence   : null,
+      confidence : 1
+    }));
   });
 });

@@ -272,6 +272,14 @@ describe("repairJson", () => {
     const broken = '{"key';
     expect(repairJson(broken)).toBe("{}");
   });
+
+  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
+  it("falls back to empty array when escaped quotes make truncation unrecoverable", () => {
+    const broken = '[{"name":"范进","quote":"他喊道：\\\\\\"中了！\\\\\\""},{"name":"胡屠户"';
+    const repaired = repairJson(broken);
+
+    expect(JSON.parse(repaired)).toEqual([]);
+  });
 });
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
@@ -332,6 +340,21 @@ describe("parseTitleResolutionResponse", () => {
     const result = parseTitleResolutionResponse('{"key":"value"}', personaIdByTitle);
     expect(result).toEqual([]);
   });
+
+  it("drops blank titles and normalizes negative confidence and empty real names", () => {
+    const result = parseTitleResolutionResponse(JSON.stringify([
+      { title: "   ", realName: "某人", confidence: 0.8 },
+      { title: " 丞相 ", realName: "   ", confidence: -1, historicalNote: 9 }
+    ]), personaIdByTitle);
+
+    expect(result).toEqual([{
+      personaId     : "persona-chengxiang",
+      title         : "丞相",
+      realName      : null,
+      confidence    : 0,
+      historicalNote: undefined
+    }]);
+  });
 });
 
 describe("parseTitleArbitrationResponse", () => {
@@ -376,6 +399,29 @@ describe("parseTitleArbitrationResponse", () => {
   it("returns empty array when arbitration payload is invalid", () => {
     expect(parseTitleArbitrationResponse("not json")).toEqual([]);
     expect(parseTitleArbitrationResponse('{"key":"value"}')).toEqual([]);
+  });
+
+  it("defaults invalid confidence and strips blank surface forms after trim", () => {
+    const result = parseTitleArbitrationResponse(JSON.stringify([
+      {
+        surfaceForm   : " 老爷 ",
+        isPersonalized: true,
+        confidence    : "bad"
+      },
+      {
+        surfaceForm   : "   ",
+        isPersonalized: false,
+        confidence    : 0.6,
+        reason        : 7
+      }
+    ]));
+
+    expect(result).toEqual([{
+      surfaceForm   : "老爷",
+      isPersonalized: true,
+      confidence    : 0,
+      reason        : undefined
+    }]);
   });
 });
 
@@ -441,6 +487,48 @@ describe("parseChapterRosterResponse", () => {
   it("returns empty array for invalid or non-array roster payloads", () => {
     expect(parseChapterRosterResponse("not json")).toEqual([]);
     expect(parseChapterRosterResponse('{"key":"value"}')).toEqual([]);
+  });
+
+  it("keeps alias confidence without creating context when clue or alias type is incomplete", () => {
+    const result = parseChapterRosterResponse(JSON.stringify([
+      {
+        surfaceForm      : "范老爷",
+        aliasType        : "NICKNAME",
+        contextHint      : "   ",
+        aliasConfidence  : 0.6,
+        suggestedRealName: "范进"
+      },
+      {
+        surfaceForm    : "周大人",
+        contextHint    : "疑似官职称呼",
+        aliasConfidence: 0.7
+      }
+    ]));
+
+    expect(result).toEqual([
+      {
+        surfaceForm      : "范老爷",
+        entityId         : undefined,
+        isNew            : false,
+        generic          : false,
+        isTitleOnly      : false,
+        aliasType        : "NICKNAME",
+        contextHint      : undefined,
+        suggestedRealName: "范进",
+        aliasConfidence  : 0.6
+      },
+      {
+        surfaceForm      : "周大人",
+        entityId         : undefined,
+        isNew            : false,
+        generic          : false,
+        isTitleOnly      : false,
+        aliasType        : undefined,
+        contextHint      : undefined,
+        suggestedRealName: undefined,
+        aliasConfidence  : undefined
+      }
+    ]);
   });
 });
 

@@ -85,4 +85,89 @@ describe("updatePersona service", () => {
     await expect(service.updatePersona("missing", { name: "周进" }))
       .rejects.toBeInstanceOf(PersonaNotFoundError);
   });
+
+  it("normalizes nullable fields and supports updating nameType", async () => {
+    const update = vi.fn().mockResolvedValue({
+      id        : "persona-2",
+      name      : "老爷",
+      aliases   : ["老爷"],
+      gender    : null,
+      hometown  : null,
+      nameType  : NameType.TITLE_ONLY,
+      globalTags: ["主角"],
+      confidence: 0.51,
+      updatedAt : new Date("2026-03-25T00:00:00.000Z")
+    });
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      persona: {
+        findFirst: vi.fn().mockResolvedValue({ id: "persona-2" }),
+        update
+      }
+    }));
+    const service = createUpdatePersonaService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.updatePersona("persona-2", {
+      aliases   : [" 老爷 ", " ", "老爷"],
+      gender    : "   ",
+      hometown  : null,
+      nameType  : NameType.TITLE_ONLY,
+      globalTags: [" ", "主角", "主角"],
+      confidence: 0.51
+    });
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        aliases   : ["老爷"],
+        gender    : null,
+        hometown  : null,
+        nameType  : NameType.TITLE_ONLY,
+        globalTags: ["主角"],
+        confidence: 0.51
+      })
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      aliases   : ["老爷"],
+      gender    : null,
+      hometown  : null,
+      nameType  : NameType.TITLE_ONLY,
+      globalTags: ["主角"]
+    }));
+  });
+
+  it("updates only the provided field without forcing optional normalization branches", async () => {
+    const update = vi.fn().mockResolvedValue({
+      id        : "persona-3",
+      name      : "严监生",
+      aliases   : [],
+      gender    : null,
+      hometown  : null,
+      nameType  : NameType.NAMED,
+      globalTags: [],
+      confidence: 0.4,
+      updatedAt : new Date("2026-03-25T00:00:00.000Z")
+    });
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      persona: {
+        findFirst: vi.fn().mockResolvedValue({ id: "persona-3" }),
+        update
+      }
+    }));
+    const service = createUpdatePersonaService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.updatePersona("persona-3", {
+      name: " 严监生 "
+    });
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+      data: { name: "严监生" }
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      id  : "persona-3",
+      name: "严监生"
+    }));
+  });
 });

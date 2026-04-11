@@ -453,3 +453,16 @@ export function createAiCallExecutor(
 
 export type AiCallExecutor = ReturnType<typeof createAiCallExecutor>;
 export const aiCallExecutor = createAiCallExecutor(prisma, modelStrategyResolver);
+
+/**
+ * 仅供单元测试使用：暴露纯帮助函数，便于稳定覆盖边界分支。
+ * 业务代码禁止依赖该对象。
+ */
+export const aiCallExecutorTesting = {
+  isRetryableError,
+  toErrorMessage,
+  toRecord,
+  getNestedValue,
+  normalizeUsage,
+  extractUsageFromError
+};

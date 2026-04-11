@@ -13,7 +13,7 @@ stage: mvp
 | 规范 | 目的 | 何时使用 |
 |------|------|---------|
 | [Zod-First 类型规范](./zod-typescript.md) | 外部数据（AI 输出/API 请求体）的 schema 定义方式 | 涉及 AI 输出解析、API 请求校验时 |
-| [代码质量规范](./code-quality.md) | 禁止 `any`/`!`/`console.log` 等全局强制规则 | 所有代码编写和提交前 |
+| [代码质量规范](./code-quality.md) | 全局代码风格与禁用模式：KISS、DRY、最小修改、格式化一致性，以及禁止 `any`/`!`/`console.log` | 所有代码编写和提交前 |
 
 ---
 

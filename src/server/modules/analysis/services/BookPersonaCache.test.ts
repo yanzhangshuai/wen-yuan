@@ -74,6 +74,78 @@ describe("BookPersonaCache", () => {
     expect(cache.lookupByAlias("老爷")).toBeUndefined();
   });
 
+  // 用例语义：覆盖空输入与空别名防御分支，避免脏数据污染倒排索引。
+  it("ignores blank alias writes and returns undefined for blank lookups", () => {
+    const cache = createBookPersonaCache();
+
+    cache.addAlias("   ", "persona-1");
+
+    expect(cache.aliasIndex.size).toBe(0);
+    expect(cache.lookupByName("")).toBeUndefined();
+    expect(cache.lookupByAlias("   ")).toBeUndefined();
+  });
+
+  // 用例语义：覆盖 alias 冲突时的 preferName 与非 TITLE_ONLY 优先级分支。
+  it("prefers canonical name matches and the lone named candidate when alias collisions occur", () => {
+    const preferNameCache = createBookPersonaCache();
+    preferNameCache.addPersona({
+      id      : "persona-1",
+      name    : "老爷",
+      aliases : ["老爷", "范老爷"],
+      nameType: NameType.NAMED
+    });
+    preferNameCache.addPersona({
+      id      : "persona-2",
+      name    : "严监生",
+      aliases : ["老爷"],
+      nameType: NameType.NAMED
+    });
+    preferNameCache.addPersona({
+      id      : "persona-3",
+      name    : "张静斋",
+      aliases : ["老爷"],
+      nameType: NameType.NAMED
+    });
+
+    const nameTypeCache = createBookPersonaCache();
+    nameTypeCache.addPersona({
+      id      : "persona-title-1",
+      name    : "周老爷",
+      aliases : ["周学道"],
+      nameType: NameType.TITLE_ONLY
+    });
+    nameTypeCache.addPersona({
+      id      : "persona-title-2",
+      name    : "周进",
+      aliases : ["周学道"],
+      nameType: NameType.NAMED
+    });
+    nameTypeCache.addPersona({
+      id      : "persona-title-3",
+      name    : "周大人",
+      aliases : ["周学道"],
+      nameType: NameType.TITLE_ONLY
+    });
+
+    expect(preferNameCache.lookupByAlias("老爷")).toBe("persona-1");
+    expect(nameTypeCache.lookupByAlias("周学道")).toBe("persona-title-2");
+  });
+
+  // 用例语义：覆盖 addPersona 的别名去重，避免重复 alias 放大冲突集合。
+  it("deduplicates aliases when adding a persona snapshot", () => {
+    const cache = createBookPersonaCache();
+
+    cache.addPersona({
+      id      : "persona-1",
+      name    : "范进",
+      aliases : ["范老爷", "范老爷", "范举人"],
+      nameType: NameType.NAMED
+    });
+
+    expect(cache.personas.get("persona-1")?.aliases).toEqual(["范老爷", "范举人"]);
+    expect(cache.aliasIndex.get("范老爷".toLowerCase())?.size).toBe(1);
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("loadBookPersonaCache builds persona and index maps", async () => {
     const { prisma, profileFindMany } = createPrismaMock();
@@ -125,5 +197,45 @@ describe("BookPersonaCache", () => {
         }
       }
     });
+  });
+
+  // 用例语义：覆盖 loadBookPersonaCache 的重复 persona、空白 localName 与默认 nameType 分支。
+  it("loadBookPersonaCache deduplicates repeated personas and skips blank local names", async () => {
+    const { prisma, profileFindMany } = createPrismaMock();
+    profileFindMany.mockResolvedValueOnce([
+      {
+        personaId: "persona-1",
+        localName: "   ",
+        persona  : {
+          id      : "persona-1",
+          name    : "范进",
+          aliases : ["范老爷", "范老爷"],
+          nameType: null
+        }
+      },
+      {
+        personaId: "persona-1",
+        localName: "范举人",
+        persona  : {
+          id      : "persona-1",
+          name    : "范进",
+          aliases : ["范老爷"],
+          nameType: null
+        }
+      }
+    ]);
+
+    const cache = await loadBookPersonaCache(prisma, "book-1");
+
+    expect(cache.personas.size).toBe(1);
+    expect(cache.personas.get("persona-1")).toEqual({
+      id      : "persona-1",
+      name    : "范进",
+      aliases : ["范老爷"],
+      nameType: NameType.NAMED
+    });
+    expect(cache.profileIndex.size).toBe(1);
+    expect(cache.profileIndex.has("")).toBe(false);
+    expect(cache.lookupByAlias("范举人")).toBe("persona-1");
   });
 });

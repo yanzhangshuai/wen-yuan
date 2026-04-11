@@ -19,7 +19,8 @@ import { createAiProviderClient } from "@/server/providers/ai";
 
 const hoisted = vi.hoisted(() => ({
   mergePersonas         : vi.fn(),
-  createAiProviderClient: vi.fn()
+  createAiProviderClient: vi.fn(),
+  resolvePromptTemplate : vi.fn().mockImplementation(async ({ fallback }: { fallback: unknown }) => fallback)
 }));
 
 vi.mock("@/server/modules/personas/mergePersonas", () => ({
@@ -28,6 +29,10 @@ vi.mock("@/server/modules/personas/mergePersonas", () => ({
 
 vi.mock("@/server/providers/ai", () => ({
   createAiProviderClient: hoisted.createAiProviderClient
+}));
+
+vi.mock("@/server/modules/knowledge", () => ({
+  resolvePromptTemplateOrFallback: hoisted.resolvePromptTemplate
 }));
 
 function createStageExecutorMock() {
@@ -245,6 +250,213 @@ describe("ValidationAgentService", () => {
     });
   });
 
+  // 用例语义：覆盖书籍/章节缺失的失败分支，确保校验在 prompt 组装前直接中止。
+  it("validateChapterResult throws when book or chapter is missing", async () => {
+    const missingBook = createPrismaMock();
+    missingBook.bookFindUnique.mockResolvedValueOnce(null);
+    missingBook.chapterFindUnique.mockResolvedValueOnce({ title: "第一回" });
+
+    const service = createValidationAgentService(missingBook.prisma);
+
+    await expect(service.validateChapterResult({
+      bookId          : "missing-book",
+      chapterId       : "chapter-1",
+      chapterNo       : 1,
+      chapterContent  : "范进中举",
+      newPersonas     : [],
+      newMentions     : [],
+      newRelationships: [],
+      existingProfiles: []
+    })).rejects.toThrow("书籍不存在: missing-book");
+
+    const missingChapter = createPrismaMock();
+    missingChapter.bookFindUnique.mockResolvedValueOnce({
+      id   : "book-1",
+      title: "儒林外史"
+    });
+    missingChapter.chapterFindUnique.mockResolvedValueOnce(null);
+
+    const secondService = createValidationAgentService(missingChapter.prisma);
+
+    await expect(secondService.validateChapterResult({
+      bookId          : "book-1",
+      chapterId       : "missing-chapter",
+      chapterNo       : 1,
+      chapterContent  : "范进中举",
+      newPersonas     : [],
+      newMentions     : [],
+      newRelationships: [],
+      existingProfiles: []
+    })).rejects.toThrow("章节不存在: missing-chapter");
+  });
+
+  // 用例语义：覆盖无 jobId 直连模型路径，并验证 runtime client 会按 modelId 复用。
+  it("reuses runtime ai client for direct chapter validation without jobId", async () => {
+    const {
+      prisma,
+      bookFindUnique,
+      chapterFindUnique,
+      personaFindMany,
+      validationReportCreate
+    } = createPrismaMock();
+    const strategyResolver = {
+      resolveForStage: vi.fn().mockResolvedValue({
+        modelId    : "deepseek-chat",
+        provider   : "deepseek",
+        modelName  : "deepseek-chat",
+        displayName: "DeepSeek Chat",
+        baseUrl    : "https://api.deepseek.com",
+        apiKey     : "sk-test",
+        source     : "SYSTEM_DEFAULT",
+        params     : {
+          temperature    : 0.2,
+          maxOutputTokens: 4096,
+          topP           : 1
+        }
+      })
+    };
+    const generateJson = vi.fn().mockResolvedValue({
+      content: JSON.stringify({ issues: [] }),
+      usage  : null
+    });
+
+    bookFindUnique
+      .mockResolvedValueOnce({ id: "book-1", title: "儒林外史" })
+      .mockResolvedValueOnce({ id: "book-1", title: "儒林外史" });
+    chapterFindUnique
+      .mockResolvedValueOnce({ title: "第一回" })
+      .mockResolvedValueOnce({ title: "第二回" });
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    validationReportCreate
+      .mockResolvedValueOnce({ id: "report-direct-1" })
+      .mockResolvedValueOnce({ id: "report-direct-2" });
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+
+    const service = createValidationAgentService(prisma, createStageExecutorMock() as never, strategyResolver as never);
+
+    await service.validateChapterResult({
+      bookId          : "book-1",
+      chapterId       : "chapter-1",
+      chapterNo       : 1,
+      chapterContent  : "范进中举",
+      newPersonas     : [],
+      newMentions     : [],
+      newRelationships: [],
+      existingProfiles: []
+    });
+    await service.validateChapterResult({
+      bookId          : "book-1",
+      chapterId       : "chapter-2",
+      chapterNo       : 2,
+      chapterContent  : "周学道到来",
+      newPersonas     : [],
+      newMentions     : [],
+      newRelationships: [],
+      existingProfiles: []
+    });
+
+    expect(strategyResolver.resolveForStage).toHaveBeenCalledTimes(2);
+    expect(mockedCreateAiProviderClient).toHaveBeenCalledTimes(1);
+    expect(generateJson).toHaveBeenCalledTimes(2);
+  });
+
+  // 用例语义：覆盖章节级 prompt fallback 默认值与直连模型参数展开，避免单测依赖真实知识库模板查询。
+  it("uses chapter prompt fallbacks and direct-model thinking options without hitting runtime template storage", async () => {
+    const {
+      prisma,
+      bookFindUnique,
+      chapterFindUnique,
+      personaFindMany,
+      validationReportCreate
+    } = createPrismaMock();
+    const strategyResolver = {
+      resolveForStage: vi.fn().mockResolvedValue({
+        modelId    : "deepseek-reasoner",
+        provider   : "deepseek",
+        modelName  : "deepseek-reasoner",
+        displayName: "DeepSeek Reasoner",
+        baseUrl    : "https://api.deepseek.com",
+        apiKey     : "sk-test",
+        source     : "SYSTEM_DEFAULT",
+        params     : {
+          temperature    : 0.1,
+          maxOutputTokens: 2048,
+          topP           : 0.95,
+          enableThinking : true,
+          reasoningEffort: "high"
+        }
+      })
+    };
+    const generateJson = vi.fn().mockResolvedValue({
+      content: JSON.stringify({
+        issues: [
+          {
+            id                : "issue-add-mapping",
+            type              : "MISSING_NAME_MAPPING",
+            severity          : "WARNING",
+            confidence        : 0.95,
+            description       : "需要补映射",
+            evidence          : "出现稳定称谓",
+            affectedPersonaIds: ["persona-new"],
+            suggestion        : {
+              action: "ADD_MAPPING",
+              reason: "补充显式映射"
+            }
+          }
+        ]
+      }),
+      usage: null
+    });
+
+    bookFindUnique.mockResolvedValueOnce({ id: "book-1", title: "儒林外史" });
+    chapterFindUnique.mockResolvedValueOnce({ title: "第一回" });
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "persona-new" }]);
+    validationReportCreate.mockResolvedValueOnce({ id: "report-direct-fallback" });
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+
+    const service = createValidationAgentService(prisma, createStageExecutorMock() as never, strategyResolver as never);
+    const report = await service.validateChapterResult({
+      bookId          : "book-1",
+      chapterId       : "chapter-1",
+      chapterNo       : 1,
+      chapterContent  : "周学道命诸生作文",
+      newPersonas     : [{ id: "persona-new", name: "  周学道  ", confidence: 0.73, nameType: "TITLE_ONLY" }],
+      newMentions     : [{ personaId: "persona-new", rawText: "周学道命诸生作文" }],
+      newRelationships: [{ sourceId: "persona-new", targetId: "ghost-target", type: "提携" }],
+      existingProfiles: [{
+        personaId    : "persona-missing",
+        canonicalName: "旧人物",
+        aliases      : ["旧称"],
+        localSummary : "历史人物"
+      }]
+    });
+
+    expect(hoisted.resolvePromptTemplate).toHaveBeenCalledTimes(1);
+    expect(generateJson).toHaveBeenCalledWith(expect.objectContaining({
+      user: expect.stringContaining("旧人物")
+    }), {
+      temperature    : 0.1,
+      maxOutputTokens: 2048,
+      topP           : 0.95,
+      enableThinking : true,
+      reasoningEffort: "high"
+    });
+
+    const promptUser = generateJson.mock.calls[0]?.[0].user ?? "";
+    expect(promptUser).toContain("置信度:1");
+    expect(promptUser).toContain("persona-new");
+    expect(promptUser).toContain("ghost-target");
+    expect(report.summary.autoFixable).toBe(0);
+    expect(report.issues[0]?.suggestion.action).toBe("ADD_MAPPING");
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("validateBookResult builds full-book prompt and persists report", async () => {
     const {
@@ -338,6 +550,83 @@ describe("ValidationAgentService", () => {
       }),
       select: { id: true }
     });
+  });
+
+  // 用例语义：覆盖整书 prompt 的 mention/source/sample fallback，确保不依赖运行时知识库模板查询结果。
+  it("validateBookResult keeps prompt fallbacks stable for missing counts, missing names and secondary samples", async () => {
+    const {
+      prisma,
+      bookFindUnique,
+      profileFindMany,
+      mentionGroupBy,
+      relationshipFindMany,
+      chapterFindMany,
+      validationReportCreate
+    } = createPrismaMock();
+    const generateJson = vi.fn().mockResolvedValue({
+      content: JSON.stringify({ issues: [] }),
+      usage  : null
+    });
+
+    bookFindUnique.mockResolvedValueOnce({ title: "儒林外史" });
+    profileFindMany.mockResolvedValueOnce([
+      {
+        personaId: "persona-a",
+        persona  : {
+          id        : "persona-a",
+          name      : "范进",
+          aliases   : ["范老爷"],
+          nameType  : "NAMED",
+          confidence: 0.95
+        }
+      },
+      {
+        personaId: "persona-b",
+        persona  : {
+          id        : "persona-b",
+          name      : "周学道",
+          aliases   : [],
+          nameType  : "TITLE_ONLY",
+          confidence: 0.62
+        }
+      }
+    ]);
+    mentionGroupBy.mockResolvedValueOnce([
+      { personaId: "persona-a", _count: { id: 12 } }
+    ]);
+    relationshipFindMany.mockResolvedValueOnce([
+      { sourceId: "persona-a", targetId: "ghost-target", type: "同乡" },
+      { sourceId: "ghost-source", targetId: "persona-b", type: "提携" }
+    ]);
+    chapterFindMany.mockResolvedValueOnce([
+      { no: 1, title: "第一回", content: "范进中举，众人相贺。" },
+      { no: 7, title: "第七回", content: "周学道再度出场，众人议论纷纷。" }
+    ]);
+    validationReportCreate.mockResolvedValueOnce({ id: "report-book-fallback" });
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+
+    const service = createValidationAgentService(prisma, createStageExecutorMock() as never);
+    const report = await service.validateBookResult("book-1", "job-book-fallback");
+
+    expect(hoisted.resolvePromptTemplate).toHaveBeenCalledTimes(1);
+    const promptUser = generateJson.mock.calls[0]?.[0].user ?? "";
+    expect(promptUser).toContain("提及:0");
+    expect(promptUser).toContain("ghost-target");
+    expect(promptUser).toContain("ghost-source");
+    expect(promptUser).toContain("代表性样本");
+    expect(promptUser).toContain("覆盖更多章节");
+    expect(report.summary.totalIssues).toBe(0);
+  });
+
+  // 用例语义：覆盖整书校验前置失败分支，避免空书籍继续执行聚合查询。
+  it("validateBookResult throws when book is missing", async () => {
+    const { prisma, bookFindUnique, profileFindMany } = createPrismaMock();
+    bookFindUnique.mockResolvedValueOnce(null);
+
+    const service = createValidationAgentService(prisma);
+
+    await expect(service.validateBookResult("missing-book", "job-1")).rejects.toThrow("书籍不存在: missing-book");
+    expect(profileFindMany).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -499,6 +788,246 @@ describe("ValidationAgentService", () => {
     expect(appliedCount).toBe(0);
   });
 
+  // 用例语义：覆盖自动修复缺失报告与多种跳过分支，确保保守策略稳定可重复。
+  it("applyAutoFixes throws when report is missing and skips invalid fix variants", async () => {
+    const missingReport = createPrismaMock();
+    missingReport.validationReportFindUnique.mockResolvedValueOnce(null);
+
+    const missingService = createValidationAgentService(missingReport.prisma);
+    await expect(missingService.applyAutoFixes("missing-report")).rejects.toThrow("自检报告不存在: missing-report");
+
+    const {
+      prisma,
+      validationReportFindUnique,
+      validationReportUpdate,
+      personaFindUnique,
+      personaUpdate
+    } = createPrismaMock();
+
+    validationReportFindUnique.mockResolvedValueOnce({
+      id    : "report-3",
+      issues: {
+        issues: [
+          {
+            id                : "merge-no-target",
+            type              : "DUPLICATE_PERSONA",
+            severity          : "WARNING",
+            confidence        : 0.96,
+            description       : "缺少 target",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-a"],
+            suggestion        : {
+              action         : "MERGE",
+              sourcePersonaId: "persona-b",
+              reason         : "信息不完整"
+            }
+          },
+          {
+            id                : "merge-deleted",
+            type              : "DUPLICATE_PERSONA",
+            severity          : "WARNING",
+            confidence        : 0.97,
+            description       : "target 已删除",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-a", "persona-b"],
+            suggestion        : {
+              action         : "MERGE",
+              targetPersonaId: "persona-a",
+              sourcePersonaId: "persona-b",
+              reason         : "报告过期"
+            }
+          },
+          {
+            id                : "alias-blank",
+            type              : "MISSING_NAME_MAPPING",
+            severity          : "INFO",
+            confidence        : 0.95,
+            description       : "空别名",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-c"],
+            suggestion        : {
+              action         : "ADD_ALIAS",
+              targetPersonaId: "persona-c",
+              newAlias       : "   ",
+              reason         : "脏数据"
+            }
+          },
+          {
+            id                : "alias-missing",
+            type              : "MISSING_NAME_MAPPING",
+            severity          : "INFO",
+            confidence        : 0.95,
+            description       : "persona 丢失",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-d"],
+            suggestion        : {
+              action         : "ADD_ALIAS",
+              targetPersonaId: "persona-d",
+              newAlias       : "周大人",
+              reason         : "回填"
+            }
+          },
+          {
+            id                : "rename-valid",
+            type              : "ALIAS_AS_NEW_PERSONA",
+            severity          : "ERROR",
+            confidence        : 0.95,
+            description       : "首次改名",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-e"],
+            suggestion        : {
+              action         : "UPDATE_NAME",
+              targetPersonaId: "persona-e",
+              newName        : "朱元璋",
+              reason         : "回填真名"
+            }
+          },
+          {
+            id                : "rename-duplicate",
+            type              : "ALIAS_AS_NEW_PERSONA",
+            severity          : "ERROR",
+            confidence        : 0.95,
+            description       : "同轮重复改名",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-e"],
+            suggestion        : {
+              action         : "UPDATE_NAME",
+              targetPersonaId: "persona-e",
+              newName        : "明太祖",
+              reason         : "应被跳过"
+            }
+          },
+          {
+            id                : "rename-deleted",
+            type              : "ALIAS_AS_NEW_PERSONA",
+            severity          : "ERROR",
+            confidence        : 0.95,
+            description       : "目标已删除",
+            evidence          : "证据",
+            affectedPersonaIds: ["persona-f"],
+            suggestion        : {
+              action         : "UPDATE_NAME",
+              targetPersonaId: "persona-f",
+              newName        : "新名字",
+              reason         : "应跳过"
+            }
+          }
+        ]
+      }
+    });
+    personaFindUnique
+      .mockResolvedValueOnce({ id: "persona-a", deletedAt: new Date("2026-04-11T00:00:00Z") })
+      .mockResolvedValueOnce({ id: "persona-b", deletedAt: null })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ name: "太祖皇帝", aliases: ["洪武帝"], deletedAt: null })
+      .mockResolvedValueOnce({ name: "旧人物", aliases: [], deletedAt: new Date("2026-04-11T00:00:00Z") });
+    validationReportUpdate.mockResolvedValueOnce({});
+
+    const service = createValidationAgentService(prisma);
+    const appliedCount = await service.applyAutoFixes("report-3");
+
+    expect(hoisted.mergePersonas).not.toHaveBeenCalled();
+    expect(personaUpdate).toHaveBeenCalledTimes(1);
+    expect(personaUpdate).toHaveBeenCalledWith({
+      where: { id: "persona-e" },
+      data : {
+        name   : "朱元璋",
+        aliases: ["洪武帝", "太祖皇帝"]
+      }
+    });
+    expect(validationReportUpdate).toHaveBeenCalledWith({
+      where: { id: "report-3" },
+      data : { status: "APPLIED" }
+    });
+    expect(appliedCount).toBe(1);
+  });
+
+  // 用例语义：覆盖 auto-fix 从 affectedPersonaIds 回填 target 的分支，并跳过空白新名字。
+  it("applyAutoFixes falls back to affected persona ids for alias and rename actions", async () => {
+    const {
+      prisma,
+      validationReportFindUnique,
+      validationReportUpdate,
+      personaFindUnique,
+      personaUpdate
+    } = createPrismaMock();
+
+    validationReportFindUnique.mockResolvedValueOnce({
+      id    : "report-4",
+      issues: {
+        issues: [
+          {
+            id                : "alias-fallback-target",
+            type              : "MISSING_NAME_MAPPING",
+            severity          : "INFO",
+            confidence        : 0.91,
+            description       : "补充别名",
+            evidence          : "稳定称谓",
+            affectedPersonaIds: ["persona-c"],
+            suggestion        : {
+              action  : "ADD_ALIAS",
+              newAlias: " 周大人 ",
+              reason  : "回填稳定称谓"
+            }
+          },
+          {
+            id                : "rename-fallback-target",
+            type              : "ALIAS_AS_NEW_PERSONA",
+            severity          : "ERROR",
+            confidence        : 0.92,
+            description       : "更新真名",
+            evidence          : "上下文已确认",
+            affectedPersonaIds: ["persona-d"],
+            suggestion        : {
+              action : "UPDATE_NAME",
+              newName: " 朱元璋 ",
+              reason : "回填真名"
+            }
+          },
+          {
+            id                : "rename-blank-name",
+            type              : "ALIAS_AS_NEW_PERSONA",
+            severity          : "ERROR",
+            confidence        : 0.93,
+            description       : "空白新名应跳过",
+            evidence          : "模型输出脏数据",
+            affectedPersonaIds: ["persona-e"],
+            suggestion        : {
+              action : "UPDATE_NAME",
+              newName: "   ",
+              reason : "脏数据"
+            }
+          }
+        ]
+      }
+    });
+    personaFindUnique
+      .mockResolvedValueOnce({ aliases: ["周学道"], deletedAt: null })
+      .mockResolvedValueOnce({ name: "太祖皇帝", aliases: ["洪武帝"], deletedAt: null });
+    validationReportUpdate.mockResolvedValueOnce({});
+
+    const service = createValidationAgentService(prisma);
+    const appliedCount = await service.applyAutoFixes("report-4");
+
+    expect(personaFindUnique).toHaveBeenCalledTimes(2);
+    expect(personaUpdate).toHaveBeenNthCalledWith(1, {
+      where: { id: "persona-c" },
+      data : { aliases: ["周学道", "周大人"] }
+    });
+    expect(personaUpdate).toHaveBeenNthCalledWith(2, {
+      where: { id: "persona-d" },
+      data : {
+        name   : "朱元璋",
+        aliases: ["洪武帝", "太祖皇帝"]
+      }
+    });
+    expect(validationReportUpdate).toHaveBeenCalledWith({
+      where: { id: "report-4" },
+      data : { status: "APPLIED" }
+    });
+    expect(appliedCount).toBe(2);
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("listValidationReports returns reports ordered by createdAt", async () => {
     const { prisma, validationReportFindMany } = createPrismaMock();
@@ -536,6 +1065,41 @@ describe("ValidationAgentService", () => {
     expect(reports[0].summary.totalIssues).toBe(5);
     expect(reports[1].id).toBe("report-b");
     expect(reports[1].scope).toBe("CHAPTER");
+  });
+
+  // 用例语义：覆盖 summary 脏数据容错分支，确保接口始终返回稳定数字字段。
+  it("listValidationReports normalizes malformed summary fields to numeric fallbacks", async () => {
+    const { prisma, validationReportFindMany } = createPrismaMock();
+
+    validationReportFindMany.mockResolvedValueOnce([{
+      id       : "report-malformed",
+      bookId   : "book-1",
+      jobId    : null,
+      scope    : "BOOK",
+      chapterId: null,
+      status   : "PENDING",
+      summary  : {
+        totalIssues : "3",
+        errorCount  : 2,
+        warningCount: null,
+        infoCount   : 1,
+        autoFixable : "bad",
+        needsReview : undefined
+      },
+      createdAt: new Date("2026-04-11T00:00:00Z")
+    }]);
+
+    const service = createValidationAgentService(prisma);
+    const [report] = await service.listValidationReports("book-1");
+
+    expect(report.summary).toEqual({
+      totalIssues : 0,
+      errorCount  : 2,
+      warningCount: 0,
+      infoCount   : 1,
+      autoFixable : 0,
+      needsReview : 0
+    });
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -584,6 +1148,74 @@ describe("ValidationAgentService", () => {
     expect(detail!.id).toBe("report-detail");
     expect(detail!.issues).toHaveLength(1);
     expect(detail!.issues[0].type).toBe("DUPLICATE_PERSONA");
+    expect(detail!.summary.totalIssues).toBe(1);
+  });
+
+  // 用例语义：覆盖字符串 issues 与非对象 summary 的容错分支，保证详情接口稳定降级。
+  it("getValidationReportDetail parses string issues and falls back to zero summary for invalid payloads", async () => {
+    const { prisma, validationReportFindFirst } = createPrismaMock();
+
+    validationReportFindFirst.mockResolvedValueOnce({
+      id       : "report-string-issues",
+      bookId   : "book-1",
+      jobId    : null,
+      scope    : "CHAPTER",
+      chapterId: "chapter-1",
+      status   : "PENDING",
+      summary  : "bad-summary",
+      issues   : JSON.stringify([{
+        id                : "issue-1",
+        type              : "MISSING_NAME_MAPPING",
+        severity          : "WARNING",
+        confidence        : 0.9,
+        description       : "需要补映射",
+        evidence          : "称谓稳定",
+        affectedPersonaIds: ["persona-a"],
+        suggestion        : {
+          action: "ADD_MAPPING",
+          reason: "补映射"
+        }
+      }]),
+      createdAt: new Date("2026-04-11T00:00:00Z")
+    });
+
+    const service = createValidationAgentService(prisma);
+    const detail = await service.getValidationReportDetail("book-1", "report-string-issues");
+
+    expect(detail).not.toBeNull();
+    expect(detail!.issues).toHaveLength(1);
+    expect(detail!.issues[0]?.suggestion.action).toBe("ADD_MAPPING");
+    expect(detail!.summary).toEqual({
+      totalIssues : 0,
+      errorCount  : 0,
+      warningCount: 0,
+      infoCount   : 0,
+      autoFixable : 0,
+      needsReview : 0
+    });
+  });
+
+  // 用例语义：覆盖不支持的 issues 载荷形态，避免脏数据透传到审核详情页。
+  it("getValidationReportDetail returns an empty issue list for unsupported issue payload shapes", async () => {
+    const { prisma, validationReportFindFirst } = createPrismaMock();
+
+    validationReportFindFirst.mockResolvedValueOnce({
+      id       : "report-bad-issues",
+      bookId   : "book-1",
+      jobId    : null,
+      scope    : "BOOK",
+      chapterId: null,
+      status   : "PENDING",
+      summary  : { totalIssues: 1, errorCount: 0, warningCount: 1, infoCount: 0, autoFixable: 0, needsReview: 1 },
+      issues   : { invalid: true },
+      createdAt: new Date("2026-04-11T00:00:00Z")
+    });
+
+    const service = createValidationAgentService(prisma);
+    const detail = await service.getValidationReportDetail("book-1", "report-bad-issues");
+
+    expect(detail).not.toBeNull();
+    expect(detail!.issues).toEqual([]);
     expect(detail!.summary.totalIssues).toBe(1);
   });
 });

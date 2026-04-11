@@ -91,4 +91,70 @@ describe("updateBiographyRecord service", () => {
     await expect(service.updateBiographyRecord("missing", { event: "更新" }))
       .rejects.toBeInstanceOf(BiographyRecordNotFoundError);
   });
+
+  it("throws input error when target chapter does not exist", async () => {
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      biographyRecord: {
+        findFirst: vi.fn().mockResolvedValue({ id: "bio-1" })
+      },
+      chapter: {
+        findFirst: vi.fn().mockResolvedValue(null)
+      }
+    }));
+    const service = createUpdateBiographyRecordService({
+      $transaction: transaction
+    } as never);
+
+    await expect(service.updateBiographyRecord("bio-1", { chapterId: "chapter-missing" }))
+      .rejects.toBeInstanceOf(BiographyInputError);
+  });
+
+  it("normalizes nullable text fields before update", async () => {
+    const biographyUpdate = vi.fn().mockResolvedValue({
+      id         : "bio-1",
+      personaId  : "persona-1",
+      chapterId  : "chapter-1",
+      chapterNo  : 1,
+      category   : BioCategory.EVENT,
+      title      : null,
+      location   : null,
+      event      : "落第",
+      virtualYear: null,
+      status     : ProcessingStatus.DRAFT,
+      updatedAt  : new Date("2026-03-25T00:00:00.000Z")
+    });
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      biographyRecord: {
+        findFirst: vi.fn().mockResolvedValue({ id: "bio-1" }),
+        update   : biographyUpdate
+      }
+    }));
+    const service = createUpdateBiographyRecordService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.updateBiographyRecord("bio-1", {
+      category   : BioCategory.EVENT,
+      title      : "   ",
+      location   : " ",
+      event      : " 落第 ",
+      virtualYear: "\t"
+    });
+
+    expect(biographyUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        category   : BioCategory.EVENT,
+        title      : null,
+        location   : null,
+        event      : "落第",
+        virtualYear: null
+      })
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      title      : null,
+      location   : null,
+      event      : "落第",
+      virtualYear: null
+    }));
+  });
 });

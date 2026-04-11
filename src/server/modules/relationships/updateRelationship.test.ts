@@ -87,4 +87,45 @@ describe("updateRelationship service", () => {
     await expect(service.updateRelationship("rel-missing", { type: "同盟" }))
       .rejects.toBeInstanceOf(RelationshipNotFoundError);
   });
+
+  it("normalizes nullable description and evidence fields", async () => {
+    const relationshipUpdate = vi.fn().mockResolvedValue({
+      id         : "rel-2",
+      chapterId  : "chapter-1",
+      sourceId   : "persona-a",
+      targetId   : "persona-b",
+      type       : "师生",
+      weight     : 1,
+      description: null,
+      evidence   : null,
+      confidence : 0.6,
+      status     : ProcessingStatus.DRAFT,
+      updatedAt  : new Date("2026-03-25T00:00:00.000Z")
+    });
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      relationship: {
+        findFirst: vi.fn().mockResolvedValue({ id: "rel-2" }),
+        update   : relationshipUpdate
+      }
+    }));
+    const service = createUpdateRelationshipService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.updateRelationship("rel-2", {
+      description: "   ",
+      evidence   : null
+    });
+
+    expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        description: null,
+        evidence   : null
+      })
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      description: null,
+      evidence   : null
+    }));
+  });
 });

@@ -88,6 +88,50 @@ export const MAX_RETRY = 3;
 - 主题门控逻辑分散后，任一组件漏改都可能触发 hydration mismatch。
 - 共享 hook 能让修复一次、全局受益，减少“同类 bug 反复出现”。
 
+### 模式 5：多个弹框各自拉模型列表，导致同类 bug 横向复制
+
+**反例**：姓氏/知识包/泛称谓弹框分别维护 `modelOptions + loading + 默认模型选择`，每个页面复制一套 `fetchModels` 逻辑和过滤条件。
+
+**正例**：抽成统一 `useAdminModels` store hook（模块级缓存 + refresh），页面只消费：
+- `models`（支持 `onlyEnabled`）
+- `loading/error`
+- `defaultModel`
+
+```ts
+// 反例：每个页面都写一遍
+useEffect(() => {
+	fetchModels().then(setModelOptions);
+}, []);
+
+// 正例：统一复用
+const { models, loading, defaultModel, refresh } = useAdminModels({ onlyEnabled: true });
+```
+
+原因：
+- 当“模型可选过滤规则”需要调整时，散落实现会出现局部修复、局部漏改。
+- 抽到共享 hook 后，选择规则、默认值策略、缓存策略都可以一次修复、全局生效。
+
+### 模式 5.1：共享缓存“只读不重校验”，导致页面长期使用过期数据
+
+**反例**：`useAdminModels` 命中模块级缓存后直接返回；用户在“模型管理”页启用模型后，回到知识库生成弹框仍显示“暂无可用模型”。
+
+**正例**：在关键交互入口（如“打开生成弹框”）调用 `refresh()` 主动重拉；同时在 UI 上区分“加载中 / 加载失败 / 当前为空”三种状态。
+
+```ts
+// 反例：缓存命中即返回，不重校验
+if (!forced && modelCache) return;
+
+// 正例：在关键入口强制刷新
+useEffect(() => {
+  if (open) refresh();
+}, [open, refresh]);
+```
+
+原因：
+- 这是“共享状态复用”与“运营配置实时性”之间的冲突，不是单页面 bug。
+- 共享缓存若缺少重校验触发点，会把一次空结果放大为跨页面长期错误感知。
+- 复用组件必须暴露显式刷新能力，并在业务关键入口建立一致调用约定。
+
 ---
 
 ## 何时抽象
@@ -135,3 +179,4 @@ export const MAX_RETRY = 3;
 - [ ] 常量仅在一个来源定义
 - [ ] 相似模式保持一致结构
 - [ ] 涉及浏览器本地状态（theme/localStorage/media query）时，已复用共享 hydration hook，而非重复写 mounted 门控
+- [ ] 多页面都依赖同一模型列表时，已复用统一 store/hook，而非每页各写一套拉取与过滤逻辑

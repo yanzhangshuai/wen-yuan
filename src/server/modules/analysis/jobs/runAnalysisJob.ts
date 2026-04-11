@@ -10,6 +10,8 @@ import { createAiCallExecutor } from "@/server/modules/analysis/services/AiCallE
 import { createModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createGlobalEntityResolver, type GlobalEntityResolverService } from "@/server/modules/analysis/services/GlobalEntityResolver";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
+import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
+import { buildAliasLookupFromDb, loadAnalysisRuntimeConfig } from "@/server/modules/knowledge/load-book-knowledge";
 import type { ChapterEntityList } from "@/types/analysis";
 
 /**
@@ -602,6 +604,7 @@ export function createAnalysisJobRunner(
 
       // ===== Two-Pass Architecture: Pass 1 (独立实体提取) + Pass 2 (全局实体消歧) =====
       let externalPersonaMap: Map<string, string> | undefined;
+      let preloadedLexiconConfig: BookLexiconConfig | undefined;
       const useTwoPass = Boolean(activeAnalyzer.extractChapterEntities && activeAnalyzer.resolveGlobalEntities);
 
       if (useTwoPass) {
@@ -674,15 +677,26 @@ export function createAnalysisJobRunner(
 
         const bookRow = await prismaClient.book.findUnique({
           where : { id: runningJob.bookId },
-          select: { title: true, genre: true }
+          select: { title: true, genre: true, bookTypeId: true, bookType: { select: { key: true } } }
         });
+
+        // 从 DB 预加载知识库别名查找表（替代硬编码的 GENRE_CLASSICAL_NAMES）
+        const bookTypeKey = bookRow!.bookType?.key ?? bookRow!.genre;
+        const preloadedAliasLookup = await buildAliasLookupFromDb(
+          runningJob.bookId,
+          bookTypeKey,
+          prismaClient
+        );
+
+        // 从 DB 预加载书籍类型 NER 调谐配置（替代硬编码的 GENRE_PRESETS）
+        preloadedLexiconConfig = await loadAnalysisRuntimeConfig(bookTypeKey, prismaClient);
 
         const { globalPersonaMap: resolvedMap } = await activeAnalyzer.resolveGlobalEntities!(
           runningJob.bookId,
           bookRow!.title,
           chapterEntityLists,
           { bookId: runningJob.bookId, jobId: runningJob.id },
-          bookRow!.genre
+          preloadedAliasLookup
         );
         externalPersonaMap = resolvedMap;
 
@@ -762,7 +776,7 @@ export function createAnalysisJobRunner(
 
           while (chapterAttempt <= CHAPTER_MAX_RETRIES) {
             try {
-              const result: ChapterAnalysisResult = await activeAnalyzer.analyzeChapter(chapter.id, { jobId: runningJob.id, externalPersonaMap });
+              const result: ChapterAnalysisResult = await activeAnalyzer.analyzeChapter(chapter.id, { jobId: runningJob.id, externalPersonaMap, preloadedLexiconConfig });
 
               // [Cost opt D] 风险门控：仅对高风险章节执行同步 CHAPTER_VALIDATION。
               // 风险信号：新建 persona 多、存在 hallucination、存在灰区称谓。

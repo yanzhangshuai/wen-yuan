@@ -50,21 +50,25 @@ const GENERIC_TITLES_EXAMPLE = Array.from(buildEffectiveGenericTitles(undefined)
  */
 export interface BuildPromptInput {
   /** 书名，用于限定语境与减少模型跨文本幻觉。 */
-  bookTitle            : string;
+  bookTitle                   : string;
   /** 当前章节号（用于输出锚定与审计定位）。 */
-  chapterNo            : number;
+  chapterNo                   : number;
   /** 当前章节标题（提高语义理解准确度）。 */
-  chapterTitle         : string;
+  chapterTitle                : string;
   /** 当前分段正文内容。 */
-  content              : string;
+  content                     : string;
   /** 已建档人物上下文（帮助做实体对齐）。 */
-  profiles             : AnalysisProfileContext[];
+  profiles                    : AnalysisProfileContext[];
   /** 当前分片序号（从 1 开始）。 */
-  chunkIndex           : number;
+  chunkIndex                  : number;
   /** 分片总数（用于引导模型避免跨片段臆断）。 */
-  chunkCount           : number;
+  chunkCount                  : number;
   /** 可选覆盖的泛化称谓示例（测试或策略定制场景）。 */
-  genericTitlesExample?: string;
+  genericTitlesExample?       : string;
+  /** 可选覆盖的实体抽取规则。 */
+  entityExtractionRules?      : readonly string[];
+  /** 可选覆盖的关系抽取规则。 */
+  relationshipExtractionRules?: readonly string[];
 }
 
 /**
@@ -76,17 +80,19 @@ export interface BuildPromptInput {
  */
 export interface RosterDiscoveryInput {
   /** 书名。 */
-  bookTitle            : string;
+  bookTitle             : string;
   /** 章节号。 */
-  chapterNo            : number;
+  chapterNo             : number;
   /** 章节标题。 */
-  chapterTitle         : string;
+  chapterTitle          : string;
   /** 完整章节正文（Phase 1 需要整章观察）。 */
-  content              : string;
+  content               : string;
   /** 已建档人物列表，用于“已知/新建”判定。 */
-  profiles             : AnalysisProfileContext[];
+  profiles              : AnalysisProfileContext[];
   /** 可选覆盖泛化称谓示例。 */
-  genericTitlesExample?: string;
+  genericTitlesExample? : string;
+  /** 可选覆盖的实体抽取规则。 */
+  entityExtractionRules?: readonly string[];
 }
 
 export interface ChapterValidationPromptInput {
@@ -210,6 +216,52 @@ function buildEntityContextLines(profiles: AnalysisProfileContext[]): string {
     .join("\n");
 }
 
+export function buildRosterDiscoveryRulesText(input: Pick<RosterDiscoveryInput, "genericTitlesExample" | "entityExtractionRules">): string {
+  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
+  const rosterSpecificRules: readonly string[] = [
+    "尊号/帝号/封号：可对应已知人物→填entityId+isTitleOnly:true；新人物→isNew+isTitleOnly:true。",
+    "别名/称号/职位类型额外标注: aliasType(TITLE|POSITION|KINSHIP|NICKNAME|COURTESY_NAME), contextHint(≤100字), suggestedRealName, aliasConfidence(0-1)。"
+  ];
+  const entityRules = input.entityExtractionRules ?? ENTITY_EXTRACTION_RULES;
+  return formatRulesSection([...entityRules, ...rosterSpecificRules], { genericTitles: genericTitlesExample });
+}
+
+export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "genericTitlesExample" | "entityExtractionRules" | "relationshipExtractionRules">): string {
+  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
+  const analysisPreRules: readonly string[] = [
+    "仅输出原始 JSON，禁止 markdown 代码块。"
+  ];
+  const analysisPostRules: readonly string[] = [
+    "biography.category 限定: BIRTH|EXAM|CAREER|TRAVEL|SOCIAL|DEATH|EVENT。",
+    "rawText 必须精准截取原文；event 客观描述，禁止抒情。不跨段推测，缺失则返回[]。"
+  ];
+  const entityRules = input.entityExtractionRules ?? ENTITY_EXTRACTION_RULES;
+  const relationshipRules = input.relationshipExtractionRules ?? RELATIONSHIP_EXTRACTION_RULES;
+  return formatRulesSection([
+    ...analysisPreRules,
+    ...entityRules,
+    ...analysisPostRules,
+    ...relationshipRules
+  ], { genericTitles: genericTitlesExample });
+}
+
+export function buildIndependentExtractionRulesText(input: Pick<IndependentExtractionInput, "entityExtractionRules">): string {
+  const genericTitlesExample = GENERIC_TITLES_EXAMPLE;
+  const baseRules = input.entityExtractionRules ?? ENTITY_EXTRACTION_RULES;
+  return [
+    "仅输出原始 JSON 数组，禁止 markdown 代码块。",
+    ...baseRules,
+    "name 填写人物最可能的完整姓名（如有名有姓优先用全名）。",
+    "aliases 填写本章出现的其他称谓（官衔、字号、亲属称呼等），每个别名 ≤10 字。",
+    `泛化称谓（如${genericTitlesExample}）如果在本章特指某一人物，则作为该人物的 alias；否则忽略。`,
+    "同一人物在本章即使有多个称谓，也只输出一条记录，所有称谓放入 aliases。",
+    "description 用一句话概括人物在本章的角色/行为，≤50字。",
+    "category: PERSON=有名有姓的人物或有明确身份的角色；MENTIONED_ONLY=仅在对话或叙述中被提及但未直接出场。",
+    "不要提取地名、物品名、组织名等非人物实体。",
+    "name 和每个 alias 长度必须 ≤10 个中文字符，超过说明提取有误。"
+  ].map((rule, index) => `${index + 1}. ${rule}`).join("\n");
+}
+
 /**
  * 功能：生成"章节人物名册发现"Phase 1 Prompt。
  * 输入：input - 书名、章节信息、完整正文与已知人物档案。
@@ -223,15 +275,7 @@ export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): PromptM
       ? buildEntityContextLines(input.profiles)
       : "（本书目前尚无已建档人物）";
 
-  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
-
-  // 通用实体抽取规则 + ROSTER 特有规则合并为编号列表
-  const rosterSpecificRules: readonly string[] = [
-    "尊号/帝号/封号：可对应已知人物→填entityId+isTitleOnly:true；新人物→isNew+isTitleOnly:true。",
-    "别名/称号/职位类型额外标注: aliasType(TITLE|POSITION|KINSHIP|NICKNAME|COURTESY_NAME), contextHint(≤100字), suggestedRealName, aliasConfidence(0-1)。"
-  ];
-  const allRules = [...ENTITY_EXTRACTION_RULES, ...rosterSpecificRules];
-  const rulesSection = formatRulesSection(allRules, { genericTitles: genericTitlesExample });
+  const rulesSection = buildRosterDiscoveryRulesText(input);
 
   const user = [
     "## 任务",
@@ -276,18 +320,7 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): PromptMessa
       ? buildEntityContextLines(input.profiles)
       : "（本书目前尚无已建档人物）";
 
-  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
-
-  // 分析特有规则(前置) + 通用实体规则 + 关系规则 → 统一编号
-  const analysisPreRules: readonly string[] = [
-    "仅输出原始 JSON，禁止 markdown 代码块。"
-  ];
-  const analysisPostRules: readonly string[] = [
-    "biography.category 限定: BIRTH|EXAM|CAREER|TRAVEL|SOCIAL|DEATH|EVENT。",
-    "rawText 必须精准截取原文；event 客观描述，禁止抒情。不跨段推测，缺失则返回[]。"
-  ];
-  const allRules = [...analysisPreRules, ...ENTITY_EXTRACTION_RULES, ...analysisPostRules, ...RELATIONSHIP_EXTRACTION_RULES];
-  const rulesSection = formatRulesSection(allRules, { genericTitles: genericTitlesExample });
+  const rulesSection = buildChapterAnalysisRulesText(input);
 
   const user = [
     "## Task",
@@ -322,31 +355,19 @@ export function buildChapterAnalysisPrompt(input: BuildPromptInput): PromptMessa
  */
 export interface IndependentExtractionInput {
   /** 书名。 */
-  bookTitle   : string;
+  bookTitle             : string;
   /** 章节号。 */
-  chapterNo   : number;
+  chapterNo             : number;
   /** 章节标题。 */
-  chapterTitle: string;
+  chapterTitle          : string;
   /** 章节正文。 */
-  content     : string;
+  content               : string;
+  /** 可选覆盖的实体抽取规则。 */
+  entityExtractionRules?: readonly string[];
 }
 
 export function buildIndependentExtractionPrompt(input: IndependentExtractionInput): PromptMessageInput {
-  const genericTitlesExample = GENERIC_TITLES_EXAMPLE;
-
-  const rules = [
-    "仅输出原始 JSON 数组，禁止 markdown 代码块。",
-    "name 填写人物最可能的完整姓名（如有名有姓优先用全名）。",
-    "aliases 填写本章出现的其他称谓（官衔、字号、亲属称呼等），每个别名 ≤10 字。",
-    `泛化称谓（如${genericTitlesExample}）如果在本章特指某一人物，则作为该人物的 alias；否则忽略。`,
-    "同一人物在本章即使有多个称谓，也只输出一条记录，所有称谓放入 aliases。",
-    "description 用一句话概括人物在本章的角色/行为，≤50字。",
-    "category: PERSON=有名有姓的人物或有明确身份的角色；MENTIONED_ONLY=仅在对话或叙述中被提及但未直接出场。",
-    "不要提取地名、物品名、组织名等非人物实体。",
-    "name 和每个 alias 长度必须 ≤10 个中文字符，超过说明提取有误。"
-  ];
-
-  const rulesText = rules.map((r, i) => `${i + 1}. ${r}`).join("\n");
+  const rulesText = buildIndependentExtractionRulesText(input);
 
   const user = [
     "## 任务",

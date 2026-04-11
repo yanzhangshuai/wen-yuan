@@ -12,12 +12,14 @@ import { createGlobalEntityResolver } from "@/server/modules/analysis/services/G
 
 const {
   createAiProviderClientMock,
-  buildEntityResolutionPromptMock
+  buildEntityResolutionPromptMock,
+  resolvePromptTemplateMock
 } = vi.hoisted(() => ({
   createAiProviderClientMock     : vi.fn(),
   buildEntityResolutionPromptMock: vi.fn((bookTitle: string, groups: Array<{ groupId: number }>) => (
     `book=${bookTitle};groups=${groups.map((group) => group.groupId).join(",")}`
-  ))
+  )),
+  resolvePromptTemplateMock: vi.fn().mockImplementation(async ({ fallback }: { fallback: unknown }) => fallback)
 }));
 
 vi.mock("@/server/providers/ai", () => ({
@@ -26,6 +28,10 @@ vi.mock("@/server/providers/ai", () => ({
 
 vi.mock("@/server/modules/analysis/services/prompts", () => ({
   buildEntityResolutionPrompt: buildEntityResolutionPromptMock
+}));
+
+vi.mock("@/server/modules/knowledge", () => ({
+  resolvePromptTemplateOrFallback: resolvePromptTemplateMock
 }));
 
 function buildChapterEntityList(
@@ -65,7 +71,7 @@ function createAiCallExecutorMock(
   model: ResolvedStageModel
 ): Pick<AiCallExecutor, "execute"> {
   return {
-    execute: vi.fn(async <TData>(input: ExecuteAiCallInput<TData>) => {
+    execute: (vi.fn(async <TData>(input: ExecuteAiCallInput<TData>) => {
       const result = await input.callFn({
         model,
         prompt: input.prompt
@@ -76,7 +82,7 @@ function createAiCallExecutorMock(
         modelId   : model.modelId,
         isFallback: false
       };
-    })
+    }) as AiCallExecutor["execute"])
   };
 }
 
@@ -100,12 +106,14 @@ describe("GlobalEntityResolver", () => {
       buildChapterEntityList(1, [{
         name       : "范进",
         aliases    : ["范举人"],
-        description: "寒门书生"
+        description: "寒门书生",
+        category   : "PERSON"
       }]),
       buildChapterEntityList(3, [{
         name       : "范举人",
         aliases    : ["范进士"],
-        description: "中举后境遇骤变的寒门书生"
+        description: "中举后境遇骤变的寒门书生",
+        category   : "PERSON"
       }])
     ]);
 
@@ -128,12 +136,12 @@ describe("GlobalEntityResolver", () => {
   it("builds candidate groups from knowledge-base aliases, edit distance and surname overlap", () => {
     const resolver = createGlobalEntityResolver({} as never, {} as never);
     const dict = resolver._collectGlobalDictionary([
-      buildChapterEntityList(1, [{ name: "范进", aliases: [], description: "书生" }]),
-      buildChapterEntityList(2, [{ name: "范举人", aliases: [], description: "中举人物" }]),
-      buildChapterEntityList(3, [{ name: "李四", aliases: [], description: "甲" }]),
-      buildChapterEntityList(4, [{ name: "李似", aliases: [], description: "乙" }]),
-      buildChapterEntityList(5, [{ name: "王惠", aliases: ["王太守"], description: "官员" }]),
-      buildChapterEntityList(6, [{ name: "王老爷", aliases: ["王太守"], description: "敬称" }])
+      buildChapterEntityList(1, [{ name: "范进", aliases: [], description: "书生", category: "PERSON" }]),
+      buildChapterEntityList(2, [{ name: "范举人", aliases: [], description: "中举人物", category: "PERSON" }]),
+      buildChapterEntityList(3, [{ name: "李四", aliases: [], description: "甲", category: "PERSON" }]),
+      buildChapterEntityList(4, [{ name: "李似", aliases: [], description: "乙", category: "PERSON" }]),
+      buildChapterEntityList(5, [{ name: "王惠", aliases: ["王太守"], description: "官员", category: "PERSON" }]),
+      buildChapterEntityList(6, [{ name: "王老爷", aliases: ["王太守"], description: "敬称", category: "PERSON" }])
     ]);
 
     const groups = resolver._buildCandidateGroups(dict, buildAliasLookup("明清官场"));
@@ -162,8 +170,8 @@ describe("GlobalEntityResolver", () => {
       "book-1",
       "测试书籍",
       [
-        buildChapterEntityList(1, [{ name: "张宝", aliases: [], description: "甲" }]),
-        buildChapterEntityList(2, [{ name: "李桂", aliases: [], description: "乙" }])
+        buildChapterEntityList(1, [{ name: "张宝", aliases: [], description: "甲", category: "PERSON" }]),
+        buildChapterEntityList(2, [{ name: "李桂", aliases: [], description: "乙", category: "PERSON" }])
       ],
       { bookId: "book-1", jobId: "job-1" }
     );
@@ -222,12 +230,12 @@ describe("GlobalEntityResolver", () => {
       "book-1",
       "儒林外史",
       [
-        buildChapterEntityList(1, [{ name: "范进", aliases: [], description: "寒门书生" }]),
-        buildChapterEntityList(2, [{ name: "范举人", aliases: [], description: "中举后境遇骤变的寒门书生" }]),
-        buildChapterEntityList(3, [{ name: "王惠", aliases: [], description: "地方官员" }])
+        buildChapterEntityList(1, [{ name: "范进", aliases: [], description: "寒门书生", category: "PERSON" }]),
+        buildChapterEntityList(2, [{ name: "范举人", aliases: [], description: "中举后境遇骤变的寒门书生", category: "PERSON" }]),
+        buildChapterEntityList(3, [{ name: "王惠", aliases: [], description: "地方官员", category: "PERSON" }])
       ],
       { bookId: "book-1", jobId: "job-1" },
-      "明清官场"
+      buildAliasLookup("明清官场")
     );
 
     expect(buildEntityResolutionPromptMock).toHaveBeenCalledWith("儒林外史", expect.any(Array));
@@ -302,8 +310,8 @@ describe("GlobalEntityResolver", () => {
       "book-1",
       "测试书籍",
       [
-        buildChapterEntityList(1, [{ name: "李四", aliases: [], description: "甲" }]),
-        buildChapterEntityList(2, [{ name: "李似", aliases: [], description: "乙" }])
+        buildChapterEntityList(1, [{ name: "李四", aliases: [], description: "甲", category: "PERSON" }]),
+        buildChapterEntityList(2, [{ name: "李似", aliases: [], description: "乙", category: "PERSON" }])
       ],
       { bookId: "book-1", jobId: "job-1" }
     );

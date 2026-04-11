@@ -23,7 +23,7 @@ import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
-import { fetchModels } from "@/lib/services/models";
+import { useAdminModels } from "@/hooks/use-admin-models";
 import {
   fetchBookStrategy,
   saveBookStrategy,
@@ -45,75 +45,61 @@ export function BookStrategyPanel({ bookId }: BookStrategyPanelProps) {
   /** 当前书籍策略；null 表示“未配置（走上游回退规则）”。 */
   const [strategy, setStrategy] = useState<ModelStrategyInput | null>(null);
 
-  /** 可供选择的启用模型列表（经过映射后的表单输入模型）。 */
-  const [availableModels, setAvailableModels] = useState<EnabledModelItem[]>([]);
+  /** 首屏策略加载状态。 */
+  const [strategyLoading, setStrategyLoading] = useState(true);
 
-  /** 首屏加载状态。 */
-  const [loading, setLoading] = useState(true);
-
-  /** 首屏加载错误。 */
+  /** 首屏策略加载错误。 */
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * 初始化并行加载：
-   * 1) 所有模型配置（随后过滤启用模型）
-   * 2) 该书当前策略
-   *
-   * 使用 `cancelled` 规避组件卸载后的状态回写。
-   */
+  // 统一 Store：模块级缓存，模型列表不重复拉取
+  const { models, loading: modelsLoading, error: modelsError } = useAdminModels({ onlyEnabled: true });
+
+  // 可用模型映射为表单所需格式
+  const availableModels: EnabledModelItem[] = models.map((model) => ({
+    id             : model.id,
+    name           : model.name,
+    provider       : model.provider,
+    providerModelId: model.providerModelId,
+    aliasKey       : model.aliasKey
+  }));
+
+  // 书籍策略单独加载（与模型列表解耦）
   useEffect(() => {
     let cancelled = false;
 
-    async function loadData() {
-      setLoading(true);
+    async function loadStrategy() {
+      setStrategyLoading(true);
       setError(null);
-      try {
-        const [allModels, bookStrategy] = await Promise.all([
-          fetchModels(),
-          fetchBookStrategy(bookId)
-        ]);
-        if (cancelled) {
-          return;
-        }
 
-        // 只允许展示启用模型，避免管理员配置到不可用模型导致任务失败。
-        setAvailableModels(
-          allModels
-            .filter((model) => model.isEnabled)
-            .map((model) => ({
-              id             : model.id,
-              name           : model.name,
-              provider       : model.provider,
-              providerModelId: model.providerModelId,
-              aliasKey       : model.aliasKey
-            }))
-        );
-        setStrategy(bookStrategy);
+      try {
+        const bookStrategy = await fetchBookStrategy(bookId);
+        if (!cancelled) {
+          setStrategy(bookStrategy);
+        }
       } catch (loadError) {
         if (!cancelled) {
           setError(loadError instanceof Error ? loadError.message : "模型策略加载失败");
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setStrategyLoading(false);
         }
       }
     }
 
-    void loadData();
+    void loadStrategy();
+
     return () => { cancelled = true; };
   }, [bookId]);
 
-  /**
-   * 保存策略。
-   *
-   * @param nextStrategy 用户在表单中提交的新策略
-   */
   async function handleSave(nextStrategy: ModelStrategyInput) {
     await saveBookStrategy(bookId, nextStrategy);
     setStrategy(nextStrategy);
     toast.success("书籍模型策略保存成功");
   }
+
+  const loading = strategyLoading || modelsLoading;
+  const combinedError = error ?? modelsError;
 
   if (loading) {
     return (
@@ -126,11 +112,11 @@ export function BookStrategyPanel({ bookId }: BookStrategyPanelProps) {
     );
   }
 
-  if (error) {
+  if (combinedError) {
     return (
       <Card>
         <CardContent className="pt-6 text-sm text-destructive">
-          {error}
+          {combinedError}
         </CardContent>
       </Card>
     );

@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Library,
   ClipboardCheck,
-  Settings2
+  Settings2,
+  BookMarked
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -265,6 +266,13 @@ export default async function AdminHomePage() {
                 <div className="flex items-center gap-2">
                   <Settings2 className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">模型设置</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+              <Link href="/admin/knowledge-base" className="flex items-center justify-between rounded-md p-2 hover:bg-accent transition-colors">
+                <div className="flex items-center gap-2">
+                  <BookMarked className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">知识库管理</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>

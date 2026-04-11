@@ -164,7 +164,7 @@ model Book {
   title          String // 书名，如《儒林外史》
   author         String? // 作者，如"吴敬梓"
   dynasty        String? // 背景朝代
-  genre          String? // 体裁预设键名（如"武侠""宫廷家族"），对应 GENRE_PRESETS，影响词典覆盖
+  genre          String? // 书籍类型预设键名（如"武侠""宫廷家族"），对应 GENRE_PRESETS，影响词典覆盖
   description    String? @db.Text // 作品简介
   coverUrl       String? @map("cover_url") // 3D 看板所需的封面图
   sourceFileKey  String? @map("source_file_key") // 原始导入文件的对象存储 key
@@ -178,6 +178,11 @@ model Book {
   errorLog      String? @map("error_log") @db.Text // 最近失败日志
   parseProgress Int     @default(0) @map("parse_progress") // 解析进度 0-100
   parseStage    String? @map("parse_stage") // 当前阶段文本，如"实体提取"
+
+  // 知识库关联：bookTypeId 为 genre 的结构化替代，过渡期两者并存
+  bookTypeId     String? @map("book_type_id") @db.Uuid
+  bookType       BookType? @relation(fields: [bookTypeId], references: [id])
+  bookKnowledgePacks BookKnowledgePack[]
 
   chapters          Chapter[] // 章节列表
   profiles          Profile[] // 本书角色档案
@@ -508,4 +513,273 @@ model MergeSuggestion {
   @@index([sourcePersonaId], map: "merge_suggestions_source_persona_idx")
   @@index([targetPersonaId], map: "merge_suggestions_target_persona_idx")
   @@map("merge_suggestions")
+}
+
+// =============================================================================
+// 知识库模块：书籍类型 + 知识包 + 知识条目
+// =============================================================================
+
+/// @db.remark: 古典文学书籍类型定义表，存储 NER 词典规则配置，可在管理后台热更新。
+model BookType {
+  id          String  @id @default(uuid()) @db.Uuid
+  key         String  @unique // 代码引用键，如"历史演义"，用于解析流水线配置查找
+  name        String // 展示名称（可与 key 不同）
+
+  /// NER 调谐配置（对应代码中的 BookLexiconConfig）。
+  /// JSON 格式：{ exemptGenericTitles, additionalTitlePatterns, additionalPositionPatterns, softRelationalSuffixes }
+  presetConfig Json? @map("preset_config")
+
+  description String? @db.Text
+  isActive    Boolean @default(true) @map("is_active")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  books          Book[]
+  knowledgePacks KnowledgePack[]
+  surnameEntries SurnameEntry[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([key], map: "book_types_key_idx")
+  @@index([isActive, sortOrder], map: "book_types_active_sort_idx")
+  @@map("book_types")
+}
+
+/// @db.remark: 知识包表。scope=GENRE 为书籍类型通用包，scope=BOOK 为书籍专属包。
+model KnowledgePack {
+  id          String  @id @default(uuid()) @db.Uuid
+  bookTypeId  String? @map("book_type_id") @db.Uuid
+  name        String
+  description String? @db.Text
+  version     Int     @default(1) // 版本号，支持增量更新追踪
+  isActive    Boolean @default(true) @map("is_active")
+  /// GENRE: 书籍类型级通用（所有该类型书籍自动继承）
+  /// BOOK:  书籍专属（仅手动挂载的书籍使用）
+  scope       String  @default("GENRE")
+
+  bookType  BookType?           @relation(fields: [bookTypeId], references: [id])
+  entries   KnowledgeEntry[]
+  bookPacks BookKnowledgePack[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookTypeId, isActive], map: "knowledge_packs_book_type_active_idx")
+  @@index([scope], map: "knowledge_packs_scope_idx")
+  @@map("knowledge_packs")
+}
+
+/// @db.remark: 知识条目。reviewStatus 驱动审核工作流（PENDING→VERIFIED or REJECTED）。
+model KnowledgeEntry {
+  id            String @id @default(uuid()) @db.Uuid
+  packId        String @map("pack_id") @db.Uuid
+
+  canonicalName String   @map("canonical_name") // 标准全名，如「关羽」
+  aliases       String[] @default([]) // 所有已知别名
+  /// CHARACTER | LOCATION | ORGANIZATION
+  entryType     String   @default("CHARACTER") @map("entry_type")
+  confidence    Float    @default(1.0) // 置信度 0.0-1.0
+
+  /// 数据来源：MANUAL | LLM_GENERATED | IMPORTED
+  source       String  @default("MANUAL")
+  sourceDetail String? @map("source_detail") @db.Text
+
+  /// 审核状态：PENDING | VERIFIED | REJECTED
+  reviewStatus String    @default("PENDING") @map("review_status")
+  reviewNote   String?   @map("review_note") @db.Text
+  reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
+
+  notes String? @db.Text
+  pack  KnowledgePack @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([packId, reviewStatus], map: "knowledge_entries_pack_review_idx")
+  @@index([canonicalName], map: "knowledge_entries_canonical_name_idx")
+  @@map("knowledge_entries")
+}
+
+/// @db.remark: 书籍 ↔ 知识包 多对多关联，priority 越大越优先。
+model BookKnowledgePack {
+  id       String @id @default(uuid()) @db.Uuid
+  bookId   String @map("book_id") @db.Uuid
+  packId   String @map("pack_id") @db.Uuid
+  priority Int    @default(0)
+
+  book Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  pack KnowledgePack @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([bookId, packId], map: "book_knowledge_pack_unique")
+  @@index([bookId], map: "book_knowledge_packs_book_id_idx")
+  @@map("book_knowledge_packs")
+}
+
+// ============================================================
+// 姓氏条目：支持单姓/复姓，复姓优先匹配
+// ============================================================
+/// @db.remark: 姓氏库。extractSurname() 运行时从此表加载，优先匹配复姓。
+model SurnameEntry {
+  id          String  @id @default(uuid()) @db.Uuid
+  surname     String  @unique // 姓氏本体，如"欧阳"/"关"
+  isCompound  Boolean @default(false) @map("is_compound") // 是否复姓
+  priority    Int     @default(0) // 覆盖默认优先级（越大越高，复姓建议设 10）
+  description String? @db.Text
+
+  /// 关联书籍类型（可选，表示此姓在某类型作品中多见，nil 表示通用）
+  bookTypeId String?   @map("book_type_id") @db.Uuid
+  bookType   BookType? @relation(fields: [bookTypeId], references: [id])
+
+  isActive Boolean @default(true) @map("is_active")
+  source   String  @default("MANUAL") // MANUAL / LLM_SUGGESTED / IMPORTED
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isCompound, priority], map: "surname_compound_priority_idx")
+  @@index([isActive], map: "surname_active_idx")
+  @@map("surname_entries")
+}
+
+// ============================================================
+// 泛化称谓条目
+// ============================================================
+/// @db.remark: 泛化称谓库。tier=SAFETY 绝不个体化，tier=DEFAULT 可被书籍类型/书籍覆盖。
+model GenericTitleEntry {
+  id    String @id @default(uuid()) @db.Uuid
+  title String @unique // 称谓本体，如"老爷"
+
+  /// SAFETY — 绝对泛称，任何情况下不允许个体化
+  /// DEFAULT — 默认泛称，可被书籍类型 exemptGenericTitles 豁免
+  tier String @default("DEFAULT") // SAFETY | DEFAULT
+
+  /// 书籍类型级别覆盖（该称谓在哪些书籍类型下不视为泛称）
+  /// JSON 数组，存储 BookType.key 列表，如 ["武侠","历史演义"]
+  exemptInGenres Json? @map("exempt_in_genres") // string[]
+
+  description String? @db.Text
+  isActive    Boolean @default(true) @map("is_active")
+  source      String  @default("MANUAL")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tier, isActive], map: "generic_titles_tier_idx")
+  @@map("generic_title_entries")
+}
+
+// ============================================================
+// 提示词模板：每个分析阶段对应一个模板槽
+// ============================================================
+/// @db.remark: 提示词模板。activeVersionId 指向当前生效版本，支持一键回滚。
+model PromptTemplate {
+  id   String @id @default(uuid()) @db.Uuid
+  /// 模板槽标识符（对应代码中的 build*Prompt 函数名）
+  slug String @unique
+  name String // 展示名称，如"Pass 1 独立提取"
+
+  description String? @db.Text
+  /// 原始代码函数名，方便与代码对照
+  codeRef  String? @map("code_ref")
+  isActive Boolean @default(true) @map("is_active")
+
+  versions        PromptTemplateVersion[]
+  /// 当前生效版本 ID
+  activeVersionId String? @unique @map("active_version_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("prompt_templates")
+}
+
+// ============================================================
+// 提示词版本：每次修改保存为一个新版本
+// ============================================================
+/// @db.remark: 提示词版本历史。每次激活都保留旧版本，支持 diff 对比与回滚。
+model PromptTemplateVersion {
+  id         String @id @default(uuid()) @db.Uuid
+  templateId String @map("template_id") @db.Uuid
+
+  versionNo    Int    // 自增版本号
+  systemPrompt String @db.Text @map("system_prompt")
+  userPrompt   String @db.Text @map("user_prompt") // 支持 {bookTitle} 等占位符
+
+  /// 覆盖书籍类型（nil = 所有书籍类型通用）
+  genreKey  String? @map("genre_key")
+  changeNote String? @db.Text @map("change_note")
+  createdBy  String? @map("created_by")
+  isBaseline Boolean @default(false) @map("is_baseline")
+
+  template PromptTemplate @relation(fields: [templateId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([templateId, versionNo], map: "prompt_version_unique")
+  @@index([templateId, createdAt(sort: Desc)], map: "prompt_versions_template_created_idx")
+  @@map("prompt_template_versions")
+}
+
+// ============================================================
+// NER 提取规则条目
+// ============================================================
+/// @db.remark: NER 规则条目。ruleType=ENTITY 或 RELATIONSHIP，isActive 控制是否注入提示词。
+model ExtractionRule {
+  id        String @id @default(uuid()) @db.Uuid
+  sortOrder Int    @default(0) @map("sort_order")
+
+  /// ENTITY — 实体提取规则
+  /// RELATIONSHIP — 关系提取规则
+  ruleType String @default("ENTITY") @map("rule_type")
+
+  content String @db.Text // 规则正文
+
+  /// 生效范围：nil=所有书籍类型
+  genreKey String? @map("genre_key")
+
+  isActive   Boolean @default(true) @map("is_active")
+  changeNote String? @db.Text @map("change_note")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([ruleType, isActive, sortOrder], map: "extraction_rules_type_active_idx")
+  @@index([genreKey], map: "extraction_rules_genre_idx")
+  @@map("extraction_rules")
+}
+
+// ============================================================
+// 知识变更审计日志
+// ============================================================
+/// @db.remark: 所有知识库对象的变更日志。
+model KnowledgeAuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// 被操作对象类型
+  objectType String @map("object_type")
+  objectId   String @map("object_id")
+  objectName String @map("object_name") // 冗余名称
+
+  /// 操作类型：CREATE | UPDATE | DELETE | VERIFY | REJECT | ACTIVATE | DEACTIVATE | IMPORT | GENERATE
+  action String
+
+  /// 变更前/后快照
+  before Json? @db.JsonB
+  after  Json? @db.JsonB
+
+  /// 操作人
+  operatorId   String? @map("operator_id")
+  operatorNote String? @db.Text @map("operator_note")
+
+  /// 关联书籍
+  relatedBookId String? @map("related_book_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([objectType, objectId], map: "audit_log_object_idx")
+  @@index([createdAt(sort: Desc)], map: "audit_log_created_idx")
+  @@index([operatorId, createdAt(sort: Desc)], map: "audit_log_operator_idx")
+  @@map("knowledge_audit_logs")
 }

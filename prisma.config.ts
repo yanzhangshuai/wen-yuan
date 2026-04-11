@@ -18,7 +18,9 @@ export default defineConfig({
   schema    : "prisma/schema.prisma",
   migrations: {
     // 迁移文件目录：记录数据库结构演进历史，支撑可回放部署。
-    path: "prisma/migrations"
+    path: "prisma/migrations",
+    // 标准 Prisma seed 入口，保证 `pnpm prisma db seed` 能直接执行项目种子脚本。
+    seed: "ts-node prisma/seed.ts"
   },
   datasource: {
     // 必须从环境变量读取连接串，避免把敏感信息硬编码进仓库。

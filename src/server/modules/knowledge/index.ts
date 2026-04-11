@@ -1,0 +1,106 @@
+/**
+ * 知识库模块入口。
+ * 聚合书籍类型、知识包、知识条目、姓氏、泛化称谓、提示词模板、NER规则、审计日志的 CRUD 与查询服务。
+ */
+
+export {
+  listBookTypes,
+  listActiveBookTypes,
+  getBookType,
+  createBookType,
+  updateBookType,
+  deleteBookType
+} from "./book-types";
+
+export {
+  listKnowledgePacks,
+  getKnowledgePack,
+  createKnowledgePack,
+  updateKnowledgePack,
+  deleteKnowledgePack
+} from "./knowledge-packs";
+
+export {
+  previewAliasPackGenerationPrompt,
+  reviewGenerateEntries,
+  generateEntries
+} from "./generateEntries";
+
+export {
+  previewSurnameGenerationPrompt,
+  reviewGeneratedSurnames
+} from "./generateSurnames";
+
+export {
+  previewGenericTitleGenerationPrompt,
+  reviewGeneratedGenericTitles
+} from "./generateGenericTitles";
+
+export {
+  listKnowledgeEntries,
+  createKnowledgeEntry,
+  updateKnowledgeEntry,
+  deleteKnowledgeEntry,
+  verifyEntry,
+  rejectEntry,
+  batchVerifyEntries,
+  batchRejectEntries,
+  importEntries,
+  exportEntries
+} from "./knowledge-entries";
+
+export {
+  listBookKnowledgePacks,
+  mountKnowledgePack,
+  unmountKnowledgePack,
+  updateBookKnowledgePackPriority
+} from "./book-knowledge-packs";
+
+export {
+  buildAliasLookupFromDb,
+  loadBookTypeConfig,
+  loadAnalysisRuntimeConfig
+} from "./load-book-knowledge";
+
+export { auditLog } from "./audit";
+
+export {
+  listSurnames,
+  createSurname,
+  updateSurname,
+  deleteSurname,
+  importSurnames,
+  testSurnameExtraction
+} from "./surnames";
+
+export {
+  listGenericTitles,
+  createGenericTitle,
+  updateGenericTitle,
+  deleteGenericTitle,
+  testGenericTitle
+} from "./generic-titles";
+
+export {
+  listPromptTemplates,
+  getPromptTemplate,
+  createPromptVersion,
+  activatePromptVersion,
+  diffPromptVersions,
+  previewPrompt,
+  resolvePromptTemplateOrFallback
+} from "./prompt-templates";
+
+export {
+  listExtractionRules,
+  createExtractionRule,
+  updateExtractionRule,
+  deleteExtractionRule,
+  reorderExtractionRules,
+  previewCombinedRules
+} from "./extraction-rules";
+
+export {
+  listChangeLogs,
+  getChangeLog
+} from "./change-logs";

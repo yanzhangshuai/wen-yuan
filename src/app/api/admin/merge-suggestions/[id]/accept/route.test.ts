@@ -81,4 +81,72 @@ describe("POST /api/admin/merge-suggestions/:id/accept", () => {
     expect(payload.code).toBe("COMMON_BAD_REQUEST");
     expect(acceptMergeSuggestionMock).not.toHaveBeenCalled();
   });
+
+  it("returns 404 when the merge suggestion no longer exists", async () => {
+    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
+    acceptMergeSuggestionMock.mockRejectedValue(new MergeSuggestionNotFoundError("missing"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/merge-suggestions"),
+      {
+        params: Promise.resolve({ id: suggestionId })
+      }
+    );
+
+    expect(response.status).toBe(404);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 409 when the merge suggestion state already changed", async () => {
+    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
+    acceptMergeSuggestionMock.mockRejectedValue(new MergeSuggestionStateError("already handled"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/merge-suggestions"),
+      {
+        params: Promise.resolve({ id: suggestionId })
+      }
+    );
+
+    expect(response.status).toBe(409);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 409 when persona merge validation detects a conflict", async () => {
+    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
+    acceptMergeSuggestionMock.mockRejectedValue(new PersonaMergeConflictError("conflict"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/merge-suggestions"),
+      {
+        params: Promise.resolve({ id: suggestionId })
+      }
+    );
+
+    expect(response.status).toBe(409);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 500 for unexpected failures", async () => {
+    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
+    acceptMergeSuggestionMock.mockRejectedValue(new Error("boom"));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/merge-suggestions"),
+      {
+        params: Promise.resolve({ id: suggestionId })
+      }
+    );
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+  });
 });

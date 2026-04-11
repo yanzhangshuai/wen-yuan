@@ -79,10 +79,10 @@ NODE_ENV=test
 **覆盖率门槛（强制）：**
 
 ```
-lines: ≥ 80%
-branches: ≥ 70%
-functions: ≥ 80%
-statements: ≥ 80%
+lines: ≥ 90%
+branches: ≥ 90%
+functions: ≥ 90%
+statements: ≥ 90%
 ```
 
 运行覆盖率命令：
@@ -1061,10 +1061,10 @@ src/app/api/admin/models/[id]/test/route.test.ts
 
 ```
 Coverage thresholds（vitest.config.ts 中定义）：
-  lines:      ≥ 80%   ✓（必须）
-  branches:   ≥ 70%   ✓（必须）
-  functions:  ≥ 80%   ✓（必须）
-  statements: ≥ 80%   ✓（必须）
+  lines:      ≥ 90%   ✓（必须）
+  branches:   ≥ 90%   ✓（必须）
+  functions:  ≥ 90%   ✓（必须）
+  statements: ≥ 90%   ✓（必须）
 ```
 
 覆盖率不满足时，禁止标记 Phase 完成。
@@ -1143,7 +1143,7 @@ done
 ### 测试与覆盖率
 
 - [ ] `pnpm test:unit` 所有测试通过（0 fail, 0 skip）
-- [ ] 覆盖率 lines ≥ 80%，branches ≥ 70%，functions ≥ 80%，statements ≥ 80%
+- [ ] 覆盖率 lines ≥ 90%，branches ≥ 90%，functions ≥ 90%，statements ≥ 90%
 - [ ] 第十五节所有缺失测试文件已补充
 
 ### 数据库

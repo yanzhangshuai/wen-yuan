@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, CheckCircle, Settings2, LogOut, LayoutDashboard } from "lucide-react";
+import { BookOpen, CheckCircle, Settings2, LogOut, LayoutDashboard, BookMarked } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/services/auth";
@@ -26,6 +26,7 @@ const adminLinks = [
   { href: "/admin",          label: "概览",     icon: LayoutDashboard },
   { href: "/admin/books",    label: "书籍管理", icon: BookOpen },
   { href: "/admin/review",   label: "审核中心", icon: CheckCircle },
+  { href: "/admin/knowledge-base", label: "知识库", icon: BookMarked },
   { href: "/admin/model",    label: "模型设置", icon: Settings2 }
 ];
 

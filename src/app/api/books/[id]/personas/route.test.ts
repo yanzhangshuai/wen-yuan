@@ -97,6 +97,37 @@ describe("GET /api/books/:id/personas", () => {
     expect(response.status).toBe(400);
     expect(listBookPersonasMock).not.toHaveBeenCalled();
   });
+
+  it("returns 404 when the book does not exist", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    const { BookNotFoundError } = await import("@/server/modules/books/errors");
+    listBookPersonasMock.mockRejectedValue(new BookNotFoundError(bookId));
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request(`http://localhost/api/books/${bookId}/personas`),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(404);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 500 when listing personas fails unexpectedly", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    listBookPersonasMock.mockRejectedValue(new Error("db unavailable"));
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request(`http://localhost/api/books/${bookId}/personas`),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+  });
 });
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
@@ -189,5 +220,66 @@ describe("POST /api/books/:id/personas", () => {
 
     expect(response.status).toBe(400);
     expect(createBookPersonaMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when route params are invalid", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/books/invalid/personas", {
+      method : "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        name: "周进"
+      })
+    }), { params: Promise.resolve({ id: "invalid" }) });
+
+    expect(response.status).toBe(400);
+    expect(createBookPersonaMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when creating a persona for a missing book", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    const { BookNotFoundError } = await import("@/server/modules/books/errors");
+    createBookPersonaMock.mockRejectedValue(new BookNotFoundError(bookId));
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request(`http://localhost/api/books/${bookId}/personas`, {
+      method : "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        name: "周进"
+      })
+    }), { params: Promise.resolve({ id: bookId }) });
+
+    expect(response.status).toBe(404);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 500 when persona creation fails unexpectedly", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    createBookPersonaMock.mockRejectedValue(new Error("db unavailable"));
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request(`http://localhost/api/books/${bookId}/personas`, {
+      method : "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        name: "周进"
+      })
+    }), { params: Promise.resolve({ id: bookId }) });
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
   });
 });

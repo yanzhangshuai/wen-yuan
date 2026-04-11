@@ -14,6 +14,7 @@
 
 import { AnalysisJobStatus, AppRole } from "@/generated/prisma/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { PipelineStage } from "@/types/pipeline";
 
 const startBookAnalysisMock = vi.fn();
 const runAnalysisJobByIdMock = vi.fn(async () => undefined);
@@ -47,10 +48,13 @@ vi.mock("@/server/modules/analysis/jobs/runAnalysisJob", () => {
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("POST /api/books/:id/analyze", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
   afterEach(() => {
     startBookAnalysisMock.mockReset();
     runAnalysisJobByIdMock.mockReset();
     runAnalysisJobByIdMock.mockImplementation(async () => undefined);
+    consoleErrorSpy.mockClear();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -168,5 +172,178 @@ describe("POST /api/books/:id/analyze", () => {
 
     // Assert
     expect(response.status).toBe(404);
+  });
+
+  it("normalizes wrapped stage strategies before creating the job", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    const modelId = "8ba43ac0-6f33-4d1a-a114-2509104d0786";
+    startBookAnalysisMock.mockResolvedValue({
+      bookId,
+      jobId           : "job-2",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false,
+      bookStatus      : "PROCESSING",
+      parseProgress   : 0,
+      parseStage      : "文本清洗"
+    });
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-role" : AppRole.ADMIN
+        },
+        body: JSON.stringify({
+          modelStrategy: {
+            stages: {
+              [PipelineStage.ROSTER_DISCOVERY]: {
+                modelId
+              }
+            }
+          }
+        })
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(202);
+    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {
+      modelStrategy: {
+        [PipelineStage.ROSTER_DISCOVERY]: {
+          modelId
+        }
+      }
+    });
+  });
+
+  it("keeps direct stage strategies unchanged when creating the job", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    const modelId = "271dc37f-8c56-4ef8-b786-f50c77345166";
+    startBookAnalysisMock.mockResolvedValue({
+      bookId,
+      jobId           : "job-3",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false,
+      bookStatus      : "PROCESSING",
+      parseProgress   : 0,
+      parseStage      : "文本清洗"
+    });
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-role" : AppRole.ADMIN
+        },
+        body: JSON.stringify({
+          modelStrategy: {
+            [PipelineStage.ROSTER_DISCOVERY]: {
+              modelId
+            }
+          }
+        })
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(202);
+    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {
+      modelStrategy: {
+        [PipelineStage.ROSTER_DISCOVERY]: {
+          modelId
+        }
+      }
+    });
+  });
+
+  it("returns 400 when the requested analysis scope is invalid", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    const { AnalysisScopeInvalidError } = await import("@/server/modules/books/startBookAnalysis");
+    startBookAnalysisMock.mockRejectedValue(new AnalysisScopeInvalidError("chapter range invalid"));
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 500 when analysis creation fails unexpectedly", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    startBookAnalysisMock.mockRejectedValue(new Error("db unavailable"));
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+  });
+
+  it("logs scheduling failures but still returns 202", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    startBookAnalysisMock.mockResolvedValue({
+      bookId,
+      jobId           : "job-4",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false,
+      bookStatus      : "PROCESSING",
+      parseProgress   : 0,
+      parseStage      : "文本清洗"
+    });
+    runAnalysisJobByIdMock.mockRejectedValue(new Error("runner offline"));
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    await vi.waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[analysis.runner] schedule.failed",
+        expect.stringContaining("\"jobId\":\"job-4\"")
+      );
+    });
+
+    expect(response.status).toBe(202);
   });
 });

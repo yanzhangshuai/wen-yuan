@@ -60,4 +60,33 @@ describe("deleteBiographyRecord service", () => {
     await expect(service.deleteBiographyRecord("missing"))
       .rejects.toBeInstanceOf(BiographyRecordNotFoundError);
   });
+
+  it("falls back to transaction timestamp when prisma result lacks deletedAt", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-26T00:00:00.000Z"));
+
+    try {
+      const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+        biographyRecord: {
+          findFirst: vi.fn().mockResolvedValue({ id: "bio-2" }),
+          update   : vi.fn().mockResolvedValue({
+            id       : "bio-2",
+            status   : ProcessingStatus.REJECTED,
+            deletedAt: null
+          })
+        }
+      }));
+      const service = createDeleteBiographyRecordService({
+        $transaction: transaction
+      } as never);
+
+      await expect(service.deleteBiographyRecord("bio-2")).resolves.toEqual({
+        id       : "bio-2",
+        status   : ProcessingStatus.REJECTED,
+        deletedAt: "2026-03-26T00:00:00.000Z"
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

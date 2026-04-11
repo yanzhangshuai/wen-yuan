@@ -131,6 +131,26 @@ describe("POST /api/personas/:id/biography", () => {
     expect(createPersonaBiographyMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 when route params are invalid", async () => {
+    const chapterId = "b53fc2ca-6f86-4cd6-ac3d-694f402e570e";
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/personas/invalid/biography", {
+      method : "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        chapterId,
+        event: "周进中举"
+      })
+    }), { params: Promise.resolve({ id: "invalid" }) });
+
+    expect(response.status).toBe(400);
+    expect(createPersonaBiographyMock).not.toHaveBeenCalled();
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 404 when persona missing", async () => {
     const personaId = "deb2ea4c-e758-4ea8-b40b-5e7e4376e12b";
@@ -154,5 +174,52 @@ describe("POST /api/personas/:id/biography", () => {
     expect(response.status).toBe(404);
     const payload = await response.json();
     expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 400 when the biography payload is rejected by the service", async () => {
+    const personaId = "deb2ea4c-e758-4ea8-b40b-5e7e4376e12b";
+    const chapterId = "b53fc2ca-6f86-4cd6-ac3d-694f402e570e";
+    const { BiographyInputError } = await import("@/server/modules/biography/errors");
+    createPersonaBiographyMock.mockRejectedValue(new BiographyInputError("事件内容不能为空"));
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request(`http://localhost/api/personas/${personaId}/biography`, {
+      method : "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        chapterId,
+        event: "周进中举"
+      })
+    }), { params: Promise.resolve({ id: personaId }) });
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 500 for unexpected creation failures", async () => {
+    const personaId = "deb2ea4c-e758-4ea8-b40b-5e7e4376e12b";
+    const chapterId = "b53fc2ca-6f86-4cd6-ac3d-694f402e570e";
+    createPersonaBiographyMock.mockRejectedValue(new Error("db unavailable"));
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request(`http://localhost/api/personas/${personaId}/biography`, {
+      method : "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        chapterId,
+        event: "周进中举"
+      })
+    }), { params: Promise.resolve({ id: personaId }) });
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
   });
 });

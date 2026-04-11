@@ -94,4 +94,29 @@ describe("listBookRelationships service", () => {
     await expect(service.listBookRelationships("missing-book"))
       .rejects.toBeInstanceOf(BookNotFoundError);
   });
+
+  it("supports filtering only by status while omitting type and source filters", async () => {
+    const relationshipFindMany = vi.fn().mockResolvedValue([]);
+    const service = createListBookRelationshipsService({
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      relationship: {
+        findMany: relationshipFindMany
+      }
+    } as never);
+
+    const result = await service.listBookRelationships("book-1", {
+      status: ProcessingStatus.DRAFT
+    });
+
+    const where = relationshipFindMany.mock.calls[0]?.[0]?.where as Record<string, unknown>;
+    expect(where).toMatchObject({
+      chapter: { bookId: "book-1" },
+      status : ProcessingStatus.DRAFT
+    });
+    expect(where).not.toHaveProperty("type");
+    expect(where).not.toHaveProperty("recordSource");
+    expect(result).toEqual([]);
+  });
 });

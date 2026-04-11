@@ -142,12 +142,13 @@ function applyRankedHonorificBoost(
 function applySurnameTitleBoost(
   extractedName: string,
   scored: ScoredCandidate[],
-  effectiveLexicon: EffectiveLexicon
+  effectiveLexicon: EffectiveLexicon,
+  lexiconConfig?: BookLexiconConfig
 ): ScoredCandidate[] {
   if (scored.length === 0) return scored;
 
   const normalizedExtracted = normalizeName(extractedName);
-  const surname = extractSurname(normalizedExtracted);
+  const surname = extractSurname(normalizedExtracted, lexiconConfig);
   if (!surname) return scored;
 
   const remainder = normalizedExtracted.slice(surname.length);
@@ -421,7 +422,8 @@ export function createPersonaResolver(
       };
     }
 
-    if (SAFETY_GENERIC_TITLES.has(rawName)) {
+    const safetyGenericTitles = new Set(input.lexiconConfig?.safetyGenericTitles ?? Array.from(SAFETY_GENERIC_TITLES));
+    if (safetyGenericTitles.has(rawName)) {
       return {
         status    : "hallucinated",
         confidence: 1.0,
@@ -498,8 +500,8 @@ export function createPersonaResolver(
             if (normalizedTarget === normalizedSurface) return true;
             if (normalizedTarget.includes(normalizedSurface) || normalizedSurface.includes(normalizedTarget)) return true;
             // 同姓校验
-            const targetSurname = extractSurname(normalizedTarget);
-            const surfaceSurname = extractSurname(normalizedSurface);
+            const targetSurname = extractSurname(normalizedTarget, input.lexiconConfig);
+            const surfaceSurname = extractSurname(normalizedSurface, input.lexiconConfig);
             if (targetSurname && surfaceSurname && targetSurname === surfaceSurname) return true;
             return false;
           });
@@ -560,7 +562,7 @@ export function createPersonaResolver(
     // - RankedHonorific: "姓+排行+敬称"（如"马二先生"）
     // - SurnameTitle: "姓+泛称/称号"（如"范举人""贾太太"）
     const boostedRanked = applyRankedHonorificBoost(extracted, baseScored, effectiveLexicon);
-    const scored = applySurnameTitleBoost(rawName, boostedRanked, effectiveLexicon)
+    const scored = applySurnameTitleBoost(rawName, boostedRanked, effectiveLexicon, input.lexiconConfig)
       .sort((a, b) => b.score - a.score);
     const winner = scored[0];
 

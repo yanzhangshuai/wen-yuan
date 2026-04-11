@@ -75,6 +75,21 @@ describe("splitPersona", () => {
     })).rejects.toBeInstanceOf(PersonaSplitInputError);
   });
 
+  it("throws input error when new persona name is blank after trimming", async () => {
+    const transaction = vi.fn();
+    const service = createSplitPersonaService({
+      $transaction: transaction
+    } as never);
+
+    await expect(service.splitPersona({
+      sourceId  : "source-persona",
+      bookId    : "book-1",
+      chapterNos: [1],
+      name      : "   "
+    })).rejects.toBeInstanceOf(PersonaSplitInputError);
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
   it("creates new persona and redirects chapter-scoped records with relation conflict handling", async () => {
     const relationshipFindFirst = vi.fn()
       .mockResolvedValueOnce({ id: "rel-existing" })
@@ -211,5 +226,92 @@ describe("splitPersona", () => {
         targetId: "third-persona"
       }
     });
+  });
+
+  it("normalizes chapter numbers and explicit persona overrides during split", async () => {
+    const personaCreate = vi.fn().mockResolvedValue({ id: "created-persona-2" });
+    const profileCreate = vi.fn().mockResolvedValue({});
+    const relationshipFindMany = vi.fn().mockResolvedValue([]);
+
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      persona: {
+        findFirst: vi.fn().mockResolvedValue({
+          id        : "source-persona",
+          type      : "PERSON",
+          nameType  : "NAMED",
+          gender    : "男",
+          hometown  : "杭州",
+          globalTags: ["旧标签"],
+          confidence: 0.64
+        }),
+        create: personaCreate
+      },
+      chapter: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "chapter-1", no: 1 },
+          { id: "chapter-3", no: 3 }
+        ])
+      },
+      profile: {
+        create: profileCreate
+      },
+      biographyRecord: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
+      },
+      mention: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
+      },
+      relationship: {
+        findMany : relationshipFindMany,
+        findFirst: vi.fn(),
+        update   : vi.fn()
+      }
+    }));
+    const service = createSplitPersonaService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.splitPersona({
+      sourceId  : "source-persona",
+      bookId    : "book-1",
+      chapterNos: [3, 1, 0, 1.5],
+      name      : " 马二先生 ",
+      aliases   : ["马二", " 马二先生 ", " "],
+      gender    : "   ",
+      hometown  : null,
+      globalTags: ["新标签", " 新标签 "],
+      confidence: 0.92,
+      localName : " 马二 "
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      chapterNos              : [1, 3],
+      redirectedRelationships : 0,
+      rejectedRelationships   : 0,
+      redirectedBiographyCount: 0,
+      redirectedMentionCount  : 0
+    }));
+    expect(personaCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        name      : "马二先生",
+        aliases   : ["马二先生", "马二"],
+        gender    : null,
+        hometown  : null,
+        globalTags: ["新标签"],
+        confidence: 0.92
+      })
+    }));
+    expect(profileCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        personaId: "created-persona-2",
+        bookId   : "book-1",
+        localName: "马二"
+      })
+    }));
+    expect(relationshipFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        chapterId: { in: ["chapter-1", "chapter-3"] }
+      })
+    }));
   });
 });

@@ -134,6 +134,24 @@ describe("PATCH /api/biography/:id", () => {
     expect(updateBiographyRecordMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 for invalid route id", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request("http://localhost/api/biography/invalid-id", {
+      method : "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        event: "周进中举"
+      })
+    }), { params: Promise.resolve({ id: "invalid-id" }) });
+
+    expect(response.status).toBe(400);
+    expect(updateBiographyRecordMock).not.toHaveBeenCalled();
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 404 when record missing", async () => {
     const biographyId = "7307b85f-2df3-40d5-af4d-6e495a8d319f";
@@ -155,6 +173,49 @@ describe("PATCH /api/biography/:id", () => {
     expect(response.status).toBe(404);
     const payload = await response.json();
     expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 400 when the service rejects the biography payload", async () => {
+    const biographyId = "7307b85f-2df3-40d5-af4d-6e495a8d319f";
+    const { BiographyInputError } = await import("@/server/modules/biography/errors");
+    updateBiographyRecordMock.mockRejectedValue(new BiographyInputError("事件内容不能为空"));
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request(`http://localhost/api/biography/${biographyId}`, {
+      method : "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        event: "周进中举"
+      })
+    }), { params: Promise.resolve({ id: biographyId }) });
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 500 for unexpected update failures", async () => {
+    const biographyId = "7307b85f-2df3-40d5-af4d-6e495a8d319f";
+    updateBiographyRecordMock.mockRejectedValue(new Error("db unavailable"));
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request(`http://localhost/api/biography/${biographyId}`, {
+      method : "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-auth-role" : AppRole.ADMIN
+      },
+      body: JSON.stringify({
+        event: "周进中举"
+      })
+    }), { params: Promise.resolve({ id: biographyId }) });
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
   });
 });
 
@@ -221,5 +282,36 @@ describe("DELETE /api/biography/:id", () => {
     expect(response.status).toBe(404);
     const payload = await response.json();
     expect(payload.code).toBe("COMMON_NOT_FOUND");
+  });
+
+  it("returns 400 for invalid route id", async () => {
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(new Request("http://localhost/api/biography/invalid-id", {
+      method : "DELETE",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      }
+    }), { params: Promise.resolve({ id: "invalid-id" }) });
+
+    expect(response.status).toBe(400);
+    expect(deleteBiographyRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 for unexpected delete failures", async () => {
+    const biographyId = "7307b85f-2df3-40d5-af4d-6e495a8d319f";
+    deleteBiographyRecordMock.mockRejectedValue(new Error("db unavailable"));
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(new Request(`http://localhost/api/biography/${biographyId}`, {
+      method : "DELETE",
+      headers: {
+        "x-auth-role": AppRole.ADMIN
+      }
+    }), { params: Promise.resolve({ id: biographyId }) });
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
   });
 });

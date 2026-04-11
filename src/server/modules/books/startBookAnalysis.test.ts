@@ -221,6 +221,54 @@ describe("startBookAnalysis", () => {
     expect(result.scope).toBe("CHAPTER_LIST");
   });
 
+  it("creates CHAPTER_RANGE analysis job with override strategy and keepHistory", async () => {
+    const { prisma, tx } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(3);
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-4",
+      status          : AnalysisJobStatus.QUEUED,
+      scope           : "CHAPTER_RANGE",
+      chapterStart    : 2,
+      chapterEnd      : 4,
+      chapterIndices  : [],
+      overrideStrategy: "ALL_DRAFTS",
+      keepHistory     : true
+    });
+    tx.book.update.mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
+
+    const service = createStartBookAnalysisService(prisma as never);
+    const result = await service.startBookAnalysis("book-1", {
+      scope           : "CHAPTER_RANGE",
+      chapterStart    : 2,
+      chapterEnd      : 4,
+      overrideStrategy: "ALL_DRAFTS",
+      keepHistory     : true
+    });
+
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        scope           : "CHAPTER_RANGE",
+        chapterStart    : 2,
+        chapterEnd      : 4,
+        chapterIndices  : [],
+        overrideStrategy: "ALL_DRAFTS",
+        keepHistory     : true
+      })
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      scope           : "CHAPTER_RANGE",
+      chapterStart    : 2,
+      chapterEnd      : 4,
+      overrideStrategy: "ALL_DRAFTS",
+      keepHistory     : true
+    }));
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws AnalysisScopeInvalidError for CHAPTER_LIST with empty indices", async () => {
     const { prisma } = createMockPrisma();
@@ -229,6 +277,55 @@ describe("startBookAnalysis", () => {
 
     await expect(
       service.startBookAnalysis("book-1", { scope: "CHAPTER_LIST", chapterIndices: [] })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+  });
+
+  it("throws AnalysisScopeInvalidError for invalid scope and override strategy", async () => {
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    const service = createStartBookAnalysisService(prisma as never);
+
+    await expect(
+      service.startBookAnalysis("book-1", { scope: "BROKEN_SCOPE" as never })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+
+    await expect(
+      service.startBookAnalysis("book-1", { overrideStrategy: "BROKEN_STRATEGY" as never })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+  });
+
+  it("throws AnalysisScopeInvalidError for CHAPTER_LIST with invalid indices", async () => {
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    const service = createStartBookAnalysisService(prisma as never);
+
+    await expect(
+      service.startBookAnalysis("book-1", { scope: "CHAPTER_LIST", chapterIndices: [1.5] })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+
+    await expect(
+      service.startBookAnalysis("book-1", { scope: "CHAPTER_LIST", chapterIndices: [-1] })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+  });
+
+  it("throws AnalysisScopeInvalidError for CHAPTER_RANGE with missing or non-integer bounds", async () => {
+    const { prisma } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    const service = createStartBookAnalysisService(prisma as never);
+
+    await expect(
+      service.startBookAnalysis("book-1", {
+        scope       : "CHAPTER_RANGE",
+        chapterStart: 1
+      })
+    ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+
+    await expect(
+      service.startBookAnalysis("book-1", {
+        scope       : "CHAPTER_RANGE",
+        chapterStart: 1,
+        chapterEnd  : 2.5
+      })
     ).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
   });
 });

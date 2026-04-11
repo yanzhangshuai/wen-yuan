@@ -19,6 +19,7 @@ import type { AiCallExecutor } from "@/server/modules/analysis/services/AiCallEx
 import type { ResolvedStageModel, ResolvedFallbackModel } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createAiProviderClient } from "@/server/providers/ai";
 import { buildEntityResolutionPrompt } from "@/server/modules/analysis/services/prompts";
+import { resolvePromptTemplateOrFallback } from "@/server/modules/knowledge";
 import type {
   ChapterEntityList,
   EntityCandidateGroup,
@@ -27,7 +28,7 @@ import type {
 import { parseEntityResolutionResponse } from "@/types/analysis";
 import { PipelineStage } from "@/types/pipeline";
 import { extractSurname } from "@/server/modules/analysis/config/lexicon";
-import { buildAliasLookup, resolveByKnowledgeBase } from "@/server/modules/analysis/config/classical-names";
+import { resolveByKnowledgeBase } from "@/server/modules/analysis/config/classical-names";
 
 /** 每批发给 LLM 的最大候选组数，避免单次请求过大导致截断或选错。 */
 const RESOLUTION_BATCH_SIZE = 15;
@@ -265,7 +266,22 @@ export function createGlobalEntityResolver(
     // 分批处理，避免单次请求过大
     for (let i = 0; i < groups.length; i += RESOLUTION_BATCH_SIZE) {
       const batch = groups.slice(i, i + RESOLUTION_BATCH_SIZE);
-      const prompt = buildEntityResolutionPrompt(bookTitle, batch);
+      const fallbackPrompt = buildEntityResolutionPrompt(bookTitle, batch);
+      const candidateGroups = batch.map(g => {
+        const membersText = g.members.map(m =>
+          `  - "${m.name}"${m.description ? `（${m.description}）` : ""}，出现于第${m.chapterNos.join("、")}回`
+        ).join("\n");
+        return `### 候选组 ${g.groupId}\n${membersText}`;
+      }).join("\n\n");
+      const prompt = await resolvePromptTemplateOrFallback({
+        slug        : "ENTITY_RESOLUTION",
+        replacements: {
+          bookTitle,
+          candidateGroups,
+          groups: candidateGroups
+        },
+        fallback: fallbackPrompt
+      });
 
       const result = await aiCallExecutor.execute({
         stage  : PipelineStage.ENTITY_RESOLUTION,
@@ -311,7 +327,7 @@ export function createGlobalEntityResolver(
     bookTitle: string,
     chapterEntities: ChapterEntityList[],
     stageContext: { bookId: string; jobId: string },
-    genre?: string | null
+    preloadedAliasLookup?: Map<string, string>
   ): Promise<{
     globalPersonaMap: Map<string, string>;
     profiles        : AnalysisProfileContext[];
@@ -324,7 +340,8 @@ export function createGlobalEntityResolver(
     }));
 
     // Step 2: 规则预分组（含字号知识库预合并）
-    const aliasLookup = buildAliasLookup(genre);
+    // 使用预加载的 aliasLookup（从 DB 加载），替代硬编码的 buildAliasLookup(genre)
+    const aliasLookup = preloadedAliasLookup ?? new Map<string, string>();
     const candidateGroups = buildCandidateGroups(dict, aliasLookup);
     console.info("[GlobalEntityResolver] candidate.groups.formed", JSON.stringify({
       bookId,

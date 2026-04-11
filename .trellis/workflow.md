@@ -58,6 +58,9 @@ git status && git log --oneline -10              # Git 状态
 **关键要求**：写任何代码前先读规范：
 
 ```bash
+# 读取共享规范索引（任何代码改动都要看）
+cat .trellis/spec/shared/index.md
+
 # 读取前端规范索引（如适用）
 cat .trellis/spec/frontend/index.md
 
@@ -70,6 +73,10 @@ cat .trellis/spec/backend/index.md
 - 了解全仓统一编码标准
 - 明确前后端交互方式
 - 对齐整体质量要求
+
+**为什么共享规范也要看？**
+- 对齐全仓统一的代码风格、禁用模式与提交质量基线
+- 在编码前先确认是否需要复用已有实现、保持最小修改范围
 
 ### 步骤 3：编码前阅读对应细则（必需）
 
@@ -176,6 +183,11 @@ python3 ./.trellis/scripts/get_context.py --json
 
 按开发内容读取对应文档：
 
+**任何代码改动都必须先读共享规范**：
+```bash
+cat .trellis/spec/shared/index.md
+```
+
 **前端开发**（如适用）：
 ```bash
 # 先读索引，再按任务读细则
@@ -223,7 +235,7 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
    --> python3 ./.trellis/scripts/task.py create "<title>" --slug <name> 或 list
 
 2. 按规范写代码
-   --> 阅读与你任务相关的 .trellis/spec/ 文档
+   --> 阅读与你任务相关的 .trellis/spec/ 文档（至少包含 shared/，按需补充 frontend/、backend/、guides/）
    --> 若是跨层变更：阅读 .trellis/spec/guides/
 
 3. 自测
@@ -244,7 +256,7 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
 **提交前必须通过**：
 - [OK] Lint 检查通过（使用项目命令）
 - [OK] 类型检查通过（如适用）
-- [OK] 单元测试通过，且覆盖率达到成熟团队基线（Line >= 80%，Branch >= 70%）
+- [OK] 单元测试通过，且覆盖率达到成熟团队基线（Line >= 90%，Branch >= 90%，Function >= 90%，Statement >= 90%）
 - [OK] 代码与单元测试注释符合注释规范
 - [OK] 手动功能验证通过
 

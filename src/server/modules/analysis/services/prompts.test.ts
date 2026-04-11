@@ -11,14 +11,18 @@
  * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type * as AnalysisTypes from "@/types/analysis";
 
 import {
   buildBookValidationPrompt,
   buildChapterAnalysisPrompt,
-  buildTitleArbitrationPrompt,
   buildChapterValidationPrompt,
+  buildEntityResolutionPrompt,
+  buildIndependentExtractionPrompt,
   buildRosterDiscoveryPrompt,
+  buildTitleArbitrationPrompt,
+  buildTitleResolutionPrompt,
   parseValidationResponse
 } from "./prompts";
 
@@ -135,6 +139,83 @@ describe("buildTitleArbitrationPrompt", () => {
     expect(prompt.user).toContain("\"surfaceForm\"");
     expect(prompt.user).toContain("老爷");
     expect(prompt).toMatchSnapshot();
+  });
+
+  // 用例语义：覆盖空灰区列表分支，确保 prompt 仍输出稳定占位文本。
+  it("uses an explicit empty-state marker when there are no gray-zone terms", () => {
+    const prompt = buildTitleArbitrationPrompt({
+      bookTitle: "儒林外史",
+      terms    : []
+    });
+
+    expect(prompt.user).toContain("## 待判定称谓");
+    expect(prompt.user).toContain("（无）");
+  });
+});
+
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
+describe("buildIndependentExtractionPrompt", () => {
+  // 用例语义：覆盖独立提取 prompt 的规则注入分支，避免词表定制丢失。
+  it("injects custom extraction rules into the independent extraction prompt", () => {
+    const prompt = buildIndependentExtractionPrompt({
+      bookTitle            : "儒林外史",
+      chapterNo            : 2,
+      chapterTitle         : "范进去省城",
+      content              : "范进在省城见周学道。",
+      entityExtractionRules: ["仅提取有明确姓名或稳定称谓的人物"]
+    });
+
+    expect(prompt.system).toContain("命名实体识别专家");
+    expect(prompt.user).toContain("仅提取有明确姓名或稳定称谓的人物");
+    expect(prompt.user).toContain("\"category\":\"PERSON\"");
+    expect(prompt.user).toContain("## 原文");
+  });
+});
+
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
+describe("buildEntityResolutionPrompt", () => {
+  // 用例语义：覆盖候选组渲染分支，验证可选 description 缺失时格式仍稳定。
+  it("renders candidate groups with and without descriptions", () => {
+    const prompt = buildEntityResolutionPrompt("儒林外史", [
+      {
+        groupId: 1,
+        members: [
+          { name: "范进", description: "中举书生", chapterNos: [1, 2] },
+          { name: "范老爷", chapterNos: [3] }
+        ]
+      },
+      {
+        groupId: 2,
+        members: [
+          { name: "娄三公子", chapterNos: [4] }
+        ]
+      }
+    ]);
+
+    expect(prompt.system).toContain("人物消歧专家");
+    expect(prompt.user).toContain("### 候选组 1");
+    expect(prompt.user).toContain("\"范进\"（中举书生），出现于第1、2回");
+    expect(prompt.user).toContain("\"范老爷\"，出现于第3回");
+    expect(prompt.user).toContain("### 候选组 2");
+  });
+});
+
+// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
+describe("buildTitleResolutionPrompt", () => {
+  // 用例语义：覆盖称号溯源表格行拼装分支，确保空摘要不会破坏表格结构。
+  it("renders title rows even when local summaries are missing", () => {
+    const prompt = buildTitleResolutionPrompt({
+      bookTitle: "儒林外史",
+      entries  : [
+        { personaId: "title-1", title: "太祖皇帝", localSummary: "明朝开国人物" },
+        { personaId: "title-2", title: "老爷", localSummary: undefined }
+      ]
+    });
+
+    expect(prompt.system).toContain("历史背景专家");
+    expect(prompt.user).toContain("| 太祖皇帝 | 明朝开国人物 |");
+    expect(prompt.user).toContain("| 老爷 |  |");
+    expect(prompt.user).toContain("\"realName\": null");
   });
 });
 
@@ -337,5 +418,92 @@ describe("parseValidationResponse", () => {
         reason: "低置信实体"
       }
     });
+  });
+
+  // 用例语义：覆盖顶层数组、空白过滤与缺省 issue id 分支。
+  it("parses top-level issue arrays and filters malformed fields", () => {
+    const raw = JSON.stringify([
+      {
+        id                : "   ",
+        type              : "MISSING_NAME_MAPPING",
+        severity          : "WARNING",
+        confidence        : -0.4,
+        description       : "需要补充别名",
+        evidence          : "上下文多次出现同一称呼",
+        affectedPersonaIds: ["persona-1", "", "   "],
+        affectedChapterIds: ["chapter-1", "", "   "],
+        suggestion        : {
+          action         : "ADD_ALIAS",
+          targetPersonaId: "persona-1",
+          newAlias       : "范老爷",
+          reason         : "补充稳定别名"
+        }
+      },
+      "not-an-object",
+      {
+        type       : "DUPLICATE_PERSONA",
+        severity   : "WARNING",
+        confidence : 0.8,
+        description: "",
+        evidence   : "证据",
+        suggestion : { action: "MERGE", reason: "x" }
+      },
+      {
+        type       : "DUPLICATE_PERSONA",
+        severity   : "WARNING",
+        confidence : 0.8,
+        description: "缺少建议原因",
+        evidence   : "证据",
+        suggestion : { action: "MERGE" }
+      }
+    ]);
+
+    const result = parseValidationResponse(raw);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id                : "issue-1",
+      type              : "MISSING_NAME_MAPPING",
+      severity          : "WARNING",
+      confidence        : 0,
+      affectedPersonaIds: ["persona-1"],
+      affectedChapterIds: ["chapter-1"],
+      suggestion        : {
+        action         : "ADD_ALIAS",
+        targetPersonaId: "persona-1",
+        newAlias       : "范老爷",
+        reason         : "补充稳定别名"
+      }
+    });
+  });
+
+  // 用例语义：覆盖无法解析与非预期顶层结构分支，保证服务端不会抛出未处理异常。
+  it("returns an empty list for unsupported response shapes", () => {
+    expect(parseValidationResponse(JSON.stringify({ foo: [] }))).toEqual([]);
+  });
+
+  // 用例语义：显式打穿 repairJson 抛错后的告警降级分支，避免解析异常向上冒泡。
+  it("returns an empty list and logs a warning when json repair throws", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.resetModules();
+    vi.doMock("@/types/analysis", async () => {
+      const actual = await vi.importActual<typeof AnalysisTypes>("@/types/analysis");
+      return {
+        ...actual,
+        repairJson: vi.fn(() => {
+          throw new Error("repair failed");
+        })
+      };
+    });
+
+    const { parseValidationResponse: parseWithBrokenRepair } = await import("./prompts");
+
+    expect(parseWithBrokenRepair("{broken")).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledOnce();
+
+    warnSpy.mockRestore();
+    vi.doUnmock("@/types/analysis");
+    vi.resetModules();
   });
 });

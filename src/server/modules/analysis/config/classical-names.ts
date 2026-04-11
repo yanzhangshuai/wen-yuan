@@ -13,7 +13,7 @@
  * - 数据来自权威文学研究资料，经人工校验；
  * - 每条映射的 canonicalName 应为该人物最广为人知的全名；
  * - aliases 应包含该人物在原著中实际出现的所有称谓形式；
- * - 按作品/场景分组管理，便于后续按体裁选择性加载。
+ * - 按作品/场景分组管理，便于后续按书籍类型选择性加载。
  *
  * 重要约束：
  * - 本知识库仅用于规则预合并，不替代 LLM 消歧；
@@ -211,12 +211,12 @@ const RULIN_NAMES: ClassicalNameEntry[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// 汇总：按体裁分组的完整知识库
+// 汇总：按书籍类型分组的完整知识库
 // ---------------------------------------------------------------------------
 
 /**
- * 体裁 → 字号知识库映射。
- * key 对应 GENRE_PRESETS 中的体裁键名。
+ * 书籍类型 → 字号知识库映射。
+ * key 对应 GENRE_PRESETS 中的书籍类型键名。
  *
  * 使用方式：
  * 1. 根据书籍 genre 选取对应知识库；
@@ -235,8 +235,8 @@ export const GENRE_CLASSICAL_NAMES: Record<string, ClassicalNameEntry[]> = {
  * 将知识库条目展平为"别名 → 标准名"的查找表。
  * 用于 GlobalEntityResolver 在 Union-Find 分组前做快速预合并。
  *
- * @param genre 体裁键名，对应 GENRE_CLASSICAL_NAMES 中的 key。
- * @returns Map<normalizedAlias, canonicalName>，未命中体裁时返回空 Map。
+ * @param genre 书籍类型键名，对应 GENRE_CLASSICAL_NAMES 中的 key。
+ * @returns Map<normalizedAlias, canonicalName>，未命中书籍类型时返回空 Map。
  */
 export function buildAliasLookup(genre: string | null | undefined): Map<string, string> {
   const lookup = new Map<string, string>();

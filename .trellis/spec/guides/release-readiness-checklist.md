@@ -11,7 +11,7 @@ stage: mature
 ## 必须遵守
 
 - 代码质量：`pnpm lint`、必要构建与核心路径手工验证通过。
-- 单元测试：测试有效性达标，且每次执行覆盖率四项门禁都必须满足（Statements >= 85%、Branches >= 85%、Functions >= 85%、Lines >= 85%）；任一未达标不得交付。
+- 单元测试：测试有效性达标，且每次执行覆盖率四项门禁都必须满足（Statements >= 90%、Branches >= 90%、Functions >= 90%、Lines >= 90%）；任一未达标不得交付。
 - 合同稳定：API/Action contract 变更已记录并验证。
 - 观测完整：关键路径日志、错误码、requestId 可追踪。
 - 回滚可行：明确回滚策略、命令与触发阈值。
@@ -47,7 +47,7 @@ cat .trellis/tasks/<task>/verification.md
 ## 验收清单
 
 - [ ] 质量检查通过并有证据
-- [ ] 单元测试有效，覆盖率四项（Statements/Branches/Functions/Lines）均 >= 85% 且有证据
+- [ ] 单元测试有效，覆盖率四项（Statements/Branches/Functions/Lines）均 >= 90% 且有证据
 - [ ] 合同变更已验证且文档化
 - [ ] 观测字段满足排障最小集
 - [ ] 回滚路径已演练或可执行

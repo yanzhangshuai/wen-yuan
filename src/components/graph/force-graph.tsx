@@ -895,8 +895,35 @@ export function ForceGraph({
         ));
     }
 
-    // 单击激活节点：仅高亮该节点，不影响全图降噪策略。
-    if (currentActiveNodeId) {
+    // 单击激活节点：首次渲染也要与 applyGraphEmphasis 保持一致，
+    // 避免“初次挂载只放大、不降噪；后续 rerender 才降噪”的视觉漂移。
+    if (currentActiveNodeId && !currentFocusedNodeId) {
+      const activeConnectedIds = new Set<string>();
+      activeConnectedIds.add(currentActiveNodeId);
+      for (const edge of edgeSelection.data()) {
+        if (edge.source.id === currentActiveNodeId) activeConnectedIds.add(edge.target.id);
+        if (edge.target.id === currentActiveNodeId) activeConnectedIds.add(edge.source.id);
+      }
+
+      nodeSelection.select<SVGPathElement>("path")
+        .attr("opacity", d => activeConnectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      nodeSelection.select<SVGTextElement>("text")
+        .attr("opacity", d => activeConnectedIds.has(d.id) ? 1 : FOCUS_DIM_OPACITY);
+      edgeSelection
+        .attr("stroke-opacity", d => (
+          d.source.id === currentActiveNodeId || d.target.id === currentActiveNodeId
+            ? EDGE_OPACITY_BASE
+            : FOCUS_DIM_OPACITY * 0.4
+        ))
+        .attr("stroke-width", d => edgeBaseWidth(d.weight));
+
+      const activeNodeSelection = nodeSelection.filter(d => d.id === currentActiveNodeId);
+      activeNodeSelection.select<SVGPathElement>("path")
+        .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
+        .attr("fill", d => nodeHighlightFillColor(d, factionColors))
+        .attr("opacity", 1);
+      activeNodeSelection.select<SVGTextElement>("text").attr("opacity", 1);
+    } else if (currentActiveNodeId) {
       const activeNodeSelection = nodeSelection.filter(d => d.id === currentActiveNodeId);
       activeNodeSelection.select<SVGPathElement>("path")
         .attr("transform", nodeScaleTransform(NODE_ACTIVE_SCALE))
@@ -1272,3 +1299,25 @@ export function ForceGraph({
     </div>
   );
 }
+
+/**
+ * 仅供单元测试使用：暴露纯样式/筛选帮助函数，便于覆盖边界分支。
+ * 业务代码禁止依赖该对象。
+ */
+export const forceGraphTesting = {
+  nodeRadius,
+  nodePath,
+  resolveEdgeColor,
+  edgeBaseWidth,
+  edgeEmphasisWidth,
+  nodeBaseStrokeColor,
+  nodeBaseStrokeWidth,
+  nodeBaseStrokeDasharray,
+  nodeFactionColor,
+  nodeBaseFillColor,
+  nodeHighlightFillColor,
+  nodeScaleTransform,
+  isPathEdge,
+  shouldIncludeNode,
+  shouldIncludeEdge
+};

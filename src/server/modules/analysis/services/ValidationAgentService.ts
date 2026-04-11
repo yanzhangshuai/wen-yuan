@@ -9,6 +9,7 @@ import {
 } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
 import { buildBookValidationPrompt, buildChapterValidationPrompt, parseValidationResponse } from "@/server/modules/analysis/services/prompts";
+import { resolvePromptTemplateOrFallback } from "@/server/modules/knowledge";
 import { createAiProviderClient, type AiProviderClient } from "@/server/providers/ai";
 import type { AnalysisProfileContext } from "@/types/analysis";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
@@ -400,7 +401,7 @@ export function createValidationAgentService(
     const personaNameMap = new Map(personaNameRows.map((row) => [row.id, row.name]));
 
     // 把数据库快照映射成提示词上下文，避免让模型直接依赖原始表结构。
-    const prompt = buildChapterValidationPrompt({
+    const chapterPromptInput = {
       bookTitle       : book.title,
       chapterNo       : input.chapterNo,
       chapterTitle    : chapter.title,
@@ -430,6 +431,21 @@ export function createValidationAgentService(
         targetName: personaNameMap.get(relation.targetId) ?? relation.targetId,
         type      : relation.type
       }))
+    };
+    const fallbackPrompt = buildChapterValidationPrompt(chapterPromptInput);
+    const prompt = await resolvePromptTemplateOrFallback({
+      slug        : "CHAPTER_VALIDATION",
+      replacements: {
+        bookTitle           : chapterPromptInput.bookTitle,
+        chapterNo           : String(chapterPromptInput.chapterNo),
+        chapterTitle        : chapterPromptInput.chapterTitle,
+        chapterContent      : chapterPromptInput.chapterContent,
+        existingPersonas    : chapterPromptInput.existingPersonas.map((p) => `- ${p.name} (${p.nameType}, 置信度:${p.confidence}) 别名:[${p.aliases.join(",")}]`).join("\n"),
+        newlyCreated        : chapterPromptInput.newlyCreated.map((p) => `- ${p.name} (${p.nameType}, 置信度:${p.confidence})`).join("\n"),
+        chapterMentions     : chapterPromptInput.chapterMentions.map((m) => `- ${m.personaName}: \"${m.rawText.slice(0, 80)}\"`).join("\n"),
+        chapterRelationships: chapterPromptInput.chapterRelationships.map((r) => `- ${r.sourceName} → ${r.targetName}: ${r.type}`).join("\n")
+      },
+      fallback: fallbackPrompt
     });
 
     const content = await executeValidationStage({
@@ -551,7 +567,7 @@ export function createValidationAgentService(
       excerpt     : chapter.content.slice(0, ANALYSIS_PIPELINE_CONFIG.bookValidationExcerptChars)
     }));
 
-    const prompt = buildBookValidationPrompt({
+    const bookPromptInput = {
       bookTitle: book.title,
       personas : profiles.map((profile) => ({
         id          : profile.persona.id,
@@ -575,6 +591,18 @@ export function createValidationAgentService(
         }))
         .filter((item) => item.confidence < 0.7),
       sourceExcerpts
+    };
+    const fallbackPrompt = buildBookValidationPrompt(bookPromptInput);
+    const prompt = await resolvePromptTemplateOrFallback({
+      slug        : "BOOK_VALIDATION",
+      replacements: {
+        bookTitle            : bookPromptInput.bookTitle,
+        personas             : bookPromptInput.personas.map((p) => `- ${p.name} [${p.id}] (${p.nameType}, 置信度:${p.confidence}, 提及:${p.mentionCount}) 别名:[${p.aliases.join(",")}]`).join("\n"),
+        relationships        : bookPromptInput.relationships.map((r) => `- ${r.sourceName} → ${r.targetName}: ${r.type} (出现 ${r.count} 次)`).join("\n"),
+        lowConfidencePersonas: bookPromptInput.lowConfidencePersonas.map((p) => `- ${p.name} [${p.id}] (置信度:${p.confidence})`).join("\n"),
+        sourceExcerpts       : bookPromptInput.sourceExcerpts.map((item) => `- 第${item.chapterNo}章「${item.chapterTitle}」(${item.reason})：${item.excerpt}`).join("\n")
+      },
+      fallback: fallbackPrompt
     });
 
     const content = await executeValidationStage({

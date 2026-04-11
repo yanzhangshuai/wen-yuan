@@ -99,6 +99,44 @@ describe("persona resolver", () => {
     expect(personaFindMany).not.toHaveBeenCalled();
   });
 
+  // 用例语义：单字称呼误报率极高，应在任何 DB 查询前直接拦截。
+  it("marks too-short extracted names as hallucinated", async () => {
+    const { prisma, personaFindMany } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "张",
+      chapterContent: "张在门外。"
+    });
+
+    expect(result).toEqual({
+      status    : "hallucinated",
+      confidence: 0,
+      reason    : "name_too_short"
+    });
+    expect(personaFindMany).not.toHaveBeenCalled();
+  });
+
+  // 用例语义：超长字符串通常是整句误切，必须在解析主流程前直接过滤。
+  it("marks overlong extracted names as hallucinated", async () => {
+    const { prisma, personaFindMany } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "这是一个明显过长的人名片段",
+      chapterContent: "这是一个明显过长的人名片段出现在正文里。"
+    });
+
+    expect(result).toEqual({
+      status    : "hallucinated",
+      confidence: 0,
+      reason    : "name_too_long"
+    });
+    expect(personaFindMany).not.toHaveBeenCalled();
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("marks empty extracted name as hallucinated", async () => {
     const { prisma, personaFindMany } = createPrismaMock();
@@ -550,6 +588,114 @@ describe("persona resolver", () => {
     expect(genericResult.reason).toBe("config_generic");
   });
 
+  it("treats roster GENERIC markers as generic_title even for non-config names", async () => {
+    const { prisma, personaFindMany } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "周老爷",
+      chapterContent: "周老爷拍案而起。",
+      rosterMap     : new Map([["周老爷", "GENERIC"]])
+    });
+
+    expect(result).toEqual({
+      status    : "hallucinated",
+      confidence: 1,
+      reason    : "generic_title"
+    });
+    expect(personaFindMany).not.toHaveBeenCalled();
+  });
+
+  it("falls through when rosterMap points to a missing persona", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaFindUnique,
+      personaCreate,
+      profileCreate,
+      profileUpsert
+    } = createPrismaMock();
+    personaFindUnique.mockResolvedValueOnce(null);
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-zhoulaoye",
+      name: "周老爷"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "周老爷",
+      chapterContent: "周老爷怒斥众人。",
+      rosterMap     : new Map([["周老爷", "persona-missing"]])
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-zhoulaoye");
+    expect(profileUpsert).not.toHaveBeenCalled();
+    expect(profileCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects unrelated rosterMap targets and continues with normal creation flow", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaFindUnique,
+      personaCreate
+    } = createPrismaMock();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    personaFindUnique.mockResolvedValueOnce({
+      name   : "范进",
+      aliases: ["范举人"]
+    });
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-jinglanjiang",
+      name: "景兰江"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "景兰江",
+      chapterContent: "景兰江在堂下回话。",
+      rosterMap     : new Map([["景兰江", "persona-fanjin"]])
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-jinglanjiang");
+    expect(warnSpy).toHaveBeenCalledOnce();
+    warnSpy.mockRestore();
+  });
+
+  it("accepts rosterMap targets when the same-surname safety check passes", async () => {
+    const { prisma, personaFindUnique, profileUpsert } = createPrismaMock();
+    personaFindUnique.mockResolvedValueOnce({
+      name   : "范进",
+      aliases: []
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范老爷",
+      chapterContent: "范老爷缓步入席。",
+      rosterMap     : new Map([["范老爷", "persona-fanjin"]])
+    });
+
+    expect(result).toEqual({
+      status    : "resolved",
+      personaId : "persona-fanjin",
+      confidence: 0.97
+    });
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("registers alias mapping when creating TITLE_ONLY persona with alias registry", async () => {
     const {
@@ -598,6 +744,185 @@ describe("persona resolver", () => {
     }, expect.any(Object));
   });
 
+  it("falls through when alias registry confidence is below the runtime threshold", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate
+    } = createPrismaMock();
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias: vi.fn().mockResolvedValue({
+        alias       : "周老爷",
+        resolvedName: "周进",
+        personaId   : "persona-zhoujin",
+        aliasType   : "NICKNAME",
+        confidence  : ANALYSIS_PIPELINE_CONFIG.aliasRegistryMinConfidence - 0.01,
+        evidence    : "低置信映射",
+        status      : "LLM_INFERRED"
+      }),
+      registerAlias      : vi.fn(),
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-zhoulaoye",
+      name: "周老爷"
+    });
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "周老爷",
+      chapterContent: "周老爷慢慢走来。",
+      chapterNo     : 5
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-zhoulaoye");
+    expect(personaFindMany).toHaveBeenCalled();
+  });
+
+  it("falls through when alias registry returns no persona id", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate,
+      profileUpsert
+    } = createPrismaMock();
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias: vi.fn().mockResolvedValue({
+        alias       : "周老爷",
+        resolvedName: "周进",
+        personaId   : null,
+        aliasType   : "NICKNAME",
+        confidence  : 0.9,
+        evidence    : "缺少 personaId",
+        status      : "LLM_INFERRED"
+      }),
+      registerAlias      : vi.fn(),
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-zhoulaoye",
+      name: "周老爷"
+    });
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "周老爷",
+      chapterContent: "周老爷缓缓回头。",
+      chapterNo     : 6
+    });
+
+    expect(result.status).toBe("created");
+    expect(profileUpsert).not.toHaveBeenCalled();
+  });
+
+  it("registers non-title created aliases with resolvedName when title stems are present", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate
+    } = createPrismaMock();
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias        : vi.fn().mockResolvedValue(null),
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-wangzhixian",
+      name: "王知县"
+    });
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "王知县",
+      chapterContent: "王知县升堂问案。",
+      chapterNo     : 9
+    });
+
+    expect(result.status).toBe("created");
+    expect(registerAlias).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      personaId   : "created-wangzhixian",
+      alias       : "王知县",
+      resolvedName: "王知县",
+      aliasType   : "TITLE",
+      confidence  : 0.35,
+      evidence    : "来自章节解析自动注册",
+      chapterStart: 9,
+      status      : "PENDING"
+    }, expect.any(Object));
+  });
+
+  it("can escalate created alias registration to confirmed when the creation threshold is raised temporarily", async () => {
+    const originalMinScore = ANALYSIS_PIPELINE_CONFIG.personaResolveMinScore;
+    (ANALYSIS_PIPELINE_CONFIG as { personaResolveMinScore: number }).personaResolveMinScore = 1.1;
+
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate
+    } = createPrismaMock();
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias        : vi.fn().mockResolvedValue(null),
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+    personaFindMany
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-existing",
+          name    : "吴王",
+          aliases : [],
+          profiles: [{ localName: "吴王" }]
+        }
+      ]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-wuwang",
+      name: "吴王"
+    });
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "吴王",
+      chapterContent: "吴王即日升殿。",
+      chapterNo     : 12
+    });
+
+    expect(result.status).toBe("created");
+    expect(registerAlias).toHaveBeenCalledWith(expect.objectContaining({
+      alias : "吴王",
+      status: "CONFIRMED"
+    }), expect.any(Object));
+    (ANALYSIS_PIPELINE_CONFIG as { personaResolveMinScore: number }).personaResolveMinScore = originalMinScore;
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("classifies config generic title as gray_zone when evidence is uncertain", async () => {
     const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
@@ -639,6 +964,17 @@ describe("persona resolver", () => {
     const score = calculateSubstringMatchScore(
       "蘧公孙父亲",
       "蘧公孙",
+      HARD_BLOCK_SUFFIXES,
+      DEFAULT_SOFT_BLOCK_SUFFIXES
+    );
+
+    expect(score).toBe(0);
+  });
+
+  it("calculateSubstringMatchScore returns 0 when the shorter string is not contained", () => {
+    const score = calculateSubstringMatchScore(
+      "范进中举",
+      "严监生",
       HARD_BLOCK_SUFFIXES,
       DEFAULT_SOFT_BLOCK_SUFFIXES
     );
@@ -821,5 +1157,37 @@ describe("persona resolver", () => {
     // 不应合并到"范进"，应新建
     expect(result.status).toBe("created");
     expect(result.personaId).toBe("created-fanzhifu");
+  });
+
+  it("falls back to edit-distance scoring for long non-substring candidates", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaCreate
+    } = createPrismaMock();
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-1",
+          name    : "京城范进先生",
+          aliases : [],
+          profiles: [{ localName: "京城范进先生" }]
+        }
+      ]);
+    personaCreate.mockResolvedValueOnce({
+      id  : "created-fanjinlaoshi",
+      name: "范进老师"
+    });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范进老师",
+      chapterContent: "范进老师正在堂上答话。"
+    });
+
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("created-fanjinlaoshi");
   });
 });

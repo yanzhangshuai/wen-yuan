@@ -63,12 +63,13 @@ import {
   type StartAnalysisBody
 } from "@/lib/services/books";
 import { BookDetailTabs } from "@/app/admin/books/[id]/_components/book-detail-tabs";
-import { fetchModels, type AdminModelItem } from "@/lib/services/models";
+import { useAdminModels } from "@/hooks/use-admin-models";
 import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
 import {
   saveBookStrategy,
   type ModelStrategyInput
 } from "@/lib/services/model-strategy";
+import { fetchActiveBookTypes, type BookTypeOption } from "@/lib/services/book-types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -158,6 +159,12 @@ export default function AdminImportPage() {
   const [genre, setGenre] = useState("");
   const [description, setDescription] = useState("");
 
+  // 动态加载书籍类型列表（替代硬编码的书籍类型下拉）
+  const [bookTypes, setBookTypes] = useState<BookTypeOption[]>([]);
+  useEffect(() => {
+    fetchActiveBookTypes().then(setBookTypes).catch(() => {/* 静默降级 */});
+  }, []);
+
   // Step 2：章节预览与确认所需状态
   /** 创建成功后的书籍主标识。后续所有步骤都依赖该 ID。 */
   const [createdBook, setCreatedBook] = useState<CreatedBookData | null>(null);
@@ -177,19 +184,14 @@ export default function AdminImportPage() {
   /** 多选模式下勾选的章节序号集合。Set 便于 O(1) 增删查。 */
   const [selectedChapterIndices, setSelectedChapterIndices] = useState<Set<number>>(new Set());
 
-  /**
-   * 本次任务覆盖策略（可选）。
+  /** 本次任务覆盖策略（可选）。
    * - null：不覆盖，走书籍/全局默认策略。
    * - 有值：按阶段覆盖本次任务模型。
    */
   const [jobStrategy, setJobStrategy] = useState<ModelStrategyInput | null>(null);
 
-  /** 系统可用模型列表（已过滤启用状态）。 */
-  const [models, setModels] = useState<AdminModelItem[]>([]);
-  /** 模型列表加载状态。 */
-  const [modelsLoading, setModelsLoading] = useState(true);
-  /** 模型列表加载错误。 */
-  const [modelsLoadError, setModelsLoadError] = useState<string | null>(null);
+  // 统一 Store：模块级缓存，不重复拉取
+  const { models, loading: modelsLoading, error: modelsLoadError } = useAdminModels({ onlyEnabled: true });
 
   // Shared UI state
   /**
@@ -197,43 +199,6 @@ export default function AdminImportPage() {
    * 设计目的：防止用户在请求未完成时重复点击，导致重复创建或重复启动任务。
    */
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  /**
-   * 首次挂载时加载模型列表。
-   *
-   * 关键点：
-   * - 使用 `cancelled` 防止组件卸载后异步回写状态引发警告；
-   * - 只保留 `isEnabled=true` 的模型，避免用户选择不可用模型造成后端拒绝；
-   * - 没有可用模型时给出明确引导（去模型设置启用）。
-   */
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadModels() {
-      setModelsLoading(true);
-      setModelsLoadError(null);
-      try {
-        const allModels = await fetchModels();
-        const enabledModels = allModels.filter(m => m.isEnabled);
-        if (cancelled) return;
-
-        setModels(enabledModels);
-        if (enabledModels.length === 0) {
-          setModelsLoadError("暂无可用模型，请先到模型设置页面启用模型。");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setModels([]);
-          setModelsLoadError(err instanceof Error ? err.message : "模型列表加载失败");
-        }
-      } finally {
-        if (!cancelled) setModelsLoading(false);
-      }
-    }
-
-    void loadModels();
-    return () => { cancelled = true; };
-  }, []);
 
   /**
    * 当进入第 2 步且已创建书籍后，自动请求章节预览。
@@ -585,7 +550,7 @@ export default function AdminImportPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="genre" className="text-sm font-medium">体裁</label>
+                  <label htmlFor="genre" className="text-sm font-medium">书籍类型</label>
                   <select
                     id="genre"
                     className="w-full h-10 rounded-md border border-border bg-transparent px-3 text-sm"
@@ -593,13 +558,9 @@ export default function AdminImportPage() {
                     onChange={e => setGenre(e.target.value)}
                   >
                     <option value="">自动（可选）</option>
-                    <option value="明清官场">明清官场</option>
-                    <option value="武侠">武侠</option>
-                    <option value="宫廷家族">宫廷家族</option>
-                    <option value="英雄传奇">英雄传奇</option>
-                    <option value="历史演义">历史演义</option>
-                    <option value="家族世情">家族世情</option>
-                    <option value="神魔小说">神魔小说</option>
+                    {bookTypes.map(bt => (
+                      <option key={bt.id} value={bt.key}>{bt.name}</option>
+                    ))}
                   </select>
                 </div>
 

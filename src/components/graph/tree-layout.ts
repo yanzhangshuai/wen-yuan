@@ -594,3 +594,22 @@ export function buildTreeLayoutPlan(input: TreeLayoutPlanInput): TreeLayoutPlan 
     isolatedLaneBounds
   };
 }
+
+/**
+ * 仅供单元测试使用：暴露纯布局帮助函数，便于覆盖边界分支。
+ * 业务代码禁止依赖该对象。
+ */
+export const treeLayoutTesting = {
+  clamp,
+  compareNodeMeta,
+  buildAdjacency,
+  collectConnectedComponents,
+  sortByNodePriority,
+  pickStableRoot,
+  assignLevels,
+  resolveHierarchyAndLaneHeights,
+  pickLightestRowIndex,
+  buildRowHeights,
+  buildWeightedRows,
+  buildComponentFrames
+};

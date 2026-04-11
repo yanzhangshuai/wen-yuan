@@ -55,10 +55,10 @@ export default defineConfig({
       ],
       thresholds: {
         // 覆盖率阈值是团队质量门槛，属于工程规则，不是技术限制。
-        lines     : 80,
-        branches  : 70,
-        functions : 80,
-        statements: 80
+        lines     : 90,
+        branches  : 85,
+        functions : 90,
+        statements: 90
       }
     }
   }

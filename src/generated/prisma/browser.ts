@@ -92,3 +92,53 @@ export type ValidationReport = Prisma.ValidationReportModel
  * @db.remark: 人物别名消歧建议。用于管理员审核同名/别名归并。
  */
 export type MergeSuggestion = Prisma.MergeSuggestionModel
+/**
+ * Model BookType
+ * @db.remark: 古典文学书籍类型定义表，存储 NER 词典规则配置，可在管理后台热更新。
+ */
+export type BookType = Prisma.BookTypeModel
+/**
+ * Model KnowledgePack
+ * @db.remark: 知识包表。scope=GENRE 为书籍类型通用包，scope=BOOK 为书籍专属包。
+ */
+export type KnowledgePack = Prisma.KnowledgePackModel
+/**
+ * Model KnowledgeEntry
+ * @db.remark: 知识条目。reviewStatus 驱动审核工作流（PENDING→VERIFIED or REJECTED）。
+ */
+export type KnowledgeEntry = Prisma.KnowledgeEntryModel
+/**
+ * Model BookKnowledgePack
+ * @db.remark: 书籍 ↔ 知识包 多对多关联，priority 越大越优先。
+ */
+export type BookKnowledgePack = Prisma.BookKnowledgePackModel
+/**
+ * Model SurnameEntry
+ * @db.remark: 姓氏库。extractSurname() 运行时从此表加载，优先匹配复姓。
+ */
+export type SurnameEntry = Prisma.SurnameEntryModel
+/**
+ * Model GenericTitleEntry
+ * @db.remark: 泛化称谓库。tier=SAFETY 绝不个体化，tier=DEFAULT 可被书籍类型/书籍覆盖。
+ */
+export type GenericTitleEntry = Prisma.GenericTitleEntryModel
+/**
+ * Model PromptTemplate
+ * @db.remark: 提示词模板。activeVersionId 指向当前生效版本，支持一键回滚。
+ */
+export type PromptTemplate = Prisma.PromptTemplateModel
+/**
+ * Model PromptTemplateVersion
+ * @db.remark: 提示词版本历史。每次激活都保留旧版本，支持 diff 对比与回滚。
+ */
+export type PromptTemplateVersion = Prisma.PromptTemplateVersionModel
+/**
+ * Model ExtractionRule
+ * @db.remark: NER 规则条目。ruleType=ENTITY 或 RELATIONSHIP，isActive 控制是否注入提示词。
+ */
+export type ExtractionRule = Prisma.ExtractionRuleModel
+/**
+ * Model KnowledgeAuditLog
+ * @db.remark: 所有知识库对象的变更日志。
+ */
+export type KnowledgeAuditLog = Prisma.KnowledgeAuditLogModel

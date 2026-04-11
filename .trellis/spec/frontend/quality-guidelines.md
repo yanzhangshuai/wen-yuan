@@ -59,7 +59,8 @@ stage: growth
 1. 运行 `pnpm lint`。
 2. 对关键改动运行 `pnpm build`（需要额外类型信心时）。
 3. 为新增/变更业务逻辑补齐单元测试（同目录 `*.test.ts(x)`），覆盖 success/failure/boundary 关键分支。
-4. 覆盖率硬性门禁：每次执行单元测试与 coverage 校验时，必须同时满足 Statements >= 85%、Branches >= 85%、Functions >= 85%、Lines >= 85%；任一未达标即任务未完成，不得交付（高风险模块建议 >= 90%）。
+4. 覆盖率硬性门禁：每次执行单元测试与 coverage 校验时，必须同时满足 Statements >= 90%、Branches >= 90%、Functions >= 90%、Lines >= 90%；任一未达标即任务未完成，不得交付（高风险模块建议 >= 95%）。
+   业务组件必须纳入全局 coverage 门禁，禁止以“画布复杂”“测试夹具未完善”等理由把真实前端交互模块移出统计；排除项只能用于生成代码、测试文件、配置文件与无业务决策的基础设施层。
 5. 手工验证受影响 UI 在 light/dark 主题下都正常。
 6. 至少验证 1 条成功路径与 1 条失败/边界路径。
 7. 对涉及 `Link` 与 `Button` 改动的页面，运行：
@@ -85,7 +86,8 @@ stage: growth
 - 失败分支是否有用户可见反馈，并保留可继续操作的输入上下文？
 - API payload 与 unknown 输入是否在使用前完成校验？
 - 单元测试是否真实覆盖关键分支，而非仅堆叠无断言价值用例？
-- 覆盖率四项门禁（Statements/Branches/Functions/Lines）是否全部 >= 85%，并附有可复核证据？
+- 覆盖率四项门禁（Statements/Branches/Functions/Lines）是否全部 >= 90%，并附有可复核证据？
+- `vitest.config.ts` 中是否存在把真实前端业务组件移出 coverage 的策略漂移。
 - 复杂实现与复杂测试是否都有足够注释支持维护和排障？
 
 ---
