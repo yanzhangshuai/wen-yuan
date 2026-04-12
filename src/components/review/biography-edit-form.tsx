@@ -33,6 +33,13 @@ import { patchBiography } from "@/lib/services/biography";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 const CATEGORY_OPTIONS = [
   /** 出生事件。 */
@@ -133,17 +140,16 @@ export function BiographyEditForm({
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">类别</span>
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            className="rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-          >
-            {CATEGORY_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger size="sm" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORY_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
         <label className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">标题</span>

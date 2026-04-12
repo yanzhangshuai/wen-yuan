@@ -204,6 +204,7 @@ describe("analysis job runner", () => {
         chapterIndices: []
       })
       .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
       .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING });
     chapterFindMany.mockResolvedValueOnce([
       { id: "chapter-1", no: 1 },
@@ -282,6 +283,7 @@ describe("analysis job runner", () => {
         chapterEnd    : null,
         chapterIndices: []
       })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
       .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING });
     chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
     bookUpdateMany.mockRejectedValueOnce(new Error("transaction timed out"));
@@ -539,7 +541,8 @@ describe("analysis job runner", () => {
         chapterEnd    : null,
         chapterIndices: []
       })
-      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING }); // cancel check
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING }); // pipeline 收尾前再次检查取消状态
     chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
     analyzeChapter.mockRejectedValueOnce(new Error("ai failed"));
 
@@ -1200,6 +1203,7 @@ describe("analysis job runner", () => {
         id            : "job-two-pass",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "twopass",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1209,6 +1213,7 @@ describe("analysis job runner", () => {
         id            : "job-two-pass",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "twopass",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1278,6 +1283,7 @@ describe("analysis job runner", () => {
         id            : "job-two-pass-non-retryable",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "twopass",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1287,6 +1293,7 @@ describe("analysis job runner", () => {
         id            : "job-two-pass-non-retryable",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "twopass",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1336,6 +1343,7 @@ describe("analysis job runner", () => {
         id            : "job-two-pass-retry",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "twopass",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1345,6 +1353,7 @@ describe("analysis job runner", () => {
         id            : "job-two-pass-retry",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "twopass",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,

@@ -71,6 +71,13 @@ function formatScope(job: AnalysisJobListItem): string {
 }
 
 /**
+ * 将解析架构转换为可读文案。
+ */
+function formatArchitecture(architecture: AnalysisJobListItem["architecture"]): string {
+  return architecture === "twopass" ? "两遍式" : "顺序式";
+}
+
+/**
  * 格式化任务耗时。
  *
  * @param startedAt 开始时间
@@ -246,6 +253,7 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
           <JobStatusBadge status={job.status} />
         </td>
         <td className="px-4 py-3 text-sm">{formatScope(job)}</td>
+        <td className="px-4 py-3 text-sm text-muted-foreground">{formatArchitecture(job.architecture)}</td>
         <td className="px-4 py-3 text-sm text-muted-foreground">
           {job.aiModelName ?? "—"}
         </td>
@@ -259,9 +267,11 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
 
       {expanded && (
         <tr className="border-t border-border bg-muted/10">
-          <td colSpan={6} className="px-4 py-3 text-sm space-y-2">
+          <td colSpan={7} className="px-4 py-3 text-sm space-y-2">
             {/* 一级摘要：便于快速读时序与重试情况 */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-muted-foreground">
+              <span>解析架构</span>
+              <span>{formatArchitecture(job.architecture)}</span>
               <span>开始时间</span>
               <span>{job.startedAt ? formatDateTime(job.startedAt) : "—"}</span>
               <span>完成时间</span>
@@ -430,6 +440,7 @@ export function AnalysisJobsPanel({ bookId }: AnalysisJobsPanelProps) {
                   <th className="px-4 py-2 text-left w-28">任务 ID</th>
                   <th className="px-4 py-2 text-left w-24">状态</th>
                   <th className="px-4 py-2 text-left">范围</th>
+                  <th className="px-4 py-2 text-left">架构</th>
                   <th className="px-4 py-2 text-left">模型</th>
                   <th className="px-4 py-2 text-left">创建时间</th>
                   <th className="px-4 py-2 text-left">耗时</th>

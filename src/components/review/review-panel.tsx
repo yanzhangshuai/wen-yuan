@@ -58,6 +58,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
+import {
+  Select,
+  SelectContent,
+  SelectEmptyItem,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  isSelectEmptyValue
+} from "@/components/ui/select";
 import { PersonaEditForm } from "@/components/review/persona-edit-form";
 import { RelationshipEditForm } from "@/components/review/relationship-edit-form";
 import { BiographyEditForm } from "@/components/review/biography-edit-form";
@@ -388,20 +397,23 @@ export function ReviewPanel({
               变更筛选后立即刷新草稿列表，保持“所见即所得”审核体验。 */}
           <div className="flex items-center gap-1 rounded-md border border-border px-2 py-1">
             <Filter size={14} className="text-muted-foreground" />
-            <select
+            <Select
               value={sourceFilter ?? ""}
-              onChange={e => {
-                const nextFilter = e.target.value || null;
+              onValueChange={(value) => {
+                const nextFilter = isSelectEmptyValue(value) ? null : value || null;
                 setSourceFilter(nextFilter);
                 void fetchDrafts(nextFilter);
               }}
-              className="bg-transparent text-xs text-foreground outline-none"
-              aria-label="来源筛选"
             >
-              <option value="">全部来源</option>
-              <option value="AI">AI 生成</option>
-              <option value="MANUAL">手动录入</option>
-            </select>
+              <SelectTrigger className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18">
+                <SelectValue placeholder="全部来源" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectEmptyItem>全部来源</SelectEmptyItem>
+                <SelectItem value="AI">AI 生成</SelectItem>
+                <SelectItem value="MANUAL">手动录入</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>

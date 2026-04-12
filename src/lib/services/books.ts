@@ -26,6 +26,9 @@
  */
 import { clientFetch, clientMutate } from "@/lib/client-api";
 import type { ModelStrategyInput } from "@/lib/services/model-strategy";
+import type { AnalysisArchitecture } from "@/types/analysis-pipeline";
+
+export type { AnalysisArchitecture } from "@/types/analysis-pipeline";
 
 /* ------------------------------------------------
    Types
@@ -84,6 +87,13 @@ export interface ConfirmChapterItem {
  */
 export type AnalyzeScope = "FULL_BOOK" | "CHAPTER_RANGE" | "CHAPTER_LIST";
 
+interface StartAnalysisBase {
+  /** 解析架构：顺序或两遍式。 */
+  architecture? : AnalysisArchitecture;
+  /** 任务级模型策略覆盖。 */
+  modelStrategy?: { stages: ModelStrategyInput };
+}
+
 /**
  * 启动解析任务请求体（判别联合类型）。
  *
@@ -93,9 +103,9 @@ export type AnalyzeScope = "FULL_BOOK" | "CHAPTER_RANGE" | "CHAPTER_LIST";
  * - 未传 `modelStrategy` 时，后端按书籍绑定 -> 全局 -> 系统默认逐级回退。
  */
 export type StartAnalysisBody =
-  | { scope: "FULL_BOOK"; modelStrategy?: { stages: ModelStrategyInput } }
-  | { scope: "CHAPTER_RANGE"; chapterStart: number; chapterEnd: number; modelStrategy?: { stages: ModelStrategyInput } }
-  | { scope: "CHAPTER_LIST"; chapterIndices: number[]; modelStrategy?: { stages: ModelStrategyInput } };
+  | ({ scope: "FULL_BOOK" } & StartAnalysisBase)
+  | ({ scope: "CHAPTER_RANGE"; chapterStart: number; chapterEnd: number } & StartAnalysisBase)
+  | ({ scope: "CHAPTER_LIST"; chapterIndices: number[] } & StartAnalysisBase);
 
 /**
  * 阅读面板使用的章节内容模型（前端视图模型）。
@@ -266,6 +276,8 @@ export interface AnalysisJobListItem {
   id            : string;
   /** 任务状态。 */
   status        : string;
+  /** 解析架构。 */
+  architecture  : AnalysisArchitecture;
   /** 任务范围类型。 */
   scope         : string;
   /** 章节区间起点（scope=CHAPTER_RANGE 时有效）。 */

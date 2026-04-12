@@ -34,6 +34,15 @@ import { Check, X as XIcon, ArrowRight, Loader2, Tag } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectEmptyItem,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  isSelectEmptyValue
+} from "@/components/ui/select";
 import type { AliasMappingItem } from "@/lib/services/alias-mappings";
 import {
   confirmAliasMapping,
@@ -142,30 +151,36 @@ export function AliasReviewTab({ bookId, aliasMappings, onRefresh }: AliasReview
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 rounded-md border border-border px-2 py-1">
           <Tag size={14} className="text-muted-foreground" />
-          <select
+          <Select
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="bg-transparent text-xs text-foreground outline-none"
-            aria-label="状态筛选"
+            onValueChange={(value) => setStatusFilter(isSelectEmptyValue(value) ? "" : value)}
           >
-            <option value="">全部状态</option>
-            <option value="PENDING">待审核</option>
-            <option value="CONFIRMED">已确认</option>
-            <option value="REJECTED">已拒绝</option>
-          </select>
+            <SelectTrigger className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18">
+              <SelectValue placeholder="全部状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectEmptyItem>全部状态</SelectEmptyItem>
+              <SelectItem value="PENDING">待审核</SelectItem>
+              <SelectItem value="CONFIRMED">已确认</SelectItem>
+              <SelectItem value="REJECTED">已拒绝</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-1 rounded-md border border-border px-2 py-1">
-          <select
+          <Select
             value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value)}
-            className="bg-transparent text-xs text-foreground outline-none"
-            aria-label="类型筛选"
+            onValueChange={(value) => setTypeFilter(isSelectEmptyValue(value) ? "" : value)}
           >
-            <option value="">全部类型</option>
-            {Object.entries(ALIAS_TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
+            <SelectTrigger className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18">
+              <SelectValue placeholder="全部类型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectEmptyItem>全部类型</SelectEmptyItem>
+              {Object.entries(ALIAS_TYPE_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <span className="ml-auto text-xs text-muted-foreground">
           {filtered.length} 条记录

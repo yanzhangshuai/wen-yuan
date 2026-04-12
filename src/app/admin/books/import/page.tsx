@@ -45,23 +45,36 @@ import {
   CheckCircle2,
   Loader2,
   UploadCloud,
+  X as XIcon,
   XCircle
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectEmptyItem,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  isSelectEmptyValue
+} from "@/components/ui/select";
 import {
   confirmBookChapters,
   createBook,
   fetchChapterPreview,
   startAnalysis,
+  type AnalysisArchitecture,
   type AnalyzeScope,
   type ChapterPreviewItem,
   type ChapterType,
   type CreatedBookData,
   type StartAnalysisBody
 } from "@/lib/services/books";
+import { fetchKnowledgePacks, mountPackToBook, type KnowledgePackItem } from "@/lib/services/knowledge";
 import { BookDetailTabs } from "@/app/admin/books/[id]/_components/book-detail-tabs";
 import { useAdminModels } from "@/hooks/use-admin-models";
 import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
@@ -98,6 +111,13 @@ function parseScope(value: string): AnalyzeScope {
   if (value === "CHAPTER_RANGE") return "CHAPTER_RANGE";
   if (value === "CHAPTER_LIST") return "CHAPTER_LIST";
   return "FULL_BOOK";
+}
+
+/**
+ * 将下拉框字符串转换为前端共享的解析架构枚举。
+ */
+function parseArchitecture(value: string): AnalysisArchitecture {
+  return value === "twopass" ? "twopass" : "sequential";
 }
 
 /**
@@ -165,6 +185,15 @@ export default function AdminImportPage() {
     fetchActiveBookTypes().then(setBookTypes).catch(() => {/* 静默降级 */});
   }, []);
 
+  // 知识包列表 + 已选知识包 ID（step 1 可选绑定）
+  const [availablePacks, setAvailablePacks] = useState<KnowledgePackItem[]>([]);
+  const [selectedPackIds, setSelectedPackIds] = useState<string[]>([]);
+  useEffect(() => {
+    fetchKnowledgePacks()
+      .then((packs) => setAvailablePacks(packs.filter((pack) => pack.isActive)))
+      .catch(() => {/* 静默降级，知识包是可选绑定 */});
+  }, []);
+
   // Step 2：章节预览与确认所需状态
   /** 创建成功后的书籍主标识。后续所有步骤都依赖该 ID。 */
   const [createdBook, setCreatedBook] = useState<CreatedBookData | null>(null);
@@ -176,6 +205,8 @@ export default function AdminImportPage() {
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   // Step 3：解析配置状态
+  /** 解析架构，默认顺序式，避免新书首次导入时意外切到 two-pass。 */
+  const [architecture, setArchitecture] = useState<AnalysisArchitecture>("sequential");
   /** 解析范围，默认全书解析，保证最少配置即可启动。 */
   const [scope, setScope] = useState<AnalyzeScope>("FULL_BOOK");
   /** 范围模式下的起止章节（字符串形式以便与输入框受控绑定）。 */
@@ -289,8 +320,26 @@ export default function AdminImportPage() {
 
       const data = await createBook(formData);
       setCreatedBook({ id: data.id, title: data.title });
+
+      // 绑定选中的知识包，并明确反馈成功/失败数量，避免静默丢失配置。
+      if (selectedPackIds.length > 0) {
+        const results = await Promise.allSettled(
+          selectedPackIds.map((packId) => mountPackToBook(data.id, packId))
+        );
+
+        const mountedCount = results.filter((result) => result.status === "fulfilled").length;
+        const failedCount = results.length - mountedCount;
+
+        if (failedCount > 0) {
+          toast.warning(`书籍已创建，成功绑定 ${mountedCount} 个知识包，另有 ${failedCount} 个绑定失败。`);
+        } else {
+          toast.success(`书籍已创建并绑定 ${mountedCount} 个知识包，正在加载章节预览...`);
+        }
+      } else {
+        toast.success("书籍已创建，正在加载章节预览...");
+      }
+
       setStep(2);
-      toast.success("书籍已创建，正在加载章节预览...");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "创建书籍失败");
     } finally {
@@ -397,6 +446,7 @@ export default function AdminImportPage() {
         }
 
         body = {
+          architecture : architecture,
           scope        : "CHAPTER_RANGE",
           chapterStart : parsedStart,
           chapterEnd   : parsedEnd,
@@ -410,6 +460,7 @@ export default function AdminImportPage() {
         }
 
         body = {
+          architecture  : architecture,
           scope         : "CHAPTER_LIST",
           // 排序是为了让请求体稳定，便于后端日志排查与重放。
           chapterIndices: [...selectedChapterIndices].sort((a, b) => a - b),
@@ -417,6 +468,7 @@ export default function AdminImportPage() {
         };
       } else {
         body = {
+          architecture : architecture,
           scope        : "FULL_BOOK",
           modelStrategy: requestModelStrategy
         };
@@ -551,22 +603,73 @@ export default function AdminImportPage() {
 
                 <div className="space-y-2">
                   <label htmlFor="genre" className="text-sm font-medium">书籍类型</label>
-                  <select
-                    id="genre"
-                    className="w-full h-10 rounded-md border border-border bg-transparent px-3 text-sm"
+                  <Select
                     value={genre}
-                    onChange={e => setGenre(e.target.value)}
+                    onValueChange={(value) => setGenre(isSelectEmptyValue(value) ? "" : value)}
                   >
-                    <option value="">自动（可选）</option>
-                    {bookTypes.map(bt => (
-                      <option key={bt.id} value={bt.key}>{bt.name}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger id="genre" className="w-full">
+                      <SelectValue placeholder="自动（可选）" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectEmptyItem>自动（可选）</SelectEmptyItem>
+                      {bookTypes.map(bt => (
+                        <SelectItem key={bt.id} value={bt.key}>{bt.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
                   <label htmlFor="description" className="text-sm font-medium">简介</label>
                   <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="可选" />
+                </div>
+
+                {/* 知识库绑定（可选）：导入后解析可依赖所选知识包 */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-medium">绑定知识包 <span className="text-muted-foreground font-normal">（可选，解析时自动载入）</span></label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedPackIds.map(pid => {
+                      const pack = availablePacks.find(p => p.id === pid);
+                      return pack ? (
+                        <Badge key={pid} variant="secondary" className="gap-1 pr-1">
+                          {pack.name}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPackIds(prev => prev.filter(id => id !== pid))}
+                            className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                            aria-label={`移除 ${pack.name}`}
+                          >
+                            <XIcon size={10} />
+                          </button>
+                        </Badge>
+                      ) : null;
+                    })}
+                    {availablePacks.filter(p => !selectedPackIds.includes(p.id)).length > 0 && (
+                      <Select
+                        value=""
+                        onValueChange={(value) => {
+                          if (value) setSelectedPackIds(prev => [...prev, value]);
+                        }}
+                      >
+                        <SelectTrigger className="h-7 text-xs w-auto min-w-30">
+                          <SelectValue placeholder="+ 添加知识包" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availablePacks
+                            .filter(p => !selectedPackIds.includes(p.id))
+                            .map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                                {p.bookType ? <span className="ml-1 text-muted-foreground">({p.bookType.name})</span> : null}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {availablePacks.length === 0 && selectedPackIds.length === 0 && (
+                      <p className="text-xs text-muted-foreground">暂无可用知识包</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="md:col-span-2 flex justify-end">
@@ -637,15 +740,19 @@ export default function AdminImportPage() {
                             <td className="px-4 py-2 text-muted-foreground">{item.index}</td>
                             <td className="px-4 py-2">
                               {/* FG-09: 章节类型可修改 */}
-                              <select
-                                className="w-full rounded border border-border bg-transparent px-1 py-0.5 text-xs"
+                              <Select
                                 value={item.chapterType}
-                                onChange={e => updatePreviewChapterType(idx, e.target.value)}
+                                onValueChange={(value) => updatePreviewChapterType(idx, value)}
                               >
-                                <option value="PRELUDE">序章</option>
-                                <option value="CHAPTER">正文</option>
-                                <option value="POSTLUDE">尾声</option>
-                              </select>
+                                <SelectTrigger size="sm" className="w-full text-xs h-7">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="PRELUDE">序章</SelectItem>
+                                  <SelectItem value="CHAPTER">正文</SelectItem>
+                                  <SelectItem value="POSTLUDE">尾声</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </td>
                             <td className="px-4 py-2">
                               {/* FG-09: 标题内联编辑 */}
@@ -704,6 +811,7 @@ export default function AdminImportPage() {
               <ModelStrategyForm
                 initialStrategy={jobStrategy}
                 availableModels={enabledModels}
+                architecture={architecture}
                 onSave={(strategy) => {
                   // 仅保存到本页状态，真正提交发生在“启动解析任务”时。
                   setJobStrategy(strategy);
@@ -729,22 +837,47 @@ export default function AdminImportPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* 范围选择：决定请求体走哪个判别联合分支 */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">解析架构</label>
+                    <Select
+                      value={architecture}
+                      onValueChange={(value) => {
+                        setArchitecture(parseArchitecture(value));
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sequential">顺序式：逐章累积名册后分析</SelectItem>
+                        <SelectItem value="twopass">两遍式：先全书消歧，再逐章详细分析</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      未显式传入架构的重新解析操作会在后端自动继承最近一次任务的架构选择。
+                    </p>
+                  </div>
+
                   <div>
                     <label className="text-sm font-medium mb-1 block">解析范围</label>
-                    <select
-                      className="w-full h-10 rounded-md border border-border bg-transparent px-3 text-sm"
+                    <Select
                       value={scope}
-                      onChange={(event) => {
-                        setScope(parseScope(event.target.value));
+                      onValueChange={(value) => {
+                        setScope(parseScope(value));
                         // 切换范围时重置离散章节选择，避免旧状态污染新配置。
                         setSelectedChapterIndices(new Set());
                       }}
                     >
-                      <option value="FULL_BOOK">全书解析</option>
-                      <option value="CHAPTER_LIST">多选指定章节</option>
-                      <option value="CHAPTER_RANGE">指定范围</option>
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FULL_BOOK">全书解析</SelectItem>
+                        <SelectItem value="CHAPTER_LIST">多选指定章节</SelectItem>
+                        <SelectItem value="CHAPTER_RANGE">指定范围</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* 范围模式：输入起止章节 */}

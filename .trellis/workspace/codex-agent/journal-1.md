@@ -287,3 +287,109 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 首页像素级还原 sheji 设计收尾并归档
+
+**Date**: 2026-04-12
+**Task**: 首页像素级还原 sheji 设计收尾并归档
+
+### Summary
+
+归档 04-09-homepage-pixel-restore-sheji，补记首页视觉回归 sheji 的已提交成果与校验结果
+
+### Main Changes
+
+| 模块 | 说明 |
+|------|------|
+| Task Archive | 已归档 `.trellis/tasks/archive/2026-04/04-09-homepage-pixel-restore-sheji/` |
+| 首页壳层 | viewer layout、背景层、导航、主题切换与整体间距节奏向 sheji 回归 |
+| 书籍卡片 | `book-card` / `book-cover` / `library-home` 收口书封、hover、阴影与信息层级 |
+| 契约收尾 | `viewer-header` / `admin-header` 的路由与壳层契约收口，补齐相关测试 |
+| 校验结果 | PRD 已记录 `pnpm lint`、`pnpm type-check` 通过，并完成首页截图对比验证 |
+
+**关键文件**:
+- `src/components/library/library-home.tsx`
+- `src/components/library/book-card.tsx`
+- `src/components/library/book-cover.tsx`
+- `src/components/layout/viewer-header.tsx`
+- `src/app/layout.tsx`
+- `src/app/(viewer)/layout.tsx`
+- `src/app/globals.css`
+
+**说明**:
+- 本次为补记已提交且已验证的首页像素还原成果；当前工作区其他未提交改动不纳入此 session。
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b5156bf` | (see git log) |
+| `333d6cb` | (see git log) |
+| `394665f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 6: 知识库 Phase 1 落地与 themed select 规范补记
+
+**Date**: 2026-04-12
+**Task**: 知识库 Phase 1 落地与 themed select 规范补记
+
+### Summary
+
+归档 04-10-knowledge-base-phase1，并补记知识库 Phase 1 落地与 themed select 规范沉淀的已提交成果
+
+### Main Changes
+
+| 模块 | 说明 |
+|------|------|
+| Task Archive | 已归档 `.trellis/tasks/archive/2026-04/04-10-knowledge-base-phase1/` |
+| Schema & Migration | 在 `prisma/schema.prisma` 新增 BookType / KnowledgePack / KnowledgeEntry / BookKnowledgePack，并落地对应迁移 |
+| Seed & Init | 新增 `data/knowledge-base/book-types.init.json` 与 `scripts/init-knowledge-base.ts`，支持知识库初始化 |
+| Admin & API | 落地知识库后台页面、服务层与 API 路由，形成基础管理闭环 |
+| Spec Follow-up | 补充 themed select 组件规范与跨层复用指引，收口后续 UI 实现约束 |
+
+**关键文件**:
+- `prisma/schema.prisma`
+- `prisma/migrations/20260410144547_add_knowledge_base_tables/migration.sql`
+- `scripts/init-knowledge-base.ts`
+- `src/app/admin/knowledge-base/alias-packs/page.tsx`
+- `src/app/api/admin/knowledge/alias-packs/route.ts`
+- `src/server/modules/knowledge/knowledge-packs.ts`
+- `.trellis/spec/frontend/component-guidelines.md`
+
+**说明**:
+- `c474ad1` 覆盖知识库 Phase 1 主体落地；`3702740` 记录 themed select 规范补充。
+- 本次记录只覆盖已提交成果，不包含当前工作区中进行中的 04-12 架构拆分与知识库重构改动。
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c474ad1` | (see git log) |
+| `3702740` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

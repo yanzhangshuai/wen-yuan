@@ -1,0 +1,44 @@
+{
+  "id": "ab-decouple-phase2",
+  "name": "ab-decouple-phase2",
+  "title": "解析架构A/B解耦-Phase2-顺序解析独立实现",
+  "description": "将legacy按章节解析逻辑移入sequential/目录, 实现SequentialPipeline, 移除对two-pass相关代码的依赖",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-12-ab-decouple-phase1",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

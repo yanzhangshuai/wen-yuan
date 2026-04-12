@@ -2,17 +2,22 @@ import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import type { ChapterType, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import {
-  createChapterAnalysisService,
-  type ChapterAnalysisResult
+  createChapterAnalysisService
 } from "@/server/modules/analysis/services/ChapterAnalysisService";
 import { createValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
 import { createAiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
 import { createModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
-import { createGlobalEntityResolver, type GlobalEntityResolverService } from "@/server/modules/analysis/services/GlobalEntityResolver";
+import { createGlobalEntityResolver, type GlobalEntityResolverService } from "@/server/modules/analysis/pipelines/twopass/GlobalEntityResolver";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
 import { buildAliasLookupFromDb, loadAnalysisRuntimeConfig } from "@/server/modules/knowledge/load-book-knowledge";
-import type { ChapterEntityList } from "@/types/analysis";
+import { createPipeline } from "@/server/modules/analysis/pipelines/factory";
+import type {
+  AnalysisArchitecture,
+  PipelineChapterTask
+} from "@/server/modules/analysis/pipelines/types";
+import type { SequentialPipelineDependencies } from "@/server/modules/analysis/pipelines/sequential/SequentialPipeline";
+import type { TwoPassPipelineDependencies } from "@/server/modules/analysis/pipelines/twopass/TwoPassPipeline";
 
 /**
  * 文件定位（Next.js 服务端任务执行层）：
@@ -35,7 +40,7 @@ import type { ChapterEntityList } from "@/types/analysis";
  * 异常：无。
  * 副作用：无。
  */
-interface ChapterTask {
+interface ChapterTask extends PipelineChapterTask {
   /** 章节主键（UUID），用于调用章节解析服务。 */
   id: string;
   /** 章节序号（从 1 开始），用于日志与进度展示。 */
@@ -94,6 +99,8 @@ interface AnalysisJobRow {
   bookId        : string;
   /** 当前任务状态（QUEUED/RUNNING/SUCCEEDED/FAILED/CANCELED）。 */
   status        : AnalysisJobStatus;
+  /** 当前任务采用的解析架构；历史任务为空时回退为 sequential。 */
+  architecture? : string | null;
   /** 执行范围（FULL_BOOK 或 CHAPTER_RANGE）。 */
   scope         : string;
   /** 范围任务起始章节号；全书任务时为 null。 */
@@ -113,6 +120,32 @@ interface AnalysisJobRow {
  */
 function buildProgressStage(index: number, total: number): string {
   return `实体提取（第${index + 1}/${total}章）`;
+}
+
+/**
+ * 功能：将数据库中的架构字段归一化为运行时可识别的枚举值。
+ * 输入：任务记录中的 architecture 文本，可为空。
+ * 输出：`sequential` 或 `twopass`。
+ * 异常：无。
+ * 副作用：无。
+ */
+function normalizeAnalysisArchitecture(architecture: string | null | undefined): AnalysisArchitecture {
+  return architecture === "twopass" ? "twopass" : "sequential";
+}
+
+/**
+ * 功能：生成任务启动时的初始阶段文案。
+ * 输入：当前解析架构与章节总数。
+ * 输出：书籍 parseStage 初始展示文本。
+ * 异常：无。
+ * 副作用：无。
+ */
+function buildInitialPipelineStage(architecture: AnalysisArchitecture, totalChapters: number): string {
+  if (architecture === "twopass") {
+    return `独立实体提取（0/${totalChapters}章）`;
+  }
+
+  return buildProgressStage(0, totalChapters);
 }
 
 async function updateBookProgressSafely(
@@ -291,6 +324,7 @@ async function loadJob(prismaClient: PrismaClient, jobId: string): Promise<Analy
       id            : true,
       bookId        : true,
       status        : true,
+      architecture  : true,
       scope         : true,
       chapterStart  : true,
       chapterEnd    : true,
@@ -537,6 +571,102 @@ export function createAnalysisJobRunner(
   }
 
   /**
+   * 功能：为 two-pass 管线一次性预加载书名、知识库别名表与词典配置。
+   * 输入：书籍 ID。
+   * 输出：Pass 2/Pass 3 运行所需上下文。
+   * 异常：书籍不存在时抛错；数据库查询失败时向上抛出。
+   * 副作用：无（只读查询）。
+   */
+  async function loadTwoPassRuntimeContext(bookId: string): Promise<{
+    bookTitle              : string;
+    preloadedAliasLookup   : Map<string, string>;
+    preloadedLexiconConfig?: BookLexiconConfig;
+  }> {
+    const bookRow = await prismaClient.book.findUnique({
+      where : { id: bookId },
+      select: {
+        title     : true,
+        genre     : true,
+        bookTypeId: true,
+        bookType  : { select: { key: true } }
+      }
+    });
+
+    if (!bookRow) {
+      throw new Error(`书籍不存在: ${bookId}`);
+    }
+
+    const bookTypeKey = bookRow.bookType?.key ?? bookRow.genre;
+    const [preloadedAliasLookup, preloadedLexiconConfig] = await Promise.all([
+      buildAliasLookupFromDb(bookId, bookTypeKey, prismaClient),
+      loadAnalysisRuntimeConfig(bookTypeKey, prismaClient)
+    ]);
+
+    return {
+      bookTitle: bookRow.title,
+      preloadedAliasLookup,
+      preloadedLexiconConfig
+    };
+  }
+
+  /**
+   * 功能：组装顺序架构共享的运行时依赖。
+   * 输入：当前任务快照与已就绪的分析器。
+   * 输出：SequentialPipelineDependencies。
+   * 异常：无。
+   * 副作用：依赖中的回调会写入章节状态与调用章节校验。
+   */
+  function createSequentialPipelineDependencies(
+    job: AnalysisJobRow,
+    analyzer: ChapterAnalyzer
+  ): SequentialPipelineDependencies {
+    return {
+      analyzer,
+      chapterConcurrency            : CHAPTER_CONCURRENCY,
+      incrementalResolveInterval    : INCREMENTAL_RESOLVE_INTERVAL,
+      chapterMaxRetries             : CHAPTER_MAX_RETRIES,
+      chapterRetryBaseMs            : CHAPTER_RETRY_BASE_MS,
+      chapterValidationRiskThreshold: ANALYSIS_PIPELINE_CONFIG.chapterValidationRiskThreshold,
+      updateChapterStatus           : async (chapterId, status) => {
+        await prismaClient.chapter.update({
+          where: { id: chapterId },
+          data : { parseStatus: status }
+        });
+      },
+      runChapterValidation: async (chapter) => await runChapterValidationBlocking(analyzer, job.id, chapter, job.bookId),
+      isChapterRetryableError
+    };
+  }
+
+  /**
+   * 功能：组装 two-pass 架构的运行时依赖。
+   * 输入：当前任务快照与已就绪的分析器。
+   * 输出：TwoPassPipelineDependencies。
+   * 异常：分析器未提供 Pass 1/Pass 2 能力时抛错。
+   * 副作用：依赖中的回调会触发知识库预加载与章节状态写回。
+   */
+  function createTwoPassPipelineDependencies(
+    job: AnalysisJobRow,
+    analyzer: ChapterAnalyzer
+  ): TwoPassPipelineDependencies {
+    if (!analyzer.extractChapterEntities || !analyzer.resolveGlobalEntities) {
+      throw new Error(`解析任务 ${job.id} 选择了 two-pass 架构，但分析器未提供完整的 Pass 1/Pass 2 能力`);
+    }
+
+    return {
+      ...createSequentialPipelineDependencies(job, analyzer),
+      analyzer: {
+        analyzeChapter          : analyzer.analyzeChapter,
+        resolvePersonaTitles    : analyzer.resolvePersonaTitles,
+        getTitleOnlyPersonaCount: analyzer.getTitleOnlyPersonaCount,
+        extractChapterEntities  : analyzer.extractChapterEntities,
+        resolveGlobalEntities   : analyzer.resolveGlobalEntities
+      },
+      loadRuntimeContext: async (bookId) => await loadTwoPassRuntimeContext(bookId)
+    };
+  }
+
+  /**
    * 功能：执行指定解析任务（支持 QUEUED 任务和中断后的 RUNNING 任务继续跑）。
    * 输入：jobId。
    * 输出：无（完成后更新任务与书籍状态）。
@@ -577,13 +707,21 @@ export function createAnalysisJobRunner(
     });
 
     let chapters: ChapterTask[] = [];
-    let completed = 0;
-    let failedCount = 0;
+    let completedChapters = 0;
     try {
       chapters = await loadChaptersForJob(prismaClient, runningJob);
       if (chapters.length === 0) {
         throw new Error(`解析任务 ${runningJob.id} 未找到可执行章节`);
       }
+
+      const architecture = normalizeAnalysisArchitecture(runningJob.architecture);
+      const pipeline = architecture === "twopass"
+        ? createPipeline("twopass", {
+          twopass: createTwoPassPipelineDependencies(runningJob, activeAnalyzer)
+        })
+        : createPipeline("sequential", {
+          sequential: createSequentialPipelineDependencies(runningJob, activeAnalyzer)
+        });
 
       // 重置所有目标章节为 PENDING，确保检测状态与实际执行一致。
       await prismaClient.chapter.updateMany({
@@ -597,305 +735,35 @@ export function createAnalysisJobRunner(
         data : {
           status       : "PROCESSING",
           parseProgress: 0,
-          parseStage   : buildProgressStage(0, chapters.length),
+          parseStage   : buildInitialPipelineStage(architecture, chapters.length),
           errorLog     : null
         }
       });
 
-      // ===== Two-Pass Architecture: Pass 1 (独立实体提取) + Pass 2 (全局实体消歧) =====
-      let externalPersonaMap: Map<string, string> | undefined;
-      let preloadedLexiconConfig: BookLexiconConfig | undefined;
-      const useTwoPass = Boolean(activeAnalyzer.extractChapterEntities && activeAnalyzer.resolveGlobalEntities);
-
-      if (useTwoPass) {
-        // --- Pass 1: 独立实体提取（并行，每章独立调用） ---
-        await prismaClient.book.update({
-          where: { id: runningJob.bookId },
-          data : { parseStage: `独立实体提取（0/${chapters.length}章）` }
-        });
-
-        const chapterEntityLists: ChapterEntityList[] = [];
-        const pass1Pending = [...chapters];
-        let pass1Done = 0;
-
-        async function pass1Worker(): Promise<void> {
-          while (true) {
-            const chapter = pass1Pending.shift();
-            if (!chapter) return;
-            if (await isJobCanceled(prismaClient, runningJob.id)) return;
-
-            for (let attempt = 0; attempt <= CHAPTER_MAX_RETRIES; attempt++) {
-              try {
-                const result = await activeAnalyzer.extractChapterEntities!(chapter.id, { jobId: runningJob.id });
-                chapterEntityLists.push(result);
-                break;
-              } catch (error) {
-                if (!isChapterRetryableError(error) || attempt >= CHAPTER_MAX_RETRIES) {
-                  console.warn(
-                    "[analysis.runner] pass1.extract.failed",
-                    JSON.stringify({
-                      jobId    : runningJob.id,
-                      chapterId: chapter.id,
-                      chapterNo: chapter.no,
-                      error    : String(error).slice(0, 500)
-                    })
-                  );
-                  break;
-                }
-                const waitMs = CHAPTER_RETRY_BASE_MS * (attempt + 1);
-                await new Promise(r => setTimeout(r, waitMs));
-              }
-            }
-
-            pass1Done += 1;
-            const progress = Math.floor((pass1Done / chapters.length) * 35);
-            await updateBookProgressSafely(prismaClient, {
-              jobId        : runningJob.id,
-              bookId       : runningJob.bookId,
-              progress,
-              completedText: `独立实体提取（${pass1Done}/${chapters.length}章）`,
-              doneCount    : pass1Done,
-              totalChapters: chapters.length
-            });
-          }
-        }
-
-        await Promise.all(Array.from(
-          { length: Math.max(1, Math.min(CHAPTER_CONCURRENCY, chapters.length)) },
-          () => pass1Worker()
-        ));
-
-        if (await isJobCanceled(prismaClient, runningJob.id)) {
-          throw new Error("任务已取消");
-        }
-
-        // --- Pass 2: 全局实体消歧 ---
-        await prismaClient.book.update({
-          where: { id: runningJob.bookId },
-          data : { parseStage: "全局实体消歧", parseProgress: 36 }
-        });
-
-        const bookRow = await prismaClient.book.findUnique({
-          where : { id: runningJob.bookId },
-          select: { title: true, genre: true, bookTypeId: true, bookType: { select: { key: true } } }
-        });
-
-        // 从 DB 预加载知识库别名查找表（替代硬编码的 GENRE_CLASSICAL_NAMES）
-        const bookTypeKey = bookRow!.bookType?.key ?? bookRow!.genre;
-        const preloadedAliasLookup = await buildAliasLookupFromDb(
-          runningJob.bookId,
-          bookTypeKey,
-          prismaClient
-        );
-
-        // 从 DB 预加载书籍类型 NER 调谐配置（替代硬编码的 GENRE_PRESETS）
-        preloadedLexiconConfig = await loadAnalysisRuntimeConfig(bookTypeKey, prismaClient);
-
-        const { globalPersonaMap: resolvedMap } = await activeAnalyzer.resolveGlobalEntities!(
-          runningJob.bookId,
-          bookRow!.title,
-          chapterEntityLists,
-          { bookId: runningJob.bookId, jobId: runningJob.id },
-          preloadedAliasLookup
-        );
-        externalPersonaMap = resolvedMap;
-
-        console.info(
-          "[analysis.runner] two_pass.completed",
-          JSON.stringify({
-            jobId       : runningJob.id,
-            bookId      : runningJob.bookId,
-            pass1Results: chapterEntityLists.length,
-            globalMap   : externalPersonaMap.size
-          })
-        );
-
-        await prismaClient.book.update({
-          where: { id: runningJob.bookId },
-          data : { parseStage: `详细分析（0/${chapters.length}章）`, parseProgress: 40 }
-        });
-      }
-
-      // ===== Pass 3 / Legacy: 章节详细分析 =====
-      const progressBase  = useTwoPass ? 40 : 0;
-      const progressRange = useTwoPass ? 60 : 100;
-      const stageLabel    = useTwoPass ? "详细分析" : "实体提取";
-
-      const pending = [...chapters];
-      let doneCount = 0;
-      let nextResolveAt = INCREMENTAL_RESOLVE_INTERVAL;
-      let resolveChain = Promise.resolve();
-
-      async function scheduleIncrementalTitleResolution(chapterNo: number): Promise<void> {
-        resolveChain = resolveChain.then(async () => {
-          if (doneCount < nextResolveAt) {
-            return;
-          }
-          const titleOnlyCount = await activeAnalyzer.getTitleOnlyPersonaCount(runningJob.bookId);
-          if (titleOnlyCount <= 0) {
-            nextResolveAt += INCREMENTAL_RESOLVE_INTERVAL;
-            return;
-          }
-          try {
-            await activeAnalyzer.resolvePersonaTitles(runningJob.bookId, { jobId: runningJob.id });
-            nextResolveAt += INCREMENTAL_RESOLVE_INTERVAL;
-          } catch (incrementalResolveError) {
-            console.warn(
-              "[analysis.runner] incremental.title.resolve.failed",
-              JSON.stringify({
-                jobId : runningJob.id,
-                bookId: runningJob.bookId,
-                chapterNo,
-                error : String(incrementalResolveError).slice(0, 500)
-              })
-            );
-          }
-        });
-
-        await resolveChain;
-      }
-
-      async function workerLoop(): Promise<void> {
-        while (true) {
-          const chapter = pending.shift();
-          if (!chapter) {
-            return;
-          }
-          if (await isJobCanceled(prismaClient, runningJob.id)) {
-            return;
-          }
-
-          await prismaClient.chapter.update({
-            where: { id: chapter.id },
-            data : { parseStatus: "PROCESSING" }
-          });
-
-          let chapterSucceeded = false;
-          let chapterAttempt = 0;
-          let chapterNeedsReview = false;
-
-          while (chapterAttempt <= CHAPTER_MAX_RETRIES) {
-            try {
-              const result: ChapterAnalysisResult = await activeAnalyzer.analyzeChapter(chapter.id, { jobId: runningJob.id, externalPersonaMap, preloadedLexiconConfig });
-
-              // [Cost opt D] 风险门控：仅对高风险章节执行同步 CHAPTER_VALIDATION。
-              // 风险信号：新建 persona 多、存在 hallucination、存在灰区称谓。
-              // 低风险章节跳过验证，节省约 50-60% 的 VALIDATION 阶段成本。
-              const riskThreshold = ANALYSIS_PIPELINE_CONFIG.chapterValidationRiskThreshold;
-              const isHighRisk =
-                result.created.personas >= riskThreshold
-                || result.hallucinationCount > 0
-                || (result.grayZoneCount ?? 0) > 0;
-
-              if (isHighRisk) {
-                const validationResult = await runChapterValidationBlocking(activeAnalyzer, runningJob.id, chapter, runningJob.bookId);
-                if (validationResult.needsReview) {
-                  chapterNeedsReview = true;
-                  console.warn(
-                    "[analysis.runner] chapter.validation.needs_review",
-                    JSON.stringify({
-                      jobId     : runningJob.id,
-                      chapterId : chapter.id,
-                      chapterNo : chapter.no,
-                      reportId  : validationResult.reportId,
-                      errorCount: validationResult.errorCount
-                    })
-                  );
-                }
-              } else {
-                console.info(
-                  "[analysis.runner] chapter.validation.skipped_low_risk",
-                  JSON.stringify({
-                    jobId       : runningJob.id,
-                    chapterId   : chapter.id,
-                    chapterNo   : chapter.no,
-                    newPersonas : result.created.personas,
-                    hallucinated: result.hallucinationCount
-                  })
-                );
-              }
-
-              completed += 1;
-              chapterSucceeded = true;
-              console.info(
-                "[analysis.runner] chapter.completed",
-                JSON.stringify({
-                  jobId    : runningJob.id,
-                  chapterId: chapter.id,
-                  chapterNo: chapter.no,
-                  attempt  : chapterAttempt,
-                  created  : result.created
-                })
-              );
-              break;
-            } catch (chapterError) {
-              const isRetryable = isChapterRetryableError(chapterError);
-              const retriesExhausted = chapterAttempt >= CHAPTER_MAX_RETRIES;
-              if (!isRetryable || retriesExhausted) {
-                failedCount += 1;
-                console.error(
-                  "[analysis.runner] chapter.failed",
-                  JSON.stringify({
-                    jobId    : runningJob.id,
-                    chapterId: chapter.id,
-                    chapterNo: chapter.no,
-                    attempt  : chapterAttempt,
-                    isRetryable,
-                    error    : String(chapterError).slice(0, 500)
-                  })
-                );
-                break;
-              }
-
-              const waitMs = CHAPTER_RETRY_BASE_MS * (chapterAttempt + 1);
-              console.warn(
-                "[analysis.runner] chapter.retry",
-                JSON.stringify({
-                  jobId    : runningJob.id,
-                  chapterId: chapter.id,
-                  chapterNo: chapter.no,
-                  attempt  : chapterAttempt + 1,
-                  waitMs,
-                  reason   : String(chapterError).slice(0, 200)
-                })
-              );
-              await new Promise((resolve) => setTimeout(resolve, waitMs));
-              chapterAttempt += 1;
-            }
-          }
-
-          doneCount += 1;
-          const progress = Math.floor(progressBase + (doneCount / chapters.length) * progressRange);
-          const completedText = `${stageLabel}（已完成${doneCount}/${chapters.length}章）`;
-
-          await prismaClient.chapter.update({
-            where: { id: chapter.id },
-            data : { parseStatus: chapterSucceeded ? (chapterNeedsReview ? "REVIEW_PENDING" : "SUCCEEDED") : "FAILED" }
-          });
+      const pipelineResult = await pipeline.run({
+        jobId     : runningJob.id,
+        bookId    : runningJob.bookId,
+        chapters,
+        isCanceled: async () => await isJobCanceled(prismaClient, runningJob.id),
+        onProgress: async (update) => {
           await updateBookProgressSafely(prismaClient, {
             jobId        : runningJob.id,
             bookId       : runningJob.bookId,
-            progress,
-            completedText,
-            doneCount,
-            totalChapters: chapters.length
+            progress     : update.progress,
+            completedText: update.stage,
+            doneCount    : update.doneCount,
+            totalChapters: update.totalChapters
           });
-
-          if (chapterSucceeded) {
-            await scheduleIncrementalTitleResolution(chapter.no);
-          }
         }
+      });
+      completedChapters = pipelineResult.completedChapters;
+
+      if (await isJobCanceled(prismaClient, runningJob.id)) {
+        return;
       }
 
-      await Promise.all(Array.from(
-        { length: Math.max(1, Math.min(CHAPTER_CONCURRENCY, chapters.length)) },
-        () => workerLoop()
-      ));
-      await resolveChain;
-
-      // 全部章节均失败时，视为任务整体失败。
-      if (completed === 0 && failedCount > 0) {
-        throw new Error(`所有章节解析失败，共 ${failedCount} 章`);
+      if (pipelineResult.completedChapters === 0 && pipelineResult.failedChapters > 0) {
+        throw new Error(`所有章节解析失败，共 ${pipelineResult.failedChapters} 章`);
       }
 
       await prismaClient.$transaction([
@@ -980,7 +848,7 @@ export function createAnalysisJobRunner(
       const errorMessage = toErrorMessage(error);
       const failedProgress = chapters.length === 0
         ? 0
-        : Math.floor((completed / chapters.length) * 100);
+        : Math.floor((completedChapters / chapters.length) * 100);
 
       // 失败时同步回写任务与书籍状态，便于前台/后台展示一致的错误上下文。
       await prismaClient.$transaction([

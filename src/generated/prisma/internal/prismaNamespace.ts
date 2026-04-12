@@ -2495,6 +2495,7 @@ export const AnalysisJobScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
   status: 'status',
+  architecture: 'architecture',
   scope: 'scope',
   chapterStart: 'chapterStart',
   chapterEnd: 'chapterEnd',

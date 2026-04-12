@@ -102,6 +102,7 @@ describe("books service", () => {
     clientMutateMock.mockResolvedValue(undefined);
     const { startAnalysis } = await import("@/lib/services/books");
     const payload = {
+      architecture : "twopass" as const,
       scope        : "FULL_BOOK" as const,
       modelStrategy: {
         stages: {
@@ -202,6 +203,7 @@ describe("books service", () => {
     const jobs = [{
       id            : "job-1",
       status        : "SUCCEEDED",
+      architecture  : "sequential",
       scope         : "FULL_BOOK",
       chapterStart  : null,
       chapterEnd    : null,

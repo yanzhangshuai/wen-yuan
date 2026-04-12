@@ -1,0 +1,44 @@
+{
+  "id": "knowledge-pack-refactor",
+  "name": "knowledge-pack-refactor",
+  "title": "知识库架构重构-scope语义修正与UI完善",
+  "description": "修正知识包 scope 互斥语义；知识包可同时绑定题材和书籍；补充导入格式说明；完善编辑面板关联编辑",
+  "status": "in_progress",
+  "dev_type": "fullstack",
+  "scope": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

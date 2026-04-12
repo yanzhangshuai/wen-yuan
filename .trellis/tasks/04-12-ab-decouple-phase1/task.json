@@ -1,0 +1,49 @@
+{
+  "id": "ab-decouple-phase1",
+  "name": "ab-decouple-phase1",
+  "title": "解析架构A/B解耦-Phase1-接口抽象与目录拆分",
+  "description": "抽取共享接口AnalysisPipeline, 建立sequential/twopass两个独立目录, 将现有代码按架构归属拆分",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "04-12-ab-decouple-phase2",
+    "04-12-ab-decouple-phase3",
+    "04-12-ab-decouple-phase4-ui",
+    "04-12-ab-decouple-phase5-cleanup"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

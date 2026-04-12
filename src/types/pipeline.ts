@@ -10,8 +10,7 @@
 export enum PipelineStage {
   /**
    * 角色发现阶段：从文本中识别人物候选。
-   * @deprecated 两遍式架构下该阶段不再执行——Pass 3 使用全局消歧后的 externalPersonaMap，跳过名册发现。
-   * 保留枚举值以兼容旧任务日志与单遍回退路径。
+  * 顺序架构会执行该阶段；two-pass 架构下则由全局消歧结果替代该步骤。
    */
   ROSTER_DISCOVERY = "ROSTER_DISCOVERY",
   /** 分块抽取阶段：按章节/片段抽取结构化线索。 */

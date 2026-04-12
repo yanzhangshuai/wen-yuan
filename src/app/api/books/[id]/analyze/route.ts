@@ -30,6 +30,7 @@ import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { strategyStagesSchema } from "@/server/modules/analysis/dto/modelStrategy";
 import {
+  ANALYSIS_ARCHITECTURE_VALUES,
   ANALYSIS_SCOPE_VALUES,
   ANALYSIS_OVERRIDE_STRATEGY_VALUES,
   AnalysisScopeInvalidError,
@@ -61,6 +62,7 @@ function normalizeModelStrategyInput(
  * 功能：启动书籍解析任务请求体校验。
  * 输入字段：
  * - `modelStrategy` 任务级阶段模型策略，可传 `{ stages: ... }` 或直接传阶段映射对象。
+ * - `architecture: "sequential" | "twopass" | undefined` 解析架构；省略时由服务层继承最近任务。
  * - `scope: "FULL_BOOK" | "CHAPTER_RANGE" | undefined` 解析范围。
  * - `chapterStart/chapterEnd: number | null | undefined` 当 `scope=CHAPTER_RANGE` 时生效。
  * - `overrideStrategy` 冲突覆盖策略（是否覆盖旧草稿/保留版本）。
@@ -72,6 +74,8 @@ function normalizeModelStrategyInput(
 const startAnalysisBodySchema = z.object({
   // 可选任务级阶段模型策略；为空时走 BOOK/GLOBAL/SYSTEM_DEFAULT 解析链路。
   modelStrategy   : modelStrategyInputSchema.nullable().optional(),
+  // 解析架构；缺省时交由服务层继承最近一次任务或回退默认顺序架构。
+  architecture    : z.enum(ANALYSIS_ARCHITECTURE_VALUES).optional(),
   // 任务执行范围；默认由服务层回落到 FULL_BOOK。
   scope           : z.enum(ANALYSIS_SCOPE_VALUES).optional(),
   // 范围任务起始章节号（仅 CHAPTER_RANGE 有效）。

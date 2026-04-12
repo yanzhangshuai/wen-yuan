@@ -198,6 +198,26 @@ const selectedTheme = mounted ? theme : null;
 
 **正例**：在 Server Component（`page.tsx`）先 `await` 数据，传递普通可序列化数据给 client 组件。
 
+### 错误 6：多阶段流水线中上游无上下文导致下游爆炸式增长
+
+**反例**：两遍式解析架构中，Pass 1 为追求"独立性"而不传入任何已知人物上下文（profiles）。LLM 在无约束下过度提取，把泛化称谓（"差人""轿夫"）、地名（"应天府"）、家族名（"贾家"）、历史典故人物全部提取为实体。Pass 2 规则分组（编辑距离 ≤1 + 同姓别名交叉）无法覆盖中文复杂称谓体系，大量重复实体无法合并。Pass 3 又在已有膨胀的实体池上继续创建新 persona。
+
+**正例**：采用逐章积累式架构——每章通过 ROSTER_DISCOVERY 时传入已有 profiles 上下文，让 LLM 在有约束的条件下做实体识别与归并。PersonaResolver 逐步增长候选池，后续章节可复用前序章节的识别结果。
+
+```
+# 反例：无上下文独立提取 → 规则弱合并 → 实体爆炸
+Pass1(无profiles) → 每章200+实体 → Pass2(edit_dist≤1) → 600+实体 → Pass3 继续创建
+
+# 正例：有上下文逐章积累 → LLM 直接归并 → 实体收敛
+Ch1(profiles=[]) → 发现20实体 → Ch2(profiles=20) → 新增5实体 → ... → 最终150实体
+```
+
+原因：
+- 这是"LLM 提取阶段"与"实体消歧阶段"的跨阶段契约问题。
+- 当 Pass 1 输出质量低（噪声多、未合并）时，Pass 2 的规则分组无法弥补，误差会沿流水线放大。
+- 中文古典文学称谓体系极其复杂（同一人物可有 5-10 种称谓，且称谓间无共同字符），简单的编辑距离和姓氏规则远不够。
+- 架构选型需考虑"信息流完整性"：如果下游依赖上游准确的输入，上游就不能为追求并行性而牺牲上下文。
+
 ```tsx
 // 反例（page.tsx）
 const modelsPromise = listAdminModels();
@@ -523,6 +543,45 @@ function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState) {
 - 这是“信息架构层”与“交互任务层”的契约问题。
 - 当页面同时承载“接入配置”和“策略编排”两类任务时，不分区会放大误操作概率，也增加回归测试范围。
 - 使用稳定 Tab 边界能把状态变更影响面收敛到当前上下文，提高可维护性。
+
+### 错误 15：浏览器 Fullscreen API 可见域与 React Portal 渲染根契约错位
+
+**反例**：`DropdownMenuContent` 通过 Portal 渲染到 `document.body`；进入全屏后只有全屏元素子树可见，Portal 内容不可见却不报错，表现为"点击没反应"。
+
+**正例**：在全屏元素内部提供 Portal 容器，监听 `fullscreenchange` 事件动态切换：
+
+```tsx
+// toggle.tsx — 自包含修复，无需上层传 ref
+const [fsContainer, setFsContainer] = useState<HTMLElement | null>(null);
+useEffect(() => {
+  function onFsChange() {
+    setFsContainer((document.fullscreenElement as HTMLElement | null) ?? null);
+  }
+  document.addEventListener("fullscreenchange", onFsChange);
+  return () => document.removeEventListener("fullscreenchange", onFsChange);
+}, []);
+
+// 非全屏时 fsContainer=null → 渲染到 body（正常）
+// 全屏时 fsContainer=全屏元素 → 渲染在全屏子树内
+<DropdownMenuPortal container={fsContainer ?? undefined}>
+  <DropdownMenuContent>{...}</DropdownMenuContent>
+</DropdownMenuPortal>
+```
+
+检测信号（容易察觉）：
+- 全屏模式下点击按钮没任何响应，但退出全屏后恢复正常；
+- React DevTools 能找到 DropdownMenuContent，但 DOM 位置在全屏元素外。
+
+检测信号（不易察觉）：
+- 非全屏时完全正常，只有少数用户进入全屏才复现；
+
+影响范围：
+- 凡是使用 Radix UI Portal（DropdownMenu/Select/Dialog/Tooltip 等）的交互组件，在全屏容器内部都有此风险。
+- 修复应在组件内自包含，不应要求调用方知道当前是否全屏。
+
+规则：
+- 任何在"沉浸式/全屏"容器内使用的交互组件，如果内部包含 Portal，**必须**处理 `fullscreenchange`，确保 Portal 容器在全屏子树内。
+
 
 ### 错误 15：复用同一状态值承载“未开始”和“待复核”两种语义，导致书级与章级状态冲突
 

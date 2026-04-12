@@ -1328,7 +1328,7 @@ function GenerateEntriesDialog({
               }
             } catch (err) {
               stopPolling();
-              reject(err);
+              reject(err instanceof Error ? err : new Error(String(err)));
             }
           })();
         }, 2000);

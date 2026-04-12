@@ -20,6 +20,7 @@ import {
 function createMockPrisma() {
   const bookFindFirst = vi.fn();
   const bookUpdate = vi.fn();
+  const analysisJobFindFirst = vi.fn().mockResolvedValue(null);
   const tx = {
     analysisJob        : { create: vi.fn() },
     modelStrategyConfig: { create: vi.fn() },
@@ -30,11 +31,11 @@ function createMockPrisma() {
     book               : { findFirst: bookFindFirst, update: bookUpdate },
     chapter            : { count: vi.fn() },
     $transaction       : vi.fn(async (callback: (input: typeof tx) => Promise<unknown>) => callback(tx)),
-    analysisJob        : tx.analysisJob,
+    analysisJob        : { create: tx.analysisJob.create, findFirst: analysisJobFindFirst },
     modelStrategyConfig: tx.modelStrategyConfig
   };
 
-  return { prisma, tx };
+  return { prisma, tx, analysisJobFindFirst };
 }
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
@@ -73,6 +74,7 @@ describe("startBookAnalysis", () => {
     expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         bookId          : "book-1",
+        architecture    : "sequential",
         scope           : "FULL_BOOK",
         chapterIndices  : [],
         overrideStrategy: "DRAFT_ONLY",
@@ -92,6 +94,7 @@ describe("startBookAnalysis", () => {
       bookId          : "book-1",
       jobId           : "job-1",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -112,6 +115,7 @@ describe("startBookAnalysis", () => {
     tx.analysisJob.create.mockResolvedValue({
       id              : "job-2",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "twopass",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -127,6 +131,7 @@ describe("startBookAnalysis", () => {
 
     const service = createStartBookAnalysisService(prisma as never);
     await service.startBookAnalysis("book-1", {
+      architecture : "twopass",
       modelStrategy: {
         CHUNK_EXTRACTION: {
           modelId    : "00000000-0000-0000-0000-000000000001",
@@ -147,6 +152,45 @@ describe("startBookAnalysis", () => {
         }
       }
     });
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ architecture: "twopass" })
+    }));
+  });
+
+  it("inherits the latest job architecture when the request omits it", async () => {
+    const { prisma, tx, analysisJobFindFirst } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(12);
+    analysisJobFindFirst.mockResolvedValue({ architecture: "twopass" });
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-latest-arch",
+      status          : AnalysisJobStatus.QUEUED,
+      architecture    : "twopass",
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      chapterIndices  : [],
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
+    });
+    tx.book.update.mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
+
+    const service = createStartBookAnalysisService(prisma as never);
+    const result = await service.startBookAnalysis("book-1");
+
+    expect(analysisJobFindFirst).toHaveBeenCalledWith({
+      where  : { bookId: "book-1" },
+      orderBy: { createdAt: "desc" },
+      select : { architecture: true }
+    });
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ architecture: "twopass" })
+    }));
+    expect(result.architecture).toBe("twopass");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -190,6 +234,7 @@ describe("startBookAnalysis", () => {
     tx.analysisJob.create.mockResolvedValue({
       id              : "job-3",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "CHAPTER_LIST",
       chapterStart    : null,
       chapterEnd      : null,
@@ -228,6 +273,7 @@ describe("startBookAnalysis", () => {
     tx.analysisJob.create.mockResolvedValue({
       id              : "job-4",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "CHAPTER_RANGE",
       chapterStart    : 2,
       chapterEnd      : 4,

@@ -24,6 +24,7 @@ import {
   pickRecommendedEnabledModel
 } from "@/lib/model-recommendations";
 import { cn } from "@/lib/utils";
+import type { AnalysisArchitecture } from "@/types/analysis-pipeline";
 
 /**
  * 文件定位（管理端模型策略表单组件）：
@@ -120,6 +121,8 @@ interface ModelStrategyFormProps {
   showResetToRecommended?: boolean;
   /** 只读模式：用于不可编辑场景。 */
   readOnly?              : boolean;
+  /** 当前解析架构；用于隐藏无关阶段。 */
+  architecture?          : AnalysisArchitecture;
 }
 
 /**
@@ -147,15 +150,26 @@ function cloneStrategy(strategy: ModelStrategyInput | null): ModelStrategyInput 
  * - 与 `cloneStrategy` 一致，移除未真正配置模型的阶段；
  * - 保证传给上层的 payload 精简且语义明确。
  */
-function normalizeStrategy(strategy: ModelStrategyInput): ModelStrategyInput {
+function normalizeStrategy(strategy: ModelStrategyInput, visibleStages: PipelineStage[]): ModelStrategyInput {
   const next: ModelStrategyInput = {};
-  for (const stage of STAGES_FOR_FORM) {
+  for (const stage of visibleStages) {
     const config = strategy[stage];
     if (config?.modelId) {
       next[stage] = { ...config };
     }
   }
   return next;
+}
+
+function getVisibleStages(architecture: AnalysisArchitecture): PipelineStage[] {
+  if (architecture === "twopass") {
+    return STAGES_FOR_FORM.filter((stage) => stage !== PipelineStage.ROSTER_DISCOVERY);
+  }
+
+  return STAGES_FOR_FORM.filter((stage) => (
+    stage !== PipelineStage.INDEPENDENT_EXTRACTION
+    && stage !== PipelineStage.ENTITY_RESOLUTION
+  ));
 }
 
 /**
@@ -183,7 +197,8 @@ export function ModelStrategyForm({
   availableModels,
   onSave,
   showResetToRecommended = false,
-  readOnly = false
+  readOnly = false,
+  architecture = "sequential"
 }: ModelStrategyFormProps) {
   /** 当前可编辑草稿（本地状态源）。 */
   const [draftStrategy, setDraftStrategy] = useState<ModelStrategyInput>(() => cloneStrategy(initialStrategy));
@@ -239,6 +254,8 @@ export function ModelStrategyForm({
 
     return mapping;
   }, [selectableModels]);
+
+  const visibleStages = useMemo(() => getVisibleStages(architecture), [architecture]);
 
   /**
    * 更新某阶段配置的统一入口。
@@ -369,8 +386,8 @@ export function ModelStrategyForm({
    * - 已填写的高级参数尽量保留，避免用户调优被误清空。
    */
   function resetToRecommended() {
-    const next: ModelStrategyInput = {};
-    for (const stage of STAGES_FOR_FORM) {
+    const next: ModelStrategyInput = { ...draftStrategy };
+    for (const stage of visibleStages) {
       const recommendedModel = recommendedByStage[stage];
       if (!recommendedModel) {
         continue;
@@ -400,7 +417,7 @@ export function ModelStrategyForm({
   async function handleSave() {
     setIsSaving(true);
     try {
-      await onSave(normalizeStrategy(draftStrategy));
+      await onSave(normalizeStrategy(draftStrategy, visibleStages));
     } finally {
       setIsSaving(false);
     }
@@ -411,7 +428,7 @@ export function ModelStrategyForm({
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="space-y-1">
           <CardTitle>模型策略配置</CardTitle>
-          <CardDescription>未选择模型的阶段将使用上级默认配置。</CardDescription>
+          <CardDescription>当前为{architecture === "twopass" ? "两遍式" : "顺序式"}架构，仅显示本架构相关阶段；未选择模型的阶段将使用上级默认配置。</CardDescription>
         </div>
         {showResetToRecommended && !readOnly && (
           /*
@@ -467,7 +484,7 @@ export function ModelStrategyForm({
         ) : (
           // 正常分支：渲染每个阶段的模型选择与可选高级参数。
           <div className="space-y-3">
-            {STAGES_FOR_FORM.map((stage) => {
+            {visibleStages.map((stage) => {
               const stageConfig = draftStrategy[stage];
               const recommended = recommendedByStage[stage];
               const recommendedMeta = STAGE_RECOMMENDED_MODELS[stage];
@@ -493,11 +510,6 @@ export function ModelStrategyForm({
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-medium">{STAGE_LABELS[stage]}</h4>
                       {isFallback && <Badge variant="secondary">FALLBACK</Badge>}
-                      {stage === PipelineStage.ROSTER_DISCOVERY && (
-                        <Badge variant="outline" className="text-xs text-muted-foreground">
-                          两遍式架构下不使用
-                        </Badge>
-                      )}
                     </div>
                     {selectedIsRecommended && (
                       // 已选模型命中推荐时给正向反馈，帮助管理员快速校准配置。

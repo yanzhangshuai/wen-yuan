@@ -32,6 +32,7 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   class AnalysisScopeInvalidError extends Error {}
 
   return {
+    ANALYSIS_ARCHITECTURE_VALUES     : ["sequential", "twopass"] as const,
     ANALYSIS_SCOPE_VALUES            : ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const,
     ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
     startBookAnalysis                : startBookAnalysisMock,
@@ -65,6 +66,7 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-1",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -117,6 +119,40 @@ describe("POST /api/books/:id/analyze", () => {
     // Assert
     expect(response.status).toBe(400);
     expect(startBookAnalysisMock).not.toHaveBeenCalled();
+  });
+
+  it("passes architecture through to startBookAnalysis when provided", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    startBookAnalysisMock.mockResolvedValue({
+      bookId,
+      jobId           : "job-arch",
+      status          : AnalysisJobStatus.QUEUED,
+      architecture    : "twopass",
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false,
+      bookStatus      : "PROCESSING",
+      parseProgress   : 0,
+      parseStage      : "文本清洗"
+    });
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-role" : AppRole.ADMIN
+        },
+        body: JSON.stringify({ architecture: "twopass" })
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(202);
+    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, { architecture: "twopass" });
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -181,6 +217,7 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-2",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -229,6 +266,7 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-3",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -315,6 +353,7 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-4",
       status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,

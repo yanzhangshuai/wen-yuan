@@ -8,7 +8,7 @@ import { buildAliasLookup } from "@/server/modules/analysis/config/classical-nam
 import type { ResolvedStageModel } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import type { ChapterEntityList } from "@/types/analysis";
 
-import { createGlobalEntityResolver } from "@/server/modules/analysis/services/GlobalEntityResolver";
+import { createGlobalEntityResolver } from "@/server/modules/analysis/pipelines/twopass/GlobalEntityResolver";
 
 const {
   createAiProviderClientMock,

@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
-- **Last Active**: 2026-04-09
+- **Total Sessions**: 6
+- **Last Active**: 2026-04-12
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~289 | Active |
+| `journal-1.md` | ~395 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,8 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 6 | 2026-04-12 | 知识库 Phase 1 落地与 themed select 规范补记 | `c474ad1`, `3702740` |
+| 5 | 2026-04-12 | 首页像素级还原 sheji 设计收尾并归档 | `b5156bf`, `333d6cb`, `394665f` |
 | 4 | 2026-04-09 | 图谱视觉优化与路径交互阶段记录 | `4e34955`, `1f27ed6` |
 | 3 | 2026-04-05 | 全项目注释规范写入 Trellis 并归档 04-04 | `d3fc196` |
 | 2 | 2026-04-04 | debugger入口命名与VSCode调试落地 | `e9dd876` |

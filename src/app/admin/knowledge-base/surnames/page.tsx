@@ -509,26 +509,28 @@ function SurnameGenerationDialog({
 
       setProgressStep("正在连接模型，准备生成…");
 
-      pollingRef.current = setInterval(async () => {
-        try {
-          const job = await pollSurnameGenerationJob(jobId);
-          setProgressStep(job.step);
+      pollingRef.current = setInterval(() => {
+        void (async () => {
+          try {
+            const job = await pollSurnameGenerationJob(jobId);
+            setProgressStep(job.step);
 
-          if (job.status === "done" && job.result) {
+            if (job.status === "done" && job.result) {
+              stopPolling();
+              setGenerating(false);
+              toast({ title: "预审完成", description: `共生成 ${job.result.candidates.length} 条候选，跳过 ${job.result.skipped} 条。` });
+              onReviewed(job.result);
+            } else if (job.status === "error") {
+              stopPolling();
+              setGenerating(false);
+              toast({ title: "生成失败", description: job.error ?? "未知错误", variant: "destructive" });
+            }
+          } catch (pollError) {
             stopPolling();
             setGenerating(false);
-            toast({ title: "预审完成", description: `共生成 ${job.result.candidates.length} 条候选，跳过 ${job.result.skipped} 条。` });
-            onReviewed(job.result);
-          } else if (job.status === "error") {
-            stopPolling();
-            setGenerating(false);
-            toast({ title: "生成失败", description: job.error ?? "未知错误", variant: "destructive" });
+            toast({ title: "轮询任务状态失败", description: String(pollError), variant: "destructive" });
           }
-        } catch (pollError) {
-          stopPolling();
-          setGenerating(false);
-          toast({ title: "轮询任务状态失败", description: String(pollError), variant: "destructive" });
-        }
+        })();
       }, 2000);
     } catch (error) {
       setGenerating(false);
@@ -585,7 +587,7 @@ function SurnameGenerationDialog({
 
           {modelsError ? <p className="text-xs text-destructive">模型列表加载失败：{modelsError}</p> : null}
           {!modelsLoading && !modelsError && modelOptions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">当前暂无可用模型。请前往"模型管理"页面，至少启用并配置 1 个模型后再生成。</p>
+            <p className="text-xs text-muted-foreground">当前暂无可用模型。请前往&quot;模型管理&quot;页面，至少启用并配置 1 个模型后再生成。</p>
           ) : null}
 
           {/* 当前选择概述 */}

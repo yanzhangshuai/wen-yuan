@@ -344,3 +344,27 @@ export function getExportUrl(
 ): string {
   return `/api/admin/knowledge/alias-packs/${packId}/export?format=${format}&reviewStatus=${reviewStatus}`;
 }
+
+/**
+ * 将知识包挂载到指定书籍。
+ * 对接 `POST /api/admin/knowledge/books/:bookId/knowledge-packs`。
+ */
+export async function mountPackToBook(bookId: string, packId: string, priority = 0): Promise<void> {
+  await clientMutate(`/api/admin/knowledge/books/${bookId}/knowledge-packs`, {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ packId, priority })
+  });
+}
+
+/**
+ * 从指定书籍卸载知识包。
+ * 对接 `DELETE /api/admin/knowledge/books/:bookId/knowledge-packs`。
+ */
+export async function unmountPackFromBook(bookId: string, packId: string): Promise<void> {
+  await clientMutate(`/api/admin/knowledge/books/${bookId}/knowledge-packs`, {
+    method : "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ packId })
+  });
+}

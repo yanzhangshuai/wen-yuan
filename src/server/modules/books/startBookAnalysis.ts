@@ -22,6 +22,10 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
 import { AnalysisScopeInvalidError, BookNotFoundError } from "@/server/modules/books/errors";
+import {
+  ANALYSIS_ARCHITECTURE_VALUES,
+  type AnalysisArchitecture
+} from "@/types/analysis-pipeline";
 
 /** 允许的解析范围枚举值。 */
 export const ANALYSIS_SCOPE_VALUES = ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const;
@@ -38,6 +42,8 @@ export type AnalysisOverrideStrategy = (typeof ANALYSIS_OVERRIDE_STRATEGY_VALUES
 export interface StartBookAnalysisInput {
   /** 任务级阶段模型配置（覆盖 Book/GLOBAL 配置）。 */
   modelStrategy    ?: StrategyStagesDto | null;
+  /** 解析架构：顺序或两遍式；为空时尝试继承最近一次任务。 */
+  architecture     ?: AnalysisArchitecture;
   /** 解析范围：全书或章节区间。 */
   scope            ?: AnalysisScope;
   /** 章节区间起点（仅 CHAPTER_RANGE 时必填）。 */
@@ -62,6 +68,8 @@ export interface StartBookAnalysisResult {
   jobId           : string;
   /** 任务状态（初始为 QUEUED）。 */
   status          : AnalysisJobStatus;
+  /** 实际生效解析架构。 */
+  architecture    : AnalysisArchitecture;
   /** 实际生效解析范围。 */
   scope           : AnalysisScope;
   /** 实际生效区间起点。 */
@@ -119,6 +127,23 @@ function resolveOverrideStrategy(
  */
 function resolveKeepHistory(keepHistory: boolean | undefined): boolean {
   return Boolean(keepHistory);
+}
+
+/**
+ * 解析并校验解析架构。
+ */
+function resolveArchitectureInput(
+  inputArchitecture: string | undefined
+): AnalysisArchitecture | undefined {
+  if (!inputArchitecture) {
+    return undefined;
+  }
+
+  if ((ANALYSIS_ARCHITECTURE_VALUES as readonly string[]).includes(inputArchitecture)) {
+    return inputArchitecture as AnalysisArchitecture;
+  }
+
+  throw new AnalysisScopeInvalidError("解析架构不合法");
 }
 
 /**
@@ -216,10 +241,19 @@ export function createStartBookAnalysisService(
     }
 
     const scope = resolveScope(input.scope);
+    const requestedArchitecture = resolveArchitectureInput(input.architecture);
     const overrideStrategy = resolveOverrideStrategy(input.overrideStrategy);
     const keepHistory = resolveKeepHistory(input.keepHistory);
     const range = resolveChapterRange(scope, input.chapterStart, input.chapterEnd);
     const chapterIndices = resolveChapterList(scope, input.chapterIndices);
+    const latestJob = requestedArchitecture
+      ? null
+      : await prismaClient.analysisJob.findFirst({
+        where  : { bookId: book.id },
+        orderBy: { createdAt: "desc" },
+        select : { architecture: true }
+      });
+    const architecture = requestedArchitecture ?? (latestJob?.architecture === "twopass" ? "twopass" : "sequential");
 
     const chapterCount = await prismaClient.chapter.count({
       where: scope === "CHAPTER_RANGE"
@@ -246,6 +280,7 @@ export function createStartBookAnalysisService(
         data: {
           bookId      : book.id,
           status      : AnalysisJobStatus.QUEUED,
+          architecture,
           scope,
           chapterStart: range.chapterStart,
           chapterEnd  : range.chapterEnd,
@@ -256,6 +291,7 @@ export function createStartBookAnalysisService(
         select: {
           id              : true,
           status          : true,
+          architecture    : true,
           scope           : true,
           chapterStart    : true,
           chapterEnd      : true,
@@ -297,6 +333,7 @@ export function createStartBookAnalysisService(
       bookId          : book.id,
       jobId           : job.id,
       status          : job.status,
+      architecture    : architecture,
       scope           : scope,
       chapterStart    : job.chapterStart,
       chapterEnd      : job.chapterEnd,
@@ -313,6 +350,7 @@ export function createStartBookAnalysisService(
 }
 
 export const { startBookAnalysis } = createStartBookAnalysisService();
+export { ANALYSIS_ARCHITECTURE_VALUES };
 export {
   AnalysisScopeInvalidError,
   BookNotFoundError
