@@ -61,6 +61,8 @@ stage: mvp
 - 根 DOM 元素 className 必须包含语义化 class token（领域导向 kebab-case）。
 - 条件样式分支需保持可读，分支表达简短明确。
 - 涉及颜色时必须同时覆盖 light/dark mode。
+- **[主题系统] 本项目使用 `data-theme` 属性（非 `.dark` CSS 类）切换主题。`dark:` Tailwind 变体在本项目中永远不生效，禁止新增任何 `dark:` 前缀类。**
+- **[下拉组件] 禁止使用原生 `<select>` 元素。必须使用 `@/components/ui/select`（Radix UI 封装），该组件的下拉内容通过 `bg-popover` CSS 变量适配所有主题，原生 `<select>` 的 OS 渲染弹出层不受 CSS 变量控制，在深色主题下会出现白色背景突兀问题。**
 - 共享 layout 中的 `max-width` / `padding` 约束必须对沉浸式页面（图谱、阅读器、全屏画布）提供显式逃生口；不要假设子页面写 `w-full` 就能突破父容器限制。
 - 当主题系统通过 root/provider 向 `body` 或应用根节点挂载全局 `fixed` 背景/装饰层时，每个一级路由壳层都必须显式建立高于背景层的 stacking context（如 `relative z-[1]`）；不要假设内容在 DOM 里写得更靠后就天然可见。
 - 主题化场景视觉（如星空图谱、博物馆首页）必须挂在语义化页面 class 上做局部覆盖，不要为修单一路由而全局扭动整个主题 token。
