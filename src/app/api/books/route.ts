@@ -75,10 +75,17 @@ const optionalLongTextField = z.preprocess((value) => {
  * - `file: File` 上传文件（仅允许 `.txt`，且大小不超过 50MB）。
  */
 const createBookFormSchema = z.object({
-  title      : optionalTextField,
-  author     : optionalTextField,
-  dynasty    : optionalTextField,
-  genre      : optionalTextField,
+  title     : optionalTextField,
+  author    : optionalTextField,
+  dynasty   : optionalTextField,
+  bookTypeId: z.preprocess((value) => {
+    if (typeof value !== "string") {
+      return undefined;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue ? trimmedValue : undefined;
+  }, z.string().uuid().optional()),
   description: optionalLongTextField,
   file       : z.instanceof(File)
     .refine((file) => file.size > 0, "请上传书籍文件")
@@ -137,7 +144,7 @@ export async function POST(request: Request): Promise<Response> {
       title      : formData.get("title"),
       author     : formData.get("author"),
       dynasty    : formData.get("dynasty"),
-      genre      : formData.get("genre"),
+      bookTypeId : formData.get("bookTypeId"),
       description: formData.get("description"),
       file       : formData.get("file")
     });
@@ -152,7 +159,7 @@ export async function POST(request: Request): Promise<Response> {
       title      : parsedResult.data.title,
       author     : parsedResult.data.author,
       dynasty    : parsedResult.data.dynasty,
-      genre      : parsedResult.data.genre,
+      bookTypeId : parsedResult.data.bookTypeId,
       description: parsedResult.data.description,
       fileName   : parsedResult.data.file.name,
       fileMime   : parsedResult.data.file.type,

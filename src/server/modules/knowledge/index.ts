@@ -57,10 +57,13 @@ export {
 } from "./book-knowledge-packs";
 
 export {
+  clearKnowledgeCache,
   buildAliasLookupFromDb,
+  loadFullRuntimeKnowledge,
   loadBookTypeConfig,
   loadAnalysisRuntimeConfig
 } from "./load-book-knowledge";
+export type { FullRuntimeKnowledge, CompiledNamePatternRule } from "./load-book-knowledge";
 
 export { auditLog } from "./audit";
 

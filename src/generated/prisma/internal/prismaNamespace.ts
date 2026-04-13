@@ -405,6 +405,9 @@ export const ModelName = {
   BookKnowledgePack: 'BookKnowledgePack',
   SurnameEntry: 'SurnameEntry',
   GenericTitleEntry: 'GenericTitleEntry',
+  HistoricalFigureEntry: 'HistoricalFigureEntry',
+  RelationalTermEntry: 'RelationalTermEntry',
+  NamePatternRule: 'NamePatternRule',
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
   ExtractionRule: 'ExtractionRule',
@@ -424,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "knowledgePack" | "knowledgeEntry" | "bookKnowledgePack" | "surnameEntry" | "genericTitleEntry" | "promptTemplate" | "promptTemplateVersion" | "extractionRule" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "knowledgePack" | "knowledgeEntry" | "bookKnowledgePack" | "surnameEntry" | "genericTitleEntry" | "historicalFigureEntry" | "relationalTermEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "extractionRule" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1982,6 +1985,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    HistoricalFigureEntry: {
+      payload: Prisma.$HistoricalFigureEntryPayload<ExtArgs>
+      fields: Prisma.HistoricalFigureEntryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.HistoricalFigureEntryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.HistoricalFigureEntryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>
+        }
+        findFirst: {
+          args: Prisma.HistoricalFigureEntryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.HistoricalFigureEntryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>
+        }
+        findMany: {
+          args: Prisma.HistoricalFigureEntryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>[]
+        }
+        create: {
+          args: Prisma.HistoricalFigureEntryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>
+        }
+        createMany: {
+          args: Prisma.HistoricalFigureEntryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.HistoricalFigureEntryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>[]
+        }
+        delete: {
+          args: Prisma.HistoricalFigureEntryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>
+        }
+        update: {
+          args: Prisma.HistoricalFigureEntryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>
+        }
+        deleteMany: {
+          args: Prisma.HistoricalFigureEntryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.HistoricalFigureEntryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.HistoricalFigureEntryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>[]
+        }
+        upsert: {
+          args: Prisma.HistoricalFigureEntryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HistoricalFigureEntryPayload>
+        }
+        aggregate: {
+          args: Prisma.HistoricalFigureEntryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateHistoricalFigureEntry>
+        }
+        groupBy: {
+          args: Prisma.HistoricalFigureEntryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HistoricalFigureEntryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.HistoricalFigureEntryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HistoricalFigureEntryCountAggregateOutputType> | number
+        }
+      }
+    }
+    RelationalTermEntry: {
+      payload: Prisma.$RelationalTermEntryPayload<ExtArgs>
+      fields: Prisma.RelationalTermEntryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RelationalTermEntryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RelationalTermEntryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>
+        }
+        findFirst: {
+          args: Prisma.RelationalTermEntryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RelationalTermEntryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>
+        }
+        findMany: {
+          args: Prisma.RelationalTermEntryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>[]
+        }
+        create: {
+          args: Prisma.RelationalTermEntryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>
+        }
+        createMany: {
+          args: Prisma.RelationalTermEntryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RelationalTermEntryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>[]
+        }
+        delete: {
+          args: Prisma.RelationalTermEntryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>
+        }
+        update: {
+          args: Prisma.RelationalTermEntryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>
+        }
+        deleteMany: {
+          args: Prisma.RelationalTermEntryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RelationalTermEntryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RelationalTermEntryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>[]
+        }
+        upsert: {
+          args: Prisma.RelationalTermEntryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationalTermEntryPayload>
+        }
+        aggregate: {
+          args: Prisma.RelationalTermEntryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRelationalTermEntry>
+        }
+        groupBy: {
+          args: Prisma.RelationalTermEntryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationalTermEntryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RelationalTermEntryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationalTermEntryCountAggregateOutputType> | number
+        }
+      }
+    }
+    NamePatternRule: {
+      payload: Prisma.$NamePatternRulePayload<ExtArgs>
+      fields: Prisma.NamePatternRuleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NamePatternRuleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NamePatternRuleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>
+        }
+        findFirst: {
+          args: Prisma.NamePatternRuleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NamePatternRuleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>
+        }
+        findMany: {
+          args: Prisma.NamePatternRuleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>[]
+        }
+        create: {
+          args: Prisma.NamePatternRuleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>
+        }
+        createMany: {
+          args: Prisma.NamePatternRuleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NamePatternRuleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>[]
+        }
+        delete: {
+          args: Prisma.NamePatternRuleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>
+        }
+        update: {
+          args: Prisma.NamePatternRuleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>
+        }
+        deleteMany: {
+          args: Prisma.NamePatternRuleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NamePatternRuleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NamePatternRuleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>[]
+        }
+        upsert: {
+          args: Prisma.NamePatternRuleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NamePatternRulePayload>
+        }
+        aggregate: {
+          args: Prisma.NamePatternRuleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNamePatternRule>
+        }
+        groupBy: {
+          args: Prisma.NamePatternRuleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NamePatternRuleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NamePatternRuleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NamePatternRuleCountAggregateOutputType> | number
+        }
+      }
+    }
     PromptTemplate: {
       payload: Prisma.$PromptTemplatePayload<ExtArgs>
       fields: Prisma.PromptTemplateFieldRefs
@@ -2355,7 +2580,6 @@ export const BookScalarFieldEnum = {
   title: 'title',
   author: 'author',
   dynasty: 'dynasty',
-  genre: 'genre',
   description: 'description',
   coverUrl: 'coverUrl',
   sourceFileKey: 'sourceFileKey',
@@ -2681,6 +2905,8 @@ export const GenericTitleEntryScalarFieldEnum = {
   title: 'title',
   tier: 'tier',
   exemptInGenres: 'exemptInGenres',
+  exemptInBooks: 'exemptInBooks',
+  category: 'category',
   description: 'description',
   isActive: 'isActive',
   source: 'source',
@@ -2689,6 +2915,45 @@ export const GenericTitleEntryScalarFieldEnum = {
 } as const
 
 export type GenericTitleEntryScalarFieldEnum = (typeof GenericTitleEntryScalarFieldEnum)[keyof typeof GenericTitleEntryScalarFieldEnum]
+
+
+export const HistoricalFigureEntryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  aliases: 'aliases',
+  dynasty: 'dynasty',
+  category: 'category',
+  description: 'description',
+  isVerified: 'isVerified',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type HistoricalFigureEntryScalarFieldEnum = (typeof HistoricalFigureEntryScalarFieldEnum)[keyof typeof HistoricalFigureEntryScalarFieldEnum]
+
+
+export const RelationalTermEntryScalarFieldEnum = {
+  id: 'id',
+  term: 'term',
+  category: 'category',
+  isVerified: 'isVerified',
+  createdAt: 'createdAt'
+} as const
+
+export type RelationalTermEntryScalarFieldEnum = (typeof RelationalTermEntryScalarFieldEnum)[keyof typeof RelationalTermEntryScalarFieldEnum]
+
+
+export const NamePatternRuleScalarFieldEnum = {
+  id: 'id',
+  ruleType: 'ruleType',
+  pattern: 'pattern',
+  action: 'action',
+  description: 'description',
+  isVerified: 'isVerified',
+  createdAt: 'createdAt'
+} as const
+
+export type NamePatternRuleScalarFieldEnum = (typeof NamePatternRuleScalarFieldEnum)[keyof typeof NamePatternRuleScalarFieldEnum]
 
 
 export const PromptTemplateScalarFieldEnum = {
@@ -3154,6 +3419,9 @@ export type GlobalOmitConfig = {
   bookKnowledgePack?: Prisma.BookKnowledgePackOmit
   surnameEntry?: Prisma.SurnameEntryOmit
   genericTitleEntry?: Prisma.GenericTitleEntryOmit
+  historicalFigureEntry?: Prisma.HistoricalFigureEntryOmit
+  relationalTermEntry?: Prisma.RelationalTermEntryOmit
+  namePatternRule?: Prisma.NamePatternRuleOmit
   promptTemplate?: Prisma.PromptTemplateOmit
   promptTemplateVersion?: Prisma.PromptTemplateVersionOmit
   extractionRule?: Prisma.ExtractionRuleOmit

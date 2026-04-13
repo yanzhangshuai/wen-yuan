@@ -1,15 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CHINESE_SURNAME_LIST,
-  DEFAULT_POSITION_STEMS,
-  ENTITY_EXTRACTION_RULES,
-  RELATIONSHIP_EXTRACTION_RULES,
-  UNIVERSAL_TITLE_STEMS,
   buildEffectiveGenericTitles,
   buildEffectiveTitlePattern,
   extractSurname,
-  formatRulesSection
+  formatRulesSection,
+  getDefaultEntityExtractionRules,
+  getDefaultRelationshipExtractionRules
 } from "@/server/modules/analysis/config/lexicon";
 
 /**
@@ -42,8 +39,6 @@ describe("lexicon config helpers", () => {
       additionalPositionPatterns: ["节度使"]
     });
 
-    expect(UNIVERSAL_TITLE_STEMS.length).toBeGreaterThan(0);
-    expect(DEFAULT_POSITION_STEMS.length).toBeGreaterThan(0);
     expect(pattern.test("武林盟主")).toBe(true);
     expect(pattern.test("河东节度使")).toBe(true);
     expect(pattern.test("王")).toBe(false);
@@ -51,28 +46,6 @@ describe("lexicon config helpers", () => {
     expect(pattern.test("伯")).toBe(false);
   });
 });
-describe("CHINESE_SURNAME_LIST", () => {
-  it("contains common single-char surnames from classical literature", () => {
-    // 古典小说高频姓氏必须覆盖
-    for (const surname of ["范", "贾", "刘", "曹", "孙", "诸", "马", "张", "王", "李"]) {
-      expect(CHINESE_SURNAME_LIST.has(surname)).toBe(true);
-    }
-  });
-
-  it("contains compound surnames", () => {
-    for (const surname of ["诸葛", "司马", "欧阳", "上官", "公孙", "夏侯"]) {
-      expect(CHINESE_SURNAME_LIST.has(surname)).toBe(true);
-    }
-  });
-
-  it("does not contain non-surname characters", () => {
-    // 常见汉字但不是姓氏
-    expect(CHINESE_SURNAME_LIST.has("的")).toBe(false);
-    expect(CHINESE_SURNAME_LIST.has("了")).toBe(false);
-    expect(CHINESE_SURNAME_LIST.has("人")).toBe(false);
-  });
-});
-
 describe("extractSurname", () => {
   it("extracts single-char surnames", () => {
     expect(extractSurname("范进")).toBe("范");
@@ -90,6 +63,9 @@ describe("extractSurname", () => {
   it("returns null for unknown surnames", () => {
     expect(extractSurname("")).toBe(null);
     expect(extractSurname("老爷")).toBe(null);
+    expect(extractSurname("的人")).toBe(null);
+    expect(extractSurname("了不起")).toBe(null);
+    expect(extractSurname("人家")).toBe(null);
   });
 
   it("handles single-char input", () => {
@@ -99,21 +75,23 @@ describe("extractSurname", () => {
 });
 
 describe("shared prompt rules", () => {
-  it("ENTITY_EXTRACTION_RULES contains genericTitles placeholder", () => {
+  it("default ENTITY rules contain genericTitles placeholder", () => {
     // 保证占位符存在，prompt 构建时能正确替换
-    const hasPlaceholder = ENTITY_EXTRACTION_RULES.some((r) => r.includes("{genericTitles}"));
+    const rules = getDefaultEntityExtractionRules();
+    const hasPlaceholder = rules.some((r) => r.includes("{genericTitles}"));
     expect(hasPlaceholder).toBe(true);
   });
 
-  it("ENTITY_EXTRACTION_RULES has minimum rule count", () => {
-    expect(ENTITY_EXTRACTION_RULES.length).toBeGreaterThanOrEqual(7);
+  it("default ENTITY rules have minimum rule count", () => {
+    expect(getDefaultEntityExtractionRules().length).toBeGreaterThanOrEqual(7);
   });
 
-  it("RELATIONSHIP_EXTRACTION_RULES covers key constraints", () => {
-    const joined = RELATIONSHIP_EXTRACTION_RULES.join(" ");
+  it("default RELATIONSHIP rules cover key constraints", () => {
+    const relationshipRules = getDefaultRelationshipExtractionRules();
+    const joined = relationshipRules.join(" ");
     expect(joined).toContain("evidence");
     expect(joined).toContain("自关系");
-    expect(RELATIONSHIP_EXTRACTION_RULES.length).toBeGreaterThanOrEqual(3);
+    expect(relationshipRules.length).toBeGreaterThanOrEqual(3);
   });
 });
 

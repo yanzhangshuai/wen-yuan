@@ -34,8 +34,8 @@ export interface CreateBookInput {
   author?     : string;
   /** 朝代（可选）。 */
   dynasty?    : string;
-  /** 书籍类型预设键名（可选），对应 GENRE_PRESETS 中的键，如"武侠""家族世情"。 */
-  genre?      : string;
+  /** 书籍类型 ID（可选），用于绑定 book_types 结构化配置。 */
+  bookTypeId? : string;
   /** 简介（可选）。 */
   description?: string;
   /** 原始上传文件名（含扩展名）。 */
@@ -115,7 +115,7 @@ export function createCreateBookService(
           title         : resolveBookTitle(input),
           author        : normalizeOptionalText(input.author) ?? null,
           dynasty       : normalizeOptionalText(input.dynasty) ?? null,
-          genre         : normalizeOptionalText(input.genre) ?? null,
+          bookTypeId    : normalizeOptionalText(input.bookTypeId) ?? null,
           description   : normalizeOptionalText(input.description) ?? null,
           sourceFileKey : storedFile.key,
           sourceFileUrl : storedFile.url,

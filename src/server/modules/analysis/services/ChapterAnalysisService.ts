@@ -30,7 +30,7 @@ import {
   buildEffectiveGenericTitles,
   GENERIC_TITLES_PROMPT_LIMIT
 } from "@/server/modules/analysis/config/lexicon";
-import { ANALYSIS_PIPELINE_CONFIG, DEFAULT_GENRE_PRESET, GENRE_PRESETS } from "@/server/modules/analysis/config/pipeline";
+import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type {
   AnalysisProfileContext,
   BioCategoryValue,
@@ -370,7 +370,7 @@ export function createChapterAnalysisService(
     jobId?                 : string;
     /** Pass 2 全局消歧后的映射表（surfaceForm → personaId），提供时跳过 ROSTER_DISCOVERY。 */
     externalPersonaMap?    : Map<string, string>;
-    /** 从数据库预加载的词典配置，提供时跳过 resolveBookLexiconConfig 硬编码查找。 */
+    /** 从数据库预加载的词典配置；未提供时回退为空配置。 */
     preloadedLexiconConfig?: BookLexiconConfig;
   }
 
@@ -741,7 +741,7 @@ export function createChapterAnalysisService(
       ),
       localSummary: p.localSummary
     }));
-    const bookLexiconConfig = executionContext.preloadedLexiconConfig ?? resolveBookLexiconConfig(chapter.book.genre);
+    const bookLexiconConfig = executionContext.preloadedLexiconConfig ?? {};
     const effectiveGenericTitles = buildEffectiveGenericTitles(bookLexiconConfig);
     const genericTitlesExample = Array.from(effectiveGenericTitles).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等";
 
@@ -1479,16 +1479,6 @@ function buildProfileLookupMap(
   return lookup;
 }
 
-function resolveBookLexiconConfig(genre: string | null | undefined): BookLexiconConfig {
-  if (!ANALYSIS_PIPELINE_CONFIG.enableGenrePresetOverride) {
-    return GENRE_PRESETS[DEFAULT_GENRE_PRESET] ?? {};
-  }
-
-  // 优先使用书籍显式指定的书籍类型；未指定时回退默认预设
-  const key = genre && genre in GENRE_PRESETS ? genre : DEFAULT_GENRE_PRESET;
-  return GENRE_PRESETS[key] ?? {};
-}
-
 function collectGenericRatiosFromRoster(
   roster: Array<{ surfaceForm: string; generic?: boolean }>
 ): Map<string, { generic: number; nonGeneric: number }> {
@@ -1516,6 +1506,5 @@ export const chapterAnalysisTesting = {
   buildEntityIdMap,
   normalizeLookupKey,
   buildProfileLookupMap,
-  resolveBookLexiconConfig,
   collectGenericRatiosFromRoster
 };

@@ -1,0 +1,96 @@
+{
+  "version": "phase7.v1",
+  "description": "Phase 7 名字模式规则种子",
+  "entries": [
+    {
+      "ruleType": "FAMILY_HOUSE",
+      "pattern": "^.+氏$",
+      "action": "BLOCK",
+      "description": "氏族称呼默认不视为具体人名。"
+    },
+    {
+      "ruleType": "FAMILY_HOUSE",
+      "pattern": "^.+家$",
+      "action": "WARN",
+      "description": "家族统称需谨慎。"
+    },
+    {
+      "ruleType": "FAMILY_HOUSE",
+      "pattern": "^.+府上$",
+      "action": "WARN",
+      "description": "府上多为家门称呼。"
+    },
+    {
+      "ruleType": "FAMILY_HOUSE",
+      "pattern": "^.+门下$",
+      "action": "WARN",
+      "description": "门下通常指群体身份。"
+    },
+    {
+      "ruleType": "DESCRIPTIVE_PHRASE",
+      "pattern": "^.*(老者|老妇|少年|少女)$",
+      "action": "WARN",
+      "description": "描述性词组可能非实体。"
+    },
+    {
+      "ruleType": "DESCRIPTIVE_PHRASE",
+      "pattern": "^.*(书生|秀才|举人|进士)$",
+      "action": "WARN",
+      "description": "功名称号需结合上下文。"
+    },
+    {
+      "ruleType": "DESCRIPTIVE_PHRASE",
+      "pattern": "^.*(掌柜|伙计|店家)$",
+      "action": "WARN",
+      "description": "职业描述优先判定为泛称。"
+    },
+    {
+      "ruleType": "DESCRIPTIVE_PHRASE",
+      "pattern": "^.*(太守|知府|县令)$",
+      "action": "WARN",
+      "description": "官职称呼需要结合人名。"
+    },
+    {
+      "ruleType": "DESCRIPTIVE_PHRASE",
+      "pattern": "^(这|那)(位|个).+$",
+      "action": "WARN",
+      "description": "指示代词引导的称谓通常非稳定姓名。"
+    },
+    {
+      "ruleType": "RELATIONAL_COMPOUND",
+      "pattern": "^.+之(父|母|兄|弟|妻|子|女)$",
+      "action": "BLOCK",
+      "description": "关系复合词通常不应建 persona。"
+    },
+    {
+      "ruleType": "RELATIONAL_COMPOUND",
+      "pattern": "^其.+(父亲|母亲|兄长|姐姐)$",
+      "action": "BLOCK",
+      "description": "代词+亲属称谓属于关系描述。"
+    },
+    {
+      "ruleType": "RELATIONAL_COMPOUND",
+      "pattern": "^(老|小)?[一二三四五六七八九十百千]+(哥|姐|叔|伯)$",
+      "action": "WARN",
+      "description": "排行+亲属称呼需要结合上下文。"
+    },
+    {
+      "ruleType": "RELATIONAL_COMPOUND",
+      "pattern": "^某(公|君|氏|人)$",
+      "action": "BLOCK",
+      "description": "某+称谓属于不确定指代。"
+    },
+    {
+      "ruleType": "RELATIONAL_COMPOUND",
+      "pattern": "^第[一二三四五六七八九十百千]+(人|位|名)$",
+      "action": "WARN",
+      "description": "序数词名词组合缺少实体性。"
+    },
+    {
+      "ruleType": "RELATIONAL_COMPOUND",
+      "pattern": "^(本|该)(官|将|帅|王)$",
+      "action": "WARN",
+      "description": "自称或泛指角色称谓。"
+    }
+  ]
+}

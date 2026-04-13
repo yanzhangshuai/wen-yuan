@@ -7,9 +7,9 @@ import {
   type EffectiveLexicon,
   type MentionPersonalizationEvidence,
   type PersonalizationTier,
-  SAFETY_GENERIC_TITLES,
-  DEFAULT_GENERIC_TITLES,
+  buildEffectiveGenericTitles,
   buildEffectiveLexicon,
+  buildSafetyGenericTitles,
   classifyPersonalization,
   extractSurname
 } from "@/server/modules/analysis/config/lexicon";
@@ -29,10 +29,7 @@ import {
  * - 下游：`ChapterAnalysisService` 根据 ResolveResult 决定创建 mention/biography/relationship 等结构化数据。
  * - 本文件内“阈值与分支”是业务规则，不是技术限制；修改会直接影响识别准确率与审核成本。
  */
-export const GENERIC_TITLES = new Set([
-  ...Array.from(SAFETY_GENERIC_TITLES),
-  ...Array.from(DEFAULT_GENERIC_TITLES)
-]);
+export const GENERIC_TITLES = buildEffectiveGenericTitles(undefined, true);
 
 /**
  * 根据词法规则推断别名类型。
@@ -422,7 +419,7 @@ export function createPersonaResolver(
       };
     }
 
-    const safetyGenericTitles = new Set(input.lexiconConfig?.safetyGenericTitles ?? Array.from(SAFETY_GENERIC_TITLES));
+    const safetyGenericTitles = buildSafetyGenericTitles(input.lexiconConfig);
     if (safetyGenericTitles.has(rawName)) {
       return {
         status    : "hallucinated",

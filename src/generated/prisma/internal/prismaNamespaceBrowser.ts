@@ -72,6 +72,9 @@ export const ModelName = {
   BookKnowledgePack: 'BookKnowledgePack',
   SurnameEntry: 'SurnameEntry',
   GenericTitleEntry: 'GenericTitleEntry',
+  HistoricalFigureEntry: 'HistoricalFigureEntry',
+  RelationalTermEntry: 'RelationalTermEntry',
+  NamePatternRule: 'NamePatternRule',
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
   ExtractionRule: 'ExtractionRule',
@@ -132,7 +135,6 @@ export const BookScalarFieldEnum = {
   title: 'title',
   author: 'author',
   dynasty: 'dynasty',
-  genre: 'genre',
   description: 'description',
   coverUrl: 'coverUrl',
   sourceFileKey: 'sourceFileKey',
@@ -458,6 +460,8 @@ export const GenericTitleEntryScalarFieldEnum = {
   title: 'title',
   tier: 'tier',
   exemptInGenres: 'exemptInGenres',
+  exemptInBooks: 'exemptInBooks',
+  category: 'category',
   description: 'description',
   isActive: 'isActive',
   source: 'source',
@@ -466,6 +470,45 @@ export const GenericTitleEntryScalarFieldEnum = {
 } as const
 
 export type GenericTitleEntryScalarFieldEnum = (typeof GenericTitleEntryScalarFieldEnum)[keyof typeof GenericTitleEntryScalarFieldEnum]
+
+
+export const HistoricalFigureEntryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  aliases: 'aliases',
+  dynasty: 'dynasty',
+  category: 'category',
+  description: 'description',
+  isVerified: 'isVerified',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type HistoricalFigureEntryScalarFieldEnum = (typeof HistoricalFigureEntryScalarFieldEnum)[keyof typeof HistoricalFigureEntryScalarFieldEnum]
+
+
+export const RelationalTermEntryScalarFieldEnum = {
+  id: 'id',
+  term: 'term',
+  category: 'category',
+  isVerified: 'isVerified',
+  createdAt: 'createdAt'
+} as const
+
+export type RelationalTermEntryScalarFieldEnum = (typeof RelationalTermEntryScalarFieldEnum)[keyof typeof RelationalTermEntryScalarFieldEnum]
+
+
+export const NamePatternRuleScalarFieldEnum = {
+  id: 'id',
+  ruleType: 'ruleType',
+  pattern: 'pattern',
+  action: 'action',
+  description: 'description',
+  isVerified: 'isVerified',
+  createdAt: 'createdAt'
+} as const
+
+export type NamePatternRuleScalarFieldEnum = (typeof NamePatternRuleScalarFieldEnum)[keyof typeof NamePatternRuleScalarFieldEnum]
 
 
 export const PromptTemplateScalarFieldEnum = {

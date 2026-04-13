@@ -781,7 +781,10 @@ describe("chapter analysis service", () => {
       }),
       discoverChapterRoster: vi.fn().mockResolvedValue([])
     };
-    const execute = vi.fn(async ({ callFn }: { callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown> }) => {
+    const execute = vi.fn(async ({ callFn }: {
+      stage : PipelineStage;
+      callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown>;
+    }) => {
       return await callFn({ model: buildStageModel() });
     });
 
@@ -797,8 +800,9 @@ describe("chapter analysis service", () => {
     await service.analyzeChapter("chapter-1", { jobId: "job-1" });
 
     expect(execute).toHaveBeenCalledTimes(2);
-    expect(execute.mock.calls[0]?.[0].stage).toBe(PipelineStage.ROSTER_DISCOVERY);
-    expect(execute.mock.calls[1]?.[0].stage).toBe(PipelineStage.CHUNK_EXTRACTION);
+    const executeStages = execute.mock.calls.map(([callInput]) => callInput.stage);
+    expect(executeStages[0]).toBe(PipelineStage.ROSTER_DISCOVERY);
+    expect(executeStages[1]).toBe(PipelineStage.CHUNK_EXTRACTION);
     expect(runtimeClient.discoverChapterRoster).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
       temperature    : 0.15,
       maxOutputTokens: 4096
@@ -1293,7 +1297,10 @@ describe("chapter analysis service", () => {
           { surfaceForm: "老爷", isPersonalized: true, confidence: 0.6 }
         ])
       };
-      const execute = vi.fn(async ({ callFn }: { callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown> }) => {
+      const execute = vi.fn(async ({ callFn }: {
+        stage : PipelineStage;
+        callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown>;
+      }) => {
         return await callFn({ model: buildStageModel() });
       });
 
@@ -1310,8 +1317,8 @@ describe("chapter analysis service", () => {
       const written = await service.runGrayZoneArbitration("book-1", { jobId: "job-1" });
 
       expect(written).toBe(1);
-      const executeCalls = execute.mock.calls as Array<[{ stage: PipelineStage }]>;
-      expect(executeCalls.map(([callInput]) => callInput.stage)).toContain(PipelineStage.GRAY_ZONE_ARBITRATION);
+      const executeStages = execute.mock.calls.map(([callInput]) => callInput.stage);
+      expect(executeStages).toContain(PipelineStage.GRAY_ZONE_ARBITRATION);
       expect(runtimeClient.arbitrateTitlePersonalization).toHaveBeenCalledTimes(1);
       expect(registerAlias).toHaveBeenCalledWith({
         bookId      : "book-1",
@@ -1682,24 +1689,6 @@ describe("chapter analysis testing helpers", () => {
     ]));
   });
 
-  it("resolves lexicon presets with both override and default fallback paths", () => {
-    const mutablePipelineConfig = ANALYSIS_PIPELINE_CONFIG as unknown as {
-      enableGenrePresetOverride: boolean;
-    };
-    const originalFlag = mutablePipelineConfig.enableGenrePresetOverride;
-
-    mutablePipelineConfig.enableGenrePresetOverride = false;
-    expect(chapterAnalysisTesting.resolveBookLexiconConfig("武侠")).toEqual({});
-
-    mutablePipelineConfig.enableGenrePresetOverride = true;
-    expect(chapterAnalysisTesting.resolveBookLexiconConfig("未知类型")).toEqual({});
-    expect(chapterAnalysisTesting.resolveBookLexiconConfig("武侠")).toEqual(expect.objectContaining({
-      additionalTitlePatterns: expect.arrayContaining(["掌门", "盟主"])
-    }));
-
-    mutablePipelineConfig.enableGenrePresetOverride = originalFlag;
-  });
-
   it("collects generic title ratios while skipping blank roster surface forms", () => {
     expect(chapterAnalysisTesting.collectGenericRatiosFromRoster([
       { surfaceForm: "老爷", generic: true },
@@ -1924,7 +1913,7 @@ describe("chapter analysis merge helpers", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips blank roster surface forms and merges sparse duplicates through fallback keys", () => {
     // Arrange
-    const entries = [
+    const entries: Parameters<typeof mergeRosterEntriesForAnalysis>[0] = [
       {
         surfaceForm      : "   ",
         aliasType        : "TITLE" as const,
@@ -1938,7 +1927,7 @@ describe("chapter analysis merge helpers", () => {
         generic          : true,
         contextHint      : {
           alias              : "张大人",
-          aliasType          : "TITLE",
+          aliasType          : "TITLE" as const,
           coOccurringPersonas: ["范进"],
           contextClue        : "第 1 章提到的官员",
           confidence         : 0.8

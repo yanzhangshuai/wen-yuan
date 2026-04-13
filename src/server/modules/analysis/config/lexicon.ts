@@ -21,9 +21,9 @@
 export interface BookLexiconConfig {
   /** 书籍私有的泛称补充列表（在默认集合上追加）。 */
   additionalGenericTitles?     : string[];
-  /** 从数据库预加载的 SAFETY 泛称集合，未提供时回退到代码常量。 */
+  /** 从数据库预加载的 SAFETY 泛称集合，未提供时回退到内置默认。 */
   safetyGenericTitles?         : string[];
-  /** 从数据库预加载的 DEFAULT 泛称集合，未提供时回退到代码常量。 */
+  /** 从数据库预加载的 DEFAULT 泛称集合，未提供时回退到内置默认。 */
   defaultGenericTitles?        : string[];
   /** 书籍私有的泛称豁免列表（从最终泛称集合中移除）。 */
   exemptGenericTitles?         : string[];
@@ -35,9 +35,9 @@ export interface BookLexiconConfig {
   additionalTitlePatterns?     : string[];
   /** 额外职位模式补充（用于 positionPattern）。 */
   additionalPositionPatterns?  : string[];
-  /** 从数据库预加载的实体抽取规则，未提供时回退到代码常量。 */
+  /** 从数据库预加载的实体抽取规则，未提供时回退到内置默认。 */
   entityExtractionRules?       : string[];
-  /** 从数据库预加载的关系抽取规则，未提供时回退到代码常量。 */
+  /** 从数据库预加载的关系抽取规则，未提供时回退到内置默认。 */
   relationshipExtractionRules? : string[];
   /** 从数据库预加载的复姓列表，优先匹配。 */
   surnameCompounds?            : string[];
@@ -74,46 +74,42 @@ export interface EffectiveLexicon {
   positionPattern  : RegExp;
 }
 
-export const SAFETY_GENERIC_TITLES = new Set([
+const SAFETY_GENERIC_TITLE_VALUES = [
   "此人", "那人", "来人", "众人", "旁人", "大家", "诸人", "某人", "一人",
   "他", "她", "他们", "她们", "吾", "汝", "彼", "尔",
   "父亲", "母亲", "老父", "老母", "老娘", "娘亲",
   "兄长", "兄弟", "姐姐", "弟弟", "妹妹", "妻子",
   "丫鬟", "丫头", "奴婢", "仆人", "仆役", "家丁", "下人", "小厮", "书童"
-]);
+] as const;
 
-export const DEFAULT_GENERIC_TITLES = new Set([
+const DEFAULT_GENERIC_TITLE_VALUES = [
   "老爷", "夫人", "太太", "老太太", "小姐", "少爷", "公子", "相公", "娘子", "先生",
   "掌柜", "掌柜的", "账房", "管家", "老管家", "门房", "门子",
   "书办", "掌舵", "按察司", "布政司", "都司", "参将", "千总", "把总",
   "员外", "举人", "秀才", "进士", "状元", "老学究"
-]);
+] as const;
 
-export const HARD_BLOCK_SUFFIXES = new Set([
+const HARD_BLOCK_SUFFIX_VALUES = [
   "父亲", "母亲", "儿子", "女儿", "之妻", "之子", "之父", "之母", "老爹", "老娘"
-]);
+] as const;
 
-export const DEFAULT_SOFT_BLOCK_SUFFIXES = new Set([
+const SOFT_BLOCK_SUFFIX_VALUES = [
   "大人", "将军", "老爷", "先生", "娘子", "太太", "夫人",
   "兄弟", "兄长", "弟弟", "姐姐", "妹妹"
-]);
+] as const;
 
-export const UNIVERSAL_TITLE_STEMS = ["皇帝", "太后", "太祖", "太宗", "国王", "王后", "太子", "公主", "吴王", "国公"];
+const UNIVERSAL_TITLE_STEM_VALUES = ["皇帝", "太后", "太祖", "太宗", "国王", "王后", "太子", "公主", "吴王", "国公"] as const;
 
-export const DEFAULT_POSITION_STEMS = [
+const DEFAULT_POSITION_STEM_VALUES = [
   "丞相", "太守", "知府", "知县", "尚书", "侍郎", "将军", "巡抚", "总督", "学道"
-];
+] as const;
 
-/**
- * 百家姓常用姓氏表（含常见复姓），覆盖古典文学主要人物姓氏。
- * PersonaResolver 通过此表做"姓+称号"类称谓匹配（如"范举人"→范进），
- * 提升同姓别名对齐准确率，同时避免不同姓人物误合并。
- */
-export const CHINESE_SURNAME_LIST: ReadonlySet<string> = new Set([
-  // 复姓（优先匹配，避免被单字姓氏截断）
+const COMPOUND_SURNAME_VALUES = [
   "欧阳", "司马", "上官", "诸葛", "公孙", "令狐", "皇甫", "尉迟",
-  "长孙", "慕容", "夏侯", "轩辕", "端木", "百里", "东方", "南宫", "西门",
-  // 单姓（百家姓高频，覆盖古典文学 99%+ 人物）
+  "长孙", "慕容", "夏侯", "轩辕", "端木", "百里", "东方", "南宫", "西门"
+] as const;
+
+const SINGLE_SURNAME_VALUES = [
   "赵", "钱", "孙", "李", "周", "吴", "郑", "王", "冯", "陈",
   "褚", "卫", "蒋", "沈", "韩", "杨", "朱", "秦", "尤", "许",
   "何", "吕", "施", "张", "孔", "曹", "严", "华", "金", "魏",
@@ -135,15 +131,43 @@ export const CHINESE_SURNAME_LIST: ReadonlySet<string> = new Set([
   "宣", "邓", "郁", "单", "杭", "洪", "包", "诸", "左", "石",
   "崔", "吉", "龚", "程", "邢", "裴", "陆", "荣", "翁", "荀",
   "羊", "惠", "甄", "曲", "封", "储", "靳", "伏"
-]);
+] as const;
+
+const ENTITY_EXTRACTION_RULE_VALUES = [
+  "原文中的文字必须精确引用（surfaceForm/rawText），禁止编造或改写。",
+  "优先匹配已知人物档案中的标准名(canonicalName)；仅确认全新人物时才创建新 personaName。",
+  "泛化称谓（{genericTitles}）禁止作为独立人物名。单独姓氏无法确认具体人物时标记为 generic。",
+  "仅提取虚构角色，排除作者、评注者、真实历史人物、批评家。",
+  'personaName 使用规范人名，禁止附加"大人""老爷"等泛称后缀。',
+  '已知别名须映射回标准名（如"范举人"→ 范进），不得重复创建。',
+  "不确定时宁可忽略，避免误建幻觉人物。",
+  "同一人物在同一片段中的多种称呼（姓名、官衔、别号）都应识别并映射到同一实体。"
+] as const;
+
+const RELATIONSHIP_EXTRACTION_RULE_VALUES = [
+  "description 写结论，evidence 填原文短句（≤120字）。",
+  "不跨段推测，当前片段无证据则不输出该关系。",
+  "ironyNote 仅在有直接讽刺/反语证据时填写。",
+  "避免自关系（source 与 target 不得相同）。"
+] as const;
+
+export function getDefaultEntityExtractionRules(): readonly string[] {
+  return ENTITY_EXTRACTION_RULE_VALUES;
+}
+
+export function getDefaultRelationshipExtractionRules(): readonly string[] {
+  return RELATIONSHIP_EXTRACTION_RULE_VALUES;
+}
 
 /**
  * 从姓名中提取姓氏。优先匹配复姓（2 字），再匹配单姓（1 字）。
  * 未命中已知姓氏时返回 null，不做猜测。
  */
 export function extractSurname(name: string, bookConfig?: BookLexiconConfig): string | null {
-  const compoundSet = new Set(bookConfig?.surnameCompounds?.filter(Boolean) ?? Array.from(CHINESE_SURNAME_LIST));
-  const singleSet = new Set(bookConfig?.surnameSingles?.filter(Boolean) ?? Array.from(CHINESE_SURNAME_LIST));
+  const compounds = toUniqueSortedList(bookConfig?.surnameCompounds ?? COMPOUND_SURNAME_VALUES);
+  const singles = toUniqueSortedList(bookConfig?.surnameSingles ?? SINGLE_SURNAME_VALUES);
+  const compoundSet = new Set(compounds);
+  const singleSet = new Set(singles);
 
   if (name.length >= 2) {
     const twoChar = name.slice(0, 2);
@@ -155,29 +179,6 @@ export function extractSurname(name: string, bookConfig?: BookLexiconConfig): st
   }
   return null;
 }
-
-/**
- * 通用实体抽取规则。所有涉及实体识别的 prompt 共用此数组，杜绝多处 prompt 规则漂移。
- * 含 `{genericTitles}` 占位符，构建 prompt 时动态替换为当前有效泛称列表。
- */
-export const ENTITY_EXTRACTION_RULES: readonly string[] = [
-  "原文中的文字必须精确引用（surfaceForm/rawText），禁止编造或改写。",
-  "优先匹配已知人物档案中的标准名(canonicalName)；仅确认全新人物时才创建新 personaName。",
-  "泛化称谓（{genericTitles}）禁止作为独立人物名。单独姓氏无法确认具体人物时标记为 generic。",
-  "仅提取虚构角色，排除作者、评注者、真实历史人物、批评家。",
-  'personaName 使用规范人名，禁止附加"大人""老爷"等泛称后缀。',
-  '已知别名须映射回标准名（如"范举人"→ 范进），不得重复创建。',
-  "不确定时宁可忽略，避免误建幻觉人物。",
-  "同一人物在同一片段中的多种称呼（姓名、官衔、别号）都应识别并映射到同一实体。"
-];
-
-/** 关系抽取规则。buildChapterAnalysisPrompt 等使用。 */
-export const RELATIONSHIP_EXTRACTION_RULES: readonly string[] = [
-  "description 写结论，evidence 填原文短句（≤120字）。",
-  "不跨段推测，当前片段无证据则不输出该关系。",
-  "ironyNote 仅在有直接讽刺/反语证据时填写。",
-  "避免自关系（source 与 target 不得相同）。"
-];
 
 /**
  * 将规则数组格式化为编号列表，并替换占位符。
@@ -211,9 +212,17 @@ function toUniqueSortedList(values: Iterable<string>): string[] {
   return Array.from(new Set(Array.from(values).map((item) => item.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
 }
 
+export function buildSafetyGenericTitles(bookConfig?: BookLexiconConfig): Set<string> {
+  return new Set(toUniqueSortedList(bookConfig?.safetyGenericTitles ?? SAFETY_GENERIC_TITLE_VALUES));
+}
+
+export function buildDefaultGenericTitles(bookConfig?: BookLexiconConfig): Set<string> {
+  return new Set(toUniqueSortedList(bookConfig?.defaultGenericTitles ?? DEFAULT_GENERIC_TITLE_VALUES));
+}
+
 export function buildEffectiveGenericTitles(bookConfig?: BookLexiconConfig, includeSafety = true): Set<string> {
-  const safetyTitles = bookConfig?.safetyGenericTitles ?? Array.from(SAFETY_GENERIC_TITLES);
-  const defaultTitles = bookConfig?.defaultGenericTitles ?? Array.from(DEFAULT_GENERIC_TITLES);
+  const safetyTitles = Array.from(buildSafetyGenericTitles(bookConfig));
+  const defaultTitles = Array.from(buildDefaultGenericTitles(bookConfig));
   const merged = new Set<string>([
     ...(includeSafety ? safetyTitles : []),
     ...defaultTitles,
@@ -230,22 +239,22 @@ export function buildEffectiveGenericTitles(bookConfig?: BookLexiconConfig, incl
 
 export function buildEffectiveSoftBlockSuffixes(bookConfig?: BookLexiconConfig): Set<string> {
   return new Set(toUniqueSortedList([
-    ...Array.from(DEFAULT_SOFT_BLOCK_SUFFIXES),
+    ...SOFT_BLOCK_SUFFIX_VALUES,
     ...(bookConfig?.softRelationalSuffixes ?? [])
   ]));
 }
 
 export function buildEffectiveHardBlockSuffixes(bookConfig?: BookLexiconConfig): Set<string> {
   return new Set(toUniqueSortedList([
-    ...Array.from(HARD_BLOCK_SUFFIXES),
+    ...HARD_BLOCK_SUFFIX_VALUES,
     ...(bookConfig?.additionalRelationalSuffixes ?? [])
   ]));
 }
 
 export function buildEffectiveTitlePattern(bookConfig?: BookLexiconConfig): RegExp {
   const stems = toUniqueSortedList([
-    ...UNIVERSAL_TITLE_STEMS,
-    ...DEFAULT_POSITION_STEMS,
+    ...UNIVERSAL_TITLE_STEM_VALUES,
+    ...DEFAULT_POSITION_STEM_VALUES,
     ...(bookConfig?.additionalTitlePatterns ?? []),
     ...(bookConfig?.additionalPositionPatterns ?? [])
   ]);
@@ -256,7 +265,7 @@ export function buildEffectiveTitlePattern(bookConfig?: BookLexiconConfig): RegE
 
 export function buildEffectivePositionPattern(bookConfig?: BookLexiconConfig): RegExp {
   const stems = toUniqueSortedList([
-    ...DEFAULT_POSITION_STEMS,
+    ...DEFAULT_POSITION_STEM_VALUES,
     ...(bookConfig?.additionalPositionPatterns ?? [])
   ]);
   // 与 titlePattern 保持一致的空集防御策略。
@@ -266,7 +275,7 @@ export function buildEffectivePositionPattern(bookConfig?: BookLexiconConfig): R
 
 export function buildEffectiveLexicon(bookConfig?: BookLexiconConfig): EffectiveLexicon {
   return {
-    // 注意：分析阶段默认不包含 SAFETY_GENERIC_TITLES，避免过度保守导致召回下降。
+    // 注意：分析阶段默认不包含 safety 级词库，避免过度保守导致召回下降。
     // 这是当前策略选择，若要变更需联动评估精准率/召回率。
     genericTitles    : buildEffectiveGenericTitles(bookConfig, false),
     hardBlockSuffixes: buildEffectiveHardBlockSuffixes(bookConfig),

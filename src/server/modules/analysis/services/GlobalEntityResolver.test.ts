@@ -4,7 +4,6 @@ import type {
   AiCallExecutor,
   ExecuteAiCallInput
 } from "@/server/modules/analysis/services/AiCallExecutor";
-import { buildAliasLookup } from "@/server/modules/analysis/config/classical-names";
 import type { ResolvedStageModel } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import type { ChapterEntityList } from "@/types/analysis";
 
@@ -144,7 +143,14 @@ describe("GlobalEntityResolver", () => {
       buildChapterEntityList(6, [{ name: "王老爷", aliases: ["王太守"], description: "敬称", category: "PERSON" }])
     ]);
 
-    const groups = resolver._buildCandidateGroups(dict, buildAliasLookup("明清官场"));
+    const aliasLookup = new Map<string, string>([
+      ["范进", "范进"],
+      ["范举人", "范进"],
+      ["王惠", "王惠"],
+      ["王老爷", "王惠"]
+    ]);
+
+    const groups = resolver._buildCandidateGroups(dict, aliasLookup);
     const memberSets = groups.map((group) => new Set(group.members.map((member) => member.name)));
 
     expect(groups).toHaveLength(3);
@@ -235,7 +241,12 @@ describe("GlobalEntityResolver", () => {
         buildChapterEntityList(3, [{ name: "王惠", aliases: [], description: "地方官员", category: "PERSON" }])
       ],
       { bookId: "book-1", jobId: "job-1" },
-      buildAliasLookup("明清官场")
+      {
+        aliasLookup: new Map<string, string>([
+          ["范进", "范进"],
+          ["范举人", "范进"]
+        ])
+      }
     );
 
     expect(buildEntityResolutionPromptMock).toHaveBeenCalledWith("儒林外史", expect.any(Array));

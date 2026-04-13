@@ -16,7 +16,14 @@ import { describe, expect, it, vi } from "vitest";
 import { calculateSubstringMatchScore, createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
-import { classifyPersonalization, DEFAULT_SOFT_BLOCK_SUFFIXES, HARD_BLOCK_SUFFIXES } from "@/server/modules/analysis/config/lexicon";
+import {
+  buildEffectiveHardBlockSuffixes,
+  buildEffectiveSoftBlockSuffixes,
+  classifyPersonalization
+} from "@/server/modules/analysis/config/lexicon";
+
+const HARD_BLOCK_SUFFIXES = buildEffectiveHardBlockSuffixes();
+const DEFAULT_SOFT_BLOCK_SUFFIXES = buildEffectiveSoftBlockSuffixes();
 
 function createPrismaMock() {
   const personaFindMany = vi.fn();

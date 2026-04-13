@@ -28,6 +28,7 @@ export type GenericTitleEntryMinAggregateOutputType = {
   id: string | null
   title: string | null
   tier: string | null
+  category: string | null
   description: string | null
   isActive: boolean | null
   source: string | null
@@ -39,6 +40,7 @@ export type GenericTitleEntryMaxAggregateOutputType = {
   id: string | null
   title: string | null
   tier: string | null
+  category: string | null
   description: string | null
   isActive: boolean | null
   source: string | null
@@ -51,6 +53,8 @@ export type GenericTitleEntryCountAggregateOutputType = {
   title: number
   tier: number
   exemptInGenres: number
+  exemptInBooks: number
+  category: number
   description: number
   isActive: number
   source: number
@@ -64,6 +68,7 @@ export type GenericTitleEntryMinAggregateInputType = {
   id?: true
   title?: true
   tier?: true
+  category?: true
   description?: true
   isActive?: true
   source?: true
@@ -75,6 +80,7 @@ export type GenericTitleEntryMaxAggregateInputType = {
   id?: true
   title?: true
   tier?: true
+  category?: true
   description?: true
   isActive?: true
   source?: true
@@ -87,6 +93,8 @@ export type GenericTitleEntryCountAggregateInputType = {
   title?: true
   tier?: true
   exemptInGenres?: true
+  exemptInBooks?: true
+  category?: true
   description?: true
   isActive?: true
   source?: true
@@ -172,6 +180,8 @@ export type GenericTitleEntryGroupByOutputType = {
   title: string
   tier: string
   exemptInGenres: runtime.JsonValue | null
+  exemptInBooks: string[]
+  category: string | null
   description: string | null
   isActive: boolean
   source: string
@@ -205,6 +215,8 @@ export type GenericTitleEntryWhereInput = {
   title?: Prisma.StringFilter<"GenericTitleEntry"> | string
   tier?: Prisma.StringFilter<"GenericTitleEntry"> | string
   exemptInGenres?: Prisma.JsonNullableFilter<"GenericTitleEntry">
+  exemptInBooks?: Prisma.StringNullableListFilter<"GenericTitleEntry">
+  category?: Prisma.StringNullableFilter<"GenericTitleEntry"> | string | null
   description?: Prisma.StringNullableFilter<"GenericTitleEntry"> | string | null
   isActive?: Prisma.BoolFilter<"GenericTitleEntry"> | boolean
   source?: Prisma.StringFilter<"GenericTitleEntry"> | string
@@ -217,6 +229,8 @@ export type GenericTitleEntryOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   tier?: Prisma.SortOrder
   exemptInGenres?: Prisma.SortOrderInput | Prisma.SortOrder
+  exemptInBooks?: Prisma.SortOrder
+  category?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   source?: Prisma.SortOrder
@@ -232,6 +246,8 @@ export type GenericTitleEntryWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.GenericTitleEntryWhereInput | Prisma.GenericTitleEntryWhereInput[]
   tier?: Prisma.StringFilter<"GenericTitleEntry"> | string
   exemptInGenres?: Prisma.JsonNullableFilter<"GenericTitleEntry">
+  exemptInBooks?: Prisma.StringNullableListFilter<"GenericTitleEntry">
+  category?: Prisma.StringNullableFilter<"GenericTitleEntry"> | string | null
   description?: Prisma.StringNullableFilter<"GenericTitleEntry"> | string | null
   isActive?: Prisma.BoolFilter<"GenericTitleEntry"> | boolean
   source?: Prisma.StringFilter<"GenericTitleEntry"> | string
@@ -244,6 +260,8 @@ export type GenericTitleEntryOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   tier?: Prisma.SortOrder
   exemptInGenres?: Prisma.SortOrderInput | Prisma.SortOrder
+  exemptInBooks?: Prisma.SortOrder
+  category?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   source?: Prisma.SortOrder
@@ -262,6 +280,8 @@ export type GenericTitleEntryScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"GenericTitleEntry"> | string
   tier?: Prisma.StringWithAggregatesFilter<"GenericTitleEntry"> | string
   exemptInGenres?: Prisma.JsonNullableWithAggregatesFilter<"GenericTitleEntry">
+  exemptInBooks?: Prisma.StringNullableListFilter<"GenericTitleEntry">
+  category?: Prisma.StringNullableWithAggregatesFilter<"GenericTitleEntry"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"GenericTitleEntry"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"GenericTitleEntry"> | boolean
   source?: Prisma.StringWithAggregatesFilter<"GenericTitleEntry"> | string
@@ -274,6 +294,8 @@ export type GenericTitleEntryCreateInput = {
   title: string
   tier?: string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryCreateexemptInBooksInput | string[]
+  category?: string | null
   description?: string | null
   isActive?: boolean
   source?: string
@@ -286,6 +308,8 @@ export type GenericTitleEntryUncheckedCreateInput = {
   title: string
   tier?: string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryCreateexemptInBooksInput | string[]
+  category?: string | null
   description?: string | null
   isActive?: boolean
   source?: string
@@ -298,6 +322,8 @@ export type GenericTitleEntryUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   tier?: Prisma.StringFieldUpdateOperationsInput | string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryUpdateexemptInBooksInput | string[]
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.StringFieldUpdateOperationsInput | string
@@ -310,6 +336,8 @@ export type GenericTitleEntryUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   tier?: Prisma.StringFieldUpdateOperationsInput | string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryUpdateexemptInBooksInput | string[]
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.StringFieldUpdateOperationsInput | string
@@ -322,6 +350,8 @@ export type GenericTitleEntryCreateManyInput = {
   title: string
   tier?: string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryCreateexemptInBooksInput | string[]
+  category?: string | null
   description?: string | null
   isActive?: boolean
   source?: string
@@ -334,6 +364,8 @@ export type GenericTitleEntryUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   tier?: Prisma.StringFieldUpdateOperationsInput | string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryUpdateexemptInBooksInput | string[]
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.StringFieldUpdateOperationsInput | string
@@ -346,6 +378,8 @@ export type GenericTitleEntryUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   tier?: Prisma.StringFieldUpdateOperationsInput | string
   exemptInGenres?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  exemptInBooks?: Prisma.GenericTitleEntryUpdateexemptInBooksInput | string[]
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.StringFieldUpdateOperationsInput | string
@@ -358,6 +392,8 @@ export type GenericTitleEntryCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   tier?: Prisma.SortOrder
   exemptInGenres?: Prisma.SortOrder
+  exemptInBooks?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   source?: Prisma.SortOrder
@@ -369,6 +405,7 @@ export type GenericTitleEntryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   tier?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   source?: Prisma.SortOrder
@@ -380,11 +417,21 @@ export type GenericTitleEntryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   tier?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type GenericTitleEntryCreateexemptInBooksInput = {
+  set: string[]
+}
+
+export type GenericTitleEntryUpdateexemptInBooksInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 
@@ -394,6 +441,8 @@ export type GenericTitleEntrySelect<ExtArgs extends runtime.Types.Extensions.Int
   title?: boolean
   tier?: boolean
   exemptInGenres?: boolean
+  exemptInBooks?: boolean
+  category?: boolean
   description?: boolean
   isActive?: boolean
   source?: boolean
@@ -406,6 +455,8 @@ export type GenericTitleEntrySelectCreateManyAndReturn<ExtArgs extends runtime.T
   title?: boolean
   tier?: boolean
   exemptInGenres?: boolean
+  exemptInBooks?: boolean
+  category?: boolean
   description?: boolean
   isActive?: boolean
   source?: boolean
@@ -418,6 +469,8 @@ export type GenericTitleEntrySelectUpdateManyAndReturn<ExtArgs extends runtime.T
   title?: boolean
   tier?: boolean
   exemptInGenres?: boolean
+  exemptInBooks?: boolean
+  category?: boolean
   description?: boolean
   isActive?: boolean
   source?: boolean
@@ -430,6 +483,8 @@ export type GenericTitleEntrySelectScalar = {
   title?: boolean
   tier?: boolean
   exemptInGenres?: boolean
+  exemptInBooks?: boolean
+  category?: boolean
   description?: boolean
   isActive?: boolean
   source?: boolean
@@ -437,7 +492,7 @@ export type GenericTitleEntrySelectScalar = {
   updatedAt?: boolean
 }
 
-export type GenericTitleEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tier" | "exemptInGenres" | "description" | "isActive" | "source" | "createdAt" | "updatedAt", ExtArgs["result"]["genericTitleEntry"]>
+export type GenericTitleEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tier" | "exemptInGenres" | "exemptInBooks" | "category" | "description" | "isActive" | "source" | "createdAt" | "updatedAt", ExtArgs["result"]["genericTitleEntry"]>
 
 export type $GenericTitleEntryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "GenericTitleEntry"
@@ -455,6 +510,14 @@ export type $GenericTitleEntryPayload<ExtArgs extends runtime.Types.Extensions.I
      * JSON 数组，存储 BookType.key 列表，如 ["武侠","历史演义"]
      */
     exemptInGenres: runtime.JsonValue | null
+    /**
+     * 书籍级别覆盖（该称谓在哪些书籍中不视为泛称），存储 Book.id
+     */
+    exemptInBooks: string[]
+    /**
+     * 可选分类：OFFICIAL / RELIGIOUS / SERVANT / MILITARY
+     */
+    category: string | null
     description: string | null
     isActive: boolean
     source: string
@@ -887,6 +950,8 @@ export interface GenericTitleEntryFieldRefs {
   readonly title: Prisma.FieldRef<"GenericTitleEntry", 'String'>
   readonly tier: Prisma.FieldRef<"GenericTitleEntry", 'String'>
   readonly exemptInGenres: Prisma.FieldRef<"GenericTitleEntry", 'Json'>
+  readonly exemptInBooks: Prisma.FieldRef<"GenericTitleEntry", 'String[]'>
+  readonly category: Prisma.FieldRef<"GenericTitleEntry", 'String'>
   readonly description: Prisma.FieldRef<"GenericTitleEntry", 'String'>
   readonly isActive: Prisma.FieldRef<"GenericTitleEntry", 'Boolean'>
   readonly source: Prisma.FieldRef<"GenericTitleEntry", 'String'>

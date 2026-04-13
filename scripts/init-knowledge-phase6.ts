@@ -4,9 +4,9 @@
  * 用法：npx tsx scripts/init-knowledge-phase6.ts
  *
  * 数据来源：
- * - CHINESE_SURNAME_LIST → surname_entries
- * - SAFETY_GENERIC_TITLES / DEFAULT_GENERIC_TITLES → generic_title_entries
- * - ENTITY_EXTRACTION_RULES / RELATIONSHIP_EXTRACTION_RULES → extraction_rules
+ * - 内置姓氏词表 → surname_entries
+ * - 泛称分层词表（SAFETY/DEFAULT）→ generic_title_entries
+ * - 实体/关系抽取规则词表 → extraction_rules
  * - 8 个 build*Prompt 模板槽 → prompt_templates + prompt_template_versions（创建可直接运行的基线版本）
  */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */

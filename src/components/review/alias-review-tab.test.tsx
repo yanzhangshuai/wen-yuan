@@ -87,8 +87,9 @@ describe("AliasReviewTab", () => {
     expect(screen.getByText("2 条记录")).toBeInTheDocument();
 
     // Filter to CONFIRMED
-    const statusSelect = screen.getByLabelText("状态筛选");
-    fireEvent.change(statusSelect, { target: { value: "CONFIRMED" } });
+    const statusSelect = screen.getByRole("combobox", { name: "状态筛选" });
+    fireEvent.click(statusSelect);
+    fireEvent.click(screen.getByRole("option", { name: "已确认" }));
     expect(screen.getByText("1 条记录")).toBeInTheDocument();
   });
 

@@ -176,7 +176,7 @@ export default function AdminImportPage() {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [dynasty, setDynasty] = useState("");
-  const [genre, setGenre] = useState("");
+  const [bookTypeId, setBookTypeId] = useState("");
   const [description, setDescription] = useState("");
 
   // 动态加载书籍类型列表（替代硬编码的书籍类型下拉）
@@ -315,7 +315,7 @@ export default function AdminImportPage() {
       if (title) formData.set("title", title);
       if (author) formData.set("author", author);
       if (dynasty) formData.set("dynasty", dynasty);
-      if (genre) formData.set("genre", genre);
+      if (bookTypeId) formData.set("bookTypeId", bookTypeId);
       if (description) formData.set("description", description);
 
       const data = await createBook(formData);
@@ -602,18 +602,18 @@ export default function AdminImportPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="genre" className="text-sm font-medium">书籍类型</label>
+                  <label htmlFor="bookTypeId" className="text-sm font-medium">书籍类型</label>
                   <Select
-                    value={genre}
-                    onValueChange={(value) => setGenre(isSelectEmptyValue(value) ? "" : value)}
+                    value={bookTypeId}
+                    onValueChange={(value) => setBookTypeId(isSelectEmptyValue(value) ? "" : value)}
                   >
-                    <SelectTrigger id="genre" className="w-full">
+                    <SelectTrigger id="bookTypeId" className="w-full">
                       <SelectValue placeholder="自动（可选）" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectEmptyItem>自动（可选）</SelectEmptyItem>
                       {bookTypes.map(bt => (
-                        <SelectItem key={bt.id} value={bt.key}>{bt.name}</SelectItem>
+                        <SelectItem key={bt.id} value={bt.id}>{bt.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

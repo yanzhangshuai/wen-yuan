@@ -181,13 +181,13 @@ describe("buildEntityResolutionPrompt", () => {
         groupId: 1,
         members: [
           { name: "范进", description: "中举书生", chapterNos: [1, 2] },
-          { name: "范老爷", chapterNos: [3] }
+          { name: "范老爷", description: "", chapterNos: [3] }
         ]
       },
       {
         groupId: 2,
         members: [
-          { name: "娄三公子", chapterNos: [4] }
+          { name: "娄三公子", description: "", chapterNos: [4] }
         ]
       }
     ]);
@@ -208,7 +208,7 @@ describe("buildTitleResolutionPrompt", () => {
       bookTitle: "儒林外史",
       entries  : [
         { personaId: "title-1", title: "太祖皇帝", localSummary: "明朝开国人物" },
-        { personaId: "title-2", title: "老爷", localSummary: undefined }
+        { personaId: "title-2", title: "老爷", localSummary: null }
       ]
     });
 

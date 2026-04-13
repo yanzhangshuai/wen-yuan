@@ -1,0 +1,20 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "全局代码质量基线（KISS/DRY/最小修改）"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "API与外部数据采用Zod-First校验"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma事务与迁移规范"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "后端类型安全与服务边界"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "结构化日志要求"}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "管理端API响应契约"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层数据流与契约检查"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "生产与测试注释交付标准"}
+{"file": "src/app/api/admin/knowledge/title-filters/route.ts", "reason": "管理端知识库列表/创建路由风格参考"}
+{"file": "src/app/api/admin/knowledge/title-filters/[id]/route.ts", "reason": "管理端知识库PATCH/DELETE路由风格参考"}
+{"file": "src/app/api/admin/knowledge/_shared.ts", "reason": "知识库路由共享schema与错误响应模式"}
+{"file": "src/server/modules/knowledge/generic-titles.ts", "reason": "知识库服务层CRUD模式参考"}
+{"file": "src/server/modules/knowledge/load-book-knowledge.ts", "reason": "知识加载与别名查找现有实现参考"}
+{"file": "src/server/modules/analysis/services/PersonaResolver.ts", "reason": "解析链路过滤与命中顺序参考"}
+{"file": "src/server/modules/analysis/pipelines/sequential/SequentialPipeline.ts", "reason": "顺序管线注入运行时上下文参考"}
+{"file": "src/server/modules/analysis/pipelines/twopass/TwoPassPipeline.ts", "reason": "TwoPass运行时上下文加载模式"}
+{"file": "scripts/init-knowledge-phase6.ts", "reason": "幂等知识库seed脚本实现模式"}

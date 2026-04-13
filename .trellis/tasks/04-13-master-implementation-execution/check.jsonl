@@ -1,0 +1,19 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check-backend.md", "reason": "Backend check spec"}
+{"file": ".claude/commands/trellis/check-frontend.md", "reason": "Frontend check spec"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "审查代码质量与禁用模式"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "审查Zod输入校验完整性"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "审查DB事务/迁移实践"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "审查类型安全与接口声明"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "审查关键路径日志"}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "审查API统一响应"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "审查跨层契约一致性"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "审查注释与测试注释"}
+{"file": "src/app/api/admin/knowledge/title-filters/route.ts", "reason": "检查路由实现是否遵循既有模式"}
+{"file": "src/app/api/admin/knowledge/title-filters/[id]/route.ts", "reason": "检查路由参数校验与错误处理"}
+{"file": "src/server/modules/knowledge/generic-titles.ts", "reason": "检查服务层CRUD与Prisma调用模式"}
+{"file": "src/server/modules/knowledge/load-book-knowledge.ts", "reason": "检查知识加载缓存与数据结构一致性"}
+{"file": "src/server/modules/analysis/services/PersonaResolver.ts", "reason": "检查过滤链顺序与兼容性"}
+{"file": "src/server/modules/analysis/pipelines/sequential/SequentialPipeline.ts", "reason": "检查Sequential集成点"}
+{"file": "src/server/modules/analysis/pipelines/twopass/TwoPassPipeline.ts", "reason": "检查TwoPass集成点"}
+{"file": "scripts/init-knowledge-phase6.ts", "reason": "检查seed脚本幂等和结构"}

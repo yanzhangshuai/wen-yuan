@@ -28,7 +28,7 @@ import type {
 import { parseEntityResolutionResponse } from "@/types/analysis";
 import { PipelineStage } from "@/types/pipeline";
 import { extractSurname } from "@/server/modules/analysis/config/lexicon";
-import { resolveByKnowledgeBase } from "@/server/modules/analysis/config/classical-names";
+import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 
 /** 每批发给 LLM 的最大候选组数，避免单次请求过大导致截断或选错。 */
 const RESOLUTION_BATCH_SIZE = 15;
@@ -42,6 +42,18 @@ const EDIT_DISTANCE_THRESHOLD = 1;
  */
 function normalizeKey(name: string): string {
   return name.trim().toLowerCase();
+}
+
+function hasAliasBasedMergeHit(
+  leftName: string,
+  rightName: string,
+  aliasLookup: Map<string, string>
+): boolean {
+  if (aliasLookup.size === 0) return false;
+
+  const canonicalLeft = aliasLookup.get(normalizeKey(leftName));
+  const canonicalRight = aliasLookup.get(normalizeKey(rightName));
+  return Boolean(canonicalLeft && canonicalRight && canonicalLeft === canonicalRight);
 }
 
 /**
@@ -171,7 +183,7 @@ export function createGlobalEntityResolver(
         const infoI = dict.get(keys[i])!;
         for (let j = i + 1; j < keys.length; j += 1) {
           const infoJ = dict.get(keys[j])!;
-          if (resolveByKnowledgeBase(infoI.canonicalName, infoJ.canonicalName, aliasLookup)) {
+          if (hasAliasBasedMergeHit(infoI.canonicalName, infoJ.canonicalName, aliasLookup)) {
             union(keys[i], keys[j]);
           }
         }
@@ -308,7 +320,7 @@ export function createGlobalEntityResolver(
     bookTitle: string,
     chapterEntities: ChapterEntityList[],
     stageContext: { bookId: string; jobId: string },
-    preloadedAliasLookup?: Map<string, string>
+    runtimeKnowledge?: Pick<FullRuntimeKnowledge, "aliasLookup">
   ): Promise<{
     globalPersonaMap: Map<string, string>;
     profiles        : AnalysisProfileContext[];
@@ -319,7 +331,7 @@ export function createGlobalEntityResolver(
       uniqueNames: dict.size
     }));
 
-    const aliasLookup = preloadedAliasLookup ?? new Map<string, string>();
+    const aliasLookup = runtimeKnowledge?.aliasLookup ?? new Map<string, string>();
     const candidateGroups = buildCandidateGroups(dict, aliasLookup);
     console.info("[GlobalEntityResolver] candidate.groups.formed", JSON.stringify({
       bookId,

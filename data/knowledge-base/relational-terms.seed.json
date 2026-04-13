@@ -1,0 +1,438 @@
+{
+  "version": "phase7.v1",
+  "description": "Phase 7 关系词种子",
+  "entries": [
+    {
+      "term": "父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "父亲",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "母亲",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "爹",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "娘",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "老爹",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "老娘",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "老父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "老母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "娘亲",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "之父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "之母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "之妻",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "之子",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "儿子",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "女儿",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "子女",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "兄",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "弟",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "姐",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "妹",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "兄长",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "兄弟",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "弟弟",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "姐姐",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "妹妹",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "嫂",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "嫂子",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "姐夫",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "妹夫",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "伯父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "伯母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "叔父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "叔母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "舅父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "舅母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "姑母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "姑父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "岳父",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "岳母",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "侄儿",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "侄女",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "外甥",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "外甥女",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "丈夫",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "妻子",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "相公",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "娘子",
+      "category": "KINSHIP"
+    },
+    {
+      "term": "老爷",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "夫人",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "太太",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "老太太",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "大人",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "先生",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "公子",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "小姐",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "少爷",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "掌柜",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "掌柜的",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "账房",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "管家",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "老管家",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "门房",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "门子",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "书办",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "员外",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "举人",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "秀才",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "进士",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "状元",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "学道",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "太守",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "知府",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "知县",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "丞相",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "将军",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "都督",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "司马",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "司徒",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "巡抚",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "总督",
+      "category": "SOCIAL"
+    },
+    {
+      "term": "此人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "那人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "来人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "众人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "旁人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "大家",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "诸人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "某人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "一人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "他",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "她",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "他们",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "她们",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "吾",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "汝",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "彼",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "尔",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "仆人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "仆役",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "奴婢",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "家丁",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "下人",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "小厮",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "书童",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "丫鬟",
+      "category": "GENERIC_ROLE"
+    },
+    {
+      "term": "丫头",
+      "category": "GENERIC_ROLE"
+    }
+  ]
+}

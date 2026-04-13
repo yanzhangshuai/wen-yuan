@@ -3,31 +3,145 @@ import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon
 
 /**
  * 解析流水线集成：从数据库加载书籍知识配置。
- * 替代硬编码的 GENRE_PRESETS + GENRE_CLASSICAL_NAMES。
+ * 替代硬编码词表，统一由数据库驱动。
  */
 
-/**
- * 加载书籍类型的 NER 调谐配置（替代 GENRE_PRESETS）。
- * 任务启动时调用一次，缓存到内存。
- */
-export async function loadBookTypeConfig(
-  bookTypeKey: string,
-  prisma: PrismaClient
-): Promise<BookLexiconConfig> {
-  const bookType = await prisma.bookType.findUnique({
-    where: { key: bookTypeKey, isActive: true }
-  });
-  if (!bookType?.presetConfig) return {};
-  return bookType.presetConfig as BookLexiconConfig;
+const NAME_PATTERN_MAX_LENGTH = 200;
+const NAME_PATTERN_COMPILE_TIMEOUT_MS = 100;
+const NESTED_QUANTIFIER_PATTERN = /(\([^)]*[+*][^)]*\))[+*{]/;
+
+interface RuntimeLexiconPayload {
+  baseConfig     : BookLexiconConfig;
+  genericTitles  : Array<{ title: string; tier: string }>;
+  surnames       : Array<{ surname: string; isCompound: boolean }>;
+  extractionRules: Array<{ ruleType: string; content: string }>;
 }
 
-/**
- * 为分析任务一次性预加载运行时词典配置，避免章节处理中重复查询数据库。
- */
-export async function loadAnalysisRuntimeConfig(
-  bookTypeKey: string | null | undefined,
+interface RuntimeLexiconBuildResult {
+  lexiconConfig       : BookLexiconConfig;
+  safetyGenericTitles : string[];
+  defaultGenericTitles: string[];
+  hardBlockSuffixes   : string[];
+  softBlockSuffixes   : string[];
+  titleStems          : string[];
+  positionStems       : string[];
+}
+
+export interface CompiledNamePatternRule {
+  id         : string;
+  ruleType   : string;
+  action     : string;
+  pattern    : string;
+  description: string | null;
+  compiled   : RegExp;
+}
+
+export interface FullRuntimeKnowledge {
+  bookId             : string;
+  bookTypeKey        : string | null;
+  lexiconConfig      : BookLexiconConfig;
+  aliasLookup        : Map<string, string>;
+  historicalFigures  : Set<string>;
+  historicalFigureMap: Map<string, {
+    id         : string;
+    name       : string;
+    aliases    : string[];
+    dynasty    : string | null;
+    category   : string;
+    description: string | null;
+  }>;
+  relationalTerms     : Set<string>;
+  namePatternRules    : CompiledNamePatternRule[];
+  hardBlockSuffixes   : Set<string>;
+  softBlockSuffixes   : Set<string>;
+  safetyGenericTitles : Set<string>;
+  defaultGenericTitles: Set<string>;
+  titlePatterns       : RegExp[];
+  positionPatterns    : RegExp[];
+  loadedAt            : Date;
+}
+
+const runtimeKnowledgeCache = new Map<string, FullRuntimeKnowledge>();
+
+function normalizeLookupValue(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function toUniqueList(values: Iterable<string>): string[] {
+  return Array.from(new Set(
+    Array.from(values)
+      .map((value) => value.trim())
+      .filter(Boolean)
+  ));
+}
+
+function escapeRegexLiteral(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function compileStemPatterns(stems: Iterable<string>): RegExp[] {
+  return toUniqueList(stems).map((stem) => new RegExp(`${escapeRegexLiteral(stem)}$`, "u"));
+}
+
+function compileNamePatternRule(input: {
+  id         : string;
+  ruleType   : string;
+  action     : string;
+  pattern    : string;
+  description: string | null;
+}): CompiledNamePatternRule | null {
+  const pattern = input.pattern.trim();
+  if (!pattern) return null;
+
+  if (pattern.length > NAME_PATTERN_MAX_LENGTH) {
+    console.warn(
+      "[knowledge.loader] name_pattern.skipped.length_exceeded",
+      JSON.stringify({ id: input.id, length: pattern.length, maxLength: NAME_PATTERN_MAX_LENGTH })
+    );
+    return null;
+  }
+
+  if (NESTED_QUANTIFIER_PATTERN.test(pattern)) {
+    console.warn(
+      "[knowledge.loader] name_pattern.skipped.nested_quantifier",
+      JSON.stringify({ id: input.id, pattern })
+    );
+    return null;
+  }
+
+  const compileStartedAt = Date.now();
+  try {
+    const compiled = new RegExp(pattern, "u");
+    const compileDurationMs = Date.now() - compileStartedAt;
+    if (compileDurationMs > NAME_PATTERN_COMPILE_TIMEOUT_MS) {
+      console.warn(
+        "[knowledge.loader] name_pattern.skipped.compile_timeout",
+        JSON.stringify({ id: input.id, compileDurationMs, maxDurationMs: NAME_PATTERN_COMPILE_TIMEOUT_MS })
+      );
+      return null;
+    }
+
+    return {
+      id         : input.id,
+      ruleType   : input.ruleType,
+      action     : input.action,
+      pattern,
+      description: input.description,
+      compiled
+    };
+  } catch (error) {
+    console.warn(
+      "[knowledge.loader] name_pattern.skipped.syntax_error",
+      JSON.stringify({ id: input.id, error: String(error).slice(0, 500) })
+    );
+    return null;
+  }
+}
+
+async function loadRuntimeLexiconPayload(
+  bookTypeKey: string | null,
   prisma: PrismaClient
-): Promise<BookLexiconConfig> {
+): Promise<RuntimeLexiconPayload> {
   const baseConfig = bookTypeKey ? await loadBookTypeConfig(bookTypeKey, prisma) : {};
 
   const [genericTitles, surnames, extractionRules] = await Promise.all([
@@ -61,14 +175,115 @@ export async function loadAnalysisRuntimeConfig(
   ]);
 
   return {
-    ...baseConfig,
-    safetyGenericTitles        : genericTitles.filter((item) => item.tier === "SAFETY").map((item) => item.title),
-    defaultGenericTitles       : genericTitles.filter((item) => item.tier === "DEFAULT").map((item) => item.title),
-    surnameCompounds           : surnames.filter((item) => item.isCompound).map((item) => item.surname),
-    surnameSingles             : surnames.filter((item) => !item.isCompound).map((item) => item.surname),
-    entityExtractionRules      : extractionRules.filter((item) => item.ruleType === "ENTITY").map((item) => item.content),
-    relationshipExtractionRules: extractionRules.filter((item) => item.ruleType === "RELATIONSHIP").map((item) => item.content)
+    baseConfig,
+    genericTitles,
+    surnames,
+    extractionRules
   };
+}
+
+function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexiconBuildResult {
+  const safetyGenericTitles = toUniqueList(payload.genericTitles
+    .filter((item) => item.tier === "SAFETY")
+    .map((item) => item.title));
+
+  const defaultGenericTitles = toUniqueList(payload.genericTitles
+    .filter((item) => item.tier === "DEFAULT")
+    .map((item) => item.title));
+
+  const surnameCompounds = toUniqueList(payload.surnames
+    .filter((item) => item.isCompound)
+    .map((item) => item.surname));
+
+  const surnameSingles = toUniqueList(payload.surnames
+    .filter((item) => !item.isCompound)
+    .map((item) => item.surname));
+
+  const entityExtractionRules = toUniqueList(payload.extractionRules
+    .filter((item) => item.ruleType === "ENTITY")
+    .map((item) => item.content));
+
+  const relationshipExtractionRules = toUniqueList(payload.extractionRules
+    .filter((item) => item.ruleType === "RELATIONSHIP")
+    .map((item) => item.content));
+
+  const hardBlockSuffixes = toUniqueList(payload.extractionRules
+    .filter((item) => item.ruleType === "HARD_BLOCK_SUFFIX")
+    .map((item) => item.content));
+
+  const softBlockSuffixes = toUniqueList(payload.extractionRules
+    .filter((item) => item.ruleType === "SOFT_BLOCK_SUFFIX")
+    .map((item) => item.content));
+
+  const titleStems = toUniqueList(payload.extractionRules
+    .filter((item) => item.ruleType === "TITLE_STEM")
+    .map((item) => item.content));
+
+  const positionStems = toUniqueList(payload.extractionRules
+    .filter((item) => item.ruleType === "POSITION_STEM")
+    .map((item) => item.content));
+
+  const lexiconConfig: BookLexiconConfig = {
+    ...payload.baseConfig,
+    safetyGenericTitles,
+    defaultGenericTitles,
+    surnameCompounds,
+    surnameSingles,
+    entityExtractionRules       : toUniqueList([...(payload.baseConfig.entityExtractionRules ?? []), ...entityExtractionRules]),
+    relationshipExtractionRules : toUniqueList([...(payload.baseConfig.relationshipExtractionRules ?? []), ...relationshipExtractionRules]),
+    additionalRelationalSuffixes: toUniqueList([
+      ...(payload.baseConfig.additionalRelationalSuffixes ?? []),
+      ...hardBlockSuffixes
+    ]),
+    softRelationalSuffixes: toUniqueList([
+      ...(payload.baseConfig.softRelationalSuffixes ?? []),
+      ...softBlockSuffixes
+    ]),
+    additionalTitlePatterns: toUniqueList([
+      ...(payload.baseConfig.additionalTitlePatterns ?? []),
+      ...titleStems
+    ]),
+    additionalPositionPatterns: toUniqueList([
+      ...(payload.baseConfig.additionalPositionPatterns ?? []),
+      ...positionStems
+    ])
+  };
+
+  return {
+    lexiconConfig,
+    safetyGenericTitles,
+    defaultGenericTitles,
+    hardBlockSuffixes,
+    softBlockSuffixes,
+    titleStems,
+    positionStems
+  };
+}
+
+/**
+ * 加载书籍类型的 NER 调谐配置（数据库驱动）。
+ * 任务启动时调用一次，缓存到内存。
+ */
+export async function loadBookTypeConfig(
+  bookTypeKey: string,
+  prisma: PrismaClient
+): Promise<BookLexiconConfig> {
+  const bookType = await prisma.bookType.findUnique({
+    where: { key: bookTypeKey, isActive: true }
+  });
+  if (!bookType?.presetConfig) return {};
+  return bookType.presetConfig as BookLexiconConfig;
+}
+
+/**
+ * 为分析任务一次性预加载运行时词典配置，避免章节处理中重复查询数据库。
+ */
+export async function loadAnalysisRuntimeConfig(
+  bookTypeKey: string | null | undefined,
+  prisma: PrismaClient
+): Promise<BookLexiconConfig> {
+  const payload = await loadRuntimeLexiconPayload(bookTypeKey ?? null, prisma);
+  return buildRuntimeLexiconConfig(payload).lexiconConfig;
 }
 
 /**
@@ -139,17 +354,140 @@ export async function buildAliasLookupFromDb(
     return left.canonicalName.localeCompare(right.canonicalName, "zh-CN");
   });
   for (const entry of sortedEntries) {
-    const canonicalKey = entry.canonicalName.trim().toLowerCase();
+    const canonicalKey = normalizeLookupValue(entry.canonicalName);
     if (canonicalKey && !lookup.has(canonicalKey)) {
       lookup.set(canonicalKey, entry.canonicalName);
     }
 
     for (const alias of entry.aliases) {
-      const normalizedAlias = alias.trim().toLowerCase();
+      const normalizedAlias = normalizeLookupValue(alias);
       if (normalizedAlias && !lookup.has(normalizedAlias)) {
         lookup.set(normalizedAlias, entry.canonicalName);
       }
     }
   }
   return lookup;
+}
+
+export function clearKnowledgeCache(bookId?: string): void {
+  if (bookId) {
+    runtimeKnowledgeCache.delete(bookId);
+    return;
+  }
+
+  runtimeKnowledgeCache.clear();
+}
+
+export async function loadFullRuntimeKnowledge(
+  bookId: string,
+  bookTypeKey: string | null | undefined,
+  prisma: PrismaClient
+): Promise<FullRuntimeKnowledge> {
+  const normalizedBookTypeKey = bookTypeKey ?? null;
+  const cached = runtimeKnowledgeCache.get(bookId);
+  if (cached && cached.bookTypeKey === normalizedBookTypeKey) {
+    return cached;
+  }
+
+  const [
+    runtimeLexiconPayload,
+    aliasLookup,
+    historicalFigureEntries,
+    relationalTermEntries,
+    namePatternRuleEntries
+  ] = await Promise.all([
+    loadRuntimeLexiconPayload(normalizedBookTypeKey, prisma),
+    buildAliasLookupFromDb(bookId, normalizedBookTypeKey, prisma),
+    prisma.historicalFigureEntry.findMany({
+      where : { isVerified: true },
+      select: {
+        id         : true,
+        name       : true,
+        aliases    : true,
+        dynasty    : true,
+        category   : true,
+        description: true
+      }
+    }),
+    prisma.relationalTermEntry.findMany({
+      where : { isVerified: true },
+      select: { term: true }
+    }),
+    prisma.namePatternRule.findMany({
+      where  : { isVerified: true },
+      orderBy: [{ ruleType: "asc" }, { createdAt: "asc" }],
+      select : {
+        id         : true,
+        ruleType   : true,
+        action     : true,
+        pattern    : true,
+        description: true
+      }
+    })
+  ]);
+
+  const runtimeLexicon = buildRuntimeLexiconConfig(runtimeLexiconPayload);
+
+  const historicalFigures = new Set<string>();
+  const historicalFigureMap = new Map<string, {
+    id         : string;
+    name       : string;
+    aliases    : string[];
+    dynasty    : string | null;
+    category   : string;
+    description: string | null;
+  }>();
+  for (const item of historicalFigureEntries) {
+    const entry = {
+      id         : item.id,
+      name       : item.name.trim(),
+      aliases    : toUniqueList(item.aliases),
+      dynasty    : item.dynasty,
+      category   : item.category,
+      description: item.description
+    };
+    if (!entry.name) continue;
+
+    const canonicalKey = normalizeLookupValue(entry.name);
+    historicalFigures.add(canonicalKey);
+    historicalFigureMap.set(canonicalKey, entry);
+
+    for (const alias of entry.aliases) {
+      const aliasKey = normalizeLookupValue(alias);
+      if (!aliasKey) continue;
+      historicalFigures.add(aliasKey);
+      if (!historicalFigureMap.has(aliasKey)) {
+        historicalFigureMap.set(aliasKey, entry);
+      }
+    }
+  }
+
+  const relationalTerms = new Set(toUniqueList(
+    relationalTermEntries.map((item) => normalizeLookupValue(item.term))
+  ));
+
+  const namePatternRules = namePatternRuleEntries
+    .map((rule) => compileNamePatternRule(rule))
+    .filter((rule): rule is CompiledNamePatternRule => Boolean(rule));
+
+  const loadedKnowledge: FullRuntimeKnowledge = {
+    bookId,
+    bookTypeKey         : normalizedBookTypeKey,
+    lexiconConfig       : runtimeLexicon.lexiconConfig,
+    aliasLookup,
+    historicalFigures,
+    historicalFigureMap,
+    relationalTerms,
+    namePatternRules,
+    hardBlockSuffixes   : new Set(runtimeLexicon.hardBlockSuffixes),
+    softBlockSuffixes   : new Set(runtimeLexicon.softBlockSuffixes),
+    safetyGenericTitles : new Set(runtimeLexicon.safetyGenericTitles),
+    defaultGenericTitles: new Set(runtimeLexicon.defaultGenericTitles),
+    titlePatterns       : compileStemPatterns(runtimeLexicon.titleStems),
+    positionPatterns    : compileStemPatterns(runtimeLexicon.positionStems),
+    loadedAt            : new Date()
+  };
+
+  runtimeKnowledgeCache.set(bookId, loadedKnowledge);
+  return loadedKnowledge;
 }

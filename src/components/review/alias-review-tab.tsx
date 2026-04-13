@@ -155,7 +155,10 @@ export function AliasReviewTab({ bookId, aliasMappings, onRefresh }: AliasReview
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(isSelectEmptyValue(value) ? "" : value)}
           >
-            <SelectTrigger className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18">
+            <SelectTrigger
+              aria-label="状态筛选"
+              className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18"
+            >
               <SelectValue placeholder="全部状态" />
             </SelectTrigger>
             <SelectContent>
@@ -171,7 +174,10 @@ export function AliasReviewTab({ bookId, aliasMappings, onRefresh }: AliasReview
             value={typeFilter}
             onValueChange={(value) => setTypeFilter(isSelectEmptyValue(value) ? "" : value)}
           >
-            <SelectTrigger className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18">
+            <SelectTrigger
+              aria-label="类型筛选"
+              className="h-auto border-0 shadow-none px-0 py-0.5 text-xs bg-transparent gap-1 w-auto min-w-18"
+            >
               <SelectValue placeholder="全部类型" />
             </SelectTrigger>
             <SelectContent>

@@ -1,0 +1,1000 @@
+{
+  "version": "phase7.v1",
+  "description": "Phase 7 历史人物种子",
+  "entries": [
+    {
+      "name": "秦始皇",
+      "aliases": [
+        "嬴政"
+      ],
+      "dynasty": "秦",
+      "category": "EMPEROR",
+      "description": "中国首位皇帝，完成统一。"
+    },
+    {
+      "name": "汉高祖",
+      "aliases": [
+        "刘邦"
+      ],
+      "dynasty": "汉",
+      "category": "EMPEROR",
+      "description": "西汉开国皇帝。"
+    },
+    {
+      "name": "汉武帝",
+      "aliases": [
+        "刘彻"
+      ],
+      "dynasty": "汉",
+      "category": "EMPEROR",
+      "description": "西汉雄主，推行推恩令。"
+    },
+    {
+      "name": "汉光武帝",
+      "aliases": [
+        "刘秀"
+      ],
+      "dynasty": "汉",
+      "category": "EMPEROR",
+      "description": "东汉开国皇帝。"
+    },
+    {
+      "name": "魏武帝",
+      "aliases": [
+        "曹操"
+      ],
+      "dynasty": "魏",
+      "category": "EMPEROR",
+      "description": "三国时期重要政治家。"
+    },
+    {
+      "name": "隋文帝",
+      "aliases": [
+        "杨坚"
+      ],
+      "dynasty": "隋",
+      "category": "EMPEROR",
+      "description": "隋朝开国皇帝。"
+    },
+    {
+      "name": "唐太宗",
+      "aliases": [
+        "李世民"
+      ],
+      "dynasty": "唐",
+      "category": "EMPEROR",
+      "description": "开创贞观之治。"
+    },
+    {
+      "name": "唐玄宗",
+      "aliases": [
+        "李隆基"
+      ],
+      "dynasty": "唐",
+      "category": "EMPEROR",
+      "description": "唐代重要皇帝。"
+    },
+    {
+      "name": "宋太祖",
+      "aliases": [
+        "赵匡胤"
+      ],
+      "dynasty": "宋",
+      "category": "EMPEROR",
+      "description": "北宋开国皇帝。"
+    },
+    {
+      "name": "宋太宗",
+      "aliases": [
+        "赵光义"
+      ],
+      "dynasty": "宋",
+      "category": "EMPEROR",
+      "description": "北宋第二位皇帝。"
+    },
+    {
+      "name": "元世祖",
+      "aliases": [
+        "忽必烈"
+      ],
+      "dynasty": "元",
+      "category": "EMPEROR",
+      "description": "元朝开国皇帝。"
+    },
+    {
+      "name": "明太祖",
+      "aliases": [
+        "朱元璋"
+      ],
+      "dynasty": "明",
+      "category": "EMPEROR",
+      "description": "明朝开国皇帝。"
+    },
+    {
+      "name": "明成祖",
+      "aliases": [
+        "朱棣",
+        "永乐帝"
+      ],
+      "dynasty": "明",
+      "category": "EMPEROR",
+      "description": "迁都北京并编修永乐大典。"
+    },
+    {
+      "name": "明神宗",
+      "aliases": [
+        "万历帝",
+        "朱翊钧"
+      ],
+      "dynasty": "明",
+      "category": "EMPEROR",
+      "description": "明朝在位时间较长皇帝。"
+    },
+    {
+      "name": "清太祖",
+      "aliases": [
+        "努尔哈赤"
+      ],
+      "dynasty": "清",
+      "category": "EMPEROR",
+      "description": "后金建立者。"
+    },
+    {
+      "name": "清圣祖",
+      "aliases": [
+        "康熙",
+        "玄烨"
+      ],
+      "dynasty": "清",
+      "category": "EMPEROR",
+      "description": "康乾盛世奠基者。"
+    },
+    {
+      "name": "清世宗",
+      "aliases": [
+        "雍正",
+        "胤禛"
+      ],
+      "dynasty": "清",
+      "category": "EMPEROR",
+      "description": "推进中央集权。"
+    },
+    {
+      "name": "清高宗",
+      "aliases": [
+        "乾隆",
+        "弘历"
+      ],
+      "dynasty": "清",
+      "category": "EMPEROR",
+      "description": "清代皇帝。"
+    },
+    {
+      "name": "武则天",
+      "aliases": [
+        "则天皇帝"
+      ],
+      "dynasty": "周",
+      "category": "EMPEROR",
+      "description": "中国历史上唯一正统女皇帝。"
+    },
+    {
+      "name": "汉献帝",
+      "aliases": [
+        "刘协"
+      ],
+      "dynasty": "汉",
+      "category": "EMPEROR",
+      "description": "东汉末代皇帝。"
+    },
+    {
+      "name": "孔子",
+      "aliases": [
+        "孔丘",
+        "孔夫子"
+      ],
+      "dynasty": "春秋",
+      "category": "SAGE",
+      "description": "儒家学派创始人。"
+    },
+    {
+      "name": "孟子",
+      "aliases": [
+        "孟轲"
+      ],
+      "dynasty": "战国",
+      "category": "SAGE",
+      "description": "儒家代表人物。"
+    },
+    {
+      "name": "荀子",
+      "aliases": [
+        "荀况"
+      ],
+      "dynasty": "战国",
+      "category": "SAGE",
+      "description": "先秦思想家。"
+    },
+    {
+      "name": "老子",
+      "aliases": [
+        "李耳"
+      ],
+      "dynasty": "春秋",
+      "category": "SAGE",
+      "description": "道家思想奠基者。"
+    },
+    {
+      "name": "庄子",
+      "aliases": [
+        "庄周"
+      ],
+      "dynasty": "战国",
+      "category": "SAGE",
+      "description": "道家代表人物。"
+    },
+    {
+      "name": "韩非子",
+      "aliases": [
+        "韩非"
+      ],
+      "dynasty": "战国",
+      "category": "SAGE",
+      "description": "法家思想集大成者。"
+    },
+    {
+      "name": "墨子",
+      "aliases": [
+        "墨翟"
+      ],
+      "dynasty": "战国",
+      "category": "SAGE",
+      "description": "墨家学派创始人。"
+    },
+    {
+      "name": "曾子",
+      "aliases": [
+        "曾参"
+      ],
+      "dynasty": "春秋",
+      "category": "SAGE",
+      "description": "儒家重要传承者。"
+    },
+    {
+      "name": "子思",
+      "aliases": [
+        "孔伋"
+      ],
+      "dynasty": "战国",
+      "category": "SAGE",
+      "description": "儒家思想家。"
+    },
+    {
+      "name": "董仲舒",
+      "aliases": [],
+      "dynasty": "汉",
+      "category": "SAGE",
+      "description": "汉代儒学代表。"
+    },
+    {
+      "name": "朱熹",
+      "aliases": [
+        "朱文公"
+      ],
+      "dynasty": "宋",
+      "category": "SAGE",
+      "description": "理学集大成者。"
+    },
+    {
+      "name": "王阳明",
+      "aliases": [
+        "王守仁"
+      ],
+      "dynasty": "明",
+      "category": "SAGE",
+      "description": "心学代表人物。"
+    },
+    {
+      "name": "程颢",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "SAGE",
+      "description": "理学代表人物。"
+    },
+    {
+      "name": "程颐",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "SAGE",
+      "description": "理学代表人物。"
+    },
+    {
+      "name": "张载",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "SAGE",
+      "description": "北宋思想家。"
+    },
+    {
+      "name": "周敦颐",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "SAGE",
+      "description": "理学先驱。"
+    },
+    {
+      "name": "陆九渊",
+      "aliases": [
+        "陆象山"
+      ],
+      "dynasty": "宋",
+      "category": "SAGE",
+      "description": "心学先驱。"
+    },
+    {
+      "name": "顾炎武",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "SAGE",
+      "description": "明末清初思想家。"
+    },
+    {
+      "name": "黄宗羲",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "SAGE",
+      "description": "思想家、史学家。"
+    },
+    {
+      "name": "王夫之",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "SAGE",
+      "description": "明清之际思想家。"
+    },
+    {
+      "name": "屈原",
+      "aliases": [],
+      "dynasty": "战国",
+      "category": "POET",
+      "description": "楚辞代表诗人。"
+    },
+    {
+      "name": "陶渊明",
+      "aliases": [
+        "陶潜"
+      ],
+      "dynasty": "晋",
+      "category": "POET",
+      "description": "田园诗代表。"
+    },
+    {
+      "name": "李白",
+      "aliases": [
+        "李太白",
+        "青莲居士"
+      ],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "浪漫主义诗人。"
+    },
+    {
+      "name": "杜甫",
+      "aliases": [
+        "杜子美"
+      ],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "现实主义诗人。"
+    },
+    {
+      "name": "白居易",
+      "aliases": [
+        "白乐天"
+      ],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "中唐诗人。"
+    },
+    {
+      "name": "王维",
+      "aliases": [
+        "王右丞"
+      ],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "山水田园诗人。"
+    },
+    {
+      "name": "孟浩然",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "山水诗人。"
+    },
+    {
+      "name": "岑参",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "边塞诗人。"
+    },
+    {
+      "name": "高适",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "边塞诗人。"
+    },
+    {
+      "name": "李商隐",
+      "aliases": [
+        "李义山"
+      ],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "晚唐诗人。"
+    },
+    {
+      "name": "杜牧",
+      "aliases": [
+        "杜牧之"
+      ],
+      "dynasty": "唐",
+      "category": "POET",
+      "description": "晚唐诗人。"
+    },
+    {
+      "name": "苏轼",
+      "aliases": [
+        "苏东坡"
+      ],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "北宋文学家。"
+    },
+    {
+      "name": "苏辙",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "北宋文学家。"
+    },
+    {
+      "name": "苏洵",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "北宋文学家。"
+    },
+    {
+      "name": "辛弃疾",
+      "aliases": [
+        "辛幼安"
+      ],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "豪放词代表。"
+    },
+    {
+      "name": "陆游",
+      "aliases": [
+        "陆放翁"
+      ],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "南宋诗人。"
+    },
+    {
+      "name": "李清照",
+      "aliases": [
+        "易安居士"
+      ],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "宋代女词人。"
+    },
+    {
+      "name": "柳永",
+      "aliases": [
+        "柳三变"
+      ],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "北宋词人。"
+    },
+    {
+      "name": "欧阳修",
+      "aliases": [
+        "欧阳文忠"
+      ],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "北宋文学家。"
+    },
+    {
+      "name": "范仲淹",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "POET",
+      "description": "北宋文学家与政治家。"
+    },
+    {
+      "name": "孙武",
+      "aliases": [
+        "孙子"
+      ],
+      "dynasty": "春秋",
+      "category": "GENERAL",
+      "description": "兵法家。"
+    },
+    {
+      "name": "吴起",
+      "aliases": [],
+      "dynasty": "战国",
+      "category": "GENERAL",
+      "description": "军事家。"
+    },
+    {
+      "name": "白起",
+      "aliases": [],
+      "dynasty": "战国",
+      "category": "GENERAL",
+      "description": "秦国名将。"
+    },
+    {
+      "name": "韩信",
+      "aliases": [
+        "淮阴侯"
+      ],
+      "dynasty": "汉",
+      "category": "GENERAL",
+      "description": "汉初名将。"
+    },
+    {
+      "name": "卫青",
+      "aliases": [],
+      "dynasty": "汉",
+      "category": "GENERAL",
+      "description": "西汉名将。"
+    },
+    {
+      "name": "霍去病",
+      "aliases": [],
+      "dynasty": "汉",
+      "category": "GENERAL",
+      "description": "西汉名将。"
+    },
+    {
+      "name": "李靖",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "GENERAL",
+      "description": "唐代名将。"
+    },
+    {
+      "name": "郭子仪",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "GENERAL",
+      "description": "唐代名将。"
+    },
+    {
+      "name": "薛仁贵",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "GENERAL",
+      "description": "唐代名将。"
+    },
+    {
+      "name": "岳飞",
+      "aliases": [
+        "岳武穆"
+      ],
+      "dynasty": "宋",
+      "category": "GENERAL",
+      "description": "南宋抗金名将。"
+    },
+    {
+      "name": "韩世忠",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "GENERAL",
+      "description": "南宋名将。"
+    },
+    {
+      "name": "狄青",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "GENERAL",
+      "description": "北宋名将。"
+    },
+    {
+      "name": "戚继光",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "GENERAL",
+      "description": "明代抗倭名将。"
+    },
+    {
+      "name": "俞大猷",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "GENERAL",
+      "description": "明代抗倭名将。"
+    },
+    {
+      "name": "袁崇焕",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "GENERAL",
+      "description": "明末名将。"
+    },
+    {
+      "name": "关羽",
+      "aliases": [
+        "关云长"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "蜀汉名将。"
+    },
+    {
+      "name": "张飞",
+      "aliases": [
+        "张翼德"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "蜀汉名将。"
+    },
+    {
+      "name": "赵云",
+      "aliases": [
+        "赵子龙"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "蜀汉名将。"
+    },
+    {
+      "name": "马超",
+      "aliases": [
+        "马孟起"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "蜀汉名将。"
+    },
+    {
+      "name": "黄忠",
+      "aliases": [
+        "黄汉升"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "蜀汉名将。"
+    },
+    {
+      "name": "吕布",
+      "aliases": [
+        "吕奉先"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "东汉末名将。"
+    },
+    {
+      "name": "周瑜",
+      "aliases": [
+        "周公瑾"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "东吴名将。"
+    },
+    {
+      "name": "陆逊",
+      "aliases": [
+        "陆伯言"
+      ],
+      "dynasty": "三国",
+      "category": "GENERAL",
+      "description": "东吴名将。"
+    },
+    {
+      "name": "徐达",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "GENERAL",
+      "description": "明初开国名将。"
+    },
+    {
+      "name": "常遇春",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "GENERAL",
+      "description": "明初开国名将。"
+    },
+    {
+      "name": "姜子牙",
+      "aliases": [
+        "太公望"
+      ],
+      "dynasty": "周",
+      "category": "MYTHICAL",
+      "description": "封神传说人物。"
+    },
+    {
+      "name": "哪吒",
+      "aliases": [
+        "三太子"
+      ],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "杨戬",
+      "aliases": [
+        "二郎神"
+      ],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "嫦娥",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "后羿",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "夸父",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "精卫",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "伏羲",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "女娲",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "神农",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "盘古",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "共工",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "祝融",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "神话人物。"
+    },
+    {
+      "name": "文昌帝君",
+      "aliases": [],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "民间信仰神祇。"
+    },
+    {
+      "name": "关圣帝君",
+      "aliases": [
+        "关帝",
+        "关公"
+      ],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "民间神祇。"
+    },
+    {
+      "name": "吕洞宾",
+      "aliases": [
+        "吕祖"
+      ],
+      "dynasty": null,
+      "category": "MYTHICAL",
+      "description": "八仙之一。"
+    },
+    {
+      "name": "管仲",
+      "aliases": [],
+      "dynasty": "春秋",
+      "category": "STATESMAN",
+      "description": "齐国名相。"
+    },
+    {
+      "name": "晏婴",
+      "aliases": [
+        "晏子"
+      ],
+      "dynasty": "春秋",
+      "category": "STATESMAN",
+      "description": "齐国政治家。"
+    },
+    {
+      "name": "商鞅",
+      "aliases": [],
+      "dynasty": "战国",
+      "category": "STATESMAN",
+      "description": "秦国改革家。"
+    },
+    {
+      "name": "李斯",
+      "aliases": [],
+      "dynasty": "秦",
+      "category": "STATESMAN",
+      "description": "秦朝丞相。"
+    },
+    {
+      "name": "萧何",
+      "aliases": [],
+      "dynasty": "汉",
+      "category": "STATESMAN",
+      "description": "西汉开国功臣。"
+    },
+    {
+      "name": "张良",
+      "aliases": [],
+      "dynasty": "汉",
+      "category": "STATESMAN",
+      "description": "西汉开国功臣。"
+    },
+    {
+      "name": "诸葛亮",
+      "aliases": [
+        "孔明"
+      ],
+      "dynasty": "三国",
+      "category": "STATESMAN",
+      "description": "蜀汉丞相。"
+    },
+    {
+      "name": "司马懿",
+      "aliases": [
+        "司马仲达"
+      ],
+      "dynasty": "三国",
+      "category": "STATESMAN",
+      "description": "曹魏政治家。"
+    },
+    {
+      "name": "房玄龄",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "STATESMAN",
+      "description": "唐代名相。"
+    },
+    {
+      "name": "杜如晦",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "STATESMAN",
+      "description": "唐代名相。"
+    },
+    {
+      "name": "魏征",
+      "aliases": [],
+      "dynasty": "唐",
+      "category": "STATESMAN",
+      "description": "唐代谏臣。"
+    },
+    {
+      "name": "包拯",
+      "aliases": [
+        "包青天"
+      ],
+      "dynasty": "宋",
+      "category": "STATESMAN",
+      "description": "北宋名臣。"
+    },
+    {
+      "name": "寇准",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "STATESMAN",
+      "description": "北宋名相。"
+    },
+    {
+      "name": "司马光",
+      "aliases": [],
+      "dynasty": "宋",
+      "category": "STATESMAN",
+      "description": "北宋政治家。"
+    },
+    {
+      "name": "王安石",
+      "aliases": [
+        "王荆公"
+      ],
+      "dynasty": "宋",
+      "category": "STATESMAN",
+      "description": "北宋改革家。"
+    },
+    {
+      "name": "张居正",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "STATESMAN",
+      "description": "明代首辅。"
+    },
+    {
+      "name": "于谦",
+      "aliases": [],
+      "dynasty": "明",
+      "category": "STATESMAN",
+      "description": "明代名臣。"
+    },
+    {
+      "name": "曾国藩",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "STATESMAN",
+      "description": "晚清重臣。"
+    },
+    {
+      "name": "李鸿章",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "STATESMAN",
+      "description": "晚清重臣。"
+    },
+    {
+      "name": "左宗棠",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "STATESMAN",
+      "description": "晚清重臣。"
+    },
+    {
+      "name": "林则徐",
+      "aliases": [],
+      "dynasty": "清",
+      "category": "STATESMAN",
+      "description": "晚清名臣。"
+    }
+  ]
+}

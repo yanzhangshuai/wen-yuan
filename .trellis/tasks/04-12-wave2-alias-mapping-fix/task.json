@@ -1,0 +1,44 @@
+{
+  "id": "wave2-alias-mapping-fix",
+  "name": "wave2-alias-mapping-fix",
+  "title": "Wave2: AliasMapping写入管线修复",
+  "description": "",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-13-master-implementation-execution",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

@@ -9,8 +9,11 @@ import { createAiCallExecutor } from "@/server/modules/analysis/services/AiCallE
 import { createModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createGlobalEntityResolver, type GlobalEntityResolverService } from "@/server/modules/analysis/pipelines/twopass/GlobalEntityResolver";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
-import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
-import { buildAliasLookupFromDb, loadAnalysisRuntimeConfig } from "@/server/modules/knowledge/load-book-knowledge";
+import {
+  clearKnowledgeCache,
+  loadFullRuntimeKnowledge,
+  type FullRuntimeKnowledge
+} from "@/server/modules/knowledge/load-book-knowledge";
 import { createPipeline } from "@/server/modules/analysis/pipelines/factory";
 import type {
   AnalysisArchitecture,
@@ -571,24 +574,21 @@ export function createAnalysisJobRunner(
   }
 
   /**
-   * 功能：为 two-pass 管线一次性预加载书名、知识库别名表与词典配置。
+   * 功能：为 two-pass 管线一次性预加载书名与完整运行时知识。
    * 输入：书籍 ID。
    * 输出：Pass 2/Pass 3 运行所需上下文。
    * 异常：书籍不存在时抛错；数据库查询失败时向上抛出。
    * 副作用：无（只读查询）。
    */
   async function loadTwoPassRuntimeContext(bookId: string): Promise<{
-    bookTitle              : string;
-    preloadedAliasLookup   : Map<string, string>;
-    preloadedLexiconConfig?: BookLexiconConfig;
+    bookTitle       : string;
+    runtimeKnowledge: FullRuntimeKnowledge;
   }> {
     const bookRow = await prismaClient.book.findUnique({
       where : { id: bookId },
       select: {
-        title     : true,
-        genre     : true,
-        bookTypeId: true,
-        bookType  : { select: { key: true } }
+        title   : true,
+        bookType: { select: { key: true } }
       }
     });
 
@@ -596,16 +596,14 @@ export function createAnalysisJobRunner(
       throw new Error(`书籍不存在: ${bookId}`);
     }
 
-    const bookTypeKey = bookRow.bookType?.key ?? bookRow.genre;
-    const [preloadedAliasLookup, preloadedLexiconConfig] = await Promise.all([
-      buildAliasLookupFromDb(bookId, bookTypeKey, prismaClient),
-      loadAnalysisRuntimeConfig(bookTypeKey, prismaClient)
-    ]);
+    const bookTypeKey = bookRow.bookType?.key ?? null;
+    // D12：任务启动时强制刷新，保证本任务读到的是最新审核后知识快照。
+    clearKnowledgeCache(bookId);
+    const runtimeKnowledge = await loadFullRuntimeKnowledge(bookId, bookTypeKey, prismaClient);
 
     return {
       bookTitle: bookRow.title,
-      preloadedAliasLookup,
-      preloadedLexiconConfig
+      runtimeKnowledge
     };
   }
 

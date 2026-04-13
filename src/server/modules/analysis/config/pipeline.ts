@@ -1,20 +1,16 @@
-import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
-
 /**
  * =============================================================================
- * 文件定位（服务端分析模块 - 流水线配置与书籍类型预设）
+ * 文件定位（服务端分析模块 - 流水线配置）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/server/modules/analysis/config/pipeline.ts`
  *
  * 本文件在配置目录中的定位：
  * ┌─ config/
- * │  ├─ pipeline.ts         ← 本文件：流水线阈值、并发、特性开关 + 书籍类型预设词表覆盖
+ * │  ├─ pipeline.ts         ← 本文件：流水线阈值、并发、特性开关
  * │  ├─ lexicon.ts          ← NER 词典规则：姓氏表、泛称集合、提取规则、个性化判定
- * │  └─ classical-names.ts  ← 古典文学字号/谥号/绰号知识库（用于 Pass 2 规则预合并）
  *
  * 核心职责：
- * - 集中管理分析流水线的运行参数（并发、阈值、分片大小、特性开关等）；
- * - 维护书籍类型预设（GENRE_PRESETS），为不同类型古典文学提供定制化词表覆盖。
+ * - 集中管理分析流水线的运行参数（并发、阈值、分片大小、特性开关等）。
  *
  * 维护边界（重要）：
  * - 这些值直接影响召回率、精度、成本和时延，是业务规则，不是纯技术参数。
@@ -63,8 +59,6 @@ export const ANALYSIS_PIPELINE_CONFIG = {
   llmArbitrationMaxTerms        : 20,
   /** 仲裁结果进入 LLM_INFERRED 的最低置信度。 */
   llmArbitrationMinConfidence   : 0.7,
-  /** 是否允许按书籍类型预设覆盖默认词表。 */
-  enableGenrePresetOverride     : true,
   /** 是否记录灰区提及用于后处理仲裁。 */
   recordGrayZoneMentions        : true,
   /**
@@ -81,56 +75,3 @@ export const ANALYSIS_PIPELINE_CONFIG = {
    */
   chapterValidationRiskThreshold: 3
 } as const;
-
-/**
- * 默认书籍类型预设名称。
- * - 作为词表/规则覆盖的默认入口；
- * - 当书籍未显式指定书籍类型时使用。
- */
-export const DEFAULT_GENRE_PRESET = "明清官场";
-
-/**
- * 书籍类型预设词表覆盖。
- *
- * 字段业务语义：
- * - `exemptGenericTitles`：豁免的“通用称谓”，避免被过度过滤；
- * - `additionalTitlePatterns`：补充称谓模式，提升特定书籍类型召回；
- * - `additionalPositionPatterns`：补充职位模式，增强角色关系识别。
- *
- * 备注：
- * - 这里的键名（如“武侠”“宫廷家族”）会被上游书籍类型选择逻辑引用，随意改名会导致预设失效。
- */
-export const GENRE_PRESETS: Record<string, BookLexiconConfig> = {
-  明清官场: {},
-  武侠  : {
-    exemptGenericTitles       : ["掌门", "帮主", "盟主", "先生", "公子"],
-    additionalTitlePatterns   : ["掌门", "盟主", "帮主", "长老", "护法"],
-    additionalPositionPatterns: ["堂主"]
-  },
-  宫廷家族: {
-    exemptGenericTitles: ["夫人", "太太", "老爷", "小姐", "公子"]
-  },
-  // 水浒传类：绰号保护 + 武职称号
-  英雄传奇: {
-    exemptGenericTitles       : ["好汉", "头领", "教头", "员外"],
-    additionalTitlePatterns   : ["员外", "教头", "都头", "押司", "提辖", "制使"],
-    additionalPositionPatterns: ["节级", "管营", "团练"]
-  },
-  // 三国演义类：字号/谥号保护 + 军政职位
-  历史演义: {
-    exemptGenericTitles       : ["丞相", "军师", "主公"],
-    additionalTitlePatterns   : ["太守", "刺史", "都督", "国舅", "驸马"],
-    additionalPositionPatterns: ["司马", "司徒", "廷尉", "长史", "从事"]
-  },
-  // 红楼梦类：辈分称呼保护
-  家族世情: {
-    exemptGenericTitles   : ["姑娘", "奶奶", "姐姐", "妹妹", "嫂子", "婶子"],
-    softRelationalSuffixes: ["哥哥", "姐姐"]
-  },
-  // 西游记类：法号/本相/神魔称号
-  神魔小说: {
-    exemptGenericTitles       : ["大王", "大圣", "长老", "法师"],
-    additionalTitlePatterns   : ["菩萨", "真人", "尊者", "天王", "星君", "元帅"],
-    additionalPositionPatterns: ["土地", "山神", "龙王"]
-  }
-};

@@ -135,7 +135,7 @@ describe("getNeo4jDriver", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("creates and caches driver in non-production", async () => {
     // Arrange
-    process.env.NODE_ENV = "development";
+    Reflect.set(process.env, "NODE_ENV", "development");
     setCompleteConfig();
     const authToken = { type: "basic-auth" };
     const driver = { name: "dev-driver" } as never;
@@ -166,7 +166,7 @@ describe("getNeo4jDriver", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not cache driver in production", async () => {
     // Arrange
-    process.env.NODE_ENV = "production";
+    Reflect.set(process.env, "NODE_ENV", "production");
     setCompleteConfig();
     const authToken = { type: "basic-auth" };
     const driver = { name: "prod-driver" } as never;

@@ -1,0 +1,44 @@
+{
+  "id": "04-13-acceptance-execution",
+  "name": "04-13-acceptance-execution",
+  "title": "验收执行 — Sequential 准确率提升 + 知识库服务化",
+  "description": "对主实施任务的所有产物进行完整验收检查，全部通过视为验收完成",
+  "status": "planning",
+  "dev_type": "test",
+  "scope": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-13",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    { "file": "docs/MASTER.md", "reason": "主任务文档总入口与 DoD 定义" },
+    { "file": ".trellis/tasks/04-13-master-implementation-execution/prd.md", "reason": "执行计划，每项任务的 DoD" },
+    { "file": "docs/待确认项汇总.md", "reason": "D1-D13 决策基线，验收以此为据" }
+  ],
+  "notes": "",
+  "meta": {}
+}

@@ -14,13 +14,38 @@
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildAliasLookupFromDb, loadAnalysisRuntimeConfig } from "@/server/modules/knowledge/load-book-knowledge";
+import {
+  clearKnowledgeCache,
+  loadFullRuntimeKnowledge,
+  type FullRuntimeKnowledge
+} from "@/server/modules/knowledge/load-book-knowledge";
 import { createAnalysisJobRunner, markOrphanPersonas } from "@/server/modules/analysis/jobs/runAnalysisJob";
 
 vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
-  buildAliasLookupFromDb   : vi.fn(),
-  loadAnalysisRuntimeConfig: vi.fn()
+  clearKnowledgeCache     : vi.fn(),
+  loadFullRuntimeKnowledge: vi.fn()
 }));
+
+function createRuntimeKnowledge(overrides: Partial<FullRuntimeKnowledge> = {}): FullRuntimeKnowledge {
+  return {
+    bookId              : "book-1",
+    bookTypeKey         : null,
+    lexiconConfig       : {},
+    aliasLookup         : new Map<string, string>(),
+    historicalFigures   : new Set<string>(),
+    historicalFigureMap : new Map(),
+    relationalTerms     : new Set<string>(),
+    namePatternRules    : [],
+    hardBlockSuffixes   : new Set<string>(),
+    softBlockSuffixes   : new Set<string>(),
+    safetyGenericTitles : new Set<string>(),
+    defaultGenericTitles: new Set<string>(),
+    titlePatterns       : [],
+    positionPatterns    : [],
+    loadedAt            : new Date("2026-01-01T00:00:00.000Z"),
+    ...overrides
+  };
+}
 
 function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: boolean } = {}) {
   const analysisJobFindUnique = vi.fn();
@@ -154,13 +179,13 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("analysis job runner", () => {
-  const mockedBuildAliasLookupFromDb = vi.mocked(buildAliasLookupFromDb);
-  const mockedLoadAnalysisRuntimeConfig = vi.mocked(loadAnalysisRuntimeConfig);
+  const mockedClearKnowledgeCache = vi.mocked(clearKnowledgeCache);
+  const mockedLoadFullRuntimeKnowledge = vi.mocked(loadFullRuntimeKnowledge);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedBuildAliasLookupFromDb.mockResolvedValue(new Map());
-    mockedLoadAnalysisRuntimeConfig.mockResolvedValue({});
+    mockedLoadFullRuntimeKnowledge.mockResolvedValue(createRuntimeKnowledge());
+    mockedClearKnowledgeCache.mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -1182,10 +1207,13 @@ describe("analysis job runner", () => {
     const preloadedLexiconConfig = {
       entityExtractionRules: ["提取历史人物真名"]
     };
+    const runtimeKnowledge = createRuntimeKnowledge({
+      aliasLookup,
+      lexiconConfig: preloadedLexiconConfig
+    });
     const globalPersonaMap = new Map<string, string>([["范进", "persona-fan"]]);
 
-    mockedBuildAliasLookupFromDb.mockResolvedValueOnce(aliasLookup);
-    mockedLoadAnalysisRuntimeConfig.mockResolvedValueOnce(preloadedLexiconConfig);
+    mockedLoadFullRuntimeKnowledge.mockResolvedValueOnce(runtimeKnowledge);
 
     const {
       runner,
@@ -1225,10 +1253,8 @@ describe("analysis job runner", () => {
       { id: "chapter-2", no: 2 }
     ]);
     bookFindUnique.mockResolvedValueOnce({
-      title     : "儒林外史",
-      genre     : "历史演义",
-      bookTypeId: null,
-      bookType  : null
+      title   : "儒林外史",
+      bookType: null
     });
     resolveGlobalEntities.mockResolvedValueOnce({ globalPersonaMap });
     analyzeChapter.mockImplementation(async (_chapterId, context) => {
@@ -1256,10 +1282,10 @@ describe("analysis job runner", () => {
         { chapterId: "chapter-2", chapterNo: 2, entities: [] }
       ],
       { bookId: "book-1", jobId: "job-two-pass" },
-      aliasLookup
+      runtimeKnowledge
     );
-    expect(mockedBuildAliasLookupFromDb).toHaveBeenCalledWith("book-1", "历史演义", expect.any(Object));
-    expect(mockedLoadAnalysisRuntimeConfig).toHaveBeenCalledWith("历史演义", expect.any(Object));
+    expect(mockedClearKnowledgeCache).toHaveBeenCalledWith("book-1");
+    expect(mockedLoadFullRuntimeKnowledge).toHaveBeenCalledWith("book-1", null, expect.any(Object));
     expect(analyzeChapter).toHaveBeenCalledTimes(2);
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: "job-two-pass" },
@@ -1302,10 +1328,8 @@ describe("analysis job runner", () => {
       .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
     chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
     bookFindUnique.mockResolvedValueOnce({
-      title     : "儒林外史",
-      genre     : "历史演义",
-      bookTypeId: null,
-      bookType  : null
+      title   : "儒林外史",
+      bookType: null
     });
     extractChapterEntities.mockRejectedValueOnce(new Error("schema mismatch"));
 
@@ -1317,7 +1341,9 @@ describe("analysis job runner", () => {
       "儒林外史",
       [],
       { bookId: "book-1", jobId: "job-two-pass-non-retryable" },
-      expect.any(Map)
+      expect.objectContaining({
+        aliasLookup: expect.any(Map)
+      })
     );
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: "job-two-pass-non-retryable" },
@@ -1362,10 +1388,8 @@ describe("analysis job runner", () => {
       .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
     chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
     bookFindUnique.mockResolvedValueOnce({
-      title     : "儒林外史",
-      genre     : "历史演义",
-      bookTypeId: null,
-      bookType  : null
+      title   : "儒林外史",
+      bookType: null
     });
     extractChapterEntities
       .mockRejectedValueOnce(new Error("network timeout"))
@@ -1389,7 +1413,9 @@ describe("analysis job runner", () => {
         entities : [{ id: "entity-1", name: "范进" }]
       }],
       { bookId: "book-1", jobId: "job-two-pass-retry" },
-      expect.any(Map)
+      expect.objectContaining({
+        aliasLookup: expect.any(Map)
+      })
     );
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: "job-two-pass-retry" },

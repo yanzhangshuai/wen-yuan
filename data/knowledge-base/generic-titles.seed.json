@@ -1,0 +1,701 @@
+{
+  "version": "phase7.v1",
+  "description": "Phase 7 泛称扩充词表（含 SAFETY/DEFAULT）",
+  "titles": [
+    {
+      "title": "此人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "那人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "来人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "众人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "旁人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "大家",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "诸人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "某人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "一人",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "他",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "她",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "他们",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "她们",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "吾",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "汝",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "彼",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "尔",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "父亲",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "母亲",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "老父",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "老母",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "老娘",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "娘亲",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "兄长",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "兄弟",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "姐姐",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "弟弟",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "妹妹",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "妻子",
+      "tier": "SAFETY",
+      "category": null
+    },
+    {
+      "title": "丫鬟",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "丫头",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "奴婢",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "仆人",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "仆役",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "家丁",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "下人",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "小厮",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "书童",
+      "tier": "SAFETY",
+      "category": "SERVANT"
+    },
+    {
+      "title": "老爷",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "夫人",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "太太",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "老太太",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "小姐",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "少爷",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "公子",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "相公",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "娘子",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "先生",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "掌柜",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "掌柜的",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "账房",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "管家",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "老管家",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "门房",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "门子",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "书办",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "掌舵",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "按察司",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "布政司",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "都司",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "参将",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "千总",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "把总",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "员外",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "举人",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "秀才",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "进士",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "状元",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "老学究",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "大人",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "国公",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "侯爷",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "王爷",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "殿下",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "陛下",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "皇上",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "圣上",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "天子",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "君上",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "娘娘",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "皇后",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "太后",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "贵妃",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "王妃",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "郡主",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "格格",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "贝勒",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "世子",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "世孙",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "都督",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "都尉",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "校尉",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "司马",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "司徒",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "刺史",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "知州",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "巡检",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "御史",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "学政",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "提督",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "巡按",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "中丞",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "郎中",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "主簿",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "县令",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "典史",
+      "tier": "DEFAULT",
+      "category": "OFFICIAL"
+    },
+    {
+      "title": "总兵",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "将门",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "督师",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "长老",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "护法",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "真人",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "法师",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "禅师",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "住持",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "方丈",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "道人",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "道长",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "居士",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "师父",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "师叔",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "师兄",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "师弟",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "徒儿",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "弟子",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "门下",
+      "tier": "DEFAULT",
+      "category": "RELIGIOUS"
+    },
+    {
+      "title": "侍卫",
+      "tier": "DEFAULT",
+      "category": "MILITARY"
+    },
+    {
+      "title": "使者",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "嬷嬷",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "奶妈",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "老妈子",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "仆妇",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "丫环",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "小厮儿",
+      "tier": "DEFAULT",
+      "category": "SERVANT"
+    },
+    {
+      "title": "东家",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "少东家",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "姑爷",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "姑奶奶",
+      "tier": "DEFAULT",
+      "category": null
+    },
+    {
+      "title": "舅老爷",
+      "tier": "DEFAULT",
+      "category": null
+    }
+  ]
+}

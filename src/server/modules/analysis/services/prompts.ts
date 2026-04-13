@@ -29,10 +29,10 @@ import {
 import { repairJson } from "@/types/analysis";
 import {
   buildEffectiveGenericTitles,
-  ENTITY_EXTRACTION_RULES,
   GENERIC_TITLES_PROMPT_LIMIT,
-  RELATIONSHIP_EXTRACTION_RULES,
-  formatRulesSection
+  formatRulesSection,
+  getDefaultEntityExtractionRules,
+  getDefaultRelationshipExtractionRules
 } from "@/server/modules/analysis/config/lexicon";
 
 /**
@@ -222,7 +222,7 @@ export function buildRosterDiscoveryRulesText(input: Pick<RosterDiscoveryInput, 
     "尊号/帝号/封号：可对应已知人物→填entityId+isTitleOnly:true；新人物→isNew+isTitleOnly:true。",
     "别名/称号/职位类型额外标注: aliasType(TITLE|POSITION|KINSHIP|NICKNAME|COURTESY_NAME), contextHint(≤100字), suggestedRealName, aliasConfidence(0-1)。"
   ];
-  const entityRules = input.entityExtractionRules ?? ENTITY_EXTRACTION_RULES;
+  const entityRules = input.entityExtractionRules ?? getDefaultEntityExtractionRules();
   return formatRulesSection([...entityRules, ...rosterSpecificRules], { genericTitles: genericTitlesExample });
 }
 
@@ -235,8 +235,8 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
     "biography.category 限定: BIRTH|EXAM|CAREER|TRAVEL|SOCIAL|DEATH|EVENT。",
     "rawText 必须精准截取原文；event 客观描述，禁止抒情。不跨段推测，缺失则返回[]。"
   ];
-  const entityRules = input.entityExtractionRules ?? ENTITY_EXTRACTION_RULES;
-  const relationshipRules = input.relationshipExtractionRules ?? RELATIONSHIP_EXTRACTION_RULES;
+  const entityRules = input.entityExtractionRules ?? getDefaultEntityExtractionRules();
+  const relationshipRules = input.relationshipExtractionRules ?? getDefaultRelationshipExtractionRules();
   return formatRulesSection([
     ...analysisPreRules,
     ...entityRules,
@@ -247,7 +247,7 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
 
 export function buildIndependentExtractionRulesText(input: Pick<IndependentExtractionInput, "entityExtractionRules">): string {
   const genericTitlesExample = GENERIC_TITLES_EXAMPLE;
-  const baseRules = input.entityExtractionRules ?? ENTITY_EXTRACTION_RULES;
+  const baseRules = input.entityExtractionRules ?? getDefaultEntityExtractionRules();
   return [
     "仅输出原始 JSON 数组，禁止 markdown 代码块。",
     ...baseRules,

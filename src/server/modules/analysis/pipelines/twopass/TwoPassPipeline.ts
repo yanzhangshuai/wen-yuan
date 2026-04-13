@@ -3,7 +3,6 @@ import type {
   AnalysisPipelineResult,
   PipelineRunParams
 } from "@/server/modules/analysis/pipelines/types";
-import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
 import type { ChapterEntityList } from "@/types/analysis";
 import {
   runSequentialChapterLoop,
@@ -11,13 +10,13 @@ import {
   type ChapterLoopAnalyzer
 } from "@/server/modules/analysis/pipelines/sequential/SequentialPipeline";
 import type { GlobalEntityResolverService } from "@/server/modules/analysis/pipelines/twopass/GlobalEntityResolver";
+import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 
 const TWO_PASS_PIPELINE_DEPENDENCY_ERROR = "TwoPassPipeline 缺少运行时依赖，无法执行两遍式分析。";
 
 interface TwoPassRuntimeContext {
-  bookTitle              : string;
-  preloadedAliasLookup   : Map<string, string>;
-  preloadedLexiconConfig?: BookLexiconConfig;
+  bookTitle       : string;
+  runtimeKnowledge: FullRuntimeKnowledge;
 }
 
 /**
@@ -162,7 +161,7 @@ export function createTwoPassPipeline(
       runtimeContext.bookTitle,
       chapterEntityLists,
       { bookId: params.bookId, jobId: params.jobId },
-      runtimeContext.preloadedAliasLookup
+      runtimeContext.runtimeKnowledge
     );
 
     console.info(
@@ -192,7 +191,7 @@ export function createTwoPassPipeline(
       progressBase          : 40,
       progressRange         : 60,
       externalPersonaMap    : globalPersonaMap,
-      preloadedLexiconConfig: runtimeContext.preloadedLexiconConfig
+      preloadedLexiconConfig: runtimeContext.runtimeKnowledge.lexiconConfig
     });
   }
 

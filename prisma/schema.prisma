@@ -164,7 +164,6 @@ model Book {
   title          String // 书名，如《儒林外史》
   author         String? // 作者，如"吴敬梓"
   dynasty        String? // 背景朝代
-  genre          String? // 书籍类型预设键名（如"武侠""宫廷家族"），对应 GENRE_PRESETS，影响词典覆盖
   description    String? @db.Text // 作品简介
   coverUrl       String? @map("cover_url") // 3D 看板所需的封面图
   sourceFileKey  String? @map("source_file_key") // 原始导入文件的对象存储 key
@@ -179,7 +178,7 @@ model Book {
   parseProgress Int     @default(0) @map("parse_progress") // 解析进度 0-100
   parseStage    String? @map("parse_stage") // 当前阶段文本，如"实体提取"
 
-  // 知识库关联：bookTypeId 为 genre 的结构化替代，过渡期两者并存
+  // 知识库关联：bookTypeId 为书籍类型结构化标识
   bookTypeId     String? @map("book_type_id") @db.Uuid
   bookType       BookType? @relation(fields: [bookTypeId], references: [id])
   bookKnowledgePacks BookKnowledgePack[]
@@ -659,6 +658,10 @@ model GenericTitleEntry {
   /// 书籍类型级别覆盖（该称谓在哪些书籍类型下不视为泛称）
   /// JSON 数组，存储 BookType.key 列表，如 ["武侠","历史演义"]
   exemptInGenres Json? @map("exempt_in_genres") // string[]
+  /// 书籍级别覆盖（该称谓在哪些书籍中不视为泛称），存储 Book.id
+  exemptInBooks String[] @default([]) @map("exempt_in_books")
+  /// 可选分类：OFFICIAL / RELIGIOUS / SERVANT / MILITARY
+  category String? @db.VarChar(30)
 
   description String? @db.Text
   isActive    Boolean @default(true) @map("is_active")
@@ -669,6 +672,63 @@ model GenericTitleEntry {
 
   @@index([tier, isActive], map: "generic_titles_tier_idx")
   @@map("generic_title_entries")
+}
+
+// ============================================================
+// 历史人物条目
+// ============================================================
+/// @db.remark: 历史人物知识条目，支持别名匹配与分类过滤。
+model HistoricalFigureEntry {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  aliases     String[] @default([])
+  dynasty     String?  @db.VarChar(50)
+  /// EMPEROR | SAGE | POET | GENERAL | MYTHICAL | STATESMAN
+  category    String   @db.VarChar(30)
+  description String?
+  isVerified  Boolean  @default(false) @map("is_verified")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([name], map: "historical_figure_entries_name_idx")
+  @@index([category, isVerified], map: "historical_figure_entries_category_verified_idx")
+  @@map("historical_figure_entries")
+}
+
+// ============================================================
+// 关系词条目
+// ============================================================
+/// @db.remark: 关系词条目，用于泛称/关系词过滤。
+model RelationalTermEntry {
+  id         String   @id @default(uuid()) @db.Uuid
+  term       String   @unique @db.VarChar(20)
+  /// KINSHIP | SOCIAL | GENERIC_ROLE
+  category   String   @db.VarChar(30)
+  isVerified Boolean  @default(false) @map("is_verified")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([category, isVerified], map: "relational_term_entries_category_verified_idx")
+  @@map("relational_term_entries")
+}
+
+// ============================================================
+// 名字模式规则
+// ============================================================
+/// @db.remark: 名字模式规则，支持运行时正则编译与风控拦截。
+model NamePatternRule {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// FAMILY_HOUSE | DESCRIPTIVE_PHRASE | RELATIONAL_COMPOUND
+  ruleType    String   @db.VarChar(30) @map("rule_type")
+  /// 正则表达式，长度上限 200（D9）
+  pattern     String   @db.VarChar(200)
+  /// BLOCK | WARN
+  action      String   @db.VarChar(20)
+  description String?
+  isVerified  Boolean  @default(false) @map("is_verified")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([ruleType, isVerified], map: "name_pattern_rules_type_verified_idx")
+  @@map("name_pattern_rules")
 }
 
 // ============================================================

@@ -12,7 +12,9 @@ import type {
   GraphEdge,
   GraphFilter,
   GraphNode,
-  GraphSnapshot
+  GraphSnapshot,
+  SimulationEdge,
+  SimulationNode
 } from "@/types/graph";
 
 const GRAPH_WIDTH = 960;
@@ -65,7 +67,7 @@ function restoreOriginalSvgGetBBox() {
     return;
   }
 
-  delete (SVGElement.prototype as Partial<SVGElement>).getBBox;
+  Reflect.deleteProperty(SVGElement.prototype, "getBBox");
 }
 
 beforeAll(() => {
@@ -114,19 +116,19 @@ afterAll(() => {
   if (originalSvgWidth) {
     Object.defineProperty(SVGSVGElement.prototype, "width", originalSvgWidth);
   } else {
-    delete (SVGSVGElement.prototype as Partial<SVGSVGElement>).width;
+    Reflect.deleteProperty(SVGSVGElement.prototype, "width");
   }
 
   if (originalSvgHeight) {
     Object.defineProperty(SVGSVGElement.prototype, "height", originalSvgHeight);
   } else {
-    delete (SVGSVGElement.prototype as Partial<SVGSVGElement>).height;
+    Reflect.deleteProperty(SVGSVGElement.prototype, "height");
   }
 
   if (originalSvgViewBox) {
     Object.defineProperty(SVGSVGElement.prototype, "viewBox", originalSvgViewBox);
   } else {
-    delete (SVGSVGElement.prototype as Partial<SVGSVGElement>).viewBox;
+    Reflect.deleteProperty(SVGSVGElement.prototype, "viewBox");
   }
 });
 
@@ -145,6 +147,14 @@ function buildNode(overrides: Partial<GraphNode> = {}): GraphNode {
     influence   : overrides.influence ?? 10,
     x           : overrides.x ?? 120,
     y           : overrides.y ?? 120
+  };
+}
+
+function buildSimulationNode(overrides: Partial<SimulationNode> = {}): SimulationNode {
+  return {
+    ...buildNode(overrides),
+    x: overrides.x ?? 120,
+    y: overrides.y ?? 120
   };
 }
 
@@ -301,10 +311,10 @@ describe("forceGraphTesting helpers", () => {
 
   it("covers faction fill and path highlighting helpers", () => {
     const factionColors = ["#111111", "#222222", "#333333"];
-    const pathEdge = {
+    const pathEdge: SimulationEdge = {
       ...buildEdge({ id: "edge-path" }),
-      source: buildNode({ id: "hero" }),
-      target: buildNode({ id: "ally" })
+      source: buildSimulationNode({ id: "hero" }),
+      target: buildSimulationNode({ id: "ally" })
     };
 
     expect(forceGraphTesting.nodeFactionColor({ factionIndex: 1 }, [])).toBeNull();
@@ -375,10 +385,10 @@ describe("forceGraphTesting helpers", () => {
       searchQuery   : "书院"
     })).toBe(false);
 
-    const pathEdge = {
+    const pathEdge: SimulationEdge = {
       ...buildEdge({ id: "edge-fallback" }),
-      source: buildNode({ id: "hero" }),
-      target: buildNode({ id: "ally" })
+      source: buildSimulationNode({ id: "hero" }),
+      target: buildSimulationNode({ id: "ally" })
     };
 
     expect(forceGraphTesting.isPathEdge(pathEdge, new Set(["hero", "ally"]), new Set())).toBe(true);

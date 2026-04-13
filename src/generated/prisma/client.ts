@@ -147,6 +147,21 @@ export type SurnameEntry = Prisma.SurnameEntryModel
  */
 export type GenericTitleEntry = Prisma.GenericTitleEntryModel
 /**
+ * Model HistoricalFigureEntry
+ * @db.remark: 历史人物知识条目，支持别名匹配与分类过滤。
+ */
+export type HistoricalFigureEntry = Prisma.HistoricalFigureEntryModel
+/**
+ * Model RelationalTermEntry
+ * @db.remark: 关系词条目，用于泛称/关系词过滤。
+ */
+export type RelationalTermEntry = Prisma.RelationalTermEntryModel
+/**
+ * Model NamePatternRule
+ * @db.remark: 名字模式规则，支持运行时正则编译与风控拦截。
+ */
+export type NamePatternRule = Prisma.NamePatternRuleModel
+/**
  * Model PromptTemplate
  * @db.remark: 提示词模板。activeVersionId 指向当前生效版本，支持一键回滚。
  */
