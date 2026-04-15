@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from "vitest";
 import { calculateSubstringMatchScore, createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
+import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import {
   buildEffectiveHardBlockSuffixes,
   buildEffectiveSoftBlockSuffixes,
@@ -61,6 +62,34 @@ function createPrismaMock() {
     profileCreate,
     aliasMappingFindMany,
     mentionFindMany
+  };
+}
+
+// Helper to create a minimal runtimeKnowledge mock for filter tests
+function createMockRuntimeKnowledge(overrides?: Partial<{
+  relationalTerms     : Set<string>;
+  namePatternRules    : Array<{ action: string; compiled: RegExp; id: string; ruleType: string; pattern: string; description: string | null }>;
+  historicalFigures   : Set<string>;
+  historicalFigureMap : Map<string, unknown>;
+  safetyGenericTitles : Set<string>;
+  defaultGenericTitles: Set<string>;
+}>): FullRuntimeKnowledge {
+  return {
+    bookId              : "book-1",
+    bookTypeKey         : null,
+    lexiconConfig       : {},
+    aliasLookup         : new Map(),
+    historicalFigures   : overrides?.historicalFigures ?? new Set(),
+    historicalFigureMap : (overrides?.historicalFigureMap ?? new Map()) as never,
+    relationalTerms     : overrides?.relationalTerms ?? new Set(),
+    namePatternRules    : overrides?.namePatternRules ?? [],
+    hardBlockSuffixes   : new Set(),
+    softBlockSuffixes   : new Set(),
+    safetyGenericTitles : overrides?.safetyGenericTitles ?? new Set(),
+    defaultGenericTitles: overrides?.defaultGenericTitles ?? new Set(),
+    titlePatterns       : [],
+    positionPatterns    : [],
+    loadedAt            : new Date()
   };
 }
 
@@ -445,24 +474,30 @@ describe("persona resolver", () => {
     expect(personaFindMany).not.toHaveBeenCalled();
   });
 
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
+  // 用例语义：dynamicTitleResolution 关闭时，泛称直接走快捷路径，不触发 DB 查询。
   it("marks generic titles as hallucinated without DB queries", async () => {
-    const { prisma, personaFindMany } = createPrismaMock();
-    const resolver = createPersonaResolver(prisma);
+    const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
+    (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = false;
+    try {
+      const { prisma, personaFindMany } = createPrismaMock();
+      const resolver = createPersonaResolver(prisma);
 
-    for (const title of ["老爷", "夫人", "众人", "掌柜的", "丫鬟"]) {
-      const result = await resolver.resolve({
-        bookId        : "book-1",
-        extractedName : title,
-        chapterContent: `${title}出现了`
-      });
-      expect(result).toEqual({
-        status    : "hallucinated",
-        confidence: title === "众人" || title === "丫鬟" ? 1.0 : 0.9,
-        reason    : title === "众人" || title === "丫鬟" ? "safety_generic" : "config_generic"
-      });
+      for (const title of ["老爷", "夫人", "众人", "掌柜的", "丫鬟"]) {
+        const result = await resolver.resolve({
+          bookId        : "book-1",
+          extractedName : title,
+          chapterContent: `${title}出现了`
+        });
+        expect(result).toEqual({
+          status    : "hallucinated",
+          confidence: title === "众人" || title === "丫鬟" ? 1.0 : 0.9,
+          reason    : title === "众人" || title === "丫鬟" ? "safety_generic" : "config_generic"
+        });
+      }
+      expect(personaFindMany).not.toHaveBeenCalled();
+    } finally {
+      (ANALYSIS_PIPELINE_CONFIG as { dynamicTitleResolutionEnabled: boolean }).dynamicTitleResolutionEnabled = original;
     }
-    expect(personaFindMany).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -591,8 +626,9 @@ describe("persona resolver", () => {
       chapterContent: "老爷走过来...",
       rosterMap
     });
+    // 动态泛称分档开启后，缺少证据的泛称进入灰区而非直接 config_generic
     expect(genericResult.status).toBe("hallucinated");
-    expect(genericResult.reason).toBe("config_generic");
+    expect(["config_generic", "gray_zone"]).toContain(genericResult.reason);
   });
 
   it("treats roster GENERIC markers as generic_title even for non-config names", async () => {
@@ -989,6 +1025,18 @@ describe("persona resolver", () => {
     expect(score).toBe(0);
   });
 
+  // 用例语义：子串匹配，尾缀不命中任何 block 规则时返回正常分值。
+  it("calculateSubstringMatchScore returns normalScore when tail is not in any block set", () => {
+    const score = calculateSubstringMatchScore(
+      "范进兄",
+      "范进",
+      HARD_BLOCK_SUFFIXES,
+      DEFAULT_SOFT_BLOCK_SUFFIXES
+    );
+    const expectedScore = 0.60 + 0.37 * ("范进".length / "范进兄".length);
+    expect(score).toBeCloseTo(expectedScore, 8);
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("collectPersonalizationEvidence supports personalized/generic/gray_zone classification", async () => {
     const original = ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled;
@@ -1196,5 +1244,261 @@ describe("persona resolver", () => {
 
     expect(result.status).toBe("created");
     expect(result.personaId).toBe("created-fanjinlaoshi");
+  });
+
+  // ── runtimeKnowledge 过滤检查点 ──
+
+  it("filters relational terms without alias binding via runtimeKnowledge", async () => {
+    const { prisma } = createPrismaMock();
+    // 别名注册表返回 null → 无绑定
+    const lookupAlias = vi.fn().mockResolvedValue(null);
+    const aliasRegistry = { lookupAlias } as unknown as AliasRegistryService;
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "嫂子",
+      chapterContent  : "嫂子端来了一碗茶。",
+      chapterNo       : 3,
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        relationalTerms: new Set(["嫂子", "兄长", "父亲"])
+      })
+    });
+
+    expect(result.status).toBe("hallucinated");
+    expect(result.reason).toBe("relational_term");
+    expect(result.confidence).toBe(0.95);
+  });
+
+  it("allows relational terms that have alias binding through", async () => {
+    const { prisma, personaFindMany } = createPrismaMock();
+    personaFindMany.mockResolvedValue([
+      { id: "persona-zhang-wife", name: "张嫂", aliases: ["嫂子"] }
+    ]);
+    const lookupAlias = vi.fn().mockResolvedValue({
+      alias       : "嫂子",
+      resolvedName: "张嫂",
+      personaId   : "persona-zhang-wife",
+      aliasType   : "NICKNAME",
+      confidence  : 0.85,
+      status      : "CONFIRMED"
+    });
+    const aliasRegistry = { lookupAlias } as unknown as AliasRegistryService;
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "嫂子",
+      chapterContent  : "嫂子端来了一碗茶。",
+      chapterNo       : 3,
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        relationalTerms: new Set(["嫂子"])
+      })
+    });
+
+    // 有 alias 绑定 → 不被拦截，走 alias registry 快速路径
+    expect(result.status).toBe("resolved");
+    expect(result.personaId).toBe("persona-zhang-wife");
+  });
+
+  it("filters names matching BLOCK name pattern rules", async () => {
+    const { prisma } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "贾府",
+      chapterContent  : "贾府中人来人往。",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        namePatternRules: [{
+          id         : "rule-1",
+          ruleType   : "FAMILY_HOUSE",
+          action     : "BLOCK",
+          pattern    : ".+[府家]$",
+          description: "家族名过滤",
+          compiled   : /.+[府家]$/
+        }]
+      })
+    });
+
+    expect(result.status).toBe("hallucinated");
+    expect(result.reason).toBe("name_pattern_block");
+    expect(result.confidence).toBe(0.95);
+  });
+
+  it("allows names matching WARN pattern rules through", async () => {
+    const { prisma, personaFindMany, personaCreate } = createPrismaMock();
+    personaFindMany.mockResolvedValue([]);
+    personaCreate.mockResolvedValueOnce({ id: "new-id", name: "赵府" });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "赵府",
+      chapterContent  : "赵府的大门敞开着。",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        namePatternRules: [{
+          id         : "rule-2",
+          ruleType   : "FAMILY_HOUSE",
+          action     : "WARN",
+          pattern    : ".+[府家]$",
+          description: "家族名警告",
+          compiled   : /.+[府家]$/
+        }]
+      })
+    });
+
+    // WARN 不拦截，应进入后续流程（created）
+    expect(result.status).toBe("created");
+  });
+
+  it("filters historical figure mention-only (D13: not in chapter text)", async () => {
+    const { prisma } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "孔子",
+      chapterContent  : "众人在堂上议论纷纷。",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        historicalFigures: new Set(["孔子", "孟子"])
+      })
+    });
+
+    // "孔子"不在章节原文中 → 纯提及 → 幻觉
+    expect(result.status).toBe("hallucinated");
+    expect(result.reason).toBe("historical_figure_mention_only");
+    expect(result.confidence).toBe(0.9);
+  });
+
+  it("allows historical figures that actively appear in chapter text (D13)", async () => {
+    const { prisma, personaFindMany, personaCreate } = createPrismaMock();
+    personaFindMany.mockResolvedValue([]);
+    personaCreate.mockResolvedValueOnce({ id: "new-kongzi", name: "孔子" });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "孔子",
+      chapterContent  : "孔子曰：\u201C学而时习之，不亦说乎？\u201D",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        historicalFigures: new Set(["孔子"])
+      })
+    });
+
+    // "孔子"在原文中有实际出现 → 放行 → 进入后续创建流程
+    expect(result.status).toBe("created");
+    expect(result.personaId).toBe("new-kongzi");
+  });
+
+  it("uses runtimeKnowledge safetyGenericTitles when available", async () => {
+    const { prisma } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "某人",
+      chapterContent  : "某人走了过来。",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        safetyGenericTitles: new Set(["某人", "此人", "那人"])
+      })
+    });
+
+    expect(result.status).toBe("hallucinated");
+    expect(result.reason).toBe("safety_generic");
+  });
+
+  it("uses runtimeKnowledge defaultGenericTitles when available", async () => {
+    const { prisma } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "掌柜的",
+      chapterContent  : "掌柜的坐在柜台后面。",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        defaultGenericTitles: new Set(["掌柜的", "伙计"])
+      })
+    });
+
+    // 动态泛称分档开启后，默认泛称仍被拦截为 hallucinated（可能 config_generic 或 gray_zone）
+    expect(result.status).toBe("hallucinated");
+    expect(["config_generic", "gray_zone"]).toContain(result.reason);
+  });
+
+  it("name_too_long threshold is 8 characters", async () => {
+    const { prisma, personaFindMany, personaCreate } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    // 9个字符 → 被过滤
+    const result9 = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "一二三四五六七八九",
+      chapterContent: "一二三四五六七八九出现了。"
+    });
+    expect(result9.status).toBe("hallucinated");
+    expect(result9.reason).toBe("name_too_long");
+
+    // 8个字符 → 不被过滤（进入后续流程）
+    personaFindMany.mockResolvedValue([]);
+    personaCreate.mockResolvedValueOnce({ id: "new-8char", name: "一二三四五六七八" });
+    const result8 = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "一二三四五六七八",
+      chapterContent: "一二三四五六七八来了。"
+    });
+    expect(result8.reason).not.toBe("name_too_long");
+  });
+
+  it("applies filter checkpoints in correct priority order", async () => {
+    const { prisma } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    // 名字同时是 safety generic 和 relational term → safety_generic 优先
+    const result = await resolver.resolve({
+      bookId          : "book-1",
+      extractedName   : "父亲",
+      chapterContent  : "父亲走了进来。",
+      runtimeKnowledge: createMockRuntimeKnowledge({
+        safetyGenericTitles: new Set(["父亲"]),
+        relationalTerms    : new Set(["父亲"])
+      })
+    });
+
+    expect(result.status).toBe("hallucinated");
+    // safety_generic 比 relational_term 优先级高
+    expect(result.reason).toBe("safety_generic");
+  });
+
+  it("filters descriptive phrases containing 的 or 之 (≥4 chars)", async () => {
+    const { prisma } = createPrismaMock();
+    const resolver = createPersonaResolver(prisma);
+
+    const result1 = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "贾政的母亲",
+      chapterContent: "贾政的母亲坐在堂上。"
+    });
+    expect(result1.status).toBe("hallucinated");
+    expect(result1.reason).toBe("descriptive_phrase");
+
+    const result2 = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "林之孝家",
+      chapterContent: "林之孝家的走了过来。"
+    });
+    expect(result2.status).toBe("hallucinated");
+    expect(result2.reason).toBe("descriptive_phrase");
+  });
+
+  it("allows short names with 的/之 (< 4 chars) through", async () => {
+    const { prisma, personaFindMany, personaCreate } = createPrismaMock();
+    personaFindMany.mockResolvedValue([]);
+    personaCreate.mockResolvedValueOnce({ id: "new-id", name: "的的" });
+
+    const resolver = createPersonaResolver(prisma);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "的的",
+      chapterContent: "的的跑了过来。"
+    });
+    // 2 chars < 4, so 的/之 rule doesn't apply
+    expect(result.reason).not.toBe("descriptive_phrase");
   });
 });

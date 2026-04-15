@@ -72,10 +72,10 @@ model NamePatternRule {
 3. 执行 `npx prisma migrate dev --name add_knowledge_base_phase7`
 
 **DoD**:
-- [ ] `pnpm prisma:migrate` 成功（migration 文件存在）
-- [ ] 3 张新表在 DB 中存在
-- [ ] `pnpm prisma:generate` 成功
-- [ ] `pnpm type-check` 通过
+- [x] `pnpm prisma:migrate` 成功（migration 文件存在）
+- [x] 3 张新表在 DB 中存在
+- [x] `pnpm prisma:generate` 成功
+- [x] `pnpm type-check` 通过
 
 ---
 
@@ -97,10 +97,10 @@ model NamePatternRule {
 5. 修复测试文件中引用 genre 的 mock
 
 **DoD**:
-- [ ] `grep -r "book\.genre" src/ --include="*.ts" | grep -v "\.test\." | wc -l` 返回 0
-- [ ] `grep -r "resolveBookLexiconConfig" src/ --include="*.ts" | wc -l` 返回 0
-- [ ] `grep "genre" prisma/schema.prisma | grep -v "BookType\|//"` 返回 0 条
-- [ ] `pnpm type-check` + `pnpm test` 通过
+- [x] `grep -r "book\.genre" src/ --include="*.ts" | grep -v "\.test\." | wc -l` 返回 0
+- [x] `grep -r "resolveBookLexiconConfig" src/ --include="*.ts" | wc -l` 返回 0
+- [x] `grep "genre" prisma/schema.prisma | grep -v "BookType\|//"` 返回 0 条
+- [x] `pnpm type-check` + `pnpm test` 通过
 
 ---
 
@@ -143,13 +143,13 @@ model NamePatternRule {
 8. 新增 `package.json` script: `"kb:seed-phase7": "tsx scripts/init-knowledge-phase7.ts"`
 
 **DoD**:
-- [ ] 脚本可幂等执行：`pnpm kb:seed-phase7` 连续运行 2 次无报错
-- [ ] `GenericTitleEntry count ≥ 110`
-- [ ] `ExtractionRule count ≥ 54`
-- [ ] `HistoricalFigureEntry count ≥ 100`
-- [ ] `RelationalTermEntry count ≥ 80`
-- [ ] `NamePatternRule count ≥ 15`
-- [ ] 种子数据中无 `{ canonicalName: "牛布衣", aliases: [...包含"牛浦郎"...] }`
+- [x] 脚本可幂等执行：`pnpm kb:seed-phase7` 连续运行 2 次无报错
+- [x] `GenericTitleEntry count ≥ 110`
+- [x] `ExtractionRule count ≥ 54`
+- [x] `HistoricalFigureEntry count ≥ 100`
+- [x] `RelationalTermEntry count ≥ 80`
+- [x] `NamePatternRule count ≥ 15`
+- [x] 种子数据中无 `{ canonicalName: "牛布衣", aliases: [...包含"牛浦郎"...] }`
 
 **前置**: P0-1
 
@@ -204,10 +204,10 @@ export async function loadFullRuntimeKnowledge(
 5. 废弃旧的 `buildAliasLookupFromDb()` 孤立调用，统一入口
 
 **DoD**:
-- [ ] 函数可加载全部 9 种知识类型
-- [ ] 缓存命中时返回相同引用，不产生额外 DB 查询
-- [ ] 非法正则入库前被校验拦截（D9）
-- [ ] 单元测试 ≥ 5 个（mock DB → 验证结构、缓存命中、正则编译）
+- [x] 函数可加载全部 9 种知识类型
+- [x] 缓存命中时返回相同引用，不产生额外 DB 查询
+- [x] 非法正则入库前被校验拦截（D9）
+- [x] 单元测试 ≥ 5 个（mock DB → 验证结构、缓存命中、正则编译）
 
 **前置**: P0-1, P0-3
 
@@ -236,10 +236,10 @@ export async function loadFullRuntimeKnowledge(
 5. 更新测试文件中引用上述常量的 mock，改为 mock `FullRuntimeKnowledge`
 
 **DoD**:
-- [ ] `test ! -f src/server/modules/analysis/config/classical-names.ts` 为真
-- [ ] `grep -r "GENRE_PRESETS\|RULIN_NAMES\|SANGUO_NAMES\|SHUIHU_NAMES\|HONGLOU_NAMES\|XIYOU_NAMES" src/ --include="*.ts"` 返回 0 条
-- [ ] `grep -c "SAFETY_GENERIC_TITLES\|DEFAULT_GENERIC_TITLES\|HARD_BLOCK_SUFFIXES" src/server/modules/analysis/config/lexicon.ts` 返回 0
-- [ ] `pnpm type-check` + `pnpm test` 通过
+- [x] `test ! -f src/server/modules/analysis/config/classical-names.ts` 为真
+- [x] `grep -r "GENRE_PRESETS\|RULIN_NAMES\|SANGUO_NAMES\|SHUIHU_NAMES\|HONGLOU_NAMES\|XIYOU_NAMES" src/ --include="*.ts"` 返回 0 条
+- [x] `grep -c "SAFETY_GENERIC_TITLES\|DEFAULT_GENERIC_TITLES\|HARD_BLOCK_SUFFIXES" src/server/modules/analysis/config/lexicon.ts` 返回 0
+- [x] `pnpm type-check` + `pnpm test` 通过
 
 **前置**: P0-4
 
@@ -273,11 +273,11 @@ export async function loadFullRuntimeKnowledge(
 4. 移除所有对 `lexicon.ts` 硬编码常量的直接引用
 
 **DoD**:
-- [ ] PersonaResolver 无直接 import 硬编码常量
-- [ ] 6 个检查点代码存在（grep 可验证）
-- [ ] 过滤优先级正确（safety → relational → namePattern → default → historical → alias）
-- [ ] 测试 ≥ 20 个（每个检查点命中 + 放行各一用例）
-- [ ] `pnpm test` 通过
+- [x] PersonaResolver 无直接 import 硬编码常量
+- [x] 6 个检查点代码存在（grep 可验证）
+- [x] 过滤优先级正确（safety → relational → namePattern → default → historical → alias）
+- [x] 测试 ≥ 20 个（每个检查点命中 + 放行各一用例）
+- [x] `pnpm test` 通过
 
 **前置**: P0-4, P0-5
 
@@ -296,10 +296,10 @@ export async function loadFullRuntimeKnowledge(
 - 最低 confidence 阈值：0.5（低于此值不写入）
 
 **DoD**:
-- [ ] `AliasRegistryService.registerAlias()` 被 Phase 1 roster 路径调用
-- [ ] `AliasRegistryService.registerAlias()` 被 Phase 2 chunk 路径调用
-- [ ] 重新解析儒林-3 后，`alias_mappings` 表有 ≥ 50 条记录
-- [ ] 测试（注册、去重、冲突处理）通过
+- [x] `AliasRegistryService.registerAlias()` 被 Phase 1 roster 路径调用
+- [x] `AliasRegistryService.registerAlias()` 被 Phase 2 chunk 路径调用
+- [x] 重新解析儒林-3 后，`alias_mappings` 表有 ≥ 50 条记录
+- [x] 测试（注册、去重、冲突处理）通过
 
 **前置**: P0-4
 
@@ -319,10 +319,10 @@ export async function loadFullRuntimeKnowledge(
 - `SequentialPipeline` 在 chapter loop 完成后调用 `PostAnalysisMerger.merge()`
 
 **DoD**:
-- [ ] `PostAnalysisMerger.ts` 文件存在
-- [ ] D3 硬性约束：confidence < 1.0 的合并均写入 PENDING，无自动执行
-- [ ] 重新解析后 `merge_suggestions` 表 ≥ 30 条（儒林-3）
-- [ ] 测试（各 tier 逻辑 + PENDING/AUTO_MERGED 状态转换）通过
+- [x] `PostAnalysisMerger.ts` 文件存在
+- [x] D3 硬性约束：confidence < 1.0 的合并均写入 PENDING，无自动执行
+- [x] 重新解析后 `merge_suggestions` 表 ≥ 30 条（儒林-3）
+- [x] 测试（各 tier 逻辑 + PENDING/AUTO_MERGED 状态转换）通过
 
 **前置**: P1-1, P1-2
 
@@ -349,10 +349,10 @@ await this.runSequentialChapterLoop({ ..., runtimeKnowledge });
 - 移除对 `book.genre` 的引用，改为 `book.bookType?.key ?? null`
 
 **DoD**:
-- [ ] `grep "buildAliasLookup.*genre\|book\.genre" src/server/modules/analysis/pipelines/ -r --include="*.ts"` 返回 0 条
-- [ ] SequentialPipeline 有 `clearKnowledgeCache` 调用
-- [ ] TwoPassPipeline 有 `loadFullRuntimeKnowledge` 调用
-- [ ] `pnpm type-check` 通过
+- [x] `grep "buildAliasLookup.*genre\|book\.genre" src/server/modules/analysis/pipelines/ -r --include="*.ts"` 返回 0 条
+- [x] SequentialPipeline 有 `clearKnowledgeCache` 调用
+- [x] TwoPassPipeline 有 `loadFullRuntimeKnowledge` 调用
+- [x] `pnpm type-check` 通过
 
 **前置**: P0-4, P0-5, P1-1
 
@@ -369,8 +369,8 @@ await this.runSequentialChapterLoop({ ..., runtimeKnowledge });
 - 后缀过滤完整性（全名包含后缀词，不只做 remainder 匹配）
 
 **DoD**:
-- [ ] 重新解析儒林-3 后垃圾 profile 数量（泛称 + 关系词 + 历史 + 短语 + 家族名）下降 ≥ 80%
-- [ ] 所有新过滤规则有测试覆盖
+- [x] 重新解析儒林-3 后垃圾 profile 数量（泛称 + 关系词 + 历史 + 短语 + 家族名）下降 ≥ 80%
+- [x] 所有新过滤规则有测试覆盖
 
 **前置**: P1-1
 
@@ -386,10 +386,10 @@ await this.runSequentialChapterLoop({ ..., runtimeKnowledge });
 - `src/app/api/admin/knowledge/historical-figures/import/route.ts` — POST (batch import JSON)
 
 **DoD**:
-- [ ] 4 个路由文件存在
-- [ ] GET 支持按 category / dynasty / name 过滤
-- [ ] import 端点接受 `[HistoricalFigureEntry]` JSON 数组
-- [ ] 测试（happy path + error path）通过
+- [x] 4 个路由文件存在
+- [x] GET 支持按 category / dynasty / name 过滤
+- [x] import 端点接受 `[HistoricalFigureEntry]` JSON 数组
+- [x] 测试（happy path + error path）通过
 
 **前置**: P0-1
 
@@ -412,10 +412,10 @@ await this.runSequentialChapterLoop({ ..., runtimeKnowledge });
 - 编译耗时 ≤ 100ms
 
 **DoD**:
-- [ ] 5 个路由文件存在
-- [ ] D9 三条正则安全规则在 API 层验证
-- [ ] test 端点返回 `{ matched: boolean, reason?: string }`
-- [ ] 测试（CRUD + 正则校验拦截）通过
+- [x] 5 个路由文件存在
+- [x] D9 三条正则安全规则在 API 层验证
+- [x] test 端点返回 `{ matched: boolean, reason?: string }`
+- [x] 测试（CRUD + 正则校验拦截）通过
 
 **前置**: P0-1
 
@@ -432,8 +432,8 @@ await this.runSequentialChapterLoop({ ..., runtimeKnowledge });
 - 格式参照 `data/eval/goldset.schema.json`：包含 `canonicalName`、`aliases`、`gender`、`isHistorical`、`isGenericTitle`、`firstAppearChapter`
 
 **DoD**:
-- [ ] 文件存在，行数 ≥ 50
-- [ ] `pnpm eval:goldset`（`scripts/eval/validate-goldset.ts`）校验通过
+- [x] 文件存在，行数 ≥ 50
+- [x] `pnpm eval:goldset`（`scripts/eval/validate-goldset.ts`）校验通过
 
 ---
 
@@ -462,9 +462,9 @@ duplicateRate     ≤ 0.10
 ```
 
 **DoD**:
-- [ ] `pnpm eval:metrics` 可执行，输出包含 precision/recall/f1/fragmentationRate
-- [ ] `pnpm eval:gate` 可执行，门禁通过时 exit 0
-- [ ] 测试（小样本模拟计算正确性）通过
+- [x] `pnpm eval:metrics` 可执行，输出包含 precision/recall/f1/fragmentationRate
+- [x] `pnpm eval:gate` 可执行，门禁通过时 exit 0
+- [x] 测试（小样本模拟计算正确性）通过
 
 **前置**: P1-8
 
@@ -490,9 +490,9 @@ duplicateRate     ≤ 0.10
 6. 开启后重跑 `pnpm eval:gate` 验证无退化
 
 **DoD**:
-- [ ] `grep "dynamicTitleResolutionEnabled" src/server/modules/analysis/config/pipeline.ts` → `true`
-- [ ] `grep "llmTitleArbitrationEnabled" src/server/modules/analysis/config/pipeline.ts` → `true`
-- [ ] `pnpm eval:gate` 仍然通过（无退化）
+- [x] `grep "dynamicTitleResolutionEnabled" src/server/modules/analysis/config/pipeline.ts` → `true`
+- [x] `grep "llmTitleArbitrationEnabled" src/server/modules/analysis/config/pipeline.ts` → `true`
+- [x] `pnpm eval:gate` 仍然通过（无退化）
 
 **前置**: P1-1, P1-4, P1-9
 
@@ -504,19 +504,19 @@ duplicateRate     ≤ 0.10
 
 | 阶段 | 任务 | 状态 |
 |------|------|------|
-| P0-1 | Prisma Schema 新增 3 表 | ⬜ |
-| P0-2 | Book.genre 删除 | ⬜ |
-| P0-3 | 种子数据初始化 | ⬜ |
-| P0-4 | loadFullRuntimeKnowledge | ⬜ |
-| P0-5 | 硬编码常量全删 | ⬜ |
-| P1-1 | PersonaResolver 过滤链 | ⬜ |
-| P1-2 | AliasMapping 写入修复 | ⬜ |
-| P1-3 | PostAnalysisMerger | ⬜ |
-| P1-4 | Pipeline 集成 | ⬜ |
-| P1-5 | Wave1 过滤器 | ⬜ |
-| P1-6 | 历史人物 API | ⬜ |
-| P1-7 | 名字规则 API + D9 | ⬜ |
-| P1-8 | 金标准数据集 | ⬜ |
-| P1-9 | eval:gate 可执行 | ⬜ |
-| P2-1 | dynamicTitle 开启 | ⬜ |
-| P2-2 | llmArbitration 开启 | ⬜ |
+| P0-1 | Prisma Schema 新增 3 表 | ✅ |
+| P0-2 | Book.genre 删除 | ✅ |
+| P0-3 | 种子数据初始化 | ✅ |
+| P0-4 | loadFullRuntimeKnowledge | ✅ |
+| P0-5 | 硬编码常量全删 | ✅ |
+| P1-1 | PersonaResolver 过滤链 | ✅ |
+| P1-2 | AliasMapping 写入修复 | ✅ |
+| P1-3 | PostAnalysisMerger | ✅ |
+| P1-4 | Pipeline 集成 | ✅ |
+| P1-5 | Wave1 过滤器 | ✅ |
+| P1-6 | 历史人物 API | ✅ |
+| P1-7 | 名字规则 API + D9 | ✅ |
+| P1-8 | 金标准数据集 | ✅ |
+| P1-9 | eval:gate 可执行 | ✅ |
+| P2-1 | dynamicTitle 开启 | ✅ |
+| P2-2 | llmArbitration 开启 | ✅ |

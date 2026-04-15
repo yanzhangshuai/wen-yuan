@@ -614,28 +614,28 @@ pnpm eval:gate
 
 | AC 编号 | 验收项 | 状态 |
 |---------|--------|------|
-| AC-P0-1 | 3 张新表 + GenericTitleEntry 扩展 | ⬜ |
-| AC-P0-2 | book.genre 全部移除 | ⬜ |
-| AC-P0-3 | 种子数据量达标 | ⬜ |
-| AC-P0-4 | loadFullRuntimeKnowledge 实现 | ⬜ |
-| AC-P0-5 | 硬编码常量全部删除 | ⬜ |
-| AC-P1-1 | PersonaResolver 6 个过滤点 | ⬜ |
-| AC-P1-2 | AliasMapping 写入管线 | ⬜ |
-| AC-P1-3 | PostAnalysisMerger（D3 严格） | ⬜ |
-| AC-P1-4 | Pipeline runtimeKnowledge 集成 | ⬜ |
-| AC-P1-5 | Wave1 过滤器全部激活 | ⬜ |
-| AC-P1-6 | 历史人物管理 API | ⬜ |
-| AC-P1-7 | 名字规则 API + D9 校验 | ⬜ |
-| AC-P1-8 | 金标准数据集 ≥ 50 条 | ⬜ |
-| AC-P1-9 | eval:gate 可执行 | ⬜ |
-| AC-BIZ-1 | D1 牛浦郎/牛布衣独立 | ⬜ |
-| AC-BIZ-2 | D3 合并阈值严格（仅 conf=1.0） | ⬜ |
-| AC-BIZ-3 | D9 正则安全三条规则 | ⬜ |
-| AC-BIZ-4 | D12 缓存策略（不热更新） | ⬜ |
-| AC-BUILD-1 | `pnpm type-check` 通过 | ⬜ |
-| AC-BUILD-2 | `pnpm lint` 通过 | ⬜ |
-| AC-BUILD-3 | `pnpm test` 全通过 | ⬜ |
-| AC-BUILD-4 | Prisma generate 无残留 genre 类型 | ⬜ |
-| AC-P2-0 | eval:gate PASS（前置） | ⬜ |
-| AC-P2-1 | dynamicTitleResolution 开启 | ⬜ |
-| AC-P2-2 | llmTitleArbitration 开启 + 限流 | ⬜ |
+| AC-P0-1 | 3 张新表 + GenericTitleEntry 扩展 | ✅ |
+| AC-P0-2 | book.genre 全部移除 | ✅ |
+| AC-P0-3 | 种子数据量达标 | ✅ |
+| AC-P0-4 | loadFullRuntimeKnowledge 实现 | ✅ |
+| AC-P0-5 | 硬编码常量全部删除 | ✅ |
+| AC-P1-1 | PersonaResolver 6 个过滤点 | ✅ |
+| AC-P1-2 | AliasMapping 写入管线 | ✅ |
+| AC-P1-3 | PostAnalysisMerger（D3 严格） | ✅ |
+| AC-P1-4 | Pipeline runtimeKnowledge 集成 | ✅ |
+| AC-P1-5 | Wave1 过滤器全部激活 | ✅ |
+| AC-P1-6 | 历史人物管理 API | ✅ |
+| AC-P1-7 | 名字规则 API + D9 校验 | ✅ |
+| AC-P1-8 | 金标准数据集 ≥ 50 条 | ✅ |
+| AC-P1-9 | eval:gate 可执行 | ✅ |
+| AC-BIZ-1 | D1 牛浦郎/牛布衣独立 | ✅ |
+| AC-BIZ-2 | D3 合并阈值严格（仅 conf=1.0） | ✅ |
+| AC-BIZ-3 | D9 正则安全三条规则 | ✅ |
+| AC-BIZ-4 | D12 缓存策略（不热更新） | ✅ |
+| AC-BUILD-1 | `pnpm type-check` 通过 | ✅ |
+| AC-BUILD-2 | `pnpm lint` 通过 | ⏳ 需线上验证 |
+| AC-BUILD-3 | `pnpm test` 全通过 | ⏳ 需线上验证 |
+| AC-BUILD-4 | Prisma generate 无残留 genre 类型 | ✅ |
+| AC-P2-0 | eval:gate PASS（前置） | ⏳ 需线上验证 |
+| AC-P2-1 | dynamicTitleResolution 开启 | ✅ |
+| AC-P2-2 | llmTitleArbitration 开启 + 限流 | ✅ |

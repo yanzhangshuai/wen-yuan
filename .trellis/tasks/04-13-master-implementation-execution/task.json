@@ -3,18 +3,18 @@
   "name": "04-13-master-implementation-execution",
   "title": "主实施执行计划 — Sequential 准确率提升 + 知识库服务化",
   "description": "统一主实施任务，编排 8 个子任务的分阶段执行，总入口为 docs/MASTER.md",
-  "status": "planning",
+  "status": "done",
   "dev_type": "feature",
   "scope": null,
   "priority": "P0",
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-04-13",
-  "completedAt": null,
+  "completedAt": "2026-04-14",
   "branch": null,
   "base_branch": "dev",
   "worktree_path": null,
-  "current_phase": 0,
+  "current_phase": 3,
   "next_action": [
     {
       "phase": 1,
@@ -48,11 +48,26 @@
   ],
   "parent": null,
   "relatedFiles": [
-    { "file": "docs/MASTER.md", "reason": "主任务文档总入口" },
-    { "file": "docs/待确认项汇总.md", "reason": "D1-D13 决策基线" },
-    { "file": "docs/全局知识库服务化重构设计.md", "reason": "知识库服务化完整设计" },
-    { "file": "docs/Sequential-准确率提升整体优化方案.md", "reason": "Wave1/2/3 改进方案" },
-    { "file": ".trellis/tasks/04-13-04-13-convergence-revision/prd.md", "reason": "完整规则口径与任务规格（第 5~8 节）" }
+    {
+      "file": "docs/MASTER.md",
+      "reason": "主任务文档总入口"
+    },
+    {
+      "file": "docs/待确认项汇总.md",
+      "reason": "D1-D13 决策基线"
+    },
+    {
+      "file": "docs/全局知识库服务化重构设计.md",
+      "reason": "知识库服务化完整设计"
+    },
+    {
+      "file": "docs/Sequential-准确率提升整体优化方案.md",
+      "reason": "Wave1/2/3 改进方案"
+    },
+    {
+      "file": ".trellis/tasks/04-13-04-13-convergence-revision/prd.md",
+      "reason": "完整规则口径与任务规格（第 5~8 节）"
+    }
   ],
   "notes": "",
   "meta": {}

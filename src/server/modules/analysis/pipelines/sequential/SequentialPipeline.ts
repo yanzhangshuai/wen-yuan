@@ -6,6 +6,7 @@ import type {
 } from "@/server/modules/analysis/pipelines/types";
 import type { ChapterAnalysisResult } from "@/server/modules/analysis/services/ChapterAnalysisService";
 import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
+import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 
 const SEQUENTIAL_PIPELINE_DEPENDENCY_ERROR = "SequentialPipeline 缺少运行时依赖，无法执行章节分析。";
 
@@ -23,6 +24,7 @@ export interface ChapterLoopAnalyzer {
       jobId                  : string;
       externalPersonaMap?    : Map<string, string>;
       preloadedLexiconConfig?: BookLexiconConfig;
+      runtimeKnowledge?      : FullRuntimeKnowledge;
     }
   ): Promise<ChapterAnalysisResult>;
   resolvePersonaTitles(bookId: string, context: { jobId: string }): Promise<number>;
@@ -60,6 +62,7 @@ export interface SequentialPipelineDependencies {
   runChapterValidation          : (chapter: PipelineChapterTask) => Promise<ChapterLoopValidationResult>;
   isChapterRetryableError       : (error: unknown) => boolean;
   wait?                         : (ms: number) => Promise<void>;
+  loadRuntimeContext?            : (bookId: string) => Promise<{ runtimeKnowledge: FullRuntimeKnowledge }>;
 }
 
 /**
@@ -75,6 +78,7 @@ export interface SequentialChapterLoopOptions {
   progressRange          : number;
   externalPersonaMap?    : Map<string, string>;
   preloadedLexiconConfig?: BookLexiconConfig;
+  runtimeKnowledge?      : FullRuntimeKnowledge;
 }
 
 type SequentialPipelineDependenciesInput = Partial<SequentialPipelineDependencies>;
@@ -159,7 +163,8 @@ export async function runSequentialChapterLoop(
           const result = await dependencies.analyzer.analyzeChapter(chapter.id, {
             jobId                 : params.jobId,
             externalPersonaMap    : options.externalPersonaMap,
-            preloadedLexiconConfig: options.preloadedLexiconConfig
+            preloadedLexiconConfig: options.preloadedLexiconConfig,
+            runtimeKnowledge      : options.runtimeKnowledge
           });
 
           const riskThreshold = dependencies.chapterValidationRiskThreshold;
@@ -308,10 +313,17 @@ export function createSequentialPipeline(
       throw new Error(SEQUENTIAL_PIPELINE_DEPENDENCY_ERROR);
     }
 
+    // D12: 任务启动时加载运行时知识，传入整个 pipeline
+    const runtimeContext = dependencies.loadRuntimeContext
+      ? await dependencies.loadRuntimeContext(params.bookId)
+      : undefined;
+
     const result: AnalysisPipelineResult = await runSequentialChapterLoop(params, dependencies, {
-      stageLabel   : "实体提取",
-      progressBase : 0,
-      progressRange: 100
+      stageLabel             : "实体提取",
+      progressBase           : 0,
+      progressRange          : 100,
+      runtimeKnowledge       : runtimeContext?.runtimeKnowledge,
+      preloadedLexiconConfig : runtimeContext?.runtimeKnowledge.lexiconConfig
     });
 
     return result;

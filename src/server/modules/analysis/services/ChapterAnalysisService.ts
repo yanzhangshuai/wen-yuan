@@ -31,6 +31,7 @@ import {
   GENERIC_TITLES_PROMPT_LIMIT
 } from "@/server/modules/analysis/config/lexicon";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
+import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import type {
   AnalysisProfileContext,
   BioCategoryValue,
@@ -372,6 +373,8 @@ export function createChapterAnalysisService(
     externalPersonaMap?    : Map<string, string>;
     /** 从数据库预加载的词典配置；未提供时回退为空配置。 */
     preloadedLexiconConfig?: BookLexiconConfig;
+    /** 运行时知识（含历史人物、关系词、名字规则等 DB 驱动的完整过滤配置）。 */
+    runtimeKnowledge?      : FullRuntimeKnowledge;
   }
 
   function toGenerateOptions(model: ResolvedStageModel | ResolvedFallbackModel) {
@@ -900,8 +903,9 @@ export function createChapterAnalysisService(
         rosterMap,
         titleOnlyNames,
         pendingRosterAliasMappings,
-        lexiconConfig : bookLexiconConfig,
-        genericRatios : resolvedGenericRatios
+        lexiconConfig    : bookLexiconConfig,
+        genericRatios    : resolvedGenericRatios,
+        runtimeKnowledge : executionContext.runtimeKnowledge
       });
     }, {
       timeout: 30000
@@ -936,6 +940,7 @@ export function createChapterAnalysisService(
       pendingRosterAliasMappings: RegisterAliasInput[];
       lexiconConfig?            : BookLexiconConfig;
       genericRatios             : Map<string, { generic: number; nonGeneric: number }>;
+      runtimeKnowledge?         : FullRuntimeKnowledge;
     }
   ): Promise<Omit<ChapterAnalysisResult, "chapterId" | "chunkCount">> {
     await tx.mention.deleteMany({ where: { chapterId: input.chapterId } });
@@ -961,14 +966,15 @@ export function createChapterAnalysisService(
     const resolve = async (name: string) => {
       if (!cache.has(name)) {
         const res = await personaResolver.resolve({
-          bookId        : input.bookId,
-          extractedName : name,
-          chapterContent: input.chapterContent,
-          chapterNo     : input.chapterNo,
-          rosterMap     : input.rosterMap,
-          titleOnlyNames: input.titleOnlyNames,
-          lexiconConfig : input.lexiconConfig,
-          genericRatios : input.genericRatios
+          bookId          : input.bookId,
+          extractedName   : name,
+          chapterContent  : input.chapterContent,
+          chapterNo       : input.chapterNo,
+          rosterMap       : input.rosterMap,
+          titleOnlyNames  : input.titleOnlyNames,
+          lexiconConfig   : input.lexiconConfig,
+          genericRatios   : input.genericRatios,
+          runtimeKnowledge: input.runtimeKnowledge
         }, tx);
         cache.set(name, res);
         if (res.status === "created") personaCreated++;

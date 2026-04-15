@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { NameType, PersonaType } from "@/generated/prisma/enums";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
+import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import {
   type BookLexiconConfig,
@@ -202,6 +203,8 @@ export interface ResolveInput {
   lexiconConfig? : BookLexiconConfig;
   /** 泛化比率统计：surfaceForm -> { generic, nonGeneric }。用于灰区判定。 */
   genericRatios? : Map<string, { generic: number; nonGeneric: number }>;
+  /** 运行时知识（含历史人物、关系词、名字规则等 DB 驱动的完整过滤配置）。 */
+  runtimeKnowledge?: FullRuntimeKnowledge;
 }
 
 /**
@@ -410,8 +413,8 @@ export function createPersonaResolver(
     }
 
     // 超长名字是垃圾提取（整句话或短语被当成人名），直接过滤。
-    // 中文人名一般 2-4 字，加上称号最多 6-8 字，> 10 字几乎不可能是合法人名。
-    if (extracted.length > 10) {
+    // 中文人名一般 2-4 字，加上称号最多 6-8 字，> 8 字几乎不可能是合法人名。
+    if (extracted.length > 8) {
       return {
         status    : "hallucinated",
         confidence: 0,
@@ -419,7 +422,18 @@ export function createPersonaResolver(
       };
     }
 
-    const safetyGenericTitles = buildSafetyGenericTitles(input.lexiconConfig);
+    // ── Wave1 描述性短语过滤 ──
+    // 含"的"/"之"的 4+ 字名字大概率是短语而非人名（如"贾政的母亲""林之孝家的"）。
+    if (extracted.length >= 4 && /[的之]/.test(extracted)) {
+      return {
+        status    : "hallucinated",
+        confidence: 0.9,
+        reason    : "descriptive_phrase"
+      };
+    }
+
+    const safetyGenericTitles = input.runtimeKnowledge?.safetyGenericTitles
+      ?? buildSafetyGenericTitles(input.lexiconConfig);
     if (safetyGenericTitles.has(rawName)) {
       return {
         status    : "hallucinated",
@@ -428,10 +442,40 @@ export function createPersonaResolver(
       };
     }
 
+    // ── 关系词过滤：无别名绑定的纯关系词直接拦截 ──
+    // 如"父亲""兄长""嫂子"等在未绑定 alias 时属于无信息量的泛化标签。
+    if (input.runtimeKnowledge?.relationalTerms.has(rawName)) {
+      const hasAliasBinding = aliasRegistry
+        ? await aliasRegistry.lookupAlias(input.bookId, rawName, input.chapterNo ?? 1)
+        : null;
+      if (!hasAliasBinding) {
+        return {
+          status    : "hallucinated",
+          confidence: 0.95,
+          reason    : "relational_term"
+        };
+      }
+    }
+
+    // ── 名字规则过滤：匹配 BLOCK 规则的直接拦截 ──
+    // 如"X家""X府""X的Y"等结构化模式，由 DB NamePatternRule 驱动。
+    if (input.runtimeKnowledge?.namePatternRules) {
+      for (const rule of input.runtimeKnowledge.namePatternRules) {
+        if (rule.action === "BLOCK" && rule.compiled.test(rawName)) {
+          return {
+            status    : "hallucinated",
+            confidence: 0.95,
+            reason    : "name_pattern_block"
+          };
+        }
+      }
+    }
+
     // 配置型泛化称谓：
     // - 若关闭动态判定，直接按泛化词处理；
     // - 若开启动态判定，则依据证据分成 personalized/generic/gray_zone。
-    if (effectiveLexicon.genericTitles.has(rawName)) {
+    if (effectiveLexicon.genericTitles.has(rawName)
+      || (input.runtimeKnowledge?.defaultGenericTitles.has(rawName) ?? false)) {
       if (!ANALYSIS_PIPELINE_CONFIG.dynamicTitleResolutionEnabled) {
         return {
           status    : "hallucinated",
@@ -467,6 +511,20 @@ export function createPersonaResolver(
           grayZoneEvidence   : evidence
         };
       }
+    }
+
+    // ── 历史人物过滤（D13）：纯提及 → 幻觉，书内参与 → 放行 ──
+    // 判定依据：名字在章节原文中是否出现在明确的"行为/对话/互动"上下文。
+    if (input.runtimeKnowledge?.historicalFigures.has(rawName)) {
+      const isActiveInStory = containsNormalizedName(input.chapterContent, rawName);
+      if (!isActiveInStory) {
+        return {
+          status    : "hallucinated",
+          confidence: 0.9,
+          reason    : "historical_figure_mention_only"
+        };
+      }
+      // 历史人物在原文中有实际出现 → 放行，进入后续正常解析流程
     }
 
     // 优先使用 Phase 1 名册结果：这是同章上下文最强信号，优先级高于全局相似度。

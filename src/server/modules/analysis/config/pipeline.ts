@@ -50,15 +50,19 @@ export const ANALYSIS_PIPELINE_CONFIG = {
   /** 全书验证单条原文抽样最大字符数。 */
   bookValidationExcerptChars    : 280,
   /** Phase 2：是否启用 generic 称谓动态分档门控。 */
-  dynamicTitleResolutionEnabled : false,
+  dynamicTitleResolutionEnabled : true,
   /** Phase 3：是否启用全书末灰区 AI 仲裁。 */
-  llmTitleArbitrationEnabled    : false,
+  llmTitleArbitrationEnabled    : true,
   /** soft-block 后缀降权系数，最终分值 = normalScore × penalty。 */
   softBlockPenalty              : 0.4,
   /** 全书一次仲裁最多提交的灰区称谓数。 */
   llmArbitrationMaxTerms        : 20,
   /** 仲裁结果进入 LLM_INFERRED 的最低置信度。 */
   llmArbitrationMinConfidence   : 0.7,
+  /** 单次全书分析中 LLM 仲裁最大调用次数（成本安全阀）。 */
+  llmArbitrationMaxCalls        : 100,
+  /** 灰区判定置信度窗口 [下界, 上界]，落入此区间的称谓进入灰区仲裁流程。 */
+  llmArbitrationGrayZone        : [0.4, 0.6] as const,
   /** 是否记录灰区提及用于后处理仲裁。 */
   recordGrayZoneMentions        : true,
   /**

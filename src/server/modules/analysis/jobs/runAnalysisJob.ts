@@ -14,6 +14,7 @@ import {
   loadFullRuntimeKnowledge,
   type FullRuntimeKnowledge
 } from "@/server/modules/knowledge/load-book-knowledge";
+import { runPostAnalysisMerger } from "@/server/modules/analysis/services/PostAnalysisMerger";
 import { createPipeline } from "@/server/modules/analysis/pipelines/factory";
 import type {
   AnalysisArchitecture,
@@ -632,7 +633,11 @@ export function createAnalysisJobRunner(
         });
       },
       runChapterValidation: async (chapter) => await runChapterValidationBlocking(analyzer, job.id, chapter, job.bookId),
-      isChapterRetryableError
+      isChapterRetryableError,
+      loadRuntimeContext: async (bookId) => {
+        const ctx = await loadTwoPassRuntimeContext(bookId);
+        return { runtimeKnowledge: ctx.runtimeKnowledge };
+      }
     };
   }
 
@@ -815,6 +820,35 @@ export function createAnalysisJobRunner(
               JSON.stringify({ jobId: runningJob.id, bookId: runningJob.bookId, arbitrationWrittenCount })
             );
           }
+        }
+
+        // Phase 5.5: 全书实体合并建议生成——检测重复/相似人物并写入 merge_suggestions 队列。
+        try {
+          const runtimeCtx = await loadTwoPassRuntimeContext(runningJob.bookId);
+          const mergeResult = await runPostAnalysisMerger(prismaClient, {
+            bookId          : runningJob.bookId,
+            runtimeKnowledge: runtimeCtx.runtimeKnowledge
+          });
+          if (mergeResult.created > 0) {
+            console.info(
+              "[analysis.runner] post.merge.suggestions.created",
+              JSON.stringify({
+                jobId     : runningJob.id,
+                bookId    : runningJob.bookId,
+                total     : mergeResult.created,
+                autoMerged: mergeResult.autoMerged
+              })
+            );
+          }
+        } catch (mergeError) {
+          console.warn(
+            "[analysis.runner] post.merge.failed",
+            JSON.stringify({
+              jobId : runningJob.id,
+              bookId: runningJob.bookId,
+              error : String(mergeError).slice(0, 500)
+            })
+          );
         }
 
         // Phase 6: 全书自检（不阻塞主流程，失败仅记日志）。
