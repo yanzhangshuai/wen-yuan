@@ -67,16 +67,17 @@ export const ModelName = {
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
   BookType: 'BookType',
-  KnowledgePack: 'KnowledgePack',
-  KnowledgeEntry: 'KnowledgeEntry',
-  BookKnowledgePack: 'BookKnowledgePack',
-  SurnameEntry: 'SurnameEntry',
-  GenericTitleEntry: 'GenericTitleEntry',
+  AliasPack: 'AliasPack',
+  AliasEntry: 'AliasEntry',
+  BookAliasPack: 'BookAliasPack',
+  SurnameRule: 'SurnameRule',
+  GenericTitleRule: 'GenericTitleRule',
+  NerLexiconRule: 'NerLexiconRule',
   HistoricalFigureEntry: 'HistoricalFigureEntry',
-  RelationalTermEntry: 'RelationalTermEntry',
   NamePatternRule: 'NamePatternRule',
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
+  PromptExtractionRule: 'PromptExtractionRule',
   ExtractionRule: 'ExtractionRule',
   KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
@@ -382,7 +383,6 @@ export const BookTypeScalarFieldEnum = {
   id: 'id',
   key: 'key',
   name: 'name',
-  presetConfig: 'presetConfig',
   description: 'description',
   isActive: 'isActive',
   sortOrder: 'sortOrder',
@@ -393,30 +393,28 @@ export const BookTypeScalarFieldEnum = {
 export type BookTypeScalarFieldEnum = (typeof BookTypeScalarFieldEnum)[keyof typeof BookTypeScalarFieldEnum]
 
 
-export const KnowledgePackScalarFieldEnum = {
+export const AliasPackScalarFieldEnum = {
   id: 'id',
-  bookTypeId: 'bookTypeId',
   name: 'name',
   description: 'description',
+  scope: 'scope',
+  bookTypeId: 'bookTypeId',
   version: 'version',
   isActive: 'isActive',
-  scope: 'scope',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type KnowledgePackScalarFieldEnum = (typeof KnowledgePackScalarFieldEnum)[keyof typeof KnowledgePackScalarFieldEnum]
+export type AliasPackScalarFieldEnum = (typeof AliasPackScalarFieldEnum)[keyof typeof AliasPackScalarFieldEnum]
 
 
-export const KnowledgeEntryScalarFieldEnum = {
+export const AliasEntryScalarFieldEnum = {
   id: 'id',
   packId: 'packId',
   canonicalName: 'canonicalName',
   aliases: 'aliases',
-  entryType: 'entryType',
   confidence: 'confidence',
   source: 'source',
-  sourceDetail: 'sourceDetail',
   reviewStatus: 'reviewStatus',
   reviewNote: 'reviewNote',
   reviewedAt: 'reviewedAt',
@@ -425,10 +423,10 @@ export const KnowledgeEntryScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type KnowledgeEntryScalarFieldEnum = (typeof KnowledgeEntryScalarFieldEnum)[keyof typeof KnowledgeEntryScalarFieldEnum]
+export type AliasEntryScalarFieldEnum = (typeof AliasEntryScalarFieldEnum)[keyof typeof AliasEntryScalarFieldEnum]
 
 
-export const BookKnowledgePackScalarFieldEnum = {
+export const BookAliasPackScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
   packId: 'packId',
@@ -436,32 +434,32 @@ export const BookKnowledgePackScalarFieldEnum = {
   createdAt: 'createdAt'
 } as const
 
-export type BookKnowledgePackScalarFieldEnum = (typeof BookKnowledgePackScalarFieldEnum)[keyof typeof BookKnowledgePackScalarFieldEnum]
+export type BookAliasPackScalarFieldEnum = (typeof BookAliasPackScalarFieldEnum)[keyof typeof BookAliasPackScalarFieldEnum]
 
 
-export const SurnameEntryScalarFieldEnum = {
+export const SurnameRuleScalarFieldEnum = {
   id: 'id',
   surname: 'surname',
   isCompound: 'isCompound',
   priority: 'priority',
-  description: 'description',
   bookTypeId: 'bookTypeId',
+  description: 'description',
   isActive: 'isActive',
   source: 'source',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type SurnameEntryScalarFieldEnum = (typeof SurnameEntryScalarFieldEnum)[keyof typeof SurnameEntryScalarFieldEnum]
+export type SurnameRuleScalarFieldEnum = (typeof SurnameRuleScalarFieldEnum)[keyof typeof SurnameRuleScalarFieldEnum]
 
 
-export const GenericTitleEntryScalarFieldEnum = {
+export const GenericTitleRuleScalarFieldEnum = {
   id: 'id',
   title: 'title',
   tier: 'tier',
-  exemptInGenres: 'exemptInGenres',
-  exemptInBooks: 'exemptInBooks',
   category: 'category',
+  exemptInBookTypeIds: 'exemptInBookTypeIds',
+  exemptInBooks: 'exemptInBooks',
   description: 'description',
   isActive: 'isActive',
   source: 'source',
@@ -469,7 +467,23 @@ export const GenericTitleEntryScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type GenericTitleEntryScalarFieldEnum = (typeof GenericTitleEntryScalarFieldEnum)[keyof typeof GenericTitleEntryScalarFieldEnum]
+export type GenericTitleRuleScalarFieldEnum = (typeof GenericTitleRuleScalarFieldEnum)[keyof typeof GenericTitleRuleScalarFieldEnum]
+
+
+export const NerLexiconRuleScalarFieldEnum = {
+  id: 'id',
+  ruleType: 'ruleType',
+  content: 'content',
+  bookTypeId: 'bookTypeId',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  source: 'source',
+  changeNote: 'changeNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NerLexiconRuleScalarFieldEnum = (typeof NerLexiconRuleScalarFieldEnum)[keyof typeof NerLexiconRuleScalarFieldEnum]
 
 
 export const HistoricalFigureEntryScalarFieldEnum = {
@@ -479,23 +493,16 @@ export const HistoricalFigureEntryScalarFieldEnum = {
   dynasty: 'dynasty',
   category: 'category',
   description: 'description',
-  isVerified: 'isVerified',
+  source: 'source',
+  reviewStatus: 'reviewStatus',
+  reviewNote: 'reviewNote',
+  reviewedAt: 'reviewedAt',
+  isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type HistoricalFigureEntryScalarFieldEnum = (typeof HistoricalFigureEntryScalarFieldEnum)[keyof typeof HistoricalFigureEntryScalarFieldEnum]
-
-
-export const RelationalTermEntryScalarFieldEnum = {
-  id: 'id',
-  term: 'term',
-  category: 'category',
-  isVerified: 'isVerified',
-  createdAt: 'createdAt'
-} as const
-
-export type RelationalTermEntryScalarFieldEnum = (typeof RelationalTermEntryScalarFieldEnum)[keyof typeof RelationalTermEntryScalarFieldEnum]
 
 
 export const NamePatternRuleScalarFieldEnum = {
@@ -504,8 +511,12 @@ export const NamePatternRuleScalarFieldEnum = {
   pattern: 'pattern',
   action: 'action',
   description: 'description',
-  isVerified: 'isVerified',
-  createdAt: 'createdAt'
+  source: 'source',
+  reviewStatus: 'reviewStatus',
+  reviewNote: 'reviewNote',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type NamePatternRuleScalarFieldEnum = (typeof NamePatternRuleScalarFieldEnum)[keyof typeof NamePatternRuleScalarFieldEnum]
@@ -518,7 +529,6 @@ export const PromptTemplateScalarFieldEnum = {
   description: 'description',
   codeRef: 'codeRef',
   isActive: 'isActive',
-  activeVersionId: 'activeVersionId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -532,14 +542,31 @@ export const PromptTemplateVersionScalarFieldEnum = {
   versionNo: 'versionNo',
   systemPrompt: 'systemPrompt',
   userPrompt: 'userPrompt',
-  genreKey: 'genreKey',
+  bookTypeId: 'bookTypeId',
+  isActive: 'isActive',
+  isBaseline: 'isBaseline',
   changeNote: 'changeNote',
   createdBy: 'createdBy',
-  isBaseline: 'isBaseline',
   createdAt: 'createdAt'
 } as const
 
 export type PromptTemplateVersionScalarFieldEnum = (typeof PromptTemplateVersionScalarFieldEnum)[keyof typeof PromptTemplateVersionScalarFieldEnum]
+
+
+export const PromptExtractionRuleScalarFieldEnum = {
+  id: 'id',
+  ruleType: 'ruleType',
+  content: 'content',
+  bookTypeId: 'bookTypeId',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  source: 'source',
+  changeNote: 'changeNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromptExtractionRuleScalarFieldEnum = (typeof PromptExtractionRuleScalarFieldEnum)[keyof typeof PromptExtractionRuleScalarFieldEnum]
 
 
 export const ExtractionRuleScalarFieldEnum = {

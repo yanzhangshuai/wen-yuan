@@ -14,10 +14,10 @@ const hoisted = vi.hoisted(() => ({
     bookType: {
       findUnique: vi.fn()
     },
-    surnameEntry: {
+    surnameRule: {
       findMany: vi.fn()
     },
-    genericTitleEntry: {
+    genericTitleRule: {
       findMany: vi.fn()
     },
     aiModel: {
@@ -62,7 +62,7 @@ describe("knowledge catalog generation", () => {
       key : "classic",
       name: "章回小说"
     });
-    hoisted.prisma.surnameEntry.findMany.mockResolvedValueOnce([
+    hoisted.prisma.surnameRule.findMany.mockResolvedValueOnce([
       {
         surname    : "欧阳",
         isCompound : true,
@@ -93,7 +93,7 @@ describe("knowledge catalog generation", () => {
   });
 
   it("reviews generated surnames with deduplication, overlap detection and low-confidence rejection", async () => {
-    hoisted.prisma.surnameEntry.findMany
+    hoisted.prisma.surnameRule.findMany
       .mockResolvedValueOnce([
         {
           surname    : "欧阳",
@@ -182,12 +182,12 @@ describe("knowledge catalog generation", () => {
       key : "wuxia",
       name: "武侠"
     });
-    hoisted.prisma.genericTitleEntry.findMany.mockResolvedValueOnce([
+    hoisted.prisma.genericTitleRule.findMany.mockResolvedValueOnce([
       {
-        title         : "先生",
-        tier          : "DEFAULT",
-        exemptInGenres: ["wuxia"],
-        description   : "多数场景为泛称"
+        title              : "先生",
+        tier               : "DEFAULT",
+        exemptInBookTypeIds: ["wuxia"],
+        description        : "多数场景为泛称"
       }
     ]);
 
@@ -205,20 +205,20 @@ describe("knowledge catalog generation", () => {
         name: "武侠"
       }
     });
-    expect(preview.systemPrompt).toContain("title、tier、exemptInGenres、confidence");
+    expect(preview.systemPrompt).toContain("title、tier、exemptInBookTypeIds、confidence");
     expect(preview.userPrompt).toContain("参考题材：武侠");
     expect(preview.userPrompt).toContain("先生");
     expect(preview.userPrompt).toContain("补充要求：优先补充武侠常见称谓");
   });
 
   it("reviews generated generic titles with tier normalization, overlap detection and low-confidence rejection", async () => {
-    hoisted.prisma.genericTitleEntry.findMany
+    hoisted.prisma.genericTitleRule.findMany
       .mockResolvedValueOnce([
         {
-          title         : "老爷",
-          tier          : "DEFAULT",
-          exemptInGenres: ["classic"],
-          description   : "多数场景为泛称"
+          title              : "老爷",
+          tier               : "DEFAULT",
+          exemptInBookTypeIds: ["classic"],
+          description        : "多数场景为泛称"
         }
       ])
       .mockResolvedValueOnce([
@@ -233,10 +233,10 @@ describe("knowledge catalog generation", () => {
     });
     hoisted.generateJson.mockResolvedValueOnce({
       content: JSON.stringify([
-        { title: "老爷", tier: "DEFAULT", exemptInGenres: ["classic"], confidence: 0.9 },
-        { title: "先生", tier: "DEFAULT", exemptInGenres: ["wuxia", "wuxia"], confidence: 0.82 },
-        { title: "先生", tier: "SAFETY", exemptInGenres: ["classic"], confidence: 0.91 },
-        { title: "掌门", tier: "DEFAULT", exemptInGenres: ["wuxia"], confidence: 0.4 }
+        { title: "老爷", tier: "DEFAULT", exemptInBookTypeIds: ["classic"], confidence: 0.9 },
+        { title: "先生", tier: "DEFAULT", exemptInBookTypeIds: ["wuxia", "wuxia"], confidence: 0.82 },
+        { title: "先生", tier: "SAFETY", exemptInBookTypeIds: ["classic"], confidence: 0.91 },
+        { title: "掌门", tier: "DEFAULT", exemptInBookTypeIds: ["wuxia"], confidence: 0.4 }
       ]),
       usage: null
     });
@@ -254,12 +254,12 @@ describe("knowledge catalog generation", () => {
     expect(result.skipped).toBe(1);
     expect(result.candidates).toEqual([
       expect.objectContaining({
-        title            : "先生",
-        tier             : "SAFETY",
-        exemptInGenres   : [],
-        confidence       : 0.91,
-        defaultSelected  : true,
-        recommendedAction: "SELECT"
+        title              : "先生",
+        tier               : "SAFETY",
+        exemptInBookTypeIds: [],
+        confidence         : 0.91,
+        defaultSelected    : true,
+        recommendedAction  : "SELECT"
       }),
       expect.objectContaining({
         title            : "老爷",

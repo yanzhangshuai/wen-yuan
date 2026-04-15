@@ -11,22 +11,22 @@ function createPrismaMock() {
     bookType: {
       findUnique: vi.fn().mockResolvedValue(null)
     },
-    genericTitleEntry: {
+    genericTitleRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    surnameEntry: {
+    surnameRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    extractionRule: {
+    nerLexiconRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    bookKnowledgePack: {
+    bookAliasPack: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    knowledgePack: {
+    aliasPack: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    knowledgeEntry: {
+    aliasEntry: {
       findMany: vi.fn().mockResolvedValue([])
     },
     historicalFigureEntry: {
@@ -49,23 +49,18 @@ describe("load-book-knowledge", () => {
 
   it("loads full runtime knowledge with merged lexicon, alias lookup and verified knowledge entries", async () => {
     const prismaMock = createPrismaMock();
-    prismaMock.bookType.findUnique.mockResolvedValueOnce({
-      presetConfig: {
-        chapterSplitSize            : 1200,
-        entityExtractionRules       : ["旧实体规则"],
-        additionalRelationalSuffixes: ["兄"],
-        additionalTitlePatterns     : ["太"]
-      }
-    });
-    prismaMock.genericTitleEntry.findMany.mockResolvedValueOnce([
+    // presetConfig 已废弃 — loadBookTypeConfig 直接返回 {}，bookType.findUnique 不会被调用
+    prismaMock.genericTitleRule.findMany.mockResolvedValueOnce([
       { title: "老爷", tier: "SAFETY" },
-      { title: "先生", tier: "DEFAULT" }
+      { title: "先生", tier: "DEFAULT" },
+      { title: "兄长", tier: "RELATIONAL" },
+      { title: "世叔", tier: "RELATIONAL" }
     ]);
-    prismaMock.surnameEntry.findMany.mockResolvedValueOnce([
+    prismaMock.surnameRule.findMany.mockResolvedValueOnce([
       { surname: "欧阳", isCompound: true },
       { surname: "赵", isCompound: false }
     ]);
-    prismaMock.extractionRule.findMany.mockResolvedValueOnce([
+    prismaMock.nerLexiconRule.findMany.mockResolvedValueOnce([
       { ruleType: "ENTITY", content: "识别人名" },
       { ruleType: "RELATIONSHIP", content: "识别关系" },
       { ruleType: "HARD_BLOCK_SUFFIX", content: "兄" },
@@ -73,13 +68,13 @@ describe("load-book-knowledge", () => {
       { ruleType: "TITLE_STEM", content: "老爷" },
       { ruleType: "POSITION_STEM", content: "太守" }
     ]);
-    prismaMock.bookKnowledgePack.findMany.mockResolvedValueOnce([
+    prismaMock.bookAliasPack.findMany.mockResolvedValueOnce([
       { packId: "pack-mounted", priority: 10 }
     ]);
-    prismaMock.knowledgePack.findMany.mockResolvedValueOnce([
+    prismaMock.aliasPack.findMany.mockResolvedValueOnce([
       { id: "pack-inherited" }
     ]);
-    prismaMock.knowledgeEntry.findMany.mockResolvedValueOnce([
+    prismaMock.aliasEntry.findMany.mockResolvedValueOnce([
       {
         packId       : "pack-mounted",
         canonicalName: "范进",
@@ -102,10 +97,6 @@ describe("load-book-knowledge", () => {
         category   : "PHILOSOPHER",
         description: "儒家学派创始人"
       }
-    ]);
-    prismaMock.relationalTermEntry.findMany.mockResolvedValueOnce([
-      { term: "兄长" },
-      { term: "世叔" }
     ]);
     prismaMock.namePatternRule.findMany.mockResolvedValueOnce([
       {
@@ -131,12 +122,11 @@ describe("load-book-knowledge", () => {
     expect(knowledge.namePatternRules[0].compiled.test("范进")).toBe(true);
 
     expect(knowledge.lexiconConfig).toMatchObject({
-      chapterSplitSize           : 1200,
       safetyGenericTitles        : ["老爷"],
       defaultGenericTitles       : ["先生"],
       surnameCompounds           : ["欧阳"],
       surnameSingles             : ["赵"],
-      entityExtractionRules      : ["旧实体规则", "识别人名"],
+      entityExtractionRules      : ["识别人名"],
       relationshipExtractionRules: ["识别关系"]
     });
     expect(Array.from(knowledge.hardBlockSuffixes)).toContain("兄");
@@ -164,8 +154,8 @@ describe("load-book-knowledge", () => {
 
     expect(second).toBe(first);
     expect(prismaMock.namePatternRule.findMany).toHaveBeenCalledTimes(1);
-    expect(prismaMock.bookKnowledgePack.findMany).toHaveBeenCalledTimes(1);
-    expect(prismaMock.relationalTermEntry.findMany).toHaveBeenCalledTimes(1);
+    expect(prismaMock.bookAliasPack.findMany).toHaveBeenCalledTimes(1);
+    expect(prismaMock.genericTitleRule.findMany).toHaveBeenCalledTimes(1);
   });
 
   it("invalidates cache by book id via clearKnowledgeCache(bookId)", async () => {

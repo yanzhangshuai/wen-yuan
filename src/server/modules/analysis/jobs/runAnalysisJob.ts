@@ -634,7 +634,7 @@ export function createAnalysisJobRunner(
       },
       runChapterValidation: async (chapter) => await runChapterValidationBlocking(analyzer, job.id, chapter, job.bookId),
       isChapterRetryableError,
-      loadRuntimeContext: async (bookId) => {
+      loadRuntimeContext  : async (bookId) => {
         const ctx = await loadTwoPassRuntimeContext(bookId);
         return { runtimeKnowledge: ctx.runtimeKnowledge };
       }

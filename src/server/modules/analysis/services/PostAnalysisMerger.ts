@@ -29,6 +29,18 @@ function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, "");
 }
 
+/**
+ * 功能：提取人物名称的姓氏（首字符）。
+ * 输入：已归一化的名称字符串。
+ * 输出：首字符（姓氏），名称为空时返回 null。
+ * 异常：无。
+ * 副作用：无。
+ */
+function extractSurname(name: string): string | null {
+  if (!name) return null;
+  return name[0] ?? null;
+}
+
 export interface PostAnalysisMergerOptions {
   bookId           : string;
   runtimeKnowledge?: FullRuntimeKnowledge;
@@ -58,10 +70,10 @@ export async function runPostAnalysisMerger(
           id        : true,
           name      : true,
           aliases   : true,
-          confidence: true,
-        },
-      },
-    },
+          confidence: true
+        }
+      }
+    }
   });
 
   // 去重：同一 persona 可能有多个 profile
@@ -88,7 +100,7 @@ export async function runPostAnalysisMerger(
   // 已存在的合并建议对（避免重复建议）
   const existingSuggestions = await prisma.mergeSuggestion.findMany({
     where : { bookId },
-    select: { sourcePersonaId: true, targetPersonaId: true },
+    select: { sourcePersonaId: true, targetPersonaId: true }
   });
   const existingPairs = new Set(
     existingSuggestions.map(
@@ -134,7 +146,7 @@ export async function runPostAnalysisMerger(
           targetId  : target.id,
           confidence: 1.0,
           reason    : `精确名称匹配: "${source.name}" = "${target.name}"`,
-          tier      : 1,
+          tier      : 1
         });
       }
     }
@@ -157,7 +169,7 @@ export async function runPostAnalysisMerger(
             targetId,
             confidence: 0.90,
             reason    : `知识库别名映射: "${alias}" → "${targetPersona?.name ?? targetId}"`,
-            tier      : 2,
+            tier      : 2
           });
         }
       }
@@ -177,7 +189,54 @@ export async function runPostAnalysisMerger(
           targetId  : matchedId,
           confidence: 0.85,
           reason    : `别名交叉: "${p.name}" 的别名 "${alias}" 匹配 "${matchedPersona?.name ?? matchedId}"`,
-          tier      : 3,
+          tier      : 3
+        });
+      }
+    }
+  }
+
+  // ── Tier 4: 同姓 + 章节共现 ≥ 50% ──
+  // 加载本书所有 mention 对应的章节信息
+  const mentionsByPersona = new Map<string, Set<number>>();
+  const allMentions = await prisma.mention.findMany({
+    where : { chapter: { bookId } },
+    select: { personaId: true, chapter: { select: { no: true } } }
+  });
+  for (const m of allMentions) {
+    const existing = mentionsByPersona.get(m.personaId) ?? new Set<number>();
+    existing.add(m.chapter.no);
+    mentionsByPersona.set(m.personaId, existing);
+  }
+
+  for (let i = 0; i < personas.length; i++) {
+    const a = personas[i];
+    const surnameA = extractSurname(normalizeName(a.name));
+    if (!surnameA) continue;
+    const chaptersA = mentionsByPersona.get(a.id) ?? new Set<number>();
+    if (chaptersA.size === 0) continue;
+
+    for (let j = i + 1; j < personas.length; j++) {
+      const b = personas[j];
+      if (isPairExists(a.id, b.id)) continue;
+
+      const surnameB = extractSurname(normalizeName(b.name));
+      if (surnameA !== surnameB) continue;
+
+      const chaptersB = mentionsByPersona.get(b.id) ?? new Set<number>();
+      if (chaptersB.size === 0) continue;
+
+      let overlap = 0;
+      for (const ch of chaptersA) {
+        if (chaptersB.has(ch)) overlap++;
+      }
+      const minSize = Math.min(chaptersA.size, chaptersB.size);
+      if (overlap / minSize >= 0.5) {
+        candidates.push({
+          sourceId  : a.id,
+          targetId  : b.id,
+          confidence: 0.80,
+          reason    : `同姓"${surnameA}"且章节共现率 ${Math.round((overlap / minSize) * 100)}%: "${a.name}" / "${b.name}"`,
+          tier      : 4
         });
       }
     }
@@ -209,8 +268,8 @@ export async function runPostAnalysisMerger(
         reason         : candidate.reason,
         confidence     : candidate.confidence,
         status,
-        evidenceRefs   : { tier: candidate.tier },
-      },
+        evidenceRefs   : { tier: candidate.tier }
+      }
     });
 
     created++;
@@ -226,7 +285,7 @@ export async function runPostAnalysisMerger(
         bookId,
         total  : created,
         autoMerged,
-        pending: created - autoMerged,
+        pending: created - autoMerged
       })
     );
   }

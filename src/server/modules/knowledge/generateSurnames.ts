@@ -212,7 +212,7 @@ export async function previewSurnameGenerationPrompt(input: {
         select: { id: true, key: true, name: true }
       })
       : Promise.resolve(null),
-    prisma.surnameEntry.findMany({
+    prisma.surnameRule.findMany({
       where  : { isActive: true },
       orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
       take   : 120,
@@ -262,7 +262,7 @@ export async function reviewGeneratedSurnames(input: {
       userPrompt     : preview.userPrompt,
       schema         : generatedSurnamesSchema
     }),
-    prisma.surnameEntry.findMany({
+    prisma.surnameRule.findMany({
       where : { isActive: true },
       select: { surname: true }
     })

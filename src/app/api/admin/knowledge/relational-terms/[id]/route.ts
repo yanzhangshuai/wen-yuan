@@ -13,10 +13,15 @@ import { badRequestJson, notFoundJson, uuidParamSchema } from "../../_shared";
 
 const PATH = "/api/admin/knowledge/relational-terms/[id]";
 
+/**
+ * 关系词现在由 GenericTitleRule.tier = RELATIONAL 驱动。
+ * 本路由提供兼容接口，底层操作 genericTitleRule 表。
+ */
+
 const updateSchema = z.object({
-  term      : z.string().trim().min(1).max(20).optional(),
-  category  : z.enum(["KINSHIP", "SOCIAL", "GENERIC_ROLE"]).optional(),
-  isVerified: z.boolean().optional()
+  title      : z.string().trim().min(1).max(20).optional(),
+  description: z.string().nullable().optional(),
+  isActive   : z.boolean().optional()
 }).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
 
 export async function PATCH(
@@ -40,12 +45,17 @@ export async function PATCH(
       return badRequestJson(PATH, requestId, startedAt, parsed.error.issues[0]?.message ?? "参数不合法");
     }
 
-    const existing = await prisma.relationalTermEntry.findUnique({ where: { id: parsedParams.data.id } });
-    if (!existing) {
+    const existing = await prisma.genericTitleRule.findUnique({
+      where: { id: parsedParams.data.id }
+    });
+    if (!existing || existing.tier !== "RELATIONAL") {
       return notFoundJson(PATH, requestId, startedAt, "关系词不存在");
     }
 
-    const data = await prisma.relationalTermEntry.update({ where: { id: parsedParams.data.id }, data: parsed.data });
+    const data = await prisma.genericTitleRule.update({
+      where: { id: parsedParams.data.id },
+      data : parsed.data
+    });
     return okJson({
       path   : PATH, requestId, startedAt,
       code   : "RELATIONAL_TERM_UPDATED",
@@ -77,12 +87,14 @@ export async function DELETE(
       return badRequestJson(PATH, requestId, startedAt, "ID 不合法");
     }
 
-    const existing = await prisma.relationalTermEntry.findUnique({ where: { id: parsedParams.data.id } });
-    if (!existing) {
+    const existing = await prisma.genericTitleRule.findUnique({
+      where: { id: parsedParams.data.id }
+    });
+    if (!existing || existing.tier !== "RELATIONAL") {
       return notFoundJson(PATH, requestId, startedAt, "关系词不存在");
     }
 
-    await prisma.relationalTermEntry.delete({ where: { id: parsedParams.data.id } });
+    await prisma.genericTitleRule.delete({ where: { id: parsedParams.data.id } });
     return okJson({
       path   : PATH, requestId, startedAt,
       code   : "RELATIONAL_TERM_DELETED",

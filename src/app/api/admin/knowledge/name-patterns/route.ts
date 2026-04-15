@@ -15,11 +15,12 @@ import { validateRegexSafety } from "./_d9";
 const PATH = "/api/admin/knowledge/name-patterns";
 
 const createSchema = z.object({
-  ruleType   : z.enum(["FAMILY_HOUSE", "DESCRIPTIVE_PHRASE", "RELATIONAL_COMPOUND"]),
-  pattern    : z.string().trim().min(1, "正则模式不能为空").max(200, "正则模式不能超过 200 字符"),
-  action     : z.enum(["BLOCK", "WARN"]),
-  description: z.string().optional(),
-  isVerified : z.boolean().optional()
+  ruleType    : z.enum(["FAMILY_HOUSE", "DESCRIPTIVE_PHRASE", "RELATIONAL_COMPOUND"]),
+  pattern     : z.string().trim().min(1, "正则模式不能为空").max(200, "正则模式不能超过 200 字符"),
+  action      : z.enum(["BLOCK", "WARN"]),
+  description : z.string().optional(),
+  reviewStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]).optional(),
+  isActive    : z.boolean().optional()
 });
 
 export async function GET(request: Request): Promise<Response> {

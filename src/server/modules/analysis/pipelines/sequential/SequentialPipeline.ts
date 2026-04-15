@@ -62,7 +62,7 @@ export interface SequentialPipelineDependencies {
   runChapterValidation          : (chapter: PipelineChapterTask) => Promise<ChapterLoopValidationResult>;
   isChapterRetryableError       : (error: unknown) => boolean;
   wait?                         : (ms: number) => Promise<void>;
-  loadRuntimeContext?            : (bookId: string) => Promise<{ runtimeKnowledge: FullRuntimeKnowledge }>;
+  loadRuntimeContext?           : (bookId: string) => Promise<{ runtimeKnowledge: FullRuntimeKnowledge }>;
 }
 
 /**
@@ -319,11 +319,11 @@ export function createSequentialPipeline(
       : undefined;
 
     const result: AnalysisPipelineResult = await runSequentialChapterLoop(params, dependencies, {
-      stageLabel             : "实体提取",
-      progressBase           : 0,
-      progressRange          : 100,
-      runtimeKnowledge       : runtimeContext?.runtimeKnowledge,
-      preloadedLexiconConfig : runtimeContext?.runtimeKnowledge.lexiconConfig
+      stageLabel            : "实体提取",
+      progressBase          : 0,
+      progressRange         : 100,
+      runtimeKnowledge      : runtimeContext?.runtimeKnowledge,
+      preloadedLexiconConfig: runtimeContext?.runtimeKnowledge.lexiconConfig
     });
 
     return result;

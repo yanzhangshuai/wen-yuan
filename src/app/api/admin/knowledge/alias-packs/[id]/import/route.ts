@@ -46,7 +46,6 @@ export async function POST(
       {
         reviewStatus: parsedBody.data.reviewStatus,
         source      : parsedBody.data.source,
-        sourceDetail: parsedBody.data.sourceDetail,
         auditAction : parsedBody.data.auditAction,
         operatorId  : auth.userId ?? undefined
       }

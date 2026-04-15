@@ -20,8 +20,11 @@ const hoisted = vi.hoisted(() => ({
     promptTemplateVersion: {
       findFirst : vi.fn(),
       findUnique: vi.fn(),
-      create    : vi.fn()
-    }
+      create    : vi.fn(),
+      update    : vi.fn(),
+      updateMany: vi.fn()
+    },
+    $transaction: vi.fn()
   }
 }));
 
@@ -82,11 +85,8 @@ describe("prompt-templates", () => {
     });
     hoisted.prisma.promptTemplateVersion.findUnique
       .mockResolvedValueOnce({ id: "version-other", templateId: "template-2" })
-      .mockResolvedValueOnce({ id: "version-3", templateId: "template-1" });
-    hoisted.prisma.promptTemplate.update.mockResolvedValueOnce({
-      slug           : "BOOK_VALIDATION",
-      activeVersionId: "version-3"
-    });
+      .mockResolvedValueOnce({ id: "version-3", templateId: "template-1", bookTypeId: null });
+    hoisted.prisma.$transaction.mockResolvedValueOnce([{ count: 0 }, { id: "version-3" }]);
 
     await expect(createPromptVersion("BOOK_VALIDATION", {
       systemPrompt: "system",
@@ -105,8 +105,9 @@ describe("prompt-templates", () => {
       "版本不属于该模板"
     );
     await expect(activatePromptVersion("BOOK_VALIDATION", "version-3")).resolves.toEqual({
-      slug           : "BOOK_VALIDATION",
-      activeVersionId: "version-3"
+      id        : "version-3",
+      templateId: "template-1",
+      bookTypeId: null
     });
 
     expect(hoisted.prisma.promptTemplateVersion.create).toHaveBeenCalledWith({
@@ -115,7 +116,7 @@ describe("prompt-templates", () => {
         versionNo   : 3,
         systemPrompt: "system",
         userPrompt  : "user",
-        genreKey    : undefined,
+        bookTypeId  : undefined,
         changeNote  : "manual",
         createdBy   : "tester",
         isBaseline  : false
@@ -136,23 +137,25 @@ describe("prompt-templates", () => {
         versionNo   : 2,
         systemPrompt: "sys-2",
         userPrompt  : "user-2"
-      })
+      });
+    hoisted.prisma.promptTemplateVersion.findFirst
       .mockResolvedValueOnce({
         id          : "v10",
         versionNo   : 10,
         systemPrompt: "system {bookTitle}",
         userPrompt  : "user {chapterNo}"
-      });
+      })
+      .mockResolvedValueOnce(null);
     hoisted.prisma.promptTemplate.findUnique
       .mockResolvedValueOnce({
-        slug           : "BOOK_VALIDATION",
-        activeVersionId: "v10",
-        codeRef        : "buildBookValidationPrompt"
+        id     : "tmpl-1",
+        slug   : "BOOK_VALIDATION",
+        codeRef: "buildBookValidationPrompt"
       })
       .mockResolvedValueOnce({
-        slug           : "CHAPTER_VALIDATION",
-        activeVersionId: null,
-        codeRef        : "buildChapterValidationPrompt"
+        id     : "tmpl-2",
+        slug   : "CHAPTER_VALIDATION",
+        codeRef: "buildChapterValidationPrompt"
       });
 
     await expect(diffPromptVersions("BOOK_VALIDATION", "v1", "v2")).resolves.toEqual({
@@ -203,46 +206,50 @@ describe("prompt-templates", () => {
 
     hoisted.prisma.promptTemplate.findUnique
       .mockResolvedValueOnce({
-        id             : "template-1",
-        codeRef        : "buildChapterValidationPrompt",
-        activeVersionId: "active-1"
+        id     : "template-1",
+        codeRef: "buildChapterValidationPrompt"
       })
       .mockResolvedValueOnce({
-        id             : "template-2",
-        codeRef        : "buildBookValidationPrompt",
-        activeVersionId: "active-2"
+        id     : "template-2",
+        codeRef: "buildBookValidationPrompt"
       })
       .mockResolvedValueOnce({
-        id             : "template-3",
-        codeRef        : "buildEntityResolutionPrompt",
-        activeVersionId: null
+        id     : "template-3",
+        codeRef: "buildEntityResolutionPrompt"
       })
       .mockResolvedValueOnce(null);
     hoisted.prisma.promptTemplateVersion.findFirst
+      // Call 1 (CHAPTER_VALIDATION, bookTypeId=classic): genre-specific → found
       .mockResolvedValueOnce({
         id          : "genre-1",
         versionNo   : 8,
         systemPrompt: "genre {genre}",
         userPrompt  : "user {bookTitle}"
       })
+      // Call 2 (BOOK_VALIDATION, bookTypeId=classic): genre-specific → null
       .mockResolvedValueOnce(null)
+      // Call 2 continued: isActive=true, bookTypeId=null → found
+      .mockResolvedValueOnce({
+        id          : "active-2",
+        versionNo   : 3,
+        systemPrompt: "active {bookTitle}",
+        userPrompt  : "active-user {chapterNo}"
+      })
+      // Call 3 (ENTITY_RESOLUTION, bookTypeId=classic): genre-specific → null
+      .mockResolvedValueOnce(null)
+      // Call 3 continued: isActive=true, bookTypeId=null → null
+      .mockResolvedValueOnce(null)
+      // Call 3 continued: fallback → found
       .mockResolvedValueOnce({
         id          : "fallback-3",
         versionNo   : 5,
         systemPrompt: "fallback {bookTitle}",
         userPrompt  : "fallback-user {genre}"
       });
-    hoisted.prisma.promptTemplateVersion.findUnique
-      .mockResolvedValueOnce({
-        id          : "active-2",
-        versionNo   : 3,
-        systemPrompt: "active {bookTitle}",
-        userPrompt  : "active-user {chapterNo}"
-      });
 
     await expect(resolvePromptTemplateOrFallback({
       slug        : "CHAPTER_VALIDATION",
-      genreKey    : "classic",
+      bookTypeId  : "classic",
       replacements: { genre: "classic", bookTitle: "儒林外史" },
       fallback    : { system: "fallback-system", user: "fallback-user" }
     })).resolves.toEqual({
@@ -255,7 +262,7 @@ describe("prompt-templates", () => {
 
     await expect(resolvePromptTemplateOrFallback({
       slug        : "BOOK_VALIDATION",
-      genreKey    : "classic",
+      bookTypeId  : "classic",
       replacements: { bookTitle: "儒林外史", chapterNo: "7" },
       fallback    : { system: "fallback-system", user: "fallback-user" }
     })).resolves.toEqual({
@@ -268,7 +275,7 @@ describe("prompt-templates", () => {
 
     await expect(resolvePromptTemplateOrFallback({
       slug        : "ENTITY_RESOLUTION",
-      genreKey    : "classic",
+      bookTypeId  : "classic",
       replacements: { bookTitle: "儒林外史", genre: "classic" },
       fallback    : { system: "fallback-system", user: "fallback-user" }
     })).resolves.toEqual({
@@ -296,7 +303,7 @@ describe("prompt-templates", () => {
 
     await expect(resolvePromptTemplateOrFallback({
       slug        : "BOOK_VALIDATION",
-      genreKey    : "classic",
+      bookTypeId  : "classic",
       replacements: { bookTitle: "儒林外史" },
       fallback    : { system: "fallback-system", user: "fallback-user" }
     })).resolves.toEqual({
@@ -322,7 +329,7 @@ describe("prompt-templates", () => {
     await expect(createPromptVersion("ENTITY_RESOLUTION", {
       systemPrompt: "system",
       userPrompt  : "user",
-      genreKey    : "classic",
+      bookTypeId  : "classic",
       createdBy   : "tester",
       isBaseline  : true
     })).resolves.toEqual({
@@ -336,7 +343,7 @@ describe("prompt-templates", () => {
         versionNo   : 1,
         systemPrompt: "system",
         userPrompt  : "user",
-        genreKey    : "classic",
+        bookTypeId  : "classic",
         changeNote  : undefined,
         createdBy   : "tester",
         isBaseline  : true
@@ -380,11 +387,10 @@ describe("prompt-templates", () => {
     vi.stubEnv("NODE_ENV", "production");
 
     hoisted.prisma.promptTemplate.findUnique.mockResolvedValueOnce({
-      id             : "template-1",
-      codeRef        : "buildBookValidationPrompt",
-      activeVersionId: "active-1"
+      id     : "template-1",
+      codeRef: "buildBookValidationPrompt"
     });
-    hoisted.prisma.promptTemplateVersion.findUnique.mockResolvedValueOnce({
+    hoisted.prisma.promptTemplateVersion.findFirst.mockResolvedValueOnce({
       id          : "active-1",
       versionNo   : 4,
       systemPrompt: "system literal",
@@ -401,20 +407,19 @@ describe("prompt-templates", () => {
       versionNo: 4,
       codeRef  : "buildBookValidationPrompt"
     });
-
-    expect(hoisted.prisma.promptTemplateVersion.findFirst).not.toHaveBeenCalled();
   });
 
   it("falls back when a template has no usable active or fallback runtime version", async () => {
     vi.stubEnv("NODE_ENV", "production");
 
     hoisted.prisma.promptTemplate.findUnique.mockResolvedValueOnce({
-      id             : "template-1",
-      codeRef        : "buildEntityResolutionPrompt",
-      activeVersionId: "missing-version"
+      id     : "template-1",
+      codeRef: "buildEntityResolutionPrompt"
     });
-    hoisted.prisma.promptTemplateVersion.findUnique.mockResolvedValueOnce(null);
-    hoisted.prisma.promptTemplateVersion.findFirst.mockResolvedValueOnce(null);
+    // isActive=true → null, fallback → null
+    hoisted.prisma.promptTemplateVersion.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
 
     await expect(resolvePromptTemplateOrFallback({
       slug    : "ENTITY_RESOLUTION",

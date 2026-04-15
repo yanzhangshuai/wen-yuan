@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model NamePatternRule
- * @db.remark: 名字模式规则，支持运行时正则编译与风控拦截。
+ * 
  */
 export type NamePatternRuleModel = runtime.Types.Result.DefaultSelection<Prisma.$NamePatternRulePayload>
 
@@ -30,8 +30,12 @@ export type NamePatternRuleMinAggregateOutputType = {
   pattern: string | null
   action: string | null
   description: string | null
-  isVerified: boolean | null
+  source: string | null
+  reviewStatus: string | null
+  reviewNote: string | null
+  isActive: boolean | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type NamePatternRuleMaxAggregateOutputType = {
@@ -40,8 +44,12 @@ export type NamePatternRuleMaxAggregateOutputType = {
   pattern: string | null
   action: string | null
   description: string | null
-  isVerified: boolean | null
+  source: string | null
+  reviewStatus: string | null
+  reviewNote: string | null
+  isActive: boolean | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type NamePatternRuleCountAggregateOutputType = {
@@ -50,8 +58,12 @@ export type NamePatternRuleCountAggregateOutputType = {
   pattern: number
   action: number
   description: number
-  isVerified: number
+  source: number
+  reviewStatus: number
+  reviewNote: number
+  isActive: number
   createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -62,8 +74,12 @@ export type NamePatternRuleMinAggregateInputType = {
   pattern?: true
   action?: true
   description?: true
-  isVerified?: true
+  source?: true
+  reviewStatus?: true
+  reviewNote?: true
+  isActive?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type NamePatternRuleMaxAggregateInputType = {
@@ -72,8 +88,12 @@ export type NamePatternRuleMaxAggregateInputType = {
   pattern?: true
   action?: true
   description?: true
-  isVerified?: true
+  source?: true
+  reviewStatus?: true
+  reviewNote?: true
+  isActive?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type NamePatternRuleCountAggregateInputType = {
@@ -82,8 +102,12 @@ export type NamePatternRuleCountAggregateInputType = {
   pattern?: true
   action?: true
   description?: true
-  isVerified?: true
+  source?: true
+  reviewStatus?: true
+  reviewNote?: true
+  isActive?: true
   createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -165,8 +189,12 @@ export type NamePatternRuleGroupByOutputType = {
   pattern: string
   action: string
   description: string | null
-  isVerified: boolean
+  source: string
+  reviewStatus: string
+  reviewNote: string | null
+  isActive: boolean
   createdAt: Date
+  updatedAt: Date
   _count: NamePatternRuleCountAggregateOutputType | null
   _min: NamePatternRuleMinAggregateOutputType | null
   _max: NamePatternRuleMaxAggregateOutputType | null
@@ -196,8 +224,12 @@ export type NamePatternRuleWhereInput = {
   pattern?: Prisma.StringFilter<"NamePatternRule"> | string
   action?: Prisma.StringFilter<"NamePatternRule"> | string
   description?: Prisma.StringNullableFilter<"NamePatternRule"> | string | null
-  isVerified?: Prisma.BoolFilter<"NamePatternRule"> | boolean
+  source?: Prisma.StringFilter<"NamePatternRule"> | string
+  reviewStatus?: Prisma.StringFilter<"NamePatternRule"> | string
+  reviewNote?: Prisma.StringNullableFilter<"NamePatternRule"> | string | null
+  isActive?: Prisma.BoolFilter<"NamePatternRule"> | boolean
   createdAt?: Prisma.DateTimeFilter<"NamePatternRule"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"NamePatternRule"> | Date | string
 }
 
 export type NamePatternRuleOrderByWithRelationInput = {
@@ -206,8 +238,12 @@ export type NamePatternRuleOrderByWithRelationInput = {
   pattern?: Prisma.SortOrder
   action?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type NamePatternRuleWhereUniqueInput = Prisma.AtLeast<{
@@ -219,8 +255,12 @@ export type NamePatternRuleWhereUniqueInput = Prisma.AtLeast<{
   pattern?: Prisma.StringFilter<"NamePatternRule"> | string
   action?: Prisma.StringFilter<"NamePatternRule"> | string
   description?: Prisma.StringNullableFilter<"NamePatternRule"> | string | null
-  isVerified?: Prisma.BoolFilter<"NamePatternRule"> | boolean
+  source?: Prisma.StringFilter<"NamePatternRule"> | string
+  reviewStatus?: Prisma.StringFilter<"NamePatternRule"> | string
+  reviewNote?: Prisma.StringNullableFilter<"NamePatternRule"> | string | null
+  isActive?: Prisma.BoolFilter<"NamePatternRule"> | boolean
   createdAt?: Prisma.DateTimeFilter<"NamePatternRule"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"NamePatternRule"> | Date | string
 }, "id">
 
 export type NamePatternRuleOrderByWithAggregationInput = {
@@ -229,8 +269,12 @@ export type NamePatternRuleOrderByWithAggregationInput = {
   pattern?: Prisma.SortOrder
   action?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.NamePatternRuleCountOrderByAggregateInput
   _max?: Prisma.NamePatternRuleMaxOrderByAggregateInput
   _min?: Prisma.NamePatternRuleMinOrderByAggregateInput
@@ -245,8 +289,12 @@ export type NamePatternRuleScalarWhereWithAggregatesInput = {
   pattern?: Prisma.StringWithAggregatesFilter<"NamePatternRule"> | string
   action?: Prisma.StringWithAggregatesFilter<"NamePatternRule"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"NamePatternRule"> | string | null
-  isVerified?: Prisma.BoolWithAggregatesFilter<"NamePatternRule"> | boolean
+  source?: Prisma.StringWithAggregatesFilter<"NamePatternRule"> | string
+  reviewStatus?: Prisma.StringWithAggregatesFilter<"NamePatternRule"> | string
+  reviewNote?: Prisma.StringNullableWithAggregatesFilter<"NamePatternRule"> | string | null
+  isActive?: Prisma.BoolWithAggregatesFilter<"NamePatternRule"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"NamePatternRule"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"NamePatternRule"> | Date | string
 }
 
 export type NamePatternRuleCreateInput = {
@@ -255,8 +303,12 @@ export type NamePatternRuleCreateInput = {
   pattern: string
   action: string
   description?: string | null
-  isVerified?: boolean
+  source?: string
+  reviewStatus?: string
+  reviewNote?: string | null
+  isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type NamePatternRuleUncheckedCreateInput = {
@@ -265,8 +317,12 @@ export type NamePatternRuleUncheckedCreateInput = {
   pattern: string
   action: string
   description?: string | null
-  isVerified?: boolean
+  source?: string
+  reviewStatus?: string
+  reviewNote?: string | null
+  isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type NamePatternRuleUpdateInput = {
@@ -275,8 +331,12 @@ export type NamePatternRuleUpdateInput = {
   pattern?: Prisma.StringFieldUpdateOperationsInput | string
   action?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type NamePatternRuleUncheckedUpdateInput = {
@@ -285,8 +345,12 @@ export type NamePatternRuleUncheckedUpdateInput = {
   pattern?: Prisma.StringFieldUpdateOperationsInput | string
   action?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type NamePatternRuleCreateManyInput = {
@@ -295,8 +359,12 @@ export type NamePatternRuleCreateManyInput = {
   pattern: string
   action: string
   description?: string | null
-  isVerified?: boolean
+  source?: string
+  reviewStatus?: string
+  reviewNote?: string | null
+  isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type NamePatternRuleUpdateManyMutationInput = {
@@ -305,8 +373,12 @@ export type NamePatternRuleUpdateManyMutationInput = {
   pattern?: Prisma.StringFieldUpdateOperationsInput | string
   action?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type NamePatternRuleUncheckedUpdateManyInput = {
@@ -315,8 +387,12 @@ export type NamePatternRuleUncheckedUpdateManyInput = {
   pattern?: Prisma.StringFieldUpdateOperationsInput | string
   action?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type NamePatternRuleCountOrderByAggregateInput = {
@@ -325,8 +401,12 @@ export type NamePatternRuleCountOrderByAggregateInput = {
   pattern?: Prisma.SortOrder
   action?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type NamePatternRuleMaxOrderByAggregateInput = {
@@ -335,8 +415,12 @@ export type NamePatternRuleMaxOrderByAggregateInput = {
   pattern?: Prisma.SortOrder
   action?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type NamePatternRuleMinOrderByAggregateInput = {
@@ -345,8 +429,12 @@ export type NamePatternRuleMinOrderByAggregateInput = {
   pattern?: Prisma.SortOrder
   action?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 
@@ -357,8 +445,12 @@ export type NamePatternRuleSelect<ExtArgs extends runtime.Types.Extensions.Inter
   pattern?: boolean
   action?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["namePatternRule"]>
 
 export type NamePatternRuleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -367,8 +459,12 @@ export type NamePatternRuleSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   pattern?: boolean
   action?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["namePatternRule"]>
 
 export type NamePatternRuleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -377,8 +473,12 @@ export type NamePatternRuleSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   pattern?: boolean
   action?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["namePatternRule"]>
 
 export type NamePatternRuleSelectScalar = {
@@ -387,32 +487,31 @@ export type NamePatternRuleSelectScalar = {
   pattern?: boolean
   action?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type NamePatternRuleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ruleType" | "pattern" | "action" | "description" | "isVerified" | "createdAt", ExtArgs["result"]["namePatternRule"]>
+export type NamePatternRuleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ruleType" | "pattern" | "action" | "description" | "source" | "reviewStatus" | "reviewNote" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["namePatternRule"]>
 
 export type $NamePatternRulePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "NamePatternRule"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    /**
-     * FAMILY_HOUSE | DESCRIPTIVE_PHRASE | RELATIONAL_COMPOUND
-     */
     ruleType: string
-    /**
-     * 正则表达式，长度上限 200（D9）
-     */
     pattern: string
-    /**
-     * BLOCK | WARN
-     */
     action: string
     description: string | null
-    isVerified: boolean
+    source: string
+    reviewStatus: string
+    reviewNote: string | null
+    isActive: boolean
     createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["namePatternRule"]>
   composites: {}
 }
@@ -841,8 +940,12 @@ export interface NamePatternRuleFieldRefs {
   readonly pattern: Prisma.FieldRef<"NamePatternRule", 'String'>
   readonly action: Prisma.FieldRef<"NamePatternRule", 'String'>
   readonly description: Prisma.FieldRef<"NamePatternRule", 'String'>
-  readonly isVerified: Prisma.FieldRef<"NamePatternRule", 'Boolean'>
+  readonly source: Prisma.FieldRef<"NamePatternRule", 'String'>
+  readonly reviewStatus: Prisma.FieldRef<"NamePatternRule", 'String'>
+  readonly reviewNote: Prisma.FieldRef<"NamePatternRule", 'String'>
+  readonly isActive: Prisma.FieldRef<"NamePatternRule", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"NamePatternRule", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"NamePatternRule", 'DateTime'>
 }
     
 

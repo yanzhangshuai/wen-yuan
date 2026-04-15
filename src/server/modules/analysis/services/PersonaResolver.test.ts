@@ -13,7 +13,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { calculateSubstringMatchScore, createPersonaResolver, GENERIC_TITLES } from "@/server/modules/analysis/services/PersonaResolver";
+import { calculateSubstringMatchScore, createPersonaResolver, GENERIC_TITLES, scorePair } from "@/server/modules/analysis/services/PersonaResolver";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
@@ -1135,6 +1135,115 @@ describe("persona resolver", () => {
     });
   });
 
+  // S1: roster 命中时，extractedName ≠ canonicalName 应自动注册别名
+  it("S1: registers alias when roster-hit resolves extractedName to a different canonicalName", async () => {
+    const { prisma, personaFindUnique, profileUpsert } = createPrismaMock();
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const lookupAlias = vi.fn().mockResolvedValue(null);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias,
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+
+    // 名册命中："范举人" -> persona "fan-jin-id"，但 persona 标准名是"范进"
+    personaFindUnique.mockResolvedValue({
+      name   : "范进",
+      aliases: ["范举人"]
+    });
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范举人",
+      chapterContent: "范举人中举之后喜出望外。",
+      chapterNo     : 3,
+      rosterMap     : new Map([["范举人", "fan-jin-id"]])
+    });
+
+    expect(result.status).toBe("resolved");
+    expect(result.personaId).toBe("fan-jin-id");
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+    // S1 修复："范举人" ≠ "范进"，应自动注册别名
+    expect(registerAlias).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookId      : "book-1",
+        personaId   : "fan-jin-id",
+        alias       : "范举人",
+        resolvedName: "范进",
+        confidence  : 0.97,
+        chapterStart: 3,
+        status      : "CONFIRMED"
+      }),
+      expect.any(Object)
+    );
+  });
+
+  // S1: 相似度命中时，extractedName ≠ canonicalName 应自动注册别名
+  it("S1: registers alias when similarity-resolved extractedName differs from canonicalName", async () => {
+    const {
+      prisma,
+      personaFindMany,
+      personaUpdate,
+      profileUpsert
+    } = createPrismaMock();
+    const registerAlias = vi.fn().mockResolvedValue(undefined);
+    const lookupAlias = vi.fn().mockResolvedValue(null);
+    const aliasRegistry: AliasRegistryService = {
+      lookupAlias,
+      registerAlias,
+      loadBookAliasCache : vi.fn(),
+      listPendingMappings: vi.fn(),
+      listReviewMappings : vi.fn(),
+      updateMappingStatus: vi.fn()
+    };
+
+    // 相似度匹配："范举人"通过 surname+title boost 解析到"范进"
+    personaFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id      : "persona-fanjin",
+          name    : "范进",
+          aliases : [],
+          profiles: [{ localName: "范进" }]
+        },
+        {
+          id      : "persona-zhoupuzheng",
+          name    : "周蒲正",
+          aliases : [],
+          profiles: [{ localName: "周蒲正" }]
+        }
+      ]);
+
+    const resolver = createPersonaResolver(prisma, aliasRegistry);
+    const result = await resolver.resolve({
+      bookId        : "book-1",
+      extractedName : "范举人",
+      chapterContent: "范举人今日风光无限。",
+      chapterNo     : 5
+    });
+
+    expect(result.status).toBe("resolved");
+    expect(result.personaId).toBe("persona-fanjin");
+    expect(profileUpsert).toHaveBeenCalledTimes(1);
+    expect(personaUpdate).toHaveBeenCalledTimes(1);
+    // S1 修复："范举人" ≠ "范进"，应自动注册别名
+    expect(registerAlias).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookId      : "book-1",
+        personaId   : "persona-fanjin",
+        alias       : "范举人",
+        resolvedName: "范进",
+        chapterStart: 5
+      }),
+      expect.any(Object)
+    );
+  });
+
   it("does not boost surname+title when same-surname candidates are ambiguous", async () => {
     // "贾太太"有两个贾姓候选（贾政、贾赦）→ 不加权，新建 persona
     const {
@@ -1500,5 +1609,32 @@ describe("persona resolver", () => {
     });
     // 2 chars < 4, so 的/之 rule doesn't apply
     expect(result.reason).not.toBe("descriptive_phrase");
+  });
+
+  // ── Fix S2: 短中文名防误合并守卫 ──
+  describe("guardShortChineseName", () => {
+    it("should cap score ≤ 0.30 when two 2-char names have different first character", () => {
+      // "向鼎" vs "董知" — different surnames
+      const score = scorePair("向鼎", "董知", new Set(), new Set());
+      expect(score).toBeLessThanOrEqual(0.30);
+    });
+
+    it("should cap score ≤ 0.50 when same surname but second char different", () => {
+      // "杜倩" vs "杜慎" — same surname, second char different
+      const score = scorePair("杜倩", "杜慎", new Set(), new Set());
+      expect(score).toBeLessThanOrEqual(0.50);
+    });
+
+    it("should NOT cap score for 3+ char names that share a surname", () => {
+      // "范进兄" is 3 chars — guard only fires when BOTH names are exactly 2 chars
+      // Jaccard({"范","进","兄"}, {"范","进"}) = 2/3 ≈ 0.667 which exceeds 0.50
+      const score = scorePair("范进兄", "范进", new Set(), new Set());
+      expect(score).toBeGreaterThan(0.50);
+    });
+
+    it("should return 1.0 for identical names", () => {
+      const score = scorePair("范进", "范进", new Set(), new Set());
+      expect(score).toBe(1.0);
+    });
   });
 });

@@ -6,7 +6,7 @@
  *
  * 核心职责：
  * - 收集 Pass 1 各章独立提取的实体列表，执行全书级去重与消歧；
- * - 先用规则预分组（精确匹配 + 姓氏前缀 + 编辑距离），再用 LLM 判断模糊候选；
+ * - 先用规则预分组（精确匹配 + 姓氏前缀 + 别名重叠），再用 LLM 判断模糊候选；
  * - 输出全局 persona 映射表：surfaceForm → personaId，供 Pass 3 使用。
  *
  * 在两遍式架构中的位置：
@@ -33,9 +33,6 @@ import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-
 /** 每批发给 LLM 的最大候选组数，避免单次请求过大导致截断或选错。 */
 const RESOLUTION_BATCH_SIZE = 15;
 
-/** 编辑距离阈值：两个名字编辑距离 ≤ 此值时视为候选。 */
-const EDIT_DISTANCE_THRESHOLD = 1;
-
 /**
  * 统一名字的内部标识：全称谓 → 规范化键。
  * 仅用于内部分组去重，不影响最终输出。
@@ -57,28 +54,56 @@ function hasAliasBasedMergeHit(
 }
 
 /**
- * Levenshtein 编辑距离（仅用于短文本，中文姓名一般 2-4 字）。
+ * Fix T3: 规则可直接确定的组不送 LLM，降低成本。
+ * 送 LLM 的条件（同时满足）：
+ *   - 组大小 ≤ 5（超过 5 说明可能是泛称漏网）
+ *   - 同姓 + 有 alias 重叠（真正模糊的情况）
  */
-function editDistance(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-  if (Math.abs(m - n) > EDIT_DISTANCE_THRESHOLD) return EDIT_DISTANCE_THRESHOLD + 1;
+function partitionGroupsForLlm(
+  groups     : EntityCandidateGroup[],
+  aliasLookup: Map<string, string>
+): {
+  directMerge  : EntityCandidateGroup[];
+  sendToLlm    : EntityCandidateGroup[];
+  directNoMerge: EntityCandidateGroup[];
+} {
+  const directMerge   : EntityCandidateGroup[] = [];
+  const sendToLlm     : EntityCandidateGroup[] = [];
+  const directNoMerge : EntityCandidateGroup[] = [];
 
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1];
-      } else {
-        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-      }
+  for (const group of groups) {
+    if (group.members.length <= 1) {
+      directNoMerge.push(group);
+      continue;
     }
+
+    // 组过大：可能是泛称漏网，不送 LLM
+    if (group.members.length > 5) {
+      directNoMerge.push(group);
+      continue;
+    }
+
+    const names = group.members.map((m) => normalizeKey(m.name));
+
+    // 所有规范化名字相同 → 直接合并
+    if (new Set(names).size === 1) {
+      directMerge.push(group);
+      continue;
+    }
+
+    // 知识库别名覆盖所有成员 → 直接合并
+    const canonicals = names.map((n) => aliasLookup.get(n));
+    const allSameCanonical = canonicals.every((c) => c !== undefined && c === canonicals[0]);
+    if (allSameCanonical) {
+      directMerge.push(group);
+      continue;
+    }
+
+    // 模糊情况：送 LLM 判断
+    sendToLlm.push(group);
   }
 
-  return dp[m][n];
+  return { directMerge, sendToLlm, directNoMerge };
 }
 
 interface GlobalEntityInfo {
@@ -186,14 +211,6 @@ export function createGlobalEntityResolver(
           if (hasAliasBasedMergeHit(infoI.canonicalName, infoJ.canonicalName, aliasLookup)) {
             union(keys[i], keys[j]);
           }
-        }
-      }
-    }
-
-    for (let i = 0; i < keys.length; i += 1) {
-      for (let j = i + 1; j < keys.length; j += 1) {
-        if (editDistance(keys[i], keys[j]) <= EDIT_DISTANCE_THRESHOLD) {
-          union(keys[i], keys[j]);
         }
       }
     }
@@ -339,9 +356,31 @@ export function createGlobalEntityResolver(
       knowledgeBaseEntries: aliasLookup.size
     }));
 
-    const decisions = candidateGroups.length > 0
-      ? await resolveCandidateGroupsWithLLM(bookTitle, candidateGroups, stageContext)
+    const { directMerge, sendToLlm, directNoMerge } = partitionGroupsForLlm(candidateGroups, aliasLookup);
+    console.info("[GlobalEntityResolver] llm.scope.narrowed", JSON.stringify({
+      totalGroups  : candidateGroups.length,
+      directMerge  : directMerge.length,
+      sendToLlm    : sendToLlm.length,
+      directNoMerge: directNoMerge.length
+    }));
+
+    // 仅将模糊候选组送 LLM 判断
+    const llmDecisions = sendToLlm.length > 0
+      ? await resolveCandidateGroupsWithLLM(bookTitle, sendToLlm, stageContext)
       : new Map<number, EntityResolutionMergeDecision>();
+
+    // 将规则直接合并的组注入合并决策（不消耗 LLM token）
+    const decisions = new Map<number, EntityResolutionMergeDecision>(llmDecisions);
+    for (const group of directMerge) {
+      const sortedByLength = group.members
+        .map((m) => m.name)
+        .sort((a, b) => b.length - a.length);
+      decisions.set(group.groupId, {
+        shouldMerge  : true,
+        mergedName   : sortedByLength[0],
+        mergedAliases: sortedByLength.slice(1)
+      });
+    }
 
     const mergedNames = new Set<string>();
     const mergeTargets: Array<{ name: string; aliases: string[]; description: string }> = [];
@@ -436,8 +475,7 @@ export function createGlobalEntityResolver(
   return {
     resolveGlobalEntities,
     _collectGlobalDictionary: collectGlobalDictionary,
-    _buildCandidateGroups   : buildCandidateGroups,
-    _editDistance           : editDistance
+    _buildCandidateGroups   : buildCandidateGroups
   };
 }
 

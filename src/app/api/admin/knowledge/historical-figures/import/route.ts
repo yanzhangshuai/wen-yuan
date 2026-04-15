@@ -15,12 +15,13 @@ const PATH = "/api/admin/knowledge/historical-figures/import";
 
 const importSchema = z.object({
   entries: z.array(z.object({
-    name       : z.string().trim().min(1).max(100),
-    aliases    : z.array(z.string().trim()).default([]),
-    dynasty    : z.string().trim().max(50).optional(),
-    category   : z.enum(["EMPEROR", "SAGE", "POET", "GENERAL", "MYTHICAL", "STATESMAN"]),
-    description: z.string().optional(),
-    isVerified : z.boolean().optional()
+    name        : z.string().trim().min(1).max(100),
+    aliases     : z.array(z.string().trim()).default([]),
+    dynasty     : z.string().trim().max(50).optional(),
+    category    : z.enum(["EMPEROR", "SAGE", "POET", "GENERAL", "MYTHICAL", "STATESMAN"]),
+    description : z.string().optional(),
+    reviewStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]).optional(),
+    isActive    : z.boolean().optional()
   })).min(1, "至少提供一条记录")
 });
 

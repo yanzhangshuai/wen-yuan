@@ -10,11 +10,11 @@ export async function listKnowledgePacks(params?: {
   bookTypeId?: string;
   scope?     : string;
 }) {
-  const where: Prisma.KnowledgePackWhereInput = {};
+  const where: Prisma.AliasPackWhereInput = {};
   if (params?.bookTypeId) where.bookTypeId = params.bookTypeId;
   if (params?.scope) where.scope = params.scope;
 
-  const packs = await prisma.knowledgePack.findMany({
+  const packs = await prisma.aliasPack.findMany({
     where,
     orderBy: [{ createdAt: "desc" }],
     include: {
@@ -32,7 +32,7 @@ export async function listKnowledgePacks(params?: {
     return [];
   }
 
-  const statusGroups = await prisma.knowledgeEntry.groupBy({
+  const statusGroups = await prisma.aliasEntry.groupBy({
     by    : ["packId", "reviewStatus"],
     where : { packId: { in: packs.map((pack) => pack.id) } },
     _count: true
@@ -53,7 +53,7 @@ export async function listKnowledgePacks(params?: {
 
 /** 获取单个知识包详情。 */
 export async function getKnowledgePack(id: string) {
-  const pack = await prisma.knowledgePack.findUnique({
+  const pack = await prisma.aliasPack.findUnique({
     where  : { id },
     include: {
       bookType: { select: { id: true, key: true, name: true } },
@@ -67,7 +67,7 @@ export async function getKnowledgePack(id: string) {
 
   if (!pack) return null;
 
-  const statusCounts = await prisma.knowledgeEntry.groupBy({
+  const statusCounts = await prisma.aliasEntry.groupBy({
     by    : ["reviewStatus"],
     where : { packId: id },
     _count: true
@@ -92,7 +92,7 @@ export async function createKnowledgePack(data: {
   scope       : string;
   description?: string;
 }) {
-  return prisma.knowledgePack.create({
+  return prisma.aliasPack.create({
     data: {
       bookTypeId : data.bookTypeId,
       name       : data.name,
@@ -112,7 +112,7 @@ export async function updateKnowledgePack(
     version?    : number;
   }
 ) {
-  return prisma.knowledgePack.update({
+  return prisma.aliasPack.update({
     where: { id },
     data : {
       ...(data.name !== undefined && { name: data.name }),
@@ -125,5 +125,5 @@ export async function updateKnowledgePack(
 
 /** 删除知识包（级联删除条目）。 */
 export async function deleteKnowledgePack(id: string) {
-  return prisma.knowledgePack.delete({ where: { id } });
+  return prisma.aliasPack.delete({ where: { id } });
 }

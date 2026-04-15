@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model PromptTemplateVersion
- * @db.remark: 提示词版本历史。每次激活都保留旧版本，支持 diff 对比与回滚。
+ * 
  */
 export type PromptTemplateVersionModel = runtime.Types.Result.DefaultSelection<Prisma.$PromptTemplateVersionPayload>
 
@@ -40,10 +40,11 @@ export type PromptTemplateVersionMinAggregateOutputType = {
   versionNo: number | null
   systemPrompt: string | null
   userPrompt: string | null
-  genreKey: string | null
+  bookTypeId: string | null
+  isActive: boolean | null
+  isBaseline: boolean | null
   changeNote: string | null
   createdBy: string | null
-  isBaseline: boolean | null
   createdAt: Date | null
 }
 
@@ -53,10 +54,11 @@ export type PromptTemplateVersionMaxAggregateOutputType = {
   versionNo: number | null
   systemPrompt: string | null
   userPrompt: string | null
-  genreKey: string | null
+  bookTypeId: string | null
+  isActive: boolean | null
+  isBaseline: boolean | null
   changeNote: string | null
   createdBy: string | null
-  isBaseline: boolean | null
   createdAt: Date | null
 }
 
@@ -66,10 +68,11 @@ export type PromptTemplateVersionCountAggregateOutputType = {
   versionNo: number
   systemPrompt: number
   userPrompt: number
-  genreKey: number
+  bookTypeId: number
+  isActive: number
+  isBaseline: number
   changeNote: number
   createdBy: number
-  isBaseline: number
   createdAt: number
   _all: number
 }
@@ -89,10 +92,11 @@ export type PromptTemplateVersionMinAggregateInputType = {
   versionNo?: true
   systemPrompt?: true
   userPrompt?: true
-  genreKey?: true
+  bookTypeId?: true
+  isActive?: true
+  isBaseline?: true
   changeNote?: true
   createdBy?: true
-  isBaseline?: true
   createdAt?: true
 }
 
@@ -102,10 +106,11 @@ export type PromptTemplateVersionMaxAggregateInputType = {
   versionNo?: true
   systemPrompt?: true
   userPrompt?: true
-  genreKey?: true
+  bookTypeId?: true
+  isActive?: true
+  isBaseline?: true
   changeNote?: true
   createdBy?: true
-  isBaseline?: true
   createdAt?: true
 }
 
@@ -115,10 +120,11 @@ export type PromptTemplateVersionCountAggregateInputType = {
   versionNo?: true
   systemPrompt?: true
   userPrompt?: true
-  genreKey?: true
+  bookTypeId?: true
+  isActive?: true
+  isBaseline?: true
   changeNote?: true
   createdBy?: true
-  isBaseline?: true
   createdAt?: true
   _all?: true
 }
@@ -215,10 +221,11 @@ export type PromptTemplateVersionGroupByOutputType = {
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey: string | null
+  bookTypeId: string | null
+  isActive: boolean
+  isBaseline: boolean
   changeNote: string | null
   createdBy: string | null
-  isBaseline: boolean
   createdAt: Date
   _count: PromptTemplateVersionCountAggregateOutputType | null
   _avg: PromptTemplateVersionAvgAggregateOutputType | null
@@ -251,12 +258,14 @@ export type PromptTemplateVersionWhereInput = {
   versionNo?: Prisma.IntFilter<"PromptTemplateVersion"> | number
   systemPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
   userPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
-  genreKey?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
+  bookTypeId?: Prisma.UuidNullableFilter<"PromptTemplateVersion"> | string | null
+  isActive?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
+  isBaseline?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
   changeNote?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
   createdBy?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
-  isBaseline?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PromptTemplateVersion"> | Date | string
   template?: Prisma.XOR<Prisma.PromptTemplateScalarRelationFilter, Prisma.PromptTemplateWhereInput>
+  bookType?: Prisma.XOR<Prisma.BookTypeNullableScalarRelationFilter, Prisma.BookTypeWhereInput> | null
 }
 
 export type PromptTemplateVersionOrderByWithRelationInput = {
@@ -265,12 +274,14 @@ export type PromptTemplateVersionOrderByWithRelationInput = {
   versionNo?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   userPrompt?: Prisma.SortOrder
-  genreKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  bookTypeId?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  isBaseline?: Prisma.SortOrder
   changeNote?: Prisma.SortOrderInput | Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
-  isBaseline?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   template?: Prisma.PromptTemplateOrderByWithRelationInput
+  bookType?: Prisma.BookTypeOrderByWithRelationInput
 }
 
 export type PromptTemplateVersionWhereUniqueInput = Prisma.AtLeast<{
@@ -283,12 +294,14 @@ export type PromptTemplateVersionWhereUniqueInput = Prisma.AtLeast<{
   versionNo?: Prisma.IntFilter<"PromptTemplateVersion"> | number
   systemPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
   userPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
-  genreKey?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
+  bookTypeId?: Prisma.UuidNullableFilter<"PromptTemplateVersion"> | string | null
+  isActive?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
+  isBaseline?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
   changeNote?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
   createdBy?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
-  isBaseline?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PromptTemplateVersion"> | Date | string
   template?: Prisma.XOR<Prisma.PromptTemplateScalarRelationFilter, Prisma.PromptTemplateWhereInput>
+  bookType?: Prisma.XOR<Prisma.BookTypeNullableScalarRelationFilter, Prisma.BookTypeWhereInput> | null
 }, "id" | "templateId_versionNo">
 
 export type PromptTemplateVersionOrderByWithAggregationInput = {
@@ -297,10 +310,11 @@ export type PromptTemplateVersionOrderByWithAggregationInput = {
   versionNo?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   userPrompt?: Prisma.SortOrder
-  genreKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  bookTypeId?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  isBaseline?: Prisma.SortOrder
   changeNote?: Prisma.SortOrderInput | Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
-  isBaseline?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.PromptTemplateVersionCountOrderByAggregateInput
   _avg?: Prisma.PromptTemplateVersionAvgOrderByAggregateInput
@@ -318,10 +332,11 @@ export type PromptTemplateVersionScalarWhereWithAggregatesInput = {
   versionNo?: Prisma.IntWithAggregatesFilter<"PromptTemplateVersion"> | number
   systemPrompt?: Prisma.StringWithAggregatesFilter<"PromptTemplateVersion"> | string
   userPrompt?: Prisma.StringWithAggregatesFilter<"PromptTemplateVersion"> | string
-  genreKey?: Prisma.StringNullableWithAggregatesFilter<"PromptTemplateVersion"> | string | null
+  bookTypeId?: Prisma.UuidNullableWithAggregatesFilter<"PromptTemplateVersion"> | string | null
+  isActive?: Prisma.BoolWithAggregatesFilter<"PromptTemplateVersion"> | boolean
+  isBaseline?: Prisma.BoolWithAggregatesFilter<"PromptTemplateVersion"> | boolean
   changeNote?: Prisma.StringNullableWithAggregatesFilter<"PromptTemplateVersion"> | string | null
   createdBy?: Prisma.StringNullableWithAggregatesFilter<"PromptTemplateVersion"> | string | null
-  isBaseline?: Prisma.BoolWithAggregatesFilter<"PromptTemplateVersion"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PromptTemplateVersion"> | Date | string
 }
 
@@ -330,12 +345,13 @@ export type PromptTemplateVersionCreateInput = {
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey?: string | null
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: string | null
   createdBy?: string | null
-  isBaseline?: boolean
   createdAt?: Date | string
   template: Prisma.PromptTemplateCreateNestedOneWithoutVersionsInput
+  bookType?: Prisma.BookTypeCreateNestedOneWithoutPromptVersionsInput
 }
 
 export type PromptTemplateVersionUncheckedCreateInput = {
@@ -344,10 +360,11 @@ export type PromptTemplateVersionUncheckedCreateInput = {
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey?: string | null
+  bookTypeId?: string | null
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: string | null
   createdBy?: string | null
-  isBaseline?: boolean
   createdAt?: Date | string
 }
 
@@ -356,12 +373,13 @@ export type PromptTemplateVersionUpdateInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.PromptTemplateUpdateOneRequiredWithoutVersionsNestedInput
+  bookType?: Prisma.BookTypeUpdateOneWithoutPromptVersionsNestedInput
 }
 
 export type PromptTemplateVersionUncheckedUpdateInput = {
@@ -370,10 +388,11 @@ export type PromptTemplateVersionUncheckedUpdateInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -383,10 +402,11 @@ export type PromptTemplateVersionCreateManyInput = {
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey?: string | null
+  bookTypeId?: string | null
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: string | null
   createdBy?: string | null
-  isBaseline?: boolean
   createdAt?: Date | string
 }
 
@@ -395,10 +415,10 @@ export type PromptTemplateVersionUpdateManyMutationInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -408,10 +428,11 @@ export type PromptTemplateVersionUncheckedUpdateManyInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -436,10 +457,11 @@ export type PromptTemplateVersionCountOrderByAggregateInput = {
   versionNo?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   userPrompt?: Prisma.SortOrder
-  genreKey?: Prisma.SortOrder
+  bookTypeId?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  isBaseline?: Prisma.SortOrder
   changeNote?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
-  isBaseline?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -453,10 +475,11 @@ export type PromptTemplateVersionMaxOrderByAggregateInput = {
   versionNo?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   userPrompt?: Prisma.SortOrder
-  genreKey?: Prisma.SortOrder
+  bookTypeId?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  isBaseline?: Prisma.SortOrder
   changeNote?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
-  isBaseline?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -466,15 +489,58 @@ export type PromptTemplateVersionMinOrderByAggregateInput = {
   versionNo?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   userPrompt?: Prisma.SortOrder
-  genreKey?: Prisma.SortOrder
+  bookTypeId?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  isBaseline?: Prisma.SortOrder
   changeNote?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
-  isBaseline?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type PromptTemplateVersionSumOrderByAggregateInput = {
   versionNo?: Prisma.SortOrder
+}
+
+export type PromptTemplateVersionCreateNestedManyWithoutBookTypeInput = {
+  create?: Prisma.XOR<Prisma.PromptTemplateVersionCreateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput> | Prisma.PromptTemplateVersionCreateWithoutBookTypeInput[] | Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput[]
+  connectOrCreate?: Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput | Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput[]
+  createMany?: Prisma.PromptTemplateVersionCreateManyBookTypeInputEnvelope
+  connect?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+}
+
+export type PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput = {
+  create?: Prisma.XOR<Prisma.PromptTemplateVersionCreateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput> | Prisma.PromptTemplateVersionCreateWithoutBookTypeInput[] | Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput[]
+  connectOrCreate?: Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput | Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput[]
+  createMany?: Prisma.PromptTemplateVersionCreateManyBookTypeInputEnvelope
+  connect?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+}
+
+export type PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput = {
+  create?: Prisma.XOR<Prisma.PromptTemplateVersionCreateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput> | Prisma.PromptTemplateVersionCreateWithoutBookTypeInput[] | Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput[]
+  connectOrCreate?: Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput | Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput[]
+  upsert?: Prisma.PromptTemplateVersionUpsertWithWhereUniqueWithoutBookTypeInput | Prisma.PromptTemplateVersionUpsertWithWhereUniqueWithoutBookTypeInput[]
+  createMany?: Prisma.PromptTemplateVersionCreateManyBookTypeInputEnvelope
+  set?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  disconnect?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  delete?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  connect?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  update?: Prisma.PromptTemplateVersionUpdateWithWhereUniqueWithoutBookTypeInput | Prisma.PromptTemplateVersionUpdateWithWhereUniqueWithoutBookTypeInput[]
+  updateMany?: Prisma.PromptTemplateVersionUpdateManyWithWhereWithoutBookTypeInput | Prisma.PromptTemplateVersionUpdateManyWithWhereWithoutBookTypeInput[]
+  deleteMany?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
+}
+
+export type PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput = {
+  create?: Prisma.XOR<Prisma.PromptTemplateVersionCreateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput> | Prisma.PromptTemplateVersionCreateWithoutBookTypeInput[] | Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput[]
+  connectOrCreate?: Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput | Prisma.PromptTemplateVersionCreateOrConnectWithoutBookTypeInput[]
+  upsert?: Prisma.PromptTemplateVersionUpsertWithWhereUniqueWithoutBookTypeInput | Prisma.PromptTemplateVersionUpsertWithWhereUniqueWithoutBookTypeInput[]
+  createMany?: Prisma.PromptTemplateVersionCreateManyBookTypeInputEnvelope
+  set?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  disconnect?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  delete?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  connect?: Prisma.PromptTemplateVersionWhereUniqueInput | Prisma.PromptTemplateVersionWhereUniqueInput[]
+  update?: Prisma.PromptTemplateVersionUpdateWithWhereUniqueWithoutBookTypeInput | Prisma.PromptTemplateVersionUpdateWithWhereUniqueWithoutBookTypeInput[]
+  updateMany?: Prisma.PromptTemplateVersionUpdateManyWithWhereWithoutBookTypeInput | Prisma.PromptTemplateVersionUpdateManyWithWhereWithoutBookTypeInput[]
+  deleteMany?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
 }
 
 export type PromptTemplateVersionCreateNestedManyWithoutTemplateInput = {
@@ -519,16 +585,86 @@ export type PromptTemplateVersionUncheckedUpdateManyWithoutTemplateNestedInput =
   deleteMany?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
 }
 
+export type PromptTemplateVersionCreateWithoutBookTypeInput = {
+  id?: string
+  versionNo: number
+  systemPrompt: string
+  userPrompt: string
+  isActive?: boolean
+  isBaseline?: boolean
+  changeNote?: string | null
+  createdBy?: string | null
+  createdAt?: Date | string
+  template: Prisma.PromptTemplateCreateNestedOneWithoutVersionsInput
+}
+
+export type PromptTemplateVersionUncheckedCreateWithoutBookTypeInput = {
+  id?: string
+  templateId: string
+  versionNo: number
+  systemPrompt: string
+  userPrompt: string
+  isActive?: boolean
+  isBaseline?: boolean
+  changeNote?: string | null
+  createdBy?: string | null
+  createdAt?: Date | string
+}
+
+export type PromptTemplateVersionCreateOrConnectWithoutBookTypeInput = {
+  where: Prisma.PromptTemplateVersionWhereUniqueInput
+  create: Prisma.XOR<Prisma.PromptTemplateVersionCreateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput>
+}
+
+export type PromptTemplateVersionCreateManyBookTypeInputEnvelope = {
+  data: Prisma.PromptTemplateVersionCreateManyBookTypeInput | Prisma.PromptTemplateVersionCreateManyBookTypeInput[]
+  skipDuplicates?: boolean
+}
+
+export type PromptTemplateVersionUpsertWithWhereUniqueWithoutBookTypeInput = {
+  where: Prisma.PromptTemplateVersionWhereUniqueInput
+  update: Prisma.XOR<Prisma.PromptTemplateVersionUpdateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedUpdateWithoutBookTypeInput>
+  create: Prisma.XOR<Prisma.PromptTemplateVersionCreateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedCreateWithoutBookTypeInput>
+}
+
+export type PromptTemplateVersionUpdateWithWhereUniqueWithoutBookTypeInput = {
+  where: Prisma.PromptTemplateVersionWhereUniqueInput
+  data: Prisma.XOR<Prisma.PromptTemplateVersionUpdateWithoutBookTypeInput, Prisma.PromptTemplateVersionUncheckedUpdateWithoutBookTypeInput>
+}
+
+export type PromptTemplateVersionUpdateManyWithWhereWithoutBookTypeInput = {
+  where: Prisma.PromptTemplateVersionScalarWhereInput
+  data: Prisma.XOR<Prisma.PromptTemplateVersionUpdateManyMutationInput, Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeInput>
+}
+
+export type PromptTemplateVersionScalarWhereInput = {
+  AND?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
+  OR?: Prisma.PromptTemplateVersionScalarWhereInput[]
+  NOT?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
+  id?: Prisma.UuidFilter<"PromptTemplateVersion"> | string
+  templateId?: Prisma.UuidFilter<"PromptTemplateVersion"> | string
+  versionNo?: Prisma.IntFilter<"PromptTemplateVersion"> | number
+  systemPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
+  userPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
+  bookTypeId?: Prisma.UuidNullableFilter<"PromptTemplateVersion"> | string | null
+  isActive?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
+  isBaseline?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
+  changeNote?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
+  createdBy?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"PromptTemplateVersion"> | Date | string
+}
+
 export type PromptTemplateVersionCreateWithoutTemplateInput = {
   id?: string
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey?: string | null
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: string | null
   createdBy?: string | null
-  isBaseline?: boolean
   createdAt?: Date | string
+  bookType?: Prisma.BookTypeCreateNestedOneWithoutPromptVersionsInput
 }
 
 export type PromptTemplateVersionUncheckedCreateWithoutTemplateInput = {
@@ -536,10 +672,11 @@ export type PromptTemplateVersionUncheckedCreateWithoutTemplateInput = {
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey?: string | null
+  bookTypeId?: string | null
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: string | null
   createdBy?: string | null
-  isBaseline?: boolean
   createdAt?: Date | string
 }
 
@@ -569,20 +706,56 @@ export type PromptTemplateVersionUpdateManyWithWhereWithoutTemplateInput = {
   data: Prisma.XOR<Prisma.PromptTemplateVersionUpdateManyMutationInput, Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutTemplateInput>
 }
 
-export type PromptTemplateVersionScalarWhereInput = {
-  AND?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
-  OR?: Prisma.PromptTemplateVersionScalarWhereInput[]
-  NOT?: Prisma.PromptTemplateVersionScalarWhereInput | Prisma.PromptTemplateVersionScalarWhereInput[]
-  id?: Prisma.UuidFilter<"PromptTemplateVersion"> | string
-  templateId?: Prisma.UuidFilter<"PromptTemplateVersion"> | string
-  versionNo?: Prisma.IntFilter<"PromptTemplateVersion"> | number
-  systemPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
-  userPrompt?: Prisma.StringFilter<"PromptTemplateVersion"> | string
-  genreKey?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
-  changeNote?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
-  createdBy?: Prisma.StringNullableFilter<"PromptTemplateVersion"> | string | null
-  isBaseline?: Prisma.BoolFilter<"PromptTemplateVersion"> | boolean
-  createdAt?: Prisma.DateTimeFilter<"PromptTemplateVersion"> | Date | string
+export type PromptTemplateVersionCreateManyBookTypeInput = {
+  id?: string
+  templateId: string
+  versionNo: number
+  systemPrompt: string
+  userPrompt: string
+  isActive?: boolean
+  isBaseline?: boolean
+  changeNote?: string | null
+  createdBy?: string | null
+  createdAt?: Date | string
+}
+
+export type PromptTemplateVersionUpdateWithoutBookTypeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  versionNo?: Prisma.IntFieldUpdateOperationsInput | number
+  systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
+  userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  template?: Prisma.PromptTemplateUpdateOneRequiredWithoutVersionsNestedInput
+}
+
+export type PromptTemplateVersionUncheckedUpdateWithoutBookTypeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  versionNo?: Prisma.IntFieldUpdateOperationsInput | number
+  systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
+  userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  versionNo?: Prisma.IntFieldUpdateOperationsInput | number
+  systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
+  userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PromptTemplateVersionCreateManyTemplateInput = {
@@ -590,10 +763,11 @@ export type PromptTemplateVersionCreateManyTemplateInput = {
   versionNo: number
   systemPrompt: string
   userPrompt: string
-  genreKey?: string | null
+  bookTypeId?: string | null
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: string | null
   createdBy?: string | null
-  isBaseline?: boolean
   createdAt?: Date | string
 }
 
@@ -602,11 +776,12 @@ export type PromptTemplateVersionUpdateWithoutTemplateInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookType?: Prisma.BookTypeUpdateOneWithoutPromptVersionsNestedInput
 }
 
 export type PromptTemplateVersionUncheckedUpdateWithoutTemplateInput = {
@@ -614,10 +789,11 @@ export type PromptTemplateVersionUncheckedUpdateWithoutTemplateInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -626,10 +802,11 @@ export type PromptTemplateVersionUncheckedUpdateManyWithoutTemplateInput = {
   versionNo?: Prisma.IntFieldUpdateOperationsInput | number
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   userPrompt?: Prisma.StringFieldUpdateOperationsInput | string
-  genreKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   changeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isBaseline?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -641,12 +818,14 @@ export type PromptTemplateVersionSelect<ExtArgs extends runtime.Types.Extensions
   versionNo?: boolean
   systemPrompt?: boolean
   userPrompt?: boolean
-  genreKey?: boolean
+  bookTypeId?: boolean
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: boolean
   createdBy?: boolean
-  isBaseline?: boolean
   createdAt?: boolean
   template?: boolean | Prisma.PromptTemplateDefaultArgs<ExtArgs>
+  bookType?: boolean | Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>
 }, ExtArgs["result"]["promptTemplateVersion"]>
 
 export type PromptTemplateVersionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -655,12 +834,14 @@ export type PromptTemplateVersionSelectCreateManyAndReturn<ExtArgs extends runti
   versionNo?: boolean
   systemPrompt?: boolean
   userPrompt?: boolean
-  genreKey?: boolean
+  bookTypeId?: boolean
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: boolean
   createdBy?: boolean
-  isBaseline?: boolean
   createdAt?: boolean
   template?: boolean | Prisma.PromptTemplateDefaultArgs<ExtArgs>
+  bookType?: boolean | Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>
 }, ExtArgs["result"]["promptTemplateVersion"]>
 
 export type PromptTemplateVersionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -669,12 +850,14 @@ export type PromptTemplateVersionSelectUpdateManyAndReturn<ExtArgs extends runti
   versionNo?: boolean
   systemPrompt?: boolean
   userPrompt?: boolean
-  genreKey?: boolean
+  bookTypeId?: boolean
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: boolean
   createdBy?: boolean
-  isBaseline?: boolean
   createdAt?: boolean
   template?: boolean | Prisma.PromptTemplateDefaultArgs<ExtArgs>
+  bookType?: boolean | Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>
 }, ExtArgs["result"]["promptTemplateVersion"]>
 
 export type PromptTemplateVersionSelectScalar = {
@@ -683,28 +866,33 @@ export type PromptTemplateVersionSelectScalar = {
   versionNo?: boolean
   systemPrompt?: boolean
   userPrompt?: boolean
-  genreKey?: boolean
+  bookTypeId?: boolean
+  isActive?: boolean
+  isBaseline?: boolean
   changeNote?: boolean
   createdBy?: boolean
-  isBaseline?: boolean
   createdAt?: boolean
 }
 
-export type PromptTemplateVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "versionNo" | "systemPrompt" | "userPrompt" | "genreKey" | "changeNote" | "createdBy" | "isBaseline" | "createdAt", ExtArgs["result"]["promptTemplateVersion"]>
+export type PromptTemplateVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "versionNo" | "systemPrompt" | "userPrompt" | "bookTypeId" | "isActive" | "isBaseline" | "changeNote" | "createdBy" | "createdAt", ExtArgs["result"]["promptTemplateVersion"]>
 export type PromptTemplateVersionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.PromptTemplateDefaultArgs<ExtArgs>
+  bookType?: boolean | Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>
 }
 export type PromptTemplateVersionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.PromptTemplateDefaultArgs<ExtArgs>
+  bookType?: boolean | Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>
 }
 export type PromptTemplateVersionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.PromptTemplateDefaultArgs<ExtArgs>
+  bookType?: boolean | Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>
 }
 
 export type $PromptTemplateVersionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PromptTemplateVersion"
   objects: {
     template: Prisma.$PromptTemplatePayload<ExtArgs>
+    bookType: Prisma.$BookTypePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -712,13 +900,14 @@ export type $PromptTemplateVersionPayload<ExtArgs extends runtime.Types.Extensio
     versionNo: number
     systemPrompt: string
     userPrompt: string
+    bookTypeId: string | null
     /**
-     * 覆盖书籍类型（nil = 所有书籍类型通用）
+     * 当前是否为该 template（+ bookType 组合）的生效版本，替代 activeVersionId
      */
-    genreKey: string | null
+    isActive: boolean
+    isBaseline: boolean
     changeNote: string | null
     createdBy: string | null
-    isBaseline: boolean
     createdAt: Date
   }, ExtArgs["result"]["promptTemplateVersion"]>
   composites: {}
@@ -1115,6 +1304,7 @@ readonly fields: PromptTemplateVersionFieldRefs;
 export interface Prisma__PromptTemplateVersionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   template<T extends Prisma.PromptTemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PromptTemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__PromptTemplateClient<runtime.Types.Result.GetResult<Prisma.$PromptTemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  bookType<T extends Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PromptTemplateVersion$bookTypeArgs<ExtArgs>>): Prisma.Prisma__BookTypeClient<runtime.Types.Result.GetResult<Prisma.$BookTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1149,10 +1339,11 @@ export interface PromptTemplateVersionFieldRefs {
   readonly versionNo: Prisma.FieldRef<"PromptTemplateVersion", 'Int'>
   readonly systemPrompt: Prisma.FieldRef<"PromptTemplateVersion", 'String'>
   readonly userPrompt: Prisma.FieldRef<"PromptTemplateVersion", 'String'>
-  readonly genreKey: Prisma.FieldRef<"PromptTemplateVersion", 'String'>
+  readonly bookTypeId: Prisma.FieldRef<"PromptTemplateVersion", 'String'>
+  readonly isActive: Prisma.FieldRef<"PromptTemplateVersion", 'Boolean'>
+  readonly isBaseline: Prisma.FieldRef<"PromptTemplateVersion", 'Boolean'>
   readonly changeNote: Prisma.FieldRef<"PromptTemplateVersion", 'String'>
   readonly createdBy: Prisma.FieldRef<"PromptTemplateVersion", 'String'>
-  readonly isBaseline: Prisma.FieldRef<"PromptTemplateVersion", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"PromptTemplateVersion", 'DateTime'>
 }
     
@@ -1547,6 +1738,25 @@ export type PromptTemplateVersionDeleteManyArgs<ExtArgs extends runtime.Types.Ex
    * Limit how many PromptTemplateVersions to delete.
    */
   limit?: number
+}
+
+/**
+ * PromptTemplateVersion.bookType
+ */
+export type PromptTemplateVersion$bookTypeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BookType
+   */
+  select?: Prisma.BookTypeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BookType
+   */
+  omit?: Prisma.BookTypeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookTypeInclude<ExtArgs> | null
+  where?: Prisma.BookTypeWhereInput
 }
 
 /**

@@ -13,10 +13,14 @@ import { badRequestJson } from "../_shared";
 
 const PATH = "/api/admin/knowledge/relational-terms";
 
+/**
+ * 关系词现在由 GenericTitleRule.tier = RELATIONAL 驱动。
+ * 本路由提供兼容接口，底层操作 genericTitleRule 表。
+ */
+
 const createSchema = z.object({
-  term      : z.string().trim().min(1, "关系词不能为空").max(20),
-  category  : z.enum(["KINSHIP", "SOCIAL", "GENERIC_ROLE"]),
-  isVerified: z.boolean().optional()
+  title      : z.string().trim().min(1, "关系词不能为空").max(20),
+  description: z.string().optional()
 });
 
 export async function GET(request: Request): Promise<Response> {
@@ -28,22 +32,20 @@ export async function GET(request: Request): Promise<Response> {
     requireAdmin(auth);
 
     const url = new URL(request.url);
-    const category = url.searchParams.get("category") ?? undefined;
     const q = url.searchParams.get("q") ?? undefined;
     const { page, pageSize } = parsePagination(url.searchParams);
 
-    const where: Record<string, unknown> = {};
-    if (category) where.category = category;
-    if (q) where.term = { contains: q, mode: "insensitive" };
+    const where: Record<string, unknown> = { tier: "RELATIONAL" };
+    if (q) where.title = { contains: q, mode: "insensitive" };
 
     const [data, total] = await Promise.all([
-      prisma.relationalTermEntry.findMany({
+      prisma.genericTitleRule.findMany({
         where,
         skip   : (page - 1) * pageSize,
         take   : pageSize,
         orderBy: { createdAt: "desc" }
       }),
-      prisma.relationalTermEntry.count({ where })
+      prisma.genericTitleRule.count({ where })
     ]);
 
     return okJson({
@@ -75,7 +77,13 @@ export async function POST(request: Request): Promise<Response> {
       return badRequestJson(PATH, requestId, startedAt, parsed.error.issues[0]?.message ?? "参数不合法");
     }
 
-    const data = await prisma.relationalTermEntry.create({ data: parsed.data });
+    const data = await prisma.genericTitleRule.create({
+      data: {
+        title      : parsed.data.title,
+        tier       : "RELATIONAL",
+        description: parsed.data.description ?? null
+      }
+    });
     return okJson({
       path   : PATH, requestId, startedAt,
       code   : "RELATIONAL_TERM_CREATED",

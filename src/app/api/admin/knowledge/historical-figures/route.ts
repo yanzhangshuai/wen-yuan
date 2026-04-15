@@ -14,12 +14,13 @@ import { badRequestJson } from "../_shared";
 const PATH = "/api/admin/knowledge/historical-figures";
 
 const createSchema = z.object({
-  name       : z.string().trim().min(1, "名称不能为空").max(100),
-  aliases    : z.array(z.string().trim()).default([]),
-  dynasty    : z.string().trim().max(50).optional(),
-  category   : z.enum(["EMPEROR", "SAGE", "POET", "GENERAL", "MYTHICAL", "STATESMAN"]),
-  description: z.string().optional(),
-  isVerified : z.boolean().optional()
+  name        : z.string().trim().min(1, "名称不能为空").max(100),
+  aliases     : z.array(z.string().trim()).default([]),
+  dynasty     : z.string().trim().max(50).optional(),
+  category    : z.enum(["EMPEROR", "SAGE", "POET", "GENERAL", "MYTHICAL", "STATESMAN"]),
+  description : z.string().optional(),
+  reviewStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]).optional(),
+  isActive    : z.boolean().optional()
 });
 
 export async function GET(request: Request): Promise<Response> {

@@ -188,21 +188,21 @@ function applySurnameTitleBoost(
  */
 export interface ResolveInput {
   /** 当前解析所属书籍 ID。用于限制候选范围，避免跨书污染。 */
-  bookId         : string;
+  bookId           : string;
   /** AI 从本段文本中抽取出的原始称谓。 */
-  extractedName  : string;
+  extractedName    : string;
   /** 当前章节原文（用于“是否真实出现在正文”校验）。 */
-  chapterContent : string;
+  chapterContent   : string;
   /** 章节号。提供时可启用按章节范围生效的 alias 映射命中。 */
-  chapterNo?     : number;
+  chapterNo?       : number;
   /** Phase 1 人物名册映射：surfaceForm -> personaId 或 GENERIC。 */
-  rosterMap?     : Map<string, string>;
+  rosterMap?       : Map<string, string>;
   /** 本章被判定为“仅称号”的名字集合，用于决定新建 persona 的 nameType。 */
-  titleOnlyNames?: Set<string>;
+  titleOnlyNames?  : Set<string>;
   /** 书籍级词典配置（泛化称谓、硬软后缀等）。 */
-  lexiconConfig? : BookLexiconConfig;
+  lexiconConfig?   : BookLexiconConfig;
   /** 泛化比率统计：surfaceForm -> { generic, nonGeneric }。用于灰区判定。 */
-  genericRatios? : Map<string, { generic: number; nonGeneric: number }>;
+  genericRatios?   : Map<string, { generic: number; nonGeneric: number }>;
   /** 运行时知识（含历史人物、关系词、名字规则等 DB 驱动的完整过滤配置）。 */
   runtimeKnowledge?: FullRuntimeKnowledge;
 }
@@ -576,6 +576,28 @@ export function createPersonaResolver(
               update: { localName: input.extractedName },
               create: { personaId: rosterValue, bookId: input.bookId, localName: input.extractedName }
             });
+
+            // Fix S1: roster 命中时同步注册别名
+            if (
+              aliasRegistry &&
+              input.chapterNo !== undefined &&
+              rawName !== normalizeName(targetPersona.name) &&
+              rawName.length >= 2
+            ) {
+              const aliasType = inferAliasType(rawName, effectiveLexicon.titlePattern, effectiveLexicon.positionPattern);
+              await aliasRegistry.registerAlias({
+                bookId      : input.bookId,
+                personaId   : rosterValue,
+                alias       : input.extractedName,
+                resolvedName: targetPersona.name,
+                aliasType,
+                confidence  : 0.97,
+                evidence    : "名册命中自动注册",
+                chapterStart: input.chapterNo,
+                status      : "CONFIRMED"
+              }, client);
+            }
+
             return {
               status    : "resolved",
               personaId : rosterValue,
@@ -648,6 +670,27 @@ export function createPersonaResolver(
           where: { id: winner.candidate.id },
           data : { aliases: { push: input.extractedName } }
         });
+      }
+
+      // Fix S1: 有效别名自动注册 — 不局限于 TITLE_ONLY
+      if (
+        aliasRegistry &&
+        input.chapterNo !== undefined &&
+        rawName !== normalizeName(winner.candidate.name) &&
+        rawName.length >= 2
+      ) {
+        const aliasType = inferAliasType(rawName, effectiveLexicon.titlePattern, effectiveLexicon.positionPattern);
+        await aliasRegistry.registerAlias({
+          bookId      : input.bookId,
+          personaId   : winner.candidate.id,
+          alias       : input.extractedName,
+          resolvedName: winner.candidate.name,
+          aliasType,
+          confidence  : winner.score,
+          evidence    : "相似度命中自动注册",
+          chapterStart: input.chapterNo,
+          status      : winner.score >= 0.9 ? "CONFIRMED" : "PENDING"
+        }, client);
       }
 
       return {
@@ -750,13 +793,27 @@ function multiSignalScore(
 }
 
 /**
+ * 短中文名相似度上限守卫。
+ * 规则：
+ *   R1: 两个 2 字名，首字（姓）不同 → 得分上限 0.30
+ *   R2: 两个 2 字名，同姓但余字完全不同（无子串关系）→ 得分上限 0.50
+ *   其他情况：无上限（返回 null）
+ */
+function guardShortChineseName(a: string, b: string): number | null {
+  if (a.length !== 2 || b.length !== 2) return null;
+  if (a[0] !== b[0]) return 0.30;          // R1: 不同姓
+  if (a[1] !== b[1]) return 0.50;          // R2: 同姓，余字不同
+  return null;                              // 完全相同 → 由 a===b 先处理
+}
+
+/**
  * 两个名字的相似度评分：
  * 1. 完全相等直接 1；
  * 2. 子串关系使用业务化惩罚规则（硬/软后缀）；
  * 3. 长字符串用编辑距离；
  * 4. 短字符串用字符集合相似度。
  */
-function scorePair(
+export function scorePair(
   a: string,
   b: string,
   hardBlockSuffixes: Set<string>,
@@ -764,6 +821,10 @@ function scorePair(
 ): number {
   if (!a || !b) return 0;
   if (a === b) return 1.0;
+
+  // Fix S2: 短中文名防误合并守卫
+  const cap = guardShortChineseName(a, b);
+  if (cap !== null) return cap;
 
   const minLen = Math.min(a.length, b.length);
   const maxLen = Math.max(a.length, b.length);

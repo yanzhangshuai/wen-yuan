@@ -21,6 +21,7 @@ interface RuntimeLexiconBuildResult {
   lexiconConfig       : BookLexiconConfig;
   safetyGenericTitles : string[];
   defaultGenericTitles: string[];
+  relationalTermTitles: string[];
   hardBlockSuffixes   : string[];
   softBlockSuffixes   : string[];
   titleStems          : string[];
@@ -142,15 +143,15 @@ async function loadRuntimeLexiconPayload(
   bookTypeKey: string | null,
   prisma: PrismaClient
 ): Promise<RuntimeLexiconPayload> {
-  const baseConfig = bookTypeKey ? await loadBookTypeConfig(bookTypeKey, prisma) : {};
+  const baseConfig = bookTypeKey ? loadBookTypeConfig(bookTypeKey, prisma) : {};
 
   const [genericTitles, surnames, extractionRules] = await Promise.all([
-    prisma.genericTitleEntry.findMany({
+    prisma.genericTitleRule.findMany({
       where  : { isActive: true },
       orderBy: [{ tier: "asc" }, { title: "asc" }],
       select : { title: true, tier: true }
     }),
-    prisma.surnameEntry.findMany({
+    prisma.surnameRule.findMany({
       where: {
         isActive: true,
         OR      : [
@@ -161,12 +162,12 @@ async function loadRuntimeLexiconPayload(
       orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
       select : { surname: true, isCompound: true }
     }),
-    prisma.extractionRule.findMany({
+    prisma.nerLexiconRule.findMany({
       where: {
         isActive: true,
         OR      : [
-          { genreKey: null },
-          ...(bookTypeKey ? [{ genreKey: bookTypeKey }] : [])
+          { bookTypeId: null },
+          ...(bookTypeKey ? [{ bookType: { key: bookTypeKey } }] : [])
         ]
       },
       orderBy: [{ ruleType: "asc" }, { sortOrder: "asc" }],
@@ -189,6 +190,11 @@ function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexic
 
   const defaultGenericTitles = toUniqueList(payload.genericTitles
     .filter((item) => item.tier === "DEFAULT")
+    .map((item) => item.title));
+
+  // NEW: relational terms now come from genericTitles with tier=RELATIONAL
+  const relationalTermTitles = toUniqueList(payload.genericTitles
+    .filter((item) => item.tier === "RELATIONAL")
     .map((item) => item.title));
 
   const surnameCompounds = toUniqueList(payload.surnames
@@ -253,6 +259,7 @@ function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexic
     lexiconConfig,
     safetyGenericTitles,
     defaultGenericTitles,
+    relationalTermTitles,
     hardBlockSuffixes,
     softBlockSuffixes,
     titleStems,
@@ -264,15 +271,12 @@ function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexic
  * 加载书籍类型的 NER 调谐配置（数据库驱动）。
  * 任务启动时调用一次，缓存到内存。
  */
-export async function loadBookTypeConfig(
-  bookTypeKey: string,
-  prisma: PrismaClient
-): Promise<BookLexiconConfig> {
-  const bookType = await prisma.bookType.findUnique({
-    where: { key: bookTypeKey, isActive: true }
-  });
-  if (!bookType?.presetConfig) return {};
-  return bookType.presetConfig as BookLexiconConfig;
+export function loadBookTypeConfig(
+  _bookTypeKey: string,
+  _prisma: PrismaClient
+): BookLexiconConfig {
+  // presetConfig 已废弃，配置已迁入 ner_lexicon_rules / prompt_extraction_rules
+  return {};
 }
 
 /**
@@ -297,7 +301,7 @@ export async function buildAliasLookupFromDb(
   prisma: PrismaClient
 ): Promise<Map<string, string>> {
   // Step 1: 查找手动挂载且仍处于启用态的知识包
-  const bookPacks = await prisma.bookKnowledgePack.findMany({
+  const bookPacks = await prisma.bookAliasPack.findMany({
     where  : { bookId, pack: { isActive: true } },
     orderBy: { priority: "desc" },
     select : { packId: true, priority: true }
@@ -305,8 +309,8 @@ export async function buildAliasLookupFromDb(
 
   // Step 2: 自动继承启用中的书籍类型知识包；与手动挂载包合并去重
   const typePacks = bookTypeKey
-    ? await prisma.knowledgePack.findMany({
-      where : { bookType: { key: bookTypeKey }, isActive: true, scope: "GENRE" },
+    ? await prisma.aliasPack.findMany({
+      where : { bookType: { key: bookTypeKey }, isActive: true, scope: "BOOK_TYPE" },
       select: { id: true }
     })
     : [];
@@ -328,7 +332,7 @@ export async function buildAliasLookupFromDb(
   }
 
   // Step 4: 加载所有已验证条目
-  const entries = await prisma.knowledgeEntry.findMany({
+  const entries = await prisma.aliasEntry.findMany({
     where : { packId: { in: packIds }, reviewStatus: "VERIFIED" },
     select: { packId: true, canonicalName: true, aliases: true, confidence: true }
   });
@@ -393,40 +397,26 @@ export async function loadFullRuntimeKnowledge(
     runtimeLexiconPayload,
     aliasLookup,
     historicalFigureEntries,
-    relationalTermEntries,
     namePatternRuleEntries
   ] = await Promise.all([
     loadRuntimeLexiconPayload(normalizedBookTypeKey, prisma),
     buildAliasLookupFromDb(bookId, normalizedBookTypeKey, prisma),
     prisma.historicalFigureEntry.findMany({
-      where : { isVerified: true },
-      select: {
-        id         : true,
-        name       : true,
-        aliases    : true,
-        dynasty    : true,
-        category   : true,
-        description: true
-      }
-    }),
-    prisma.relationalTermEntry.findMany({
-      where : { isVerified: true },
-      select: { term: true }
+      where : { reviewStatus: "VERIFIED", isActive: true },
+      select: { id: true, name: true, aliases: true, dynasty: true, category: true, description: true }
     }),
     prisma.namePatternRule.findMany({
-      where  : { isVerified: true },
+      where  : { reviewStatus: "VERIFIED", isActive: true },
       orderBy: [{ ruleType: "asc" }, { createdAt: "asc" }],
-      select : {
-        id         : true,
-        ruleType   : true,
-        action     : true,
-        pattern    : true,
-        description: true
-      }
+      select : { id: true, ruleType: true, action: true, pattern: true, description: true }
     })
   ]);
 
   const runtimeLexicon = buildRuntimeLexiconConfig(runtimeLexiconPayload);
+
+  const relationalTerms = new Set(toUniqueList(
+    runtimeLexicon.relationalTermTitles.map(normalizeLookupValue)
+  ));
 
   const historicalFigures = new Set<string>();
   const historicalFigureMap = new Map<string, {
@@ -461,10 +451,6 @@ export async function loadFullRuntimeKnowledge(
       }
     }
   }
-
-  const relationalTerms = new Set(toUniqueList(
-    relationalTermEntries.map((item) => normalizeLookupValue(item.term))
-  ));
 
   const namePatternRules = namePatternRuleEntries
     .map((rule) => compileNamePatternRule(rule))

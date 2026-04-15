@@ -895,17 +895,17 @@ export function createChapterAnalysisService(
 
     const stats = await prismaClient.$transaction(async (tx) => {
       return await persistResult(tx, {
-        chapterId     : chapter.id,
-        chapterNo     : chapter.no,
-        bookId        : chapter.bookId,
-        chapterContent: chapter.content,
+        chapterId       : chapter.id,
+        chapterNo       : chapter.no,
+        bookId          : chapter.bookId,
+        chapterContent  : chapter.content,
         merged,
         rosterMap,
         titleOnlyNames,
         pendingRosterAliasMappings,
-        lexiconConfig    : bookLexiconConfig,
-        genericRatios    : resolvedGenericRatios,
-        runtimeKnowledge : executionContext.runtimeKnowledge
+        lexiconConfig   : bookLexiconConfig,
+        genericRatios   : resolvedGenericRatios,
+        runtimeKnowledge: executionContext.runtimeKnowledge
       });
     }, {
       timeout: 30000

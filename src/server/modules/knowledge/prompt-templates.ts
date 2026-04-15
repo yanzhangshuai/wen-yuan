@@ -29,13 +29,12 @@ function shouldBypassRuntimePromptLookup() {
   return process.env.NODE_ENV === "test";
 }
 
-async function findRuntimePromptVersion(slug: string, genreKey?: string | null) {
+async function findRuntimePromptVersion(slug: string, bookTypeId?: string | null) {
   const template = await prisma.promptTemplate.findUnique({
     where : { slug },
     select: {
-      id             : true,
-      codeRef        : true,
-      activeVersionId: true
+      id     : true,
+      codeRef: true
     }
   });
 
@@ -43,34 +42,38 @@ async function findRuntimePromptVersion(slug: string, genreKey?: string | null) 
     return null;
   }
 
-  if (genreKey) {
-    const genreVersion = await prisma.promptTemplateVersion.findFirst({
+  if (bookTypeId) {
+    const bookTypeVersion = await prisma.promptTemplateVersion.findFirst({
       where: {
         templateId: template.id,
-        genreKey
+        bookTypeId
       },
       orderBy: { versionNo: "desc" }
     });
 
-    if (genreVersion) {
-      return { template, version: genreVersion };
+    if (bookTypeVersion) {
+      return { template, version: bookTypeVersion };
     }
   }
 
-  if (template.activeVersionId) {
-    const activeVersion = await prisma.promptTemplateVersion.findUnique({
-      where: { id: template.activeVersionId }
-    });
+  // 找到该模板激活版本（isActive=true）
+  const activeVersion = await prisma.promptTemplateVersion.findFirst({
+    where: {
+      templateId: template.id,
+      isActive  : true,
+      bookTypeId: null
+    },
+    orderBy: { versionNo: "desc" }
+  });
 
-    if (activeVersion) {
-      return { template, version: activeVersion };
-    }
+  if (activeVersion) {
+    return { template, version: activeVersion };
   }
 
   const fallbackVersion = await prisma.promptTemplateVersion.findFirst({
     where: {
       templateId: template.id,
-      genreKey  : null
+      bookTypeId: null
     },
     orderBy: { versionNo: "desc" }
   });
@@ -106,7 +109,7 @@ export async function getPromptTemplate(slug: string) {
           versionNo   : true,
           systemPrompt: true,
           userPrompt  : true,
-          genreKey    : true,
+          bookTypeId  : true,
           changeNote  : true,
           createdBy   : true,
           isBaseline  : true,
@@ -122,7 +125,7 @@ export async function createPromptVersion(
   data: {
     systemPrompt: string;
     userPrompt  : string;
-    genreKey?   : string;
+    bookTypeId? : string;
     changeNote? : string;
     createdBy?  : string;
     isBaseline? : boolean;
@@ -142,7 +145,7 @@ export async function createPromptVersion(
       versionNo   : nextVersionNo,
       systemPrompt: data.systemPrompt,
       userPrompt  : data.userPrompt,
-      genreKey    : data.genreKey,
+      bookTypeId  : data.bookTypeId,
       changeNote  : data.changeNote,
       createdBy   : data.createdBy,
       isBaseline  : data.isBaseline ?? false
@@ -160,10 +163,23 @@ export async function activatePromptVersion(slug: string, versionId: string) {
     throw new Error("版本不属于该模板");
   }
 
-  return prisma.promptTemplate.update({
-    where: { slug },
-    data : { activeVersionId: versionId }
-  });
+  // 停用同 bookType 组合的旧激活版本，激活新版本
+  await prisma.$transaction([
+    prisma.promptTemplateVersion.updateMany({
+      where: {
+        templateId: template.id,
+        bookTypeId: version.bookTypeId,
+        isActive  : true
+      },
+      data: { isActive: false }
+    }),
+    prisma.promptTemplateVersion.update({
+      where: { id: versionId },
+      data : { isActive: true }
+    })
+  ]);
+
+  return version;
 }
 
 export async function diffPromptVersions(slug: string, v1: string, v2: string) {
@@ -191,8 +207,12 @@ export async function previewPrompt(
   let version;
   if (versionId) {
     version = await prisma.promptTemplateVersion.findUnique({ where: { id: versionId } });
-  } else if (template.activeVersionId) {
-    version = await prisma.promptTemplateVersion.findUnique({ where: { id: template.activeVersionId } });
+  } else {
+    // 找激活版本
+    version = await prisma.promptTemplateVersion.findFirst({
+      where  : { templateId: template.id, isActive: true, bookTypeId: null },
+      orderBy: { versionNo: "desc" }
+    });
   }
 
   if (!version) {
@@ -214,7 +234,7 @@ export async function previewPrompt(
 
 export async function resolvePromptTemplateOrFallback(input: {
   slug         : string;
-  genreKey?    : string | null;
+  bookTypeId?  : string | null;
   replacements?: Record<string, string>;
   fallback     : { system: string; user: string };
 }): Promise<ResolvedPromptTemplate> {
@@ -223,7 +243,7 @@ export async function resolvePromptTemplateOrFallback(input: {
   }
 
   try {
-    const resolved = await findRuntimePromptVersion(input.slug, input.genreKey);
+    const resolved = await findRuntimePromptVersion(input.slug, input.bookTypeId);
     if (!resolved) {
       return input.fallback;
     }
@@ -237,9 +257,9 @@ export async function resolvePromptTemplateOrFallback(input: {
     };
   } catch (error) {
     console.warn("[knowledge.prompt-templates] runtime resolve failed, using fallback", {
-      slug    : input.slug,
-      genreKey: input.genreKey ?? null,
-      message : error instanceof Error ? error.message : String(error)
+      slug      : input.slug,
+      bookTypeId: input.bookTypeId ?? null,
+      message   : error instanceof Error ? error.message : String(error)
     });
     return input.fallback;
   }

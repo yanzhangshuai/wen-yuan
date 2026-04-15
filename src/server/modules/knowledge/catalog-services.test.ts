@@ -1,4 +1,3 @@
-import { Prisma } from "@/generated/prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -53,14 +52,14 @@ const hoisted = vi.hoisted(() => {
       update    : vi.fn(),
       delete    : vi.fn()
     },
-    knowledgePack: {
+    aliasPack: {
       findMany  : vi.fn(),
       findUnique: vi.fn(),
       create    : vi.fn(),
       update    : vi.fn(),
       delete    : vi.fn()
     },
-    knowledgeEntry: {
+    aliasEntry: {
       groupBy: vi.fn()
     },
     knowledgeAuditLog: {
@@ -68,20 +67,20 @@ const hoisted = vi.hoisted(() => {
       count     : vi.fn(),
       findUnique: vi.fn()
     },
-    extractionRule: {
+    nerLexiconRule: {
       findMany: vi.fn(),
       create  : vi.fn(),
       update  : vi.fn(),
       delete  : vi.fn()
     },
-    genericTitleEntry: {
+    genericTitleRule: {
       findMany  : vi.fn(),
       create    : vi.fn(),
       update    : vi.fn(),
       findUnique: vi.fn(),
       delete    : vi.fn()
     },
-    surnameEntry: {
+    surnameRule: {
       findMany  : vi.fn(),
       create    : vi.fn(),
       update    : vi.fn(),
@@ -116,8 +115,8 @@ describe("knowledge catalog services", () => {
         include: {
           _count: {
             select: {
-              books         : true,
-              knowledgePacks: true
+              books     : true,
+              aliasPacks: true
             }
           }
         }
@@ -146,12 +145,11 @@ describe("knowledge catalog services", () => {
         description: "desc"
       })).resolves.toEqual({ id: "bt-new" });
       await expect(updateBookType("bt-1", {
-        key         : "classic-updated",
-        name        : "章回小说新版",
-        description : "new desc",
-        presetConfig: null,
-        sortOrder   : 9,
-        isActive    : false
+        key        : "classic-updated",
+        name       : "章回小说新版",
+        description: "new desc",
+        sortOrder  : 9,
+        isActive   : false
       })).resolves.toEqual({ id: "bt-updated" });
       await expect(deleteBookType("missing")).rejects.toThrow("书籍类型不存在");
       await expect(deleteBookType("bt-2")).rejects.toThrow("该书籍类型下仍有 2 本书籍");
@@ -162,30 +160,28 @@ describe("knowledge catalog services", () => {
         include: {
           _count: {
             select: {
-              books         : true,
-              knowledgePacks: true
+              books     : true,
+              aliasPacks: true
             }
           }
         }
       });
       expect(hoisted.prisma.bookType.create).toHaveBeenCalledWith({
         data: {
-          key         : "classic",
-          name        : "章回小说",
-          description : "desc",
-          presetConfig: undefined,
-          sortOrder   : 0
+          key        : "classic",
+          name       : "章回小说",
+          description: "desc",
+          sortOrder  : 0
         }
       });
       expect(hoisted.prisma.bookType.update).toHaveBeenCalledWith({
         where: { id: "bt-1" },
         data : {
-          key         : "classic-updated",
-          name        : "章回小说新版",
-          description : "new desc",
-          presetConfig: Prisma.JsonNull,
-          sortOrder   : 9,
-          isActive    : false
+          key        : "classic-updated",
+          name       : "章回小说新版",
+          description: "new desc",
+          sortOrder  : 9,
+          isActive   : false
         }
       });
       expect(hoisted.prisma.bookType.delete).toHaveBeenCalledWith({ where: { id: "bt-3" } });
@@ -194,11 +190,11 @@ describe("knowledge catalog services", () => {
 
   describe("knowledge-packs", () => {
     it("returns empty pack list without querying review counts", async () => {
-      hoisted.prisma.knowledgePack.findMany.mockResolvedValueOnce([]);
+      hoisted.prisma.aliasPack.findMany.mockResolvedValueOnce([]);
 
       await expect(listKnowledgePacks({ bookTypeId: "bt-1", scope: "GENRE" })).resolves.toEqual([]);
 
-      expect(hoisted.prisma.knowledgePack.findMany).toHaveBeenCalledWith({
+      expect(hoisted.prisma.aliasPack.findMany).toHaveBeenCalledWith({
         where  : { bookTypeId: "bt-1", scope: "GENRE" },
         orderBy: [{ createdAt: "desc" }],
         include: {
@@ -211,15 +207,15 @@ describe("knowledge catalog services", () => {
           }
         }
       });
-      expect(hoisted.prisma.knowledgeEntry.groupBy).not.toHaveBeenCalled();
+      expect(hoisted.prisma.aliasEntry.groupBy).not.toHaveBeenCalled();
     });
 
     it("hydrates pack status counts for list and detail queries", async () => {
-      hoisted.prisma.knowledgePack.findMany.mockResolvedValueOnce([
+      hoisted.prisma.aliasPack.findMany.mockResolvedValueOnce([
         { id: "pack-1", name: "人物别名" },
         { id: "pack-2", name: "官衔" }
       ]);
-      hoisted.prisma.knowledgeEntry.groupBy
+      hoisted.prisma.aliasEntry.groupBy
         .mockResolvedValueOnce([
           { packId: "pack-1", reviewStatus: "VERIFIED", _count: 2 },
           { packId: "pack-1", reviewStatus: "PENDING", _count: 1 }
@@ -228,12 +224,12 @@ describe("knowledge catalog services", () => {
           { reviewStatus: "VERIFIED", _count: 4 },
           { reviewStatus: "PENDING", _count: 1 }
         ]);
-      hoisted.prisma.knowledgePack.findUnique
+      hoisted.prisma.aliasPack.findUnique
         .mockResolvedValueOnce({ id: "pack-1", name: "人物别名" })
         .mockResolvedValueOnce(null);
-      hoisted.prisma.knowledgePack.create.mockResolvedValueOnce({ id: "pack-3" });
-      hoisted.prisma.knowledgePack.update.mockResolvedValueOnce({ id: "pack-1", version: 2 });
-      hoisted.prisma.knowledgePack.delete.mockResolvedValueOnce({ id: "pack-1" });
+      hoisted.prisma.aliasPack.create.mockResolvedValueOnce({ id: "pack-3" });
+      hoisted.prisma.aliasPack.update.mockResolvedValueOnce({ id: "pack-1", version: 2 });
+      hoisted.prisma.aliasPack.delete.mockResolvedValueOnce({ id: "pack-1" });
 
       await expect(listKnowledgePacks()).resolves.toEqual([
         { id: "pack-1", name: "人物别名", statusCounts: { PENDING: 1, VERIFIED: 2 } },
@@ -259,7 +255,7 @@ describe("knowledge catalog services", () => {
       })).resolves.toEqual({ id: "pack-1", version: 2 });
       await expect(deleteKnowledgePack("pack-1")).resolves.toEqual({ id: "pack-1" });
 
-      expect(hoisted.prisma.knowledgePack.create).toHaveBeenCalledWith({
+      expect(hoisted.prisma.aliasPack.create).toHaveBeenCalledWith({
         data: {
           bookTypeId : "bt-1",
           name       : "人物别名",
@@ -267,7 +263,7 @@ describe("knowledge catalog services", () => {
           description: "desc"
         }
       });
-      expect(hoisted.prisma.knowledgePack.update).toHaveBeenCalledWith({
+      expect(hoisted.prisma.aliasPack.update).toHaveBeenCalledWith({
         where: { id: "pack-1" },
         data : {
           name       : "新名称",
@@ -404,27 +400,27 @@ describe("knowledge catalog services", () => {
 
   describe("extraction-rules", () => {
     it("supports list/create/update/delete/reorder and combined preview flows", async () => {
-      hoisted.prisma.extractionRule.findMany
+      hoisted.prisma.nerLexiconRule.findMany
         .mockResolvedValueOnce([{ id: "rule-1" }])
         .mockResolvedValueOnce([
-          { id: "rule-1", content: "规则一", genreKey: null, sortOrder: 1 },
-          { id: "rule-2", content: "规则二", genreKey: "classic", sortOrder: 2 }
+          { id: "rule-1", content: "规则一", bookTypeId: null, sortOrder: 1 },
+          { id: "rule-2", content: "规则二", bookTypeId: "classic", sortOrder: 2 }
         ])
         .mockResolvedValueOnce([
-          { id: "rule-3", content: "通用关系", genreKey: null, sortOrder: 1 }
+          { id: "rule-3", content: "通用关系", bookTypeId: null, sortOrder: 1 }
         ]);
-      hoisted.prisma.extractionRule.create.mockResolvedValueOnce({ id: "rule-new" });
-      hoisted.prisma.extractionRule.update
+      hoisted.prisma.nerLexiconRule.create.mockResolvedValueOnce({ id: "rule-new" });
+      hoisted.prisma.nerLexiconRule.update
         .mockResolvedValueOnce({ id: "rule-1" })
         .mockResolvedValueOnce({ id: "rule-a" })
         .mockResolvedValueOnce({ id: "rule-b" });
-      hoisted.prisma.extractionRule.delete.mockResolvedValueOnce({ id: "rule-1" });
+      hoisted.prisma.nerLexiconRule.delete.mockResolvedValueOnce({ id: "rule-1" });
       hoisted.prisma.$transaction.mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
 
       await expect(listExtractionRules({
-        ruleType: "ENTITY",
-        genreKey: "classic",
-        active  : true
+        ruleType  : "ENTITY",
+        bookTypeId: "classic",
+        active    : true
       })).resolves.toEqual([{ id: "rule-1" }]);
       await expect(createExtractionRule({
         content   : "人物规则",
@@ -432,7 +428,7 @@ describe("knowledge catalog services", () => {
       })).resolves.toEqual({ id: "rule-new" });
       await expect(updateExtractionRule("rule-1", {
         content   : "更新规则",
-        genreKey  : null,
+        bookTypeId: null,
         sortOrder : 7,
         isActive  : false,
         changeNote: "调整"
@@ -440,49 +436,49 @@ describe("knowledge catalog services", () => {
       await expect(deleteExtractionRule("rule-1")).resolves.toEqual({ id: "rule-1" });
       await expect(reorderExtractionRules("ENTITY", ["rule-a", "rule-b"])).resolves.toBeUndefined();
       await expect(previewCombinedRules("ENTITY", "classic")).resolves.toEqual({
-        ruleType: "ENTITY",
-        genreKey: "classic",
-        count   : 2,
-        combined: "1. 规则一\n2. 规则二",
-        rules   : [
-          { id: "rule-1", content: "规则一", genreKey: null, sortOrder: 1 },
-          { id: "rule-2", content: "规则二", genreKey: "classic", sortOrder: 2 }
+        ruleType  : "ENTITY",
+        bookTypeId: "classic",
+        count     : 2,
+        combined  : "1. 规则一\n2. 规则二",
+        rules     : [
+          { id: "rule-1", content: "规则一", bookTypeId: null, sortOrder: 1 },
+          { id: "rule-2", content: "规则二", bookTypeId: "classic", sortOrder: 2 }
         ]
       });
       await expect(previewCombinedRules("RELATIONSHIP")).resolves.toEqual({
-        ruleType: "RELATIONSHIP",
-        genreKey: null,
-        count   : 1,
-        combined: "1. 通用关系",
-        rules   : [
-          { id: "rule-3", content: "通用关系", genreKey: null, sortOrder: 1 }
+        ruleType  : "RELATIONSHIP",
+        bookTypeId: null,
+        count     : 1,
+        combined  : "1. 通用关系",
+        rules     : [
+          { id: "rule-3", content: "通用关系", bookTypeId: null, sortOrder: 1 }
         ]
       });
 
-      expect(hoisted.prisma.extractionRule.create).toHaveBeenCalledWith({
+      expect(hoisted.prisma.nerLexiconRule.create).toHaveBeenCalledWith({
         data: {
           ruleType  : "ENTITY",
           content   : "人物规则",
-          genreKey  : undefined,
+          bookTypeId: undefined,
           sortOrder : 0,
           changeNote: "初始导入"
         }
       });
-      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(1, {
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(1, {
         where: { id: "rule-1" },
         data : {
           content   : "更新规则",
-          genreKey  : null,
+          bookTypeId: null,
           sortOrder : 7,
           isActive  : false,
           changeNote: "调整"
         }
       });
-      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(2, {
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(2, {
         where: { id: "rule-a" },
         data : { sortOrder: 1 }
       });
-      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(3, {
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(3, {
         where: { id: "rule-b" },
         data : { sortOrder: 2 }
       });
@@ -492,17 +488,17 @@ describe("knowledge catalog services", () => {
 
   describe("generic-titles", () => {
     it("supports list/create/update and guarded delete flows", async () => {
-      hoisted.prisma.genericTitleEntry.findMany.mockResolvedValueOnce([{ id: "title-1" }]);
-      hoisted.prisma.genericTitleEntry.create.mockResolvedValueOnce({ id: "title-new" });
-      hoisted.prisma.genericTitleEntry.update.mockResolvedValueOnce({ id: "title-1" });
-      hoisted.prisma.genericTitleEntry.findUnique
+      hoisted.prisma.genericTitleRule.findMany.mockResolvedValueOnce([{ id: "title-1" }]);
+      hoisted.prisma.genericTitleRule.create.mockResolvedValueOnce({ id: "title-new" });
+      hoisted.prisma.genericTitleRule.update.mockResolvedValueOnce({ id: "title-1" });
+      hoisted.prisma.genericTitleRule.findUnique
         .mockResolvedValueOnce({ id: "title-safe", tier: "SAFETY" })
         .mockResolvedValueOnce({ id: "title-normal", tier: "DEFAULT" })
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ title: "老爷", isActive: true, tier: "SAFETY" })
-        .mockResolvedValueOnce({ title: "掌门", isActive: true, tier: "DEFAULT", exemptInGenres: ["wuxia"] })
-        .mockResolvedValueOnce({ title: "先生", isActive: true, tier: "DEFAULT", exemptInGenres: null });
-      hoisted.prisma.genericTitleEntry.delete.mockResolvedValueOnce({ id: "title-normal" });
+        .mockResolvedValueOnce({ title: "掌门", isActive: true, tier: "DEFAULT", exemptInBookTypeIds: ["wuxia"] })
+        .mockResolvedValueOnce({ title: "先生", isActive: true, tier: "DEFAULT", exemptInBookTypeIds: null });
+      hoisted.prisma.genericTitleRule.delete.mockResolvedValueOnce({ id: "title-normal" });
 
       await expect(listGenericTitles({
         tier  : "DEFAULT",
@@ -514,10 +510,10 @@ describe("knowledge catalog services", () => {
         description: "武侠常见称谓"
       })).resolves.toEqual({ id: "title-new" });
       await expect(updateGenericTitle("title-1", {
-        tier          : "GRAY_ZONE",
-        exemptInGenres: null,
-        description   : "需人工判断",
-        isActive      : false
+        tier               : "GRAY_ZONE",
+        exemptInBookTypeIds: null,
+        description        : "需人工判断",
+        isActive           : false
       })).resolves.toEqual({ id: "title-1" });
       await expect(deleteGenericTitle("title-safe")).rejects.toThrow("SAFETY 级别称谓不可删除");
       await expect(deleteGenericTitle("title-normal")).resolves.toEqual({ id: "title-normal" });
@@ -539,7 +535,7 @@ describe("knowledge catalog services", () => {
         title : "掌门",
         genre : "wuxia",
         result: "exempt",
-        reason: "该称谓在wuxia书籍类型下已豁免（exemptInGenres）",
+        reason: "该称谓在wuxia书籍类型下已豁免（exemptInBookTypeIds）",
         tier  : "DEFAULT"
       });
       await expect(testGenericTitle("先生")).resolves.toEqual({
@@ -550,13 +546,13 @@ describe("knowledge catalog services", () => {
         tier  : "DEFAULT"
       });
 
-      expect(hoisted.prisma.genericTitleEntry.update).toHaveBeenCalledWith({
+      expect(hoisted.prisma.genericTitleRule.update).toHaveBeenCalledWith({
         where: { id: "title-1" },
         data : {
-          tier          : "GRAY_ZONE",
-          exemptInGenres: Prisma.JsonNull,
-          description   : "需人工判断",
-          isActive      : false
+          tier               : "GRAY_ZONE",
+          exemptInBookTypeIds: [],
+          description        : "需人工判断",
+          isActive           : false
         }
       });
     });
@@ -564,7 +560,7 @@ describe("knowledge catalog services", () => {
 
   describe("surnames", () => {
     it("supports list/create/update/delete/import and extraction helpers", async () => {
-      hoisted.prisma.surnameEntry.findMany
+      hoisted.prisma.surnameRule.findMany
         .mockResolvedValueOnce([{ id: "surname-1" }])
         .mockResolvedValueOnce([
           { surname: "欧阳", isCompound: true, priority: 10 },
@@ -578,13 +574,13 @@ describe("knowledge catalog services", () => {
           { surname: "欧阳", isCompound: true, priority: 10 },
           { surname: "赵", isCompound: false, priority: 0 }
         ]);
-      hoisted.prisma.surnameEntry.create
+      hoisted.prisma.surnameRule.create
         .mockResolvedValueOnce({ id: "surname-new" })
         .mockResolvedValueOnce({ id: "created-1" })
         .mockResolvedValueOnce({ id: "created-2" });
-      hoisted.prisma.surnameEntry.update.mockResolvedValueOnce({ id: "surname-1" });
-      hoisted.prisma.surnameEntry.delete.mockResolvedValueOnce({ id: "surname-1" });
-      hoisted.prisma.surnameEntry.findUnique
+      hoisted.prisma.surnameRule.update.mockResolvedValueOnce({ id: "surname-1" });
+      hoisted.prisma.surnameRule.delete.mockResolvedValueOnce({ id: "surname-1" });
+      hoisted.prisma.surnameRule.findUnique
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ id: "existing-zhao" })
         .mockResolvedValueOnce(null);
@@ -630,7 +626,7 @@ describe("knowledge catalog services", () => {
         priority        : 0
       });
 
-      expect(hoisted.prisma.surnameEntry.findMany).toHaveBeenNthCalledWith(1, {
+      expect(hoisted.prisma.surnameRule.findMany).toHaveBeenNthCalledWith(1, {
         where: {
           isCompound: true,
           isActive  : true,
@@ -639,7 +635,7 @@ describe("knowledge catalog services", () => {
         orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
         include: { bookType: { select: { id: true, key: true, name: true } } }
       });
-      expect(hoisted.prisma.surnameEntry.create).toHaveBeenNthCalledWith(1, {
+      expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(1, {
         data: {
           surname    : "欧阳",
           isCompound : true,
@@ -649,7 +645,7 @@ describe("knowledge catalog services", () => {
           source     : "MANUAL"
         }
       });
-      expect(hoisted.prisma.surnameEntry.create).toHaveBeenNthCalledWith(2, {
+      expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(2, {
         data: {
           surname   : "欧阳",
           isCompound: true,
@@ -657,7 +653,7 @@ describe("knowledge catalog services", () => {
           source    : "IMPORTED"
         }
       });
-      expect(hoisted.prisma.surnameEntry.create).toHaveBeenNthCalledWith(3, {
+      expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(3, {
         data: {
           surname   : "司马",
           isCompound: true,

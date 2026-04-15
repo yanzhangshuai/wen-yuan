@@ -6,12 +6,12 @@ import { prisma } from "@/server/db/prisma";
  */
 
 export async function listSurnames(params?: { compound?: boolean; q?: string; active?: boolean }) {
-  const where: Prisma.SurnameEntryWhereInput = {};
+  const where: Prisma.SurnameRuleWhereInput = {};
   if (params?.compound !== undefined) where.isCompound = params.compound;
   if (params?.active !== undefined) where.isActive = params.active;
   if (params?.q) where.surname = { contains: params.q };
 
-  return prisma.surnameEntry.findMany({
+  return prisma.surnameRule.findMany({
     where,
     orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
     include: { bookType: { select: { id: true, key: true, name: true } } }
@@ -26,7 +26,7 @@ export async function createSurname(data: {
   bookTypeId? : string;
   source?     : string;
 }) {
-  return prisma.surnameEntry.create({
+  return prisma.surnameRule.create({
     data: {
       surname    : data.surname,
       isCompound : data.isCompound ?? data.surname.length >= 2,
@@ -47,7 +47,7 @@ export async function updateSurname(
     isActive?   : boolean;
   }
 ) {
-  return prisma.surnameEntry.update({
+  return prisma.surnameRule.update({
     where: { id },
     data : {
       ...(data.priority !== undefined && { priority: data.priority }),
@@ -59,7 +59,7 @@ export async function updateSurname(
 }
 
 export async function deleteSurname(id: string) {
-  return prisma.surnameEntry.delete({ where: { id } });
+  return prisma.surnameRule.delete({ where: { id } });
 }
 
 export async function importSurnames(text: string) {
@@ -68,10 +68,10 @@ export async function importSurnames(text: string) {
   let created = 0;
 
   for (const surname of unique) {
-    const existing = await prisma.surnameEntry.findUnique({ where: { surname } });
+    const existing = await prisma.surnameRule.findUnique({ where: { surname } });
     if (existing) continue;
 
-    await prisma.surnameEntry.create({
+    await prisma.surnameRule.create({
       data: {
         surname,
         isCompound: surname.length >= 2,
@@ -86,7 +86,7 @@ export async function importSurnames(text: string) {
 }
 
 export async function testSurnameExtraction(name: string) {
-  const entries = await prisma.surnameEntry.findMany({
+  const entries = await prisma.surnameRule.findMany({
     where  : { isActive: true },
     orderBy: [{ priority: "desc" }, { surname: "asc" }],
     select : { surname: true, isCompound: true, priority: true }

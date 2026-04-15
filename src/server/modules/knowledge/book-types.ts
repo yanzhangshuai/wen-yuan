@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/client";
+import { type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 
 /**
@@ -18,8 +18,8 @@ export async function listBookTypes(params?: { active?: boolean }) {
     include: {
       _count: {
         select: {
-          books         : true,
-          knowledgePacks: true
+          books     : true,
+          aliasPacks: true
         }
       }
     }
@@ -42,8 +42,8 @@ export async function getBookType(id: string) {
     include: {
       _count: {
         select: {
-          books         : true,
-          knowledgePacks: true
+          books     : true,
+          aliasPacks: true
         }
       }
     }
@@ -52,19 +52,17 @@ export async function getBookType(id: string) {
 
 /** 创建书籍类型。 */
 export async function createBookType(data: {
-  key          : string;
-  name         : string;
-  description? : string;
-  presetConfig?: Prisma.InputJsonValue;
-  sortOrder?   : number;
+  key         : string;
+  name        : string;
+  description?: string;
+  sortOrder?  : number;
 }) {
   return prisma.bookType.create({
     data: {
-      key         : data.key,
-      name        : data.name,
-      description : data.description,
-      presetConfig: data.presetConfig,
-      sortOrder   : data.sortOrder ?? 0
+      key        : data.key,
+      name       : data.name,
+      description: data.description,
+      sortOrder  : data.sortOrder ?? 0
     }
   });
 }
@@ -73,12 +71,11 @@ export async function createBookType(data: {
 export async function updateBookType(
   id: string,
   data: {
-    key?         : string;
-    name?        : string;
-    description? : string;
-    presetConfig?: Prisma.InputJsonValue | null;
-    sortOrder?   : number;
-    isActive?    : boolean;
+    key?        : string;
+    name?       : string;
+    description?: string;
+    sortOrder?  : number;
+    isActive?   : boolean;
   }
 ) {
   return prisma.bookType.update({
@@ -87,9 +84,6 @@ export async function updateBookType(
       ...(data.key !== undefined && { key: data.key }),
       ...(data.name !== undefined && { name: data.name }),
       ...(data.description !== undefined && { description: data.description }),
-      ...(data.presetConfig !== undefined && {
-        presetConfig: data.presetConfig === null ? Prisma.JsonNull : data.presetConfig
-      }),
       ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
       ...(data.isActive !== undefined && { isActive: data.isActive })
     }

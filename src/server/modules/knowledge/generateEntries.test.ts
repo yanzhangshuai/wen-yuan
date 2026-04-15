@@ -11,13 +11,13 @@ const hoisted = vi.hoisted(() => ({
     aiModel: {
       findFirst: vi.fn()
     },
-    knowledgePack: {
+    aliasPack: {
       findUnique: vi.fn()
     },
     book: {
       findUnique: vi.fn()
     },
-    knowledgeEntry: {
+    aliasEntry: {
       findMany: vi.fn()
     },
     $transaction: vi.fn()
@@ -60,7 +60,7 @@ describe("generateEntries", () => {
   });
 
   it("builds generation preview prompts with existing entries and optional book context", async () => {
-    hoisted.prisma.knowledgePack.findUnique.mockResolvedValueOnce({
+    hoisted.prisma.aliasPack.findUnique.mockResolvedValueOnce({
       id         : "pack-1",
       name       : "三国人物包",
       description: "覆盖主要人物与军师别名",
@@ -98,7 +98,7 @@ describe("generateEntries", () => {
     expect(preview.userPrompt).toContain("《三国演义》");
     expect(preview.userPrompt).toContain("关羽: 云长、关公");
     expect(preview.userPrompt).toContain("补充要求：优先覆盖主角");
-    expect(hoisted.prisma.knowledgePack.findUnique).toHaveBeenCalledWith({
+    expect(hoisted.prisma.aliasPack.findUnique).toHaveBeenCalledWith({
       where  : { id: "pack-1" },
       include: {
         bookType: { select: { key: true } },
@@ -116,7 +116,7 @@ describe("generateEntries", () => {
   });
 
   it("rejects preview requests when the pack or target book does not exist", async () => {
-    hoisted.prisma.knowledgePack.findUnique
+    hoisted.prisma.aliasPack.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         id         : "pack-1",
@@ -137,7 +137,7 @@ describe("generateEntries", () => {
   });
 
   it("reviews AI generated candidates with deduplication, overlap detection and low-confidence rejection", async () => {
-    hoisted.prisma.knowledgePack.findUnique.mockResolvedValueOnce({
+    hoisted.prisma.aliasPack.findUnique.mockResolvedValueOnce({
       id         : "pack-1",
       name       : "三国人物包",
       description: "覆盖主要人物与军师别名",
@@ -161,7 +161,7 @@ describe("generateEntries", () => {
       ]),
       usage: null
     });
-    hoisted.prisma.knowledgeEntry.findMany.mockResolvedValueOnce([
+    hoisted.prisma.aliasEntry.findMany.mockResolvedValueOnce([
       { canonicalName: "关羽", aliases: ["云长", "关公"] },
       { canonicalName: "张飞", aliases: ["翼德"] }
     ]);
@@ -215,7 +215,7 @@ describe("generateEntries", () => {
     const createEntry = vi.fn().mockResolvedValue({ id: "entry-1" });
     const bumpPackVersion = vi.fn().mockResolvedValue({ id: "pack-1" });
 
-    hoisted.prisma.knowledgePack.findUnique.mockResolvedValueOnce({
+    hoisted.prisma.aliasPack.findUnique.mockResolvedValueOnce({
       id         : "pack-1",
       name       : "三国人物包",
       description: "覆盖主要人物与军师别名",
@@ -242,15 +242,15 @@ describe("generateEntries", () => {
       ]),
       usage: null
     });
-    hoisted.prisma.knowledgeEntry.findMany.mockResolvedValueOnce([]);
+    hoisted.prisma.aliasEntry.findMany.mockResolvedValueOnce([]);
     hoisted.prisma.$transaction.mockImplementationOnce(async (callback: unknown) => {
       const runTransaction = callback as (tx: {
-        knowledgeEntry: { create: typeof createEntry };
-        knowledgePack : { update: typeof bumpPackVersion };
+        aliasEntry: { create: typeof createEntry };
+        aliasPack : { update: typeof bumpPackVersion };
       }) => Promise<unknown>;
       return runTransaction({
-        knowledgeEntry: { create: createEntry },
-        knowledgePack : { update: bumpPackVersion }
+        aliasEntry: { create: createEntry },
+        aliasPack : { update: bumpPackVersion }
       });
     });
 
@@ -269,12 +269,10 @@ describe("generateEntries", () => {
         packId       : "pack-1",
         canonicalName: "赵云",
         aliases      : ["子龙"],
-        entryType    : "CHARACTER",
         confidence   : 0.91,
         source       : "LLM_GENERATED",
-        sourceDetail : "model=deepseek-chat",
         reviewStatus : "PENDING",
-        notes        : "LLM 生成候选，待人工审核"
+        notes        : "LLM 生成候选，待人工审核 model=deepseek-chat"
       }
     });
     expect(bumpPackVersion).toHaveBeenCalledWith({
@@ -300,7 +298,7 @@ describe("generateEntries", () => {
   });
 
   it("surfaces a clear error when the selected model is unavailable", async () => {
-    hoisted.prisma.knowledgePack.findUnique.mockResolvedValueOnce({
+    hoisted.prisma.aliasPack.findUnique.mockResolvedValueOnce({
       id         : "pack-1",
       name       : "三国人物包",
       description: null,

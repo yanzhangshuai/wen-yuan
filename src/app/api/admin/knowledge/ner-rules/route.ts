@@ -21,10 +21,10 @@ export async function GET(request: Request): Promise<Response> {
     requireAdmin(auth);
 
     const url = new URL(request.url);
-    const ruleType = url.searchParams.get("ruleType") ?? undefined;
-    const genreKey = url.searchParams.get("genreKey") ?? undefined;
+    const ruleType  = url.searchParams.get("ruleType") ?? undefined;
+    const bookTypeId = url.searchParams.get("bookTypeId") ?? undefined;
 
-    const data = await listExtractionRules({ ruleType, genreKey });
+    const data = await listExtractionRules({ ruleType, bookTypeId });
     return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_NER_RULES_LISTED", message: "NER 规则列表获取成功", data });
   } catch (error) {
     return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "NER 规则列表获取失败" });

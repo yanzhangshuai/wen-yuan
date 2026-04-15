@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model PromptTemplate
- * @db.remark: 提示词模板。activeVersionId 指向当前生效版本，支持一键回滚。
+ * 
  */
 export type PromptTemplateModel = runtime.Types.Result.DefaultSelection<Prisma.$PromptTemplatePayload>
 
@@ -31,7 +31,6 @@ export type PromptTemplateMinAggregateOutputType = {
   description: string | null
   codeRef: string | null
   isActive: boolean | null
-  activeVersionId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -43,7 +42,6 @@ export type PromptTemplateMaxAggregateOutputType = {
   description: string | null
   codeRef: string | null
   isActive: boolean | null
-  activeVersionId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -55,7 +53,6 @@ export type PromptTemplateCountAggregateOutputType = {
   description: number
   codeRef: number
   isActive: number
-  activeVersionId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -69,7 +66,6 @@ export type PromptTemplateMinAggregateInputType = {
   description?: true
   codeRef?: true
   isActive?: true
-  activeVersionId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -81,7 +77,6 @@ export type PromptTemplateMaxAggregateInputType = {
   description?: true
   codeRef?: true
   isActive?: true
-  activeVersionId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -93,7 +88,6 @@ export type PromptTemplateCountAggregateInputType = {
   description?: true
   codeRef?: true
   isActive?: true
-  activeVersionId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -178,7 +172,6 @@ export type PromptTemplateGroupByOutputType = {
   description: string | null
   codeRef: string | null
   isActive: boolean
-  activeVersionId: string | null
   createdAt: Date
   updatedAt: Date
   _count: PromptTemplateCountAggregateOutputType | null
@@ -211,7 +204,6 @@ export type PromptTemplateWhereInput = {
   description?: Prisma.StringNullableFilter<"PromptTemplate"> | string | null
   codeRef?: Prisma.StringNullableFilter<"PromptTemplate"> | string | null
   isActive?: Prisma.BoolFilter<"PromptTemplate"> | boolean
-  activeVersionId?: Prisma.UuidNullableFilter<"PromptTemplate"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PromptTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PromptTemplate"> | Date | string
   versions?: Prisma.PromptTemplateVersionListRelationFilter
@@ -224,7 +216,6 @@ export type PromptTemplateOrderByWithRelationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   codeRef?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  activeVersionId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   versions?: Prisma.PromptTemplateVersionOrderByRelationAggregateInput
@@ -233,7 +224,6 @@ export type PromptTemplateOrderByWithRelationInput = {
 export type PromptTemplateWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   slug?: string
-  activeVersionId?: string
   AND?: Prisma.PromptTemplateWhereInput | Prisma.PromptTemplateWhereInput[]
   OR?: Prisma.PromptTemplateWhereInput[]
   NOT?: Prisma.PromptTemplateWhereInput | Prisma.PromptTemplateWhereInput[]
@@ -244,7 +234,7 @@ export type PromptTemplateWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"PromptTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PromptTemplate"> | Date | string
   versions?: Prisma.PromptTemplateVersionListRelationFilter
-}, "id" | "slug" | "activeVersionId">
+}, "id" | "slug">
 
 export type PromptTemplateOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -253,7 +243,6 @@ export type PromptTemplateOrderByWithAggregationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   codeRef?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  activeVersionId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PromptTemplateCountOrderByAggregateInput
@@ -271,7 +260,6 @@ export type PromptTemplateScalarWhereWithAggregatesInput = {
   description?: Prisma.StringNullableWithAggregatesFilter<"PromptTemplate"> | string | null
   codeRef?: Prisma.StringNullableWithAggregatesFilter<"PromptTemplate"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"PromptTemplate"> | boolean
-  activeVersionId?: Prisma.UuidNullableWithAggregatesFilter<"PromptTemplate"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PromptTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PromptTemplate"> | Date | string
 }
@@ -283,7 +271,6 @@ export type PromptTemplateCreateInput = {
   description?: string | null
   codeRef?: string | null
   isActive?: boolean
-  activeVersionId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   versions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutTemplateInput
@@ -296,7 +283,6 @@ export type PromptTemplateUncheckedCreateInput = {
   description?: string | null
   codeRef?: string | null
   isActive?: boolean
-  activeVersionId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   versions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutTemplateInput
@@ -309,7 +295,6 @@ export type PromptTemplateUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codeRef?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  activeVersionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   versions?: Prisma.PromptTemplateVersionUpdateManyWithoutTemplateNestedInput
@@ -322,7 +307,6 @@ export type PromptTemplateUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codeRef?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  activeVersionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   versions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutTemplateNestedInput
@@ -335,7 +319,6 @@ export type PromptTemplateCreateManyInput = {
   description?: string | null
   codeRef?: string | null
   isActive?: boolean
-  activeVersionId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -347,7 +330,6 @@ export type PromptTemplateUpdateManyMutationInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codeRef?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  activeVersionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -359,7 +341,6 @@ export type PromptTemplateUncheckedUpdateManyInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codeRef?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  activeVersionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -371,7 +352,6 @@ export type PromptTemplateCountOrderByAggregateInput = {
   description?: Prisma.SortOrder
   codeRef?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  activeVersionId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -383,7 +363,6 @@ export type PromptTemplateMaxOrderByAggregateInput = {
   description?: Prisma.SortOrder
   codeRef?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  activeVersionId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -395,7 +374,6 @@ export type PromptTemplateMinOrderByAggregateInput = {
   description?: Prisma.SortOrder
   codeRef?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  activeVersionId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -426,7 +404,6 @@ export type PromptTemplateCreateWithoutVersionsInput = {
   description?: string | null
   codeRef?: string | null
   isActive?: boolean
-  activeVersionId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -438,7 +415,6 @@ export type PromptTemplateUncheckedCreateWithoutVersionsInput = {
   description?: string | null
   codeRef?: string | null
   isActive?: boolean
-  activeVersionId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -466,7 +442,6 @@ export type PromptTemplateUpdateWithoutVersionsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codeRef?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  activeVersionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -478,7 +453,6 @@ export type PromptTemplateUncheckedUpdateWithoutVersionsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   codeRef?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  activeVersionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -521,7 +495,6 @@ export type PromptTemplateSelect<ExtArgs extends runtime.Types.Extensions.Intern
   description?: boolean
   codeRef?: boolean
   isActive?: boolean
-  activeVersionId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   versions?: boolean | Prisma.PromptTemplate$versionsArgs<ExtArgs>
@@ -535,7 +508,6 @@ export type PromptTemplateSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   description?: boolean
   codeRef?: boolean
   isActive?: boolean
-  activeVersionId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["promptTemplate"]>
@@ -547,7 +519,6 @@ export type PromptTemplateSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   description?: boolean
   codeRef?: boolean
   isActive?: boolean
-  activeVersionId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["promptTemplate"]>
@@ -559,12 +530,11 @@ export type PromptTemplateSelectScalar = {
   description?: boolean
   codeRef?: boolean
   isActive?: boolean
-  activeVersionId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PromptTemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "codeRef" | "isActive" | "activeVersionId" | "createdAt" | "updatedAt", ExtArgs["result"]["promptTemplate"]>
+export type PromptTemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "codeRef" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["promptTemplate"]>
 export type PromptTemplateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   versions?: boolean | Prisma.PromptTemplate$versionsArgs<ExtArgs>
   _count?: boolean | Prisma.PromptTemplateCountOutputTypeDefaultArgs<ExtArgs>
@@ -579,21 +549,11 @@ export type $PromptTemplatePayload<ExtArgs extends runtime.Types.Extensions.Inte
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    /**
-     * 模板槽标识符（对应代码中的 build*Prompt 函数名）
-     */
     slug: string
     name: string
     description: string | null
-    /**
-     * 原始代码函数名，方便与代码对照
-     */
     codeRef: string | null
     isActive: boolean
-    /**
-     * 当前生效版本 ID
-     */
-    activeVersionId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["promptTemplate"]>
@@ -1026,7 +986,6 @@ export interface PromptTemplateFieldRefs {
   readonly description: Prisma.FieldRef<"PromptTemplate", 'String'>
   readonly codeRef: Prisma.FieldRef<"PromptTemplate", 'String'>
   readonly isActive: Prisma.FieldRef<"PromptTemplate", 'Boolean'>
-  readonly activeVersionId: Prisma.FieldRef<"PromptTemplate", 'String'>
   readonly createdAt: Prisma.FieldRef<"PromptTemplate", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PromptTemplate", 'DateTime'>
 }

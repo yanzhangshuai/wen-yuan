@@ -14,16 +14,16 @@ const hoisted = vi.hoisted(() => ({
     book: {
       findFirst: vi.fn()
     },
-    bookKnowledgePack: {
+    bookAliasPack: {
       findMany  : vi.fn(),
       upsert    : vi.fn(),
       deleteMany: vi.fn(),
       updateMany: vi.fn()
     },
-    knowledgePack: {
+    aliasPack: {
       findMany: vi.fn()
     },
-    knowledgeEntry: {
+    aliasEntry: {
       groupBy: vi.fn()
     }
   }
@@ -49,7 +49,7 @@ describe("book-knowledge-packs", () => {
       id        : "book-1",
       bookTypeId: "type-1"
     });
-    hoisted.prisma.bookKnowledgePack.findMany.mockResolvedValueOnce([
+    hoisted.prisma.bookAliasPack.findMany.mockResolvedValueOnce([
       {
         bookId  : "book-1",
         packId  : "pack-mounted",
@@ -62,7 +62,7 @@ describe("book-knowledge-packs", () => {
         }
       }
     ]);
-    hoisted.prisma.knowledgePack.findMany.mockResolvedValueOnce([
+    hoisted.prisma.aliasPack.findMany.mockResolvedValueOnce([
       {
         id      : "pack-inherited",
         name    : "继承包",
@@ -70,7 +70,7 @@ describe("book-knowledge-packs", () => {
         _count  : { entries: 3 }
       }
     ]);
-    hoisted.prisma.knowledgeEntry.groupBy.mockResolvedValueOnce([
+    hoisted.prisma.aliasEntry.groupBy.mockResolvedValueOnce([
       { packId: "pack-mounted", reviewStatus: "VERIFIED", _count: 2 },
       { packId: "pack-inherited", reviewStatus: "PENDING", _count: 1 }
     ]);
@@ -101,10 +101,10 @@ describe("book-knowledge-packs", () => {
       ]
     });
 
-    expect(hoisted.prisma.knowledgePack.findMany).toHaveBeenCalledWith({
+    expect(hoisted.prisma.aliasPack.findMany).toHaveBeenCalledWith({
       where: {
         bookTypeId: "type-1",
-        scope     : "GENRE",
+        scope     : "BOOK_TYPE",
         isActive  : true,
         id        : { notIn: ["pack-mounted"] }
       },
@@ -120,15 +120,15 @@ describe("book-knowledge-packs", () => {
       id        : "book-1",
       bookTypeId: null
     });
-    hoisted.prisma.bookKnowledgePack.findMany.mockResolvedValueOnce([]);
+    hoisted.prisma.bookAliasPack.findMany.mockResolvedValueOnce([]);
 
     await expect(listBookKnowledgePacks("book-1")).resolves.toEqual({
       mounted  : [],
       inherited: []
     });
 
-    expect(hoisted.prisma.knowledgePack.findMany).not.toHaveBeenCalled();
-    expect(hoisted.prisma.knowledgeEntry.groupBy).not.toHaveBeenCalled();
+    expect(hoisted.prisma.aliasPack.findMany).not.toHaveBeenCalled();
+    expect(hoisted.prisma.aliasEntry.groupBy).not.toHaveBeenCalled();
   });
 
   it("upserts mounted relations after validating the book exists", async () => {
@@ -136,7 +136,7 @@ describe("book-knowledge-packs", () => {
       id        : "book-1",
       bookTypeId: "type-1"
     });
-    hoisted.prisma.bookKnowledgePack.upsert.mockResolvedValueOnce({
+    hoisted.prisma.bookAliasPack.upsert.mockResolvedValueOnce({
       bookId  : "book-1",
       packId  : "pack-1",
       priority: 7
@@ -152,7 +152,7 @@ describe("book-knowledge-packs", () => {
       priority: 7
     });
 
-    expect(hoisted.prisma.bookKnowledgePack.upsert).toHaveBeenCalledWith({
+    expect(hoisted.prisma.bookAliasPack.upsert).toHaveBeenCalledWith({
       where: {
         bookId_packId: {
           bookId: "book-1",
@@ -174,10 +174,10 @@ describe("book-knowledge-packs", () => {
       .mockResolvedValueOnce({ id: "book-1", bookTypeId: null })
       .mockResolvedValueOnce({ id: "book-1", bookTypeId: null })
       .mockResolvedValueOnce({ id: "book-1", bookTypeId: null });
-    hoisted.prisma.bookKnowledgePack.deleteMany
+    hoisted.prisma.bookAliasPack.deleteMany
       .mockResolvedValueOnce({ count: 0 })
       .mockResolvedValueOnce({ count: 1 });
-    hoisted.prisma.bookKnowledgePack.updateMany
+    hoisted.prisma.bookAliasPack.updateMany
       .mockResolvedValueOnce({ count: 0 })
       .mockResolvedValueOnce({ count: 1 });
 

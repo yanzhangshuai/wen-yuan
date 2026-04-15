@@ -15,7 +15,7 @@ import {
 
 const hoisted = vi.hoisted(() => ({
   prisma: {
-    knowledgeEntry: {
+    aliasEntry: {
       findMany  : vi.fn(),
       count     : vi.fn(),
       create    : vi.fn(),
@@ -23,7 +23,7 @@ const hoisted = vi.hoisted(() => ({
       delete    : vi.fn(),
       updateMany: vi.fn()
     },
-    knowledgePack: {
+    aliasPack: {
       findUnique: vi.fn()
     },
     $transaction: vi.fn()
@@ -49,7 +49,7 @@ describe("knowledge-entries", () => {
   });
 
   it("lists paginated entries and attaches overlap metadata", async () => {
-    hoisted.prisma.knowledgeEntry.findMany
+    hoisted.prisma.aliasEntry.findMany
       .mockResolvedValueOnce([
         {
           id           : "entry-1",
@@ -79,7 +79,7 @@ describe("knowledge-entries", () => {
           aliases      : ["仲达"]
         }
       ]);
-    hoisted.prisma.knowledgeEntry.count.mockResolvedValueOnce(11);
+    hoisted.prisma.aliasEntry.count.mockResolvedValueOnce(11);
 
     await expect(listKnowledgeEntries({
       packId      : "pack-1",
@@ -109,7 +109,7 @@ describe("knowledge-entries", () => {
       pageSize: 10
     });
 
-    expect(hoisted.prisma.knowledgeEntry.findMany).toHaveBeenNthCalledWith(1, {
+    expect(hoisted.prisma.aliasEntry.findMany).toHaveBeenNthCalledWith(1, {
       where: {
         packId      : "pack-1",
         reviewStatus: "PENDING",
@@ -125,7 +125,7 @@ describe("knowledge-entries", () => {
   });
 
   it("uses default paging and keeps overlap empty for entries outside the overlap pool", async () => {
-    hoisted.prisma.knowledgeEntry.findMany
+    hoisted.prisma.aliasEntry.findMany
       .mockResolvedValueOnce([
         {
           id           : "entry-rejected",
@@ -140,7 +140,7 @@ describe("knowledge-entries", () => {
           aliases      : ["孔明"]
         }
       ]);
-    hoisted.prisma.knowledgeEntry.count.mockResolvedValueOnce(1);
+    hoisted.prisma.aliasEntry.count.mockResolvedValueOnce(1);
 
     await expect(listKnowledgeEntries({
       packId: "pack-1"
@@ -157,7 +157,7 @@ describe("knowledge-entries", () => {
       pageSize: 50
     });
 
-    expect(hoisted.prisma.knowledgeEntry.findMany).toHaveBeenNthCalledWith(1, {
+    expect(hoisted.prisma.aliasEntry.findMany).toHaveBeenNthCalledWith(1, {
       where: {
         packId: "pack-1"
       },
@@ -171,13 +171,13 @@ describe("knowledge-entries", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-11T12:00:00.000Z"));
 
-    hoisted.prisma.knowledgeEntry.create.mockResolvedValueOnce({ id: "entry-new" });
-    hoisted.prisma.knowledgeEntry.update
+    hoisted.prisma.aliasEntry.create.mockResolvedValueOnce({ id: "entry-new" });
+    hoisted.prisma.aliasEntry.update
       .mockResolvedValueOnce({ id: "entry-1" })
       .mockResolvedValueOnce({ id: "entry-2" })
       .mockResolvedValueOnce({ id: "entry-3" });
-    hoisted.prisma.knowledgeEntry.delete.mockResolvedValueOnce({ id: "entry-4" });
-    hoisted.prisma.knowledgeEntry.updateMany
+    hoisted.prisma.aliasEntry.delete.mockResolvedValueOnce({ id: "entry-4" });
+    hoisted.prisma.aliasEntry.updateMany
       .mockResolvedValueOnce({ count: 2 })
       .mockResolvedValueOnce({ count: 1 });
 
@@ -198,20 +198,18 @@ describe("knowledge-entries", () => {
     await expect(batchVerifyEntries(["entry-2", "entry-3"])).resolves.toEqual({ count: 2 });
     await expect(batchRejectEntries(["entry-4"], "批量拒绝")).resolves.toEqual({ count: 1 });
 
-    expect(hoisted.prisma.knowledgeEntry.create).toHaveBeenCalledWith({
+    expect(hoisted.prisma.aliasEntry.create).toHaveBeenCalledWith({
       data: {
         packId       : "pack-1",
         canonicalName: "赵云",
         aliases      : ["子龙"],
-        entryType    : "CHARACTER",
         notes        : undefined,
         source       : "MANUAL",
-        sourceDetail : undefined,
         reviewStatus : "PENDING",
         confidence   : 1
       }
     });
-    expect(hoisted.prisma.knowledgeEntry.update).toHaveBeenNthCalledWith(1, {
+    expect(hoisted.prisma.aliasEntry.update).toHaveBeenNthCalledWith(1, {
       where: { id: "entry-1" },
       data : {
         canonicalName: "赵子龙",
@@ -220,14 +218,14 @@ describe("knowledge-entries", () => {
         confidence   : 0.88
       }
     });
-    expect(hoisted.prisma.knowledgeEntry.update).toHaveBeenNthCalledWith(2, {
+    expect(hoisted.prisma.aliasEntry.update).toHaveBeenNthCalledWith(2, {
       where: { id: "entry-2" },
       data : {
         reviewStatus: "VERIFIED",
         reviewedAt  : new Date("2026-04-11T12:00:00.000Z")
       }
     });
-    expect(hoisted.prisma.knowledgeEntry.updateMany).toHaveBeenNthCalledWith(2, {
+    expect(hoisted.prisma.aliasEntry.updateMany).toHaveBeenNthCalledWith(2, {
       where: { id: { in: ["entry-4"] } },
       data : {
         reviewStatus: "REJECTED",
@@ -241,10 +239,10 @@ describe("knowledge-entries", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-11T13:00:00.000Z"));
 
-    hoisted.prisma.knowledgeEntry.update
+    hoisted.prisma.aliasEntry.update
       .mockResolvedValueOnce({ id: "entry-5" })
       .mockResolvedValueOnce({ id: "entry-6" });
-    hoisted.prisma.knowledgeEntry.updateMany.mockResolvedValueOnce({ count: 2 });
+    hoisted.prisma.aliasEntry.updateMany.mockResolvedValueOnce({ count: 2 });
 
     await expect(updateKnowledgeEntry("entry-5", {
       aliases: ["张飞", "翼德"]
@@ -252,13 +250,13 @@ describe("knowledge-entries", () => {
     await expect(rejectEntry("entry-6")).resolves.toEqual({ id: "entry-6" });
     await expect(batchRejectEntries(["entry-7", "entry-8"])).resolves.toEqual({ count: 2 });
 
-    expect(hoisted.prisma.knowledgeEntry.update).toHaveBeenNthCalledWith(1, {
+    expect(hoisted.prisma.aliasEntry.update).toHaveBeenNthCalledWith(1, {
       where: { id: "entry-5" },
       data : {
         aliases: ["张飞", "翼德"]
       }
     });
-    expect(hoisted.prisma.knowledgeEntry.update).toHaveBeenNthCalledWith(2, {
+    expect(hoisted.prisma.aliasEntry.update).toHaveBeenNthCalledWith(2, {
       where: { id: "entry-6" },
       data : {
         reviewStatus: "REJECTED",
@@ -266,7 +264,7 @@ describe("knowledge-entries", () => {
         reviewedAt  : new Date("2026-04-11T13:00:00.000Z")
       }
     });
-    expect(hoisted.prisma.knowledgeEntry.updateMany).toHaveBeenCalledWith({
+    expect(hoisted.prisma.aliasEntry.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ["entry-7", "entry-8"] } },
       data : {
         reviewStatus: "REJECTED",
@@ -282,24 +280,23 @@ describe("knowledge-entries", () => {
 
     hoisted.prisma.$transaction.mockImplementationOnce(async (callback: unknown) => {
       const runTransaction = callback as (tx: {
-        knowledgeEntry: { createMany: typeof createMany };
-        knowledgePack : { update: typeof updatePackVersion };
+        aliasEntry: { createMany: typeof createMany };
+        aliasPack : { update: typeof updatePackVersion };
       }) => Promise<unknown>;
       return runTransaction({
-        knowledgeEntry: { createMany },
-        knowledgePack : { update: updatePackVersion }
+        aliasEntry: { createMany },
+        aliasPack : { update: updatePackVersion }
       });
     });
-    hoisted.prisma.knowledgePack.findUnique.mockResolvedValueOnce({ name: "人物别名包" });
+    hoisted.prisma.aliasPack.findUnique.mockResolvedValueOnce({ name: "人物别名包" });
 
     await expect(importEntries("pack-1", [
       { canonicalName: "赵云", aliases: ["子龙"] },
       { canonicalName: "关羽", aliases: ["云长"], confidence: 0.72 }
     ], {
-      source      : "LLM_GENERATED",
-      sourceDetail: "batch-1",
-      operatorId  : "user-1",
-      auditAction : "REVIEW_IMPORT"
+      source     : "LLM_GENERATED",
+      operatorId : "user-1",
+      auditAction: "REVIEW_IMPORT"
     })).resolves.toEqual({ count: 2 });
 
     expect(createMany).toHaveBeenCalledWith({
@@ -308,10 +305,8 @@ describe("knowledge-entries", () => {
           packId       : "pack-1",
           canonicalName: "赵云",
           aliases      : ["子龙"],
-          entryType    : "CHARACTER",
           notes        : undefined,
           source       : "LLM_GENERATED",
-          sourceDetail : "batch-1",
           reviewStatus : "PENDING",
           confidence   : 0.8
         },
@@ -319,10 +314,8 @@ describe("knowledge-entries", () => {
           packId       : "pack-1",
           canonicalName: "关羽",
           aliases      : ["云长"],
-          entryType    : "CHARACTER",
           notes        : undefined,
           source       : "LLM_GENERATED",
-          sourceDetail : "batch-1",
           reviewStatus : "PENDING",
           confidence   : 0.72
         }
@@ -340,8 +333,7 @@ describe("knowledge-entries", () => {
       after     : {
         count       : 2,
         reviewStatus: "PENDING",
-        source      : "LLM_GENERATED",
-        sourceDetail: "batch-1"
+        source      : "LLM_GENERATED"
       },
       operatorId: "user-1"
     });
@@ -353,15 +345,15 @@ describe("knowledge-entries", () => {
 
     hoisted.prisma.$transaction.mockImplementationOnce(async (callback: unknown) => {
       const runTransaction = callback as (tx: {
-        knowledgeEntry: { createMany: typeof createMany };
-        knowledgePack : { update: typeof updatePackVersion };
+        aliasEntry: { createMany: typeof createMany };
+        aliasPack : { update: typeof updatePackVersion };
       }) => Promise<unknown>;
       return runTransaction({
-        knowledgeEntry: { createMany },
-        knowledgePack : { update: updatePackVersion }
+        aliasEntry: { createMany },
+        aliasPack : { update: updatePackVersion }
       });
     });
-    hoisted.prisma.knowledgePack.findUnique.mockResolvedValueOnce(null);
+    hoisted.prisma.aliasPack.findUnique.mockResolvedValueOnce(null);
 
     await expect(importEntries("pack-2", [{
       canonicalName: "张飞",
@@ -374,10 +366,8 @@ describe("knowledge-entries", () => {
         packId       : "pack-2",
         canonicalName: "张飞",
         aliases      : ["翼德"],
-        entryType    : "CHARACTER",
         notes        : "蜀汉猛将",
         source       : "IMPORTED",
-        sourceDetail : undefined,
         reviewStatus : "PENDING",
         confidence   : 1
       }]
@@ -391,12 +381,12 @@ describe("knowledge-entries", () => {
 
     hoisted.prisma.$transaction.mockImplementationOnce(async (callback: unknown) => {
       const runTransaction = callback as (tx: {
-        knowledgeEntry: { createMany: typeof createMany };
-        knowledgePack : { update: typeof updatePackVersion };
+        aliasEntry: { createMany: typeof createMany };
+        aliasPack : { update: typeof updatePackVersion };
       }) => Promise<unknown>;
       return runTransaction({
-        knowledgeEntry: { createMany },
-        knowledgePack : { update: updatePackVersion }
+        aliasEntry: { createMany },
+        aliasPack : { update: updatePackVersion }
       });
     });
 
@@ -406,7 +396,7 @@ describe("knowledge-entries", () => {
       reviewStatus: "VERIFIED"
     })).resolves.toEqual({ count: 0 });
 
-    expect(hoisted.prisma.knowledgePack.findUnique).not.toHaveBeenCalled();
+    expect(hoisted.prisma.aliasPack.findUnique).not.toHaveBeenCalled();
     expect(hoisted.auditLog).not.toHaveBeenCalled();
   });
 
@@ -414,7 +404,7 @@ describe("knowledge-entries", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-11T13:30:00.000Z"));
 
-    hoisted.prisma.knowledgePack.findUnique
+    hoisted.prisma.aliasPack.findUnique
       .mockResolvedValueOnce({
         id      : "pack-2",
         name    : "官职别名包",
@@ -423,7 +413,6 @@ describe("knowledge-entries", () => {
         entries : [{
           canonicalName: "太守",
           aliases      : ["郡守"],
-          entryType    : "TITLE",
           notes        : null
         }]
       })
@@ -435,7 +424,6 @@ describe("knowledge-entries", () => {
         entries : [{
           canonicalName: "太守",
           aliases      : ["郡守"],
-          entryType    : "TITLE",
           notes        : null
         }]
       });
@@ -453,13 +441,12 @@ describe("knowledge-entries", () => {
       entries: [{
         canonicalName: "太守",
         aliases      : ["郡守"],
-        entryType    : "TITLE",
         notes        : null
       }]
     });
 
     await expect(exportEntries("pack-2", "csv")).resolves.toEqual({
-      content    : 'canonicalName,aliases,entryType,notes\n太守,"郡守",TITLE,""',
+      content    : 'canonicalName,aliases,notes\n太守,"郡守",""',
       contentType: "text/csv"
     });
   });
@@ -468,7 +455,7 @@ describe("knowledge-entries", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-11T12:30:00.000Z"));
 
-    hoisted.prisma.knowledgePack.findUnique
+    hoisted.prisma.aliasPack.findUnique
       .mockResolvedValueOnce({
         id      : "pack-1",
         name    : "人物别名包",
@@ -480,7 +467,6 @@ describe("knowledge-entries", () => {
           {
             canonicalName: "诸葛亮",
             aliases      : ["孔明", "卧龙"],
-            entryType    : "CHARACTER",
             notes        : '引号"测试'
           }
         ]
@@ -496,7 +482,6 @@ describe("knowledge-entries", () => {
           {
             canonicalName: "诸葛亮",
             aliases      : ["孔明", "卧龙"],
-            entryType    : "CHARACTER",
             notes        : "隆中对主角"
           }
         ]
@@ -504,7 +489,7 @@ describe("knowledge-entries", () => {
       .mockResolvedValueOnce(null);
 
     await expect(exportEntries("pack-1", "csv", "ALL")).resolves.toEqual({
-      content    : 'canonicalName,aliases,entryType,notes\n诸葛亮,"孔明|卧龙",CHARACTER,"引号""测试"',
+      content    : 'canonicalName,aliases,notes\n诸葛亮,"孔明|卧龙","引号""测试"',
       contentType: "text/csv"
     });
 
@@ -523,7 +508,6 @@ describe("knowledge-entries", () => {
         {
           canonicalName: "诸葛亮",
           aliases      : ["孔明", "卧龙"],
-          entryType    : "CHARACTER",
           notes        : "隆中对主角"
         }
       ]
@@ -531,7 +515,7 @@ describe("knowledge-entries", () => {
 
     await expect(exportEntries("missing-pack")).rejects.toThrow("知识包不存在");
 
-    expect(hoisted.prisma.knowledgePack.findUnique).toHaveBeenNthCalledWith(1, {
+    expect(hoisted.prisma.aliasPack.findUnique).toHaveBeenNthCalledWith(1, {
       where  : { id: "pack-1" },
       include: {
         bookType: { select: { key: true } },
@@ -541,7 +525,6 @@ describe("knowledge-entries", () => {
           select : {
             canonicalName: true,
             aliases      : true,
-            entryType    : true,
             notes        : true
           }
         }

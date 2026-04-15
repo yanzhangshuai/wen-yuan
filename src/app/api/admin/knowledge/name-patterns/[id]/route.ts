@@ -15,11 +15,12 @@ import { validateRegexSafety } from "../_d9";
 const PATH = "/api/admin/knowledge/name-patterns/[id]";
 
 const updateSchema = z.object({
-  ruleType   : z.enum(["FAMILY_HOUSE", "DESCRIPTIVE_PHRASE", "RELATIONAL_COMPOUND"]).optional(),
-  pattern    : z.string().trim().min(1).max(200).optional(),
-  action     : z.enum(["BLOCK", "WARN"]).optional(),
-  description: z.string().nullable().optional(),
-  isVerified : z.boolean().optional()
+  ruleType    : z.enum(["FAMILY_HOUSE", "DESCRIPTIVE_PHRASE", "RELATIONAL_COMPOUND"]).optional(),
+  pattern     : z.string().trim().min(1).max(200).optional(),
+  action      : z.enum(["BLOCK", "WARN"]).optional(),
+  description : z.string().nullable().optional(),
+  reviewStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]).optional(),
+  isActive    : z.boolean().optional()
 }).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
 
 export async function PATCH(

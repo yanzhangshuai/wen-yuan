@@ -333,7 +333,7 @@ export type BookWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   bookType?: Prisma.XOR<Prisma.BookTypeNullableScalarRelationFilter, Prisma.BookTypeWhereInput> | null
-  bookKnowledgePacks?: Prisma.BookKnowledgePackListRelationFilter
+  bookAliasPacks?: Prisma.BookAliasPackListRelationFilter
   chapters?: Prisma.ChapterListRelationFilter
   profiles?: Prisma.ProfileListRelationFilter
   analysisJobs?: Prisma.AnalysisJobListRelationFilter
@@ -364,7 +364,7 @@ export type BookOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   bookType?: Prisma.BookTypeOrderByWithRelationInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackOrderByRelationAggregateInput
+  bookAliasPacks?: Prisma.BookAliasPackOrderByRelationAggregateInput
   chapters?: Prisma.ChapterOrderByRelationAggregateInput
   profiles?: Prisma.ProfileOrderByRelationAggregateInput
   analysisJobs?: Prisma.AnalysisJobOrderByRelationAggregateInput
@@ -398,7 +398,7 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   bookType?: Prisma.XOR<Prisma.BookTypeNullableScalarRelationFilter, Prisma.BookTypeWhereInput> | null
-  bookKnowledgePacks?: Prisma.BookKnowledgePackListRelationFilter
+  bookAliasPacks?: Prisma.BookAliasPackListRelationFilter
   chapters?: Prisma.ChapterListRelationFilter
   profiles?: Prisma.ProfileListRelationFilter
   analysisJobs?: Prisma.AnalysisJobListRelationFilter
@@ -480,7 +480,7 @@ export type BookCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
@@ -510,7 +510,7 @@ export type BookUncheckedCreateInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
@@ -540,7 +540,7 @@ export type BookUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
@@ -570,7 +570,7 @@ export type BookUncheckedUpdateInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
@@ -899,18 +899,18 @@ export type BookUncheckedUpdateManyWithoutBookTypeNestedInput = {
   deleteMany?: Prisma.BookScalarWhereInput | Prisma.BookScalarWhereInput[]
 }
 
-export type BookCreateNestedOneWithoutBookKnowledgePacksInput = {
-  create?: Prisma.XOR<Prisma.BookCreateWithoutBookKnowledgePacksInput, Prisma.BookUncheckedCreateWithoutBookKnowledgePacksInput>
-  connectOrCreate?: Prisma.BookCreateOrConnectWithoutBookKnowledgePacksInput
+export type BookCreateNestedOneWithoutBookAliasPacksInput = {
+  create?: Prisma.XOR<Prisma.BookCreateWithoutBookAliasPacksInput, Prisma.BookUncheckedCreateWithoutBookAliasPacksInput>
+  connectOrCreate?: Prisma.BookCreateOrConnectWithoutBookAliasPacksInput
   connect?: Prisma.BookWhereUniqueInput
 }
 
-export type BookUpdateOneRequiredWithoutBookKnowledgePacksNestedInput = {
-  create?: Prisma.XOR<Prisma.BookCreateWithoutBookKnowledgePacksInput, Prisma.BookUncheckedCreateWithoutBookKnowledgePacksInput>
-  connectOrCreate?: Prisma.BookCreateOrConnectWithoutBookKnowledgePacksInput
-  upsert?: Prisma.BookUpsertWithoutBookKnowledgePacksInput
+export type BookUpdateOneRequiredWithoutBookAliasPacksNestedInput = {
+  create?: Prisma.XOR<Prisma.BookCreateWithoutBookAliasPacksInput, Prisma.BookUncheckedCreateWithoutBookAliasPacksInput>
+  connectOrCreate?: Prisma.BookCreateOrConnectWithoutBookAliasPacksInput
+  upsert?: Prisma.BookUpsertWithoutBookAliasPacksInput
   connect?: Prisma.BookWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.BookUpdateToOneWithWhereWithoutBookKnowledgePacksInput, Prisma.BookUpdateWithoutBookKnowledgePacksInput>, Prisma.BookUncheckedUpdateWithoutBookKnowledgePacksInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BookUpdateToOneWithWhereWithoutBookAliasPacksInput, Prisma.BookUpdateWithoutBookAliasPacksInput>, Prisma.BookUncheckedUpdateWithoutBookAliasPacksInput>
 }
 
 export type BookCreateWithoutChaptersInput = {
@@ -933,7 +933,7 @@ export type BookCreateWithoutChaptersInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
@@ -962,7 +962,7 @@ export type BookUncheckedCreateWithoutChaptersInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
@@ -1007,7 +1007,7 @@ export type BookUpdateWithoutChaptersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
@@ -1036,7 +1036,7 @@ export type BookUncheckedUpdateWithoutChaptersInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
@@ -1065,7 +1065,7 @@ export type BookCreateWithoutProfilesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
@@ -1094,7 +1094,7 @@ export type BookUncheckedCreateWithoutProfilesInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
@@ -1139,7 +1139,7 @@ export type BookUpdateWithoutProfilesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
@@ -1168,7 +1168,7 @@ export type BookUncheckedUpdateWithoutProfilesInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
@@ -1197,7 +1197,7 @@ export type BookCreateWithoutAnalysisJobsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutBookInput
@@ -1226,7 +1226,7 @@ export type BookUncheckedCreateWithoutAnalysisJobsInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutBookInput
@@ -1271,7 +1271,7 @@ export type BookUpdateWithoutAnalysisJobsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutBookNestedInput
@@ -1300,7 +1300,7 @@ export type BookUncheckedUpdateWithoutAnalysisJobsInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutBookNestedInput
@@ -1329,7 +1329,7 @@ export type BookCreateWithoutModelStrategiesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
@@ -1358,7 +1358,7 @@ export type BookUncheckedCreateWithoutModelStrategiesInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
@@ -1403,7 +1403,7 @@ export type BookUpdateWithoutModelStrategiesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
@@ -1432,7 +1432,7 @@ export type BookUncheckedUpdateWithoutModelStrategiesInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
@@ -1461,7 +1461,7 @@ export type BookCreateWithoutAliasMappingsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
@@ -1490,7 +1490,7 @@ export type BookUncheckedCreateWithoutAliasMappingsInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
@@ -1535,7 +1535,7 @@ export type BookUpdateWithoutAliasMappingsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
@@ -1564,7 +1564,7 @@ export type BookUncheckedUpdateWithoutAliasMappingsInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
@@ -1593,7 +1593,7 @@ export type BookCreateWithoutValidationReportsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
@@ -1622,7 +1622,7 @@ export type BookUncheckedCreateWithoutValidationReportsInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
@@ -1667,7 +1667,7 @@ export type BookUpdateWithoutValidationReportsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
@@ -1696,7 +1696,7 @@ export type BookUncheckedUpdateWithoutValidationReportsInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
@@ -1725,7 +1725,7 @@ export type BookCreateWithoutMergeSuggestionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   bookType?: Prisma.BookTypeCreateNestedOneWithoutBooksInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
@@ -1754,7 +1754,7 @@ export type BookUncheckedCreateWithoutMergeSuggestionsInput = {
   bookTypeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
@@ -1799,7 +1799,7 @@ export type BookUpdateWithoutMergeSuggestionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookType?: Prisma.BookTypeUpdateOneWithoutBooksNestedInput
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
@@ -1828,7 +1828,7 @@ export type BookUncheckedUpdateWithoutMergeSuggestionsInput = {
   bookTypeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
@@ -1856,7 +1856,7 @@ export type BookCreateWithoutBookTypeInput = {
   parseStage?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobCreateNestedManyWithoutBookInput
@@ -1885,7 +1885,7 @@ export type BookUncheckedCreateWithoutBookTypeInput = {
   parseStage?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedCreateNestedManyWithoutBookInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedCreateNestedManyWithoutBookInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutBookInput
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutBookInput
   analysisJobs?: Prisma.AnalysisJobUncheckedCreateNestedManyWithoutBookInput
@@ -1946,7 +1946,7 @@ export type BookScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
 }
 
-export type BookCreateWithoutBookKnowledgePacksInput = {
+export type BookCreateWithoutBookAliasPacksInput = {
   id?: string
   title: string
   author?: string | null
@@ -1975,7 +1975,7 @@ export type BookCreateWithoutBookKnowledgePacksInput = {
   mergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutBookInput
 }
 
-export type BookUncheckedCreateWithoutBookKnowledgePacksInput = {
+export type BookUncheckedCreateWithoutBookAliasPacksInput = {
   id?: string
   title: string
   author?: string | null
@@ -2004,23 +2004,23 @@ export type BookUncheckedCreateWithoutBookKnowledgePacksInput = {
   mergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutBookInput
 }
 
-export type BookCreateOrConnectWithoutBookKnowledgePacksInput = {
+export type BookCreateOrConnectWithoutBookAliasPacksInput = {
   where: Prisma.BookWhereUniqueInput
-  create: Prisma.XOR<Prisma.BookCreateWithoutBookKnowledgePacksInput, Prisma.BookUncheckedCreateWithoutBookKnowledgePacksInput>
+  create: Prisma.XOR<Prisma.BookCreateWithoutBookAliasPacksInput, Prisma.BookUncheckedCreateWithoutBookAliasPacksInput>
 }
 
-export type BookUpsertWithoutBookKnowledgePacksInput = {
-  update: Prisma.XOR<Prisma.BookUpdateWithoutBookKnowledgePacksInput, Prisma.BookUncheckedUpdateWithoutBookKnowledgePacksInput>
-  create: Prisma.XOR<Prisma.BookCreateWithoutBookKnowledgePacksInput, Prisma.BookUncheckedCreateWithoutBookKnowledgePacksInput>
+export type BookUpsertWithoutBookAliasPacksInput = {
+  update: Prisma.XOR<Prisma.BookUpdateWithoutBookAliasPacksInput, Prisma.BookUncheckedUpdateWithoutBookAliasPacksInput>
+  create: Prisma.XOR<Prisma.BookCreateWithoutBookAliasPacksInput, Prisma.BookUncheckedCreateWithoutBookAliasPacksInput>
   where?: Prisma.BookWhereInput
 }
 
-export type BookUpdateToOneWithWhereWithoutBookKnowledgePacksInput = {
+export type BookUpdateToOneWithWhereWithoutBookAliasPacksInput = {
   where?: Prisma.BookWhereInput
-  data: Prisma.XOR<Prisma.BookUpdateWithoutBookKnowledgePacksInput, Prisma.BookUncheckedUpdateWithoutBookKnowledgePacksInput>
+  data: Prisma.XOR<Prisma.BookUpdateWithoutBookAliasPacksInput, Prisma.BookUncheckedUpdateWithoutBookAliasPacksInput>
 }
 
-export type BookUpdateWithoutBookKnowledgePacksInput = {
+export type BookUpdateWithoutBookAliasPacksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2049,7 +2049,7 @@ export type BookUpdateWithoutBookKnowledgePacksInput = {
   mergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutBookNestedInput
 }
 
-export type BookUncheckedUpdateWithoutBookKnowledgePacksInput = {
+export type BookUncheckedUpdateWithoutBookAliasPacksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   author?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2118,7 +2118,7 @@ export type BookUpdateWithoutBookTypeInput = {
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUpdateManyWithoutBookNestedInput
@@ -2147,7 +2147,7 @@ export type BookUncheckedUpdateWithoutBookTypeInput = {
   parseStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookKnowledgePacks?: Prisma.BookKnowledgePackUncheckedUpdateManyWithoutBookNestedInput
+  bookAliasPacks?: Prisma.BookAliasPackUncheckedUpdateManyWithoutBookNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutBookNestedInput
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutBookNestedInput
   analysisJobs?: Prisma.AnalysisJobUncheckedUpdateManyWithoutBookNestedInput
@@ -2184,7 +2184,7 @@ export type BookUncheckedUpdateManyWithoutBookTypeInput = {
  */
 
 export type BookCountOutputType = {
-  bookKnowledgePacks: number
+  bookAliasPacks: number
   chapters: number
   profiles: number
   analysisJobs: number
@@ -2195,7 +2195,7 @@ export type BookCountOutputType = {
 }
 
 export type BookCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  bookKnowledgePacks?: boolean | BookCountOutputTypeCountBookKnowledgePacksArgs
+  bookAliasPacks?: boolean | BookCountOutputTypeCountBookAliasPacksArgs
   chapters?: boolean | BookCountOutputTypeCountChaptersArgs
   profiles?: boolean | BookCountOutputTypeCountProfilesArgs
   analysisJobs?: boolean | BookCountOutputTypeCountAnalysisJobsArgs
@@ -2218,8 +2218,8 @@ export type BookCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
 /**
  * BookCountOutputType without action
  */
-export type BookCountOutputTypeCountBookKnowledgePacksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.BookKnowledgePackWhereInput
+export type BookCountOutputTypeCountBookAliasPacksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookAliasPackWhereInput
 }
 
 /**
@@ -2293,7 +2293,7 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   bookType?: boolean | Prisma.Book$bookTypeArgs<ExtArgs>
-  bookKnowledgePacks?: boolean | Prisma.Book$bookKnowledgePacksArgs<ExtArgs>
+  bookAliasPacks?: boolean | Prisma.Book$bookAliasPacksArgs<ExtArgs>
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
   profiles?: boolean | Prisma.Book$profilesArgs<ExtArgs>
   analysisJobs?: boolean | Prisma.Book$analysisJobsArgs<ExtArgs>
@@ -2375,7 +2375,7 @@ export type BookSelectScalar = {
 export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "dynasty" | "description" | "coverUrl" | "sourceFileKey" | "sourceFileUrl" | "sourceFileName" | "sourceFileMime" | "sourceFileSize" | "deletedAt" | "status" | "errorLog" | "parseProgress" | "parseStage" | "bookTypeId" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
 export type BookInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   bookType?: boolean | Prisma.Book$bookTypeArgs<ExtArgs>
-  bookKnowledgePacks?: boolean | Prisma.Book$bookKnowledgePacksArgs<ExtArgs>
+  bookAliasPacks?: boolean | Prisma.Book$bookAliasPacksArgs<ExtArgs>
   chapters?: boolean | Prisma.Book$chaptersArgs<ExtArgs>
   profiles?: boolean | Prisma.Book$profilesArgs<ExtArgs>
   analysisJobs?: boolean | Prisma.Book$analysisJobsArgs<ExtArgs>
@@ -2396,7 +2396,7 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "Book"
   objects: {
     bookType: Prisma.$BookTypePayload<ExtArgs> | null
-    bookKnowledgePacks: Prisma.$BookKnowledgePackPayload<ExtArgs>[]
+    bookAliasPacks: Prisma.$BookAliasPackPayload<ExtArgs>[]
     chapters: Prisma.$ChapterPayload<ExtArgs>[]
     profiles: Prisma.$ProfilePayload<ExtArgs>[]
     analysisJobs: Prisma.$AnalysisJobPayload<ExtArgs>[]
@@ -2820,7 +2820,7 @@ readonly fields: BookFieldRefs;
 export interface Prisma__BookClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   bookType<T extends Prisma.Book$bookTypeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$bookTypeArgs<ExtArgs>>): Prisma.Prisma__BookTypeClient<runtime.Types.Result.GetResult<Prisma.$BookTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  bookKnowledgePacks<T extends Prisma.Book$bookKnowledgePacksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$bookKnowledgePacksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookKnowledgePackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  bookAliasPacks<T extends Prisma.Book$bookAliasPacksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$bookAliasPacksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookAliasPackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chapters<T extends Prisma.Book$chaptersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$chaptersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChapterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   profiles<T extends Prisma.Book$profilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$profilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   analysisJobs<T extends Prisma.Book$analysisJobsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Book$analysisJobsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisJobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3291,27 +3291,27 @@ export type Book$bookTypeArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 }
 
 /**
- * Book.bookKnowledgePacks
+ * Book.bookAliasPacks
  */
-export type Book$bookKnowledgePacksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Book$bookAliasPacksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the BookKnowledgePack
+   * Select specific fields to fetch from the BookAliasPack
    */
-  select?: Prisma.BookKnowledgePackSelect<ExtArgs> | null
+  select?: Prisma.BookAliasPackSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the BookKnowledgePack
+   * Omit specific fields from the BookAliasPack
    */
-  omit?: Prisma.BookKnowledgePackOmit<ExtArgs> | null
+  omit?: Prisma.BookAliasPackOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.BookKnowledgePackInclude<ExtArgs> | null
-  where?: Prisma.BookKnowledgePackWhereInput
-  orderBy?: Prisma.BookKnowledgePackOrderByWithRelationInput | Prisma.BookKnowledgePackOrderByWithRelationInput[]
-  cursor?: Prisma.BookKnowledgePackWhereUniqueInput
+  include?: Prisma.BookAliasPackInclude<ExtArgs> | null
+  where?: Prisma.BookAliasPackWhereInput
+  orderBy?: Prisma.BookAliasPackOrderByWithRelationInput | Prisma.BookAliasPackOrderByWithRelationInput[]
+  cursor?: Prisma.BookAliasPackWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.BookKnowledgePackScalarFieldEnum | Prisma.BookKnowledgePackScalarFieldEnum[]
+  distinct?: Prisma.BookAliasPackScalarFieldEnum | Prisma.BookAliasPackScalarFieldEnum[]
 }
 
 /**

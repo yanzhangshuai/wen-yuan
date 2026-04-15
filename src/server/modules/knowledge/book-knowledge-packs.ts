@@ -47,7 +47,7 @@ export async function listBookKnowledgePacks(bookId: string) {
   const book = await ensureBookExists(bookId);
 
   // 手动挂载的包
-  const mounted = await prisma.bookKnowledgePack.findMany({
+  const mounted = await prisma.bookAliasPack.findMany({
     where  : { bookId },
     orderBy: { priority: "desc" },
     include: {
@@ -64,10 +64,10 @@ export async function listBookKnowledgePacks(bookId: string) {
   let inherited: typeof mounted[number]["pack"][] = [];
   if (book.bookTypeId) {
     const mountedPackIds = mounted.map((m) => m.packId);
-    inherited = await prisma.knowledgePack.findMany({
+    inherited = await prisma.aliasPack.findMany({
       where: {
         bookTypeId: book.bookTypeId,
-        scope     : "GENRE",
+        scope     : "BOOK_TYPE",
         isActive  : true,
         id        : { notIn: mountedPackIds }
       },
@@ -83,7 +83,7 @@ export async function listBookKnowledgePacks(bookId: string) {
     return { mounted, inherited };
   }
 
-  const statusGroups = await prisma.knowledgeEntry.groupBy({
+  const statusGroups = await prisma.aliasEntry.groupBy({
     by    : ["packId", "reviewStatus"],
     where : { packId: { in: packIds } },
     _count: true
@@ -113,7 +113,7 @@ export async function mountKnowledgePack(data: {
 }) {
   await ensureBookExists(data.bookId);
 
-  return prisma.bookKnowledgePack.upsert({
+  return prisma.bookAliasPack.upsert({
     where: {
       bookId_packId: {
         bookId: data.bookId,
@@ -133,7 +133,7 @@ export async function mountKnowledgePack(data: {
 export async function unmountKnowledgePack(bookId: string, packId: string) {
   await ensureBookExists(bookId);
 
-  const result = await prisma.bookKnowledgePack.deleteMany({
+  const result = await prisma.bookAliasPack.deleteMany({
     where: { bookId, packId }
   });
 
@@ -152,7 +152,7 @@ export async function updateBookKnowledgePackPriority(
 ) {
   await ensureBookExists(bookId);
 
-  const result = await prisma.bookKnowledgePack.updateMany({
+  const result = await prisma.bookAliasPack.updateMany({
     where: { bookId, packId },
     data : { priority }
   });

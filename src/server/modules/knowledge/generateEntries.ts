@@ -325,7 +325,7 @@ async function runGenerationModel(input: {
   const repaired = repairJson(aiResult.content);
   const parsed = generatedEntriesSchema.parse(JSON.parse(repaired));
 
-  const existingEntries = await prisma.knowledgeEntry.findMany({
+  const existingEntries = await prisma.aliasEntry.findMany({
     where: {
       packId      : input.packId,
       reviewStatus: { in: ["PENDING", "VERIFIED"] }
@@ -361,7 +361,7 @@ export async function previewAliasPackGenerationPrompt(input: {
   bookId?                : string;
 }): Promise<AliasPackGenerationPreview> {
   const [pack, bookContext] = await Promise.all([
-    prisma.knowledgePack.findUnique({
+    prisma.aliasPack.findUnique({
       where  : { id: input.packId },
       include: {
         bookType: { select: { key: true } },
@@ -454,24 +454,22 @@ export async function generateEntries(input: {
     let createdCount = 0;
 
     for (const entry of selectedEntries) {
-      await tx.knowledgeEntry.create({
+      await tx.aliasEntry.create({
         data: {
           packId       : input.packId,
           canonicalName: entry.canonicalName,
           aliases      : entry.aliases,
-          entryType    : "CHARACTER",
           confidence   : entry.confidence,
           source       : "LLM_GENERATED",
-          sourceDetail : `model=${review.model.modelName}`,
           reviewStatus : "PENDING",
-          notes        : "LLM 生成候选，待人工审核"
+          notes        : `LLM 生成候选，待人工审核 model=${review.model.modelName}`
         }
       });
       createdCount += 1;
     }
 
     if (createdCount > 0) {
-      await tx.knowledgePack.update({
+      await tx.aliasPack.update({
         where: { id: input.packId },
         data : { version: { increment: 1 } }
       });

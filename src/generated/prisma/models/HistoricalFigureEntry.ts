@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model HistoricalFigureEntry
- * @db.remark: 历史人物知识条目，支持别名匹配与分类过滤。
+ * 
  */
 export type HistoricalFigureEntryModel = runtime.Types.Result.DefaultSelection<Prisma.$HistoricalFigureEntryPayload>
 
@@ -30,7 +30,11 @@ export type HistoricalFigureEntryMinAggregateOutputType = {
   dynasty: string | null
   category: string | null
   description: string | null
-  isVerified: boolean | null
+  source: string | null
+  reviewStatus: string | null
+  reviewNote: string | null
+  reviewedAt: Date | null
+  isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -41,7 +45,11 @@ export type HistoricalFigureEntryMaxAggregateOutputType = {
   dynasty: string | null
   category: string | null
   description: string | null
-  isVerified: boolean | null
+  source: string | null
+  reviewStatus: string | null
+  reviewNote: string | null
+  reviewedAt: Date | null
+  isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,7 +61,11 @@ export type HistoricalFigureEntryCountAggregateOutputType = {
   dynasty: number
   category: number
   description: number
-  isVerified: number
+  source: number
+  reviewStatus: number
+  reviewNote: number
+  reviewedAt: number
+  isActive: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,7 +78,11 @@ export type HistoricalFigureEntryMinAggregateInputType = {
   dynasty?: true
   category?: true
   description?: true
-  isVerified?: true
+  source?: true
+  reviewStatus?: true
+  reviewNote?: true
+  reviewedAt?: true
+  isActive?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,7 +93,11 @@ export type HistoricalFigureEntryMaxAggregateInputType = {
   dynasty?: true
   category?: true
   description?: true
-  isVerified?: true
+  source?: true
+  reviewStatus?: true
+  reviewNote?: true
+  reviewedAt?: true
+  isActive?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -89,7 +109,11 @@ export type HistoricalFigureEntryCountAggregateInputType = {
   dynasty?: true
   category?: true
   description?: true
-  isVerified?: true
+  source?: true
+  reviewStatus?: true
+  reviewNote?: true
+  reviewedAt?: true
+  isActive?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -174,7 +198,11 @@ export type HistoricalFigureEntryGroupByOutputType = {
   dynasty: string | null
   category: string
   description: string | null
-  isVerified: boolean
+  source: string
+  reviewStatus: string
+  reviewNote: string | null
+  reviewedAt: Date | null
+  isActive: boolean
   createdAt: Date
   updatedAt: Date
   _count: HistoricalFigureEntryCountAggregateOutputType | null
@@ -207,7 +235,11 @@ export type HistoricalFigureEntryWhereInput = {
   dynasty?: Prisma.StringNullableFilter<"HistoricalFigureEntry"> | string | null
   category?: Prisma.StringFilter<"HistoricalFigureEntry"> | string
   description?: Prisma.StringNullableFilter<"HistoricalFigureEntry"> | string | null
-  isVerified?: Prisma.BoolFilter<"HistoricalFigureEntry"> | boolean
+  source?: Prisma.StringFilter<"HistoricalFigureEntry"> | string
+  reviewStatus?: Prisma.StringFilter<"HistoricalFigureEntry"> | string
+  reviewNote?: Prisma.StringNullableFilter<"HistoricalFigureEntry"> | string | null
+  reviewedAt?: Prisma.DateTimeNullableFilter<"HistoricalFigureEntry"> | Date | string | null
+  isActive?: Prisma.BoolFilter<"HistoricalFigureEntry"> | boolean
   createdAt?: Prisma.DateTimeFilter<"HistoricalFigureEntry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"HistoricalFigureEntry"> | Date | string
 }
@@ -219,7 +251,11 @@ export type HistoricalFigureEntryOrderByWithRelationInput = {
   dynasty?: Prisma.SortOrderInput | Prisma.SortOrder
   category?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -234,7 +270,11 @@ export type HistoricalFigureEntryWhereUniqueInput = Prisma.AtLeast<{
   dynasty?: Prisma.StringNullableFilter<"HistoricalFigureEntry"> | string | null
   category?: Prisma.StringFilter<"HistoricalFigureEntry"> | string
   description?: Prisma.StringNullableFilter<"HistoricalFigureEntry"> | string | null
-  isVerified?: Prisma.BoolFilter<"HistoricalFigureEntry"> | boolean
+  source?: Prisma.StringFilter<"HistoricalFigureEntry"> | string
+  reviewStatus?: Prisma.StringFilter<"HistoricalFigureEntry"> | string
+  reviewNote?: Prisma.StringNullableFilter<"HistoricalFigureEntry"> | string | null
+  reviewedAt?: Prisma.DateTimeNullableFilter<"HistoricalFigureEntry"> | Date | string | null
+  isActive?: Prisma.BoolFilter<"HistoricalFigureEntry"> | boolean
   createdAt?: Prisma.DateTimeFilter<"HistoricalFigureEntry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"HistoricalFigureEntry"> | Date | string
 }, "id">
@@ -246,7 +286,11 @@ export type HistoricalFigureEntryOrderByWithAggregationInput = {
   dynasty?: Prisma.SortOrderInput | Prisma.SortOrder
   category?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.HistoricalFigureEntryCountOrderByAggregateInput
@@ -264,7 +308,11 @@ export type HistoricalFigureEntryScalarWhereWithAggregatesInput = {
   dynasty?: Prisma.StringNullableWithAggregatesFilter<"HistoricalFigureEntry"> | string | null
   category?: Prisma.StringWithAggregatesFilter<"HistoricalFigureEntry"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"HistoricalFigureEntry"> | string | null
-  isVerified?: Prisma.BoolWithAggregatesFilter<"HistoricalFigureEntry"> | boolean
+  source?: Prisma.StringWithAggregatesFilter<"HistoricalFigureEntry"> | string
+  reviewStatus?: Prisma.StringWithAggregatesFilter<"HistoricalFigureEntry"> | string
+  reviewNote?: Prisma.StringNullableWithAggregatesFilter<"HistoricalFigureEntry"> | string | null
+  reviewedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"HistoricalFigureEntry"> | Date | string | null
+  isActive?: Prisma.BoolWithAggregatesFilter<"HistoricalFigureEntry"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"HistoricalFigureEntry"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"HistoricalFigureEntry"> | Date | string
 }
@@ -276,7 +324,11 @@ export type HistoricalFigureEntryCreateInput = {
   dynasty?: string | null
   category: string
   description?: string | null
-  isVerified?: boolean
+  source?: string
+  reviewStatus?: string
+  reviewNote?: string | null
+  reviewedAt?: Date | string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -288,7 +340,11 @@ export type HistoricalFigureEntryUncheckedCreateInput = {
   dynasty?: string | null
   category: string
   description?: string | null
-  isVerified?: boolean
+  source?: string
+  reviewStatus?: string
+  reviewNote?: string | null
+  reviewedAt?: Date | string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -300,7 +356,11 @@ export type HistoricalFigureEntryUpdateInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -312,7 +372,11 @@ export type HistoricalFigureEntryUncheckedUpdateInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -324,7 +388,11 @@ export type HistoricalFigureEntryCreateManyInput = {
   dynasty?: string | null
   category: string
   description?: string | null
-  isVerified?: boolean
+  source?: string
+  reviewStatus?: string
+  reviewNote?: string | null
+  reviewedAt?: Date | string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -336,7 +404,11 @@ export type HistoricalFigureEntryUpdateManyMutationInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -348,7 +420,11 @@ export type HistoricalFigureEntryUncheckedUpdateManyInput = {
   dynasty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  reviewNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -360,7 +436,11 @@ export type HistoricalFigureEntryCountOrderByAggregateInput = {
   dynasty?: Prisma.SortOrder
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrder
+  reviewedAt?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -371,7 +451,11 @@ export type HistoricalFigureEntryMaxOrderByAggregateInput = {
   dynasty?: Prisma.SortOrder
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrder
+  reviewedAt?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -382,7 +466,11 @@ export type HistoricalFigureEntryMinOrderByAggregateInput = {
   dynasty?: Prisma.SortOrder
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  isVerified?: Prisma.SortOrder
+  source?: Prisma.SortOrder
+  reviewStatus?: Prisma.SortOrder
+  reviewNote?: Prisma.SortOrder
+  reviewedAt?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -405,7 +493,11 @@ export type HistoricalFigureEntrySelect<ExtArgs extends runtime.Types.Extensions
   dynasty?: boolean
   category?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  reviewedAt?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["historicalFigureEntry"]>
@@ -417,7 +509,11 @@ export type HistoricalFigureEntrySelectCreateManyAndReturn<ExtArgs extends runti
   dynasty?: boolean
   category?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  reviewedAt?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["historicalFigureEntry"]>
@@ -429,7 +525,11 @@ export type HistoricalFigureEntrySelectUpdateManyAndReturn<ExtArgs extends runti
   dynasty?: boolean
   category?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  reviewedAt?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["historicalFigureEntry"]>
@@ -441,12 +541,16 @@ export type HistoricalFigureEntrySelectScalar = {
   dynasty?: boolean
   category?: boolean
   description?: boolean
-  isVerified?: boolean
+  source?: boolean
+  reviewStatus?: boolean
+  reviewNote?: boolean
+  reviewedAt?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type HistoricalFigureEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "aliases" | "dynasty" | "category" | "description" | "isVerified" | "createdAt" | "updatedAt", ExtArgs["result"]["historicalFigureEntry"]>
+export type HistoricalFigureEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "aliases" | "dynasty" | "category" | "description" | "source" | "reviewStatus" | "reviewNote" | "reviewedAt" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["historicalFigureEntry"]>
 
 export type $HistoricalFigureEntryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "HistoricalFigureEntry"
@@ -456,12 +560,13 @@ export type $HistoricalFigureEntryPayload<ExtArgs extends runtime.Types.Extensio
     name: string
     aliases: string[]
     dynasty: string | null
-    /**
-     * EMPEROR | SAGE | POET | GENERAL | MYTHICAL | STATESMAN
-     */
     category: string
     description: string | null
-    isVerified: boolean
+    source: string
+    reviewStatus: string
+    reviewNote: string | null
+    reviewedAt: Date | null
+    isActive: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["historicalFigureEntry"]>
@@ -893,7 +998,11 @@ export interface HistoricalFigureEntryFieldRefs {
   readonly dynasty: Prisma.FieldRef<"HistoricalFigureEntry", 'String'>
   readonly category: Prisma.FieldRef<"HistoricalFigureEntry", 'String'>
   readonly description: Prisma.FieldRef<"HistoricalFigureEntry", 'String'>
-  readonly isVerified: Prisma.FieldRef<"HistoricalFigureEntry", 'Boolean'>
+  readonly source: Prisma.FieldRef<"HistoricalFigureEntry", 'String'>
+  readonly reviewStatus: Prisma.FieldRef<"HistoricalFigureEntry", 'String'>
+  readonly reviewNote: Prisma.FieldRef<"HistoricalFigureEntry", 'String'>
+  readonly reviewedAt: Prisma.FieldRef<"HistoricalFigureEntry", 'DateTime'>
+  readonly isActive: Prisma.FieldRef<"HistoricalFigureEntry", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"HistoricalFigureEntry", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"HistoricalFigureEntry", 'DateTime'>
 }

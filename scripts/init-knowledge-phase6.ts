@@ -96,7 +96,7 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
   // 1. 姓氏
   let surnameCount = 0;
   for (const surname of COMPOUND_SURNAMES) {
-    await prisma.surnameEntry.upsert({
+    await prisma.surnameRule.upsert({
       where : { surname },
       create: { surname, isCompound: true, priority: 10, source: "IMPORTED" },
       update: {}
@@ -104,7 +104,7 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
     surnameCount++;
   }
   for (const surname of SINGLE_SURNAMES) {
-    await prisma.surnameEntry.upsert({
+    await prisma.surnameRule.upsert({
       where : { surname },
       create: { surname, isCompound: false, priority: 0, source: "IMPORTED" },
       update: {}
@@ -116,7 +116,7 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
   // 2. 泛化称谓
   let titleCount = 0;
   for (const title of SAFETY_TITLES) {
-    await prisma.genericTitleEntry.upsert({
+    await prisma.genericTitleRule.upsert({
       where : { title },
       create: { title, tier: "SAFETY", source: "IMPORTED" },
       update: {}
@@ -124,7 +124,7 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
     titleCount++;
   }
   for (const title of DEFAULT_TITLES) {
-    await prisma.genericTitleEntry.upsert({
+    await prisma.genericTitleRule.upsert({
       where : { title },
       create: { title, tier: "DEFAULT", source: "IMPORTED" },
       update: {}
@@ -184,16 +184,16 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
     const template = await prisma.promptTemplate.findUnique({
       where : { slug: slot.slug },
       select: {
-        id             : true,
-        activeVersionId: true,
-        versions       : {
+        id      : true,
+        versions: {
           orderBy: { versionNo: "desc" },
           take   : 1,
           select : {
             id          : true,
             versionNo   : true,
             systemPrompt: true,
-            userPrompt  : true
+            userPrompt  : true,
+            isActive    : true
           }
         }
       }
@@ -207,26 +207,22 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
     const needsBaselineVersion = !latest || latest.systemPrompt.includes("迁移，请在管理后台填入实际内容") || latest.userPrompt.includes("迁移，请在管理后台填入实际内容");
 
     if (needsBaselineVersion) {
-      const version = await prisma.promptTemplateVersion.create({
+      await prisma.promptTemplateVersion.create({
         data: {
           templateId  : template.id,
           versionNo   : (latest?.versionNo ?? 0) + 1,
           systemPrompt: slot.systemPrompt,
           userPrompt  : slot.userPrompt,
           changeNote  : latest ? "升级为可执行基线模板" : "种子初始化基线版本",
-          isBaseline  : true
+          isBaseline  : true,
+          isActive    : true
         }
       });
       versionCount++;
-
-      await prisma.promptTemplate.update({
-        where: { id: template.id },
-        data : { activeVersionId: version.id }
-      });
-    } else if (!template.activeVersionId && latest) {
-      await prisma.promptTemplate.update({
-        where: { id: template.id },
-        data : { activeVersionId: latest.id }
+    } else if (latest && !latest.isActive) {
+      await prisma.promptTemplateVersion.update({
+        where: { id: latest.id },
+        data : { isActive: true }
       });
     }
   }

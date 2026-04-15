@@ -14,12 +14,13 @@ import { badRequestJson, notFoundJson, uuidParamSchema } from "../../_shared";
 const PATH = "/api/admin/knowledge/historical-figures/[id]";
 
 const updateSchema = z.object({
-  name       : z.string().trim().min(1).max(100).optional(),
-  aliases    : z.array(z.string().trim()).optional(),
-  dynasty    : z.string().trim().max(50).nullable().optional(),
-  category   : z.enum(["EMPEROR", "SAGE", "POET", "GENERAL", "MYTHICAL", "STATESMAN"]).optional(),
-  description: z.string().nullable().optional(),
-  isVerified : z.boolean().optional()
+  name        : z.string().trim().min(1).max(100).optional(),
+  aliases     : z.array(z.string().trim()).optional(),
+  dynasty     : z.string().trim().max(50).nullable().optional(),
+  category    : z.enum(["EMPEROR", "SAGE", "POET", "GENERAL", "MYTHICAL", "STATESMAN"]).optional(),
+  description : z.string().nullable().optional(),
+  reviewStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]).optional(),
+  isActive    : z.boolean().optional()
 }).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
 
 export async function PATCH(

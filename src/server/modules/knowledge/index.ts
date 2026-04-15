@@ -107,3 +107,6 @@ export {
   listChangeLogs,
   getChangeLog
 } from "./change-logs";
+
+export * from "./ner-lexicon-rules";
+export * from "./prompt-extraction-rules";

@@ -10,3 +10,4 @@ tsconfig.tsbuildinfo
 .pnpm-store
 .archive/
 .trellis.bak
+.worktrees/

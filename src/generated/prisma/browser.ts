@@ -94,59 +94,66 @@ export type ValidationReport = Prisma.ValidationReportModel
 export type MergeSuggestion = Prisma.MergeSuggestionModel
 /**
  * Model BookType
- * @db.remark: 古典文学书籍类型定义表，存储 NER 词典规则配置，可在管理后台热更新。
+ * 
  */
 export type BookType = Prisma.BookTypeModel
 /**
- * Model KnowledgePack
- * @db.remark: 知识包表。scope=GENRE 为书籍类型通用包，scope=BOOK 为书籍专属包。
+ * Model AliasPack
+ * 
  */
-export type KnowledgePack = Prisma.KnowledgePackModel
+export type AliasPack = Prisma.AliasPackModel
 /**
- * Model KnowledgeEntry
- * @db.remark: 知识条目。reviewStatus 驱动审核工作流（PENDING→VERIFIED or REJECTED）。
+ * Model AliasEntry
+ * 别名映射条目，仅存储人物（CHARACTER）别名
  */
-export type KnowledgeEntry = Prisma.KnowledgeEntryModel
+export type AliasEntry = Prisma.AliasEntryModel
 /**
- * Model BookKnowledgePack
- * @db.remark: 书籍 ↔ 知识包 多对多关联，priority 越大越优先。
+ * Model BookAliasPack
+ * 
  */
-export type BookKnowledgePack = Prisma.BookKnowledgePackModel
+export type BookAliasPack = Prisma.BookAliasPackModel
 /**
- * Model SurnameEntry
- * @db.remark: 姓氏库。extractSurname() 运行时从此表加载，优先匹配复姓。
+ * Model SurnameRule
+ * 
  */
-export type SurnameEntry = Prisma.SurnameEntryModel
+export type SurnameRule = Prisma.SurnameRuleModel
 /**
- * Model GenericTitleEntry
- * @db.remark: 泛化称谓库。tier=SAFETY 绝不个体化，tier=DEFAULT 可被书籍类型/书籍覆盖。
+ * Model GenericTitleRule
+ * 
  */
-export type GenericTitleEntry = Prisma.GenericTitleEntryModel
+export type GenericTitleRule = Prisma.GenericTitleRuleModel
+/**
+ * Model NerLexiconRule
+ * NER 算法配置：后缀惩罚规则与称号/职位词干
+ * 与 prompt_extraction_rules 的区别：本表配置评分算法，不注入 AI Prompt
+ */
+export type NerLexiconRule = Prisma.NerLexiconRuleModel
 /**
  * Model HistoricalFigureEntry
- * @db.remark: 历史人物知识条目，支持别名匹配与分类过滤。
+ * 
  */
 export type HistoricalFigureEntry = Prisma.HistoricalFigureEntryModel
 /**
- * Model RelationalTermEntry
- * @db.remark: 关系词条目，用于泛称/关系词过滤。
- */
-export type RelationalTermEntry = Prisma.RelationalTermEntryModel
-/**
  * Model NamePatternRule
- * @db.remark: 名字模式规则，支持运行时正则编译与风控拦截。
+ * 
  */
 export type NamePatternRule = Prisma.NamePatternRuleModel
 /**
  * Model PromptTemplate
- * @db.remark: 提示词模板。activeVersionId 指向当前生效版本，支持一键回滚。
+ * 
  */
 export type PromptTemplate = Prisma.PromptTemplateModel
 /**
  * Model PromptTemplateVersion
- * @db.remark: 提示词版本历史。每次激活都保留旧版本，支持 diff 对比与回滚。
+ * 
  */
 export type PromptTemplateVersion = Prisma.PromptTemplateVersionModel
+/**
+ * Model PromptExtractionRule
+ * Prompt 注入规则：告诉 AI 如何提取实体和关系
+ * 与 ner_lexicon_rules 的区别：本表内容注入 AI Prompt，不配置评分算法
+ */
+export type PromptExtractionRule = Prisma.PromptExtractionRuleModel
 /**
  * Model ExtractionRule
  * @db.remark: NER 规则条目。ruleType=ENTITY 或 RELATIONSHIP，isActive 控制是否注入提示词。

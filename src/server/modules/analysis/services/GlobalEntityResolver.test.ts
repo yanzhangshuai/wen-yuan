@@ -90,14 +90,6 @@ describe("GlobalEntityResolver", () => {
     vi.clearAllMocks();
   });
 
-  it("calculates edit distance with the short-name guard", () => {
-    const resolver = createGlobalEntityResolver({} as never, {} as never);
-
-    expect(resolver._editDistance("范进", "范进")).toBe(0);
-    expect(resolver._editDistance("范进", "范晋")).toBe(1);
-    expect(resolver._editDistance("范进", "范进老爷")).toBe(2);
-  });
-
   it("collects a global dictionary with merged chapters, aliases and longest descriptions", () => {
     const resolver = createGlobalEntityResolver({} as never, {} as never);
 
@@ -132,7 +124,7 @@ describe("GlobalEntityResolver", () => {
     expect(Array.from(aliasEntry.allNames).sort()).toEqual(["范举人", "范进", "范进士"]);
   });
 
-  it("builds candidate groups from knowledge-base aliases, edit distance and surname overlap", () => {
+  it("builds candidate groups from knowledge-base aliases and surname overlap", () => {
     const resolver = createGlobalEntityResolver({} as never, {} as never);
     const dict = resolver._collectGlobalDictionary([
       buildChapterEntityList(1, [{ name: "范进", aliases: [], description: "书生", category: "PERSON" }]),
@@ -153,10 +145,12 @@ describe("GlobalEntityResolver", () => {
     const groups = resolver._buildCandidateGroups(dict, aliasLookup);
     const memberSets = groups.map((group) => new Set(group.members.map((member) => member.name)));
 
-    expect(groups).toHaveLength(3);
+    // 范进/范举人 grouped via alias lookup; 王惠/王老爷 grouped via alias lookup + surname+allNames overlap
+    // 李四/李似 are NOT grouped: no alias overlap, no allNames overlap (edit distance removed)
+    expect(groups).toHaveLength(2);
     expect(memberSets.some((members) => members.has("范进") && members.has("范举人"))).toBe(true);
-    expect(memberSets.some((members) => members.has("李四") && members.has("李似"))).toBe(true);
     expect(memberSets.some((members) => members.has("王惠") && members.has("王老爷"))).toBe(true);
+    expect(memberSets.some((members) => members.has("李四") && members.has("李似"))).toBe(false);
   });
 
   it("creates independent personas without invoking AI when there are no candidate groups", async () => {
@@ -202,19 +196,9 @@ describe("GlobalEntityResolver", () => {
     ]);
   });
 
-  it("merges a candidate group through the AI resolution path and preserves the best description", async () => {
-    const generateJsonMock = vi.fn().mockResolvedValue({
-      content: JSON.stringify([
-        {
-          groupId      : 1,
-          shouldMerge  : true,
-          mergedName   : "范进",
-          mergedAliases: ["范进", "范举人"],
-          reason       : "同一人物"
-        }
-      ]),
-      usage: { totalTokens: 16 }
-    });
+  it("merges a KB-covered candidate group directly without invoking LLM and preserves the best description", async () => {
+    // Fix T3: KB alias covers all members → directMerge, LLM not called
+    const generateJsonMock = vi.fn();
     createAiProviderClientMock.mockReturnValue({
       generateJson: generateJsonMock
     });
@@ -249,33 +233,22 @@ describe("GlobalEntityResolver", () => {
       }
     );
 
-    expect(buildEntityResolutionPromptMock).toHaveBeenCalledWith("儒林外史", expect.any(Array));
-    expect(createAiProviderClientMock).toHaveBeenCalledWith({
-      provider : "deepseek",
-      apiKey   : "secret-key",
-      baseUrl  : "https://api.deepseek.com",
-      modelName: "deepseek-chat"
-    });
-    expect(generateJsonMock).toHaveBeenCalledWith("book=儒林外史;groups=1", {
-      temperature    : 0.2,
-      maxOutputTokens: 512,
-      topP           : 0.9,
-      enableThinking : true,
-      reasoningEffort: "medium"
-    });
+    // KB-covered group: LLM should NOT be called
+    expect(generateJsonMock).not.toHaveBeenCalled();
 
+    // Direct merge should use longest name as canonical
     expect(prismaClient.persona.create).toHaveBeenNthCalledWith(1, {
       data: {
-        name        : "范进",
+        name        : "范举人",
         type        : "PERSON",
         nameType    : "NAMED",
-        aliases     : ["范进", "范举人"],
+        aliases     : ["范进"],
         confidence  : 0.8,
         recordSource: "AI",
         profiles    : {
           create: {
             bookId      : "book-1",
-            localName   : "范进",
+            localName   : "范举人",
             localSummary: "中举后境遇骤变的寒门书生"
           }
         }
@@ -284,6 +257,59 @@ describe("GlobalEntityResolver", () => {
     expect(result.globalPersonaMap.get("范进")).toBe("persona-merged");
     expect(result.globalPersonaMap.get("范举人")).toBe("persona-merged");
     expect(result.globalPersonaMap.get("王惠")).toBe("persona-2");
+  });
+
+  it("merges a candidate group through the AI resolution path when aliases do not fully cover all members", async () => {
+    // Fix T3: when KB alias does not cover all members, group is sent to LLM
+    // Use shared alias to trigger allNames overlap grouping without aliasLookup
+    const generateJsonMock = vi.fn().mockResolvedValue({
+      content: JSON.stringify([
+        {
+          groupId      : 1,
+          shouldMerge  : true,
+          mergedName   : "范进",
+          mergedAliases: ["范进", "范举人"],
+          reason       : "同一人物"
+        }
+      ]),
+      usage: { totalTokens: 16 }
+    });
+    createAiProviderClientMock.mockReturnValue({
+      generateJson: generateJsonMock
+    });
+
+    const prismaClient = {
+      persona: {
+        create: vi.fn()
+          .mockResolvedValueOnce({ id: "persona-merged" })
+          .mockResolvedValueOnce({ id: "persona-2" })
+          .mockResolvedValueOnce({ id: "persona-3" })
+      }
+    };
+    const aiCallExecutor = createAiCallExecutorMock(buildResolvedStageModel({
+      enableThinking : true,
+      reasoningEffort: "medium"
+    }));
+    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor as never);
+
+    // 范进/范举人 share alias 范老爷 → allNames overlap → candidate group → sendToLlm (no aliasLookup)
+    const result = await resolver.resolveGlobalEntities(
+      "book-1",
+      "儒林外史",
+      [
+        buildChapterEntityList(1, [{ name: "范进", aliases: ["范老爷"], description: "寒门书生", category: "PERSON" }]),
+        buildChapterEntityList(2, [{ name: "范举人", aliases: ["范老爷"], description: "中举后境遇骤变的寒门书生", category: "PERSON" }]),
+        buildChapterEntityList(3, [{ name: "王惠", aliases: [], description: "地方官员", category: "PERSON" }])
+      ],
+      { bookId: "book-1", jobId: "job-1" }
+      // no aliasLookup → no directMerge → ambiguous group goes to LLM
+    );
+
+    expect(buildEntityResolutionPromptMock).toHaveBeenCalledWith("儒林外史", expect.any(Array));
+    expect(generateJsonMock).toHaveBeenCalled();
+    expect(result.globalPersonaMap.get("范进")).toBe("persona-merged");
+    expect(result.globalPersonaMap.get("范举人")).toBe("persona-merged");
+    expect(result.globalPersonaMap.get("王惠")).not.toBeUndefined();
   });
 
   it("keeps candidate members separate when the AI decides not to merge them", async () => {

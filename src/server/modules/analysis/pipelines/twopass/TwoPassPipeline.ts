@@ -14,6 +14,29 @@ import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-
 
 const TWO_PASS_PIPELINE_DEPENDENCY_ERROR = "TwoPassPipeline 缺少运行时依赖，无法执行两遍式分析。";
 
+/**
+ * Fix T1: Pass 1 候选集过滤
+ * 使用 FullRuntimeKnowledge 对 AI 提取的原始名字列表进行前置过滤，
+ * 与 PersonaResolver 的过滤层对齐，防止泛称/关系词进入全局候选池。
+ */
+function filterPass1Candidates(
+  rawNames: string[],
+  runtimeKnowledge: FullRuntimeKnowledge
+): string[] {
+  return rawNames.filter((name) => {
+    const raw = name.trim();
+    if (raw.length < 2 || raw.length > 8)               return false;
+    if (/[的之]/.test(raw) && raw.length >= 4)           return false;
+    if (runtimeKnowledge.safetyGenericTitles.has(raw))   return false;
+    if (runtimeKnowledge.relationalTerms.has(raw))       return false;
+    for (const rule of runtimeKnowledge.namePatternRules) {
+      if (rule.action === "BLOCK" && rule.compiled.test(raw)) return false;
+    }
+    if (runtimeKnowledge.historicalFigures.has(raw))     return false;
+    return true;
+  });
+}
+
 interface TwoPassRuntimeContext {
   bookTitle       : string;
   runtimeKnowledge: FullRuntimeKnowledge;
@@ -156,10 +179,20 @@ export function createTwoPassPipeline(
     });
 
     const runtimeContext = await runtimeDependencies.loadRuntimeContext(params.bookId);
+
+    // Fix T1: 在 Pass 1 输出进入 Pass 2 前，过滤掉泛称/关系词等噪声候选
+    const filteredEntityLists = chapterEntityLists.map((cel) => ({
+      ...cel,
+      entities: cel.entities.filter((e) => {
+        const filtered = filterPass1Candidates([e.name, ...(e.aliases ?? [])], runtimeContext.runtimeKnowledge);
+        return filtered.includes(e.name);
+      })
+    }));
+
     const { globalPersonaMap } = await runtimeDependencies.analyzer.resolveGlobalEntities(
       params.bookId,
       runtimeContext.bookTitle,
-      chapterEntityLists,
+      filteredEntityLists,
       { bookId: params.bookId, jobId: params.jobId },
       runtimeContext.runtimeKnowledge
     );
@@ -167,10 +200,13 @@ export function createTwoPassPipeline(
     console.info(
       "[analysis.runner] two_pass.completed",
       JSON.stringify({
-        jobId       : params.jobId,
-        bookId      : params.bookId,
-        pass1Results: chapterEntityLists.length,
-        globalMap   : globalPersonaMap.size
+        jobId              : params.jobId,
+        bookId             : params.bookId,
+        pass1Results       : chapterEntityLists.length,
+        filteredResults    : filteredEntityLists.length,
+        pass1EntityCount   : chapterEntityLists.reduce((sum, cel) => sum + cel.entities.length, 0),
+        filteredEntityCount: filteredEntityLists.reduce((sum, cel) => sum + cel.entities.length, 0),
+        globalMap          : globalPersonaMap.size
       })
     );
 

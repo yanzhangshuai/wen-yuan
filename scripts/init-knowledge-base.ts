@@ -1,14 +1,14 @@
 /**
- * 知识库初始化脚本：从 JSON 种子文件导入 BookType / KnowledgePack / KnowledgeEntry。
+ * 知识库初始化脚本：从 JSON 种子文件导入 BookType / AliasPack / AliasEntry。
  *
  * 用法：
  *   npx tsx scripts/init-knowledge-base.ts
  *   npx tsx scripts/init-knowledge-base.ts --file data/knowledge-base/book-types.init.json
  *
  * 幂等性保证：
- * - BookType：按 key upsert，已存在则更新 name / presetConfig / description / sortOrder
- * - KnowledgePack：按 bookTypeId + name 查重，已存在则跳过（不覆盖条目）
- * - KnowledgeEntry：跟随 KnowledgePack 创建；若包已存在则整包跳过
+ * - BookType：按 key upsert，已存在则更新 name / description / sortOrder
+ * - AliasPack：按 bookTypeId + name 查重，已存在则跳过（不覆盖条目）
+ * - AliasEntry：跟随 AliasPack 创建；若包已存在则整包跳过
  *
  * 与 prisma/seed.ts 的关系：
  * - seed.ts 现在会串联本脚本与 Phase 6 脚本，保证标准 `prisma db seed` 后即可得到完整知识库基础数据
@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { type Prisma, PrismaClient } from "../src/generated/prisma/client.ts";
+import { PrismaClient } from "../src/generated/prisma/client.ts";
 
 // --- 类型定义：与 book-types.init.json 结构对齐 ---
 
@@ -37,13 +37,12 @@ export interface InitPack {
 }
 
 export interface InitBookType {
-  key           : string;
-  name          : string;
-  description?  : string;
-  sortOrder     : number;
-  isActive      : boolean;
-  presetConfig  : Record<string, unknown> | null;
-  knowledgePacks: InitPack[];
+  key         : string;
+  name        : string;
+  description?: string;
+  sortOrder   : number;
+  isActive    : boolean;
+  aliasPacks  : InitPack[];
 }
 
 export interface InitData {
@@ -85,24 +84,23 @@ export async function seedKnowledgeBase(prisma: PrismaClient, data: InitData): P
     const bookType = await prisma.bookType.upsert({
       where : { key: bt.key },
       create: {
-        key         : bt.key,
-        name        : bt.name,
-        description : bt.description,
-        sortOrder   : bt.sortOrder,
-        isActive    : bt.isActive,
-        presetConfig: (bt.presetConfig ?? undefined) as Prisma.InputJsonValue | undefined
+        key        : bt.key,
+        name       : bt.name,
+        description: bt.description,
+        sortOrder  : bt.sortOrder,
+        isActive   : bt.isActive
       },
       update: {
-        name        : bt.name,
-        description : bt.description,
-        sortOrder   : bt.sortOrder,
-        isActive    : bt.isActive,
-        presetConfig: (bt.presetConfig ?? undefined) as Prisma.InputJsonValue | undefined
+        name       : bt.name,
+        description: bt.description,
+        sortOrder  : bt.sortOrder,
+        isActive   : bt.isActive
       }
     });
 
-    for (const pack of bt.knowledgePacks) {
-      const existing = await prisma.knowledgePack.findFirst({
+    const packs = bt.aliasPacks ?? [];
+    for (const pack of packs) {
+      const existing = await prisma.aliasPack.findFirst({
         where: { bookTypeId: bookType.id, name: pack.name }
       });
 
@@ -113,7 +111,7 @@ export async function seedKnowledgeBase(prisma: PrismaClient, data: InitData): P
       }
 
       await prisma.$transaction(async (tx) => {
-        const knowledgePack = await tx.knowledgePack.create({
+        const aliasPack = await tx.aliasPack.create({
           data: {
             bookTypeId : bookType.id,
             name       : pack.name,
@@ -123,9 +121,9 @@ export async function seedKnowledgeBase(prisma: PrismaClient, data: InitData): P
         });
 
         if (pack.entries.length > 0) {
-          await tx.knowledgeEntry.createMany({
+          await tx.aliasEntry.createMany({
             data: pack.entries.map((entry) => ({
-              packId       : knowledgePack.id,
+              packId       : aliasPack.id,
               canonicalName: entry.canonicalName,
               aliases      : entry.aliases,
               source       : "IMPORTED",

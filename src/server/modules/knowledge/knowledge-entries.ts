@@ -78,7 +78,7 @@ export async function listKnowledgeEntries(params: {
   page?        : number;
   pageSize?    : number;
 }) {
-  const where: Prisma.KnowledgeEntryWhereInput = { packId: params.packId };
+  const where: Prisma.AliasEntryWhereInput = { packId: params.packId };
   if (params.reviewStatus) where.reviewStatus = params.reviewStatus;
   if (params.q) {
     where.OR = [
@@ -91,14 +91,14 @@ export async function listKnowledgeEntries(params: {
   const pageSize = params.pageSize ?? 50;
 
   const [entries, total, packEntries] = await Promise.all([
-    prisma.knowledgeEntry.findMany({
+    prisma.aliasEntry.findMany({
       where,
       orderBy: [{ createdAt: "desc" }],
       skip   : (page - 1) * pageSize,
       take   : pageSize
     }),
-    prisma.knowledgeEntry.count({ where }),
-    prisma.knowledgeEntry.findMany({
+    prisma.aliasEntry.count({ where }),
+    prisma.aliasEntry.findMany({
       where: {
         packId      : params.packId,
         reviewStatus: { in: ["PENDING", "VERIFIED"] }
@@ -124,22 +124,18 @@ export async function createKnowledgeEntry(data: {
   packId       : string;
   canonicalName: string;
   aliases      : string[];
-  entryType?   : string;
   notes?       : string;
   source?      : string;
-  sourceDetail?: string;
   reviewStatus?: string;
   confidence?  : number;
 }) {
-  return prisma.knowledgeEntry.create({
+  return prisma.aliasEntry.create({
     data: {
       packId       : data.packId,
       canonicalName: data.canonicalName,
       aliases      : data.aliases,
-      entryType    : data.entryType ?? "CHARACTER",
       notes        : data.notes,
       source       : data.source ?? "MANUAL",
-      sourceDetail : data.sourceDetail,
       reviewStatus : data.reviewStatus ?? "PENDING",
       confidence   : data.confidence ?? 1.0
     }
@@ -152,17 +148,15 @@ export async function updateKnowledgeEntry(
   data: {
     canonicalName?: string;
     aliases?      : string[];
-    entryType?    : string;
     notes?        : string | null;
     confidence?   : number;
   }
 ) {
-  return prisma.knowledgeEntry.update({
+  return prisma.aliasEntry.update({
     where: { id },
     data : {
       ...(data.canonicalName !== undefined && { canonicalName: data.canonicalName }),
       ...(data.aliases !== undefined && { aliases: data.aliases }),
-      ...(data.entryType !== undefined && { entryType: data.entryType }),
       ...(data.notes !== undefined && { notes: data.notes }),
       ...(data.confidence !== undefined && { confidence: data.confidence })
     }
@@ -171,12 +165,12 @@ export async function updateKnowledgeEntry(
 
 /** 删除条目。 */
 export async function deleteKnowledgeEntry(id: string) {
-  return prisma.knowledgeEntry.delete({ where: { id } });
+  return prisma.aliasEntry.delete({ where: { id } });
 }
 
 /** 审核通过。 */
 export async function verifyEntry(id: string) {
-  return prisma.knowledgeEntry.update({
+  return prisma.aliasEntry.update({
     where: { id },
     data : {
       reviewStatus: "VERIFIED",
@@ -187,7 +181,7 @@ export async function verifyEntry(id: string) {
 
 /** 审核拒绝。 */
 export async function rejectEntry(id: string, note?: string) {
-  return prisma.knowledgeEntry.update({
+  return prisma.aliasEntry.update({
     where: { id },
     data : {
       reviewStatus: "REJECTED",
@@ -199,7 +193,7 @@ export async function rejectEntry(id: string, note?: string) {
 
 /** 批量审核通过。 */
 export async function batchVerifyEntries(ids: string[]) {
-  return prisma.knowledgeEntry.updateMany({
+  return prisma.aliasEntry.updateMany({
     where: { id: { in: ids } },
     data : {
       reviewStatus: "VERIFIED",
@@ -210,7 +204,7 @@ export async function batchVerifyEntries(ids: string[]) {
 
 /** 批量审核拒绝。 */
 export async function batchRejectEntries(ids: string[], note?: string) {
-  return prisma.knowledgeEntry.updateMany({
+  return prisma.aliasEntry.updateMany({
     where: { id: { in: ids } },
     data : {
       reviewStatus: "REJECTED",
@@ -226,14 +220,12 @@ export async function importEntries(
   entries: Array<{
     canonicalName: string;
     aliases      : string[];
-    entryType?   : string;
     notes?       : string;
     confidence?  : number;
   }>,
   options?: {
     reviewStatus?: string;
     source?      : string;
-    sourceDetail?: string;
     operatorId?  : string;
     auditAction? : string;
   }
@@ -242,21 +234,19 @@ export async function importEntries(
   const source = options?.source ?? "IMPORTED";
 
   const result = await prisma.$transaction(async (tx) => {
-    const result = await tx.knowledgeEntry.createMany({
+    const result = await tx.aliasEntry.createMany({
       data: entries.map((e) => ({
         packId,
         canonicalName: e.canonicalName,
         aliases      : e.aliases,
-        entryType    : e.entryType ?? "CHARACTER",
         notes        : e.notes,
         source,
-        sourceDetail : options?.sourceDetail,
         reviewStatus,
         confidence   : e.confidence ?? (source === "LLM_GENERATED" ? 0.8 : 1.0)
       }))
     });
 
-    await tx.knowledgePack.update({
+    await tx.aliasPack.update({
       where: { id: packId },
       data : { version: { increment: 1 } }
     });
@@ -265,7 +255,7 @@ export async function importEntries(
   });
 
   if (result.count > 0) {
-    const pack = await prisma.knowledgePack.findUnique({
+    const pack = await prisma.aliasPack.findUnique({
       where : { id: packId },
       select: { name: true }
     });
@@ -277,10 +267,9 @@ export async function importEntries(
         objectName: pack.name,
         action    : options?.auditAction ?? "IMPORT",
         after     : {
-          count       : result.count,
+          count: result.count,
           reviewStatus,
-          source,
-          sourceDetail: options?.sourceDetail ?? null
+          source
         },
         operatorId: options?.operatorId
       });
@@ -300,7 +289,7 @@ export async function exportEntries(
     ? { reviewStatus: { not: "REJECTED" as const } }
     : { reviewStatus: "VERIFIED" as const };
 
-  const pack = await prisma.knowledgePack.findUnique({
+  const pack = await prisma.aliasPack.findUnique({
     where  : { id: packId },
     include: {
       bookType: { select: { key: true } },
@@ -310,7 +299,6 @@ export async function exportEntries(
         select : {
           canonicalName: true,
           aliases      : true,
-          entryType    : true,
           notes        : true
         }
       }
@@ -320,11 +308,11 @@ export async function exportEntries(
   if (!pack) throw new Error("知识包不存在");
 
   if (format === "csv") {
-    const header = "canonicalName,aliases,entryType,notes";
+    const header = "canonicalName,aliases,notes";
     const rows = pack.entries.map((e) => {
       const aliasStr = e.aliases.join("|");
       const notesStr = (e.notes ?? "").replace(/"/g, '""');
-      return `${e.canonicalName},"${aliasStr}",${e.entryType},"${notesStr}"`;
+      return `${e.canonicalName},"${aliasStr}","${notesStr}"`;
     });
     return { content: [header, ...rows].join("\n"), contentType: "text/csv" };
   }

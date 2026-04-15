@@ -188,7 +188,7 @@ async function seedGenericTitles(prisma: PrismaClient, seed: GenericTitlesSeedDa
     const title = normalizeText(item.title);
     if (!title) continue;
 
-    await prisma.genericTitleEntry.upsert({
+    await prisma.genericTitleRule.upsert({
       where : { title },
       create: {
         title,
@@ -228,9 +228,10 @@ async function seedHistoricalFigures(prisma: PrismaClient, seed: HistoricalFigur
         where: { id: existing.id },
         data : {
           aliases,
-          dynasty    : item.dynasty ?? undefined,
-          description: item.description ?? undefined,
-          isVerified : true
+          dynasty     : item.dynasty ?? undefined,
+          description : item.description ?? undefined,
+          reviewStatus: "VERIFIED",
+          isActive    : true
         }
       });
     } else {
@@ -238,10 +239,11 @@ async function seedHistoricalFigures(prisma: PrismaClient, seed: HistoricalFigur
         data: {
           name,
           aliases,
-          dynasty    : item.dynasty ?? undefined,
-          category   : item.category,
-          description: item.description ?? undefined,
-          isVerified : true
+          dynasty     : item.dynasty ?? undefined,
+          category    : item.category,
+          description : item.description ?? undefined,
+          reviewStatus: "VERIFIED",
+          isActive    : true
         }
       });
     }
@@ -258,16 +260,20 @@ async function seedRelationalTerms(prisma: PrismaClient, seed: RelationalTermsSe
     const term = normalizeText(item.term);
     if (!term) continue;
 
-    await prisma.relationalTermEntry.upsert({
-      where : { term },
+    // RelationalTermEntry 已合并入 GenericTitleRule（tier=RELATIONAL）
+    await prisma.genericTitleRule.upsert({
+      where : { title: term },
       create: {
-        term,
-        category  : item.category,
-        isVerified: true
+        title   : term,
+        tier    : "RELATIONAL",
+        category: item.category,
+        isActive: true,
+        source  : "IMPORTED"
       },
       update: {
-        category  : item.category,
-        isVerified: true
+        tier    : "RELATIONAL",
+        category: item.category,
+        isActive: true
       }
     });
     count += 1;
@@ -296,18 +302,20 @@ async function seedNamePatternRules(prisma: PrismaClient, seed: NamePatternRules
       await prisma.namePatternRule.update({
         where: { id: existing.id },
         data : {
-          description: item.description ?? undefined,
-          isVerified : true
+          description : item.description ?? undefined,
+          reviewStatus: "VERIFIED",
+          isActive    : true
         }
       });
     } else {
       await prisma.namePatternRule.create({
         data: {
-          ruleType   : item.ruleType,
+          ruleType    : item.ruleType,
           pattern,
-          action     : item.action,
-          description: item.description ?? undefined,
-          isVerified : true
+          action      : item.action,
+          description : item.description ?? undefined,
+          reviewStatus: "VERIFIED",
+          isActive    : true
         }
       });
     }
@@ -334,13 +342,13 @@ async function ensureKnowledgePack(
     throw new Error(`无法找到 bookType: ${input.bookTypeKey}`);
   }
 
-  const existingPack = await prisma.knowledgePack.findFirst({
+  const existingPack = await prisma.aliasPack.findFirst({
     where : { bookTypeId: bookType.id, name: input.packName },
     select: { id: true }
   });
 
   if (existingPack) {
-    await prisma.knowledgePack.update({
+    await prisma.aliasPack.update({
       where: { id: existingPack.id },
       data : {
         scope      : input.scope,
@@ -351,7 +359,7 @@ async function ensureKnowledgePack(
     return existingPack.id;
   }
 
-  const createdPack = await prisma.knowledgePack.create({
+  const createdPack = await prisma.aliasPack.create({
     data: {
       bookTypeId  : bookType.id,
       name        : input.packName,
@@ -387,33 +395,29 @@ async function seedClassicalCharacters(
       if (!canonicalName) continue;
 
       const aliases = toUniqueList(item.aliases).filter((alias) => alias !== canonicalName);
-      const existing = await prisma.knowledgeEntry.findFirst({
+      const existing = await prisma.aliasEntry.findFirst({
         where : { packId, canonicalName },
         select: { id: true }
       });
 
       if (existing) {
-        await prisma.knowledgeEntry.update({
+        await prisma.aliasEntry.update({
           where: { id: existing.id },
           data : {
             aliases,
-            entryType   : "CHARACTER",
             confidence  : 1.0,
             source      : "IMPORTED",
-            sourceDetail: genre.sourceDetail,
             reviewStatus: "VERIFIED"
           }
         });
       } else {
-        await prisma.knowledgeEntry.create({
+        await prisma.aliasEntry.create({
           data: {
             packId,
             canonicalName,
             aliases,
-            entryType   : "CHARACTER",
             confidence  : 1.0,
             source      : "IMPORTED",
-            sourceDetail: genre.sourceDetail,
             reviewStatus: "VERIFIED"
           }
         });
