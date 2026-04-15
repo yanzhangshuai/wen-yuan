@@ -60,3 +60,14 @@ export async function updateNerLexiconRule(
 export async function deleteNerLexiconRule(id: string) {
   return prisma.nerLexiconRule.delete({ where: { id } });
 }
+
+export async function reorderNerLexiconRules(orderedIds: string[]) {
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.nerLexiconRule.update({
+        where: { id },
+        data : { sortOrder: index + 1 }
+      })
+    )
+  );
+}

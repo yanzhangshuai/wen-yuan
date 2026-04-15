@@ -39,8 +39,13 @@ const knowledgeBaseLinks = [
   },
   {
     href : "/admin/knowledge-base/ner-rules",
-    label: "提取规则",
-    icon : Sparkles
+    label: "NER 词典规则",
+    icon : BookMarked
+  },
+  {
+    href : "/admin/knowledge-base/prompt-extraction-rules",
+    label: "Prompt 提取规则",
+    icon : ScrollText
   },
   {
     href : "/admin/knowledge-base/change-logs",

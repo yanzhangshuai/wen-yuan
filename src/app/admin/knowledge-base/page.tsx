@@ -41,9 +41,15 @@ const knowledgeModules = [
   },
   {
     href       : "/admin/knowledge-base/ner-rules",
-    title      : "提取规则",
-    description: "维护实体/关系抽取规则与组合预览。",
+    title      : "NER 词典规则",
+    description: "维护命名实体识别的词典规则（后缀阻断、词干）。",
     icon       : BookMarked
+  },
+  {
+    href       : "/admin/knowledge-base/prompt-extraction-rules",
+    title      : "Prompt 提取规则",
+    description: "维护实体/关系抽取时拼接进 Prompt 的规则列表。",
+    icon       : ScrollText
   },
   {
     href       : "/admin/knowledge-base/change-logs",

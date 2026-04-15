@@ -31,7 +31,7 @@ export const updateBookTypeSchema = z.object({
 export const createPackSchema = z.object({
   bookTypeId : z.string().uuid().optional(),
   name       : z.string().trim().min(1, "名称不能为空"),
-  scope      : z.enum(["GENRE", "BOOK"]),
+  scope      : z.enum(["BOOK_TYPE", "BOOK"]),
   description: z.string().optional()
 });
 
@@ -172,24 +172,49 @@ export const generateCatalogCandidatesSchema = z.object({
   referenceBookTypeId   : z.string().uuid().optional()
 });
 
-// ─── NER 规则 ──────────────────────────────────────────
-export const createRuleSchema = z.object({
-  ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]).default("ENTITY"),
+// ─── NER 词典规则 ───────────────────────────────────────
+export const createNerLexiconRuleSchema = z.object({
+  ruleType  : z.enum(["HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM"]),
   content   : z.string().trim().min(1, "规则内容不能为空"),
-  genreKey  : z.string().optional(),
+  bookTypeId: z.string().uuid().optional(),
   sortOrder : z.number().int().optional(),
   changeNote: z.string().optional()
 });
 
-export const updateRuleSchema = z.object({
+export const updateNerLexiconRuleSchema = z.object({
   content   : z.string().trim().min(1).optional(),
-  genreKey  : z.string().nullable().optional(),
+  bookTypeId: z.string().uuid().nullable().optional(),
   sortOrder : z.number().int().optional(),
   isActive  : z.boolean().optional(),
   changeNote: z.string().optional()
 }).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
 
-export const reorderRulesSchema = z.object({
-  ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]),
+export const reorderNerLexiconRulesSchema = z.object({
   orderedIds: z.array(z.string().uuid()).min(1)
+});
+
+// ─── Prompt 提取规则 ────────────────────────────────────
+export const createPromptExtractionRuleSchema = z.object({
+  ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]).default("ENTITY"),
+  content   : z.string().trim().min(1, "规则内容不能为空"),
+  bookTypeId: z.string().uuid().optional(),
+  sortOrder : z.number().int().optional(),
+  changeNote: z.string().optional()
+});
+
+export const updatePromptExtractionRuleSchema = z.object({
+  content   : z.string().trim().min(1).optional(),
+  bookTypeId: z.string().uuid().nullable().optional(),
+  sortOrder : z.number().int().optional(),
+  isActive  : z.boolean().optional(),
+  changeNote: z.string().optional()
+}).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
+
+export const reorderPromptExtractionRulesSchema = z.object({
+  orderedIds: z.array(z.string().uuid()).min(1)
+});
+
+export const previewPromptExtractionRulesSchema = z.object({
+  ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]),
+  bookTypeId: z.string().uuid().optional()
 });

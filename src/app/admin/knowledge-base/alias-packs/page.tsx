@@ -1778,13 +1778,13 @@ function CreatePackDialog({
   onSave      : (data: { bookTypeId?: string; name: string; scope: string; description?: string }) => Promise<void>;
 }) {
   const [name, setName] = useState("");
-  const [scope, setScope] = useState("GENRE");
+  const [scope, setScope] = useState("BOOK_TYPE");
   const [bookTypeId, setBookTypeId] = useState<string>(UNLINKED_BOOK_TYPE_VALUE);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) { setName(""); setScope("GENRE"); setBookTypeId(UNLINKED_BOOK_TYPE_VALUE); setDescription(""); }
+    if (open) { setName(""); setScope("BOOK_TYPE"); setBookTypeId(UNLINKED_BOOK_TYPE_VALUE); setDescription(""); }
   }, [open]);
 
   const handleSubmit = async () => {
@@ -1820,14 +1820,14 @@ function CreatePackDialog({
                 ))}
               </SelectContent>
             </Select>
-            <div className="text-xs text-muted-foreground">内部仍使用 GENRE/BOOK 枚举，但前端统一显示中文说明。</div>
+            <div className="text-xs text-muted-foreground">内部使用 BOOK_TYPE/BOOK 枚举，但前端统一显示中文说明。</div>
           </div>
           <div className="grid gap-2">
-            <Label>关联题材（可选）</Label>
+            <Label>关联书籍类型（可选）</Label>
             <Select value={bookTypeId} onValueChange={setBookTypeId}>
               <SelectTrigger><SelectValue placeholder="选择书籍类型" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value={UNLINKED_BOOK_TYPE_VALUE}>不关联任何题材</SelectItem>
+                <SelectItem value={UNLINKED_BOOK_TYPE_VALUE}>不关联任何书籍类型</SelectItem>
                 {bookTypes.map((bt) => (
                   <SelectItem key={bt.id} value={bt.id}>{bt.name}</SelectItem>
                 ))}
@@ -1840,8 +1840,8 @@ function CreatePackDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={() => void handleSubmit()} disabled={!name || saving}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button type="button" onClick={() => void handleSubmit()} disabled={!name || saving}>
             {saving ? "创建中..." : "创建"}
           </Button>
         </DialogFooter>

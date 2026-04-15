@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 
 import {
   PageContainer,
@@ -39,31 +39,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { fetchBookTypes, type BookTypeItem } from "@/lib/services/book-types";
 import {
-  createNerLexiconRule,
-  deleteNerLexiconRule,
-  fetchNerLexiconRules,
-  reorderNerLexiconRules,
-  updateNerLexiconRule,
-  type NerLexiconRuleItem,
-  type NerLexiconRuleType
-} from "@/lib/services/ner-rules";
+  createPromptExtractionRule,
+  deletePromptExtractionRule,
+  fetchPromptExtractionRules,
+  previewCombinedPromptRules,
+  reorderPromptExtractionRules,
+  updatePromptExtractionRule,
+  type CombinedPromptRulesPreview,
+  type PromptExtractionRuleItem,
+  type PromptRuleType
+} from "@/lib/services/prompt-extraction-rules";
 
 const ALL_BOOK_TYPES_VALUE = "__ALL_BOOK_TYPES__";
 const GLOBAL_BOOK_TYPE_VALUE = "__GLOBAL_BOOK_TYPE__";
 
-const RULE_TYPE_OPTIONS: Array<{ value: NerLexiconRuleType; label: string }> = [
-  { value: "HARD_BLOCK_SUFFIX", label: "强阻断后缀" },
-  { value: "SOFT_BLOCK_SUFFIX", label: "软阻断后缀" },
-  { value: "TITLE_STEM", label: "称谓词干" },
-  { value: "POSITION_STEM", label: "职位词干" }
+const RULE_TYPE_OPTIONS: Array<{ value: PromptRuleType; label: string }> = [
+  { value: "ENTITY", label: "实体规则" },
+  { value: "RELATIONSHIP", label: "关系规则" }
 ];
 
-function getRuleTypeLabel(ruleType: NerLexiconRuleType) {
+function getRuleTypeLabel(ruleType: PromptRuleType) {
   return RULE_TYPE_OPTIONS.find((option) => option.value === ruleType)?.label ?? ruleType;
 }
 
-function parseNerLexiconRuleType(value: string): NerLexiconRuleType {
-  return RULE_TYPE_OPTIONS.find((option) => option.value === value)?.value ?? "HARD_BLOCK_SUFFIX";
+function parsePromptRuleType(value: string): PromptRuleType {
+  return RULE_TYPE_OPTIONS.find((option) => option.value === value)?.value ?? "ENTITY";
 }
 
 function getBookTypeLabel(bookTypes: BookTypeItem[], bookTypeId: string | null) {
@@ -74,21 +74,23 @@ function getBookTypeLabel(bookTypes: BookTypeItem[], bookTypeId: string | null) 
   return bookTypes.find((bookType) => bookType.id === bookTypeId)?.name ?? bookTypeId;
 }
 
-export default function NerRulesPage() {
-  const [items, setItems] = useState<NerLexiconRuleItem[]>([]);
+export default function PromptExtractionRulesPage() {
+  const [items, setItems] = useState<PromptExtractionRuleItem[]>([]);
   const [bookTypes, setBookTypes] = useState<BookTypeItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [ruleType, setRuleType] = useState<NerLexiconRuleType>("HARD_BLOCK_SUFFIX");
+  const [ruleType, setRuleType] = useState<PromptRuleType>("ENTITY");
   const [bookTypeFilter, setBookTypeFilter] = useState(ALL_BOOK_TYPES_VALUE);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<NerLexiconRuleItem | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<CombinedPromptRulesPreview | null>(null);
+  const [editing, setEditing] = useState<PromptExtractionRuleItem | null>(null);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
       const [ruleItems, bookTypeItems] = await Promise.all([
-        fetchNerLexiconRules({
+        fetchPromptExtractionRules({
           ruleType,
           bookTypeId: bookTypeFilter !== ALL_BOOK_TYPES_VALUE ? bookTypeFilter : undefined
         }),
@@ -121,7 +123,7 @@ export default function NerRulesPage() {
 
   async function persistOrder() {
     try {
-      await reorderNerLexiconRules(orderedIds);
+      await reorderPromptExtractionRules(orderedIds);
       toast({ title: "排序已保存" });
       await load();
     } catch (error) {
@@ -129,11 +131,24 @@ export default function NerRulesPage() {
     }
   }
 
-  async function handleDelete(item: NerLexiconRuleItem) {
-    if (!confirm("确定删除该词典规则吗？")) return;
+  async function handlePreview() {
+    try {
+      const data = await previewCombinedPromptRules(
+        ruleType,
+        bookTypeFilter !== ALL_BOOK_TYPES_VALUE ? bookTypeFilter : undefined
+      );
+      setPreviewData(data);
+      setPreviewOpen(true);
+    } catch (error) {
+      toast({ title: "预览失败", description: String(error), variant: "destructive" });
+    }
+  }
+
+  async function handleDelete(item: PromptExtractionRuleItem) {
+    if (!confirm("确定删除该 Prompt 规则吗？")) return;
 
     try {
-      await deleteNerLexiconRule(item.id);
+      await deletePromptExtractionRule(item.id);
       toast({ title: "删除成功" });
       await load();
     } catch (error) {
@@ -144,15 +159,19 @@ export default function NerRulesPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="NER 词典规则"
-        description="维护命名实体识别的词典规则（后缀阻断、称谓词干、职位词干）。"
+        title="Prompt 提取规则"
+        description="维护实体和关系抽取时拼接进 Prompt 的规则列表。"
         breadcrumbs={[
           { label: "管理后台", href: "/admin" },
           { label: "知识库", href: "/admin/knowledge-base" },
-          { label: "NER 词典规则" }
+          { label: "Prompt 提取规则" }
         ]}
       >
         <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => void handlePreview()}>
+            <Eye className="mr-1 h-4 w-4" />
+            组合预览
+          </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => void persistOrder()} disabled={items.length === 0}>
             保存排序
           </Button>
@@ -165,7 +184,7 @@ export default function NerRulesPage() {
 
       <PageSection>
         <div className="mb-4 grid gap-3 md:grid-cols-[180px_240px_auto]">
-          <Select value={ruleType} onValueChange={(value) => setRuleType(parseNerLexiconRuleType(value))}>
+          <Select value={ruleType} onValueChange={(value) => setRuleType(parsePromptRuleType(value))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {RULE_TYPE_OPTIONS.map((option) => (
@@ -193,8 +212,8 @@ export default function NerRulesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-24">排序</TableHead>
-                  <TableHead className="w-36">规则类型</TableHead>
-                  <TableHead>词典内容</TableHead>
+                  <TableHead className="w-32">规则类型</TableHead>
+                  <TableHead>规则内容</TableHead>
                   <TableHead className="w-36">书籍类型</TableHead>
                   <TableHead className="w-24">状态</TableHead>
                   <TableHead className="w-28">操作</TableHead>
@@ -229,7 +248,7 @@ export default function NerRulesPage() {
                       </div>
                     </TableCell>
                     <TableCell>{getRuleTypeLabel(item.ruleType)}</TableCell>
-                    <TableCell className="font-mono text-sm whitespace-pre-wrap">{item.content}</TableCell>
+                    <TableCell className="whitespace-pre-wrap">{item.content}</TableCell>
                     <TableCell className="text-muted-foreground">{getBookTypeLabel(bookTypes, item.bookTypeId)}</TableCell>
                     <TableCell>
                       <Badge variant={item.isActive ? "success" : "secondary"}>{item.isActive ? "启用" : "停用"}</Badge>
@@ -269,7 +288,7 @@ export default function NerRulesPage() {
         )}
       </PageSection>
 
-      <NerRuleDialog
+      <PromptRuleDialog
         open={dialogOpen}
         editing={editing}
         ruleType={ruleType}
@@ -277,11 +296,27 @@ export default function NerRulesPage() {
         onOpenChange={setDialogOpen}
         onSaved={load}
       />
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>规则组合预览</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              当前共 {previewData?.count ?? 0} 条规则，类型：{previewData?.ruleType ? getRuleTypeLabel(previewData.ruleType) : ""}
+            </div>
+            <pre className="max-h-[460px] overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
+              {previewData?.combined ?? ""}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
 
-function NerRuleDialog({
+function PromptRuleDialog({
   open,
   editing,
   ruleType,
@@ -290,13 +325,13 @@ function NerRuleDialog({
   onSaved
 }: {
   open        : boolean;
-  editing     : NerLexiconRuleItem | null;
-  ruleType    : NerLexiconRuleType;
+  editing     : PromptExtractionRuleItem | null;
+  ruleType    : PromptRuleType;
   bookTypes   : BookTypeItem[];
   onOpenChange: (open: boolean) => void;
   onSaved     : () => Promise<void>;
 }) {
-  const [localRuleType, setLocalRuleType] = useState<NerLexiconRuleType>(ruleType);
+  const [localRuleType, setLocalRuleType] = useState<PromptRuleType>(ruleType);
   const [content, setContent] = useState("");
   const [bookTypeId, setBookTypeId] = useState(GLOBAL_BOOK_TYPE_VALUE);
   const [sortOrder, setSortOrder] = useState(1);
@@ -320,7 +355,7 @@ function NerRuleDialog({
     setSaving(true);
     try {
       if (editing) {
-        await updateNerLexiconRule(editing.id, {
+        await updatePromptExtractionRule(editing.id, {
           content,
           bookTypeId: bookTypeId !== GLOBAL_BOOK_TYPE_VALUE ? bookTypeId : null,
           sortOrder,
@@ -328,7 +363,7 @@ function NerRuleDialog({
           isActive
         });
       } else {
-        await createNerLexiconRule({
+        await createPromptExtractionRule({
           ruleType  : localRuleType,
           content,
           bookTypeId: bookTypeId !== GLOBAL_BOOK_TYPE_VALUE ? bookTypeId : undefined,
@@ -350,12 +385,12 @@ function NerRuleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? "编辑词典规则" : "新增词典规则"}</DialogTitle>
+          <DialogTitle>{editing ? "编辑 Prompt 规则" : "新增 Prompt 规则"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>规则类型</Label>
-            <Select value={localRuleType} onValueChange={(value) => setLocalRuleType(parseNerLexiconRuleType(value))}>
+            <Select value={localRuleType} onValueChange={(value) => setLocalRuleType(parsePromptRuleType(value))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RULE_TYPE_OPTIONS.map((option) => (
@@ -365,8 +400,8 @@ function NerRuleDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label>词典内容（词条、后缀或词干）</Label>
-            <Textarea rows={4} value={content} onChange={(event) => setContent(event.target.value)} placeholder="每行一个词条，或输入单个模式" />
+            <Label>规则内容</Label>
+            <Textarea rows={6} value={content} onChange={(event) => setContent(event.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">

@@ -5,12 +5,12 @@ import { headers } from "next/headers";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { updateNerLexiconRule, deleteNerLexiconRule } from "@/server/modules/knowledge";
+import { updatePromptExtractionRule, deletePromptExtractionRule } from "@/server/modules/knowledge";
 import { ERROR_CODES } from "@/types/api";
 
-import { badRequestJson, uuidParamSchema, updateNerLexiconRuleSchema } from "../../_shared";
+import { badRequestJson, uuidParamSchema, updatePromptExtractionRuleSchema } from "../../_shared";
 
-const PATH = "/api/admin/knowledge/ner-rules/[id]";
+const PATH = "/api/admin/knowledge/prompt-extraction-rules/[id]";
 
 export async function PATCH(
   request: Request,
@@ -28,15 +28,15 @@ export async function PATCH(
       return badRequestJson(PATH, requestId, startedAt, "ID 不合法");
     }
 
-    const parsedBody = updateNerLexiconRuleSchema.safeParse(await readJsonBody(request));
+    const parsedBody = updatePromptExtractionRuleSchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       return badRequestJson(PATH, requestId, startedAt, parsedBody.error.issues[0]?.message ?? "参数不合法");
     }
 
-    const data = await updateNerLexiconRule(parsedParams.data.id, parsedBody.data);
-    return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_NER_RULE_UPDATED", message: "NER 规则更新成功", data });
+    const data = await updatePromptExtractionRule(parsedParams.data.id, parsedBody.data);
+    return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_PROMPT_RULE_UPDATED", message: "Prompt 规则更新成功", data });
   } catch (error) {
-    return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "NER 规则更新失败" });
+    return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "Prompt 规则更新失败" });
   }
 }
 
@@ -56,9 +56,9 @@ export async function DELETE(
       return badRequestJson(PATH, requestId, startedAt, "ID 不合法");
     }
 
-    await deleteNerLexiconRule(parsedParams.data.id);
-    return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_NER_RULE_DELETED", message: "NER 规则删除成功", data: null });
+    await deletePromptExtractionRule(parsedParams.data.id);
+    return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_PROMPT_RULE_DELETED", message: "Prompt 规则删除成功", data: null });
   } catch (error) {
-    return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "NER 规则删除失败" });
+    return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "Prompt 规则删除失败" });
   }
 }

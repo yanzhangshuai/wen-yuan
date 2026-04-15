@@ -1,10 +1,12 @@
 import { clientFetch, clientMutate } from "@/lib/client-api";
 
-export interface ExtractionRuleItem {
+export type NerLexiconRuleType = "HARD_BLOCK_SUFFIX" | "SOFT_BLOCK_SUFFIX" | "TITLE_STEM" | "POSITION_STEM";
+
+export interface NerLexiconRuleItem {
   id        : string;
-  ruleType  : "ENTITY" | "RELATIONSHIP";
+  ruleType  : NerLexiconRuleType;
   content   : string;
-  genreKey  : string | null;
+  bookTypeId: string | null;
   sortOrder : number;
   isActive  : boolean;
   changeNote: string | null;
@@ -12,43 +14,35 @@ export interface ExtractionRuleItem {
   updatedAt : string;
 }
 
-export interface CombinedRulesPreview {
-  ruleType: string;
-  genreKey: string | null;
-  count   : number;
-  combined: string;
-  rules   : Array<Pick<ExtractionRuleItem, "id" | "content" | "genreKey" | "sortOrder">>;
-}
-
-export async function fetchExtractionRules(params?: {
-  ruleType?: string;
-  genreKey?: string;
-}): Promise<ExtractionRuleItem[]> {
+export async function fetchNerLexiconRules(params?: {
+  ruleType?  : NerLexiconRuleType;
+  bookTypeId?: string;
+}): Promise<NerLexiconRuleItem[]> {
   const sp = new URLSearchParams();
-  if (params?.ruleType) sp.set("ruleType", params.ruleType);
-  if (params?.genreKey) sp.set("genreKey", params.genreKey);
+  if (params?.ruleType)   sp.set("ruleType", params.ruleType);
+  if (params?.bookTypeId) sp.set("bookTypeId", params.bookTypeId);
   const qs = sp.toString() ? `?${sp.toString()}` : "";
 
-  return clientFetch<ExtractionRuleItem[]>(`/api/admin/knowledge/ner-rules${qs}`);
+  return clientFetch<NerLexiconRuleItem[]>(`/api/admin/knowledge/ner-rules${qs}`);
 }
 
-export async function createExtractionRule(data: {
-  ruleType?  : "ENTITY" | "RELATIONSHIP";
+export async function createNerLexiconRule(data: {
+  ruleType   : NerLexiconRuleType;
   content    : string;
-  genreKey?  : string;
+  bookTypeId?: string;
   sortOrder? : number;
   changeNote?: string;
-}): Promise<ExtractionRuleItem> {
-  return clientFetch<ExtractionRuleItem>("/api/admin/knowledge/ner-rules", {
+}): Promise<NerLexiconRuleItem> {
+  return clientFetch<NerLexiconRuleItem>("/api/admin/knowledge/ner-rules", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(data)
   });
 }
 
-export async function updateExtractionRule(id: string, data: {
+export async function updateNerLexiconRule(id: string, data: {
   content?   : string;
-  genreKey?  : string | null;
+  bookTypeId?: string | null;
   sortOrder? : number;
   isActive?  : boolean;
   changeNote?: string;
@@ -60,24 +54,16 @@ export async function updateExtractionRule(id: string, data: {
   });
 }
 
-export async function deleteExtractionRule(id: string): Promise<void> {
+export async function deleteNerLexiconRule(id: string): Promise<void> {
   await clientMutate(`/api/admin/knowledge/ner-rules/${id}`, {
     method: "DELETE"
   });
 }
 
-export async function reorderExtractionRules(ruleType: "ENTITY" | "RELATIONSHIP", orderedIds: string[]): Promise<void> {
+export async function reorderNerLexiconRules(orderedIds: string[]): Promise<void> {
   await clientMutate("/api/admin/knowledge/ner-rules/reorder", {
     method : "PUT",
     headers: { "Content-Type": "application/json" },
-    body   : JSON.stringify({ ruleType, orderedIds })
-  });
-}
-
-export async function previewCombinedRules(ruleType: "ENTITY" | "RELATIONSHIP", genreKey?: string): Promise<CombinedRulesPreview> {
-  return clientFetch<CombinedRulesPreview>("/api/admin/knowledge/ner-rules/preview-combined", {
-    method : "POST",
-    headers: { "Content-Type": "application/json" },
-    body   : JSON.stringify({ ruleType, genreKey })
+    body   : JSON.stringify({ orderedIds })
   });
 }

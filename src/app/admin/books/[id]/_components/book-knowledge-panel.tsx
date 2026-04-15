@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getKnowledgePackScopeLabel } from "@/lib/knowledge-presentation";
 import type { KnowledgePackItem } from "@/lib/services/knowledge";
 import { fetchKnowledgePacks } from "@/lib/services/knowledge";
 import {
@@ -39,8 +40,8 @@ function getStatusCount(statusCounts: Record<string, number>, key: string) {
 
 function scopeBadge(scope: string) {
   return scope === "BOOK"
-    ? <Badge variant="outline">BOOK</Badge>
-    : <Badge variant="secondary">GENRE</Badge>;
+    ? <Badge variant="outline">{getKnowledgePackScopeLabel(scope)}</Badge>
+    : <Badge variant="secondary">{getKnowledgePackScopeLabel(scope)}</Badge>;
 }
 
 function formatPackStatusText(pack: Pick<BookKnowledgePackSummary, "statusCounts">) {

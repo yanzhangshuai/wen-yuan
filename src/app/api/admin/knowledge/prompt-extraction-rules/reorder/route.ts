@@ -5,12 +5,12 @@ import { headers } from "next/headers";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { reorderNerLexiconRules } from "@/server/modules/knowledge";
+import { reorderPromptExtractionRules } from "@/server/modules/knowledge";
 import { ERROR_CODES } from "@/types/api";
 
-import { badRequestJson, reorderNerLexiconRulesSchema } from "../../_shared";
+import { badRequestJson, reorderPromptExtractionRulesSchema } from "../../_shared";
 
-const PATH = "/api/admin/knowledge/ner-rules/reorder";
+const PATH = "/api/admin/knowledge/prompt-extraction-rules/reorder";
 
 export async function PUT(request: Request): Promise<Response> {
   const startedAt = Date.now();
@@ -20,13 +20,13 @@ export async function PUT(request: Request): Promise<Response> {
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
-    const parsed = reorderNerLexiconRulesSchema.safeParse(await readJsonBody(request));
+    const parsed = reorderPromptExtractionRulesSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) {
       return badRequestJson(PATH, requestId, startedAt, parsed.error.issues[0]?.message ?? "参数不合法");
     }
 
-    await reorderNerLexiconRules(parsed.data.orderedIds);
-    return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_NER_RULES_REORDERED", message: "规则排序更新成功", data: null });
+    await reorderPromptExtractionRules(parsed.data.orderedIds);
+    return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_PROMPT_RULES_REORDERED", message: "规则排序更新成功", data: null });
   } catch (error) {
     return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "规则排序更新失败" });
   }

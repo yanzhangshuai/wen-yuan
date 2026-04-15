@@ -126,10 +126,10 @@ describe("knowledge service", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce({ id: "pack-1" });
 
-    await fetchKnowledgePacks({ bookTypeId: "classic", scope: "GENRE" });
+    await fetchKnowledgePacks({ bookTypeId: "classic", scope: "BOOK_TYPE" });
     await fetchKnowledgePack("pack-1");
 
-    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(1, "/api/admin/knowledge/alias-packs?bookTypeId=classic&scope=GENRE");
+    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(1, "/api/admin/knowledge/alias-packs?bookTypeId=classic&scope=BOOK_TYPE");
     expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(2, "/api/admin/knowledge/alias-packs/pack-1");
   });
 
@@ -137,14 +137,14 @@ describe("knowledge service", () => {
     hoisted.clientFetchMock.mockResolvedValueOnce({ id: "pack-1" });
     hoisted.clientMutateMock.mockResolvedValue(undefined);
 
-    await createKnowledgePack({ name: "人物包", scope: "GENRE", description: "说明" });
+    await createKnowledgePack({ name: "人物包", scope: "BOOK_TYPE", description: "说明" });
     await updateKnowledgePack("pack-1", { name: "人物包v2", isActive: true });
     await deleteKnowledgePack("pack-1");
 
     expect(hoisted.clientFetchMock).toHaveBeenCalledWith("/api/admin/knowledge/alias-packs", {
       method : "POST",
       headers: { "Content-Type": "application/json" },
-      body   : JSON.stringify({ name: "人物包", scope: "GENRE", description: "说明" })
+      body   : JSON.stringify({ name: "人物包", scope: "BOOK_TYPE", description: "说明" })
     });
     expect(hoisted.clientMutateMock).toHaveBeenNthCalledWith(1, "/api/admin/knowledge/alias-packs/pack-1", {
       method : "PATCH",

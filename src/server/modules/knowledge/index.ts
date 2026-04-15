@@ -95,18 +95,23 @@ export {
 } from "./prompt-templates";
 
 export {
-  listExtractionRules,
-  createExtractionRule,
-  updateExtractionRule,
-  deleteExtractionRule,
-  reorderExtractionRules,
-  previewCombinedRules
-} from "./extraction-rules";
+  listNerLexiconRules,
+  createNerLexiconRule,
+  updateNerLexiconRule,
+  deleteNerLexiconRule,
+  reorderNerLexiconRules
+} from "./ner-lexicon-rules";
+
+export {
+  listPromptExtractionRules,
+  createPromptExtractionRule,
+  updatePromptExtractionRule,
+  deletePromptExtractionRule,
+  reorderPromptExtractionRules,
+  previewCombinedPromptRules
+} from "./prompt-extraction-rules";
 
 export {
   listChangeLogs,
   getChangeLog
 } from "./change-logs";
-
-export * from "./ner-lexicon-rules";
-export * from "./prompt-extraction-rules";

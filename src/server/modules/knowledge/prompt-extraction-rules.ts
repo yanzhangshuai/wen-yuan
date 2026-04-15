@@ -60,3 +60,41 @@ export async function updatePromptExtractionRule(
 export async function deletePromptExtractionRule(id: string) {
   return prisma.promptExtractionRule.delete({ where: { id } });
 }
+
+export async function reorderPromptExtractionRules(orderedIds: string[]) {
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.promptExtractionRule.update({
+        where: { id },
+        data : { sortOrder: index + 1 }
+      })
+    )
+  );
+}
+
+export async function previewCombinedPromptRules(ruleType: string, bookTypeId?: string) {
+  const rules = await prisma.promptExtractionRule.findMany({
+    where: {
+      ruleType,
+      isActive: true,
+      OR      : [
+        { bookTypeId: null },
+        ...(bookTypeId ? [{ bookTypeId }] : [])
+      ]
+    },
+    orderBy: { sortOrder: "asc" }
+  });
+
+  return {
+    ruleType,
+    bookTypeId: bookTypeId ?? null,
+    count     : rules.length,
+    combined  : rules.map((rule, index) => `${index + 1}. ${rule.content}`).join("\n"),
+    rules     : rules.map((rule) => ({
+      id        : rule.id,
+      content   : rule.content,
+      bookTypeId: rule.bookTypeId,
+      sortOrder : rule.sortOrder
+    }))
+  };
+}
