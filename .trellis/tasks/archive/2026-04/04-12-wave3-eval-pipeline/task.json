@@ -1,0 +1,44 @@
+{
+  "id": "wave3-eval-pipeline",
+  "name": "wave3-eval-pipeline",
+  "title": "Wave3: 评估体系-金标准与自动metrics",
+  "description": "",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": "2026-04-15",
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-13-master-implementation-execution",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

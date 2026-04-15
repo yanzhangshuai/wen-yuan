@@ -1,0 +1,44 @@
+{
+  "id": "ab-decouple-phase3",
+  "name": "ab-decouple-phase3",
+  "title": "解析架构A/B解耦-Phase3-两遍式独立实现",
+  "description": "将two-pass逻辑移入twopass/目录, 实现TwoPassPipeline, GlobalEntityResolver自包含, 移除对legacy代码的互相引用",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": "2026-04-15",
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

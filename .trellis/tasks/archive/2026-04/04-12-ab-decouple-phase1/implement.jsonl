@@ -1,0 +1,11 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Phase1 架构抽象必须保持最小修改与工厂风格"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "新增 pipeline 契约与工厂类型必须显式声明"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "后续 pipeline 日志与现有 analysis.* 结构保持一致"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "新增导出工厂/接口/骨架实现必须补齐高价值注释"}
+{"file": ".trellis/spec/guides/module-boundary-guidelines.md", "reason": "目录拆分时保持 services 与 pipelines 的边界清晰"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "拆分 analysis 编排层时保持 job -> pipeline -> service 数据流明确"}
+{"file": "src/server/modules/analysis/jobs/runAnalysisJob.ts", "reason": "当前编排基线，Phase1 需最小改造接入 pipeline factory"}
+{"file": "src/server/modules/analysis/services/ModelStrategyResolver.ts", "reason": "复用现有 createX 工厂风格与显式类型模式"}
+{"file": "src/server/modules/analysis/services/ChapterAnalysisService.ts", "reason": "共享服务基线，Phase1 暂不改变业务行为"}

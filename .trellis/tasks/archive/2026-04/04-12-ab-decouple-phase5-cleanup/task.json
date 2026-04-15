@@ -1,0 +1,44 @@
+{
+  "id": "ab-decouple-phase5-cleanup",
+  "name": "ab-decouple-phase5-cleanup",
+  "title": "解析架构A/B解耦-Phase5-废弃清理与测试迁移",
+  "description": "移除enableTwoPassArchitecture开关, 清理@deprecated标记, 迁移it.skip测试到twopass测试文件, 删除runAnalysisJob中的内联两遍代码块",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-12",
+  "completedAt": "2026-04-15",
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
