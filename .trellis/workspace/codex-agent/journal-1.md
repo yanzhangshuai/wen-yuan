@@ -393,3 +393,50 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: 前端知识库 UI 对齐与僵尸文件清理
+
+**Date**: 2026-04-15
+**Task**: 前端知识库 UI 对齐与僵尸文件清理
+**Branch**: `dev`
+
+### Summary
+
+完成 04-15-frontend-kb-align：对齐 KB 重构后的前端知识库管理体验，拆分 NER 规则与 Prompt Extraction Rule 管理入口，补齐 HTTP/service/test 覆盖，并清理不再需要的僵尸文件。
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Knowledge Base UI | 拆分 `ner-rules` 与 `prompt-extraction-rules` 管理页面，调整知识库导航与书籍知识面板展示，使前端与重构后的 KB 架构一致。 |
+| API/Service Layer | 新增 PromptExtractionRule HTTP 路由与前端 service，保留 NER Lexicon Rule 独立接口，修正知识呈现与 scope 映射。 |
+| Tests | 增加 NER/Prompt Extraction Rule API 与 service 单测，覆盖拆分后的 list/create/update/reorder/preview 路径。 |
+| Cleanup | 删除 `src/server/modules/knowledge/extraction-rules.ts` 与旧 NER `preview-combined` 僵尸入口；清理未跟踪运行时产物 `data/storage/books/20260415/儒林外史.txt`。 |
+
+**Verification**:
+- `pnpm lint` passed, exit 0
+- `pnpm type-check` passed, exit 0
+- `pnpm test` passed: 127/127 test files, 983/983 tests; coverage 94.62% statements / 85.67% branches / 96.13% funcs / 95.08% lines
+
+**Primary Commit**:
+- `c619366` feat: 知识库前端对齐 — NerLexiconRule/PromptExtractionRule 拆分
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c619366` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

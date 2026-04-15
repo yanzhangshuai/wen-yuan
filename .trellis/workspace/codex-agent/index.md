@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
-- **Last Active**: 2026-04-12
+- **Total Sessions**: 7
+- **Last Active**: 2026-04-15
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~395 | Active |
+| `journal-1.md` | ~442 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -27,8 +27,9 @@
 ## Session History
 
 <!-- @@@auto:session-history -->
-| # | Date | Title | Commits |
-|---|------|-------|---------|
+| # | Date | Title | Commits | Branch |
+|---|------|-------|---------|--------|
+| 7 | 2026-04-15 | 前端知识库 UI 对齐与僵尸文件清理 | `c619366` | `dev` |
 | 6 | 2026-04-12 | 知识库 Phase 1 落地与 themed select 规范补记 | `c474ad1`, `3702740` |
 | 5 | 2026-04-12 | 首页像素级还原 sheji 设计收尾并归档 | `b5156bf`, `333d6cb`, `394665f` |
 | 4 | 2026-04-09 | 图谱视觉优化与路径交互阶段记录 | `4e34955`, `1f27ed6` |
