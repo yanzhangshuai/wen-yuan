@@ -1,6 +1,6 @@
 ---
 name: start
-description: "Start Session"
+description: "Initializes an AI development session by reading workflow guides, developer identity, git status, active tasks, and project guidelines from .trellis/. Classifies incoming tasks and routes to brainstorm, direct edit, or task workflow. Use when beginning a new coding session, resuming work, starting a new task, or re-establishing project context."
 ---
 
 # Start Session
@@ -45,12 +45,19 @@ This shows: developer identity, git status, current task (if any), active tasks.
 ### Step 3: Read Guidelines Index
 
 ```bash
-cat .trellis/spec/frontend/index.md  # Frontend guidelines
-cat .trellis/spec/backend/index.md   # Backend guidelines
-cat .trellis/spec/guides/index.md    # Thinking guides
-cat .trellis/spec/guides/comment-guidelines.md # Comment standard (including unit tests)
-cat .trellis/spec/meta/spec-quality-standard.md # Spec quality standard (when editing specs)
+python3 ./.trellis/scripts/get_context.py --mode packages
 ```
+
+This shows available packages and their spec layers. Read the relevant spec indexes:
+
+```bash
+cat .trellis/spec/<package>/<layer>/index.md   # Package-specific guidelines
+cat .trellis/spec/guides/index.md              # Thinking guides (always read)
+```
+
+> **Important**: The index files are navigation — they list the actual guideline files (e.g., `error-handling.md`, `conventions.md`, `mock-strategies.md`).
+> At this step, just read the indexes to understand what's available.
+> When you start actual development, you MUST go back and read the specific guideline files relevant to your task, as listed in the index's Pre-Development Checklist.
 
 ### Step 4: Report and Ask
 
@@ -95,15 +102,23 @@ For questions or trivial fixes, work directly:
 
 For simple, well-defined tasks:
 
-1. Quick confirm: "I understand you want to [goal]. Ready to proceed?"
-2. If yes, proceed to **Task Workflow Phase 1 Path B** (create task, write PRD, then research)
-3. If no, clarify and confirm again
+1. Quick confirm: "I understand you want to [goal]. Shall I proceed?"
+2. If no, clarify and confirm again
+3. **If yes: execute ALL steps below without stopping. Do NOT ask for additional confirmation between steps.**
+   - Create task directory (Phase 1 Path B, Step 2)
+   - Write PRD (Step 3)
+   - Research codebase (Phase 2, Step 5)
+   - Configure context (Step 6)
+   - Activate task (Step 7)
+   - Implement (Phase 3, Step 8)
+   - Check quality (Step 9)
+   - Complete (Step 10)
 
 ---
 
 ## Complex Task - Brainstorm First
 
-For complex or vague tasks, use the brainstorm process to clarify requirements.
+For complex or vague tasks, **automatically start the brainstorm process** — do NOT skip directly to implementation.
 
 See `$brainstorm` for the full process. Summary:
 
@@ -263,9 +278,6 @@ Implement the task described in `prd.md`.
 - Follow all specs injected into implement context
 - Keep changes scoped to requirements
 - Run lint and typecheck before finishing
-- Add/Update unit tests for changed business logic
-- Follow project testing baseline: test effectiveness first, then coverage gate (mature team baseline)
-- Write detailed and complete comments for production code and unit tests per comment guidelines; treat missing required comments as incomplete work
 
 **Step 9: Check Quality** `[AI]`
 
@@ -274,13 +286,10 @@ Run a quality pass against check context:
 - Review all code changes against the specs
 - Fix issues directly
 - Ensure lint and typecheck pass
-- Ensure unit tests cover success/failure/boundary logic for changed code
-- Ensure coverage evidence is recorded and meets baseline
-- Ensure code and unit test comments are complete, accurate, aligned with implemented behavior, and added before considering the task done
 
 **Step 10: Complete** `[AI]`
 
-1. Verify lint/typecheck/test checks pass, coverage baseline is met, and required comments are fully added before marking the task complete
+1. Verify lint and typecheck pass
 2. Report what was implemented
 3. Remind user to:
    - Test the changes
