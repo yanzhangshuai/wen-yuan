@@ -154,16 +154,6 @@ html {
   animation: shimmer 1.5s linear infinite;
 }
 
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-@keyframes twinkle-slow {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.7; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   * {
     /* 保留交互过渡，避免卡片 hover 等状态变化被“瞬时切换”成无动画。 */
