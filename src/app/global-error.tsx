@@ -45,7 +45,7 @@ export default function GlobalError({
       <body style={{ margin: 0, fontFamily: "system-ui, sans-serif" }}>
         {/* 设计意图：使用全屏居中容器，确保无论错误发生在哪个页面，用户都能第一时间看到明确反馈。 */}
         <div style={{
-          minHeight      : "100vh",
+          minHeight      : "100dvh",
           display        : "flex",
           flexDirection  : "column",
           alignItems     : "center",
