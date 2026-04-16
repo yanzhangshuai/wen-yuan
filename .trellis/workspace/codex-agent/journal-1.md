@@ -440,3 +440,52 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: 技术债清理：移除僵尸脚本与 ExtractionRule 残留
+
+**Date**: 2026-04-16
+**Task**: 技术债清理：移除僵尸脚本与 ExtractionRule 残留
+**Branch**: `dev`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| 项目 | 说明 |
+|------|------|
+| 技术债清理 | 删除僵尸脚本、eval 工具链、旧的 `ExtractionRule` Prisma 模型与相关 seed 数据 |
+| 数据库迁移 | 新增正式 migration 收敛 KB refactor schema，并避免通过改写已应用 migration 处理 drift |
+| Prisma / Seed | 更新 `prisma/schema.prisma` 与 `scripts/init-knowledge-phase6.ts`，改为使用 `promptExtractionRule` |
+| 规范沉淀 | 在 `.trellis/spec/backend/migration-guidelines.md` 补充“已应用 migration 被改写导致 drift”的可执行修复流程 |
+
+**验证**:
+- `pnpm prisma migrate status`
+- `pnpm lint`
+- `pnpm type-check`
+- `pnpm test`
+
+**结果**:
+- 数据库 schema 与 migration 历史重新对齐
+- `04-15-tech-debt-cleanup` 已完成并归档
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c9bff4f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
