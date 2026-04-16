@@ -20,6 +20,16 @@ const hoisted = vi.hoisted(() => ({
     genericTitleRule: {
       findMany: vi.fn()
     },
+    nerLexiconRule: {
+      findMany  : vi.fn(),
+      findFirst : vi.fn(),
+      createMany: vi.fn()
+    },
+    promptExtractionRule: {
+      findMany  : vi.fn(),
+      findFirst : vi.fn(),
+      createMany: vi.fn()
+    },
     aiModel: {
       findFirst: vi.fn()
     }
@@ -174,6 +184,364 @@ describe("knowledge catalog generation", () => {
       baseUrl  : "https://api.example.com",
       modelName: "deepseek-chat"
     });
+  });
+
+  it("builds ner lexicon preview prompts with reference book type context", async () => {
+    const { previewNerLexiconGenerationPrompt } = await import("./generateNerLexiconRules");
+
+    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce({
+      id  : "bt-3",
+      key : "historic",
+      name: "历史演义"
+    });
+    hoisted.prisma.nerLexiconRule.findMany.mockResolvedValueOnce([
+      {
+        content : "大人",
+        ruleType: "TITLE_STEM",
+        bookType: { key: "historic", name: "历史演义" }
+      }
+    ]);
+
+    const preview = await previewNerLexiconGenerationPrompt({
+      ruleType              : "TITLE_STEM",
+      targetCount           : 10,
+      bookTypeId            : "bt-3",
+      additionalInstructions: "优先补充古代敬称"
+    });
+
+    expect(preview.systemPrompt).toContain("content、confidence");
+    expect(preview.userPrompt).toContain("TITLE_STEM");
+    expect(preview.userPrompt).toContain("历史演义");
+    expect(preview.userPrompt).toContain("大人");
+    expect(preview.userPrompt).toContain("补充要求：优先补充古代敬称");
+  });
+
+  it("builds ner lexicon preview prompts without reference book type defaults", async () => {
+    const { previewNerLexiconGenerationPrompt } = await import("./generateNerLexiconRules");
+
+    hoisted.prisma.nerLexiconRule.findMany.mockResolvedValueOnce([]);
+
+    const preview = await previewNerLexiconGenerationPrompt({
+      ruleType: "POSITION_STEM"
+    });
+
+    expect(preview).toMatchObject({
+      ruleType         : "POSITION_STEM",
+      targetCount      : 30,
+      referenceBookType: null
+    });
+    expect(hoisted.prisma.bookType.findUnique).not.toHaveBeenCalled();
+    expect(preview.userPrompt).toContain("参考题材：未指定，请按通用古典文学场景生成。");
+    expect(preview.userPrompt).toContain("（当前暂无已启用规则）");
+  });
+
+  it("rejects ner lexicon preview when the reference book type is missing", async () => {
+    const { previewNerLexiconGenerationPrompt } = await import("./generateNerLexiconRules");
+
+    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce(null);
+    hoisted.prisma.nerLexiconRule.findMany.mockResolvedValueOnce([]);
+
+    await expect(previewNerLexiconGenerationPrompt({
+      ruleType  : "TITLE_STEM",
+      bookTypeId: "bt-missing"
+    })).rejects.toThrow("参考题材不存在");
+  });
+
+  it("generates ner lexicon rules with dedupe inactive persistence and sort-order increment", async () => {
+    const { generateNerLexiconRules } = await import("./generateNerLexiconRules");
+
+    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce({
+      id  : "bt-4",
+      key : "gongdou",
+      name: "宫斗"
+    });
+    hoisted.prisma.nerLexiconRule.findMany
+      .mockResolvedValueOnce([
+        {
+          content : "娘娘",
+          ruleType: "TITLE_STEM",
+          bookType: { key: "gongdou", name: "宫斗" }
+        }
+      ])
+      .mockResolvedValueOnce([
+        { content: "老爷" }
+      ]);
+    hoisted.prisma.nerLexiconRule.findFirst.mockResolvedValueOnce({ sortOrder: 7 });
+    hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
+      id      : "model-3",
+      provider: "GLM",
+      modelId : "glm-4.5",
+      apiKey  : "encrypted-key-3",
+      baseUrl : "https://api.glm.example.com"
+    });
+    hoisted.generateJson.mockResolvedValueOnce({
+      content: JSON.stringify([
+        { content: "老爷", confidence: 0.92 },
+        { content: "夫子", confidence: 0.88 },
+        { content: "夫子", confidence: 0.76 },
+        { content: "掌柜", confidence: 0.85 }
+      ]),
+      usage: null
+    });
+    hoisted.prisma.nerLexiconRule.createMany.mockResolvedValueOnce({ count: 2 });
+
+    const result = await generateNerLexiconRules({
+      ruleType              : "TITLE_STEM",
+      targetCount           : 20,
+      bookTypeId            : "bt-4",
+      additionalInstructions: "优先补充宫廷敬称",
+      selectedModelId       : "model-3"
+    });
+
+    expect(result).toEqual({
+      created: 2,
+      skipped: 2,
+      model  : {
+        id       : "model-3",
+        provider : "glm",
+        modelName: "glm-4.5"
+      }
+    });
+    expect(hoisted.prisma.nerLexiconRule.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          ruleType  : "TITLE_STEM",
+          content   : "夫子",
+          bookTypeId: "bt-4",
+          sortOrder : 8,
+          isActive  : false,
+          source    : "LLM_SUGGESTED"
+        },
+        {
+          ruleType  : "TITLE_STEM",
+          content   : "掌柜",
+          bookTypeId: "bt-4",
+          sortOrder : 9,
+          isActive  : false,
+          source    : "LLM_SUGGESTED"
+        }
+      ]
+    });
+  });
+
+  it("skips ner lexicon persistence when every generated rule is filtered out", async () => {
+    const { generateNerLexiconRules } = await import("./generateNerLexiconRules");
+
+    hoisted.prisma.nerLexiconRule.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { content: "夫子" }
+      ]);
+    hoisted.prisma.nerLexiconRule.findFirst.mockResolvedValueOnce(null);
+    hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
+      id      : "model-5",
+      provider: "QWEN",
+      modelId : "qwen-plus",
+      apiKey  : "encrypted-key-5",
+      baseUrl : "https://api.qwen.example.com"
+    });
+    hoisted.generateJson.mockResolvedValueOnce({
+      content: JSON.stringify([
+        { content: "夫子", confidence: 0.9 },
+        { content: "夫子", confidence: 0.8 }
+      ]),
+      usage: null
+    });
+
+    const result = await generateNerLexiconRules({
+      ruleType       : "POSITION_STEM",
+      selectedModelId: "model-5"
+    });
+
+    expect(result).toEqual({
+      created: 0,
+      skipped: 2,
+      model  : {
+        id       : "model-5",
+        provider : "qwen",
+        modelName: "qwen-plus"
+      }
+    });
+    expect(hoisted.prisma.nerLexiconRule.createMany).not.toHaveBeenCalled();
+  });
+
+  it("builds prompt extraction preview prompts with reference book type context", async () => {
+    const { previewPromptExtractionGenerationPrompt } = await import("./generatePromptExtractionRules");
+
+    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce({
+      id  : "bt-5",
+      key : "xianxia",
+      name: "仙侠"
+    });
+    hoisted.prisma.promptExtractionRule.findMany.mockResolvedValueOnce([
+      {
+        content : "抽取门派与修行体系",
+        ruleType: "ENTITY",
+        bookType: { key: "xianxia", name: "仙侠" }
+      }
+    ]);
+
+    const preview = await previewPromptExtractionGenerationPrompt({
+      ruleType              : "ENTITY",
+      targetCount           : 8,
+      bookTypeId            : "bt-5",
+      additionalInstructions: "优先补充仙门体系"
+    });
+
+    expect(preview.systemPrompt).toContain("content、confidence");
+    expect(preview.userPrompt).toContain("ENTITY");
+    expect(preview.userPrompt).toContain("仙侠");
+    expect(preview.userPrompt).toContain("抽取门派与修行体系");
+    expect(preview.userPrompt).toContain("补充要求：优先补充仙门体系");
+  });
+
+  it("builds prompt extraction preview prompts without reference book type defaults", async () => {
+    const { previewPromptExtractionGenerationPrompt } = await import("./generatePromptExtractionRules");
+
+    hoisted.prisma.promptExtractionRule.findMany.mockResolvedValueOnce([]);
+
+    const preview = await previewPromptExtractionGenerationPrompt({
+      ruleType: "RELATIONSHIP"
+    });
+
+    expect(preview).toMatchObject({
+      ruleType         : "RELATIONSHIP",
+      targetCount      : 30,
+      referenceBookType: null
+    });
+    expect(hoisted.prisma.bookType.findUnique).not.toHaveBeenCalled();
+    expect(preview.userPrompt).toContain("参考题材：未指定，请按通用古典文学场景生成。");
+    expect(preview.userPrompt).toContain("（当前暂无已启用规则）");
+  });
+
+  it("rejects prompt extraction preview when the reference book type is missing", async () => {
+    const { previewPromptExtractionGenerationPrompt } = await import("./generatePromptExtractionRules");
+
+    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce(null);
+    hoisted.prisma.promptExtractionRule.findMany.mockResolvedValueOnce([]);
+
+    await expect(previewPromptExtractionGenerationPrompt({
+      ruleType  : "ENTITY",
+      bookTypeId: "bt-missing"
+    })).rejects.toThrow("参考题材不存在");
+  });
+
+  it("generates prompt extraction rules with dedupe inactive persistence and sort-order increment", async () => {
+    const { generatePromptExtractionRules } = await import("./generatePromptExtractionRules");
+
+    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce({
+      id  : "bt-6",
+      key : "zhiguai",
+      name: "志怪"
+    });
+    hoisted.prisma.promptExtractionRule.findMany
+      .mockResolvedValueOnce([
+        {
+          content : "抽取妖怪类别与修炼方式",
+          ruleType: "ENTITY",
+          bookType: { key: "zhiguai", name: "志怪" }
+        }
+      ])
+      .mockResolvedValueOnce([
+        { content: "抽取神怪身份" }
+      ]);
+    hoisted.prisma.promptExtractionRule.findFirst.mockResolvedValueOnce({ sortOrder: 3 });
+    hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
+      id      : "model-4",
+      provider: "DOUBAO",
+      modelId : "doubao-pro",
+      apiKey  : "encrypted-key-4",
+      baseUrl : "https://api.doubao.example.com"
+    });
+    hoisted.generateJson.mockResolvedValueOnce({
+      content: JSON.stringify([
+        { content: "抽取神怪身份", confidence: 0.91 },
+        { content: "抽取法器名称与用途", confidence: 0.88 },
+        { content: "抽取法器名称与用途", confidence: 0.73 },
+        { content: "抽取禁忌与代价", confidence: 0.86 }
+      ]),
+      usage: null
+    });
+    hoisted.prisma.promptExtractionRule.createMany.mockResolvedValueOnce({ count: 2 });
+
+    const result = await generatePromptExtractionRules({
+      ruleType              : "ENTITY",
+      targetCount           : 12,
+      bookTypeId            : "bt-6",
+      additionalInstructions: "优先补充志怪世界观",
+      selectedModelId       : "model-4"
+    });
+
+    expect(result).toEqual({
+      created: 2,
+      skipped: 2,
+      model  : {
+        id       : "model-4",
+        provider : "doubao",
+        modelName: "doubao-pro"
+      }
+    });
+    expect(hoisted.prisma.promptExtractionRule.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          ruleType  : "ENTITY",
+          content   : "抽取法器名称与用途",
+          bookTypeId: "bt-6",
+          sortOrder : 4,
+          isActive  : false,
+          source    : "LLM_SUGGESTED"
+        },
+        {
+          ruleType  : "ENTITY",
+          content   : "抽取禁忌与代价",
+          bookTypeId: "bt-6",
+          sortOrder : 5,
+          isActive  : false,
+          source    : "LLM_SUGGESTED"
+        }
+      ]
+    });
+  });
+
+  it("skips prompt extraction persistence when every generated rule is filtered out", async () => {
+    const { generatePromptExtractionRules } = await import("./generatePromptExtractionRules");
+
+    hoisted.prisma.promptExtractionRule.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { content: "抽取门派关系" }
+      ]);
+    hoisted.prisma.promptExtractionRule.findFirst.mockResolvedValueOnce(null);
+    hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
+      id      : "model-6",
+      provider: "GLM",
+      modelId : "glm-4.5-air",
+      apiKey  : "encrypted-key-6",
+      baseUrl : "https://api.glm.example.com"
+    });
+    hoisted.generateJson.mockResolvedValueOnce({
+      content: JSON.stringify([
+        { content: "抽取门派关系", confidence: 0.9 },
+        { content: "抽取门派关系", confidence: 0.8 }
+      ]),
+      usage: null
+    });
+
+    const result = await generatePromptExtractionRules({
+      ruleType       : "RELATIONSHIP",
+      selectedModelId: "model-6"
+    });
+
+    expect(result).toEqual({
+      created: 0,
+      skipped: 2,
+      model  : {
+        id       : "model-6",
+        provider : "glm",
+        modelName: "glm-4.5-air"
+      }
+    });
+    expect(hoisted.prisma.promptExtractionRule.createMany).not.toHaveBeenCalled();
   });
 
   it("builds generic title preview prompts with reference book type context", async () => {

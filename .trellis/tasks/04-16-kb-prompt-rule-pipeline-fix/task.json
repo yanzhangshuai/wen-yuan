@@ -1,0 +1,36 @@
+{
+  "id": "04-16-kb-prompt-rule-pipeline-fix",
+  "name": "04-16-kb-prompt-rule-pipeline-fix",
+  "title": "修复 PromptExtractionRule 未接入分析管道的架构断链",
+  "description": "load-book-knowledge.ts 只查询 nerLexiconRule 表，但对 ENTITY/RELATIONSHIP 类型的过滤在该表上永远返回空（这两个类型属于 promptExtractionRule 表）。导致所有通过 UI 编辑或 AI 生成的 PromptExtractionRule 对分析管道完全无效。修复：在 loadRuntimeLexiconPayload 新增 promptExtractionRule 查询，将结果接入 entityExtractionRules / relationshipExtractionRules。",
+  "status": "pending",
+  "dev_type": "fix",
+  "scope": "backend",
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-16",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 1,
+  "next_action": [
+    { "phase": 1, "action": "implement" },
+    { "phase": 2, "action": "check" },
+    { "phase": 3, "action": "finish" }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    {
+      "file": "src/server/modules/knowledge/load-book-knowledge.ts",
+      "reason": "主修复点：新增 promptExtractionRule 查询，修正 buildRuntimeLexiconConfig 中 ENTITY/RELATIONSHIP 数据来源"
+    }
+  ],
+  "notes": "根因：KB 重构后 ENTITY/RELATIONSHIP 规则从 nerLexiconRule 独立为 promptExtractionRule 表，但 load-book-knowledge.ts 未同步更新。修复为纯后端单文件改动，不涉及 schema 迁移。Phase 6 种子内容与 lexicon.ts 硬编码默认值相同，所以分析结果目前是正确的，但数据库管理的规则完全无效。",
+  "meta": {}
+}

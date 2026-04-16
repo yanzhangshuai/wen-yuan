@@ -4,6 +4,9 @@ import {
   createNerLexiconRule,
   deleteNerLexiconRule,
   fetchNerLexiconRules,
+  generateNerLexiconRules,
+  pollNerGenerationJob,
+  previewNerLexiconGenerationPrompt,
   reorderNerLexiconRules,
   updateNerLexiconRule
 } from "@/lib/services/ner-rules";
@@ -24,10 +27,23 @@ describe("ner-rules service", () => {
     hoisted.clientMutateMock.mockReset();
   });
 
-  it("uses ner lexicon endpoints and payloads", async () => {
+  it("uses ner lexicon endpoints and generation payloads", async () => {
     hoisted.clientFetchMock
       .mockResolvedValueOnce([{ id: "rule-1" }])
-      .mockResolvedValueOnce({ id: "rule-2" });
+      .mockResolvedValueOnce({ id: "rule-2" })
+      .mockResolvedValueOnce({ systemPrompt: "system", userPrompt: "user" })
+      .mockResolvedValueOnce({ jobId: "job-ner-1" })
+      .mockResolvedValueOnce({
+        jobId : "job-ner-1",
+        status: "done",
+        step  : "生成完成",
+        result: {
+          created: 2,
+          skipped: 1,
+          model  : { id: "model-1", provider: "glm", modelName: "glm-4.5" }
+        },
+        error: null
+      });
     hoisted.clientMutateMock.mockResolvedValue(undefined);
 
     await fetchNerLexiconRules({
@@ -50,6 +66,20 @@ describe("ner-rules service", () => {
     });
     await deleteNerLexiconRule("rule-2");
     await reorderNerLexiconRules(["rule-3", "rule-4"]);
+    await previewNerLexiconGenerationPrompt({
+      ruleType              : "TITLE_STEM",
+      targetCount           : 15,
+      bookTypeId            : "33333333-3333-4333-8333-333333333333",
+      additionalInstructions: "优先补充古代敬称"
+    });
+    await generateNerLexiconRules({
+      ruleType              : "TITLE_STEM",
+      targetCount           : 15,
+      bookTypeId            : "33333333-3333-4333-8333-333333333333",
+      additionalInstructions: "优先补充古代敬称",
+      modelId               : "44444444-4444-4444-8444-444444444444"
+    });
+    await pollNerGenerationJob("job-ner-1");
 
     expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(
       1,
@@ -85,5 +115,38 @@ describe("ner-rules service", () => {
       headers: { "Content-Type": "application/json" },
       body   : JSON.stringify({ orderedIds: ["rule-3", "rule-4"] })
     });
+    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/admin/knowledge/ner-rules/generate/preview-prompt?ruleType=TITLE_STEM&targetCount=15&bookTypeId=33333333-3333-4333-8333-333333333333&additionalInstructions=%E4%BC%98%E5%85%88%E8%A1%A5%E5%85%85%E5%8F%A4%E4%BB%A3%E6%95%AC%E7%A7%B0"
+    );
+    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(4, "/api/admin/knowledge/ner-rules/generate", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({
+        ruleType              : "TITLE_STEM",
+        targetCount           : 15,
+        bookTypeId            : "33333333-3333-4333-8333-333333333333",
+        additionalInstructions: "优先补充古代敬称",
+        modelId               : "44444444-4444-4444-8444-444444444444"
+      })
+    });
+    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(5, "/api/admin/knowledge/ner-rules/generate?jobId=job-ner-1");
+  });
+
+  it("omits optional ner rule query parameters when they are not provided", async () => {
+    hoisted.clientFetchMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({ systemPrompt: "system", userPrompt: "user" });
+
+    await fetchNerLexiconRules();
+    await previewNerLexiconGenerationPrompt({
+      ruleType: "POSITION_STEM"
+    });
+
+    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(1, "/api/admin/knowledge/ner-rules");
+    expect(hoisted.clientFetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/admin/knowledge/ner-rules/generate/preview-prompt?ruleType=POSITION_STEM"
+    );
   });
 });

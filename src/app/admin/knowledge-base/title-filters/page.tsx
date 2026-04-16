@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Plus, Search, Sparkles, Trash2, WandSparkles } from "lucide-react";
 
 import {
@@ -49,6 +49,7 @@ import {
   createGenericTitle,
   deleteGenericTitle,
   fetchGenericTitles,
+  pollTitleFilterGenerationJob,
   previewGenericTitleGenerationPrompt,
   reviewGeneratedGenericTitles,
   testGenericTitle,
@@ -326,17 +327,19 @@ export default function TitleFiltersPage() {
  * - 打开弹框会刷新模型缓存，保证下拉读取的是最新可用模型；
  * - 预览/预审会分别更新局部状态并驱动后续审核流程。
  */
+interface GenericTitleGenerationDialogProps {
+  open        : boolean;
+  bookTypes   : BookTypeItem[];
+  onOpenChange: (open: boolean) => void;
+  onReviewed  : (review: GenericTitleGenerationReviewResult) => void;
+}
+
 function GenericTitleGenerationDialog({
   open,
   bookTypes,
   onOpenChange,
   onReviewed
-}: {
-  open        : boolean;
-  bookTypes   : BookTypeItem[];
-  onOpenChange: (open: boolean) => void;
-  onReviewed  : (review: GenericTitleGenerationReviewResult) => void;
-}) {
+}: GenericTitleGenerationDialogProps) {
   const [targetCount, setTargetCount]                                  = useState("20");
   const [selectedModelId, setSelectedModelId]                          = useState("");
   const [selectedReferenceBookTypeId, setSelectedReferenceBookTypeId]  = useState(NO_REFERENCE_BOOK_TYPE);
@@ -344,7 +347,19 @@ function GenericTitleGenerationDialog({
   const [preview, setPreview]                                          = useState<GenericTitleGenerationPreview | null>(null);
   const [previewLoading, setPreviewLoading]                            = useState(false);
   const [generating, setGenerating]                                    = useState(false);
+  const [progressStep, setProgressStep]                                = useState("");
+  const [elapsedSeconds, setElapsedSeconds]                            = useState(0);
+  const pollingRef                                                     = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef                                                   = useRef<number>(0);
   const { toast }                                                      = useToast();
+  const normalizedTargetCount                                          = useMemo(() => {
+    const parsed = Number(targetCount);
+    if (!Number.isFinite(parsed)) {
+      return 20;
+    }
+
+    return Math.min(200, Math.max(1, Math.floor(parsed)));
+  }, [targetCount]);
 
   // 统一 Store：模块级缓存 + 后台重校验。
   // 额外读取 error/refresh，用于弹框内显式反馈与主动刷新。
@@ -356,16 +371,30 @@ function GenericTitleGenerationDialog({
     refresh: refreshModels
   } = useAdminModels({ onlyEnabled: true });
 
-  // 弹框打开时重置表单；若模型已缓存，同步选中默认模型
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  // 弹框关闭时终止轮询并重置状态；打开时回填默认配置。
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      stopPolling();
+      setGenerating(false);
+      setProgressStep("");
+      setElapsedSeconds(0);
+      setPreview(null);
+      return;
+    }
     setTargetCount("20");
     setSelectedReferenceBookTypeId(NO_REFERENCE_BOOK_TYPE);
     setAdditionalInstructions("");
     setPreview(null);
     setSelectedModelId(defaultModel?.id ?? "");
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, stopPolling]);
 
   // 每次打开弹框都触发一次模型列表刷新，避免跨页面切换后读到旧缓存。
   useEffect(() => {
@@ -395,12 +424,24 @@ function GenericTitleGenerationDialog({
     }
   }, [open, modelOptions, selectedModelId]);
 
+  // 计时器只在模型生成任务运行期间生效。
+  useEffect(() => {
+    if (!generating) return;
+
+    startTimeRef.current = Date.now();
+    const timer = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [generating]);
+
   // 仅预览提示词，不执行写入。
   async function handlePreview() {
     try {
       setPreviewLoading(true);
       const data = await previewGenericTitleGenerationPrompt({
-        targetCount           : Number(targetCount) || 20,
+        targetCount           : normalizedTargetCount,
         referenceBookTypeId   : selectedReferenceBookTypeId !== NO_REFERENCE_BOOK_TYPE ? selectedReferenceBookTypeId : undefined,
         additionalInstructions: additionalInstructions || undefined
       });
@@ -421,18 +462,43 @@ function GenericTitleGenerationDialog({
 
     try {
       setGenerating(true);
-      const review = await reviewGeneratedGenericTitles({
-        targetCount           : Number(targetCount) || 20,
+      setProgressStep("提交任务中…");
+
+      const { jobId } = await reviewGeneratedGenericTitles({
+        targetCount           : normalizedTargetCount,
         modelId               : selectedModelId,
         referenceBookTypeId   : selectedReferenceBookTypeId !== NO_REFERENCE_BOOK_TYPE ? selectedReferenceBookTypeId : undefined,
         additionalInstructions: additionalInstructions || undefined
       });
-      toast({ title: "预审完成", description: `共生成 ${review.candidates.length} 条候选，跳过 ${review.skipped} 条。` });
-      onReviewed(review);
+
+      setProgressStep("正在连接模型，准备生成…");
+
+      pollingRef.current = setInterval(() => {
+        void (async () => {
+          try {
+            const job = await pollTitleFilterGenerationJob(jobId);
+            setProgressStep(job.step);
+
+            if (job.status === "done" && job.result) {
+              stopPolling();
+              setGenerating(false);
+              toast({ title: "预审完成", description: `共生成 ${job.result.candidates.length} 条候选，跳过 ${job.result.skipped} 条。` });
+              onReviewed(job.result);
+            } else if (job.status === "error") {
+              stopPolling();
+              setGenerating(false);
+              toast({ title: "生成失败", description: job.error ?? "未知错误", variant: "destructive" });
+            }
+          } catch (pollError) {
+            stopPolling();
+            setGenerating(false);
+            toast({ title: "轮询任务状态失败", description: String(pollError), variant: "destructive" });
+          }
+        })();
+      }, 2000);
     } catch (error) {
-      toast({ title: "生成失败", description: String(error), variant: "destructive" });
-    } finally {
       setGenerating(false);
+      toast({ title: "提交任务失败", description: String(error), variant: "destructive" });
     }
   }
 
@@ -440,7 +506,7 @@ function GenericTitleGenerationDialog({
   const selectedBookTypeName = bookTypes.find((bt) => bt.id === selectedReferenceBookTypeId)?.name;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (generating) return; onOpenChange(next); }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>模型生成泛化称谓候选</DialogTitle>
@@ -455,14 +521,16 @@ function GenericTitleGenerationDialog({
               <Input
                 type="number"
                 min={1}
-                max={500}
+                max={200}
                 value={targetCount}
+                disabled={generating}
                 onChange={(event) => setTargetCount(event.target.value)}
+                onBlur={() => setTargetCount(String(normalizedTargetCount))}
               />
             </div>
             <div className="space-y-1.5">
               <Label>参考题材</Label>
-              <Select value={selectedReferenceBookTypeId} onValueChange={setSelectedReferenceBookTypeId}>
+              <Select value={selectedReferenceBookTypeId} onValueChange={setSelectedReferenceBookTypeId} disabled={generating}>
                 <SelectTrigger>
                   <SelectValue placeholder="不指定，通用场景" />
                 </SelectTrigger>
@@ -479,7 +547,7 @@ function GenericTitleGenerationDialog({
               <Select
                 value={selectedModelId}
                 onValueChange={setSelectedModelId}
-                disabled={modelsLoading}
+                disabled={modelsLoading || generating}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={modelsLoading ? "加载中…" : modelOptions.length === 0 ? "暂无可用模型" : "选择模型"} />
@@ -514,7 +582,7 @@ function GenericTitleGenerationDialog({
             <span className="text-border">·</span>
             <span>题材：<span className="font-medium text-foreground">{selectedBookTypeName ?? "通用场景"}</span></span>
             <span className="text-border">·</span>
-            <span>目标 {targetCount} 条</span>
+            <span>目标 {normalizedTargetCount} 条</span>
           </div>
 
           {/* 使用说明 */}
@@ -528,30 +596,43 @@ function GenericTitleGenerationDialog({
             <Textarea
               rows={3}
               value={additionalInstructions}
+              disabled={generating}
               onChange={(event) => setAdditionalInstructions(event.target.value)}
               placeholder="例如：优先补充容易误判为人物名的称谓；武侠场景下请特别标注需要题材豁免的称谓。"
             />
           </div>
 
+          {generating ? (
+            <div className="flex flex-col items-center gap-3 rounded-md border bg-muted/30 px-4 py-5">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="text-center">
+                <p className="text-sm font-medium">{progressStep || "生成中…"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">已用时 {elapsedSeconds} 秒，模型推理可能需要 1~3 分钟，请勿关闭此窗口</p>
+              </div>
+            </div>
+          ) : null}
+
           {/* 操作按钮 */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => void handlePreview()}
-              disabled={previewLoading}
-            >
-              {previewLoading ? "预览中…" : "预览提示词"}
-            </Button>
-            <Button
-              onClick={() => void handleGenerate()}
-              disabled={generating || !selectedModelId}
-            >
-              {generating ? "预审中…" : "开始预审"}
-            </Button>
-          </div>
+          {!generating ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => void handlePreview()}
+                disabled={previewLoading}
+              >
+                {previewLoading ? "预览中…" : "预览提示词"}
+              </Button>
+              <Button
+                onClick={() => void handleGenerate()}
+                disabled={!selectedModelId}
+              >
+                开始预审
+              </Button>
+            </div>
+          ) : null}
 
           {/* 提示词预览 */}
-          {preview ? (
+          {preview && !generating ? (
             <div className="space-y-2 rounded-md border p-3">
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">提示词预览</div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -570,11 +651,18 @@ function GenericTitleGenerationDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>关闭</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={generating}>关闭</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+interface GenericTitleGenerationReviewDialogProps {
+  open        : boolean;
+  review      : GenericTitleGenerationReviewResult | null;
+  onOpenChange: (open: boolean) => void;
+  onSave      : (candidates: GeneratedGenericTitleCandidate[]) => Promise<void>;
 }
 
 function GenericTitleGenerationReviewDialog({
@@ -582,12 +670,7 @@ function GenericTitleGenerationReviewDialog({
   review,
   onOpenChange,
   onSave
-}: {
-  open        : boolean;
-  review      : GenericTitleGenerationReviewResult | null;
-  onOpenChange: (open: boolean) => void;
-  onSave      : (candidates: GeneratedGenericTitleCandidate[]) => Promise<void>;
-}) {
+}: GenericTitleGenerationReviewDialogProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
@@ -721,17 +804,19 @@ function GenericTitleGenerationReviewDialog({
   );
 }
 
+interface GenericTitleDialogProps {
+  open        : boolean;
+  editing     : GenericTitleItem | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved     : () => Promise<void>;
+}
+
 function GenericTitleDialog({
   open,
   editing,
   onOpenChange,
   onSaved
-}: {
-  open        : boolean;
-  editing     : GenericTitleItem | null;
-  onOpenChange: (open: boolean) => void;
-  onSaved     : () => Promise<void>;
-}) {
+}: GenericTitleDialogProps) {
   const [title, setTitle] = useState("");
   const [tier, setTier] = useState<"SAFETY" | "DEFAULT">("DEFAULT");
   const [exemptInGenres, setExemptInGenres] = useState("");

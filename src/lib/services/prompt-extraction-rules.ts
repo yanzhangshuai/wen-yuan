@@ -22,6 +22,36 @@ export interface CombinedPromptRulesPreview {
   rules     : Array<Pick<PromptExtractionRuleItem, "id" | "content" | "bookTypeId" | "sortOrder">>;
 }
 
+export interface PromptExtractionGenerationPreview {
+  ruleType         : PromptRuleType;
+  targetCount      : number;
+  referenceBookType: {
+    id  : string;
+    key : string;
+    name: string;
+  } | null;
+  systemPrompt: string;
+  userPrompt  : string;
+}
+
+export interface PromptExtractionGenerationResult {
+  created: number;
+  skipped: number;
+  model: {
+    id       : string;
+    provider : string;
+    modelName: string;
+  };
+}
+
+export interface PromptExtractionGenerationJobStatus {
+  jobId : string;
+  status: "pending" | "running" | "done" | "error";
+  step  : string;
+  result: PromptExtractionGenerationResult | null;
+  error : string | null;
+}
+
 export async function fetchPromptExtractionRules(params?: {
   ruleType?  : PromptRuleType;
   bookTypeId?: string;
@@ -81,6 +111,44 @@ export async function previewCombinedPromptRules(
   return clientFetch<CombinedPromptRulesPreview>("/api/admin/knowledge/prompt-extraction-rules/preview-combined", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
-    body   : JSON.stringify({ ruleType, bookTypeId })
+      body   : JSON.stringify({ ruleType, bookTypeId })
+    });
+}
+
+export async function previewPromptExtractionGenerationPrompt(params: {
+  ruleType               : PromptRuleType;
+  targetCount?           : number;
+  bookTypeId?            : string;
+  additionalInstructions?: string;
+}): Promise<PromptExtractionGenerationPreview> {
+  const sp = new URLSearchParams();
+  sp.set("ruleType", params.ruleType);
+  if (params.targetCount) sp.set("targetCount", String(params.targetCount));
+  if (params.bookTypeId) sp.set("bookTypeId", params.bookTypeId);
+  if (params.additionalInstructions) sp.set("additionalInstructions", params.additionalInstructions);
+  const qs = sp.toString() ? `?${sp.toString()}` : "";
+
+  return clientFetch<PromptExtractionGenerationPreview>(
+    `/api/admin/knowledge/prompt-extraction-rules/generate/preview-prompt${qs}`
+  );
+}
+
+export async function generatePromptExtractionRules(data: {
+  ruleType               : PromptRuleType;
+  targetCount?           : number;
+  bookTypeId?            : string;
+  additionalInstructions?: string;
+  modelId?               : string;
+}): Promise<{ jobId: string }> {
+  return clientFetch<{ jobId: string }>("/api/admin/knowledge/prompt-extraction-rules/generate", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(data)
   });
+}
+
+export async function pollPromptRuleGenerationJob(jobId: string): Promise<PromptExtractionGenerationJobStatus> {
+  return clientFetch<PromptExtractionGenerationJobStatus>(
+    `/api/admin/knowledge/prompt-extraction-rules/generate?jobId=${encodeURIComponent(jobId)}`
+  );
 }

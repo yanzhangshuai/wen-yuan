@@ -4,15 +4,15 @@ import { headers } from "next/headers";
 
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
-import { createJob, getJob, updateJob } from "@/server/lib/knowledge-job-store";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { reviewGeneratedGenericTitles } from "@/server/modules/knowledge";
-import type { GenericTitleGenerationReviewResult } from "@/server/modules/knowledge/generateGenericTitles";
+import { createJob, getJob, updateJob } from "@/server/lib/knowledge-job-store";
+import { generateNerLexiconRules } from "@/server/modules/knowledge";
+import type { NerLexiconGenerationResult } from "@/server/modules/knowledge/generateNerLexiconRules";
 import { ERROR_CODES } from "@/types/api";
 
-import { badRequestJson, generateCatalogCandidatesSchema } from "../../_shared";
+import { badRequestJson, generateNerRulesSchema } from "../../_shared";
 
-const PATH = "/api/admin/knowledge/title-filters/generate";
+const PATH = "/api/admin/knowledge/ner-rules/generate";
 
 export async function GET(request: Request): Promise<Response> {
   const startedAt = Date.now();
@@ -27,7 +27,7 @@ export async function GET(request: Request): Promise<Response> {
       return badRequestJson(PATH, requestId, startedAt, "缺少 jobId 参数");
     }
 
-    const job = getJob<GenericTitleGenerationReviewResult>(jobId);
+    const job = getJob<NerLexiconGenerationResult>(jobId);
     if (!job) {
       return failJson({
         path           : PATH,
@@ -43,7 +43,7 @@ export async function GET(request: Request): Promise<Response> {
       path   : PATH,
       requestId,
       startedAt,
-      code   : "ADMIN_GENERIC_TITLE_GENERATION_JOB_STATUS",
+      code   : "ADMIN_NER_GENERATION_JOB_STATUS",
       message: job.step,
       data   : {
         jobId : job.id,
@@ -73,19 +73,19 @@ export async function POST(request: Request): Promise<Response> {
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
-    const parsed = generateCatalogCandidatesSchema.safeParse(await readJsonBody(request));
+    const parsed = generateNerRulesSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) {
       return badRequestJson(PATH, requestId, startedAt, parsed.error.issues[0]?.message ?? "参数不合法");
     }
 
     const jobId = randomUUID();
-    createJob<GenericTitleGenerationReviewResult>(jobId);
+    createJob<NerLexiconGenerationResult>(jobId);
 
     void (async () => {
       updateJob(jobId, { status: "running", step: "正在连接模型，准备生成…" });
       try {
-        const result = await reviewGeneratedGenericTitles(parsed.data);
-        updateJob<GenericTitleGenerationReviewResult>(jobId, {
+        const result = await generateNerLexiconRules(parsed.data);
+        updateJob<NerLexiconGenerationResult>(jobId, {
           status: "done",
           step  : "生成完成",
           result
@@ -103,7 +103,7 @@ export async function POST(request: Request): Promise<Response> {
       path   : PATH,
       requestId,
       startedAt,
-      code   : "ADMIN_GENERIC_TITLE_GENERATION_JOB_SUBMITTED",
+      code   : "ADMIN_NER_GENERATION_JOB_SUBMITTED",
       message: "生成任务已提交",
       data   : { jobId }
     });

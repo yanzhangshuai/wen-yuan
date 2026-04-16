@@ -193,6 +193,14 @@ export const reorderNerLexiconRulesSchema = z.object({
   orderedIds: z.array(z.string().uuid()).min(1)
 });
 
+export const generateNerRulesSchema = z.object({
+  ruleType              : z.enum(["HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM"]),
+  targetCount           : z.number().int().min(1).max(200).default(30),
+  additionalInstructions: z.string().trim().max(2000).optional(),
+  modelId               : z.string().uuid().optional(),
+  bookTypeId            : z.string().uuid().optional()
+});
+
 // ─── Prompt 提取规则 ────────────────────────────────────
 export const createPromptExtractionRuleSchema = z.object({
   ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]).default("ENTITY"),
@@ -217,4 +225,12 @@ export const reorderPromptExtractionRulesSchema = z.object({
 export const previewPromptExtractionRulesSchema = z.object({
   ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]),
   bookTypeId: z.string().uuid().optional()
+});
+
+export const generatePromptRulesSchema = z.object({
+  ruleType              : z.enum(["ENTITY", "RELATIONSHIP"]).default("ENTITY"),
+  targetCount           : z.number().int().min(1).max(200).default(30),
+  additionalInstructions: z.string().trim().max(2000).optional(),
+  modelId               : z.string().uuid().optional(),
+  bookTypeId            : z.string().uuid().optional()
 });

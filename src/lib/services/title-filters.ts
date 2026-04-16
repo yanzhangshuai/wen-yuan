@@ -54,6 +54,14 @@ export interface GenericTitleTestResult {
   tier  : string | null;
 }
 
+export interface GenericTitleGenerationJobStatus {
+  jobId : string;
+  status: "pending" | "running" | "done" | "error";
+  step  : string;
+  result: GenericTitleGenerationReviewResult | null;
+  error : string | null;
+}
+
 export async function fetchGenericTitles(params?: {
   tier?: string;
   q?   : string;
@@ -126,10 +134,16 @@ export async function reviewGeneratedGenericTitles(data?: {
   additionalInstructions?: string;
   referenceBookTypeId?   : string;
   modelId?               : string;
-}): Promise<GenericTitleGenerationReviewResult> {
-  return clientFetch<GenericTitleGenerationReviewResult>("/api/admin/knowledge/title-filters/generate", {
+}): Promise<{ jobId: string }> {
+  return clientFetch<{ jobId: string }>("/api/admin/knowledge/title-filters/generate", {
     method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(data ?? {})
   });
+}
+
+export async function pollTitleFilterGenerationJob(jobId: string): Promise<GenericTitleGenerationJobStatus> {
+  return clientFetch<GenericTitleGenerationJobStatus>(
+    `/api/admin/knowledge/title-filters/generate?jobId=${encodeURIComponent(jobId)}`
+  );
 }

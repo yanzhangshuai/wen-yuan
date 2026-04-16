@@ -37,6 +37,16 @@ export {
 } from "./generateGenericTitles";
 
 export {
+  previewNerLexiconGenerationPrompt,
+  generateNerLexiconRules
+} from "./generateNerLexiconRules";
+
+export {
+  previewPromptExtractionGenerationPrompt,
+  generatePromptExtractionRules
+} from "./generatePromptExtractionRules";
+
+export {
   listKnowledgeEntries,
   createKnowledgeEntry,
   updateKnowledgeEntry,
