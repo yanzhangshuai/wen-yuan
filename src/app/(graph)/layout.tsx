@@ -16,7 +16,7 @@ export default function GraphLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex h-screen flex-col overflow-hidden">
       {children}
     </div>
   );
