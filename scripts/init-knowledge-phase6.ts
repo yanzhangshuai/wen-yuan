@@ -6,7 +6,7 @@
  * 数据来源：
  * - 内置姓氏词表 → surname_entries
  * - 泛称分层词表（SAFETY/DEFAULT）→ generic_title_entries
- * - 实体/关系抽取规则词表 → extraction_rules
+ * - 实体/关系 Prompt 注入规则词表 → prompt_extraction_rules
  * - 8 个 build*Prompt 模板槽 → prompt_templates + prompt_template_versions（创建可直接运行的基线版本）
  */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
@@ -63,7 +63,7 @@ const DEFAULT_TITLES = [
   "员外", "举人", "秀才", "进士", "状元", "老学究"
 ];
 
-// ─── NER 规则数据 ───────────────────────────────────────────────────
+// ─── Prompt 提取规则数据 ────────────────────────────────────────────
 const ENTITY_RULES = [
   "原文中的文字必须精确引用（surfaceForm/rawText），禁止编造或改写。",
   "优先匹配已知人物档案中的标准名(canonicalName)；仅确认全新人物时才创建新 personaName。",
@@ -133,31 +133,31 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
   }
   console.log(`✓ 泛化称谓库：${titleCount} 条（安全泛称 ${SAFETY_TITLES.length}，默认泛称 ${DEFAULT_TITLES.length}）`);
 
-  // 3. NER 提取规则
+  // 3. Prompt 提取规则
   let ruleCount = 0;
   for (let i = 0; i < ENTITY_RULES.length; i++) {
-    const existing = await prisma.extractionRule.findFirst({
+    const existing = await prisma.promptExtractionRule.findFirst({
       where: { ruleType: "ENTITY", content: ENTITY_RULES[i] }
     });
     if (!existing) {
-      await prisma.extractionRule.create({
-        data: { ruleType: "ENTITY", content: ENTITY_RULES[i], sortOrder: i + 1 }
+      await prisma.promptExtractionRule.create({
+        data: { ruleType: "ENTITY", content: ENTITY_RULES[i], sortOrder: i + 1, source: "IMPORTED" }
       });
     }
     ruleCount++;
   }
   for (let i = 0; i < RELATIONSHIP_RULES.length; i++) {
-    const existing = await prisma.extractionRule.findFirst({
+    const existing = await prisma.promptExtractionRule.findFirst({
       where: { ruleType: "RELATIONSHIP", content: RELATIONSHIP_RULES[i] }
     });
     if (!existing) {
-      await prisma.extractionRule.create({
-        data: { ruleType: "RELATIONSHIP", content: RELATIONSHIP_RULES[i], sortOrder: i + 1 }
+      await prisma.promptExtractionRule.create({
+        data: { ruleType: "RELATIONSHIP", content: RELATIONSHIP_RULES[i], sortOrder: i + 1, source: "IMPORTED" }
       });
     }
     ruleCount++;
   }
-  console.log(`✓ NER 规则：${ruleCount} 条（实体 ${ENTITY_RULES.length}，关系 ${RELATIONSHIP_RULES.length}）`);
+  console.log(`✓ Prompt 提取规则：${ruleCount} 条（实体 ${ENTITY_RULES.length}，关系 ${RELATIONSHIP_RULES.length}）`);
 
   // 4. 提示词模板与基线版本
   let templateCount = 0;

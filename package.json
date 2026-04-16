@@ -12,15 +12,9 @@
     "lint:fix": "eslint src --fix",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "eval:goldset": "pnpm ts-node scripts/eval/validate-goldset.ts",
-    "eval:run": "pnpm ts-node scripts/eval/run-stage-ab.ts",
-    "eval:metrics": "pnpm ts-node scripts/eval/compute-metrics.ts",
-    "eval:gate": "pnpm ts-node scripts/eval/check-gate.ts",
-    "trellis:context": "python3 ./.trellis/scripts/get_context.py",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts",
-    "kb:seed-phase7": "pnpm ts-node scripts/init-knowledge-phase7.ts"
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

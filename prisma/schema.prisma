@@ -799,34 +799,6 @@ model PromptExtractionRule {
 }
 
 // ============================================================
-// NER 提取规则条目
-// ============================================================
-/// @db.remark: NER 规则条目。ruleType=ENTITY 或 RELATIONSHIP，isActive 控制是否注入提示词。
-model ExtractionRule {
-  id        String @id @default(uuid()) @db.Uuid
-  sortOrder Int    @default(0) @map("sort_order")
-
-  /// ENTITY — 实体提取规则
-  /// RELATIONSHIP — 关系提取规则
-  ruleType String @default("ENTITY") @map("rule_type")
-
-  content String @db.Text // 规则正文
-
-  /// 生效范围：nil=所有书籍类型
-  genreKey String? @map("genre_key")
-
-  isActive   Boolean @default(true) @map("is_active")
-  changeNote String? @db.Text @map("change_note")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  @@index([ruleType, isActive, sortOrder], map: "extraction_rules_type_active_idx")
-  @@index([genreKey], map: "extraction_rules_genre_idx")
-  @@map("extraction_rules")
-}
-
-// ============================================================
 // 知识变更审计日志
 // ============================================================
 /// @db.remark: 所有知识库对象的变更日志。

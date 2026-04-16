@@ -179,11 +179,6 @@ export type PromptTemplateVersion = Prisma.PromptTemplateVersionModel
  */
 export type PromptExtractionRule = Prisma.PromptExtractionRuleModel
 /**
- * Model ExtractionRule
- * @db.remark: NER 规则条目。ruleType=ENTITY 或 RELATIONSHIP，isActive 控制是否注入提示词。
- */
-export type ExtractionRule = Prisma.ExtractionRuleModel
-/**
  * Model KnowledgeAuditLog
  * @db.remark: 所有知识库对象的变更日志。
  */

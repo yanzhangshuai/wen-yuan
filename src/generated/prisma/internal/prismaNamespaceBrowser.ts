@@ -78,7 +78,6 @@ export const ModelName = {
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
   PromptExtractionRule: 'PromptExtractionRule',
-  ExtractionRule: 'ExtractionRule',
   KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
 
@@ -567,21 +566,6 @@ export const PromptExtractionRuleScalarFieldEnum = {
 } as const
 
 export type PromptExtractionRuleScalarFieldEnum = (typeof PromptExtractionRuleScalarFieldEnum)[keyof typeof PromptExtractionRuleScalarFieldEnum]
-
-
-export const ExtractionRuleScalarFieldEnum = {
-  id: 'id',
-  sortOrder: 'sortOrder',
-  ruleType: 'ruleType',
-  content: 'content',
-  genreKey: 'genreKey',
-  isActive: 'isActive',
-  changeNote: 'changeNote',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type ExtractionRuleScalarFieldEnum = (typeof ExtractionRuleScalarFieldEnum)[keyof typeof ExtractionRuleScalarFieldEnum]
 
 
 export const KnowledgeAuditLogScalarFieldEnum = {
