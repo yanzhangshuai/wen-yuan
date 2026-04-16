@@ -109,25 +109,39 @@
 
 ## Acceptance Criteria
 
-- [ ] `resolvePromptTemplateOrFallback` 被替换为 `resolvePromptTemplate`，无 fallback 参数
-- [ ] DB 中模板不存在时，抛出包含 slug 名称的明确错误
-- [ ] DB 查询异常时，错误向上传播，不静默吞掉
-- [ ] `prompts.ts` 中 8 个 `build*Prompt` 函数及其专属辅助函数被移除
-- [ ] `prompts.ts` 保留类型定义和 `parseValidationResponse`
-- [ ] `ChapterAnalysisService` 中 8 处调用点全部改为直接使用 `resolvePromptTemplate`
-- [ ] `GlobalEntityResolver` 中 1 处调用点改为直接使用 `resolvePromptTemplate`
-- [ ] `ValidationAgentService` 中 2 处调用点改为直接使用 `resolvePromptTemplate`
-- [ ] `aiClient.ts` 的 `createChapterAnalysisAiClient` 不再直接调用硬编码 prompt builder
-- [ ] 测试环境不再绕过 DB 查询（移除 `shouldBypassRuntimePromptLookup`）
-- [ ] 所有现有测试更新并通过
-- [ ] TypeScript 编译无错误
-- [ ] `prompt-template-baselines.ts` 保持不变
+- [x] `resolvePromptTemplateOrFallback` 被替换为 `resolvePromptTemplate`，无 fallback 参数
+- [x] DB 中模板不存在时，抛出包含 slug 名称的明确错误
+- [x] DB 查询异常时，错误向上传播，不静默吞掉
+- [x] `prompts.ts` 中 8 个 `build*Prompt` 函数及其专属辅助函数被移除
+- [x] `prompts.ts` 保留类型定义和 `parseValidationResponse`
+- [x] `ChapterAnalysisService` 中 8 处调用点全部改为直接使用 `resolvePromptTemplate`
+- [x] `GlobalEntityResolver` 中 1 处调用点改为直接使用 `resolvePromptTemplate`
+- [x] `ValidationAgentService` 中 2 处调用点改为直接使用 `resolvePromptTemplate`
+- [x] `aiClient.ts` 已删除（无 jobId 旧兼容路径全部移除）
+- [x] 测试环境不再绕过 DB 查询（移除 `shouldBypassRuntimePromptLookup`）
+- [x] 所有现有测试更新并通过（135 files, 1004 tests）
+- [x] TypeScript 编译无错误
+- [x] `prompt-template-baselines.ts` 保持不变
 
 ## Definition of Done
 
-- Tests added/updated (unit where appropriate)
-- Lint / typecheck / CI green
-- 无运行时 fallback 路径残留
+- [x] Tests added/updated (unit where appropriate)
+- [x] Lint / typecheck / CI green
+- [x] 无运行时 fallback 路径残留
+
+## Implementation Notes (completed 2026-04-17)
+
+采用方案 B（移除无 jobId 路径），具体变更：
+
+| 文件 | 变更 |
+|------|------|
+| `prompt-templates.ts` | `resolvePromptTemplateOrFallback` → `resolvePromptTemplate`，DB 无数据直接抛错 |
+| `prompts.ts` | 删除 8 个 builder + 辅助函数，保留接口/类型和 `parseValidationResponse` |
+| `aiClient.ts` | **整文件删除**（无 jobId 旧兼容入口全部移除） |
+| `ChapterAnalysisService.ts` | 工厂签名 `(prisma, aliasRegistry?, executor, resolver)`；所有方法要求 `jobId: string` |
+| `GlobalEntityResolver.ts` | 调用 `resolvePromptTemplate` 替代旧 fallback 路径 |
+| `ValidationAgentService.ts` | 同上，`ChapterValidationInput.jobId` 改为 required |
+| 5 个测试文件 | mock 从 `resolvePromptTemplateOrFallback` 改为 `resolvePromptTemplate`；移除所有 `!jobId` 测试 |
 
 ## Out of Scope
 

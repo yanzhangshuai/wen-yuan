@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # Hook 规范
 
 > 本项目 hooks 的使用方式。
@@ -10,21 +6,23 @@ stage: mvp
 
 ## 概览
 
-当前 hooks 使用保持精简，主要聚焦在 UI 交互行为。
-目前仓库中还没有共享的自定义 hooks。
+项目 hooks 保持精简，聚焦 UI 交互行为与安全的客户端状态读取。
 
 默认规则：
 - 服务端数据逻辑放在服务端路由或 server actions。
-- 客户端 hooks 只用于浏览器侧交互。
+- 客户端 hooks 只用于浏览器侧交互与 Hydration 安全状态。
 
 ---
 
-## 当前 Hook 模式
+## 当前共享 Hook 清单
 
-- 主题状态与切换：`src/components/ThemeToggle.tsx` 中的 `useTheme`
-- 挂载安全渲染：`src/components/ThemeToggle.tsx` 中的
-  `useState` + `useEffect`
-- 导航路由感知：`src/components/layout/Navbar.tsx` 中的 `usePathname`
+| Hook | 位置 | 用途 |
+|------|------|------|
+| `useTheme` | `next-themes`（外部库） | 主题读取与切换 |
+| `useHydratedTheme` | `src/components/theme/` | 带 mounted 门控的主题读取，解决 SSR Hydration 不一致 |
+| `usePathname` | `next/navigation`（外部库） | 当前路由路径感知 |
+
+> **`useHydratedTheme` 存在原因**：`useTheme` 在 SSR 首帧返回 `undefined`，直接用于 `aria-pressed`/`className` 会触发 Hydration 警告。`useHydratedTheme` 在 `useEffect` 后才暴露真实值，保证服务端/客户端首帧同值。详见 `guides/cross-layer-thinking-guide.md` 错误 5。
 
 ---
 

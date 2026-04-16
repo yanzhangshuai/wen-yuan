@@ -1010,16 +1010,12 @@ describe("chapter analysis service", () => {
         listReviewMappings : vi.fn(),
         updateMappingStatus: vi.fn()
       };
-      const generateJson = vi.fn().mockResolvedValue({
-        content: JSON.stringify([
-          { surfaceForm: "老爷", isPersonalized: false, confidence: 0.9 },
-          { surfaceForm: "陌生称呼", isPersonalized: true, confidence: 0.9 },
-          { surfaceForm: "老爷", isPersonalized: true, confidence: 0 },
-          { surfaceForm: "老爷", isPersonalized: true, confidence: 0.6 }
-        ]),
-        usage: null
+      // Mock order: 1) roster discovery, 2) chunk extraction, 3) gray-zone arbitration
+      const rosterGenerateJson = vi.fn().mockResolvedValue({
+        content: JSON.stringify([]),
+        usage  : null
       });
-      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: rosterGenerateJson } as never);
 
       const chunkGenerateJson = vi.fn().mockResolvedValue({
         content: JSON.stringify({
@@ -1030,6 +1026,17 @@ describe("chapter analysis service", () => {
         usage: null
       });
       mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: chunkGenerateJson } as never);
+
+      const generateJson = vi.fn().mockResolvedValue({
+        content: JSON.stringify([
+          { surfaceForm: "老爷", isPersonalized: false, confidence: 0.9 },
+          { surfaceForm: "陌生称呼", isPersonalized: true, confidence: 0.9 },
+          { surfaceForm: "老爷", isPersonalized: true, confidence: 0 },
+          { surfaceForm: "老爷", isPersonalized: true, confidence: 0.6 }
+        ]),
+        usage: null
+      });
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
 
       const execute = vi.fn(async ({ callFn }: {
         stage : PipelineStage;

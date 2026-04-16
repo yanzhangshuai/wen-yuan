@@ -263,6 +263,7 @@ describe("ValidationAgentService", () => {
       chapterId       : "chapter-1",
       chapterNo       : 1,
       chapterContent  : "范进中举",
+      jobId           : "test-job",
       newPersonas     : [],
       newMentions     : [],
       newRelationships: [],
@@ -283,6 +284,7 @@ describe("ValidationAgentService", () => {
       chapterId       : "missing-chapter",
       chapterNo       : 1,
       chapterContent  : "范进中举",
+      jobId           : "test-job",
       newPersonas     : [],
       newMentions     : [],
       newRelationships: [],
@@ -291,7 +293,7 @@ describe("ValidationAgentService", () => {
   });
 
   // 用例语义：覆盖无 jobId 直连模型路径，并验证 runtime client 会按 modelId 复用。
-  it("reuses runtime ai client for direct chapter validation without jobId", async () => {
+  it("reuses runtime ai client across multiple chapter validations", async () => {
     const {
       prisma,
       bookFindUnique,
@@ -343,6 +345,7 @@ describe("ValidationAgentService", () => {
       chapterId       : "chapter-1",
       chapterNo       : 1,
       chapterContent  : "范进中举",
+      jobId           : "job-1",
       newPersonas     : [],
       newMentions     : [],
       newRelationships: [],
@@ -353,13 +356,14 @@ describe("ValidationAgentService", () => {
       chapterId       : "chapter-2",
       chapterNo       : 2,
       chapterContent  : "周学道到来",
+      jobId           : "job-1",
       newPersonas     : [],
       newMentions     : [],
       newRelationships: [],
       existingProfiles: []
     });
 
-    expect(strategyResolver.resolveForStage).toHaveBeenCalledTimes(2);
+    expect(strategyResolver.resolveForStage).not.toHaveBeenCalled();
     expect(mockedCreateAiProviderClient).toHaveBeenCalledTimes(1);
     expect(generateJson).toHaveBeenCalledTimes(2);
   });
@@ -427,6 +431,7 @@ describe("ValidationAgentService", () => {
       chapterId       : "chapter-1",
       chapterNo       : 1,
       chapterContent  : "周学道命诸生作文",
+      jobId           : "job-1",
       newPersonas     : [{ id: "persona-new", name: "  周学道  ", confidence: 0.73, nameType: "TITLE_ONLY" }],
       newMentions     : [{ personaId: "persona-new", rawText: "周学道命诸生作文" }],
       newRelationships: [{ sourceId: "persona-new", targetId: "ghost-target", type: "提携" }],
@@ -439,20 +444,20 @@ describe("ValidationAgentService", () => {
     });
 
     expect(hoisted.resolvePromptTemplate).toHaveBeenCalledTimes(1);
-    expect(generateJson).toHaveBeenCalledWith(expect.objectContaining({
-      user: expect.stringContaining("旧人物")
-    }), {
-      temperature    : 0.1,
-      maxOutputTokens: 2048,
-      topP           : 0.95,
-      enableThinking : true,
-      reasoningEffort: "high"
-    });
+    expect(hoisted.resolvePromptTemplate).toHaveBeenCalledWith(expect.objectContaining({
+      slug        : "CHAPTER_VALIDATION",
+      replacements: expect.objectContaining({
+        bookTitle       : "儒林外史",
+        chapterNo       : "1",
+        existingPersonas: expect.stringContaining("旧人物")
+      })
+    }));
+    expect(generateJson).toHaveBeenCalledTimes(1);
 
-    const promptUser = generateJson.mock.calls[0]?.[0].user ?? "";
-    expect(promptUser).toContain("置信度:1");
-    expect(promptUser).toContain("persona-new");
-    expect(promptUser).toContain("ghost-target");
+    const templateReplacements = hoisted.resolvePromptTemplate.mock.calls[0]?.[0].replacements;
+    expect(templateReplacements.existingPersonas).toContain("置信度:1");
+    expect(templateReplacements.newlyCreated).toContain("周学道");
+    expect(templateReplacements.chapterRelationships).toContain("ghost-target");
     expect(report.summary.autoFixable).toBe(0);
     expect(report.issues[0]?.suggestion.action).toBe("ADD_MAPPING");
   });
@@ -538,8 +543,12 @@ describe("ValidationAgentService", () => {
     const report = await service.validateBookResult("book-1", "job-1");
 
     expect(generateJson).toHaveBeenCalledTimes(1);
-    expect(generateJson.mock.calls[0]?.[0].user).toContain("## 全书人物列表");
-    expect(generateJson.mock.calls[0]?.[0].user).toContain("## 抽样原文证据");
+    expect(hoisted.resolvePromptTemplate).toHaveBeenCalledWith(expect.objectContaining({
+      slug        : "BOOK_VALIDATION",
+      replacements: expect.objectContaining({
+        bookTitle: "儒林外史"
+      })
+    }));
     expect(report.id).toBe("report-book-1");
     expect(report.summary.autoFixable).toBe(1);
     expect(validationReportCreate).toHaveBeenCalledWith({
@@ -609,12 +618,14 @@ describe("ValidationAgentService", () => {
     const report = await service.validateBookResult("book-1", "job-book-fallback");
 
     expect(hoisted.resolvePromptTemplate).toHaveBeenCalledTimes(1);
-    const promptUser = generateJson.mock.calls[0]?.[0].user ?? "";
-    expect(promptUser).toContain("提及:0");
-    expect(promptUser).toContain("ghost-target");
-    expect(promptUser).toContain("ghost-source");
-    expect(promptUser).toContain("代表性样本");
-    expect(promptUser).toContain("覆盖更多章节");
+    const templateCall = hoisted.resolvePromptTemplate.mock.calls[0]?.[0];
+    expect(templateCall.slug).toBe("BOOK_VALIDATION");
+    const replacements = templateCall.replacements;
+    expect(replacements.personas).toContain("提及:0");
+    expect(replacements.relationships).toContain("ghost-target");
+    expect(replacements.relationships).toContain("ghost-source");
+    expect(replacements.sourceExcerpts).toContain("代表性样本");
+    expect(replacements.sourceExcerpts).toContain("覆盖更多章节");
     expect(report.summary.totalIssues).toBe(0);
   });
 

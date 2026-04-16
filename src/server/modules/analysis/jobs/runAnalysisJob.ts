@@ -428,7 +428,7 @@ function createDefaultChapterAnalyzerFactory(prismaClient: PrismaClient): Chapte
     await resolver.preloadStrategy({ jobId, bookId });
     const executor = createAiCallExecutor(prismaClient, resolver);
 
-    const chapterService = createChapterAnalysisService(prismaClient, undefined, undefined, executor, resolver);
+    const chapterService = createChapterAnalysisService(prismaClient, undefined, executor, resolver);
     const validationService = createValidationAgentService(prismaClient, executor, resolver);
     const globalEntityResolver = createGlobalEntityResolver(prismaClient, executor);
 

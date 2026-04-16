@@ -302,7 +302,7 @@ describe("GlobalEntityResolver", () => {
       // no aliasLookup → no directMerge → ambiguous group goes to LLM
     );
 
-    expect(buildEntityResolutionPromptMock).toHaveBeenCalledWith("儒林外史", expect.any(Array));
+    expect(resolvePromptTemplateMock).toHaveBeenCalled();
     expect(generateJsonMock).toHaveBeenCalled();
     expect(result.globalPersonaMap.get("范进")).toBe("persona-merged");
     expect(result.globalPersonaMap.get("范举人")).toBe("persona-merged");

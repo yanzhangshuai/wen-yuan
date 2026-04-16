@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # 分析运行时知识契约
 
 ## Scenario: DB-only Runtime Knowledge For Analysis

@@ -1,0 +1,55 @@
+/**
+ * API 路由处理器模板
+ *
+ * 放置位置：`src/app/api/**/route.ts`
+ * 规则：
+ *   - 与 page.tsx 不能共存于同一目录
+ *   - 没有 React DOM，不能使用 JSX
+ *   - 默认 Node.js 运行时（可访问 Prisma、neo4j-driver）
+ */
+
+import { type NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@/server/http";
+import { parsePagination } from "@/server/http";
+
+// ===== GET：分页列表 =====
+export async function GET(request: NextRequest) {
+  try {
+    const { page, pageSize } = parsePagination(request.nextUrl.searchParams);
+
+    const [items, total] = await Promise.all([
+      db.item.findMany({ skip: (page - 1) * pageSize, take: pageSize }),
+      db.item.count(),
+    ]);
+
+    return successResponse({ items, total, page, pageSize });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+// ===== POST：创建资源 =====
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json() as Record<string, unknown>;
+
+    // 在 API 边界做参数校验
+    if (!body.title || typeof body.title !== "string") {
+      return errorResponse(new Error("title 不能为空"), 400);
+    }
+
+    const item = await db.item.create({ data: { title: body.title } });
+    return successResponse(item, 201);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+// 占位 db 对象（实际替换为 prisma client）
+declare const db: {
+  item: {
+    findMany: (args: unknown) => Promise<unknown[]>;
+    count: () => Promise<number>;
+    create: (args: unknown) => Promise<unknown>;
+  };
+};

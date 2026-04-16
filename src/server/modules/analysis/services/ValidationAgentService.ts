@@ -44,8 +44,8 @@ export interface ChapterValidationInput {
   chapterNo       : number;
   /** 章节内容（通常为截断后的片段），用于让模型审阅证据。 */
   chapterContent  : string;
-  /** 所属分析任务 ID（可选）。为空时表示脱离任务链路的独立调用。 */
-  jobId?          : string;
+  /** 所属分析任务 ID。 */
+  jobId           : string;
   /** 本章新建人物快照（供模型检查重复/误建）。 */
   newPersonas     : Array<{ id: string; name: string; confidence: number; nameType: string }>;
   /** 本章提及快照（供模型核对人物-文本引用）。 */

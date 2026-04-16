@@ -1,8 +1,3 @@
----
-stage: mvp
-source: adapted from mindfold-ai marketplace-specs/shared/typescript.md
----
-
 # Zod-First 类型规范
 
 > 适用于本项目所有涉及外部数据（AI 输出、API 请求体、URL 参数）的类型定义场景。

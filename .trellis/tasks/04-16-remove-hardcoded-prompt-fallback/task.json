@@ -3,7 +3,7 @@
   "name": "remove-hardcoded-prompt-fallback",
   "title": "refactor: 移除硬编码 Prompt fallback，统一走 DB 模板",
   "description": "",
-  "status": "planning",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,37 +11,12 @@
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-04-16",
-  "completedAt": null,
+  "completedAt": "2026-04-17",
   "branch": null,
   "base_branch": "dev",
   "worktree_path": null,
-  "current_phase": 0,
-  "next_action": [
-    {
-      "phase": 1,
-      "action": "brainstorm"
-    },
-    {
-      "phase": 2,
-      "action": "research"
-    },
-    {
-      "phase": 3,
-      "action": "implement"
-    },
-    {
-      "phase": 4,
-      "action": "check"
-    },
-    {
-      "phase": 5,
-      "action": "update-spec"
-    },
-    {
-      "phase": 6,
-      "action": "record-session"
-    }
-  ],
+  "current_phase": 6,
+  "next_action": [],
   "commit": null,
   "pr_url": null,
   "subtasks": [],

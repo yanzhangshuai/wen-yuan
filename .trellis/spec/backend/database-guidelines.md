@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # 数据库规范
 
 > [SYNC-NOTE]

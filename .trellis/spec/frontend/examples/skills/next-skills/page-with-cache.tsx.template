@@ -1,0 +1,79 @@
+/**
+ * 页面模板：混合 Static + Cached + Dynamic 三种内容类型
+ *
+ * 适用场景：书籍详情页、人物图谱页等有公共静态部分 + 聚合数据 + 用户实时数据的页面
+ *
+ * 前提：next.config.ts 中已启用 `cacheComponents: true`
+ */
+
+import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
+import { cacheLife, cacheTag } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
+
+// ===== 页面入口（路由段组件）=====
+export default async function BookDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  return (
+    <>
+      {/* 1. 静态内容：构建时预渲染，CDN 直出 */}
+      <PageHeader />
+
+      {/* 2. 缓存内容：1小时内复用，超时后后台刷新 */}
+      <BookStats bookId={id} />
+
+      {/* 3. 动态内容：每次请求实时获取，Suspense 流式传输 */}
+      <Suspense fallback={<div>加载分析状态...</div>}>
+        <AnalysisStatus bookId={id} />
+      </Suspense>
+    </>
+  );
+}
+
+// ===== 静态组件（无异步，构建时确定）=====
+function PageHeader() {
+  return (
+    <header>
+      <h1>文渊知识图谱</h1>
+    </header>
+  );
+}
+
+// ===== 缓存组件（use cache）=====
+async function BookStats({ bookId }: { bookId: string }) {
+  "use cache";
+  cacheLife("hours");                    // 缓存 1 小时
+  cacheTag("book-stats", `book-${bookId}`); // 打标签，支持按需失效
+
+  try {
+    // 在此调用 DB/服务，结果将被缓存
+    const stats = await getBookStats(bookId);
+    if (!stats) notFound();
+    return <StatsDisplay stats={stats} />;
+  } catch (error) {
+    unstable_rethrow(error);              // 重要：让 notFound/redirect 正常传播
+    throw error;
+  }
+}
+
+// ===== 动态组件（读取运行时 API，不能用 use cache）=====
+async function AnalysisStatus({ bookId }: { bookId: string }) {
+  // cookies() 是运行时 API，必须在 use cache 外部
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  const status = await getAnalysisStatus(bookId, userId);
+  return <StatusBadge status={status} />;
+}
+
+// ===== 占位类型（实际使用时替换为真实类型）=====
+declare function getBookStats(bookId: string): Promise<Record<string, unknown> | null>;
+declare function getAnalysisStatus(bookId: string, userId?: string): Promise<string>;
+declare function StatsDisplay(props: { stats: Record<string, unknown> }): React.JSX.Element;
+declare function StatusBadge(props: { status: string }): React.JSX.Element;

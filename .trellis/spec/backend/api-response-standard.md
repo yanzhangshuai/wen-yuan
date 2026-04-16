@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # API 响应规范
 
 > [SYNC-NOTE]

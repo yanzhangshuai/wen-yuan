@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # 注释模板
 
 > [SYNC-NOTE]

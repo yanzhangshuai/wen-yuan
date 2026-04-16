@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # 后端开发规范
 
 > [SYNC-NOTE]
@@ -29,9 +25,11 @@ stage: mvp
 | [类型安全](./type-safety.md) | 跨层类型约束与禁用模式 | 代码库既有模式 |
 | [日志规范](./logging-guidelines.md) | 结构化日志规范 | 服务层既有模式 |
 | [安全规范](./security-guidelines.md) | 鉴权、输入校验、敏感信息保护 | 项目安全基线 |
-| [API 版本与兼容规范](./api-versioning-guidelines.md) | contract 演进与兼容窗口 | 项目流程约定 |
 | [数据迁移规范](./migration-guidelines.md) | expand-contract 与回滚策略 | 数据可靠性要求 |
 | [知识库批量操作契约](./knowledge-base-batch-ops.md) | 知识库管理台批量 API/Service/Prisma 跨层契约 | 04-16 知识库批量操作 |
+| [测试规范](./test-guidelines.md) | Vitest 测试模式、mock 策略、Route Handler 测试 | 项目测试约定 |
+| [分析管线架构规范](./analysis-pipeline.md) | sequential/twopass 管线边界与调用约定 | 管线架构约定 |
+| [Route Handler 编写规范](./route-handler-guidelines.md) | 鉴权顺序、Zod 校验、错误映射、分页解析 | 项目既有模式 |
 | [质量规范](./quality-guidelines.md) | 交付前校验清单 | 项目流程约定 |
 
 ---
@@ -39,7 +37,7 @@ stage: mvp
 ## 规范质量要求
 
 所有后端规范文档需满足“具体规则 + 代码示例 + 原因说明”。
-统一标准见：`../meta/spec-quality-standard.md`。
+
 
 代码示例：
 ```ts

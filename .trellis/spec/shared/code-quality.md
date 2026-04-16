@@ -1,8 +1,3 @@
----
-stage: mvp
-source: adapted from mindfold-ai marketplace-specs/shared/code-quality.md
----
-
 # 代码质量规范
 
 > 全局强制规则，适用于前端和后端所有代码。

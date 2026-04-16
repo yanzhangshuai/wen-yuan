@@ -1,8 +1,3 @@
----
-stage: mvp
-source: redesign-existing-projects + design-taste-frontend (选择性摘取)
----
-
 # UI 设计审计清单
 
 > 基于 `redesign-existing-projects` skill 裁剪适配，用于检查现有页面及新建页面的视觉质量。

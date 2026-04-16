@@ -1,0 +1,59 @@
+/**
+ * Server Action 模板：写操作 + 缓存失效
+ *
+ * 适用场景：创建/更新/删除书籍、合并人物等写操作
+ * 文件必须有 "use server" 声明（文件级）或每个导出函数内部声明
+ */
+
+"use server";
+
+import { revalidateTag, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
+
+// ===== 创建书籍：后台重新验证（下次请求生效）=====
+export async function createBook(formData: FormData) {
+  const title = formData.get("title") as string;
+
+  const book = await db.book.create({
+    data: { title, createdAt: new Date() },
+  });
+
+  // revalidateTag：后台触发，下次请求看到新数据
+  revalidateTag("book-list");
+
+  redirect(`/admin/books/${book.id}`);
+}
+
+// ===== 合并人物：同请求内立即失效（updateTag）=====
+export async function mergePersonas(
+  bookId: string,
+  targetId: string,
+  sourceId: string,
+) {
+  await db.persona.merge({ targetId, sourceId });
+
+  // updateTag：本次请求内立即失效，用于需要立刻看到结果的场景
+  updateTag(`personas-${bookId}`);
+  updateTag("persona-list");
+}
+
+// ===== 删除书籍：同时失效多个标签 =====
+export async function deleteBook(bookId: string) {
+  await db.book.softDelete({ where: { id: bookId } });
+
+  // 同时让多个标签失效
+  revalidateTag("book-list");
+  revalidateTag(`book-${bookId}`);
+  revalidateTag(`personas-${bookId}`);
+}
+
+// 占位 db 对象（实际替换为 prisma client）
+declare const db: {
+  book: {
+    create: (args: unknown) => Promise<{ id: string }>;
+    softDelete: (args: unknown) => Promise<void>;
+  };
+  persona: {
+    merge: (args: unknown) => Promise<void>;
+  };
+};

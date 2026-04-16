@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # Neo4j 使用规范
 
 > 本项目用 Neo4j 存储人物关系图谱，与 Prisma（PostgreSQL）并存。

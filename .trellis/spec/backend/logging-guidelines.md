@@ -1,7 +1,3 @@
----
-stage: mvp
----
-
 # 日志规范
 
 > [SYNC-NOTE]

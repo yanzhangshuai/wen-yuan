@@ -1,0 +1,41 @@
+/**
+ * 路由级错误边界模板
+ *
+ * 放置位置：`src/app/**/error.tsx`
+ * 规则：必须是 Client Component（"use client"）
+ * 作用：捕获同级路由段及其子树的渲染错误
+ */
+
+"use client";
+
+import { useEffect } from "react";
+
+interface ErrorBoundaryProps {
+  error: Error & { digest?: string };  // digest 是服务端错误的唯一标识
+  reset: () => void;                   // 重置错误边界，触发重新渲染
+}
+
+export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
+  useEffect(() => {
+    // 上报错误到监控系统（如 Sentry）
+    console.error("[RouteError]", error);
+  }, [error]);
+
+  return (
+    <div className="flex min-h-[200px] flex-col items-center justify-center gap-4">
+      <h2 className="text-lg font-semibold text-destructive">页面出错了</h2>
+      <p className="text-sm text-muted-foreground">
+        {error.message || "发生了未知错误，请重试"}
+      </p>
+      {error.digest && (
+        <p className="text-xs text-muted-foreground">错误码：{error.digest}</p>
+      )}
+      <button
+        onClick={reset}
+        className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+      >
+        重试
+      </button>
+    </div>
+  );
+}

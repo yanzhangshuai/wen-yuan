@@ -1,8 +1,3 @@
----
-stage: mvp
-skill-source: https://skills.sh/vercel-labs/next-skills/next-best-practices
----
-
 @@@section:skill-next-best-practices
 
 # Next.js App Router 开发最佳实践
@@ -84,29 +79,99 @@ export async function deleteBook(id: string) { ... }
 
 ---
 
-## 三、异步 API 模式（Async Patterns - Next.js 15+）
+## 三、异步 API 模式（Async Patterns）【强制】
 
-Next.js 15 起，`params`、`searchParams`、`cookies()`、`headers()` 均为异步。
+> 来源：[async-patterns.md](https://github.com/vercel-labs/next-skills/blob/HEAD/skills/next-best-practices/async-patterns.md)
 
-**反例（同步访问）**：
+> **[强制]** Next.js 15 起，`params`、`searchParams`、`cookies()`、`headers()` **全部改为异步**，类型统一为 `Promise<...>`。
+> 任何同步访问这些 API 的代码均为**违规**，评审时直接打回，不得合并。
+
+### 违规速查表
+
+| 违规写法 | 正确写法 |
+|---------|--------|
+| `params: { id: string }` | `params: Promise<{ id: string }>` |
+| `const { id } = params` | `const { id } = await params` |
+| `searchParams: { q?: string }` | `searchParams: Promise<{ q?: string }>` |
+| `cookies()` 未 `await` | `const store = await cookies()` |
+| `headers()` 未 `await` | `const hdrs = await headers()` |
+| Client 组件内 `await params` | `const { id } = use(params)` |
+
+Next.js 15 起，`params`、`searchParams`、`cookies()`、`headers()` **全部改为异步**，类型统一为 `Promise<...>`，必须 `await` 后才能读取值。
+
+### 1. Pages / Layouts 中的 params 与 searchParams
+
 ```tsx
-// ❌ Next.js 15+ 已废弃同步访问
-export default function Page({ params }: { params: { id: string } }) {
-  const { id } = params; // 同步 params
+type Props = {
+  params      : Promise<{ id: string }>;
+  searchParams: Promise<{ query?: string }>;
+};
+
+export default async function Page({ params, searchParams }: Props) {
+  const { id }    = await params;
+  const { query } = await searchParams;
 }
 ```
 
-**正例**：
-```tsx
-// ✅ 异步解构 params
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+### 2. Route Handlers 中的 params
+
+```ts
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
 }
+```
 
-// ✅ 异步读取 cookies
-import { cookies } from "next/headers";
-const cookieStore = await cookies();
-const token = cookieStore.get("token")?.value;
+### 3. 同步组件中使用 `use()`
+
+非 async 组件（如 Client Component）无法直接 `await`，改用 `React.use()`：
+
+```tsx
+"use client";
+import { use } from "react";
+
+type Props = { params: Promise<{ id: string }> };
+
+export default function Page({ params }: Props) {
+  const { id } = use(params);   // ✅ 等价于 await，适用于 Client Component
+}
+```
+
+### 4. `generateMetadata` 中的 params
+
+```ts
+import { type Metadata } from "next";
+
+type Props = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  return { title: `书籍 ${id}` };
+}
+```
+
+### 5. cookies() 与 headers()
+
+```ts
+import { cookies, headers } from "next/headers";
+
+export default async function Page() {
+  const cookieStore  = await cookies();
+  const headersList  = await headers();
+
+  const theme     = cookieStore.get("theme")?.value;
+  const userAgent = headersList.get("user-agent");
+}
+```
+
+### 6. 迁移 Codemod
+
+升级到 Next.js 15+ 后，可用官方 codemod 自动转换同步调用为异步写法：
+
+```bash
+npx @next/codemod@latest next-async-request-api .
 ```
 
 ---
