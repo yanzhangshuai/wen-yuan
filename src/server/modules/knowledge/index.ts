@@ -106,7 +106,7 @@ export {
   activatePromptVersion,
   diffPromptVersions,
   previewPrompt,
-  resolvePromptTemplateOrFallback
+  resolvePromptTemplate
 } from "./prompt-templates";
 
 export {

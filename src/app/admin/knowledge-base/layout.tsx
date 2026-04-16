@@ -67,7 +67,7 @@ export default function KnowledgeBaseLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)]">
+    <div className="flex min-h-[calc(100dvh-3.5rem)]">
       <aside className="hidden w-56 shrink-0 border-r bg-muted/30 p-4 md:block">
         <h3 className="mb-4 text-sm font-semibold text-muted-foreground">知识库管理</h3>
         <KnowledgeBaseNav links={knowledgeBaseLinks} />

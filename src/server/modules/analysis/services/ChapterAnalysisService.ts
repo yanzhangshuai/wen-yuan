@@ -3,7 +3,6 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { createAiProviderClient } from "@/server/providers/ai";
 import { aliasRegistryService, type AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
-import { createChapterAnalysisAiClient, type AiAnalysisClient } from "@/server/modules/analysis/services/aiClient";
 import { aiCallExecutor, type AiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
 import {
   createModelStrategyResolver,
@@ -13,16 +12,13 @@ import {
 } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
-import { resolvePromptTemplateOrFallback } from "@/server/modules/knowledge";
+import { resolvePromptTemplate } from "@/server/modules/knowledge";
 import {
-  buildChapterAnalysisPrompt,
   buildChapterAnalysisRulesText,
-  buildIndependentExtractionPrompt,
   buildIndependentExtractionRulesText,
-  buildRosterDiscoveryPrompt,
   buildRosterDiscoveryRulesText,
-  buildTitleArbitrationPrompt,
-  buildTitleResolutionPrompt
+  type BuildPromptInput,
+  type RosterDiscoveryInput
 } from "@/server/modules/analysis/services/prompts";
 import {
   type BookLexiconConfig,
@@ -42,7 +38,13 @@ import type {
   TitleResolutionInput,
   RegisterAliasInput
 } from "@/types/analysis";
-import { parseIndependentExtractionResponse } from "@/types/analysis";
+import {
+  parseChapterAnalysisResponse,
+  parseEnhancedChapterRosterResponse,
+  parseIndependentExtractionResponse,
+  parseTitleArbitrationResponse,
+  parseTitleResolutionResponse
+} from "@/types/analysis";
 import { PipelineStage } from "@/types/pipeline";
 
 /**
@@ -343,7 +345,6 @@ function sanitizeRelationshipField(value?: string): string | undefined {
  */
 export function createChapterAnalysisService(
   prismaClient: PrismaClient = prisma,
-  aiClient?: AiAnalysisClient,
   aliasRegistry?: AliasRegistryService,
   stageAiCallExecutor: AiCallExecutor = aiCallExecutor,
   strategyResolver: ModelStrategyResolver = createModelStrategyResolver(prismaClient)
@@ -365,10 +366,8 @@ export function createChapterAnalysisService(
     grayZoneMentionStore.set(bookId, bookStore);
   }
 
-  const runtimeAiClientCache = new Map<string, AiAnalysisClient>();
-
   interface AnalysisExecutionContext {
-    jobId?                 : string;
+    jobId                  : string;
     /** Pass 2 全局消歧后的映射表（surfaceForm → personaId），提供时跳过 ROSTER_DISCOVERY。 */
     externalPersonaMap?    : Map<string, string>;
     /** 从数据库预加载的词典配置；未提供时回退为空配置。 */
@@ -391,58 +390,13 @@ export function createChapterAnalysisService(
     };
   }
 
-  function getRuntimeAiClient(model: ResolvedStageModel | ResolvedFallbackModel): AiAnalysisClient {
-    if (aiClient) {
-      return aiClient;
-    }
-
-    const cached = runtimeAiClientCache.get(model.modelId);
-    if (cached) {
-      return cached;
-    }
-
-    const providerClient = createAiProviderClient({
-      provider : model.provider,
-      apiKey   : model.apiKey,
-      baseUrl  : model.baseUrl,
-      modelName: model.modelName
-    });
-    const createdClient = createChapterAnalysisAiClient(providerClient);
-    runtimeAiClientCache.set(model.modelId, createdClient);
-    return createdClient;
-  }
-
   async function discoverRosterByStage(input: {
     chapterId   : string;
-    stageContext: { bookId: string; jobId?: string };
-    rosterInput : Parameters<AiAnalysisClient["discoverChapterRoster"]>[0];
+    stageContext: { bookId: string; jobId: string };
+    rosterInput : RosterDiscoveryInput;
     chunkIndex? : number;
   }): Promise<EnhancedChapterRosterEntry[]> {
-    if (!input.stageContext.jobId) {
-      if (aiClient) {
-        if (aiClient.discoverChapterRosterWithUsage) {
-          const result = await aiClient.discoverChapterRosterWithUsage(input.rosterInput);
-          return result.data;
-        }
-
-        return await aiClient.discoverChapterRoster(input.rosterInput);
-      }
-
-      const model = await strategyResolver.resolveForStage(PipelineStage.ROSTER_DISCOVERY, {
-        bookId: input.stageContext.bookId
-      });
-      const runtimeClient = getRuntimeAiClient(model);
-      const result = runtimeClient.discoverChapterRosterWithUsage
-        ? await runtimeClient.discoverChapterRosterWithUsage(input.rosterInput, toGenerateOptions(model))
-        : {
-          data : await runtimeClient.discoverChapterRoster(input.rosterInput, toGenerateOptions(model)),
-          usage: null
-        };
-      return result.data;
-    }
-
-    const fallbackPrompt = buildRosterDiscoveryPrompt(input.rosterInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "ROSTER_DISCOVERY",
       replacements: {
         bookTitle    : input.rosterInput.bookTitle,
@@ -456,8 +410,7 @@ export function createChapterAnalysisService(
         rosterRules  : buildRosterDiscoveryRulesText(input.rosterInput),
         content      : input.rosterInput.content,
         genericTitles: input.rosterInput.genericTitlesExample ?? ""
-      },
-      fallback: fallbackPrompt
+      }
     });
     const result = await stageAiCallExecutor.execute({
       stage     : PipelineStage.ROSTER_DISCOVERY,
@@ -467,13 +420,17 @@ export function createChapterAnalysisService(
       chunkIndex: input.chunkIndex,
       context   : input.stageContext,
       callFn    : async ({ model }) => {
-        const runtimeClient = getRuntimeAiClient(model);
-        if (runtimeClient.discoverChapterRosterWithUsage) {
-          return await runtimeClient.discoverChapterRosterWithUsage(input.rosterInput, toGenerateOptions(model));
-        }
-
-        const data = await runtimeClient.discoverChapterRoster(input.rosterInput, toGenerateOptions(model));
-        return { data, usage: null };
+        const providerClient = createAiProviderClient({
+          provider : model.provider,
+          apiKey   : model.apiKey,
+          baseUrl  : model.baseUrl,
+          modelName: model.modelName
+        });
+        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
+        return {
+          data : parseEnhancedChapterRosterResponse(aiResult.content),
+          usage: aiResult.usage
+        };
       }
     });
 
@@ -482,35 +439,11 @@ export function createChapterAnalysisService(
 
   async function analyzeChunkByStage(input: {
     chapterId   : string;
-    stageContext: { bookId: string; jobId?: string };
-    chunkInput  : Parameters<AiAnalysisClient["analyzeChapterChunk"]>[0];
+    stageContext: { bookId: string; jobId: string };
+    chunkInput  : BuildPromptInput;
     chunkIndex  : number;
   }): Promise<ChapterAnalysisResponse> {
-    if (!input.stageContext.jobId) {
-      if (aiClient) {
-        if (aiClient.analyzeChapterChunkWithUsage) {
-          const result = await aiClient.analyzeChapterChunkWithUsage(input.chunkInput);
-          return result.data;
-        }
-
-        return await aiClient.analyzeChapterChunk(input.chunkInput);
-      }
-
-      const model = await strategyResolver.resolveForStage(PipelineStage.CHUNK_EXTRACTION, {
-        bookId: input.stageContext.bookId
-      });
-      const runtimeClient = getRuntimeAiClient(model);
-      const result = runtimeClient.analyzeChapterChunkWithUsage
-        ? await runtimeClient.analyzeChapterChunkWithUsage(input.chunkInput, toGenerateOptions(model))
-        : {
-          data : await runtimeClient.analyzeChapterChunk(input.chunkInput, toGenerateOptions(model)),
-          usage: null
-        };
-      return result.data;
-    }
-
-    const fallbackPrompt = buildChapterAnalysisPrompt(input.chunkInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "CHAPTER_ANALYSIS",
       replacements: {
         bookTitle    : input.chunkInput.bookTitle,
@@ -526,8 +459,7 @@ export function createChapterAnalysisService(
           const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(",") : "无";
           return `[${index + 1}] ${profile.canonicalName}|${aliasStr}`;
         }).join("\n") || "（本书目前尚无已建档人物）"
-      },
-      fallback: fallbackPrompt
+      }
     });
     const result = await stageAiCallExecutor.execute({
       stage     : PipelineStage.CHUNK_EXTRACTION,
@@ -537,13 +469,17 @@ export function createChapterAnalysisService(
       chunkIndex: input.chunkIndex,
       context   : input.stageContext,
       callFn    : async ({ model }) => {
-        const runtimeClient = getRuntimeAiClient(model);
-        if (runtimeClient.analyzeChapterChunkWithUsage) {
-          return await runtimeClient.analyzeChapterChunkWithUsage(input.chunkInput, toGenerateOptions(model));
-        }
-
-        const data = await runtimeClient.analyzeChapterChunk(input.chunkInput, toGenerateOptions(model));
-        return { data, usage: null };
+        const providerClient = createAiProviderClient({
+          provider : model.provider,
+          apiKey   : model.apiKey,
+          baseUrl  : model.baseUrl,
+          modelName: model.modelName
+        });
+        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
+        return {
+          data : parseChapterAnalysisResponse(aiResult.content),
+          usage: aiResult.usage
+        };
       }
     });
 
@@ -551,40 +487,15 @@ export function createChapterAnalysisService(
   }
 
   async function resolveTitlesByStage(input: {
-    stageContext: { bookId: string; jobId?: string };
+    stageContext: { bookId: string; jobId: string };
     titleInput  : TitleResolutionInput;
   }) {
-    if (!input.stageContext.jobId) {
-      if (aiClient) {
-        if (aiClient.resolvePersonaTitlesWithUsage) {
-          const result = await aiClient.resolvePersonaTitlesWithUsage(input.titleInput);
-          return result.data;
-        }
-
-        return await aiClient.resolvePersonaTitles(input.titleInput);
-      }
-
-      const model = await strategyResolver.resolveForStage(PipelineStage.TITLE_RESOLUTION, {
-        bookId: input.stageContext.bookId
-      });
-      const runtimeClient = getRuntimeAiClient(model);
-      const result = runtimeClient.resolvePersonaTitlesWithUsage
-        ? await runtimeClient.resolvePersonaTitlesWithUsage(input.titleInput, toGenerateOptions(model))
-        : {
-          data : await runtimeClient.resolvePersonaTitles(input.titleInput, toGenerateOptions(model)),
-          usage: null
-        };
-      return result.data;
-    }
-
-    const fallbackPrompt = buildTitleResolutionPrompt(input.titleInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "TITLE_RESOLUTION",
       replacements: {
         bookTitle   : input.titleInput.bookTitle,
         titleEntries: input.titleInput.entries.map((entry) => `| ${entry.title} | ${entry.localSummary ?? ""} |`).join("\n")
-      },
-      fallback: fallbackPrompt
+      }
     });
     const result = await stageAiCallExecutor.execute({
       stage  : PipelineStage.TITLE_RESOLUTION,
@@ -592,13 +503,18 @@ export function createChapterAnalysisService(
       jobId  : input.stageContext.jobId,
       context: input.stageContext,
       callFn : async ({ model }) => {
-        const runtimeClient = getRuntimeAiClient(model);
-        if (runtimeClient.resolvePersonaTitlesWithUsage) {
-          return await runtimeClient.resolvePersonaTitlesWithUsage(input.titleInput, toGenerateOptions(model));
-        }
-
-        const data = await runtimeClient.resolvePersonaTitles(input.titleInput, toGenerateOptions(model));
-        return { data, usage: null };
+        const providerClient = createAiProviderClient({
+          provider : model.provider,
+          apiKey   : model.apiKey,
+          baseUrl  : model.baseUrl,
+          modelName: model.modelName
+        });
+        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
+        const personaIdByTitle = new Map(input.titleInput.entries.map((e) => [e.title, e.personaId]));
+        return {
+          data : parseTitleResolutionResponse(aiResult.content, personaIdByTitle),
+          usage: aiResult.usage
+        };
       }
     });
 
@@ -606,46 +522,17 @@ export function createChapterAnalysisService(
   }
 
   async function arbitrateGrayZoneByStage(input: {
-    stageContext    : { bookId: string; jobId?: string };
+    stageContext    : { bookId: string; jobId: string };
     arbitrationInput: TitleArbitrationInput;
   }) {
-    if (!input.stageContext.jobId) {
-      if (aiClient) {
-        if (aiClient.arbitrateTitlePersonalizationWithUsage) {
-          const result = await aiClient.arbitrateTitlePersonalizationWithUsage(input.arbitrationInput);
-          return result.data;
-        }
-        return aiClient.arbitrateTitlePersonalization
-          ? await aiClient.arbitrateTitlePersonalization(input.arbitrationInput)
-          : [];
-      }
-
-      const model = await strategyResolver.resolveForStage(PipelineStage.GRAY_ZONE_ARBITRATION, {
-        bookId: input.stageContext.bookId
-      });
-      const runtimeClient = getRuntimeAiClient(model);
-      if (runtimeClient.arbitrateTitlePersonalizationWithUsage) {
-        const result = await runtimeClient.arbitrateTitlePersonalizationWithUsage(
-          input.arbitrationInput,
-          toGenerateOptions(model)
-        );
-        return result.data;
-      }
-      return runtimeClient.arbitrateTitlePersonalization
-        ? await runtimeClient.arbitrateTitlePersonalization(input.arbitrationInput, toGenerateOptions(model))
-        : [];
-    }
-
-    const fallbackPrompt = buildTitleArbitrationPrompt(input.arbitrationInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "TITLE_ARBITRATION",
       replacements: {
         bookTitle: input.arbitrationInput.bookTitle,
         terms    : input.arbitrationInput.terms.map((item) =>
           `- "${item.surfaceForm}" (chapterAppearanceCount=${item.chapterAppearanceCount}, hasStableAliasBinding=${item.hasStableAliasBinding}, singlePersonaConsistency=${item.singlePersonaConsistency}, genericRatio=${item.genericRatio.toFixed(2)})`
         ).join("\n")
-      },
-      fallback: fallbackPrompt
+      }
     });
     const result = await stageAiCallExecutor.execute({
       stage  : PipelineStage.GRAY_ZONE_ARBITRATION,
@@ -653,18 +540,17 @@ export function createChapterAnalysisService(
       jobId  : input.stageContext.jobId,
       context: input.stageContext,
       callFn : async ({ model }) => {
-        const runtimeClient = getRuntimeAiClient(model);
-        if (runtimeClient.arbitrateTitlePersonalizationWithUsage) {
-          return await runtimeClient.arbitrateTitlePersonalizationWithUsage(
-            input.arbitrationInput,
-            toGenerateOptions(model)
-          );
-        }
-
-        const data = runtimeClient.arbitrateTitlePersonalization
-          ? await runtimeClient.arbitrateTitlePersonalization(input.arbitrationInput, toGenerateOptions(model))
-          : [];
-        return { data, usage: null };
+        const providerClient = createAiProviderClient({
+          provider : model.provider,
+          apiKey   : model.apiKey,
+          baseUrl  : model.baseUrl,
+          modelName: model.modelName
+        });
+        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
+        return {
+          data : parseTitleArbitrationResponse(aiResult.content),
+          usage: aiResult.usage
+        };
       }
     });
 
@@ -677,8 +563,8 @@ export function createChapterAnalysisService(
   async function discoverRosterWithProtection(input: {
     chapterId     : string;
     chapterContent: string;
-    stageContext  : { bookId: string; jobId?: string };
-    rosterInput   : Omit<Parameters<AiAnalysisClient["discoverChapterRoster"]>[0], "content">;
+    stageContext  : { bookId: string; jobId: string };
+    rosterInput   : Omit<RosterDiscoveryInput, "content">;
   }): Promise<EnhancedChapterRosterEntry[]> {
     if (input.chapterContent.length <= ANALYSIS_PIPELINE_CONFIG.rosterMaxInputLength) {
       return await discoverRosterByStage({
@@ -720,7 +606,7 @@ export function createChapterAnalysisService(
    * 异常：章节不存在、AI 调用失败、数据库失败时抛错。
    * 副作用：更新该章节的 mentions / biography_records / relationships 等数据。
    */
-  async function analyzeChapter(chapterId: string, executionContext: AnalysisExecutionContext = {}): Promise<ChapterAnalysisResult> {
+  async function analyzeChapter(chapterId: string, executionContext: AnalysisExecutionContext): Promise<ChapterAnalysisResult> {
     log("analysis.start", { chapterId });
 
     const chapter = await prismaClient.chapter.findUnique({
@@ -1159,7 +1045,7 @@ export function createChapterAnalysisService(
    * 异常：数据库或 AI 调用失败时抛错。
    * 副作用：更新 personas.name / aliases / nameType / confidence。
    */
-  async function resolvePersonaTitles(bookId: string, executionContext: AnalysisExecutionContext = {}): Promise<number> {
+  async function resolvePersonaTitles(bookId: string, executionContext: AnalysisExecutionContext): Promise<number> {
     // 1. 加载书籍信息以及所有 TITLE_ONLY Persona。
     const book = await prismaClient.book.findUnique({
       where : { id: bookId },
@@ -1302,7 +1188,7 @@ export function createChapterAnalysisService(
     grayZoneMentionStore.delete(bookId);
   }
 
-  async function runGrayZoneArbitration(bookId: string, executionContext: AnalysisExecutionContext = {}): Promise<number> {
+  async function runGrayZoneArbitration(bookId: string, executionContext: AnalysisExecutionContext): Promise<number> {
     if (!ANALYSIS_PIPELINE_CONFIG.llmTitleArbitrationEnabled) return 0;
     const grayZones = collectGrayZoneMentions(bookId);
     if (grayZones.length === 0) return 0;
@@ -1366,7 +1252,7 @@ export function createChapterAnalysisService(
    */
   async function extractChapterEntities(
     chapterId: string,
-    executionContext: AnalysisExecutionContext = {}
+    executionContext: AnalysisExecutionContext
   ): Promise<ChapterEntityList> {
     const chapter = await prismaClient.chapter.findUnique({
       where  : { id: chapterId },
@@ -1384,8 +1270,7 @@ export function createChapterAnalysisService(
         ? Array.from(buildEffectiveGenericTitles(executionContext.preloadedLexiconConfig)).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等"
         : undefined
     };
-    const fallbackPrompt = buildIndependentExtractionPrompt(extractionInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "INDEPENDENT_EXTRACTION",
       replacements: {
         bookTitle       : extractionInput.bookTitle,
@@ -1393,26 +1278,10 @@ export function createChapterAnalysisService(
         chapterTitle    : extractionInput.chapterTitle,
         independentRules: buildIndependentExtractionRulesText(extractionInput),
         content         : extractionInput.content
-      },
-      fallback: fallbackPrompt
+      }
     });
 
     const stageContext = { bookId: chapter.bookId, jobId: executionContext.jobId };
-
-    if (!stageContext.jobId) {
-      const model = await strategyResolver.resolveForStage(PipelineStage.INDEPENDENT_EXTRACTION, {
-        bookId: chapter.bookId
-      });
-      const providerClient = createAiProviderClient({
-        provider : model.provider,
-        apiKey   : model.apiKey,
-        baseUrl  : model.baseUrl,
-        modelName: model.modelName
-      });
-      const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
-      const entities = parseIndependentExtractionResponse(aiResult.content);
-      return { chapterId, chapterNo: chapter.no, entities };
-    }
 
     const result = await stageAiCallExecutor.execute({
       stage  : PipelineStage.INDEPENDENT_EXTRACTION,
@@ -1444,7 +1313,7 @@ export function createChapterAnalysisService(
   return { analyzeChapter, extractChapterEntities, resolvePersonaTitles, getTitleOnlyPersonaCount, collectGrayZoneMentions, clearGrayZoneMentions, runGrayZoneArbitration };
 }
 
-export const chapterAnalysisService = createChapterAnalysisService(prisma, undefined, aliasRegistryService);
+export const chapterAnalysisService = createChapterAnalysisService(prisma, aliasRegistryService);
 
 /**
  * 功能：将人物档案列表转为短整型 ID 映射（shortId → personaId UUID）。

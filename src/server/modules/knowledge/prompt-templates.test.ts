@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   activatePromptVersion,
@@ -7,7 +7,7 @@ import {
   getPromptTemplate,
   listPromptTemplates,
   previewPrompt,
-  resolvePromptTemplateOrFallback
+  resolvePromptTemplate
 } from "@/server/modules/knowledge/prompt-templates";
 
 const hoisted = vi.hoisted(() => ({
@@ -35,10 +35,6 @@ vi.mock("@/server/db/prisma", () => ({
 describe("prompt-templates", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   it("lists templates and fetches template details", async () => {
@@ -187,23 +183,7 @@ describe("prompt-templates", () => {
     );
   });
 
-  it("bypasses runtime prompt lookup in the test environment", async () => {
-    vi.stubEnv("NODE_ENV", "test");
-
-    await expect(resolvePromptTemplateOrFallback({
-      slug    : "CHAPTER_VALIDATION",
-      fallback: { system: "fallback-system", user: "fallback-user" }
-    })).resolves.toEqual({
-      system: "fallback-system",
-      user  : "fallback-user"
-    });
-
-    expect(hoisted.prisma.promptTemplate.findUnique).not.toHaveBeenCalled();
-  });
-
   it("resolves runtime templates through genre-specific, active and fallback versions", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-
     hoisted.prisma.promptTemplate.findUnique
       .mockResolvedValueOnce({
         id     : "template-1",
@@ -247,11 +227,10 @@ describe("prompt-templates", () => {
         userPrompt  : "fallback-user {genre}"
       });
 
-    await expect(resolvePromptTemplateOrFallback({
+    await expect(resolvePromptTemplate({
       slug        : "CHAPTER_VALIDATION",
       bookTypeId  : "classic",
-      replacements: { genre: "classic", bookTitle: "儒林外史" },
-      fallback    : { system: "fallback-system", user: "fallback-user" }
+      replacements: { genre: "classic", bookTitle: "儒林外史" }
     })).resolves.toEqual({
       system   : "genre classic",
       user     : "user 儒林外史",
@@ -260,11 +239,10 @@ describe("prompt-templates", () => {
       codeRef  : "buildChapterValidationPrompt"
     });
 
-    await expect(resolvePromptTemplateOrFallback({
+    await expect(resolvePromptTemplate({
       slug        : "BOOK_VALIDATION",
       bookTypeId  : "classic",
-      replacements: { bookTitle: "儒林外史", chapterNo: "7" },
-      fallback    : { system: "fallback-system", user: "fallback-user" }
+      replacements: { bookTitle: "儒林外史", chapterNo: "7" }
     })).resolves.toEqual({
       system   : "active 儒林外史",
       user     : "active-user 7",
@@ -273,11 +251,10 @@ describe("prompt-templates", () => {
       codeRef  : "buildBookValidationPrompt"
     });
 
-    await expect(resolvePromptTemplateOrFallback({
+    await expect(resolvePromptTemplate({
       slug        : "ENTITY_RESOLUTION",
       bookTypeId  : "classic",
-      replacements: { bookTitle: "儒林外史", genre: "classic" },
-      fallback    : { system: "fallback-system", user: "fallback-user" }
+      replacements: { bookTitle: "儒林外史", genre: "classic" }
     })).resolves.toEqual({
       system   : "fallback 儒林外史",
       user     : "fallback-user classic",
@@ -286,33 +263,19 @@ describe("prompt-templates", () => {
       codeRef  : "buildEntityResolutionPrompt"
     });
 
-    await expect(resolvePromptTemplateOrFallback({
-      slug    : "MISSING_TEMPLATE",
-      fallback: { system: "fallback-system", user: "fallback-user" }
-    })).resolves.toEqual({
-      system: "fallback-system",
-      user  : "fallback-user"
-    });
+    await expect(resolvePromptTemplate({
+      slug: "MISSING_TEMPLATE"
+    })).rejects.toThrow('Prompt template "MISSING_TEMPLATE" not found in database');
   });
 
-  it("falls back and logs a warning when runtime template lookup fails", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("throws when runtime template lookup fails", async () => {
     hoisted.prisma.promptTemplate.findUnique.mockRejectedValueOnce(new Error("db offline"));
 
-    await expect(resolvePromptTemplateOrFallback({
+    await expect(resolvePromptTemplate({
       slug        : "BOOK_VALIDATION",
       bookTypeId  : "classic",
-      replacements: { bookTitle: "儒林外史" },
-      fallback    : { system: "fallback-system", user: "fallback-user" }
-    })).resolves.toEqual({
-      system: "fallback-system",
-      user  : "fallback-user"
-    });
-
-    expect(warnSpy).toHaveBeenCalledOnce();
-    warnSpy.mockRestore();
+      replacements: { bookTitle: "儒林外史" }
+    })).rejects.toThrow("db offline");
   });
 
   it("creates the first prompt version from an empty template history", async () => {
@@ -384,8 +347,6 @@ describe("prompt-templates", () => {
   });
 
   it("uses the active runtime version unchanged when genre and replacements are absent", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-
     hoisted.prisma.promptTemplate.findUnique.mockResolvedValueOnce({
       id     : "template-1",
       codeRef: "buildBookValidationPrompt"
@@ -397,9 +358,8 @@ describe("prompt-templates", () => {
       userPrompt  : "user literal"
     });
 
-    await expect(resolvePromptTemplateOrFallback({
-      slug    : "BOOK_VALIDATION",
-      fallback: { system: "fallback-system", user: "fallback-user" }
+    await expect(resolvePromptTemplate({
+      slug: "BOOK_VALIDATION"
     })).resolves.toEqual({
       system   : "system literal",
       user     : "user literal",
@@ -409,9 +369,7 @@ describe("prompt-templates", () => {
     });
   });
 
-  it("falls back when a template has no usable active or fallback runtime version", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-
+  it("throws when a template has no usable active or fallback runtime version", async () => {
     hoisted.prisma.promptTemplate.findUnique.mockResolvedValueOnce({
       id     : "template-1",
       codeRef: "buildEntityResolutionPrompt"
@@ -421,36 +379,16 @@ describe("prompt-templates", () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null);
 
-    await expect(resolvePromptTemplateOrFallback({
-      slug    : "ENTITY_RESOLUTION",
-      fallback: { system: "fallback-system", user: "fallback-user" }
-    })).resolves.toEqual({
-      system: "fallback-system",
-      user  : "fallback-user"
-    });
+    await expect(resolvePromptTemplate({
+      slug: "ENTITY_RESOLUTION"
+    })).rejects.toThrow('Prompt template "ENTITY_RESOLUTION" not found in database');
   });
 
-  it("falls back and stringifies non-Error runtime lookup failures", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("throws on non-Error runtime lookup failures", async () => {
     hoisted.prisma.promptTemplate.findUnique.mockRejectedValueOnce("db offline");
 
-    await expect(resolvePromptTemplateOrFallback({
-      slug    : "BOOK_VALIDATION",
-      fallback: { system: "fallback-system", user: "fallback-user" }
-    })).resolves.toEqual({
-      system: "fallback-system",
-      user  : "fallback-user"
-    });
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      "[knowledge.prompt-templates] runtime resolve failed, using fallback",
-      expect.objectContaining({
-        slug   : "BOOK_VALIDATION",
-        message: "db offline"
-      })
-    );
-    warnSpy.mockRestore();
+    await expect(resolvePromptTemplate({
+      slug: "BOOK_VALIDATION"
+    })).rejects.toThrow();
   });
 });

@@ -1,25 +1,21 @@
 /**
  * =============================================================================
- * 文件定位（分析服务：Prompt 构建与校验响应解析）
+ * 文件定位（分析服务：Prompt 类型契约与校验响应解析）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/server/modules/analysis/services/prompts.ts`
  *
  * 模块职责：
- * - 为多个分析阶段构建统一 Prompt（名册发现、章节分析、称号溯源、质量校验等）；
  * - 维护 Prompt 输入类型契约，保证上游调用参数含义稳定；
+ * - 提供构建 DB 模板 replacements 所需的 RulesText 辅助函数；
  * - 对模型返回的校验 JSON 做修复与结构化解析。
  *
- * 在链路中的位置：
- * - 上游：章节分析服务、验证服务、aiClient；
- * - 下游：各 Provider 客户端（仅消费字符串 Prompt）与解析器。
- *
- * 关键业务约束：
- * - Prompt 文案中的规则属于业务规则，不是技术注释，改动会直接影响抽取准确率；
- * - 同一概念（如 generic titles 示例）必须统一口径，避免多处 prompt 漂移导致结果不一致。
+ * 注意：
+ * - Prompt 模板本身存储在数据库 `prompt_templates` + `prompt_template_versions` 中，
+ *   通过 `resolvePromptTemplate()` 在运行时加载；
+ * - 本文件不再包含硬编码的 prompt builder 函数。
  * =============================================================================
  */
-import type { AnalysisProfileContext, EntityCandidateGroup, TitleArbitrationEntry, TitleArbitrationInput, TitleResolutionEntry, TitleResolutionInput } from "@/types/analysis";
-import type { PromptMessageInput } from "@/types/pipeline";
+import type { AnalysisProfileContext } from "@/types/analysis";
 import {
   type ValidationIssue,
   type ValidationIssueType,
@@ -185,25 +181,6 @@ export interface BookValidationPromptInput {
   }>;
 }
 
-/**
- * 功能：将人物档案列表转为 Known Entities 短整型索引文本。
- * 格式：[N] 标准名 | 别名: xxx, yyy | 小传: ...
- * 输入：profiles - 人物档案列表。
- * 输出：多行字符串，每行对应一个人物。
- * 异常：无。
- * 副作用：无。
- */
-function buildEntityContextLines(profiles: AnalysisProfileContext[]): string {
-  return profiles
-    .map((p, idx) => {
-      const id = idx + 1;
-      const uniqueAliases = p.aliases.filter((a) => a !== p.canonicalName);
-      const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(",") : "无";
-      return `[${id}] ${p.canonicalName}|${aliasStr}`;
-    })
-    .join("\n");
-}
-
 export function buildRosterDiscoveryRulesText(input: Pick<RosterDiscoveryInput, "genericTitlesExample" | "entityExtractionRules">): string {
   const genericTitlesExample = input.genericTitlesExample ?? "";
   const rosterSpecificRules: readonly string[] = [
@@ -253,93 +230,6 @@ export function buildIndependentExtractionRulesText(input: Pick<IndependentExtra
   ].map((rule, index) => `${index + 1}. ${rule}`).join("\n");
 }
 
-/**
- * 功能：生成"章节人物名册发现"Phase 1 Prompt。
- * 输入：input - 书名、章节信息、完整正文与已知人物档案。
- * 输出：可直接发送给模型的字符串 Prompt。
- * 异常：无。
- * 副作用：无。
- */
-export function buildRosterDiscoveryPrompt(input: RosterDiscoveryInput): PromptMessageInput {
-  const entityContextLines =
-    input.profiles.length > 0
-      ? buildEntityContextLines(input.profiles)
-      : "（本书目前尚无已建档人物）";
-
-  const rulesSection = buildRosterDiscoveryRulesText(input);
-
-  const user = [
-    "## 任务",
-    `枚举《${input.bookTitle}》第${input.chapterNo}章「${input.chapterTitle}」原文中所有人物称谓（姓名、官衔、亲属称呼等）。`,
-    "",
-    "## 已知人物档案",
-    entityContextLines,
-    "",
-    "## 规则",
-    rulesSection,
-    "",
-    "## 输出格式（仅输出 JSON 数组）",
-    JSON.stringify([
-      { surfaceForm: "范举人", entityId: 1 },
-      { surfaceForm: "范老爷", entityId: 1, aliasType: "NICKNAME" },
-      { surfaceForm: "严监生", isNew: true },
-      { surfaceForm: "太祖皇帝", isNew: true, isTitleOnly: true, aliasType: "TITLE", contextHint: "明朝开国", suggestedRealName: "朱元璋", aliasConfidence: 0.9 },
-      { surfaceForm: "那老者", generic: true }
-    ]),
-    "",
-    "## 本章正文",
-    input.content
-  ].join("\n");
-
-  return {
-    system: "你是古典中文文献的命名实体专家，专注于从文言文中准确识别人物称谓。重点：同一人物的不同称呼（姓名、字、号、官衔、亲属称呼）都应映射到同一 entityId。",
-    user
-  };
-}
-
-/**
- * 功能：生成"章节分段分析"高约束 Prompt。
- * 输入：input - 当前书籍、章节、分段内容与人物上下文。
- * 输出：可直接发送给模型的字符串 Prompt。
- * 异常：无。
- * 副作用：无。
- */
-export function buildChapterAnalysisPrompt(input: BuildPromptInput): PromptMessageInput {
-  // 实体上下文：使用短整型索引格式（[N] 标准名 | 别名 | 小传），让模型直接引用标准名
-  const entityContext =
-    input.profiles.length > 0
-      ? buildEntityContextLines(input.profiles)
-      : "（本书目前尚无已建档人物）";
-
-  const rulesSection = buildChapterAnalysisRulesText(input);
-
-  const user = [
-    "## Task",
-    `分析《${input.bookTitle}》第${input.chapterNo}回（${input.chapterTitle}）片段（${input.chunkIndex + 1}/${input.chunkCount}），提取 biographies/mentions/relationships。`,
-    "",
-    "## Rules",
-    rulesSection,
-    "",
-    "## Known Entities",
-    entityContext,
-    "",
-    "## JSON Format",
-    JSON.stringify({
-      biographies  : [{ personaName: "标准名", category: "枚举", event: "行为", title: "头衔", location: "地点", virtualYear: "时间", ironyNote: "可选" }],
-      mentions     : [{ personaName: "标准名", rawText: "原文", summary: "状态", paraIndex: 0 }],
-      relationships: [{ sourceName: "发起者", targetName: "接收者", type: "关系类型", weight: 0.5, description: "结论", evidence: "原文证据" }]
-    }),
-    "",
-    "## Source Text",
-    input.content
-  ].join("\n");
-
-  return {
-    system: "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。重点：优先将称谓映射到已知人物，避免重复创建同一角色。",
-    user
-  };
-}
-
 /** * 功能：生成 Pass 1"独立章节实体提取"Prompt。
  * 不传入任何已有 profiles，让 LLM 纯粹从原文中提取人物。
  * 消除 entityId 数字编号选错导致的级联合并错误。
@@ -359,152 +249,9 @@ export interface IndependentExtractionInput {
   genericTitlesExample? : string;
 }
 
-export function buildIndependentExtractionPrompt(input: IndependentExtractionInput): PromptMessageInput {
-  const rulesText = buildIndependentExtractionRulesText(input);
-
-  const user = [
-    "## 任务",
-    `列出《${input.bookTitle}》第${input.chapterNo}回「${input.chapterTitle}」中出现的所有人物。`,
-    "",
-    "## 规则",
-    rulesText,
-    "",
-    "## 输出格式（仅输出 JSON 数组）",
-    JSON.stringify([
-      { name: "范进", aliases: ["范举人", "范老爷"], description: "落魄书生，考中举人后喜极而疯", category: "PERSON" },
-      { name: "朱元璋", aliases: ["吴王", "太祖"], description: "被提及的历史人物", category: "MENTIONED_ONLY" }
-    ]),
-    "",
-    "## 原文",
-    input.content
-  ].join("\n");
-
-  return {
-    system: "你是中国古典文学命名实体识别专家。请从给定章节中精准提取所有人物，注意区分人物的不同称谓并合并为同一条记录。",
-    user
-  };
-}
 
 
-/**
- * 功能：生成 Pass 2"实体消歧"Prompt。
- * 每次发送一批候选组，让 LLM 判断组内称谓是否指同一人。
- */
-export function buildEntityResolutionPrompt(
-  bookTitle: string,
-  groups: EntityCandidateGroup[]
-): PromptMessageInput {
-  const groupsText = groups.map(g => {
-    const membersText = g.members.map(m =>
-      `  - "${m.name}"${m.description ? `（${m.description}）` : ""}，出现于第${m.chapterNos.join("、")}回`
-    ).join("\n");
-    return `### 候选组 ${g.groupId}\n${membersText}`;
-  }).join("\n\n");
 
-  const user = [
-    "## 任务",
-    `以下是从《${bookTitle}》各章节独立提取的人物候选组。每组内的人物名称可能指同一人（但也可能不是）。`,
-    "请逐组判断：组内这些称谓是否指同一个人？",
-    "",
-    "## 规则",
-    "1. shouldMerge=true 仅当你确信组内所有称谓都指同一人（例如 范进/范举人/范老爷 是同一人）。",
-    "2. shouldMerge=false 当组内存在不同人物的称谓（例如 娄三公子/娄四公子 是兄弟俩，不是同一人）。",
-    "3. mergedName 填写最正式的全名。",
-    "4. mergedAliases 包含所有确实属于该人物的称谓（包括 mergedName 本身）。",
-    "5. 若 shouldMerge=false，mergedName 填组内第一个名字，mergedAliases 只含该名字。",
-    "6. reason 简述判断依据，≤30字。",
-    "",
-    "## 候选组",
-    groupsText,
-    "",
-    "## 输出格式（仅输出 JSON 数组，每组一条）",
-    JSON.stringify([
-      { groupId: 1, shouldMerge: true, mergedName: "范进", mergedAliases: ["范进", "范举人", "范老爷"], reason: "同一人物的不同称呼" },
-      { groupId: 2, shouldMerge: false, mergedName: "娄三公子", mergedAliases: ["娄三公子"], reason: "娄三公子和娄四公子是兄弟二人" }
-    ])
-  ].join("\n");
-
-  return {
-    system: "你是中国古典文学人物消歧专家。你的任务是判断从不同章节提取的人物称谓是否指向同一个人。注意：同姓但不同人（如兄弟、父子）不应合并。",
-    user
-  };
-}
-
-/** * 功能：生成“称号人物真名溯源” Phase 5 Prompt。
- * 输入：input - 书名与待溯源称号列表。
- * 输出：可直接发送给模型的字符串 Prompt。
- * 异常：无。
- * 副作用：无。
- */
-export function buildTitleResolutionPrompt(input: TitleResolutionInput): PromptMessageInput {
-  const tableRows = input.entries.map(
-    (e) => `| ${e.title} | ${e.localSummary ?? ""} |`
-  ).join("\n");
-
-  const exampleOutput: Omit<TitleResolutionEntry, "personaId">[] = [
-    { title: "太祖皇帝", realName: "朱元璋", confidence: 0.95, historicalNote: "明朝开国皇帝，庙号太祖" },
-    { title: "吴王",   realName: "朱元璋", confidence: 0.90, historicalNote: "封吴王时期尚未称帝" },
-    { title: "不知名称号", realName: null, confidence: 0.2, historicalNote: "无历史依据" }
-  ];
-
-  const user = [
-    "## 任务",
-    `书名：《${input.bookTitle}》`,
-    "以下人物在书中仅以称号出现，请根据书中语境和历史知识，推断其真实姓名。",
-    "",
-    "## 称号列表",
-    "| 称号 | 书中摘要 |",
-    "|------|----------|",
-    tableRows,
-    "",
-    "## 输出规则",
-    "1. realName 填写最准确的历史真名（如\"朱元璋\"）",
-    "2. 若确实无法判断→ realName 填 null",
-    "3. confidence 0.0-1.0：有据可查填 0.85+，较有把握的推断填 0.7-0.85，一般推断填 0.5-0.7，不确定填 < 0.5",
-    "4. historicalNote 简短说明推理依据（≤ 30字）",
-    "5. 每个称号必须对应一条输出，不得多个称号共用同一条",
-    "",
-    "## 输出格式（仅输出 JSON 数组，不加任何说明或 Markdown 代码块）",
-    JSON.stringify(exampleOutput, null, 2)
-  ].join("\n");
-
-  return {
-    system: "你是中国古典文学历史背景专家，熟悉明清小说历史原型。",
-    user
-  };
-}
-
-export function buildTitleArbitrationPrompt(input: TitleArbitrationInput): PromptMessageInput {
-  const terms = input.terms.map((item) =>
-    `- "${item.surfaceForm}" (chapterAppearanceCount=${item.chapterAppearanceCount}, hasStableAliasBinding=${item.hasStableAliasBinding}, singlePersonaConsistency=${item.singlePersonaConsistency}, genericRatio=${item.genericRatio.toFixed(2)})`
-  ).join("\n");
-
-  const example: TitleArbitrationEntry[] = [
-    { surfaceForm: "掌门", isPersonalized: true, confidence: 0.82, reason: "多章稳定指向同一人物" },
-    { surfaceForm: "先生", isPersonalized: false, confidence: 0.74, reason: "多次泛指，缺乏稳定绑定" }
-  ];
-
-  const user = [
-    "## 任务",
-    `判断《${input.bookTitle}》中的灰区称谓是否已经人格化为特定人物稳定称呼。`,
-    "",
-    "## 约束",
-    "1. 只针对给定称谓逐项判断，不扩展新增词。",
-    "2. 若称谓明显泛指，isPersonalized 返回 false。",
-    "3. confidence 只反映当前判断确信度。",
-    "",
-    "## 待判定称谓",
-    terms || "（无）",
-    "",
-    "## 输出格式（仅输出 JSON 数组，不加任何说明）",
-    JSON.stringify(example, null, 2)
-  ].join("\n");
-
-  return {
-    system: "你是文学实体解析仲裁助手。",
-    user
-  };
-}
 
 const VALIDATION_ISSUE_TYPES: readonly ValidationIssueType[] = [
   "ALIAS_AS_NEW_PERSONA",
@@ -574,107 +321,7 @@ function normalizeConfidence(value: unknown): number {
   return value;
 }
 
-export function buildChapterValidationPrompt(input: ChapterValidationPromptInput): PromptMessageInput {
-  const user = [
-    "## 核心原则",
-    "1. 保守判断：只报告你确信存在的问题，不确定时宁可不报",
-    "2. 证据导向：每个问题必须附带原文证据或数据矛盾点",
-    "3. 不要过度修正：不要仅因为“可能”就建议合并或拆分",
-    "4. 不要发明信息：不要推测原文中没有的信息",
-    "",
-    "## 检查维度",
-    "1. 别名误识别：检查新建人物是否实际上是已知人物的别名/称号",
-    "2. 错误合并：检查是否有不同人物被错误归到同一 persona",
-    "3. 漏掉映射：检查 TITLE_ONLY 人物是否有线索可确定真名",
-    "4. 关系合理性：检查关系是否自洽（无自我关系、无明显矛盾）",
-    "5. 同名异人：检查同名人物在不同上下文中是否表现一致",
-    "",
-    "## 书籍上下文",
-    `书名: 《${input.bookTitle}》`,
-    `章节: 第${input.chapterNo}回「${input.chapterTitle}」`,
-    "",
-    "## 已知人物档案",
-    ...input.existingPersonas.map((p) =>
-      `- ${p.name} (${p.nameType}, 置信度:${p.confidence}) 别名:[${p.aliases.join(",")}]`
-    ),
-    "",
-    "## 本章新建人物",
-    ...input.newlyCreated.map((p) =>
-      `- ${p.name} (${p.nameType}, 置信度:${p.confidence})`
-    ),
-    "",
-    "## 本章提及记录",
-    ...input.chapterMentions.slice(0, 50).map((m) =>
-      `- ${m.personaName}: "${m.rawText.slice(0, 80)}"`
-    ),
-    "",
-    "## 本章关系记录",
-    ...input.chapterRelationships.map((r) =>
-      `- ${r.sourceName} → ${r.targetName}: ${r.type}`
-    ),
-    "",
-    "## 原文片段（重点段落）",
-    input.chapterContent.slice(0, 3000),
-    "",
-    "## 输出格式（仅输出 JSON）",
-    JSON.stringify({
-      issues: [{ type: "ALIAS_AS_NEW_PERSONA", severity: "ERROR", confidence: 0.85, description: "描述", evidence: "证据", affectedPersonaIds: ["id"], suggestion: { action: "MERGE", targetPersonaId: "id", sourcePersonaId: "id", newName: "名", newAlias: "别名", reason: "理由" } }]
-    }),
-    "type: ALIAS_AS_NEW_PERSONA|WRONG_MERGE|MISSING_NAME_MAPPING|INVALID_RELATIONSHIP|SAME_NAME_DIFFERENT_PERSON|DUPLICATE_PERSONA",
-    "severity: ERROR|WARNING|INFO; action: MERGE|SPLIT|UPDATE_NAME|ADD_ALIAS|DELETE|ADD_MAPPING|MANUAL_REVIEW",
-    "无问题返回{\"issues\":[]}。confidence<0.6不报告。evidence必须来自原文，不可编造。"
-  ].join("\n");
 
-  return {
-    system: "你是一个文学文本实体解析的质量审核专家。你的任务是检查人物解析结果的准确性，发现并报告问题。",
-    user
-  };
-}
-
-export function buildBookValidationPrompt(input: BookValidationPromptInput): PromptMessageInput {
-  const user = [
-    "## 任务",
-    `检查《${input.bookTitle}》全书人物解析结果的一致性与自洽性。`,
-    "",
-    "## 检查重点",
-    "1. 全书人物列表一致性（同人多名、同名异人、重复 persona）",
-    "2. 别名覆盖率（称号是否应回填到真实姓名）",
-    "3. 关系图自洽性（矛盾关系、自我关系）",
-    "4. 低置信实体是否需要人工审核",
-    "",
-    "## 全书人物列表",
-    ...input.personas.map((p) =>
-      `- ${p.name} [${p.id}] (${p.nameType}, 置信度:${p.confidence}, 提及:${p.mentionCount}) 别名:[${p.aliases.join(",")}]`
-    ),
-    "",
-    "## 关系统计",
-    ...input.relationships.map((r) =>
-      `- ${r.sourceName} → ${r.targetName}: ${r.type} (出现 ${r.count} 次)`
-    ),
-    "",
-    "## 低置信人物",
-    ...input.lowConfidencePersonas.map((p) =>
-      `- ${p.name} [${p.id}] (置信度:${p.confidence})`
-    ),
-    "",
-    "## 抽样原文证据",
-    ...input.sourceExcerpts.map((item) =>
-      `- 第${item.chapterNo}章「${item.chapterTitle}」(${item.reason})：${item.excerpt}`
-    ),
-    "",
-    "## 输出格式（仅输出 JSON）",
-    JSON.stringify({
-      issues: [{ type: "DUPLICATE_PERSONA", severity: "WARNING", confidence: 0.9, description: "描述", evidence: "证据", affectedPersonaIds: ["id1", "id2"], suggestion: { action: "MERGE", targetPersonaId: "id1", sourcePersonaId: "id2", reason: "理由" } }]
-    }),
-    "type: DUPLICATE_PERSONA|ALIAS_AS_NEW_PERSONA|WRONG_MERGE|MISSING_NAME_MAPPING|INVALID_RELATIONSHIP",
-    "无问题返回{\"issues\":[]}。confidence<0.6不输出。仅输出有明确证据的问题。"
-  ].join("\n");
-
-  return {
-    system: "你是文学实体识别全书质检专家，需要做跨章节一致性检查。",
-    user
-  };
-}
 
 export function parseValidationResponse(raw: string): ValidationIssue[] {
   let parsed: unknown;

@@ -52,7 +52,7 @@ interface LibraryEmptyStateProps {}
 
 function LibraryEmptyState({}: LibraryEmptyStateProps) {
   return (
-    <section className="library-empty-state flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 text-center">
+    <section className="library-empty-state flex min-h-[calc(100dvh-64px)] flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 rounded-full bg-primary-subtle p-6">
         <BookOpen className="h-12 w-12 text-primary" strokeWidth={1.5} />
       </div>
@@ -83,7 +83,7 @@ export function LibraryHome({ books }: LibraryHomeProps) {
   const totalPersonas = completedBooks.reduce((acc, book) => acc + (book.personaCount ?? 0), 0);
 
   return (
-    <div className="library-home library-ambient min-h-[calc(100vh-64px)]">
+    <div className="library-home library-ambient min-h-[calc(100dvh-64px)]">
       <div className="library-home-inner mx-auto max-w-[1440px] px-6 py-8">
         <section className="library-hero mb-12 border-b border-border py-12 text-center">
           <h1 className="mb-4 text-3xl font-bold tracking-tight text-balance">中国古典文学人物关系图谱</h1>

@@ -11,26 +11,18 @@ import { createGlobalEntityResolver } from "@/server/modules/analysis/pipelines/
 
 const {
   createAiProviderClientMock,
-  buildEntityResolutionPromptMock,
   resolvePromptTemplateMock
 } = vi.hoisted(() => ({
   createAiProviderClientMock     : vi.fn(),
-  buildEntityResolutionPromptMock: vi.fn((bookTitle: string, groups: Array<{ groupId: number }>) => (
-    `book=${bookTitle};groups=${groups.map((group) => group.groupId).join(",")}`
-  )),
-  resolvePromptTemplateMock: vi.fn().mockImplementation(async ({ fallback }: { fallback: unknown }) => fallback)
+  resolvePromptTemplateMock: vi.fn().mockImplementation(async () => ({ system: "mock-system", user: "mock-user" }))
 }));
 
 vi.mock("@/server/providers/ai", () => ({
   createAiProviderClient: createAiProviderClientMock
 }));
 
-vi.mock("@/server/modules/analysis/services/prompts", () => ({
-  buildEntityResolutionPrompt: buildEntityResolutionPromptMock
-}));
-
 vi.mock("@/server/modules/knowledge", () => ({
-  resolvePromptTemplateOrFallback: resolvePromptTemplateMock
+  resolvePromptTemplate: resolvePromptTemplateMock
 }));
 
 function buildChapterEntityList(

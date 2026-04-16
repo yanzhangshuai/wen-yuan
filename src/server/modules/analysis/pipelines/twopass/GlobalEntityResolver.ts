@@ -18,8 +18,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { AiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
 import type { ResolvedStageModel, ResolvedFallbackModel } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createAiProviderClient } from "@/server/providers/ai";
-import { buildEntityResolutionPrompt } from "@/server/modules/analysis/services/prompts";
-import { resolvePromptTemplateOrFallback } from "@/server/modules/knowledge";
+import { resolvePromptTemplate } from "@/server/modules/knowledge";
 import type {
   ChapterEntityList,
   EntityCandidateGroup,
@@ -287,21 +286,19 @@ export function createGlobalEntityResolver(
 
     for (let i = 0; i < groups.length; i += RESOLUTION_BATCH_SIZE) {
       const batch = groups.slice(i, i + RESOLUTION_BATCH_SIZE);
-      const fallbackPrompt = buildEntityResolutionPrompt(bookTitle, batch);
       const candidateGroups = batch.map((group) => {
         const membersText = group.members.map((member) =>
           `  - "${member.name}"${member.description ? `（${member.description}）` : ""}，出现于第${member.chapterNos.join("、")}回`
         ).join("\n");
         return `### 候选组 ${group.groupId}\n${membersText}`;
       }).join("\n\n");
-      const prompt = await resolvePromptTemplateOrFallback({
+      const prompt = await resolvePromptTemplate({
         slug        : "ENTITY_RESOLUTION",
         replacements: {
           bookTitle,
           candidateGroups,
           groups: candidateGroups
-        },
-        fallback: fallbackPrompt
+        }
       });
 
       const result = await aiCallExecutor.execute({

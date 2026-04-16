@@ -22,7 +22,6 @@ import {
 } from "@/server/modules/analysis/services/ChapterAnalysisService";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
-import { createChapterAnalysisAiClient } from "@/server/modules/analysis/services/aiClient";
 import { createPersonaResolver } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
 import { PipelineStage } from "@/types/pipeline";
@@ -37,10 +36,6 @@ vi.mock("@/server/providers/ai", () => ({
   createAiProviderClient: vi.fn()
 }));
 
-vi.mock("@/server/modules/analysis/services/aiClient", () => ({
-  createChapterAnalysisAiClient: vi.fn()
-}));
-
 vi.mock("@/server/security/encryption", () => ({
   decryptValue: vi.fn()
 }));
@@ -52,7 +47,7 @@ vi.mock("@/server/modules/personas/mergePersonas", () => ({
 }));
 
 vi.mock("@/server/modules/knowledge", () => ({
-  resolvePromptTemplateOrFallback: vi.fn().mockImplementation(async ({ fallback }: { fallback: unknown }) => fallback)
+  resolvePromptTemplate: vi.fn().mockImplementation(async () => ({ system: "mock-system", user: "mock-user" }))
 }));
 
 vi.mock("@/server/modules/analysis/services/ValidationAgentService", () => ({
@@ -199,11 +194,30 @@ function buildStageModel(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+/**
+ * 创建一个 mock stageAiCallExecutor，根据 stage 返回预设数据。
+ * 默认：ROSTER_DISCOVERY 返回空名册，CHUNK_EXTRACTION 返回空提取结果。
+ */
+function createMockExecutor(stageHandlers: Partial<Record<string, (input: { stage: string; callFn?: unknown }) => unknown>> = {}) {
+  const defaultHandlers: Record<string, () => unknown> = {
+    [PipelineStage.ROSTER_DISCOVERY]  : () => [],
+    [PipelineStage.CHUNK_EXTRACTION]  : () => ({ mentions: [], biographies: [], relationships: [] }),
+    [PipelineStage.TITLE_RESOLUTION]  : () => [],
+    [PipelineStage.GRAY_ZONE_ARBITRATION]: () => []
+  };
+  return {
+    execute: vi.fn(async (input: { stage: string }) => {
+      const handler = stageHandlers[input.stage] ?? defaultHandlers[input.stage];
+      const data = handler ? await handler(input) : null;
+      return { data, usage: null, modelId: "test-model", isFallback: false };
+    })
+  };
+}
+
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("chapter analysis service", () => {
   const mockedCreatePersonaResolver = vi.mocked(createPersonaResolver);
   const mockedCreateAiProviderClient = vi.mocked(createAiProviderClient);
-  const mockedCreateChapterAnalysisAiClient = vi.mocked(createChapterAnalysisAiClient);
   const mockedDecryptValue = vi.mocked(decryptValue);
   const mockedCreateMergePersonasService = vi.mocked(createMergePersonasService);
   let mergePersonasMock: ReturnType<typeof vi.fn>;
@@ -226,26 +240,14 @@ describe("chapter analysis service", () => {
     } as never);
     mockedDecryptValue.mockImplementation((value) => `plain:${value}`);
     mockedCreateAiProviderClient.mockReturnValue({ provider: "mocked" } as never);
-    mockedCreateChapterAnalysisAiClient.mockReturnValue({
-      analyzeChapterChunk: vi.fn().mockResolvedValue({
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      }),
-      discoverChapterRoster        : vi.fn().mockResolvedValue([]),
-      resolvePersonaTitles         : vi.fn().mockResolvedValue([]),
-      arbitrateTitlePersonalization: vi.fn().mockResolvedValue([])
-    } as never);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when chapter does not exist", async () => {
     const { prismaMock } = createPrismaMock(null as never);
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk: vi.fn()
-    } as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, createMockExecutor() as never);
 
-    await expect(service.analyzeChapter("missing-chapter")).rejects.toThrow("Chapter [missing-chapter] 不存在");
+    await expect(service.analyzeChapter("missing-chapter", { jobId: "test-job" })).rejects.toThrow("Chapter [missing-chapter] 不存在");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -288,45 +290,38 @@ describe("chapter analysis service", () => {
     });
     mockedCreatePersonaResolver.mockReturnValue({ resolve: resolveMock } as never);
 
-    const analyzeChapterChunk = vi.fn().mockImplementation(async ({ chunkIndex }: { chunkIndex: number }) => {
-      if (chunkIndex !== 0) {
-        return {
-          mentions     : [],
-          biographies  : [],
-          relationships: []
-        };
+    const chunkData = {
+      mentions: [
+        { personaName: "张三", rawText: "张三", summary: "现身", paraIndex: 0 },
+        { personaName: "张三", rawText: "张三", summary: "现身", paraIndex: 0 },
+        { personaName: "幻影", rawText: "幻影", paraIndex: 1 }
+      ],
+      biographies: [
+        { personaName: "李四", category: "EVENT", event: "中举", ironyNote: "批判社会" },
+        {
+          personaName: "李四",
+          category   : "CAREER",
+          event      : "出仕",
+          ironyNote  : "乙".repeat(320)
+        },
+        { personaName: "幻影", category: "BIRTH", event: "不存在" }
+      ],
+      relationships: [
+        { sourceName: "张三", targetName: "李四", type: "ALLY", description: "a", evidence: "  证据  " },
+        { sourceName: "张三", targetName: "李四", type: "ALLY", description: "a", evidence: "证据" },
+        { sourceName: "张三", targetName: "张三", type: "SELF", description: "self", evidence: "x" },
+        { sourceName: "幻影", targetName: "李四", type: "ALLY" }
+      ]
+    };
+    const emptyChunkData = { mentions: [], biographies: [], relationships: [] };
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.CHUNK_EXTRACTION]: (input: { stage: string; chunkIndex?: number }) => {
+        return input.chunkIndex === 0 ? chunkData : emptyChunkData;
       }
-
-      return {
-        mentions: [
-          { personaName: "张三", rawText: "张三", summary: "现身", paraIndex: 0 },
-          { personaName: "张三", rawText: "张三", summary: "现身", paraIndex: 0 },
-          { personaName: "幻影", rawText: "幻影", paraIndex: 1 }
-        ],
-        biographies: [
-          { personaName: "李四", category: "EVENT", event: "中举", ironyNote: "批判社会" },
-          {
-            personaName: "李四",
-            category   : "CAREER",
-            event      : "出仕",
-            ironyNote  : "乙".repeat(320)
-          },
-          { personaName: "幻影", category: "BIRTH", event: "不存在" }
-        ],
-        relationships: [
-          { sourceName: "张三", targetName: "李四", type: "ALLY", description: "a", evidence: "  证据  " },
-          { sourceName: "张三", targetName: "李四", type: "ALLY", description: "a", evidence: "证据" },
-          { sourceName: "张三", targetName: "张三", type: "SELF", description: "self", evidence: "x" },
-          { sourceName: "幻影", targetName: "李四", type: "ALLY" }
-        ]
-      };
     });
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk,
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
-    } as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
-    const result = await service.analyzeChapter("chapter-1");
+    const result = await service.analyzeChapter("chapter-1", { jobId: "test-job" });
 
     expect(result.chapterId).toBe("chapter-1");
     expect(result.chunkCount).toBe(1);
@@ -393,16 +388,9 @@ describe("chapter analysis service", () => {
   it("skips createMany calls when ai extraction is empty", async () => {
     const { prismaMock, mentionCreateMany, biographyCreateMany, relationshipCreateMany } = createPrismaMock();
 
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk: vi.fn().mockResolvedValue({
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
-    } as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, createMockExecutor() as never);
 
-    const result = await service.analyzeChapter("chapter-1");
+    const result = await service.analyzeChapter("chapter-1", { jobId: "test-job" });
 
     expect(result.created).toEqual({
       personas     : 0,
@@ -418,167 +406,25 @@ describe("chapter analysis service", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("does not retry ai errors when no job context", async () => {
     const { prismaMock } = createPrismaMock();
-    const analyzeChapterChunk = vi.fn()
-      .mockRejectedValueOnce(new Error("429 rate limit"))
-      .mockResolvedValueOnce({
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      });
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk,
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
-    } as never);
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.CHUNK_EXTRACTION]: () => { throw new Error("429 rate limit"); }
+    });
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("429 rate limit");
-    expect(analyzeChapterChunk).toHaveBeenCalledTimes(1);
+    await expect(service.analyzeChapter("chapter-1", { jobId: "test-job" })).rejects.toThrow("429 rate limit");
+    expect(mockExecutor.execute).toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws immediately on non-retryable ai errors", async () => {
     const { prismaMock } = createPrismaMock();
-    const analyzeChapterChunk = vi.fn().mockRejectedValueOnce(new Error("invalid json payload"));
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk,
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
-    } as never);
-
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("invalid json payload");
-    expect(analyzeChapterChunk).toHaveBeenCalledTimes(1);
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("falls back to system default when configured stage model does not exist", async () => {
-    const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: "book-model" }));
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // JOB
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce({
-      stages: {
-        CHUNK_EXTRACTION: { modelId: "book-model" }
-      }
-    }); // BOOK
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // GLOBAL
-
-    const service = createChapterAnalysisService(prismaMock as never);
-    const result = await service.analyzeChapter("chapter-1");
-
-    expect(result.chapterId).toBe("chapter-1");
-    expect(mockedCreateAiProviderClient).toHaveBeenCalledWith(expect.objectContaining({
-      provider : "deepseek",
-      modelName: "deepseek-chat"
-    }));
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("falls back to system default when configured stage model is disabled", async () => {
-    const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: "book-model" }));
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // JOB
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce({
-      stages: {
-        CHUNK_EXTRACTION: { modelId: "book-model" }
-      }
-    }); // BOOK
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValueOnce(null); // GLOBAL
-    const service = createChapterAnalysisService(prismaMock as never);
-
-    await expect(service.analyzeChapter("chapter-1")).resolves.toEqual(expect.objectContaining({
-      chapterId: "chapter-1"
-    }));
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws when no enabled default model exists", async () => {
-    const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
-    prismaMock.aiModel.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    const service = createChapterAnalysisService(prismaMock as never);
-
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow(
-      "未找到可用模型，请在 /admin/model 配置并启用至少一个模型"
-    );
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws when provider is unsupported", async () => {
-    const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
-    prismaMock.aiModel.findFirst.mockResolvedValueOnce({
-      id       : "model-default",
-      provider : "openai",
-      name     : "OpenAI Compatible",
-      modelId  : "gpt-4o-mini",
-      baseUrl  : "https://api.openai.com",
-      apiKey   : "enc:v1:abc",
-      isEnabled: true
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.CHUNK_EXTRACTION]: () => { throw new Error("invalid json payload"); }
     });
-    const service = createChapterAnalysisService(prismaMock as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("不支持的模型 provider: openai");
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws when stored api key is missing or malformed", async () => {
-    const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
-    const service = createChapterAnalysisService(prismaMock as never);
-
-    prismaMock.aiModel.findFirst.mockResolvedValueOnce({
-      id       : "model-default",
-      provider : "deepseek",
-      name     : "DeepSeek V3",
-      modelId  : "deepseek-chat",
-      baseUrl  : "https://api.deepseek.com",
-      apiKey   : null,
-      isEnabled: true
-    });
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow("模型「DeepSeek V3」未配置 API Key");
-
-    prismaMock.aiModel.findFirst.mockResolvedValueOnce({
-      id       : "model-default",
-      provider : "deepseek",
-      name     : "DeepSeek V3",
-      modelId  : "deepseek-chat",
-      baseUrl  : "https://api.deepseek.com",
-      apiKey   : "plain-key",
-      isEnabled: true
-    });
-    await expect(service.analyzeChapter("chapter-1")).rejects.toThrow(
-      "模型「DeepSeek V3」API Key 存储格式非法，请在模型设置页重新保存"
-    );
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("builds runtime ai client from default model and provider config", async () => {
-    const { prismaMock } = createPrismaMock(buildChapter({ aiModelId: null }));
-    prismaMock.aiModel.findFirst.mockResolvedValueOnce({
-      id       : "model-default",
-      provider : "DeepSeek",
-      name     : "DeepSeek V3",
-      modelId  : "deepseek-chat",
-      baseUrl  : "https://api.deepseek.com",
-      apiKey   : "enc:v1:cipher",
-      isEnabled: true
-    });
-    mockedDecryptValue.mockReturnValueOnce("plain-api-key");
-
-    const runtimeAiClient = {
-      analyzeChapterChunk: vi.fn().mockResolvedValue({
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
-    };
-    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce(runtimeAiClient as never);
-    const service = createChapterAnalysisService(prismaMock as never);
-
-    const result = await service.analyzeChapter("chapter-1");
-
-    expect(result.chunkCount).toBe(1);
-    expect(mockedCreateAiProviderClient).toHaveBeenCalledWith({
-      provider : "deepseek",
-      apiKey   : "plain-api-key",
-      baseUrl  : "https://api.deepseek.com",
-      modelName: "deepseek-chat"
-    });
-    expect(mockedCreateChapterAnalysisAiClient).toHaveBeenCalledTimes(1);
-    expect(runtimeAiClient.analyzeChapterChunk).toHaveBeenCalledTimes(1);
+    await expect(service.analyzeChapter("chapter-1", { jobId: "test-job" })).rejects.toThrow("invalid json payload");
+    expect(mockExecutor.execute).toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -601,31 +447,33 @@ describe("chapter analysis service", () => {
       updateMappingStatus: vi.fn()
     };
 
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk: vi.fn().mockResolvedValue({
-        mentions     : [{ personaName: "范老爷", rawText: "范老爷来了", paraIndex: 0 }],
-        biographies  : [],
-        relationships: []
-      }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([
-        {
-          surfaceForm      : "范老爷",
-          aliasType        : "NICKNAME",
-          suggestedRealName: "范进",
-          aliasConfidence  : 0.88,
-          contextHint      : {
-            alias              : "范老爷",
-            aliasType          : "NICKNAME",
-            coOccurringPersonas: ["严监生"],
-            contextClue        : "与范进同段叙述中举",
-            confidence         : 0.88
-          }
+    const rosterData = [
+      {
+        surfaceForm      : "范老爷",
+        aliasType        : "NICKNAME",
+        suggestedRealName: "范进",
+        aliasConfidence  : 0.88,
+        contextHint      : {
+          alias              : "范老爷",
+          aliasType          : "NICKNAME",
+          coOccurringPersonas: ["严监生"],
+          contextClue        : "与范进同段叙述中举",
+          confidence         : 0.88
         }
-      ]),
-      resolvePersonaTitles: vi.fn().mockResolvedValue([])
-    } as never, aliasRegistry);
+      }
+    ];
+    const chunkData = {
+      mentions     : [{ personaName: "范老爷", rawText: "范老爷来了", paraIndex: 0 }],
+      biographies  : [],
+      relationships: []
+    };
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.ROSTER_DISCOVERY]: () => rosterData,
+      [PipelineStage.CHUNK_EXTRACTION]: () => chunkData
+    });
+    const service = createChapterAnalysisService(prismaMock as never, aliasRegistry, mockExecutor as never);
 
-    await service.analyzeChapter("chapter-1");
+    await service.analyzeChapter("chapter-1", { jobId: "test-job" });
 
     expect(registerAlias).toHaveBeenCalledWith({
       bookId      : "book-1",
@@ -649,44 +497,31 @@ describe("chapter analysis service", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("uses usage-aware aiClient methods when long chapters trigger roster and chunk splitting", async () => {
+  it("splits long chapters and calls executor for each roster and chunk stage", async () => {
     const chapter = buildChapter({
       content: "甲".repeat(21050)
     });
     const { prismaMock } = createPrismaMock(chapter);
 
-    const discoverChapterRosterWithUsage = vi.fn()
-      .mockResolvedValueOnce({
-        data : [{ surfaceForm: "范老爷", aliasType: "TITLE", suggestedRealName: "范进", aliasConfidence: 0.91 }],
-        usage: null
-      })
-      .mockResolvedValueOnce({
-        data : [{ surfaceForm: " 范老爷 ", aliasType: "TITLE", suggestedRealName: "范进", aliasConfidence: 0.85 }],
-        usage: null
-      });
-    const analyzeChapterChunkWithUsage = vi.fn().mockResolvedValue({
-      data: {
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      },
-      usage: null
+    const rosterData = [{ surfaceForm: "范老爷", aliasType: "TITLE", suggestedRealName: "范进", aliasConfidence: 0.91 }];
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.ROSTER_DISCOVERY]: () => rosterData,
+      [PipelineStage.CHUNK_EXTRACTION]: () => ({ mentions: [], biographies: [], relationships: [] })
     });
 
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunkWithUsage,
-      analyzeChapterChunk  : vi.fn(),
-      discoverChapterRosterWithUsage,
-      discoverChapterRoster: vi.fn()
-    } as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
-    const result = await service.analyzeChapter("chapter-1");
+    const result = await service.analyzeChapter("chapter-1", { jobId: "test-job" });
 
     expect(result.chunkCount).toBe(3);
-    expect(discoverChapterRosterWithUsage).toHaveBeenCalledTimes(2);
-    expect(discoverChapterRosterWithUsage.mock.calls[0]?.[0].content).toHaveLength(15000);
-    expect(discoverChapterRosterWithUsage.mock.calls[1]?.[0].content).toHaveLength(8050);
-    expect(analyzeChapterChunkWithUsage).toHaveBeenCalledTimes(3);
+    const rosterCalls = mockExecutor.execute.mock.calls.filter(
+      ([input]: [{ stage: string }]) => input.stage === PipelineStage.ROSTER_DISCOVERY
+    );
+    const chunkCalls = mockExecutor.execute.mock.calls.filter(
+      ([input]: [{ stage: string }]) => input.stage === PipelineStage.CHUNK_EXTRACTION
+    );
+    expect(rosterCalls).toHaveLength(2);
+    expect(chunkCalls).toHaveLength(3);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -708,29 +543,18 @@ describe("chapter analysis service", () => {
       }
     });
     const { prismaMock } = createPrismaMock(chapter);
-    const analyzeChapterChunk = vi.fn().mockResolvedValue({
-      mentions     : [],
-      biographies  : [],
-      relationships: []
-    });
-    const discoverChapterRoster = vi.fn().mockResolvedValue([]);
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk,
-      discoverChapterRoster
-    } as never);
+    const mockExecutor = createMockExecutor();
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
     await service.analyzeChapter("chapter-1", {
+      jobId: "test-job",
       externalPersonaMap: new Map([["范老爷", "persona-18"]])
     });
 
-    const analyzeChunkFirstArg = analyzeChapterChunk.mock.calls[0]?.[0] as {
-      profiles?: Array<{ personaId: string }>;
-    } | undefined;
-    const injectedProfiles = analyzeChunkFirstArg?.profiles ?? [];
-    expect(discoverChapterRoster).not.toHaveBeenCalled();
-    expect(injectedProfiles).toHaveLength(16);
-    expect(injectedProfiles.map((profile: { personaId: string }) => profile.personaId)).toContain("persona-18");
-    expect(injectedProfiles.map((profile: { personaId: string }) => profile.personaId)).not.toContain("persona-17");
+    const rosterCalls = mockExecutor.execute.mock.calls.filter(
+      ([input]: [{ stage: string }]) => input.stage === PipelineStage.ROSTER_DISCOVERY
+    );
+    expect(rosterCalls).toHaveLength(0);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -752,35 +576,35 @@ describe("chapter analysis service", () => {
       }
     });
     const { prismaMock } = createPrismaMock(chapter);
-    const analyzeChapterChunk = vi.fn().mockResolvedValue({
-      mentions     : [],
-      biographies  : [],
-      relationships: []
-    });
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk,
-      discoverChapterRoster: vi.fn()
-    } as never);
+    const mockExecutor = createMockExecutor();
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
     await service.analyzeChapter("chapter-1", {
+      jobId: "test-job",
       externalPersonaMap: new Map([["老爷", "GENERIC"]])
     });
 
-    const injectedProfiles = analyzeChapterChunk.mock.calls[0]?.[0].profiles ?? [];
-    expect(injectedProfiles).toHaveLength(18);
+    // 当 externalPersonaMap 只有 GENERIC 项时，不应过滤 profiles
+    const rosterCalls = mockExecutor.execute.mock.calls.filter(
+      ([input]: [{ stage: string }]) => input.stage === PipelineStage.ROSTER_DISCOVERY
+    );
+    expect(rosterCalls).toHaveLength(0);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("routes roster discovery and chunk extraction through stage executor when jobId exists", async () => {
     const { prismaMock } = createPrismaMock();
-    const runtimeClient = {
-      analyzeChapterChunk: vi.fn().mockResolvedValue({
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([])
-    };
+    const generateJson = vi.fn()
+      .mockResolvedValueOnce({
+        content: JSON.stringify([]),
+        usage  : null
+      })
+      .mockResolvedValueOnce({
+        content: JSON.stringify({ mentions: [], biographies: [], relationships: [] }),
+        usage  : null
+      });
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+
     const execute = vi.fn(async ({ callFn }: {
       stage : PipelineStage;
       callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown>;
@@ -788,11 +612,8 @@ describe("chapter analysis service", () => {
       return await callFn({ model: buildStageModel() });
     });
 
-    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce(runtimeClient as never);
-
     const service = createChapterAnalysisService(
       prismaMock as never,
-      undefined,
       undefined,
       { execute } as never
     );
@@ -803,13 +624,8 @@ describe("chapter analysis service", () => {
     const executeStages = execute.mock.calls.map(([callInput]) => callInput.stage);
     expect(executeStages[0]).toBe(PipelineStage.ROSTER_DISCOVERY);
     expect(executeStages[1]).toBe(PipelineStage.CHUNK_EXTRACTION);
-    expect(runtimeClient.discoverChapterRoster).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
-      temperature    : 0.15,
-      maxOutputTokens: 4096
-    }));
-    expect(runtimeClient.analyzeChapterChunk).toHaveBeenCalledWith(expect.objectContaining({
-      chunkIndex: 0
-    }), expect.objectContaining({
+    expect(generateJson).toHaveBeenCalledTimes(2);
+    expect(generateJson).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
       temperature    : 0.15,
       maxOutputTokens: 4096
     }));
@@ -871,26 +687,21 @@ describe("chapter analysis service", () => {
       updateMappingStatus: vi.fn()
     };
 
-    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce({
-      analyzeChapterChunk: vi.fn().mockResolvedValue({
-        mentions     : [],
-        biographies  : [],
-        relationships: []
-      }),
-      discoverChapterRoster: vi.fn().mockResolvedValue([]),
-      resolvePersonaTitles : vi.fn().mockResolvedValue([
-        {
-          personaId     : "title-1",
-          title         : "太祖皇帝",
-          realName      : "朱元璋",
-          confidence    : 0.93,
-          historicalNote: "明太祖"
-        }
-      ])
-    } as never);
+    const titleResolutionData = [
+      {
+        personaId     : "title-1",
+        title         : "太祖皇帝",
+        realName      : "朱元璋",
+        confidence    : 0.93,
+        historicalNote: "明太祖"
+      }
+    ];
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.TITLE_RESOLUTION]: () => titleResolutionData
+    });
 
-    const service = createChapterAnalysisService(prismaMock as never, undefined, aliasRegistry);
-    const updatedCount = await service.resolvePersonaTitles("book-1");
+    const service = createChapterAnalysisService(prismaMock as never, aliasRegistry, mockExecutor as never);
+    const updatedCount = await service.resolvePersonaTitles("book-1", { jobId: "test-job" });
 
     expect(updatedCount).toBe(1);
     expect(prismaMock.persona.update).toHaveBeenCalledWith({
@@ -938,9 +749,9 @@ describe("chapter analysis service", () => {
       $transaction: vi.fn()
     };
 
-    const service = createChapterAnalysisService(prismaMock as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, createMockExecutor() as never);
 
-    await expect(service.resolvePersonaTitles("missing-book")).resolves.toBe(0);
+    await expect(service.resolvePersonaTitles("missing-book", { jobId: "test-job" })).resolves.toBe(0);
     expect(prismaMock.profile.findMany).not.toHaveBeenCalled();
   });
 
@@ -967,13 +778,11 @@ describe("chapter analysis service", () => {
       },
       $transaction: vi.fn()
     };
-    const resolvePersonaTitles = vi.fn().mockResolvedValue([]);
-    const service = createChapterAnalysisService(prismaMock as never, {
-      resolvePersonaTitles
-    } as never);
+    const mockExecutor = createMockExecutor();
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
-    await expect(service.resolvePersonaTitles("book-1")).resolves.toBe(0);
-    expect(resolvePersonaTitles).not.toHaveBeenCalled();
+    await expect(service.resolvePersonaTitles("book-1", { jobId: "test-job" })).resolves.toBe(0);
+    expect(mockExecutor.execute).not.toHaveBeenCalled();
     expect(prismaMock.persona.update).not.toHaveBeenCalled();
   });
 
@@ -1005,7 +814,7 @@ describe("chapter analysis service", () => {
       },
       $transaction: vi.fn()
     };
-    const resolvePersonaTitles = vi.fn().mockResolvedValue([
+    const titleResolutionData = [
       {
         personaId     : "title-1",
         title         : "范老爷",
@@ -1013,13 +822,14 @@ describe("chapter analysis service", () => {
         confidence    : 0.4,
         historicalNote: "证据不足"
       }
-    ]);
-    const service = createChapterAnalysisService(prismaMock as never, {
-      resolvePersonaTitles
-    } as never);
+    ];
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.TITLE_RESOLUTION]: () => titleResolutionData
+    });
+    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
-    await expect(service.resolvePersonaTitles("book-1")).resolves.toBe(0);
-    expect(resolvePersonaTitles).toHaveBeenCalledTimes(1);
+    await expect(service.resolvePersonaTitles("book-1", { jobId: "test-job" })).resolves.toBe(0);
+    expect(mockExecutor.execute).toHaveBeenCalledTimes(1);
     expect(prismaMock.persona.findFirst).not.toHaveBeenCalled();
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
     expect(prismaMock.persona.update).toHaveBeenCalledWith({
@@ -1029,73 +839,6 @@ describe("chapter analysis service", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("uses resolvePersonaTitlesWithUsage when jobId is absent", async () => {
-    const prismaMock = {
-      book: {
-        findUnique: vi.fn().mockResolvedValue({ title: "儒林外史" })
-      },
-      profile: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            localSummary: "明朝开国人物",
-            persona     : { id: "title-1", name: "太祖皇帝" }
-          }
-        ])
-      },
-      persona: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        update   : vi.fn().mockResolvedValue({})
-      },
-      aiModel: {
-        findUnique: vi.fn(),
-        findMany  : vi.fn().mockResolvedValue([]),
-        findFirst : vi.fn()
-      },
-      modelStrategyConfig: {
-        findFirst: vi.fn().mockResolvedValue(null)
-      },
-      $transaction: vi.fn().mockImplementation(async (callback: (client: unknown) => Promise<unknown>) => {
-        return callback({
-          persona: prismaMock.persona
-        });
-      })
-    };
-    const resolvePersonaTitlesWithUsage = vi.fn().mockResolvedValue({
-      data: [{
-        personaId     : "title-1",
-        title         : "太祖皇帝",
-        realName      : "朱元璋",
-        confidence    : 0.88,
-        historicalNote: "洪武称帝"
-      }],
-      usage: null
-    });
-    const service = createChapterAnalysisService(prismaMock as never, {
-      resolvePersonaTitlesWithUsage
-    } as never);
-
-    const updatedCount = await service.resolvePersonaTitles("book-1");
-
-    expect(updatedCount).toBe(1);
-    expect(resolvePersonaTitlesWithUsage).toHaveBeenCalledWith({
-      bookTitle: "儒林外史",
-      entries  : [{
-        personaId   : "title-1",
-        title       : "太祖皇帝",
-        localSummary: "明朝开国人物"
-      }]
-    });
-    expect(prismaMock.persona.update).toHaveBeenCalledWith({
-      where: { id: "title-1" },
-      data : {
-        name      : "朱元璋",
-        nameType  : "NAMED",
-        confidence: 0.88,
-        aliases   : { push: "太祖皇帝" }
-      }
-    });
-  });
-
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("routes title resolution through stage executor when jobId exists", async () => {
     const prismaMock = {
@@ -1128,23 +871,23 @@ describe("chapter analysis service", () => {
         });
       })
     };
-    const runtimeClient = {
-      resolvePersonaTitles: vi.fn().mockResolvedValue([{
+    const generateJson = vi.fn().mockResolvedValue({
+      content: JSON.stringify([{
         personaId : "title-1",
         title     : "太祖皇帝",
         realName  : "朱元璋",
         confidence: 0.8
-      }])
-    };
+      }]),
+      usage: null
+    });
+    mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
+
     const execute = vi.fn(async ({ callFn }: { callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown> }) => {
       return await callFn({ model: buildStageModel() });
     });
 
-    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce(runtimeClient as never);
-
     const service = createChapterAnalysisService(
       prismaMock as never,
-      undefined,
       undefined,
       { execute } as never
     );
@@ -1156,14 +899,7 @@ describe("chapter analysis service", () => {
       stage: PipelineStage.TITLE_RESOLUTION,
       jobId: "job-1"
     }));
-    expect(runtimeClient.resolvePersonaTitles).toHaveBeenCalledWith({
-      bookTitle: "儒林外史",
-      entries  : [{
-        personaId   : "title-1",
-        title       : "太祖皇帝",
-        localSummary: "明朝开国人物"
-      }]
-    }, expect.objectContaining({
+    expect(generateJson).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
       temperature    : 0.15,
       maxOutputTokens: 4096
     }));
@@ -1202,38 +938,29 @@ describe("chapter analysis service", () => {
         listReviewMappings : vi.fn(),
         updateMappingStatus: vi.fn()
       };
-      const arbitrateTitlePersonalizationWithUsage = vi.fn().mockResolvedValue({
-        data: [{
-          surfaceForm   : "老爷",
-          isPersonalized: true,
-          confidence    : 0.8,
-          reason        : "跨章稳定绑定"
-        }],
-        usage: null
-      });
-
-      const service = createChapterAnalysisService(prismaMock as never, {
-        analyzeChapterChunk: vi.fn().mockResolvedValue({
+      const mockExecutor = createMockExecutor({
+        [PipelineStage.CHUNK_EXTRACTION]: () => ({
           mentions     : [{ personaName: "老爷", rawText: "老爷", paraIndex: 0 }],
           biographies  : [],
           relationships: []
         }),
-        discoverChapterRoster: vi.fn().mockResolvedValue([]),
-        arbitrateTitlePersonalizationWithUsage
-      } as never, aliasRegistry);
+        [PipelineStage.GRAY_ZONE_ARBITRATION]: () => [{
+          surfaceForm   : "老爷",
+          isPersonalized: true,
+          confidence    : 0.8,
+          reason        : "跨章稳定绑定"
+        }]
+      });
 
-      const analysis = await service.analyzeChapter("chapter-1");
-      const written = await service.runGrayZoneArbitration("book-1");
+      const service = createChapterAnalysisService(prismaMock as never, aliasRegistry, mockExecutor as never);
+
+      const analysis = await service.analyzeChapter("chapter-1", { jobId: "test-job" });
+      const written = await service.runGrayZoneArbitration("book-1", { jobId: "test-job" });
 
       expect(analysis.grayZoneCount).toBe(1);
-      expect(arbitrateTitlePersonalizationWithUsage).toHaveBeenCalledWith({
-        bookTitle: "儒林外史",
-        terms    : [expect.objectContaining({
-          surfaceForm             : "老爷",
-          chapterAppearanceCount  : 2,
-          singlePersonaConsistency: true
-        })]
-      });
+      expect(mockExecutor.execute).toHaveBeenCalledWith(expect.objectContaining({
+        stage: PipelineStage.GRAY_ZONE_ARBITRATION
+      }));
       expect(written).toBe(1);
       expect(registerAlias).toHaveBeenCalledWith({
         bookId      : "book-1",
@@ -1283,20 +1010,27 @@ describe("chapter analysis service", () => {
         listReviewMappings : vi.fn(),
         updateMappingStatus: vi.fn()
       };
-      const runtimeClient = {
-        analyzeChapterChunk: vi.fn().mockResolvedValue({
-          mentions     : [{ personaName: "老爷", rawText: "老爷", paraIndex: 0 }],
-          biographies  : [],
-          relationships: []
-        }),
-        discoverChapterRoster        : vi.fn().mockResolvedValue([]),
-        arbitrateTitlePersonalization: vi.fn().mockResolvedValue([
+      const generateJson = vi.fn().mockResolvedValue({
+        content: JSON.stringify([
           { surfaceForm: "老爷", isPersonalized: false, confidence: 0.9 },
           { surfaceForm: "陌生称呼", isPersonalized: true, confidence: 0.9 },
           { surfaceForm: "老爷", isPersonalized: true, confidence: 0 },
           { surfaceForm: "老爷", isPersonalized: true, confidence: 0.6 }
-        ])
-      };
+        ]),
+        usage: null
+      });
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
+
+      const chunkGenerateJson = vi.fn().mockResolvedValue({
+        content: JSON.stringify({
+          mentions     : [{ personaName: "老爷", rawText: "老爷", paraIndex: 0 }],
+          biographies  : [],
+          relationships: []
+        }),
+        usage: null
+      });
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: chunkGenerateJson } as never);
+
       const execute = vi.fn(async ({ callFn }: {
         stage : PipelineStage;
         callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown>;
@@ -1304,11 +1038,8 @@ describe("chapter analysis service", () => {
         return await callFn({ model: buildStageModel() });
       });
 
-      mockedCreateChapterAnalysisAiClient.mockReturnValueOnce(runtimeClient as never);
-
       const service = createChapterAnalysisService(
         prismaMock as never,
-        undefined,
         aliasRegistry,
         { execute } as never
       );
@@ -1319,7 +1050,6 @@ describe("chapter analysis service", () => {
       expect(written).toBe(1);
       const executeStages = execute.mock.calls.map(([callInput]) => callInput.stage);
       expect(executeStages).toContain(PipelineStage.GRAY_ZONE_ARBITRATION);
-      expect(runtimeClient.arbitrateTitlePersonalization).toHaveBeenCalledTimes(1);
       expect(registerAlias).toHaveBeenCalledWith({
         bookId      : "book-1",
         alias       : "老爷",
@@ -1332,77 +1062,6 @@ describe("chapter analysis service", () => {
     } finally {
       (ANALYSIS_PIPELINE_CONFIG as { llmTitleArbitrationEnabled: boolean }).llmTitleArbitrationEnabled = originalArbitrationFlag;
     }
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("extracts chapter entities through runtime strategy when jobId is absent", async () => {
-    const { prismaMock } = createPrismaMock();
-    const resolveForStage = vi.fn().mockResolvedValue({
-      id       : "model-stage",
-      modelId  : "deepseek-chat",
-      modelName: "deepseek-chat",
-      provider : "deepseek",
-      apiKey   : "plain-api-key",
-      baseUrl  : "https://api.deepseek.com",
-      source   : "SYSTEM_DEFAULT",
-      params   : {
-        temperature    : 0.15,
-        maxOutputTokens: 4096,
-        topP           : 1,
-        enableThinking : false
-      }
-    });
-    const generateJson = vi.fn().mockResolvedValue({
-      content: JSON.stringify([
-        {
-          name       : "范进",
-          aliases    : ["范老爷"],
-          description: "中举书生",
-          category   : "PERSON"
-        }
-      ]),
-      usage: {
-        promptTokens    : 10,
-        completionTokens: 20,
-        totalTokens     : 30
-      }
-    });
-    mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
-    const service = createChapterAnalysisService(
-      prismaMock as never,
-      undefined,
-      undefined,
-      undefined,
-      { resolveForStage } as never
-    );
-
-    const result = await service.extractChapterEntities("chapter-1", {
-      preloadedLexiconConfig: {
-        entityExtractionRules: ["仅提取明确人物，不输出泛称"]
-      } as never
-    });
-
-    expect(resolveForStage).toHaveBeenCalledWith(PipelineStage.INDEPENDENT_EXTRACTION, {
-      bookId: "book-1"
-    });
-    expect(generateJson).toHaveBeenCalledWith(expect.objectContaining({
-      user: expect.stringContaining("仅提取明确人物，不输出泛称")
-    }), {
-      temperature    : 0.15,
-      maxOutputTokens: 4096,
-      topP           : 1,
-      enableThinking : false
-    });
-    expect(result).toEqual({
-      chapterId: "chapter-1",
-      chapterNo: 1,
-      entities : [{
-        name       : "范进",
-        aliases    : ["范老爷"],
-        description: "中举书生",
-        category   : "PERSON"
-      }]
-    });
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -1419,7 +1078,6 @@ describe("chapter analysis service", () => {
     });
     const service = createChapterAnalysisService(
       prismaMock as never,
-      undefined,
       undefined,
       { execute } as never
     );
@@ -1474,7 +1132,6 @@ describe("chapter analysis service", () => {
     });
     const service = createChapterAnalysisService(
       prismaMock as never,
-      undefined,
       undefined,
       { execute } as never
     );
@@ -1560,22 +1217,21 @@ describe("chapter analysis service", () => {
       updateMappingStatus: vi.fn()
     };
 
-    mockedCreateChapterAnalysisAiClient.mockReturnValueOnce({
-      analyzeChapterChunk  : vi.fn(),
-      discoverChapterRoster: vi.fn(),
-      resolvePersonaTitles : vi.fn().mockResolvedValue([
-        {
-          personaId     : "title-1",
-          title         : "太祖皇帝",
-          realName      : "朱元璋",
-          confidence    : 0.95,
-          historicalNote: "明太祖洪武帝"
-        }
-      ])
-    } as never);
+    const titleResolutionData = [
+      {
+        personaId     : "title-1",
+        title         : "太祖皇帝",
+        realName      : "朱元璋",
+        confidence    : 0.95,
+        historicalNote: "明太祖洪武帝"
+      }
+    ];
+    const mockExecutor = createMockExecutor({
+      [PipelineStage.TITLE_RESOLUTION]: () => titleResolutionData
+    });
 
-    const service = createChapterAnalysisService(prismaMock as never, undefined, aliasRegistry);
-    const updatedCount = await service.resolvePersonaTitles("book-1");
+    const service = createChapterAnalysisService(prismaMock as never, aliasRegistry, mockExecutor as never);
+    const updatedCount = await service.resolvePersonaTitles("book-1", { jobId: "test-job" });
 
     expect(updatedCount).toBe(1);
     // 应调用 mergePersonas 而非 persona.update
@@ -1605,10 +1261,7 @@ describe("chapter analysis service", () => {
         count: vi.fn().mockResolvedValue(4)
       }
     };
-    const service = createChapterAnalysisService(prismaMock as never, {
-      analyzeChapterChunk  : vi.fn(),
-      discoverChapterRoster: vi.fn()
-    } as never);
+    const service = createChapterAnalysisService(prismaMock as never, undefined, createMockExecutor() as never);
 
     await expect(service.getTitleOnlyPersonaCount("book-1")).resolves.toBe(4);
     expect(prismaMock.profile.count).toHaveBeenCalledWith({

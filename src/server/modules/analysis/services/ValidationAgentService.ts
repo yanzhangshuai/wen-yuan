@@ -8,8 +8,8 @@ import {
   type ResolvedStageModel
 } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
-import { buildBookValidationPrompt, buildChapterValidationPrompt, parseValidationResponse } from "@/server/modules/analysis/services/prompts";
-import { resolvePromptTemplateOrFallback } from "@/server/modules/knowledge";
+import { parseValidationResponse } from "@/server/modules/analysis/services/prompts";
+import { resolvePromptTemplate } from "@/server/modules/knowledge";
 import { createAiProviderClient, type AiProviderClient } from "@/server/providers/ai";
 import type { AnalysisProfileContext } from "@/types/analysis";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
@@ -262,17 +262,9 @@ export function createValidationAgentService(
     stage     : PipelineStage.CHAPTER_VALIDATION | PipelineStage.BOOK_VALIDATION;
     prompt    : { system: string; user: string };
     bookId    : string;
-    jobId?    : string;
+    jobId     : string;
     chapterId?: string;
   }): Promise<string> {
-    // 无 jobId 时走“直接调用模型”模式：不写阶段日志，适合独立触发的自检。
-    if (!input.jobId) {
-      const model = await strategyResolver.resolveForStage(input.stage, { bookId: input.bookId });
-      const client = getRuntimeAiClient(model);
-      const result = await client.generateJson(input.prompt, toGenerateOptions(model));
-      return result.content;
-    }
-
     // 有 jobId 时必须走 AiCallExecutor，确保 token/时长/fallback 等阶段日志可追踪。
     const result = await stageAiCallExecutor.execute({
       stage    : input.stage,
@@ -432,8 +424,7 @@ export function createValidationAgentService(
         type      : relation.type
       }))
     };
-    const fallbackPrompt = buildChapterValidationPrompt(chapterPromptInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "CHAPTER_VALIDATION",
       replacements: {
         bookTitle           : chapterPromptInput.bookTitle,
@@ -444,8 +435,7 @@ export function createValidationAgentService(
         newlyCreated        : chapterPromptInput.newlyCreated.map((p) => `- ${p.name} (${p.nameType}, 置信度:${p.confidence})`).join("\n"),
         chapterMentions     : chapterPromptInput.chapterMentions.map((m) => `- ${m.personaName}: \"${m.rawText.slice(0, 80)}\"`).join("\n"),
         chapterRelationships: chapterPromptInput.chapterRelationships.map((r) => `- ${r.sourceName} → ${r.targetName}: ${r.type}`).join("\n")
-      },
-      fallback: fallbackPrompt
+      }
     });
 
     const content = await executeValidationStage({
@@ -592,8 +582,7 @@ export function createValidationAgentService(
         .filter((item) => item.confidence < 0.7),
       sourceExcerpts
     };
-    const fallbackPrompt = buildBookValidationPrompt(bookPromptInput);
-    const prompt = await resolvePromptTemplateOrFallback({
+    const prompt = await resolvePromptTemplate({
       slug        : "BOOK_VALIDATION",
       replacements: {
         bookTitle            : bookPromptInput.bookTitle,
@@ -601,8 +590,7 @@ export function createValidationAgentService(
         relationships        : bookPromptInput.relationships.map((r) => `- ${r.sourceName} → ${r.targetName}: ${r.type} (出现 ${r.count} 次)`).join("\n"),
         lowConfidencePersonas: bookPromptInput.lowConfidencePersonas.map((p) => `- ${p.name} [${p.id}] (置信度:${p.confidence})`).join("\n"),
         sourceExcerpts       : bookPromptInput.sourceExcerpts.map((item) => `- 第${item.chapterNo}章「${item.chapterTitle}」(${item.reason})：${item.excerpt}`).join("\n")
-      },
-      fallback: fallbackPrompt
+      }
     });
 
     const content = await executeValidationStage({

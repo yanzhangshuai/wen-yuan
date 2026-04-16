@@ -24,11 +24,6 @@ function applyTemplateReplacements(template: string, replacements?: Record<strin
   return result;
 }
 
-function shouldBypassRuntimePromptLookup() {
-  // 测试场景只需要稳定验证 fallback 提示词契约，不应隐式触发真实数据库读取。
-  return process.env.NODE_ENV === "test";
-}
-
 async function findRuntimePromptVersion(slug: string, bookTypeId?: string | null) {
   const template = await prisma.promptTemplate.findUnique({
     where : { slug },
@@ -232,35 +227,21 @@ export async function previewPrompt(
   return { systemPrompt: system, userPrompt: user, versionNo: version.versionNo };
 }
 
-export async function resolvePromptTemplateOrFallback(input: {
+export async function resolvePromptTemplate(input: {
   slug         : string;
   bookTypeId?  : string | null;
   replacements?: Record<string, string>;
-  fallback     : { system: string; user: string };
 }): Promise<ResolvedPromptTemplate> {
-  if (shouldBypassRuntimePromptLookup()) {
-    return input.fallback;
+  const resolved = await findRuntimePromptVersion(input.slug, input.bookTypeId);
+  if (!resolved) {
+    throw new Error(`Prompt template "${input.slug}" not found in database`);
   }
 
-  try {
-    const resolved = await findRuntimePromptVersion(input.slug, input.bookTypeId);
-    if (!resolved) {
-      return input.fallback;
-    }
-
-    return {
-      system   : applyTemplateReplacements(resolved.version.systemPrompt, input.replacements),
-      user     : applyTemplateReplacements(resolved.version.userPrompt, input.replacements),
-      versionId: resolved.version.id,
-      versionNo: resolved.version.versionNo,
-      codeRef  : resolved.template.codeRef
-    };
-  } catch (error) {
-    console.warn("[knowledge.prompt-templates] runtime resolve failed, using fallback", {
-      slug      : input.slug,
-      bookTypeId: input.bookTypeId ?? null,
-      message   : error instanceof Error ? error.message : String(error)
-    });
-    return input.fallback;
-  }
+  return {
+    system   : applyTemplateReplacements(resolved.version.systemPrompt, input.replacements),
+    user     : applyTemplateReplacements(resolved.version.userPrompt, input.replacements),
+    versionId: resolved.version.id,
+    versionNo: resolved.version.versionNo,
+    codeRef  : resolved.template.codeRef
+  };
 }

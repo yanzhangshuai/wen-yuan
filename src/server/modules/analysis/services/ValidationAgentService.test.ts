@@ -20,7 +20,7 @@ import { createAiProviderClient } from "@/server/providers/ai";
 const hoisted = vi.hoisted(() => ({
   mergePersonas         : vi.fn(),
   createAiProviderClient: vi.fn(),
-  resolvePromptTemplate : vi.fn().mockImplementation(async ({ fallback }: { fallback: unknown }) => fallback)
+  resolvePromptTemplate : vi.fn().mockImplementation(async () => ({ system: "mock-system", user: "mock-user" }))
 }));
 
 vi.mock("@/server/modules/personas/mergePersonas", () => ({
@@ -32,7 +32,7 @@ vi.mock("@/server/providers/ai", () => ({
 }));
 
 vi.mock("@/server/modules/knowledge", () => ({
-  resolvePromptTemplateOrFallback: hoisted.resolvePromptTemplate
+  resolvePromptTemplate: hoisted.resolvePromptTemplate
 }));
 
 function createStageExecutorMock() {
