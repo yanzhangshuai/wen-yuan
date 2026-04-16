@@ -88,7 +88,7 @@ export default function LoginPage() {
 function LoginSkeleton() {
   // 登录页查询参数尚未就绪时的过渡骨架，避免白屏。
   return (
-    <main className="login-page flex min-h-screen items-center justify-center px-6 py-12">
+    <main className="login-page flex min-h-dvh items-center justify-center px-6 py-12">
       <div className="h-96 w-full max-w-md animate-pulse rounded-lg bg-muted/20" />
     </main>
   );
@@ -133,7 +133,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="login-layout flex min-h-screen">
+    <div className="login-layout flex min-h-dvh">
       <div className="login-left relative hidden overflow-hidden bg-primary/5 lg:flex lg:w-1/2">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
 

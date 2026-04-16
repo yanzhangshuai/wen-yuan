@@ -40,7 +40,7 @@ export default async function ViewerLayout({
   const currentPath = sanitizeRedirectPath(headerPath);
 
   return (
-    <div className="relative z-[1] flex min-h-screen flex-col">
+    <div className="relative z-[1] flex min-h-dvh flex-col">
       <ViewerHeader isAdmin={isAdmin} currentPath={currentPath} />
       <main className="viewer-layout-main flex-1 animate-page-enter">
         {children}

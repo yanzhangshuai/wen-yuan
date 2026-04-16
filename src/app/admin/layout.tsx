@@ -55,7 +55,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="admin-layout-shell relative z-[1] flex min-h-screen flex-col bg-(--color-admin-content-bg)">
+    <div className="admin-layout-shell relative z-[1] flex min-h-dvh flex-col bg-(--color-admin-content-bg)">
       <AdminHeader userName={auth.name} />
       {/* 与 sheji 对齐：外层 layout 仅负责页面骨架，内容留白统一交给各页面的 PageContainer 控制。 */}
       {/* 必须显式高于全局主题背景层，否则 xingkong 的 fixed canvas 会盖住整个 admin 内容区。 */}
