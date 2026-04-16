@@ -89,7 +89,7 @@ export default async function BookGraphPage({
   }
 
   return (
-    <section className="book-graph-page relative left-1/2 h-[calc(100dvh-64px)] w-screen -translate-x-1/2 overflow-hidden">
+    <section className="book-graph-page relative left-1/2 h-[calc(100vh-64px)] w-screen -translate-x-1/2 overflow-hidden">
       <GraphView
         bookId={id}
         initialSnapshot={snapshot}

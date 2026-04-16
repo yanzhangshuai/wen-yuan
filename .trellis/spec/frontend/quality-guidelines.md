@@ -25,6 +25,8 @@ stage: growth
 - 在整棵路由树上滥用 `"use client"`，但无真实交互需求。
 - 在组件渲染期用 `useEffect + setState` 进行异步首屏拉数。
 - 同一组件渲染期混用 `await` 与 `use()` 读取异步数据。
+- `params` / `searchParams` 类型声明为非 Promise 形式（如 `{ id: string }` 而非 `Promise<{ id: string }>`）。
+- 在 Server Component 中同步调用 `cookies()` 或 `headers()`（未 `await`）。
 - 不复用 `src/components/ui/*`，重复实现基础 UI 结构。
 - 在客户端 UI 组件中直接导入仅服务端模块。
 - 使用 `Link` 包裹 `Button`（或 `Button` 包裹 `Link` 但未 `asChild`），产生交互元素无效嵌套。
@@ -37,6 +39,7 @@ stage: growth
 - props interface 命名必须明确（如 `NavbarProps`、`ThemeToggleProps`）。
 - server/client 边界要明确且尽量小。
 - 组件渲染期异步读取统一使用 `use()`（详见 `react-guidelines.md`）。
+- Next.js 异步 API（`params`、`searchParams`、`cookies()`、`headers()`）必须 `await` 后使用；类型声明必须为 `Promise<...>`；Client 组件中改用 `use()`（详见 `nextjs-best-practices.md` 第三节）。
 - 使用语义化根 className（`home-page`、`layout-navbar`、`ui-card`）。
 - 图标按钮等无文本控件必须提供可访问性标签。
 - 跳转型按钮统一使用 `Button asChild + Link` 组合，禁止输出 `<a><button /></a>` 结构。
@@ -67,6 +70,10 @@ stage: growth
    `rg -n -U "<Link[^>]*>\\s*\\n\\s*<Button" src`
    确认无无效嵌套。
 8. 对涉及 `next-themes` / `localStorage` 的页面，确认首帧不依赖浏览器本地值计算关键属性（必要时使用 mounted）。
+9. 对涉及视口单位（`vh` / `dvh`）替换的页面，区分使用场景：
+   - `min-height` 场景（可滚动布局）→ 使用 `dvh` 安全；
+   - `height` / `calc(100vh - Xpx)` 场景（固定高度画布、沉浸式全屏布局）→ 保持 `vh`，不替换为 `dvh`。
+   - 图谱页面 `(graph)/` 下的布局和页面属于后者，必须使用 `vh`。
 
 说明：若当前模块缺少单测基础设施，需先补齐最小可用测试框架与 coverage 报告，再视为交付完成。
 
