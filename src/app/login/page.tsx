@@ -168,19 +168,19 @@ function LoginForm() {
           <div className="mt-12 space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background/80">
-                <span className="text-lg font-semibold text-primary">50+</span>
+                <span className="text-lg font-semibold text-primary">47</span>
               </div>
               <span className="text-muted-foreground">部经典典籍</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background/80">
-                <span className="text-lg font-semibold text-primary">10K+</span>
+                <span className="text-lg font-semibold text-primary">8,640</span>
               </div>
               <span className="text-muted-foreground">历史人物</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background/80">
-                <span className="text-lg font-semibold text-primary">50K+</span>
+                <span className="text-lg font-semibold text-primary">43,200+</span>
               </div>
               <span className="text-muted-foreground">人物关系</span>
             </div>
