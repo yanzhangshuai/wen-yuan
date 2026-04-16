@@ -90,6 +90,18 @@ export async function deleteNerLexiconRule(id: string): Promise<void> {
   });
 }
 
+export type NerLexiconRuleBatchActionInput =
+  | { action: "delete" | "enable" | "disable"; ids: string[] }
+  | { action: "changeBookType"; ids: string[]; bookTypeId: string | null };
+
+export async function batchNerLexiconRuleAction(body: NerLexiconRuleBatchActionInput): Promise<{ count: number }> {
+  return clientFetch<{ count: number }>("/api/admin/knowledge/ner-rules/batch", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
 export async function reorderNerLexiconRules(orderedIds: string[]): Promise<void> {
   await clientMutate("/api/admin/knowledge/ner-rules/reorder", {
     method : "PUT",

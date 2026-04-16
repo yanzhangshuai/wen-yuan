@@ -7,8 +7,17 @@ import { AlertTriangle, Check, Download, Plus, Search, Sparkles, Trash2, Upload,
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter
@@ -341,6 +350,8 @@ export default function AliasPacksPage() {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editPackDialogOpen, setEditPackDialogOpen] = useState(false);
+  const [deletePackTarget, setDeletePackTarget] = useState<KnowledgePackItem | null>(null);
+  const [deletingPack, setDeletingPack] = useState(false);
   const { toast } = useToast();
 
   const loadPacks = useCallback(async () => {
@@ -392,15 +403,20 @@ export default function AliasPacksPage() {
     }
   };
 
-  const handleDeletePack = async (pack: KnowledgePackItem) => {
-    if (!confirm(`确定删除知识包「${pack.name}」及其所有条目吗？`)) return;
+  const handleDeletePackConfirmed = async (pack: KnowledgePackItem) => {
+    setDeletingPack(true);
     try {
       await deleteKnowledgePack(pack.id);
       toast({ title: "删除成功" });
-      if (selectedPack?.id === pack.id) setSelectedPack(null);
+      setDeletePackTarget(null);
+      if (selectedPack?.id === pack.id) {
+        setSelectedPack(null);
+      }
       await loadPacks();
     } catch (e) {
       toast({ title: "删除失败", description: String(e), variant: "destructive" });
+    } finally {
+      setDeletingPack(false);
     }
   };
 
@@ -495,10 +511,15 @@ export default function AliasPacksPage() {
                   </div>
                   <div className="mt-1 flex gap-1">
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       className="h-6 px-1"
-                      onClick={(e) => { e.stopPropagation(); void handleDeletePack(pack); }}
+                      aria-label={`删除知识包 ${pack.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletePackTarget(pack);
+                      }}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -534,6 +555,46 @@ export default function AliasPacksPage() {
         pack={selectedPack}
         onSave={handleUpdatePack}
       />
+
+      <AlertDialog
+        open={deletePackTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletingPack) {
+            setDeletePackTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除知识包</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除知识包「{deletePackTarget?.name ?? ""}」及其所有条目吗？此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deletingPack}
+              onClick={() => setDeletePackTarget(null)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletingPack || !deletePackTarget}
+              onClick={() => {
+                if (deletePackTarget) {
+                  void handleDeletePackConfirmed(deletePackTarget);
+                }
+              }}
+            >
+              {deletingPack ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }
@@ -555,6 +616,13 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [generationReview, setGenerationReview] = useState<AliasPackGenerationReviewResult | null>(null);
+  const [deleteEntryTarget, setDeleteEntryTarget] = useState<KnowledgeEntryItem | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectMode, setRejectMode] = useState<"single" | "batch">("single");
+  const [rejectTargetId, setRejectTargetId] = useState("");
+  const [rejectNote, setRejectNote] = useState("");
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -648,14 +716,60 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
     }
   };
 
-  const handleReject = async (id: string) => {
-    const note = prompt("拒绝原因（可选）：");
+  const openRejectDialog = (mode: "single" | "batch", targetId = "") => {
+    setRejectMode(mode);
+    setRejectTargetId(targetId);
+    setRejectNote("");
+    setRejectDialogOpen(true);
+  };
+
+  const closeRejectDialog = () => {
+    if (rejectSubmitting) {
+      return;
+    }
+
+    setRejectDialogOpen(false);
+    setRejectMode("single");
+    setRejectTargetId("");
+    setRejectNote("");
+  };
+
+  const handleReject = (id: string) => {
+    openRejectDialog("single", id);
+  };
+
+  const handleRejectConfirmed = async () => {
+    const note = rejectNote.trim() || undefined;
+    setRejectSubmitting(true);
     try {
-      await rejectEntry(id, note ?? undefined);
-      toast({ title: "已拒绝" });
+      if (rejectMode === "single") {
+        if (!rejectTargetId) {
+          return;
+        }
+
+        await rejectEntry(rejectTargetId, note);
+        toast({ title: "已拒绝" });
+      } else {
+        const selectedIds = Array.from(selected);
+        if (selectedIds.length === 0) {
+          toast({ title: "请先选择条目", variant: "destructive" });
+          return;
+        }
+
+        await batchRejectEntries(pack.id, selectedIds, note);
+        toast({ title: `成功拒绝 ${selectedIds.length} 条` });
+        setSelected(new Set());
+      }
+
+      setRejectDialogOpen(false);
+      setRejectMode("single");
+      setRejectTargetId("");
+      setRejectNote("");
       await refreshAll();
     } catch (e) {
       toast({ title: "操作失败", description: String(e), variant: "destructive" });
+    } finally {
+      setRejectSubmitting(false);
     }
   };
 
@@ -671,32 +785,37 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
     }
   };
 
-  const handleBatchReject = async () => {
-    if (selected.size === 0) return;
-    const note = prompt("批量拒绝原因（可选）：");
-    try {
-      await batchRejectEntries(pack.id, Array.from(selected), note ?? undefined);
-      toast({ title: `成功拒绝 ${selected.size} 条` });
-      setSelected(new Set());
-      await refreshAll();
-    } catch (e) {
-      toast({ title: "批量拒绝失败", description: String(e), variant: "destructive" });
+  const handleBatchReject = () => {
+    if (selected.size === 0) {
+      return;
     }
+
+    openRejectDialog("batch");
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("确定删除该条目？")) return;
+  const handleDeleteConfirmed = async (entry: KnowledgeEntryItem) => {
+    setDeletingEntry(true);
     try {
-      await deleteEntry(id);
-      if (editingEntryId === id) {
+      await deleteEntry(entry.id);
+      if (editingEntryId === entry.id) {
         cancelEditing();
       }
       toast({ title: "删除成功" });
+      setDeleteEntryTarget(null);
+      setSelected((previous) => {
+        const next = new Set(previous);
+        next.delete(entry.id);
+        return next;
+      });
       await refreshAll();
     } catch (e) {
       toast({ title: "删除失败", description: String(e), variant: "destructive" });
+    } finally {
+      setDeletingEntry(false);
     }
   };
+
+  const rejectTargetEntry = entries.find((entry) => entry.id === rejectTargetId) ?? null;
 
   const handleSaveEntryEdit = async (entry: KnowledgeEntryItem) => {
     if (!editingDraft) {
@@ -823,12 +942,17 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="mr-1 h-3.5 w-3.5" />导入
           </Button>
-          <a href={getExportUrl(pack.id, "json", "verified")} download>
-            <Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" />导出已验证</Button>
-          </a>
-          <a href={getExportUrl(pack.id, "json", "all")} download>
-            <Button variant="ghost" size="sm">导出全部</Button>
-          </a>
+          <Button asChild variant="outline" size="sm">
+            <a href={getExportUrl(pack.id, "json", "verified")} download>
+              <Download className="mr-1 h-3.5 w-3.5" />
+              导出已验证
+            </a>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <a href={getExportUrl(pack.id, "json", "all")} download>
+              导出全部
+            </a>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setGenerateDialogOpen(true)}>
             <Sparkles className="mr-1 h-3.5 w-3.5" />模型生成
           </Button>
@@ -961,15 +1085,36 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
                           </Button>
                           {entry.reviewStatus === "PENDING" && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => void handleVerify(entry.id)}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-1.5"
+                                aria-label={`通过条目 ${entry.canonicalName}`}
+                                onClick={() => void handleVerify(entry.id)}
+                              >
                                 <Check className="h-3.5 w-3.5 text-green-600" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => void handleReject(entry.id)}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-1.5"
+                                aria-label={`拒绝条目 ${entry.canonicalName}`}
+                                onClick={() => handleReject(entry.id)}
+                              >
                                 <X className="h-3.5 w-3.5 text-red-500" />
                               </Button>
                             </>
                           )}
-                          <Button variant="ghost" size="sm" className="h-7 px-1.5" onClick={() => void handleDelete(entry.id)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-1.5"
+                            aria-label={`删除条目 ${entry.canonicalName}`}
+                            onClick={() => setDeleteEntryTarget(entry)}
+                          >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -1101,6 +1246,97 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
         onOpenChange={setReviewDialogOpen}
         onSave={handleSaveReviewedEntries}
       />
+
+      <AlertDialog
+        open={deleteEntryTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletingEntry) {
+            setDeleteEntryTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除条目</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除条目「{deleteEntryTarget?.canonicalName ?? ""}」吗？此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deletingEntry}
+              onClick={() => setDeleteEntryTarget(null)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletingEntry || !deleteEntryTarget}
+              onClick={() => {
+                if (deleteEntryTarget) {
+                  void handleDeleteConfirmed(deleteEntryTarget);
+                }
+              }}
+            >
+              {deletingEntry ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeRejectDialog();
+          }
+        }}
+      >
+        <DialogContent className="max-w-md" showCloseButton={!rejectSubmitting}>
+          <DialogHeader>
+            <DialogTitle>{rejectMode === "single" ? "拒绝条目" : "批量拒绝条目"}</DialogTitle>
+            <DialogDescription>
+              {rejectMode === "single"
+                ? `将条目「${rejectTargetEntry?.canonicalName ?? ""}」标记为已拒绝，可选填写拒绝原因。`
+                : `将所选 ${selected.size} 条条目标记为已拒绝，可选填写统一拒绝原因。`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor={`reject-note-${pack.id}`}>拒绝原因（可选）</Label>
+            <Textarea
+              id={`reject-note-${pack.id}`}
+              rows={4}
+              value={rejectNote}
+              disabled={rejectSubmitting}
+              onChange={(event) => setRejectNote(event.target.value)}
+              placeholder={rejectMode === "single" ? "例如：与已有条目重复，或上下文不足以支持采纳。" : "例如：本批条目来源不可靠，需补充依据后再提交。"}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={rejectSubmitting}
+              onClick={closeRejectDialog}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={rejectSubmitting || (rejectMode === "single" ? !rejectTargetId : selected.size === 0)}
+              onClick={() => {
+                void handleRejectConfirmed();
+              }}
+            >
+              {rejectSubmitting ? "提交中..." : rejectMode === "single" ? "确认拒绝" : `确认拒绝 ${selected.size} 条`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1146,6 +1382,7 @@ function AliasChipsInput({
             {alias}
             <button
               type="button"
+              aria-label={`删除别名 ${alias}`}
               className="rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-black/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => onChange(values.filter((value) => value !== alias))}
               disabled={disabled}

@@ -70,7 +70,6 @@ export {
   clearKnowledgeCache,
   buildAliasLookupFromDb,
   loadFullRuntimeKnowledge,
-  loadBookTypeConfig,
   loadAnalysisRuntimeConfig
 } from "./load-book-knowledge";
 export type { FullRuntimeKnowledge, CompiledNamePatternRule } from "./load-book-knowledge";
@@ -82,6 +81,9 @@ export {
   createSurname,
   updateSurname,
   deleteSurname,
+  batchDeleteSurnames,
+  batchToggleSurnames,
+  batchChangeBookTypeSurnames,
   importSurnames,
   testSurnameExtraction
 } from "./surnames";
@@ -91,6 +93,9 @@ export {
   createGenericTitle,
   updateGenericTitle,
   deleteGenericTitle,
+  batchDeleteGenericTitles,
+  batchToggleGenericTitles,
+  batchChangeBookTypeGenericTitles,
   testGenericTitle
 } from "./generic-titles";
 
@@ -109,6 +114,9 @@ export {
   createNerLexiconRule,
   updateNerLexiconRule,
   deleteNerLexiconRule,
+  batchDeleteNerLexiconRules,
+  batchToggleNerLexiconRules,
+  batchChangeBookTypeNerLexiconRules,
   reorderNerLexiconRules
 } from "./ner-lexicon-rules";
 
@@ -117,6 +125,9 @@ export {
   createPromptExtractionRule,
   updatePromptExtractionRule,
   deletePromptExtractionRule,
+  batchDeletePromptExtractionRules,
+  batchTogglePromptExtractionRules,
+  batchChangeBookTypePromptExtractionRules,
   reorderPromptExtractionRules,
   previewCombinedPromptRules
 } from "./prompt-extraction-rules";

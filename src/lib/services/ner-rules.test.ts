@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  batchNerLexiconRuleAction,
   createNerLexiconRule,
   deleteNerLexiconRule,
   fetchNerLexiconRules,
@@ -25,6 +26,33 @@ describe("ner-rules service", () => {
   beforeEach(() => {
     hoisted.clientFetchMock.mockReset();
     hoisted.clientMutateMock.mockReset();
+  });
+
+  it("posts batch ner rule actions and returns affected count", async () => {
+    hoisted.clientFetchMock.mockResolvedValueOnce({ count: 3 });
+
+    await expect(batchNerLexiconRuleAction({
+      action: "disable",
+      ids   : [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+        "33333333-3333-4333-8333-333333333333"
+      ]
+    })).resolves.toEqual({ count: 3 });
+
+    expect(hoisted.clientFetchMock).toHaveBeenCalledWith("/api/admin/knowledge/ner-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({
+        action: "disable",
+        ids   : [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222",
+          "33333333-3333-4333-8333-333333333333"
+        ]
+      })
+    });
+    expect(hoisted.clientMutateMock).not.toHaveBeenCalled();
   });
 
   it("uses ner lexicon endpoints and generation payloads", async () => {

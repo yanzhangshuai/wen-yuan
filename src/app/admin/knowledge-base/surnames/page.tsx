@@ -12,6 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -39,8 +47,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminModels } from "@/hooks/use-admin-models";
+import { BatchActionControls } from "@/app/admin/knowledge-base/batch-action-controls";
 import { fetchBookTypes, type BookTypeItem } from "@/lib/services/book-types";
 import {
+  batchSurnameAction,
   createSurname,
   deleteSurname,
   fetchSurnames,
@@ -89,6 +99,9 @@ export default function SurnamesPage() {
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [generationReview, setGenerationReview] = useState<SurnameGenerationReviewResult | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<SurnameItem | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [testName, setTestName] = useState("");
@@ -120,6 +133,10 @@ export default function SurnamesPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    setSelected((previous) => new Set(items.filter((item) => previous.has(item.id)).map((item) => item.id)));
+  }, [items]);
+
   const compoundSummary = useMemo(() => {
     const compoundCount = items.filter((item) => item.isCompound).length;
     return {
@@ -129,14 +146,66 @@ export default function SurnamesPage() {
     };
   }, [items]);
 
-  async function handleDelete(item: SurnameItem) {
-    if (!confirm(`确定删除姓氏「${item.surname}」吗？`)) return;
+  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  const allSelected = items.length > 0 && selected.size === items.length;
+  const partiallySelected = selected.size > 0 && !allSelected;
+
+  function toggleSelect(id: string) {
+    setSelected((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((previous) => {
+      if (items.length === 0 || previous.size === items.length) {
+        return new Set();
+      }
+
+      return new Set(items.map((item) => item.id));
+    });
+  }
+
+  async function runBatchAction(
+    action: Parameters<typeof batchSurnameAction>[0],
+    successTitle: string
+  ) {
+    try {
+      const result = await batchSurnameAction(action);
+      toast({
+        title      : successTitle,
+        description: `已处理 ${result.count} 条姓氏。`
+      });
+      setSelected(new Set());
+      await load();
+    } catch (error) {
+      toast({ title: "批量操作失败", description: String(error), variant: "destructive" });
+      throw error;
+    }
+  }
+
+  async function handleDeleteConfirmed(item: SurnameItem) {
+    setDeletePending(true);
     try {
       await deleteSurname(item.id);
       toast({ title: "删除成功" });
+      setDeleteTarget(null);
+      setSelected((previous) => {
+        const next = new Set(previous);
+        next.delete(item.id);
+        return next;
+      });
       await load();
     } catch (error) {
       toast({ title: "删除失败", description: String(error), variant: "destructive" });
+    } finally {
+      setDeletePending(false);
     }
   }
 
@@ -257,6 +326,19 @@ export default function SurnamesPage() {
             <span>单姓 {compoundSummary.single} 条</span>
           </div>
 
+          <BatchActionControls
+            selectedCount={selected.size}
+            bookTypes={bookTypes.map((bookType) => ({ id: bookType.id, name: bookType.name }))}
+            onEnable={() => runBatchAction({ action: "enable", ids: selectedIds }, "已批量启用")}
+            onDisable={() => runBatchAction({ action: "disable", ids: selectedIds }, "已批量停用")}
+            onDelete={() => runBatchAction({ action: "delete", ids: selectedIds }, "已批量删除")}
+            onClear={() => setSelected(new Set())}
+            onChangeBookType={(bookTypeId) => runBatchAction(
+              { action: "changeBookType", ids: selectedIds, bookTypeId },
+              "已更新书籍类型"
+            )}
+          />
+
           {loading ? (
             <div className="py-12 text-center text-muted-foreground">加载中...</div>
           ) : (
@@ -264,6 +346,13 @@ export default function SurnamesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
+                        aria-label="全选姓氏"
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-28">姓氏</TableHead>
                     <TableHead className="w-24">类型</TableHead>
                     <TableHead className="w-20">优先级</TableHead>
@@ -276,6 +365,13 @@ export default function SurnamesPage() {
                 <TableBody>
                   {items.map((item) => (
                     <TableRow key={item.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(item.id)}
+                          aria-label={`选择姓氏 ${item.surname}`}
+                          onCheckedChange={() => toggleSelect(item.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{item.surname}</TableCell>
                       <TableCell>
                         <Badge variant={item.isCompound ? "default" : "secondary"}>
@@ -292,10 +388,22 @@ export default function SurnamesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => { setEditing(item); setDialogOpen(true); }}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`编辑姓氏 ${item.surname}`}
+                            onClick={() => { setEditing(item); setDialogOpen(true); }}
+                          >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => void handleDelete(item)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`删除姓氏 ${item.surname}`}
+                            onClick={() => setDeleteTarget(item)}
+                          >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -372,6 +480,46 @@ export default function SurnamesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletePending) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除姓氏</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除姓氏「{deleteTarget?.surname ?? ""}」吗？此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deletePending}
+              onClick={() => setDeleteTarget(null)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletePending || !deleteTarget}
+              onClick={() => {
+                if (deleteTarget) {
+                  void handleDeleteConfirmed(deleteTarget);
+                }
+              }}
+            >
+              {deletePending ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

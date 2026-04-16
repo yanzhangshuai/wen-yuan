@@ -61,6 +61,37 @@ export async function deletePromptExtractionRule(id: string) {
   return prisma.promptExtractionRule.delete({ where: { id } });
 }
 
+export async function batchDeletePromptExtractionRules(ids: string[]) {
+  const result = await prisma.$transaction(
+    ids.map((id) => prisma.promptExtractionRule.delete({ where: { id } }))
+  );
+  return { count: result.length };
+}
+
+export async function batchTogglePromptExtractionRules(ids: string[], isActive: boolean) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.promptExtractionRule.update({
+        where: { id },
+        data : { isActive }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
+export async function batchChangeBookTypePromptExtractionRules(ids: string[], bookTypeId: string | null) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.promptExtractionRule.update({
+        where: { id },
+        data : { bookTypeId }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
 export async function reorderPromptExtractionRules(orderedIds: string[]) {
   await prisma.$transaction(
     orderedIds.map((id, index) =>

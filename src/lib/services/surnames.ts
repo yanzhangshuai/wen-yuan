@@ -111,6 +111,18 @@ export async function deleteSurname(id: string): Promise<void> {
   });
 }
 
+export type SurnameBatchActionInput =
+  | { action: "delete" | "enable" | "disable"; ids: string[] }
+  | { action: "changeBookType"; ids: string[]; bookTypeId: string | null };
+
+export async function batchSurnameAction(body: SurnameBatchActionInput): Promise<{ count: number }> {
+  return clientFetch<{ count: number }>("/api/admin/knowledge/surnames/batch", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
 export async function importSurnames(text: string): Promise<SurnameImportResult> {
   return clientFetch<SurnameImportResult>("/api/admin/knowledge/surnames/import", {
     method : "POST",

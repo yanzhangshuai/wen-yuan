@@ -35,6 +35,18 @@ const baseInput = {
   chunkCount  : 3
 };
 
+const TEST_GENERIC_TITLES_EXAMPLE = "按察司、把总、彼、布政司、参将、此人、大家、弟弟、都司、尔、夫人、父亲、公子、管家、家丁、姐姐、进士、举人、来人、老父、老管家、老母、老娘、老太太、老学究、老爷、妹妹、门房、门子、某人等";
+const TEST_ENTITY_EXTRACTION_RULES = [
+  "原文中的文字必须精确引用（surfaceForm/rawText），禁止编造或改写。",
+  "优先匹配已知人物档案中的标准名(canonicalName)；仅确认全新人物时才创建新 personaName。",
+  "泛化称谓（{genericTitles}）禁止作为独立人物名。单独姓氏无法确认具体人物时标记为 generic。",
+  "仅提取虚构角色，排除作者、评注者、真实历史人物、批评家。",
+  "personaName 使用规范人名，禁止附加\"大人\"\"老爷\"等泛称后缀。",
+  "已知别名须映射回标准名（如\"范举人\"→ 范进），不得重复创建。",
+  "不确定时宁可忽略，避免误建幻觉人物。",
+  "同一人物在同一片段中的多种称呼（姓名、官衔、别号）都应识别并映射到同一实体。"
+] as const;
+
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("buildChapterAnalysisPrompt", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -73,7 +85,10 @@ describe("buildChapterAnalysisPrompt", () => {
     // Arrange
     const prompt = buildChapterAnalysisPrompt({
       ...baseInput,
-      profiles: []
+      profiles                   : [],
+      genericTitlesExample       : TEST_GENERIC_TITLES_EXAMPLE,
+      entityExtractionRules      : TEST_ENTITY_EXTRACTION_RULES,
+      relationshipExtractionRules: []
     });
 
     // Act
@@ -98,7 +113,9 @@ describe("buildRosterDiscoveryPrompt", () => {
   it("includes alias annotation rules and keeps output stable", () => {
     const prompt = buildRosterDiscoveryPrompt({
       ...baseInput,
-      profiles: [
+      genericTitlesExample : TEST_GENERIC_TITLES_EXAMPLE,
+      entityExtractionRules: TEST_ENTITY_EXTRACTION_RULES,
+      profiles             : [
         {
           personaId    : "p1",
           canonicalName: "范进",

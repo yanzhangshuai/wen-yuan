@@ -28,6 +28,7 @@ stage: mvp
 | [Hook 规范](./hook-guidelines.md) | 自定义 hooks 与数据交互模式 | 已就绪 |
 | [状态管理](./state-management.md) | 本地状态、context 状态、服务端状态 | 已就绪 |
 | [Zustand Store 模板](./zustand-store-template.md) | Zustand store 目录、命名、selector、action 模板 | 已就绪 |
+| [知识库管理台 UI 契约](./knowledge-base-admin-ui.md) | 知识库导航 RSC 边界、批量操作工具栏与确认弹窗契约 | 已就绪 |
 | [性能规范](./performance-guidelines.md) | 渲染成本、列表性能、状态订阅规范 | 已就绪 |
 | [质量规范](./quality-guidelines.md) | 代码标准与禁用模式 | 已就绪 |
 | [类型安全](./type-safety.md) | 类型模式与校验规则 | 已就绪 |

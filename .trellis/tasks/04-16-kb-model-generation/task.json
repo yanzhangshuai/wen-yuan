@@ -3,44 +3,98 @@
   "name": "04-16-kb-model-generation",
   "title": "知识库模型生成 — NER词典规则/Prompt提取规则新增 + 泛化称谓迁移为异步",
   "description": "为 NER 词典规则和 Prompt 提取规则新增「模型生成」能力（生成结果以 isActive=false 写入 DB 待手动审核）；将泛化称谓的模型生成从同步阻塞改为异步 job 轮询模式（与姓氏词库对齐）。",
-  "status": "pending",
+  "status": "completed",
   "dev_type": "feat",
   "scope": "fullstack",
   "priority": "P1",
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-04-16",
-  "completedAt": null,
+  "completedAt": "2026-04-16",
   "branch": null,
   "base_branch": "dev",
   "worktree_path": null,
   "current_phase": 1,
   "next_action": [
-    { "phase": 1, "action": "implement" },
-    { "phase": 2, "action": "check" },
-    { "phase": 3, "action": "finish" }
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    }
   ],
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": ["04-16-kb-batch-ops-ui-fix"],
+  "children": [],
   "parent": null,
   "relatedFiles": [
-    { "file": "src/server/modules/knowledge/generateNerLexiconRules.ts",                       "reason": "新建：NER 词典规则生成服务" },
-    { "file": "src/server/modules/knowledge/generatePromptExtractionRules.ts",                 "reason": "新建：Prompt 提取规则生成服务" },
-    { "file": "src/server/modules/knowledge/index.ts",                                         "reason": "新增生成函数导出" },
-    { "file": "src/app/api/admin/knowledge/title-filters/generate/route.ts",                   "reason": "同步→异步 job 改造" },
-    { "file": "src/app/api/admin/knowledge/ner-rules/generate/route.ts",                       "reason": "新建：提交 job + 轮询" },
-    { "file": "src/app/api/admin/knowledge/ner-rules/generate/preview-prompt/route.ts",        "reason": "新建：提示词预览" },
-    { "file": "src/app/api/admin/knowledge/prompt-extraction-rules/generate/route.ts",         "reason": "新建：提交 job + 轮询" },
-    { "file": "src/app/api/admin/knowledge/prompt-extraction-rules/generate/preview-prompt/route.ts", "reason": "新建：提示词预览" },
-    { "file": "src/app/api/admin/knowledge/_shared.ts",                                        "reason": "新增 generateNerRulesSchema、generatePromptRulesSchema" },
-    { "file": "src/lib/services/title-filters.ts",                                             "reason": "改为 job 接口 + 新增 pollTitleFilterGenerationJob" },
-    { "file": "src/lib/services/ner-rules.ts",                                                 "reason": "新增生成接口（generate + poll + preview）" },
-    { "file": "src/lib/services/prompt-extraction-rules.ts",                                   "reason": "新增生成接口（generate + poll + preview）" },
-    { "file": "src/app/admin/knowledge-base/title-filters/page.tsx",                           "reason": "GenerationDialog 改为 polling 模式" },
-    { "file": "src/app/admin/knowledge-base/ner-rules/page.tsx",                               "reason": "新增模型生成按钮 + NerRuleGenerationDialog" },
-    { "file": "src/app/admin/knowledge-base/prompt-extraction-rules/page.tsx",                 "reason": "新增模型生成按钮 + PromptRuleGenerationDialog" }
+    {
+      "file": "src/server/modules/knowledge/generateNerLexiconRules.ts",
+      "reason": "新建：NER 词典规则生成服务"
+    },
+    {
+      "file": "src/server/modules/knowledge/generatePromptExtractionRules.ts",
+      "reason": "新建：Prompt 提取规则生成服务"
+    },
+    {
+      "file": "src/server/modules/knowledge/index.ts",
+      "reason": "新增生成函数导出"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/title-filters/generate/route.ts",
+      "reason": "同步→异步 job 改造"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/ner-rules/generate/route.ts",
+      "reason": "新建：提交 job + 轮询"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/ner-rules/generate/preview-prompt/route.ts",
+      "reason": "新建：提示词预览"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/prompt-extraction-rules/generate/route.ts",
+      "reason": "新建：提交 job + 轮询"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/prompt-extraction-rules/generate/preview-prompt/route.ts",
+      "reason": "新建：提示词预览"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/_shared.ts",
+      "reason": "新增 generateNerRulesSchema、generatePromptRulesSchema"
+    },
+    {
+      "file": "src/lib/services/title-filters.ts",
+      "reason": "改为 job 接口 + 新增 pollTitleFilterGenerationJob"
+    },
+    {
+      "file": "src/lib/services/ner-rules.ts",
+      "reason": "新增生成接口（generate + poll + preview）"
+    },
+    {
+      "file": "src/lib/services/prompt-extraction-rules.ts",
+      "reason": "新增生成接口（generate + poll + preview）"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/title-filters/page.tsx",
+      "reason": "GenerationDialog 改为 polling 模式"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/ner-rules/page.tsx",
+      "reason": "新增模型生成按钮 + NerRuleGenerationDialog"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/prompt-extraction-rules/page.tsx",
+      "reason": "新增模型生成按钮 + PromptRuleGenerationDialog"
+    }
   ],
   "notes": "参考模式：src/server/modules/knowledge/generateSurnames.ts（后端）、src/app/api/admin/knowledge/surnames/generate/route.ts（异步 job HTTP 层）、src/app/admin/knowledge-base/surnames/page.tsx（前端 polling）。job store 在 src/server/lib/knowledge-job-store.ts。",
   "meta": {}

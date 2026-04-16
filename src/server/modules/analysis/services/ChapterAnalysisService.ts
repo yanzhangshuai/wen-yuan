@@ -1379,7 +1379,10 @@ export function createChapterAnalysisService(
       chapterNo            : chapter.no,
       chapterTitle         : chapter.title,
       content              : chapter.content,
-      entityExtractionRules: executionContext.preloadedLexiconConfig?.entityExtractionRules
+      entityExtractionRules: executionContext.preloadedLexiconConfig?.entityExtractionRules,
+      genericTitlesExample : executionContext.runtimeKnowledge
+        ? Array.from(buildEffectiveGenericTitles(executionContext.preloadedLexiconConfig)).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等"
+        : undefined
     };
     const fallbackPrompt = buildIndependentExtractionPrompt(extractionInput);
     const prompt = await resolvePromptTemplateOrFallback({

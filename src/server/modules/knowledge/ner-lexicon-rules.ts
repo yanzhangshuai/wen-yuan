@@ -61,6 +61,37 @@ export async function deleteNerLexiconRule(id: string) {
   return prisma.nerLexiconRule.delete({ where: { id } });
 }
 
+export async function batchDeleteNerLexiconRules(ids: string[]) {
+  const result = await prisma.$transaction(
+    ids.map((id) => prisma.nerLexiconRule.delete({ where: { id } }))
+  );
+  return { count: result.length };
+}
+
+export async function batchToggleNerLexiconRules(ids: string[], isActive: boolean) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.nerLexiconRule.update({
+        where: { id },
+        data : { isActive }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
+export async function batchChangeBookTypeNerLexiconRules(ids: string[], bookTypeId: string | null) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.nerLexiconRule.update({
+        where: { id },
+        data : { bookTypeId }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
 export async function reorderNerLexiconRules(orderedIds: string[]) {
   await prisma.$transaction(
     orderedIds.map((id, index) =>

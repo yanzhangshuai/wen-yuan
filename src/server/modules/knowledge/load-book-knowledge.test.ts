@@ -20,6 +20,9 @@ function createPrismaMock() {
     nerLexiconRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
+    promptExtractionRule: {
+      findMany: vi.fn().mockResolvedValue([])
+    },
     bookAliasPack: {
       findMany: vi.fn().mockResolvedValue([])
     },
@@ -49,7 +52,7 @@ describe("load-book-knowledge", () => {
 
   it("loads full runtime knowledge with merged lexicon, alias lookup and verified knowledge entries", async () => {
     const prismaMock = createPrismaMock();
-    // presetConfig 已废弃 — loadBookTypeConfig 直接返回 {}，bookType.findUnique 不会被调用
+    // 词典配置已全面 DB 驱动 — 不再依赖 loadBookTypeConfig / baseConfig
     prismaMock.genericTitleRule.findMany.mockResolvedValueOnce([
       { title: "老爷", tier: "SAFETY" },
       { title: "先生", tier: "DEFAULT" },
@@ -61,12 +64,14 @@ describe("load-book-knowledge", () => {
       { surname: "赵", isCompound: false }
     ]);
     prismaMock.nerLexiconRule.findMany.mockResolvedValueOnce([
-      { ruleType: "ENTITY", content: "识别人名" },
-      { ruleType: "RELATIONSHIP", content: "识别关系" },
       { ruleType: "HARD_BLOCK_SUFFIX", content: "兄" },
       { ruleType: "SOFT_BLOCK_SUFFIX", content: "叔" },
       { ruleType: "TITLE_STEM", content: "老爷" },
       { ruleType: "POSITION_STEM", content: "太守" }
+    ]);
+    prismaMock.promptExtractionRule.findMany.mockResolvedValueOnce([
+      { ruleType: "ENTITY", content: "识别人名" },
+      { ruleType: "RELATIONSHIP", content: "识别关系" }
     ]);
     prismaMock.bookAliasPack.findMany.mockResolvedValueOnce([
       { packId: "pack-mounted", priority: 10 }

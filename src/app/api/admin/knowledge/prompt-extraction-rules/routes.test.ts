@@ -9,6 +9,9 @@ const updatePromptExtractionRuleMock = vi.fn();
 const deletePromptExtractionRuleMock = vi.fn();
 const reorderPromptExtractionRulesMock = vi.fn();
 const previewCombinedPromptRulesMock = vi.fn();
+const batchDeletePromptExtractionRulesMock = vi.fn();
+const batchTogglePromptExtractionRulesMock = vi.fn();
+const batchChangeBookTypePromptExtractionRulesMock = vi.fn();
 
 const BOOK_TYPE_ID = "11111111-1111-4111-8111-111111111111";
 const RULE_ID = "22222222-2222-4222-8222-222222222222";
@@ -24,12 +27,15 @@ vi.mock("@/server/modules/auth", () => ({
 }));
 
 vi.mock("@/server/modules/knowledge", () => ({
-  listPromptExtractionRules   : listPromptExtractionRulesMock,
-  createPromptExtractionRule  : createPromptExtractionRuleMock,
-  updatePromptExtractionRule  : updatePromptExtractionRuleMock,
-  deletePromptExtractionRule  : deletePromptExtractionRuleMock,
-  reorderPromptExtractionRules: reorderPromptExtractionRulesMock,
-  previewCombinedPromptRules  : previewCombinedPromptRulesMock
+  listPromptExtractionRules               : listPromptExtractionRulesMock,
+  createPromptExtractionRule              : createPromptExtractionRuleMock,
+  updatePromptExtractionRule              : updatePromptExtractionRuleMock,
+  deletePromptExtractionRule              : deletePromptExtractionRuleMock,
+  reorderPromptExtractionRules            : reorderPromptExtractionRulesMock,
+  previewCombinedPromptRules              : previewCombinedPromptRulesMock,
+  batchDeletePromptExtractionRules        : batchDeletePromptExtractionRulesMock,
+  batchTogglePromptExtractionRules        : batchTogglePromptExtractionRulesMock,
+  batchChangeBookTypePromptExtractionRules: batchChangeBookTypePromptExtractionRulesMock
 }));
 
 describe("knowledge prompt-extraction-rules routes", () => {
@@ -49,6 +55,9 @@ describe("knowledge prompt-extraction-rules routes", () => {
     deletePromptExtractionRuleMock.mockReset();
     reorderPromptExtractionRulesMock.mockReset();
     previewCombinedPromptRulesMock.mockReset();
+    batchDeletePromptExtractionRulesMock.mockReset();
+    batchTogglePromptExtractionRulesMock.mockReset();
+    batchChangeBookTypePromptExtractionRulesMock.mockReset();
     vi.resetModules();
   });
 
@@ -142,5 +151,45 @@ describe("knowledge prompt-extraction-rules routes", () => {
 
     expect(previewResponse.status).toBe(200);
     expect(previewCombinedPromptRulesMock).toHaveBeenCalledWith("ENTITY", BOOK_TYPE_ID);
+  });
+
+  it("dispatches prompt extraction batch actions", async () => {
+    batchDeletePromptExtractionRulesMock.mockResolvedValueOnce({ count: 2 });
+    batchTogglePromptExtractionRulesMock
+      .mockResolvedValueOnce({ count: 2 })
+      .mockResolvedValueOnce({ count: 2 });
+    batchChangeBookTypePromptExtractionRulesMock.mockResolvedValueOnce({ count: 2 });
+
+    const { POST } = await import("./batch/route");
+
+    const deleteResponse = await POST(new Request("http://localhost/api/admin/knowledge/prompt-extraction-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "delete", ids: [RULE_ID, RULE_ID_2] })
+    }));
+    const enableResponse = await POST(new Request("http://localhost/api/admin/knowledge/prompt-extraction-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "enable", ids: [RULE_ID, RULE_ID_2] })
+    }));
+    const disableResponse = await POST(new Request("http://localhost/api/admin/knowledge/prompt-extraction-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "disable", ids: [RULE_ID, RULE_ID_2] })
+    }));
+    const changeResponse = await POST(new Request("http://localhost/api/admin/knowledge/prompt-extraction-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "changeBookType", ids: [RULE_ID, RULE_ID_2], bookTypeId: null })
+    }));
+
+    expect(deleteResponse.status).toBe(200);
+    expect(enableResponse.status).toBe(200);
+    expect(disableResponse.status).toBe(200);
+    expect(changeResponse.status).toBe(200);
+    expect(batchDeletePromptExtractionRulesMock).toHaveBeenCalledWith([RULE_ID, RULE_ID_2]);
+    expect(batchTogglePromptExtractionRulesMock).toHaveBeenNthCalledWith(1, [RULE_ID, RULE_ID_2], true);
+    expect(batchTogglePromptExtractionRulesMock).toHaveBeenNthCalledWith(2, [RULE_ID, RULE_ID_2], false);
+    expect(batchChangeBookTypePromptExtractionRulesMock).toHaveBeenCalledWith([RULE_ID, RULE_ID_2], null);
   });
 });

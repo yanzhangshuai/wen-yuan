@@ -1,16 +1,16 @@
 {
   "id": "04-16-kb-prompt-rule-pipeline-fix",
   "name": "04-16-kb-prompt-rule-pipeline-fix",
-  "title": "修复 PromptExtractionRule 未接入分析管道的架构断链",
-  "description": "load-book-knowledge.ts 只查询 nerLexiconRule 表，但对 ENTITY/RELATIONSHIP 类型的过滤在该表上永远返回空（这两个类型属于 promptExtractionRule 表）。导致所有通过 UI 编辑或 AI 生成的 PromptExtractionRule 对分析管道完全无效。修复：在 loadRuntimeLexiconPayload 新增 promptExtractionRule 查询，将结果接入 entityExtractionRules / relationshipExtractionRules。",
-  "status": "pending",
+  "title": "知识库加载层重构 — PromptExtractionRule 断链修复 + 硬编码清理 + Phase 7 种子入库",
+  "description": "三个层级的修复：P0 — load-book-knowledge.ts 新增 promptExtractionRule 查询，修复 ENTITY/RELATIONSHIP 规则完全不生效的断链；P1 — lexicon.ts 删除所有硬编码常量并清理 buildEffective* 双轨问题，prompts.ts 移除失效 fallback；P2 — init-knowledge-base.ts 补齐 Phase 7 种子（历史人物、名字模式规则、古典人物别名、RELATIONAL 关系词）。修复后 DB 成为唯一知识数据源，所有 UI/AI 生成的规则真正生效。",
+  "status": "completed",
   "dev_type": "fix",
   "scope": "backend",
-  "priority": "P1",
+  "priority": "P0",
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-04-16",
-  "completedAt": null,
+  "completedAt": "2026-04-16",
   "branch": null,
   "base_branch": "dev",
   "worktree_path": null,
@@ -28,9 +28,29 @@
   "relatedFiles": [
     {
       "file": "src/server/modules/knowledge/load-book-knowledge.ts",
-      "reason": "主修复点：新增 promptExtractionRule 查询，修正 buildRuntimeLexiconConfig 中 ENTITY/RELATIONSHIP 数据来源"
+      "reason": "P0：新增 promptExtractionRule 查询；重命名 extractionRules→nerLexiconRules；删除 loadBookTypeConfig 和 baseConfig 字段"
+    },
+    {
+      "file": "src/server/modules/analysis/config/lexicon.ts",
+      "reason": "P1：删除所有硬编码常量（SAFETY/DEFAULT/HARD/SOFT/STEM/SURNAME/ENTITY/RELATIONSHIP）；buildEffective* 改为纯数据透传"
+    },
+    {
+      "file": "src/server/modules/analysis/services/prompts.ts",
+      "reason": "P1：删除 getDefault* fallback 替换为 ?? []；修复 GENERIC_TITLES_EXAMPLE 模块级常量（buildEffectiveGenericTitles(undefined) 删除硬编码后返回空集）；IndependentExtractionInput 新增 genericTitlesExample 字段"
+    },
+    {
+      "file": "scripts/init-knowledge-base.ts",
+      "reason": "P2：新增 Phase 7 种子处理（historical-figures / name-pattern-rules / classical-characters / relational-terms）"
+    },
+    {
+      "file": "src/server/modules/analysis/config/lexicon.test.ts",
+      "reason": "测试更新：删除依赖硬编码常量的断言，改为 DB 数据驱动"
+    },
+    {
+      "file": "src/server/modules/knowledge/load-book-knowledge.test.ts",
+      "reason": "测试扩展：覆盖 promptRules 路由、DB 有/无规则时的行为"
     }
   ],
-  "notes": "根因：KB 重构后 ENTITY/RELATIONSHIP 规则从 nerLexiconRule 独立为 promptExtractionRule 表，但 load-book-knowledge.ts 未同步更新。修复为纯后端单文件改动，不涉及 schema 迁移。Phase 6 种子内容与 lexicon.ts 硬编码默认值相同，所以分析结果目前是正确的，但数据库管理的规则完全无效。",
+  "notes": "设计文档：docs/superpowers/specs/2026-04-16-kb-pipeline-refactor-design.md。实施前须完成回归搜索：extractSurname/buildSafetyGenericTitles/buildDefaultGenericTitles/buildEffective* 等 8 个函数的所有调用点，确认均传入有效 bookConfig（删除硬编码 fallback 后无 config 时返回空集/null）。",
   "meta": {}
 }

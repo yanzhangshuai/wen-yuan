@@ -20,6 +20,9 @@ import {
   listChangeLogs
 } from "@/server/modules/knowledge/change-logs";
 import {
+  batchChangeBookTypeNerLexiconRules,
+  batchDeleteNerLexiconRules,
+  batchToggleNerLexiconRules,
   createNerLexiconRule,
   deleteNerLexiconRule,
   listNerLexiconRules,
@@ -27,6 +30,9 @@ import {
   updateNerLexiconRule
 } from "@/server/modules/knowledge/ner-lexicon-rules";
 import {
+  batchChangeBookTypePromptExtractionRules,
+  batchDeletePromptExtractionRules,
+  batchTogglePromptExtractionRules,
   createPromptExtractionRule,
   deletePromptExtractionRule,
   listPromptExtractionRules,
@@ -35,6 +41,9 @@ import {
   updatePromptExtractionRule
 } from "@/server/modules/knowledge/prompt-extraction-rules";
 import {
+  batchChangeBookTypeGenericTitles,
+  batchDeleteGenericTitles,
+  batchToggleGenericTitles,
   createGenericTitle,
   deleteGenericTitle,
   listGenericTitles,
@@ -42,6 +51,9 @@ import {
   updateGenericTitle
 } from "@/server/modules/knowledge/generic-titles";
 import {
+  batchChangeBookTypeSurnames,
+  batchDeleteSurnames,
+  batchToggleSurnames,
   createSurname,
   deleteSurname,
   importSurnames,
@@ -476,6 +488,36 @@ describe("knowledge catalog services", () => {
       });
       expect(hoisted.prisma.$transaction).toHaveBeenCalledTimes(1);
     });
+
+    it("performs batch delete toggle and book type changes for ner lexicon rules", async () => {
+      hoisted.prisma.$transaction
+        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
+        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
+        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
+
+      await expect(batchDeleteNerLexiconRules(["rule-a", "rule-b"])).resolves.toEqual({ count: 2 });
+      await expect(batchToggleNerLexiconRules(["rule-a", "rule-b"], false)).resolves.toEqual({ count: 2 });
+      await expect(batchChangeBookTypeNerLexiconRules(["rule-a", "rule-b"], "bt-1")).resolves.toEqual({ count: 2 });
+
+      expect(hoisted.prisma.nerLexiconRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "rule-a" } });
+      expect(hoisted.prisma.nerLexiconRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "rule-b" } });
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(1, {
+        where: { id: "rule-a" },
+        data : { isActive: false }
+      });
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(2, {
+        where: { id: "rule-b" },
+        data : { isActive: false }
+      });
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(3, {
+        where: { id: "rule-a" },
+        data : { bookTypeId: "bt-1" }
+      });
+      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(4, {
+        where: { id: "rule-b" },
+        data : { bookTypeId: "bt-1" }
+      });
+    });
   });
 
   describe("prompt-extraction-rules", () => {
@@ -568,6 +610,36 @@ describe("knowledge catalog services", () => {
       });
       expect(hoisted.prisma.$transaction).toHaveBeenCalledTimes(1);
     });
+
+    it("performs batch delete toggle and book type changes for prompt extraction rules", async () => {
+      hoisted.prisma.$transaction
+        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
+        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
+        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
+
+      await expect(batchDeletePromptExtractionRules(["rule-a", "rule-b"])).resolves.toEqual({ count: 2 });
+      await expect(batchTogglePromptExtractionRules(["rule-a", "rule-b"], true)).resolves.toEqual({ count: 2 });
+      await expect(batchChangeBookTypePromptExtractionRules(["rule-a", "rule-b"], null)).resolves.toEqual({ count: 2 });
+
+      expect(hoisted.prisma.promptExtractionRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "rule-a" } });
+      expect(hoisted.prisma.promptExtractionRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "rule-b" } });
+      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(1, {
+        where: { id: "rule-a" },
+        data : { isActive: true }
+      });
+      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(2, {
+        where: { id: "rule-b" },
+        data : { isActive: true }
+      });
+      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(3, {
+        where: { id: "rule-a" },
+        data : { bookTypeId: null }
+      });
+      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(4, {
+        where: { id: "rule-b" },
+        data : { bookTypeId: null }
+      });
+    });
   });
 
   describe("generic-titles", () => {
@@ -639,6 +711,55 @@ describe("knowledge catalog services", () => {
           isActive           : false
         }
       });
+    });
+
+    it("performs guarded batch delete toggle and book type exemption changes for generic titles", async () => {
+      hoisted.prisma.genericTitleRule.findMany.mockResolvedValueOnce([
+        { id: "title-a", tier: "DEFAULT" },
+        { id: "title-b", tier: "DEFAULT" }
+      ]);
+      hoisted.prisma.$transaction
+        .mockResolvedValueOnce([{ id: "title-a" }, { id: "title-b" }])
+        .mockResolvedValueOnce([{ id: "title-a" }, { id: "title-b" }])
+        .mockResolvedValueOnce([{ id: "title-a" }, { id: "title-b" }]);
+
+      await expect(batchDeleteGenericTitles(["title-a", "title-b"])).resolves.toEqual({ count: 2 });
+      await expect(batchToggleGenericTitles(["title-a", "title-b"], false)).resolves.toEqual({ count: 2 });
+      await expect(batchChangeBookTypeGenericTitles(["title-a", "title-b"], "bt-1")).resolves.toEqual({ count: 2 });
+
+      expect(hoisted.prisma.genericTitleRule.findMany).toHaveBeenCalledWith({
+        where : { id: { in: ["title-a", "title-b"] } },
+        select: { id: true, tier: true }
+      });
+      expect(hoisted.prisma.genericTitleRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "title-a" } });
+      expect(hoisted.prisma.genericTitleRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "title-b" } });
+      expect(hoisted.prisma.genericTitleRule.update).toHaveBeenNthCalledWith(1, {
+        where: { id: "title-a" },
+        data : { isActive: false }
+      });
+      expect(hoisted.prisma.genericTitleRule.update).toHaveBeenNthCalledWith(2, {
+        where: { id: "title-b" },
+        data : { isActive: false }
+      });
+      expect(hoisted.prisma.genericTitleRule.update).toHaveBeenNthCalledWith(3, {
+        where: { id: "title-a" },
+        data : { exemptInBookTypeIds: ["bt-1"] }
+      });
+      expect(hoisted.prisma.genericTitleRule.update).toHaveBeenNthCalledWith(4, {
+        where: { id: "title-b" },
+        data : { exemptInBookTypeIds: ["bt-1"] }
+      });
+    });
+
+    it("rejects batch delete when generic titles include safety tier entries", async () => {
+      hoisted.prisma.genericTitleRule.findMany.mockResolvedValueOnce([
+        { id: "title-safe", tier: "SAFETY" }
+      ]);
+
+      await expect(batchDeleteGenericTitles(["title-safe"])).rejects.toThrow("SAFETY 级别称谓不可删除");
+
+      expect(hoisted.prisma.genericTitleRule.delete).not.toHaveBeenCalled();
+      expect(hoisted.prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -744,6 +865,36 @@ describe("knowledge catalog services", () => {
           priority  : 10,
           source    : "IMPORTED"
         }
+      });
+    });
+
+    it("performs batch delete toggle and book type changes for surnames", async () => {
+      hoisted.prisma.$transaction
+        .mockResolvedValueOnce([{ id: "surname-a" }, { id: "surname-b" }])
+        .mockResolvedValueOnce([{ id: "surname-a" }, { id: "surname-b" }])
+        .mockResolvedValueOnce([{ id: "surname-a" }, { id: "surname-b" }]);
+
+      await expect(batchDeleteSurnames(["surname-a", "surname-b"])).resolves.toEqual({ count: 2 });
+      await expect(batchToggleSurnames(["surname-a", "surname-b"], true)).resolves.toEqual({ count: 2 });
+      await expect(batchChangeBookTypeSurnames(["surname-a", "surname-b"], null)).resolves.toEqual({ count: 2 });
+
+      expect(hoisted.prisma.surnameRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "surname-a" } });
+      expect(hoisted.prisma.surnameRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "surname-b" } });
+      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(1, {
+        where: { id: "surname-a" },
+        data : { isActive: true }
+      });
+      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(2, {
+        where: { id: "surname-b" },
+        data : { isActive: true }
+      });
+      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(3, {
+        where: { id: "surname-a" },
+        data : { bookTypeId: null }
+      });
+      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(4, {
+        where: { id: "surname-b" },
+        data : { bookTypeId: null }
       });
     });
   });

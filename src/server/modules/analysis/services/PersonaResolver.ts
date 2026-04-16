@@ -264,7 +264,7 @@ export function createPersonaResolver(
    * 2. 若无直接命中，再退化到“本书所有人物”做兜底比对，避免漏识别。
    */
   async function loadCandidates(client: TxLike, bookId: string, extracted: string): Promise<CandidatePersona[]> {
-    const directMatches = await client.persona.findMany({
+    const directMatches = (await client.persona.findMany({
       where: {
         OR: [
           { name: { contains: extracted, mode: "insensitive" } },
@@ -286,7 +286,7 @@ export function createPersonaResolver(
         }
       },
       take: 40
-    });
+    })) ?? [];
 
     if (directMatches.length > 0) {
       return directMatches.map((item) => ({
@@ -299,7 +299,7 @@ export function createPersonaResolver(
       }));
     }
 
-    const fallbackBookMatches = await client.persona.findMany({
+    const fallbackBookMatches = (await client.persona.findMany({
       where: {
         profiles: {
           some: { bookId }
@@ -312,7 +312,7 @@ export function createPersonaResolver(
         }
       },
       take: 200
-    });
+    })) ?? [];
 
     return fallbackBookMatches.map((item) => ({
       id     : item.id,
@@ -391,7 +391,8 @@ export function createPersonaResolver(
   async function resolve(input: ResolveInput, tx?: TxLike): Promise<ResolveResult> {
     const client = tx ?? prisma;
     const extracted = normalizeName(input.extractedName);
-    const effectiveLexicon = buildEffectiveLexicon(input.lexiconConfig);
+    const lexiconConfig = input.lexiconConfig ?? input.runtimeKnowledge?.lexiconConfig;
+    const effectiveLexicon = buildEffectiveLexicon(lexiconConfig);
     const rawName = input.extractedName.trim();
 
     // 空字符串直接视为无效识别，避免落库污染。
@@ -433,7 +434,7 @@ export function createPersonaResolver(
     }
 
     const safetyGenericTitles = input.runtimeKnowledge?.safetyGenericTitles
-      ?? buildSafetyGenericTitles(input.lexiconConfig);
+      ?? buildSafetyGenericTitles(lexiconConfig);
     if (safetyGenericTitles.has(rawName)) {
       return {
         status    : "hallucinated",
@@ -555,8 +556,8 @@ export function createPersonaResolver(
             if (normalizedTarget === normalizedSurface) return true;
             if (normalizedTarget.includes(normalizedSurface) || normalizedSurface.includes(normalizedTarget)) return true;
             // 同姓校验
-            const targetSurname = extractSurname(normalizedTarget, input.lexiconConfig);
-            const surfaceSurname = extractSurname(normalizedSurface, input.lexiconConfig);
+            const targetSurname = extractSurname(normalizedTarget, lexiconConfig);
+            const surfaceSurname = extractSurname(normalizedSurface, lexiconConfig);
             if (targetSurname && surfaceSurname && targetSurname === surfaceSurname) return true;
             return false;
           });
@@ -639,7 +640,7 @@ export function createPersonaResolver(
     // - RankedHonorific: "姓+排行+敬称"（如"马二先生"）
     // - SurnameTitle: "姓+泛称/称号"（如"范举人""贾太太"）
     const boostedRanked = applyRankedHonorificBoost(extracted, baseScored, effectiveLexicon);
-    const scored = applySurnameTitleBoost(rawName, boostedRanked, effectiveLexicon, input.lexiconConfig)
+    const scored = applySurnameTitleBoost(rawName, boostedRanked, effectiveLexicon, lexiconConfig)
       .sort((a, b) => b.score - a.score);
     const winner = scored[0];
 

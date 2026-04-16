@@ -301,7 +301,12 @@ describe("GlobalEntityResolver", () => {
         buildChapterEntityList(2, [{ name: "范举人", aliases: ["范老爷"], description: "中举后境遇骤变的寒门书生", category: "PERSON" }]),
         buildChapterEntityList(3, [{ name: "王惠", aliases: [], description: "地方官员", category: "PERSON" }])
       ],
-      { bookId: "book-1", jobId: "job-1" }
+      { bookId: "book-1", jobId: "job-1" },
+      {
+        lexiconConfig: {
+          surnameSingles: ["范", "王"]
+        }
+      }
       // no aliasLookup → no directMerge → ambiguous group goes to LLM
     );
 

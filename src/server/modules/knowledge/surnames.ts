@@ -62,6 +62,37 @@ export async function deleteSurname(id: string) {
   return prisma.surnameRule.delete({ where: { id } });
 }
 
+export async function batchDeleteSurnames(ids: string[]) {
+  const result = await prisma.$transaction(
+    ids.map((id) => prisma.surnameRule.delete({ where: { id } }))
+  );
+  return { count: result.length };
+}
+
+export async function batchToggleSurnames(ids: string[], isActive: boolean) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.surnameRule.update({
+        where: { id },
+        data : { isActive }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
+export async function batchChangeBookTypeSurnames(ids: string[], bookTypeId: string | null) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.surnameRule.update({
+        where: { id },
+        data : { bookTypeId }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
 export async function importSurnames(text: string) {
   const surnames = text.split(/[,\n，、\s]+/).map(s => s.trim()).filter(Boolean);
   const unique = [...new Set(surnames)];

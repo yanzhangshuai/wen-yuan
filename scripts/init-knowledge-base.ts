@@ -162,6 +162,200 @@ export async function seedKnowledgeBaseFromFile(prisma: PrismaClient, filePath: 
   return seedKnowledgeBase(prisma, data);
 }
 
+// --- Phase 7 种子类型定义 ---
+
+interface HistoricalFigureSeedData {
+  version    : string;
+  description: string;
+  entries    : Array<{
+    name        : string;
+    aliases     : string[];
+    dynasty?    : string;
+    category    : string;
+    description?: string;
+  }>;
+}
+
+interface NamePatternRuleSeedData {
+  version    : string;
+  description: string;
+  entries    : Array<{
+    ruleType    : string;
+    pattern     : string;
+    action      : string;
+    description?: string;
+  }>;
+}
+
+interface RelationalTermSeedData {
+  version    : string;
+  description: string;
+  entries    : Array<{
+    term    : string;
+    category: string;
+  }>;
+}
+
+interface ClassicalCharacterSeedData {
+  version    : string;
+  description: string;
+  genres     : Array<{
+    bookTypeKey : string;
+    packName    : string;
+    scope       : string;
+    sourceDetail: string;
+    entries     : Array<{
+      canonicalName: string;
+      aliases      : string[];
+    }>;
+  }>;
+}
+
+export interface KnowledgePhase7SeedSummary {
+  historicalFigures: number;
+  namePatternRules : number;
+  relationalTerms  : number;
+  classicalPacks   : number;
+  classicalEntries : number;
+}
+
+export async function seedKnowledgePhase7(prisma: PrismaClient): Promise<KnowledgePhase7SeedSummary> {
+  console.log("Phase 7 种子数据导入开始...\n");
+  const basePath = resolve(process.cwd(), "data/knowledge-base");
+
+  // 1. Historical Figures
+  let historicalFigureCount = 0;
+  const hfPath = resolve(basePath, "historical-figures.seed.json");
+  const hfData = JSON.parse(readFileSync(hfPath, "utf-8")) as HistoricalFigureSeedData;
+  console.log(`  历史人物: ${hfData.entries.length} 条 (${hfData.version})`);
+  for (const entry of hfData.entries) {
+    const existing = await prisma.historicalFigureEntry.findFirst({
+      where: { name: entry.name }
+    });
+    if (!existing) {
+      await prisma.historicalFigureEntry.create({
+        data: {
+          name        : entry.name,
+          aliases     : entry.aliases,
+          dynasty     : entry.dynasty ?? null,
+          category    : entry.category,
+          description : entry.description ?? null,
+          reviewStatus: "VERIFIED",
+          isActive    : true,
+          source      : "IMPORTED"
+        }
+      });
+      historicalFigureCount++;
+    }
+  }
+  console.log(`  ✅ 历史人物: ${historicalFigureCount} created, ${hfData.entries.length - historicalFigureCount} skipped`);
+
+  // 2. Name Pattern Rules
+  let namePatternCount = 0;
+  const npPath = resolve(basePath, "name-pattern-rules.seed.json");
+  const npData = JSON.parse(readFileSync(npPath, "utf-8")) as NamePatternRuleSeedData;
+  console.log(`  名字模式规则: ${npData.entries.length} 条 (${npData.version})`);
+  for (const rule of npData.entries) {
+    const existing = await prisma.namePatternRule.findFirst({
+      where: { ruleType: rule.ruleType, pattern: rule.pattern }
+    });
+    if (!existing) {
+      await prisma.namePatternRule.create({
+        data: {
+          ruleType    : rule.ruleType,
+          pattern     : rule.pattern,
+          action      : rule.action,
+          description : rule.description ?? null,
+          reviewStatus: "VERIFIED",
+          isActive    : true,
+          source      : "IMPORTED"
+        }
+      });
+      namePatternCount++;
+    }
+  }
+  console.log(`  ✅ 名字模式规则: ${namePatternCount} created, ${npData.entries.length - namePatternCount} skipped`);
+
+  // 3. Relational Terms → GenericTitleRule (tier=RELATIONAL)
+  let relationalTermCount = 0;
+  const rtPath = resolve(basePath, "relational-terms.seed.json");
+  const rtData = JSON.parse(readFileSync(rtPath, "utf-8")) as RelationalTermSeedData;
+  console.log(`  关系词: ${rtData.entries.length} 条 (${rtData.version})`);
+  for (const entry of rtData.entries) {
+    await prisma.genericTitleRule.upsert({
+      where : { title: entry.term },
+      create: { title: entry.term, tier: "RELATIONAL", category: entry.category, source: "IMPORTED" },
+      update: {}
+    });
+    relationalTermCount++;
+  }
+  console.log(`  ✅ 关系词: ${relationalTermCount} upserted`);
+
+  // 4. Classical Characters → AliasPack + AliasEntry
+  let classicalPackCount = 0;
+  let classicalEntryCount = 0;
+  const ccPath = resolve(basePath, "classical-characters.seed.json");
+  const ccData = JSON.parse(readFileSync(ccPath, "utf-8")) as ClassicalCharacterSeedData;
+  console.log(`  古典人物: ${ccData.genres.length} 类 (${ccData.version})`);
+  for (const genre of ccData.genres) {
+    const bookType = await prisma.bookType.findFirst({ where: { key: genre.bookTypeKey } });
+    if (!bookType) {
+      console.log(`  ⏩ 跳过未知书籍类型: ${genre.bookTypeKey}`);
+      continue;
+    }
+
+    const existingPack = await prisma.aliasPack.findFirst({
+      where: { bookTypeId: bookType.id, name: genre.packName }
+    });
+    if (existingPack) {
+      console.log(`  ⏩ 跳过已有知识包: ${genre.packName}`);
+      continue;
+    }
+
+    const pack = await prisma.aliasPack.create({
+      data: {
+        name       : genre.packName,
+        scope      : genre.scope,
+        bookTypeId : bookType.id,
+        description: genre.sourceDetail,
+        isActive   : true
+      }
+    });
+
+    if (genre.entries.length > 0) {
+      await prisma.aliasEntry.createMany({
+        data: genre.entries.map((entry) => ({
+          packId       : pack.id,
+          canonicalName: entry.canonicalName,
+          aliases      : entry.aliases,
+          source       : "IMPORTED",
+          reviewStatus : "VERIFIED",
+          confidence   : 1.0
+        }))
+      });
+    }
+
+    classicalPackCount++;
+    classicalEntryCount += genre.entries.length;
+    console.log(`  ✅ 知识包: ${genre.packName} (${genre.entries.length} entries)`);
+  }
+
+  console.log("\n========== Phase 7 Summary ==========");
+  console.log(`历史人物:   ${historicalFigureCount} created`);
+  console.log(`名字模式:   ${namePatternCount} created`);
+  console.log(`关系词:     ${relationalTermCount} upserted`);
+  console.log(`古典人物包: ${classicalPackCount} created (${classicalEntryCount} entries)`);
+  console.log("======================================");
+
+  return {
+    historicalFigures: historicalFigureCount,
+    namePatternRules : namePatternCount,
+    relationalTerms  : relationalTermCount,
+    classicalPacks   : classicalPackCount,
+    classicalEntries : classicalEntryCount
+  };
+}
+
 // --- 主逻辑 ---
 
 async function main() {

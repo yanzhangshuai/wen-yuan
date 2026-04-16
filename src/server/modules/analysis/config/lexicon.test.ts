@@ -4,94 +4,89 @@ import {
   buildEffectiveGenericTitles,
   buildEffectiveTitlePattern,
   extractSurname,
-  formatRulesSection,
-  getDefaultEntityExtractionRules,
-  getDefaultRelationshipExtractionRules
+  formatRulesSection
 } from "@/server/modules/analysis/config/lexicon";
 
 /**
  * 文件定位（分析配置层单测）：
- * - 校验“称谓词典”构建逻辑，属于文本分析前置配置，不直接处理路由请求。
- * - 在整条解析链路中，它为后续实体识别/关系抽取提供候选称谓规则。
- *
- * 业务价值：
- * - 保证系统默认词典 + 书籍定制词典可叠加，同时支持豁免词（排除误识别）。
- * - 保证正则模式能覆盖常见称谓并避免单字误匹配（降低噪声）。
+ * - 校验"称谓词典"构建逻辑，属于文本分析前置配置，不直接处理路由请求。
+ * - 删除硬编码后，所有 buildEffective* 在无 config 时返回空集。
  */
 describe("lexicon config helpers", () => {
-  it("buildEffectiveGenericTitles applies additional and exempt entries", () => {
-    // 业务场景：运营或分析策略会对“泛称谓”做增删，本断言保证配置变更能够生效且可回滚。
+  it("buildEffectiveGenericTitles returns empty set without config", () => {
+    const effective = buildEffectiveGenericTitles(undefined, false);
+    expect(effective.size).toBe(0);
+  });
+
+  it("buildEffectiveGenericTitles with safety returns empty when no config", () => {
+    const effective = buildEffectiveGenericTitles(undefined, true);
+    expect(effective.size).toBe(0);
+  });
+
+  it("buildEffectiveGenericTitles applies additional and exempt entries from DB config", () => {
     const effective = buildEffectiveGenericTitles({
+      defaultGenericTitles   : ["老爷", "夫人", "先生", "公子"],
       additionalGenericTitles: ["掌门", "山主"],
       exemptGenericTitles    : ["先生", "公子"]
     }, false);
 
     expect(effective.has("掌门")).toBe(true);
     expect(effective.has("山主")).toBe(true);
+    expect(effective.has("老爷")).toBe(true);
     expect(effective.has("先生")).toBe(false);
     expect(effective.has("公子")).toBe(false);
   });
 
-  it("buildEffectiveTitlePattern merges universal/default/book stems and avoids single-char fallback", () => {
-    // 业务原因：若允许单字称谓（如“王/侯/伯”）直接命中，会在古文中产生大量误报，影响下游图谱质量。
+  it("buildEffectiveTitlePattern returns never-match regex without config", () => {
+    const pattern = buildEffectiveTitlePattern(undefined);
+    expect(pattern.test("武林盟主")).toBe(false);
+    expect(pattern.test("任何文本")).toBe(false);
+  });
+
+  it("buildEffectiveTitlePattern merges book stems from DB config", () => {
     const pattern = buildEffectiveTitlePattern({
-      additionalTitlePatterns   : ["盟主"],
-      additionalPositionPatterns: ["节度使"]
+      additionalTitlePatterns   : ["盟主", "皇帝"],
+      additionalPositionPatterns: ["节度使", "太守"]
     });
 
     expect(pattern.test("武林盟主")).toBe(true);
     expect(pattern.test("河东节度使")).toBe(true);
     expect(pattern.test("王")).toBe(false);
-    expect(pattern.test("侯")).toBe(false);
-    expect(pattern.test("伯")).toBe(false);
   });
 });
+
 describe("extractSurname", () => {
-  it("extracts single-char surnames", () => {
-    expect(extractSurname("范进")).toBe("范");
-    expect(extractSurname("贾宝玉")).toBe("贾");
-    expect(extractSurname("刘备")).toBe("刘");
+  const dbConfig = {
+    surnameCompounds: ["诸葛", "司马", "欧阳"],
+    surnameSingles  : ["范", "贾", "刘"]
+  };
+
+  it("extracts single-char surnames from DB config", () => {
+    expect(extractSurname("范进", dbConfig)).toBe("范");
+    expect(extractSurname("贾宝玉", dbConfig)).toBe("贾");
+    expect(extractSurname("刘备", dbConfig)).toBe("刘");
   });
 
   it("prioritizes compound surnames over single-char", () => {
-    // "诸葛亮"应匹配复姓"诸葛"而非单姓"诸"
-    expect(extractSurname("诸葛亮")).toBe("诸葛");
-    expect(extractSurname("司马懿")).toBe("司马");
-    expect(extractSurname("欧阳修")).toBe("欧阳");
+    expect(extractSurname("诸葛亮", dbConfig)).toBe("诸葛");
+    expect(extractSurname("司马懿", dbConfig)).toBe("司马");
+    expect(extractSurname("欧阳修", dbConfig)).toBe("欧阳");
+  });
+
+  it("returns null without config (no hardcoded fallback)", () => {
+    expect(extractSurname("范进")).toBe(null);
+    expect(extractSurname("诸葛亮")).toBe(null);
   });
 
   it("returns null for unknown surnames", () => {
-    expect(extractSurname("")).toBe(null);
-    expect(extractSurname("老爷")).toBe(null);
-    expect(extractSurname("的人")).toBe(null);
-    expect(extractSurname("了不起")).toBe(null);
-    expect(extractSurname("人家")).toBe(null);
+    expect(extractSurname("", dbConfig)).toBe(null);
+    expect(extractSurname("老爷", dbConfig)).toBe(null);
+    expect(extractSurname("的人", dbConfig)).toBe(null);
   });
 
   it("handles single-char input", () => {
-    expect(extractSurname("范")).toBe("范");
-    expect(extractSurname("啊")).toBe(null);
-  });
-});
-
-describe("shared prompt rules", () => {
-  it("default ENTITY rules contain genericTitles placeholder", () => {
-    // 保证占位符存在，prompt 构建时能正确替换
-    const rules = getDefaultEntityExtractionRules();
-    const hasPlaceholder = rules.some((r) => r.includes("{genericTitles}"));
-    expect(hasPlaceholder).toBe(true);
-  });
-
-  it("default ENTITY rules have minimum rule count", () => {
-    expect(getDefaultEntityExtractionRules().length).toBeGreaterThanOrEqual(7);
-  });
-
-  it("default RELATIONSHIP rules cover key constraints", () => {
-    const relationshipRules = getDefaultRelationshipExtractionRules();
-    const joined = relationshipRules.join(" ");
-    expect(joined).toContain("evidence");
-    expect(joined).toContain("自关系");
-    expect(relationshipRules.length).toBeGreaterThanOrEqual(3);
+    expect(extractSurname("范", dbConfig)).toBe("范");
+    expect(extractSurname("啊", dbConfig)).toBe(null);
   });
 });
 

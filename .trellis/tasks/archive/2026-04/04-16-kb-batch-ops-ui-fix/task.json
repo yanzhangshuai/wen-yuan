@@ -1,0 +1,125 @@
+{
+  "id": "04-16-kb-batch-ops-ui-fix",
+  "name": "04-16-kb-batch-ops-ui-fix",
+  "title": "知识库前端增强 — 批量操作 + 原生对话框替换 + 侧边栏 Active 高亮",
+  "description": "为姓氏词库/泛化称谓/NER词典规则/Prompt提取规则四个模块新增批量操作（批量删除/启用/停用/改书籍类型）；将全知识库管理区 9 处 confirm()/prompt() 替换为 UI 组件对话框；修复侧边栏导航无当前选中状态高亮的问题。",
+  "status": "completed",
+  "dev_type": "feat",
+  "scope": "fullstack",
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-16",
+  "completedAt": "2026-04-16",
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 1,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-16-kb-model-generation",
+  "relatedFiles": [
+    {
+      "file": "src/app/admin/knowledge-base/layout.tsx",
+      "reason": "NavLink 加 usePathname() active 高亮"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/surnames/page.tsx",
+      "reason": "confirm() 替换 + 批量操作"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/title-filters/page.tsx",
+      "reason": "confirm() 替换 + 批量操作"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/ner-rules/page.tsx",
+      "reason": "confirm() 替换 + 批量操作"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/prompt-extraction-rules/page.tsx",
+      "reason": "confirm() 替换 + 批量操作"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/book-types/page.tsx",
+      "reason": "confirm() 替换"
+    },
+    {
+      "file": "src/app/admin/knowledge-base/alias-packs/page.tsx",
+      "reason": "confirm() 2处 + prompt() 2处 替换"
+    },
+    {
+      "file": "src/server/modules/knowledge/surnames.ts",
+      "reason": "新增 batchDelete/batchToggle/batchChangeBookType"
+    },
+    {
+      "file": "src/server/modules/knowledge/generic-titles.ts",
+      "reason": "新增 batchDelete/batchToggle/batchChangeBookType"
+    },
+    {
+      "file": "src/server/modules/knowledge/ner-lexicon-rules.ts",
+      "reason": "新增 batchDelete/batchToggle/batchChangeBookType"
+    },
+    {
+      "file": "src/server/modules/knowledge/prompt-extraction-rules.ts",
+      "reason": "新增 batchDelete/batchToggle/batchChangeBookType"
+    },
+    {
+      "file": "src/server/modules/knowledge/index.ts",
+      "reason": "新增批量操作函数导出"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/surnames/batch/route.ts",
+      "reason": "新建"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/title-filters/batch/route.ts",
+      "reason": "新建"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/ner-rules/batch/route.ts",
+      "reason": "新建"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/prompt-extraction-rules/batch/route.ts",
+      "reason": "新建"
+    },
+    {
+      "file": "src/app/api/admin/knowledge/_shared.ts",
+      "reason": "新增 knowledgeBatchActionSchema"
+    },
+    {
+      "file": "src/lib/services/surnames.ts",
+      "reason": "新增 batchSurnameAction"
+    },
+    {
+      "file": "src/lib/services/title-filters.ts",
+      "reason": "新增 batchGenericTitleAction"
+    },
+    {
+      "file": "src/lib/services/ner-rules.ts",
+      "reason": "新增 batchNerLexiconRuleAction"
+    },
+    {
+      "file": "src/lib/services/prompt-extraction-rules.ts",
+      "reason": "新增 batchPromptExtractionRuleAction"
+    }
+  ],
+  "notes": "需先完成 04-16-kb-model-generation 再执行本任务。原生对话框：confirm() 7处 + prompt() 2处，全部在 src/app/admin/knowledge-base/ 下。",
+  "meta": {}
+}

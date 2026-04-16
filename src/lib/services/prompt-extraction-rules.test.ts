@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  batchPromptExtractionRuleAction,
   createPromptExtractionRule,
   deletePromptExtractionRule,
   fetchPromptExtractionRules,
@@ -26,6 +27,27 @@ describe("prompt-extraction-rules service", () => {
   beforeEach(() => {
     hoisted.clientFetchMock.mockReset();
     hoisted.clientMutateMock.mockReset();
+  });
+
+  it("posts batch prompt extraction rule actions and returns affected count", async () => {
+    hoisted.clientFetchMock.mockResolvedValueOnce({ count: 2 });
+
+    await expect(batchPromptExtractionRuleAction({
+      action    : "changeBookType",
+      ids       : ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"],
+      bookTypeId: "33333333-3333-4333-8333-333333333333"
+    })).resolves.toEqual({ count: 2 });
+
+    expect(hoisted.clientFetchMock).toHaveBeenCalledWith("/api/admin/knowledge/prompt-extraction-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({
+        action    : "changeBookType",
+        ids       : ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"],
+        bookTypeId: "33333333-3333-4333-8333-333333333333"
+      })
+    });
+    expect(hoisted.clientMutateMock).not.toHaveBeenCalled();
   });
 
   it("uses prompt extraction rule endpoints and generation payloads", async () => {

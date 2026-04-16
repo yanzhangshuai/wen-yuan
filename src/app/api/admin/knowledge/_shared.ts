@@ -11,11 +11,13 @@ export const uuidParamSchema = z.object({
   id: z.string().uuid("ID 不合法")
 });
 
+const bookTypePresetConfigSchema = z.record(z.unknown()).nullable();
+
 export const createBookTypeSchema = z.object({
   key         : z.string().trim().min(1, "key 不能为空"),
   name        : z.string().trim().min(1, "name 不能为空"),
   description : z.string().optional(),
-  presetConfig: z.any().optional(),
+  presetConfig: bookTypePresetConfigSchema.optional(),
   sortOrder   : z.number().int().optional()
 });
 
@@ -23,7 +25,7 @@ export const updateBookTypeSchema = z.object({
   key         : z.string().trim().min(1, "key 不能为空").optional(),
   name        : z.string().trim().min(1, "name 不能为空").optional(),
   description : z.string().optional(),
-  presetConfig: z.any().optional(),
+  presetConfig: bookTypePresetConfigSchema.optional(),
   sortOrder   : z.number().int().optional(),
   isActive    : z.boolean().optional()
 }).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
@@ -64,6 +66,28 @@ export const batchRejectSchema = z.object({
   ids : z.array(z.string().uuid()).min(1, "至少提供一个条目 ID"),
   note: z.string().optional()
 });
+
+const knowledgeBatchIdsSchema = z.array(z.string().uuid()).min(1, "至少提供一个条目 ID").max(500, "单次最多批量操作 500 条");
+
+export const knowledgeBatchActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("delete"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action: z.literal("enable"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action: z.literal("disable"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action    : z.literal("changeBookType"),
+    ids       : knowledgeBatchIdsSchema,
+    bookTypeId: z.string().uuid().nullable()
+  })
+]);
 
 export const rejectSchema = z.object({
   note: z.string().optional()

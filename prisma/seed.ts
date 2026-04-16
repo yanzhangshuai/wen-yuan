@@ -3,7 +3,7 @@ import argon2 from "argon2";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
-import { seedKnowledgeBaseFromFile } from "../scripts/init-knowledge-base.ts";
+import { seedKnowledgeBaseFromFile, seedKnowledgePhase7 } from "../scripts/init-knowledge-base.ts";
 import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
 
 /**
@@ -235,6 +235,9 @@ async function main() {
 
   console.log("🧩 导入知识库 Phase 6 基础词库与模板...");
   await seedKnowledgePhase6(prisma);
+
+  console.log("🧩 导入知识库 Phase 7 种子数据（历史人物、名字模式、关系词、古典人物）...");
+  await seedKnowledgePhase7(prisma);
 
   console.log("✅ 种子数据录入成功！");
   console.log(`- 已预设模型数: ${result.modelCount}`);

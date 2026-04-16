@@ -7,6 +7,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -49,6 +57,8 @@ export default function BookTypesPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BookTypeItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BookTypeItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -75,14 +85,17 @@ export default function BookTypesPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (item: BookTypeItem) => {
-    if (!confirm(`确定删除书籍类型「${item.name}」吗？`)) return;
+  const handleDeleteConfirmed = async (item: BookTypeItem) => {
+    setDeleting(true);
     try {
       await deleteBookType(item.id);
       toast({ title: "删除成功" });
+      setDeleteTarget(null);
       await load();
     } catch (e) {
       toast({ title: "删除失败", description: String(e), variant: "destructive" });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -156,17 +169,29 @@ export default function BookTypesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`编辑书籍类型 ${item.name}`}
+                          onClick={() => handleEdit(item)}
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => void handleDelete(item)}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`删除书籍类型 ${item.name}`}
+                          onClick={() => setDeleteTarget(item)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Link href={`/admin/knowledge-base/alias-packs?bookTypeId=${item.id}`}>
-                          <Button variant="ghost" size="sm">
+                        <Button asChild variant="ghost" size="icon-sm" aria-label={`查看 ${item.name} 的知识包`}>
+                          <Link href={`/admin/knowledge-base/alias-packs?bookTypeId=${item.id}`}>
                             <ChevronRight className="h-3.5 w-3.5" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -183,6 +208,46 @@ export default function BookTypesPage() {
         editing={editing}
         onSave={handleDialogSave}
       />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除书籍类型</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除书籍类型「{deleteTarget?.name ?? ""}」吗？此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleting}
+              onClick={() => setDeleteTarget(null)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting || !deleteTarget}
+              onClick={() => {
+                if (deleteTarget) {
+                  void handleDeleteConfirmed(deleteTarget);
+                }
+              }}
+            >
+              {deleting ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

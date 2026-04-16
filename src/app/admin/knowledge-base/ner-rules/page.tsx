@@ -10,6 +10,15 @@ import {
 } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +47,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminModels } from "@/hooks/use-admin-models";
 import { useToast } from "@/hooks/use-toast";
+import { BatchActionControls } from "@/app/admin/knowledge-base/batch-action-controls";
 import { fetchBookTypes, type BookTypeItem } from "@/lib/services/book-types";
 import {
+  batchNerLexiconRuleAction,
   createNerLexiconRule,
   deleteNerLexiconRule,
   fetchNerLexiconRules,
@@ -92,6 +103,9 @@ export default function NerRulesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [editing, setEditing] = useState<NerLexiconRuleItem | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<NerLexiconRuleItem | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -117,7 +131,14 @@ export default function NerRulesPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    setSelected((previous) => new Set(items.filter((item) => previous.has(item.id)).map((item) => item.id)));
+  }, [items]);
+
   const orderedIds = useMemo(() => items.map((item) => item.id), [items]);
+  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  const allSelected = items.length > 0 && selected.size === items.length;
+  const partiallySelected = selected.size > 0 && !allSelected;
 
   function moveItem(index: number, direction: -1 | 1) {
     const targetIndex = index + direction;
@@ -140,14 +161,61 @@ export default function NerRulesPage() {
   }
 
   async function handleDelete(item: NerLexiconRuleItem) {
-    if (!confirm("确定删除该词典规则吗？")) return;
-
+    setDeletePending(true);
     try {
       await deleteNerLexiconRule(item.id);
       toast({ title: "删除成功" });
+      setDeleteTarget(null);
+      setSelected((previous) => {
+        const next = new Set(previous);
+        next.delete(item.id);
+        return next;
+      });
       await load();
     } catch (error) {
       toast({ title: "删除失败", description: String(error), variant: "destructive" });
+    } finally {
+      setDeletePending(false);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((previous) => {
+      if (items.length === 0 || previous.size === items.length) {
+        return new Set();
+      }
+
+      return new Set(items.map((item) => item.id));
+    });
+  }
+
+  async function runBatchAction(
+    action: Parameters<typeof batchNerLexiconRuleAction>[0],
+    successTitle: string
+  ) {
+    try {
+      const result = await batchNerLexiconRuleAction(action);
+      toast({
+        title      : successTitle,
+        description: `已处理 ${result.count} 条词典规则。`
+      });
+      setSelected(new Set());
+      await load();
+    } catch (error) {
+      toast({ title: "批量操作失败", description: String(error), variant: "destructive" });
+      throw error;
     }
   }
 
@@ -204,6 +272,19 @@ export default function NerRulesPage() {
           <Button type="button" variant="outline" onClick={() => void load()}>刷新</Button>
         </div>
 
+        <BatchActionControls
+          selectedCount={selected.size}
+          bookTypes={bookTypes.map((bookType) => ({ id: bookType.id, name: bookType.name }))}
+          onEnable={() => runBatchAction({ action: "enable", ids: selectedIds }, "已批量启用")}
+          onDisable={() => runBatchAction({ action: "disable", ids: selectedIds }, "已批量停用")}
+          onDelete={() => runBatchAction({ action: "delete", ids: selectedIds }, "已批量删除")}
+          onClear={() => setSelected(new Set())}
+          onChangeBookType={(bookTypeId) => runBatchAction(
+            { action: "changeBookType", ids: selectedIds, bookTypeId },
+            "已更新书籍类型"
+          )}
+        />
+
         {loading ? (
           <div className="py-12 text-center text-muted-foreground">加载中...</div>
         ) : (
@@ -211,6 +292,13 @@ export default function NerRulesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
+                      aria-label="全选 NER 词典规则"
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-24">排序</TableHead>
                   <TableHead className="w-36">规则类型</TableHead>
                   <TableHead>词典内容</TableHead>
@@ -219,12 +307,19 @@ export default function NerRulesPage() {
                   <TableHead className="w-28">操作</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {items.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span>{item.sortOrder}</span>
+                <TableBody>
+                  {items.map((item, index) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(item.id)}
+                          aria-label={`选择规则 ${item.content}`}
+                          onCheckedChange={() => toggleSelect(item.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span>{item.sortOrder}</span>
                         <Button
                           type="button"
                           variant="ghost"
@@ -269,7 +364,7 @@ export default function NerRulesPage() {
                           variant="ghost"
                           size="icon-sm"
                           aria-label="删除规则"
-                          onClick={() => void handleDelete(item)}
+                          onClick={() => setDeleteTarget(item)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -279,7 +374,7 @@ export default function NerRulesPage() {
                 ))}
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">暂无规则</TableCell>
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">暂无规则</TableCell>
                   </TableRow>
                 ) : null}
               </TableBody>
@@ -304,6 +399,46 @@ export default function NerRulesPage() {
         onOpenChange={setDialogOpen}
         onSaved={load}
       />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletePending) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除词典规则</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除该词典规则吗？此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deletePending}
+              onClick={() => setDeleteTarget(null)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletePending || !deleteTarget}
+              onClick={() => {
+                if (deleteTarget) {
+                  void handleDelete(deleteTarget);
+                }
+              }}
+            >
+              {deletePending ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

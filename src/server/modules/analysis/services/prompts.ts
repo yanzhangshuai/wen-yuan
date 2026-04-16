@@ -27,19 +27,7 @@ import {
   type ValidationSuggestionAction
 } from "@/types/validation";
 import { repairJson } from "@/types/analysis";
-import {
-  buildEffectiveGenericTitles,
-  GENERIC_TITLES_PROMPT_LIMIT,
-  formatRulesSection,
-  getDefaultEntityExtractionRules,
-  getDefaultRelationshipExtractionRules
-} from "@/server/modules/analysis/config/lexicon";
-
-/**
- * 从 GENERIC_TITLES 生成 prompt 使用的示例列表。
- * 这里固定从统一词库截取，避免章节分析/名册发现/测试断言三处列表不一致。
- */
-const GENERIC_TITLES_EXAMPLE = Array.from(buildEffectiveGenericTitles(undefined)).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等";
+import { formatRulesSection } from "@/server/modules/analysis/config/lexicon";
 
 /**
  * 功能：定义生成分段 Prompt 所需参数。
@@ -217,17 +205,17 @@ function buildEntityContextLines(profiles: AnalysisProfileContext[]): string {
 }
 
 export function buildRosterDiscoveryRulesText(input: Pick<RosterDiscoveryInput, "genericTitlesExample" | "entityExtractionRules">): string {
-  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
+  const genericTitlesExample = input.genericTitlesExample ?? "";
   const rosterSpecificRules: readonly string[] = [
     "尊号/帝号/封号：可对应已知人物→填entityId+isTitleOnly:true；新人物→isNew+isTitleOnly:true。",
     "别名/称号/职位类型额外标注: aliasType(TITLE|POSITION|KINSHIP|NICKNAME|COURTESY_NAME), contextHint(≤100字), suggestedRealName, aliasConfidence(0-1)。"
   ];
-  const entityRules = input.entityExtractionRules ?? getDefaultEntityExtractionRules();
+  const entityRules = input.entityExtractionRules ?? [];
   return formatRulesSection([...entityRules, ...rosterSpecificRules], { genericTitles: genericTitlesExample });
 }
 
 export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "genericTitlesExample" | "entityExtractionRules" | "relationshipExtractionRules">): string {
-  const genericTitlesExample = input.genericTitlesExample ?? GENERIC_TITLES_EXAMPLE;
+  const genericTitlesExample = input.genericTitlesExample ?? "";
   const analysisPreRules: readonly string[] = [
     "仅输出原始 JSON，禁止 markdown 代码块。"
   ];
@@ -235,8 +223,8 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
     "biography.category 限定: BIRTH|EXAM|CAREER|TRAVEL|SOCIAL|DEATH|EVENT。",
     "rawText 必须精准截取原文；event 客观描述，禁止抒情。不跨段推测，缺失则返回[]。"
   ];
-  const entityRules = input.entityExtractionRules ?? getDefaultEntityExtractionRules();
-  const relationshipRules = input.relationshipExtractionRules ?? getDefaultRelationshipExtractionRules();
+  const entityRules = input.entityExtractionRules ?? [];
+  const relationshipRules = input.relationshipExtractionRules ?? [];
   return formatRulesSection([
     ...analysisPreRules,
     ...entityRules,
@@ -245,15 +233,18 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
   ], { genericTitles: genericTitlesExample });
 }
 
-export function buildIndependentExtractionRulesText(input: Pick<IndependentExtractionInput, "entityExtractionRules">): string {
-  const genericTitlesExample = GENERIC_TITLES_EXAMPLE;
-  const baseRules = input.entityExtractionRules ?? getDefaultEntityExtractionRules();
+export function buildIndependentExtractionRulesText(input: Pick<IndependentExtractionInput, "entityExtractionRules" | "genericTitlesExample">): string {
+  const genericTitlesExample = input.genericTitlesExample ?? "";
+  const baseRules = input.entityExtractionRules ?? [];
+  const genericRule = genericTitlesExample
+    ? `泛化称谓（如${genericTitlesExample}）如果在本章特指某一人物，则作为该人物的 alias；否则忽略。`
+    : "泛化称谓如果在本章特指某一人物，则作为该人物的 alias；否则忽略。";
   return [
     "仅输出原始 JSON 数组，禁止 markdown 代码块。",
     ...baseRules,
     "name 填写人物最可能的完整姓名（如有名有姓优先用全名）。",
     "aliases 填写本章出现的其他称谓（官衔、字号、亲属称呼等），每个别名 ≤10 字。",
-    `泛化称谓（如${genericTitlesExample}）如果在本章特指某一人物，则作为该人物的 alias；否则忽略。`,
+    genericRule,
     "同一人物在本章即使有多个称谓，也只输出一条记录，所有称谓放入 aliases。",
     "description 用一句话概括人物在本章的角色/行为，≤50字。",
     "category: PERSON=有名有姓的人物或有明确身份的角色；MENTIONED_ONLY=仅在对话或叙述中被提及但未直接出场。",
@@ -364,6 +355,8 @@ export interface IndependentExtractionInput {
   content               : string;
   /** 可选覆盖的实体抽取规则。 */
   entityExtractionRules?: readonly string[];
+  /** 可选覆盖的泛称示例文本（来自 FullRuntimeKnowledge 的实际泛称示例）。 */
+  genericTitlesExample? : string;
 }
 
 export function buildIndependentExtractionPrompt(input: IndependentExtractionInput): PromptMessageInput {

@@ -12,6 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -39,6 +47,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminModels } from "@/hooks/use-admin-models";
+import { BatchActionControls } from "@/app/admin/knowledge-base/batch-action-controls";
 import {
   GENERIC_TITLE_TIER_OPTIONS,
   getGenericTitleTierDescription,
@@ -46,6 +55,7 @@ import {
 } from "@/lib/knowledge-presentation";
 import { fetchBookTypes, type BookTypeItem } from "@/lib/services/book-types";
 import {
+  batchGenericTitleAction,
   createGenericTitle,
   deleteGenericTitle,
   fetchGenericTitles,
@@ -93,6 +103,9 @@ export default function TitleFiltersPage() {
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [generationReview, setGenerationReview] = useState<GenericTitleGenerationReviewResult | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<GenericTitleItem | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
   const [testTitle, setTestTitle] = useState("");
   const [testGenre, setTestGenre] = useState("");
   const [testResult, setTestResult] = useState<GenericTitleTestResult | null>(null);
@@ -121,14 +134,70 @@ export default function TitleFiltersPage() {
     void load();
   }, [load]);
 
-  async function handleDelete(item: GenericTitleItem) {
-    if (!confirm(`确定删除称谓「${item.title}」吗？`)) return;
+  useEffect(() => {
+    setSelected((previous) => new Set(items.filter((item) => previous.has(item.id)).map((item) => item.id)));
+  }, [items]);
+
+  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  const allSelected = items.length > 0 && selected.size === items.length;
+  const partiallySelected = selected.size > 0 && !allSelected;
+
+  function toggleSelect(id: string) {
+    setSelected((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((previous) => {
+      if (items.length === 0 || previous.size === items.length) {
+        return new Set();
+      }
+
+      return new Set(items.map((item) => item.id));
+    });
+  }
+
+  async function runBatchAction(
+    action: Parameters<typeof batchGenericTitleAction>[0],
+    successTitle: string
+  ) {
+    try {
+      const result = await batchGenericTitleAction(action);
+      toast({
+        title      : successTitle,
+        description: `已处理 ${result.count} 条称谓。`
+      });
+      setSelected(new Set());
+      await load();
+    } catch (error) {
+      toast({ title: "批量操作失败", description: String(error), variant: "destructive" });
+      throw error;
+    }
+  }
+
+  async function handleDeleteConfirmed(item: GenericTitleItem) {
+    setDeletePending(true);
     try {
       await deleteGenericTitle(item.id);
       toast({ title: "删除成功" });
+      setDeleteTarget(null);
+      setSelected((previous) => {
+        const next = new Set(previous);
+        next.delete(item.id);
+        return next;
+      });
       await load();
     } catch (error) {
       toast({ title: "删除失败", description: String(error), variant: "destructive" });
+    } finally {
+      setDeletePending(false);
     }
   }
 
@@ -224,6 +293,23 @@ export default function TitleFiltersPage() {
             <Button variant="outline" onClick={() => void load()}>刷新</Button>
           </div>
 
+          <BatchActionControls
+            selectedCount={selected.size}
+            bookTypes={bookTypes.map((bookType) => ({ id: bookType.id, name: bookType.name }))}
+            onEnable={() => runBatchAction({ action: "enable", ids: selectedIds }, "已批量启用")}
+            onDisable={() => runBatchAction({ action: "disable", ids: selectedIds }, "已批量停用")}
+            onDelete={() => runBatchAction({ action: "delete", ids: selectedIds }, "已批量删除")}
+            onClear={() => setSelected(new Set())}
+            onChangeBookType={(bookTypeId) => runBatchAction(
+              { action: "changeBookType", ids: selectedIds, bookTypeId },
+              "已更新豁免书籍类型"
+            )}
+            changeActionLabel="批量设置豁免书籍类型"
+            changeDialogTitle="批量设置豁免书籍类型"
+            bookTypeFieldLabel="豁免书籍类型"
+            globalBookTypeLabel="无豁免"
+          />
+
           {loading ? (
             <div className="py-12 text-center text-muted-foreground">加载中...</div>
           ) : (
@@ -231,6 +317,13 @@ export default function TitleFiltersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
+                        aria-label="全选泛化称谓"
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-32">称谓</TableHead>
                     <TableHead className="w-32">层级</TableHead>
                     <TableHead>书籍类型豁免</TableHead>
@@ -242,6 +335,13 @@ export default function TitleFiltersPage() {
                 <TableBody>
                   {items.map((item) => (
                     <TableRow key={item.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(item.id)}
+                          aria-label={`选择称谓 ${item.title}`}
+                          onCheckedChange={() => toggleSelect(item.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{item.title}</TableCell>
                       <TableCell>
                         <Badge variant={item.tier === "SAFETY" ? "destructive" : "secondary"}>{getGenericTitleTierLabel(item.tier)}</Badge>
@@ -253,10 +353,22 @@ export default function TitleFiltersPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => { setEditing(item); setDialogOpen(true); }}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`编辑称谓 ${item.title}`}
+                            onClick={() => { setEditing(item); setDialogOpen(true); }}
+                          >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => void handleDelete(item)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`删除称谓 ${item.title}`}
+                            onClick={() => setDeleteTarget(item)}
+                          >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -314,6 +426,46 @@ export default function TitleFiltersPage() {
         onOpenChange={setDialogOpen}
         onSaved={load}
       />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletePending) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除称谓</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定删除称谓「{deleteTarget?.title ?? ""}」吗？此操作不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deletePending}
+              onClick={() => setDeleteTarget(null)}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletePending || !deleteTarget}
+              onClick={() => {
+                if (deleteTarget) {
+                  void handleDeleteConfirmed(deleteTarget);
+                }
+              }}
+            >
+              {deletePending ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

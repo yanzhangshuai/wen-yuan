@@ -8,6 +8,9 @@ const createNerLexiconRuleMock = vi.fn();
 const updateNerLexiconRuleMock = vi.fn();
 const deleteNerLexiconRuleMock = vi.fn();
 const reorderNerLexiconRulesMock = vi.fn();
+const batchDeleteNerLexiconRulesMock = vi.fn();
+const batchToggleNerLexiconRulesMock = vi.fn();
+const batchChangeBookTypeNerLexiconRulesMock = vi.fn();
 
 const BOOK_TYPE_ID = "11111111-1111-4111-8111-111111111111";
 const RULE_ID = "22222222-2222-4222-8222-222222222222";
@@ -23,11 +26,14 @@ vi.mock("@/server/modules/auth", () => ({
 }));
 
 vi.mock("@/server/modules/knowledge", () => ({
-  listNerLexiconRules   : listNerLexiconRulesMock,
-  createNerLexiconRule  : createNerLexiconRuleMock,
-  updateNerLexiconRule  : updateNerLexiconRuleMock,
-  deleteNerLexiconRule  : deleteNerLexiconRuleMock,
-  reorderNerLexiconRules: reorderNerLexiconRulesMock
+  listNerLexiconRules               : listNerLexiconRulesMock,
+  createNerLexiconRule              : createNerLexiconRuleMock,
+  updateNerLexiconRule              : updateNerLexiconRuleMock,
+  deleteNerLexiconRule              : deleteNerLexiconRuleMock,
+  reorderNerLexiconRules            : reorderNerLexiconRulesMock,
+  batchDeleteNerLexiconRules        : batchDeleteNerLexiconRulesMock,
+  batchToggleNerLexiconRules        : batchToggleNerLexiconRulesMock,
+  batchChangeBookTypeNerLexiconRules: batchChangeBookTypeNerLexiconRulesMock
 }));
 
 describe("knowledge ner-rules routes", () => {
@@ -46,6 +52,9 @@ describe("knowledge ner-rules routes", () => {
     updateNerLexiconRuleMock.mockReset();
     deleteNerLexiconRuleMock.mockReset();
     reorderNerLexiconRulesMock.mockReset();
+    batchDeleteNerLexiconRulesMock.mockReset();
+    batchToggleNerLexiconRulesMock.mockReset();
+    batchChangeBookTypeNerLexiconRulesMock.mockReset();
     vi.resetModules();
   });
 
@@ -125,5 +134,45 @@ describe("knowledge ner-rules routes", () => {
 
     expect(reorderResponse.status).toBe(200);
     expect(reorderNerLexiconRulesMock).toHaveBeenCalledWith([RULE_ID, RULE_ID_2]);
+  });
+
+  it("dispatches ner lexicon batch actions", async () => {
+    batchDeleteNerLexiconRulesMock.mockResolvedValueOnce({ count: 2 });
+    batchToggleNerLexiconRulesMock
+      .mockResolvedValueOnce({ count: 2 })
+      .mockResolvedValueOnce({ count: 2 });
+    batchChangeBookTypeNerLexiconRulesMock.mockResolvedValueOnce({ count: 2 });
+
+    const { POST } = await import("./batch/route");
+
+    const deleteResponse = await POST(new Request("http://localhost/api/admin/knowledge/ner-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "delete", ids: [RULE_ID, RULE_ID_2] })
+    }));
+    const enableResponse = await POST(new Request("http://localhost/api/admin/knowledge/ner-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "enable", ids: [RULE_ID, RULE_ID_2] })
+    }));
+    const disableResponse = await POST(new Request("http://localhost/api/admin/knowledge/ner-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "disable", ids: [RULE_ID, RULE_ID_2] })
+    }));
+    const changeResponse = await POST(new Request("http://localhost/api/admin/knowledge/ner-rules/batch", {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ action: "changeBookType", ids: [RULE_ID, RULE_ID_2], bookTypeId: BOOK_TYPE_ID })
+    }));
+
+    expect(deleteResponse.status).toBe(200);
+    expect(enableResponse.status).toBe(200);
+    expect(disableResponse.status).toBe(200);
+    expect(changeResponse.status).toBe(200);
+    expect(batchDeleteNerLexiconRulesMock).toHaveBeenCalledWith([RULE_ID, RULE_ID_2]);
+    expect(batchToggleNerLexiconRulesMock).toHaveBeenNthCalledWith(1, [RULE_ID, RULE_ID_2], true);
+    expect(batchToggleNerLexiconRulesMock).toHaveBeenNthCalledWith(2, [RULE_ID, RULE_ID_2], false);
+    expect(batchChangeBookTypeNerLexiconRulesMock).toHaveBeenCalledWith([RULE_ID, RULE_ID_2], BOOK_TYPE_ID);
   });
 });

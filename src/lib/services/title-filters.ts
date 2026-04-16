@@ -107,6 +107,18 @@ export async function deleteGenericTitle(id: string): Promise<void> {
   });
 }
 
+export type GenericTitleBatchActionInput =
+  | { action: "delete" | "enable" | "disable"; ids: string[] }
+  | { action: "changeBookType"; ids: string[]; bookTypeId: string | null };
+
+export async function batchGenericTitleAction(body: GenericTitleBatchActionInput): Promise<{ count: number }> {
+  return clientFetch<{ count: number }>("/api/admin/knowledge/title-filters/batch", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
 export async function testGenericTitle(title: string, genreKey?: string): Promise<GenericTitleTestResult> {
   return clientFetch<GenericTitleTestResult>("/api/admin/knowledge/title-filters/test", {
     method : "POST",

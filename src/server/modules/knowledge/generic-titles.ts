@@ -65,6 +65,45 @@ export async function deleteGenericTitle(id: string) {
   return prisma.genericTitleRule.delete({ where: { id } });
 }
 
+export async function batchDeleteGenericTitles(ids: string[]) {
+  const entries = await prisma.genericTitleRule.findMany({
+    where : { id: { in: ids } },
+    select: { id: true, tier: true }
+  });
+  if (entries.some((entry) => entry.tier === "SAFETY")) {
+    throw new Error("SAFETY 级别称谓不可删除，仅可停用");
+  }
+
+  const result = await prisma.$transaction(
+    ids.map((id) => prisma.genericTitleRule.delete({ where: { id } }))
+  );
+  return { count: result.length };
+}
+
+export async function batchToggleGenericTitles(ids: string[], isActive: boolean) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.genericTitleRule.update({
+        where: { id },
+        data : { isActive }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
+export async function batchChangeBookTypeGenericTitles(ids: string[], bookTypeId: string | null) {
+  const result = await prisma.$transaction(
+    ids.map((id) =>
+      prisma.genericTitleRule.update({
+        where: { id },
+        data : { exemptInBookTypeIds: bookTypeId ? [bookTypeId] : [] }
+      })
+    )
+  );
+  return { count: result.length };
+}
+
 export async function testGenericTitle(title: string, genreKey?: string) {
   const entry = await prisma.genericTitleRule.findUnique({ where: { title } });
   if (!entry || !entry.isActive) {

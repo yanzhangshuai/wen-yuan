@@ -18,13 +18,24 @@ import type { AliasRegistryService } from "@/server/modules/analysis/services/Al
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import {
+  type BookLexiconConfig,
   buildEffectiveHardBlockSuffixes,
   buildEffectiveSoftBlockSuffixes,
   classifyPersonalization
 } from "@/server/modules/analysis/config/lexicon";
 
-const HARD_BLOCK_SUFFIXES = buildEffectiveHardBlockSuffixes();
-const DEFAULT_SOFT_BLOCK_SUFFIXES = buildEffectiveSoftBlockSuffixes();
+const TEST_LEXICON_CONFIG: BookLexiconConfig = {
+  safetyGenericTitles         : ["众人", "丫鬟"],
+  defaultGenericTitles        : ["老爷", "夫人", "掌柜的", "举人", "太太"],
+  surnameSingles              : ["范", "王", "吴", "蘧", "周", "贾", "李", "马"],
+  additionalRelationalSuffixes: ["父亲", "之父"],
+  softRelationalSuffixes      : ["大人"],
+  additionalTitlePatterns     : ["王", "皇帝"],
+  additionalPositionPatterns  : ["知县"]
+};
+
+const HARD_BLOCK_SUFFIXES = buildEffectiveHardBlockSuffixes(TEST_LEXICON_CONFIG);
+const DEFAULT_SOFT_BLOCK_SUFFIXES = buildEffectiveSoftBlockSuffixes(TEST_LEXICON_CONFIG);
 
 function createPrismaMock() {
   const personaFindMany = vi.fn();
@@ -486,7 +497,8 @@ describe("persona resolver", () => {
         const result = await resolver.resolve({
           bookId        : "book-1",
           extractedName : title,
-          chapterContent: `${title}出现了`
+          chapterContent: `${title}出现了`,
+          lexiconConfig : TEST_LEXICON_CONFIG
         });
         expect(result).toEqual({
           status    : "hallucinated",
@@ -501,16 +513,8 @@ describe("persona resolver", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("GENERIC_TITLES set contains expected common titles", () => {
-    expect(GENERIC_TITLES.has("老爷")).toBe(true);
-    expect(GENERIC_TITLES.has("夫人")).toBe(true);
-    expect(GENERIC_TITLES.has("众人")).toBe(true);
-    expect(GENERIC_TITLES.has("书办")).toBe(true);
-    expect(GENERIC_TITLES.has("掌舵")).toBe(true);
-    expect(GENERIC_TITLES.has("按察司")).toBe(true);
-    expect(GENERIC_TITLES.has("范进")).toBe(false);
-    expect(GENERIC_TITLES.has("严监生")).toBe(false);
-    expect(GENERIC_TITLES.has("蒋书办")).toBe(false);  // 有姓前缀，不是泛称
+  it("GENERIC_TITLES set is empty without DB config", () => {
+    expect(GENERIC_TITLES.size).toBe(0);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -542,7 +546,8 @@ describe("persona resolver", () => {
     const result = await resolver.resolve({
       bookId        : "book-1",
       extractedName : "蘧公孙父亲",
-      chapterContent: "蘧公孙父亲也到了场上。"
+      chapterContent: "蘧公孙父亲也到了场上。",
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     // 因为后缀是亲属词，不应解析为"蘧公孙"，应新建
@@ -626,9 +631,8 @@ describe("persona resolver", () => {
       chapterContent: "老爷走过来...",
       rosterMap
     });
-    // 动态泛称分档开启后，缺少证据的泛称进入灰区而非直接 config_generic
     expect(genericResult.status).toBe("hallucinated");
-    expect(["config_generic", "gray_zone"]).toContain(genericResult.reason);
+    expect(genericResult.reason).toBe("generic_title");
   });
 
   it("treats roster GENERIC markers as generic_title even for non-config names", async () => {
@@ -728,7 +732,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "范老爷",
       chapterContent: "范老爷缓步入席。",
-      rosterMap     : new Map([["范老爷", "persona-fanjin"]])
+      rosterMap     : new Map([["范老爷", "persona-fanjin"]]),
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     expect(result).toEqual({
@@ -901,7 +906,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "王知县",
       chapterContent: "王知县升堂问案。",
-      chapterNo     : 9
+      chapterNo     : 9,
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     expect(result.status).toBe("created");
@@ -955,7 +961,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "吴王",
       chapterContent: "吴王即日升殿。",
-      chapterNo     : 12
+      chapterNo     : 12,
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     expect(result.status).toBe("created");
@@ -979,7 +986,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "老爷",
       chapterContent: "老爷在堂上发话。",
-      genericRatios : new Map([["老爷", { generic: 1, nonGeneric: 1 }]])
+      genericRatios : new Map([["老爷", { generic: 1, nonGeneric: 1 }]]),
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     expect(result.status).toBe("hallucinated");
@@ -1057,7 +1065,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "老爷",
       chapterContent: "老爷来了",
-      genericRatios : new Map([["老爷", { generic: 0, nonGeneric: 5 }]])
+      genericRatios : new Map([["老爷", { generic: 0, nonGeneric: 5 }]]),
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
     expect(personalized.reason).not.toBe("config_generic");
     expect(classifyPersonalization({
@@ -1074,7 +1083,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "老爷",
       chapterContent: "老爷来了",
-      genericRatios : new Map([["老爷", { generic: 8, nonGeneric: 1 }]])
+      genericRatios : new Map([["老爷", { generic: 8, nonGeneric: 1 }]]),
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
     expect(generic.reason).toBe("config_generic");
 
@@ -1084,7 +1094,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "老爷",
       chapterContent: "老爷来了",
-      genericRatios : new Map([["老爷", { generic: 1, nonGeneric: 1 }]])
+      genericRatios : new Map([["老爷", { generic: 1, nonGeneric: 1 }]]),
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
     expect(gray.reason).toBe("gray_zone");
 
@@ -1121,7 +1132,8 @@ describe("persona resolver", () => {
     const result = await resolver.resolve({
       bookId        : "book-1",
       extractedName : "范举人",
-      chapterContent: "范举人今日风光无限。"
+      chapterContent: "范举人今日风光无限。",
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     expect(result.status).toBe("resolved");
@@ -1224,7 +1236,8 @@ describe("persona resolver", () => {
       bookId        : "book-1",
       extractedName : "范举人",
       chapterContent: "范举人今日风光无限。",
-      chapterNo     : 5
+      chapterNo     : 5,
+      lexiconConfig : TEST_LEXICON_CONFIG
     });
 
     expect(result.status).toBe("resolved");

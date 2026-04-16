@@ -11,10 +11,10 @@ const NAME_PATTERN_COMPILE_TIMEOUT_MS = 100;
 const NESTED_QUANTIFIER_PATTERN = /(\([^)]*[+*][^)]*\))[+*{]/;
 
 interface RuntimeLexiconPayload {
-  baseConfig     : BookLexiconConfig;
   genericTitles  : Array<{ title: string; tier: string }>;
   surnames       : Array<{ surname: string; isCompound: boolean }>;
-  extractionRules: Array<{ ruleType: string; content: string }>;
+  nerLexiconRules: Array<{ ruleType: string; content: string }>;
+  promptRules    : Array<{ ruleType: string; content: string }>;
 }
 
 interface RuntimeLexiconBuildResult {
@@ -143,9 +143,7 @@ async function loadRuntimeLexiconPayload(
   bookTypeKey: string | null,
   prisma: PrismaClient
 ): Promise<RuntimeLexiconPayload> {
-  const baseConfig = bookTypeKey ? loadBookTypeConfig(bookTypeKey, prisma) : {};
-
-  const [genericTitles, surnames, extractionRules] = await Promise.all([
+  const [genericTitles, surnames, nerLexiconRules, promptRules] = await Promise.all([
     prisma.genericTitleRule.findMany({
       where  : { isActive: true },
       orderBy: [{ tier: "asc" }, { title: "asc" }],
@@ -172,14 +170,25 @@ async function loadRuntimeLexiconPayload(
       },
       orderBy: [{ ruleType: "asc" }, { sortOrder: "asc" }],
       select : { ruleType: true, content: true }
+    }),
+    prisma.promptExtractionRule.findMany({
+      where: {
+        isActive: true,
+        OR      : [
+          { bookTypeId: null },
+          ...(bookTypeKey ? [{ bookType: { key: bookTypeKey } }] : [])
+        ]
+      },
+      orderBy: [{ ruleType: "asc" }, { sortOrder: "asc" }],
+      select : { ruleType: true, content: true }
     })
   ]);
 
   return {
-    baseConfig,
     genericTitles,
     surnames,
-    extractionRules
+    nerLexiconRules,
+    promptRules
   };
 }
 
@@ -205,54 +214,41 @@ function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexic
     .filter((item) => !item.isCompound)
     .map((item) => item.surname));
 
-  const entityExtractionRules = toUniqueList(payload.extractionRules
+  const entityExtractionRules = toUniqueList(payload.promptRules
     .filter((item) => item.ruleType === "ENTITY")
     .map((item) => item.content));
 
-  const relationshipExtractionRules = toUniqueList(payload.extractionRules
+  const relationshipExtractionRules = toUniqueList(payload.promptRules
     .filter((item) => item.ruleType === "RELATIONSHIP")
     .map((item) => item.content));
 
-  const hardBlockSuffixes = toUniqueList(payload.extractionRules
+  const hardBlockSuffixes = toUniqueList(payload.nerLexiconRules
     .filter((item) => item.ruleType === "HARD_BLOCK_SUFFIX")
     .map((item) => item.content));
 
-  const softBlockSuffixes = toUniqueList(payload.extractionRules
+  const softBlockSuffixes = toUniqueList(payload.nerLexiconRules
     .filter((item) => item.ruleType === "SOFT_BLOCK_SUFFIX")
     .map((item) => item.content));
 
-  const titleStems = toUniqueList(payload.extractionRules
+  const titleStems = toUniqueList(payload.nerLexiconRules
     .filter((item) => item.ruleType === "TITLE_STEM")
     .map((item) => item.content));
 
-  const positionStems = toUniqueList(payload.extractionRules
+  const positionStems = toUniqueList(payload.nerLexiconRules
     .filter((item) => item.ruleType === "POSITION_STEM")
     .map((item) => item.content));
 
   const lexiconConfig: BookLexiconConfig = {
-    ...payload.baseConfig,
     safetyGenericTitles,
     defaultGenericTitles,
     surnameCompounds,
     surnameSingles,
-    entityExtractionRules       : toUniqueList([...(payload.baseConfig.entityExtractionRules ?? []), ...entityExtractionRules]),
-    relationshipExtractionRules : toUniqueList([...(payload.baseConfig.relationshipExtractionRules ?? []), ...relationshipExtractionRules]),
-    additionalRelationalSuffixes: toUniqueList([
-      ...(payload.baseConfig.additionalRelationalSuffixes ?? []),
-      ...hardBlockSuffixes
-    ]),
-    softRelationalSuffixes: toUniqueList([
-      ...(payload.baseConfig.softRelationalSuffixes ?? []),
-      ...softBlockSuffixes
-    ]),
-    additionalTitlePatterns: toUniqueList([
-      ...(payload.baseConfig.additionalTitlePatterns ?? []),
-      ...titleStems
-    ]),
-    additionalPositionPatterns: toUniqueList([
-      ...(payload.baseConfig.additionalPositionPatterns ?? []),
-      ...positionStems
-    ])
+    entityExtractionRules       : toUniqueList(entityExtractionRules),
+    relationshipExtractionRules : toUniqueList(relationshipExtractionRules),
+    additionalRelationalSuffixes: toUniqueList(hardBlockSuffixes),
+    softRelationalSuffixes      : toUniqueList(softBlockSuffixes),
+    additionalTitlePatterns     : toUniqueList(titleStems),
+    additionalPositionPatterns  : toUniqueList(positionStems)
   };
 
   return {
@@ -265,18 +261,6 @@ function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexic
     titleStems,
     positionStems
   };
-}
-
-/**
- * 加载书籍类型的 NER 调谐配置（数据库驱动）。
- * 任务启动时调用一次，缓存到内存。
- */
-export function loadBookTypeConfig(
-  _bookTypeKey: string,
-  _prisma: PrismaClient
-): BookLexiconConfig {
-  // presetConfig 已废弃，配置已迁入 ner_lexicon_rules / prompt_extraction_rules
-  return {};
 }
 
 /**

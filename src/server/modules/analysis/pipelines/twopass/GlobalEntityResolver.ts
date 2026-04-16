@@ -27,7 +27,7 @@ import type {
 } from "@/types/analysis";
 import { parseEntityResolutionResponse } from "@/types/analysis";
 import { PipelineStage } from "@/types/pipeline";
-import { extractSurname } from "@/server/modules/analysis/config/lexicon";
+import { extractSurname, type BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 
 /** 每批发给 LLM 的最大候选组数，避免单次请求过大导致截断或选错。 */
@@ -178,7 +178,11 @@ export function createGlobalEntityResolver(
     return dict;
   }
 
-  function buildCandidateGroups(dict: Map<string, GlobalEntityInfo>, aliasLookup: Map<string, string>): EntityCandidateGroup[] {
+  function buildCandidateGroups(
+    dict: Map<string, GlobalEntityInfo>,
+    aliasLookup: Map<string, string>,
+    lexiconConfig?: BookLexiconConfig
+  ): EntityCandidateGroup[] {
     const keys = Array.from(dict.keys());
     const parent = new Map<string, string>();
 
@@ -217,14 +221,14 @@ export function createGlobalEntityResolver(
 
     for (let i = 0; i < keys.length; i += 1) {
       const infoI = dict.get(keys[i])!;
-      const surnameI = extractSurname(infoI.canonicalName);
+      const surnameI = extractSurname(infoI.canonicalName, lexiconConfig);
       if (!surnameI) {
         continue;
       }
 
       for (let j = i + 1; j < keys.length; j += 1) {
         const infoJ = dict.get(keys[j])!;
-        const surnameJ = extractSurname(infoJ.canonicalName);
+        const surnameJ = extractSurname(infoJ.canonicalName, lexiconConfig);
         if (surnameI !== surnameJ) {
           continue;
         }
@@ -337,7 +341,7 @@ export function createGlobalEntityResolver(
     bookTitle: string,
     chapterEntities: ChapterEntityList[],
     stageContext: { bookId: string; jobId: string },
-    runtimeKnowledge?: Pick<FullRuntimeKnowledge, "aliasLookup">
+    runtimeKnowledge?: Partial<Pick<FullRuntimeKnowledge, "aliasLookup" | "lexiconConfig">>
   ): Promise<{
     globalPersonaMap: Map<string, string>;
     profiles        : AnalysisProfileContext[];
@@ -349,7 +353,7 @@ export function createGlobalEntityResolver(
     }));
 
     const aliasLookup = runtimeKnowledge?.aliasLookup ?? new Map<string, string>();
-    const candidateGroups = buildCandidateGroups(dict, aliasLookup);
+    const candidateGroups = buildCandidateGroups(dict, aliasLookup, runtimeKnowledge?.lexiconConfig);
     console.info("[GlobalEntityResolver] candidate.groups.formed", JSON.stringify({
       bookId,
       groupCount          : candidateGroups.length,

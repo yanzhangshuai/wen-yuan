@@ -96,6 +96,18 @@ export async function deletePromptExtractionRule(id: string): Promise<void> {
   await clientMutate(`/api/admin/knowledge/prompt-extraction-rules/${id}`, { method: "DELETE" });
 }
 
+export type PromptExtractionRuleBatchActionInput =
+  | { action: "delete" | "enable" | "disable"; ids: string[] }
+  | { action: "changeBookType"; ids: string[]; bookTypeId: string | null };
+
+export async function batchPromptExtractionRuleAction(body: PromptExtractionRuleBatchActionInput): Promise<{ count: number }> {
+  return clientFetch<{ count: number }>("/api/admin/knowledge/prompt-extraction-rules/batch", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
 export async function reorderPromptExtractionRules(orderedIds: string[]): Promise<void> {
   await clientMutate("/api/admin/knowledge/prompt-extraction-rules/reorder", {
     method : "PUT",
