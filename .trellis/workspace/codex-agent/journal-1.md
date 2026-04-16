@@ -489,3 +489,56 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 知识库模型生成、批量操作 UI 与 Prompt 规则链路修复归档
+
+**Date**: 2026-04-16
+**Task**: 知识库模型生成、批量操作 UI 与 Prompt 规则链路修复归档
+**Branch**: `dev`
+
+### Summary
+
+补记 2026-04-16 知识库三项完成工作的收尾记录：补充 KB pipeline 设计文档，归档模型生成、批量操作 UI 修复与 Prompt 规则链路修复三个任务，并将验证结论写入开发 journal。
+
+### Main Changes
+
+| 项目 | 说明 |
+|------|------|
+| 模型生成能力 | 为 `ner-rules` / `prompt-extraction-rules` 增加模型生成与提示词预览接口；将泛化称谓生成改为异步 job 轮询模式 |
+| 管理台 UI / 批量操作 | 为姓氏词库、泛化称谓、NER 规则、Prompt 规则补齐批量删除 / 启停 / 改书籍类型；替换原生 `confirm()` / `prompt()`；修复侧边栏 active 高亮与 RSC icon 序列化边界 |
+| Prompt 规则链路修复 | `load-book-knowledge` 接入 `promptExtractionRule`；`lexicon.ts` / `prompts.ts` 删除硬编码 fallback；补齐 Phase 7 seed；DB 成为分析运行时唯一知识数据源 |
+| 设计与任务收尾 | 新增 KB pipeline refactor 设计文档；按父子顺序归档 `04-16-kb-batch-ops-ui-fix`、`04-16-kb-model-generation`、`04-16-kb-prompt-rule-pipeline-fix` |
+
+**验证结论**:
+- `04-16-kb-batch-ops-ui-fix`：`pnpm lint`、`pnpm type-check`、6 个 task-local suites（25 tests）通过；当时 `pnpm test` 被 analysis 模块 16 个失败阻塞。
+- `04-16-kb-prompt-rule-pipeline-fix`：`pnpm lint`、`pnpm type-check`、7 个回归 suites（166 tests）通过，`pnpm test` 全量通过。
+- `04-16-kb-model-generation`：归档目录未保留单独 `verification.md`，本次按任务定义与归档状态记录。
+- 当前仓库状态：`python3 ./.trellis/scripts/task.py list` 为 `0 task(s)`，`git status --short` 为空。
+
+**归档任务**:
+- `04-16-kb-batch-ops-ui-fix`
+- `04-16-kb-model-generation`
+- `04-16-kb-prompt-rule-pipeline-fix`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `45ede02` | (see git log) |
+| `e074d28` | (see git log) |
+| `edc7264` | (see git log) |
+| `ebeddc6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
