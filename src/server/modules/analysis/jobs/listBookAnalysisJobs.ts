@@ -115,7 +115,7 @@ export function createListBookAnalysisJobsService(
     return jobs.map(job => ({
       id            : job.id,
       status        : job.status,
-      architecture  : job.architecture === "twopass" ? "twopass" : "sequential",
+      architecture  : job.architecture === "threestage" ? "threestage" : "sequential",
       scope         : job.scope,
       chapterStart  : job.chapterStart,
       chapterEnd    : job.chapterEnd,

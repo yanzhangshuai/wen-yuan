@@ -108,8 +108,8 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
   const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
   const rawArchitecture = book.analysisJobs?.[0]?.architecture ?? null;
-  const lastArchitecture = rawArchitecture === "twopass"
-    ? "twopass"
+  const lastArchitecture = rawArchitecture === "threestage"
+    ? "threestage"
     : rawArchitecture === "sequential"
       ? "sequential"
       : null;

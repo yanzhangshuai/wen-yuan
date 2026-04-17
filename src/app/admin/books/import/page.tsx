@@ -121,7 +121,7 @@ function parseScope(value: string): AnalyzeScope {
  * 将下拉框字符串转换为前端共享的解析架构枚举。
  */
 function parseArchitecture(value: string): AnalysisArchitecture {
-  return value === "twopass" ? "twopass" : "sequential";
+  return value === "sequential" ? "sequential" : "threestage";
 }
 
 /**
@@ -215,7 +215,7 @@ export default function AdminImportPage() {
 
   // Step 3：解析配置状态
   /** 解析架构，默认顺序式，避免新书首次导入时意外切到 two-pass。 */
-  const [architecture, setArchitecture] = useState<AnalysisArchitecture>("sequential");
+  const [architecture, setArchitecture] = useState<AnalysisArchitecture>("threestage");
   /** 解析范围，默认全书解析，保证最少配置即可启动。 */
   const [scope, setScope] = useState<AnalyzeScope>("FULL_BOOK");
   /** 范围模式下的起止章节（字符串形式以便与输入框受控绑定）。 */
@@ -894,7 +894,7 @@ export default function AdminImportPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="sequential">顺序式：逐章累积名册后分析</SelectItem>
-                        <SelectItem value="twopass">两遍式：先全书消歧，再逐章详细分析</SelectItem>
+                        <SelectItem value="threestage">三阶段：章节硬提取 → 全书实体仲裁 → 事件归属</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="mt-2 text-xs text-muted-foreground">

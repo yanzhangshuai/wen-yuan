@@ -298,8 +298,8 @@ describe("merge suggestions service", () => {
         status: "PENDING",
         source: { in: ["STAGE_B_AUTO", "STAGE_C_FEEDBACK"] }
       },
-      skip : 0,
-      take : 20
+      skip: 0,
+      take: 20
     }));
     expect(count).toHaveBeenCalledWith({
       where: {
@@ -335,8 +335,8 @@ describe("merge suggestions service", () => {
         status: "PENDING",
         source: "STAGE_B5_TEMPORAL"
       },
-      skip : 10,
-      take : 10
+      skip: 10,
+      take: 10
     }));
     expect(result.items[0]?.source).toBe("STAGE_B5_TEMPORAL");
   });
@@ -374,8 +374,8 @@ describe("merge suggestions service", () => {
     });
     const txFindUnique = vi.fn().mockResolvedValue({ id: "s-b5", status: "PENDING" });
     const txUpdate = vi.fn().mockResolvedValue(createSuggestionRow({
-      id: "s-b5", status: "ACCEPTED", resolvedAt: new Date("2026-04-01T00:00:00.000Z"),
-      source: "STAGE_B5_TEMPORAL"
+      id        : "s-b5", status    : "ACCEPTED", resolvedAt: new Date("2026-04-01T00:00:00.000Z"),
+      source    : "STAGE_B5_TEMPORAL"
     } as never));
     // 冒名分支不应调用 biographyRecord.updateMany / mention.updateMany。
     const biographyUpdateMany = vi.fn();

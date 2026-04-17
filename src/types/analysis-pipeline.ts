@@ -5,7 +5,7 @@
  */
 
 /** 支持的解析架构枚举值。 */
-export const ANALYSIS_ARCHITECTURE_VALUES = ["sequential", "twopass"] as const;
+export const ANALYSIS_ARCHITECTURE_VALUES = ["sequential", "threestage"] as const;
 
 /** 解析架构类型。 */
 export type AnalysisArchitecture = (typeof ANALYSIS_ARCHITECTURE_VALUES)[number];

@@ -7,7 +7,6 @@ import {
 import { createValidationAgentService } from "@/server/modules/analysis/services/ValidationAgentService";
 import { createAiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
 import { createModelStrategyResolver } from "@/server/modules/analysis/services/ModelStrategyResolver";
-import { createGlobalEntityResolver, type GlobalEntityResolverService } from "@/server/modules/analysis/pipelines/twopass/GlobalEntityResolver";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import {
   clearKnowledgeCache,
@@ -21,7 +20,9 @@ import type {
   PipelineChapterTask
 } from "@/server/modules/analysis/pipelines/types";
 import type { SequentialPipelineDependencies } from "@/server/modules/analysis/pipelines/sequential/SequentialPipeline";
-import type { TwoPassPipelineDependencies } from "@/server/modules/analysis/pipelines/twopass/TwoPassPipeline";
+import type { ThreeStagePipelineDependencies } from "@/server/modules/analysis/pipelines/threestage/ThreeStagePipeline";
+import { createAiProviderClient, type AiProviderClient } from "@/server/providers/ai";
+import { PipelineStage } from "@/types/pipeline";
 
 /**
  * 文件定位（Next.js 服务端任务执行层）：
@@ -75,10 +76,7 @@ type ChapterAnalyzer =
   Pick<ReturnType<typeof createChapterAnalysisService>, "analyzeChapter" | "resolvePersonaTitles" | "getTitleOnlyPersonaCount"> &
   Partial<Pick<ReturnType<typeof createChapterAnalysisService>, "extractChapterEntities" | "runGrayZoneArbitration">> &
   Pick<ReturnType<typeof createValidationAgentService>, "validateChapterResult"> &
-  Partial<Pick<ReturnType<typeof createValidationAgentService>, "validateBookResult" | "applyAutoFixes">> & {
-    /** Pass 2 全书实体消歧（两遍式架构可选）。 */
-    resolveGlobalEntities?: GlobalEntityResolverService["resolveGlobalEntities"];
-  };
+  Partial<Pick<ReturnType<typeof createValidationAgentService>, "validateBookResult" | "applyAutoFixes">>;
 
 interface ChapterAnalyzerFactoryInput {
   /** 当前任务 ID。用于策略解析与阶段日志归属。 */
@@ -129,24 +127,20 @@ function buildProgressStage(index: number, total: number): string {
 /**
  * 功能：将数据库中的架构字段归一化为运行时可识别的枚举值。
  * 输入：任务记录中的 architecture 文本，可为空。
- * 输出：`sequential` 或 `twopass`。
- * 异常：无。
- * 副作用：无。
+ * 输出：`sequential` 或 `threestage`；未知值归一化为 `threestage`（新默认）。
  */
 function normalizeAnalysisArchitecture(architecture: string | null | undefined): AnalysisArchitecture {
-  return architecture === "twopass" ? "twopass" : "sequential";
+  return architecture === "sequential" ? "sequential" : "threestage";
 }
 
 /**
  * 功能：生成任务启动时的初始阶段文案。
  * 输入：当前解析架构与章节总数。
  * 输出：书籍 parseStage 初始展示文本。
- * 异常：无。
- * 副作用：无。
  */
 function buildInitialPipelineStage(architecture: AnalysisArchitecture, totalChapters: number): string {
-  if (architecture === "twopass") {
-    return `独立实体提取（0/${totalChapters}章）`;
+  if (architecture === "threestage") {
+    return `阶段 A 硬提取（0/${totalChapters}章）`;
   }
 
   return buildProgressStage(0, totalChapters);
@@ -430,12 +424,10 @@ function createDefaultChapterAnalyzerFactory(prismaClient: PrismaClient): Chapte
 
     const chapterService = createChapterAnalysisService(prismaClient, undefined, executor, resolver);
     const validationService = createValidationAgentService(prismaClient, executor, resolver);
-    const globalEntityResolver = createGlobalEntityResolver(prismaClient, executor);
 
     return {
       ...chapterService,
-      ...validationService,
-      resolveGlobalEntities: globalEntityResolver.resolveGlobalEntities
+      ...validationService
     };
   };
 }
@@ -575,13 +567,13 @@ export function createAnalysisJobRunner(
   }
 
   /**
-   * 功能：为 two-pass 管线一次性预加载书名与完整运行时知识。
+   * 功能：为全书级 pipeline 阶段一次性预加载书名与完整运行时知识。
    * 输入：书籍 ID。
-   * 输出：Pass 2/Pass 3 运行所需上下文。
+   * 输出：下游阶段运行所需上下文。
    * 异常：书籍不存在时抛错；数据库查询失败时向上抛出。
    * 副作用：无（只读查询）。
    */
-  async function loadTwoPassRuntimeContext(bookId: string): Promise<{
+  async function loadBookRuntimeContext(bookId: string): Promise<{
     bookTitle       : string;
     runtimeKnowledge: FullRuntimeKnowledge;
   }> {
@@ -635,37 +627,55 @@ export function createAnalysisJobRunner(
       runChapterValidation: async (chapter) => await runChapterValidationBlocking(analyzer, job.id, chapter, job.bookId),
       isChapterRetryableError,
       loadRuntimeContext  : async (bookId) => {
-        const ctx = await loadTwoPassRuntimeContext(bookId);
+        const ctx = await loadBookRuntimeContext(bookId);
         return { runtimeKnowledge: ctx.runtimeKnowledge };
       }
     };
   }
 
   /**
-   * 功能：组装 two-pass 架构的运行时依赖。
-   * 输入：当前任务快照与已就绪的分析器。
-   * 输出：TwoPassPipelineDependencies。
-   * 异常：分析器未提供 Pass 1/Pass 2 能力时抛错。
-   * 副作用：依赖中的回调会触发知识库预加载与章节状态写回。
+   * 功能：按任务上下文解析一个 AiProviderClient，供三阶段 pipeline 的 Stage A/B/C 直调。
+   * 输入：任务快照。
+   * 输出：已就绪的 AiProviderClient 实例。
+   * 异常：策略解析或模型配置缺失时向上抛出。
+   * 副作用：只读查询模型策略相关表。
+   *
+   * 说明：Stage A/B/C 服务类直接调用 `aiClient.generateJson`，不走 AiCallExecutor 的阶段日志通道。
+   * 当前选择 `CHUNK_EXTRACTION` 阶段的模型做统一解析，保持与 Stage A（章节级硬提取）的语义接近；
+   * 若未来需要每阶段不同模型，应拓展 ThreeStagePipelineDependencies 传入多个 client。
    */
-  function createTwoPassPipelineDependencies(
-    job: AnalysisJobRow,
-    analyzer: ChapterAnalyzer
-  ): TwoPassPipelineDependencies {
-    if (!analyzer.extractChapterEntities || !analyzer.resolveGlobalEntities) {
-      throw new Error(`解析任务 ${job.id} 选择了 two-pass 架构，但分析器未提供完整的 Pass 1/Pass 2 能力`);
-    }
+  async function resolveThreeStageAiClient(job: AnalysisJobRow): Promise<AiProviderClient> {
+    const resolver = createModelStrategyResolver(prismaClient);
+    const model = await resolver.resolveForStage(PipelineStage.CHUNK_EXTRACTION, {
+      jobId : job.id,
+      bookId: job.bookId
+    });
+    return createAiProviderClient({
+      provider : model.provider,
+      apiKey   : model.apiKey,
+      baseUrl  : model.baseUrl,
+      modelName: model.modelName
+    });
+  }
 
+  /**
+   * 功能：组装三阶段架构的运行时依赖。
+   * 输入：当前任务快照与 AiProviderClient。
+   * 输出：ThreeStagePipelineDependencies。
+   * 异常：无（依赖缺失会在 pipeline.run 阶段抛出）。
+   * 副作用：无（仅打包参数）。
+   */
+  function createThreeStagePipelineDependencies(
+    _job: AnalysisJobRow,
+    aiClient: AiProviderClient
+  ): ThreeStagePipelineDependencies {
     return {
-      ...createSequentialPipelineDependencies(job, analyzer),
-      analyzer: {
-        analyzeChapter          : analyzer.analyzeChapter,
-        resolvePersonaTitles    : analyzer.resolvePersonaTitles,
-        getTitleOnlyPersonaCount: analyzer.getTitleOnlyPersonaCount,
-        extractChapterEntities  : analyzer.extractChapterEntities,
-        resolveGlobalEntities   : analyzer.resolveGlobalEntities
-      },
-      loadRuntimeContext: async (bookId) => await loadTwoPassRuntimeContext(bookId)
+      prisma            : prismaClient,
+      aiClient,
+      chapterConcurrency: CHAPTER_CONCURRENCY,
+      chapterMaxRetries : CHAPTER_MAX_RETRIES,
+      chapterRetryBaseMs: CHAPTER_RETRY_BASE_MS,
+      isChapterRetryableError
     };
   }
 
@@ -718,9 +728,9 @@ export function createAnalysisJobRunner(
       }
 
       const architecture = normalizeAnalysisArchitecture(runningJob.architecture);
-      const pipeline = architecture === "twopass"
-        ? createPipeline("twopass", {
-          twopass: createTwoPassPipelineDependencies(runningJob, activeAnalyzer)
+      const pipeline = architecture === "threestage"
+        ? createPipeline("threestage", {
+          threestage: createThreeStagePipelineDependencies(runningJob, await resolveThreeStageAiClient(runningJob))
         })
         : createPipeline("sequential", {
           sequential: createSequentialPipelineDependencies(runningJob, activeAnalyzer)
@@ -824,7 +834,7 @@ export function createAnalysisJobRunner(
 
         // Phase 5.5: 全书实体合并建议生成——检测重复/相似人物并写入 merge_suggestions 队列。
         try {
-          const runtimeCtx = await loadTwoPassRuntimeContext(runningJob.bookId);
+          const runtimeCtx = await loadBookRuntimeContext(runningJob.bookId);
           const mergeResult = await runPostAnalysisMerger(prismaClient, {
             bookId          : runningJob.bookId,
             runtimeKnowledge: runtimeCtx.runtimeKnowledge

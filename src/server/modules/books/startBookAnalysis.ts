@@ -42,7 +42,7 @@ export type AnalysisOverrideStrategy = (typeof ANALYSIS_OVERRIDE_STRATEGY_VALUES
 export interface StartBookAnalysisInput {
   /** 任务级阶段模型配置（覆盖 Book/GLOBAL 配置）。 */
   modelStrategy    ?: StrategyStagesDto | null;
-  /** 解析架构：顺序或两遍式；为空时尝试继承最近一次任务。 */
+  /** 解析架构：顺序或三阶段；为空时尝试继承最近一次任务。 */
   architecture     ?: AnalysisArchitecture;
   /** 解析范围：全书或章节区间。 */
   scope            ?: AnalysisScope;
@@ -253,7 +253,7 @@ export function createStartBookAnalysisService(
         orderBy: { createdAt: "desc" },
         select : { architecture: true }
       });
-    const architecture = requestedArchitecture ?? (latestJob?.architecture === "twopass" ? "twopass" : "sequential");
+    const architecture = requestedArchitecture ?? (latestJob?.architecture === "sequential" ? "sequential" : "threestage");
 
     const chapterCount = await prismaClient.chapter.count({
       where: scope === "CHAPTER_RANGE"

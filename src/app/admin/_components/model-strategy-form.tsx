@@ -162,7 +162,7 @@ function normalizeStrategy(strategy: ModelStrategyInput, visibleStages: Pipeline
 }
 
 function getVisibleStages(architecture: AnalysisArchitecture): PipelineStage[] {
-  if (architecture === "twopass") {
+  if (architecture === "threestage") {
     return STAGES_FOR_FORM.filter((stage) => stage !== PipelineStage.ROSTER_DISCOVERY);
   }
 
@@ -428,7 +428,7 @@ export function ModelStrategyForm({
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="space-y-1">
           <CardTitle>模型策略配置</CardTitle>
-          <CardDescription>当前为{architecture === "twopass" ? "两遍式" : "顺序式"}架构，仅显示本架构相关阶段；未选择模型的阶段将使用上级默认配置。</CardDescription>
+          <CardDescription>当前为{architecture === "threestage" ? "三阶段" : "顺序式"}架构，仅显示本架构相关阶段；未选择模型的阶段将使用上级默认配置。</CardDescription>
         </div>
         {showResetToRecommended && !readOnly && (
           /*

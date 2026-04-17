@@ -50,7 +50,7 @@ describe("listBookAnalysisJobs", () => {
       {
         id            : "job-2",
         status        : AnalysisJobStatus.FAILED,
-        architecture  : "twopass",
+        architecture  : "threestage",
         scope         : "CHAPTER_RANGE",
         chapterStart  : 1,
         chapterEnd    : 5,
@@ -101,7 +101,7 @@ describe("listBookAnalysisJobs", () => {
     expect(second).toMatchObject({
       id          : "job-2",
       status      : AnalysisJobStatus.FAILED,
-      architecture: "twopass",
+      architecture: "threestage",
       scope       : "CHAPTER_RANGE",
       chapterStart: 1,
       chapterEnd  : 5,

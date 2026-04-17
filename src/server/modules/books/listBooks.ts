@@ -190,8 +190,8 @@ function mapBook(book: BookListRow): BookLibraryListItem {
   // 原因：Book/AnalysisJob 已不直接维护 aiModel 关系，阶段日志才是实际执行来源。
   const currentModel = book.analysisJobs[0]?.phaseLogs?.[0]?.model?.name ?? null;
   const rawArchitecture = book.analysisJobs[0]?.architecture ?? null;
-  const lastArchitecture = rawArchitecture === "twopass"
-    ? "twopass"
+  const lastArchitecture = rawArchitecture === "threestage"
+    ? "threestage"
     : rawArchitecture === "sequential"
       ? "sequential"
       : null;

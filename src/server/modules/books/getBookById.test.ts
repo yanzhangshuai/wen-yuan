@@ -116,8 +116,8 @@ describe("getBookById", () => {
     expect(result.lastArchitecture).toBeNull();
   });
 
-  it("maps twopass architecture from the latest analysis job", async () => {
-    // 场景：两遍式任务完成后，详情页需要展示真实架构，方便管理员回溯策略来源。
+  it("maps threestage architecture from the latest analysis job", async () => {
+    // 场景：三阶段任务完成后，详情页需要展示真实架构，方便管理员回溯策略来源。
     // Arrange
     const findFirst = vi.fn().mockResolvedValue({
       id            : "book-3",
@@ -142,7 +142,7 @@ describe("getBookById", () => {
           updatedAt   : new Date("2026-03-26T10:00:00.000Z"),
           finishedAt  : new Date("2026-03-26T10:05:00.000Z"),
           errorLog    : null,
-          architecture: "twopass",
+          architecture: "threestage",
           phaseLogs   : []
         }
       ]
@@ -153,7 +153,7 @@ describe("getBookById", () => {
     const result = await service.getBookById("book-3");
 
     // Assert
-    expect(result.lastArchitecture).toBe("twopass");
+    expect(result.lastArchitecture).toBe("threestage");
   });
 
   it("throws BookNotFoundError when id does not exist", async () => {

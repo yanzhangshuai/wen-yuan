@@ -47,7 +47,7 @@ function createRuntimeKnowledge(overrides: Partial<FullRuntimeKnowledge> = {}): 
   };
 }
 
-function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: boolean } = {}) {
+function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const analysisJobFindUnique = vi.fn();
   const analysisJobFindFirst = vi.fn();
   const analysisJobUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
@@ -80,14 +80,6 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
   // Phase 5 真名溯源：默认返回 0（无 TITLE_ONLY persona），不影响既有测试断言。
   const resolvePersonaTitles = vi.fn().mockResolvedValue(0);
   const getTitleOnlyPersonaCount = vi.fn().mockResolvedValue(0);
-  const extractChapterEntities = vi.fn().mockImplementation(async (chapterId: string) => ({
-    chapterId,
-    chapterNo: Number(chapterId.split("-").at(-1) ?? 1),
-    entities : []
-  }));
-  const resolveGlobalEntities = vi.fn().mockResolvedValue({
-    globalPersonaMap: new Map<string, string>([["范进", "persona-existing"]])
-  });
   const validateBookResult = vi.fn().mockResolvedValue({
     id     : "report-default",
     issues : [],
@@ -125,9 +117,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
   const chapterAnalyzer = options.withValidation
     ? { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult, validateBookResult, applyAutoFixes }
     : { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult };
-  const resolvedChapterAnalyzer = options.withTwoPass
-    ? { ...chapterAnalyzer, extractChapterEntities, resolveGlobalEntities }
-    : chapterAnalyzer;
+  const resolvedChapterAnalyzer = chapterAnalyzer;
 
   const runner = createAnalysisJobRunner({
     analysisJob: {
@@ -162,8 +152,6 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
     analyzeChapter,
     resolvePersonaTitles,
     getTitleOnlyPersonaCount,
-    extractChapterEntities,
-    resolveGlobalEntities,
     validateBookResult,
     validateChapterResult,
     applyAutoFixes,
@@ -214,6 +202,7 @@ describe("analysis job runner", () => {
         id            : jobId,
         bookId,
         status        : AnalysisJobStatus.QUEUED,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -223,6 +212,7 @@ describe("analysis job runner", () => {
         id            : jobId,
         bookId,
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -294,6 +284,7 @@ describe("analysis job runner", () => {
         id            : "job-progress-write-fail",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -303,6 +294,7 @@ describe("analysis job runner", () => {
         id            : "job-progress-write-fail",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -344,6 +336,7 @@ describe("analysis job runner", () => {
         id          : "job-s",
         bookId      : "book-1",
         status      : AnalysisJobStatus.SUCCEEDED,
+        architecture: "sequential",
         scope       : "FULL_BOOK",
         chapterStart: null,
         chapterEnd  : null
@@ -352,6 +345,7 @@ describe("analysis job runner", () => {
         id          : "job-c",
         bookId      : "book-1",
         status      : AnalysisJobStatus.CANCELED,
+        architecture: "sequential",
         scope       : "FULL_BOOK",
         chapterStart: null,
         chapterEnd  : null
@@ -375,6 +369,7 @@ describe("analysis job runner", () => {
       id          : "job-claim",
       bookId      : "book-1",
       status      : AnalysisJobStatus.QUEUED,
+      architecture: "sequential",
       scope       : "FULL_BOOK",
       chapterStart: null,
       chapterEnd  : null
@@ -399,6 +394,7 @@ describe("analysis job runner", () => {
         id          : "job-refresh",
         bookId      : "book-1",
         status      : AnalysisJobStatus.QUEUED,
+        architecture: "sequential",
         scope       : "FULL_BOOK",
         chapterStart: null,
         chapterEnd  : null
@@ -407,6 +403,7 @@ describe("analysis job runner", () => {
         id          : "job-refresh",
         bookId      : "book-1",
         status      : AnalysisJobStatus.FAILED,
+        architecture: "sequential",
         scope       : "FULL_BOOK",
         chapterStart: null,
         chapterEnd  : null
@@ -425,6 +422,7 @@ describe("analysis job runner", () => {
         id          : "job-range-invalid",
         bookId      : "book-1",
         status      : AnalysisJobStatus.RUNNING,
+        architecture: "sequential",
         scope       : "CHAPTER_RANGE",
         chapterStart: null,
         chapterEnd  : null
@@ -433,6 +431,7 @@ describe("analysis job runner", () => {
         id          : "job-range-invalid",
         bookId      : "book-1",
         status      : AnalysisJobStatus.RUNNING,
+        architecture: "sequential",
         scope       : "CHAPTER_RANGE",
         chapterStart: null,
         chapterEnd  : null
@@ -454,6 +453,7 @@ describe("analysis job runner", () => {
         id            : "job-empty-list",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "CHAPTER_LIST",
         chapterStart  : null,
         chapterEnd    : null,
@@ -463,6 +463,7 @@ describe("analysis job runner", () => {
         id            : "job-empty-list",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "CHAPTER_LIST",
         chapterStart  : null,
         chapterEnd    : null,
@@ -503,6 +504,7 @@ describe("analysis job runner", () => {
         id          : "job-empty-chapters",
         bookId      : "book-1",
         status      : AnalysisJobStatus.RUNNING,
+        architecture: "sequential",
         scope       : "FULL_BOOK",
         chapterStart: null,
         chapterEnd  : null
@@ -511,6 +513,7 @@ describe("analysis job runner", () => {
         id          : "job-empty-chapters",
         bookId      : "book-1",
         status      : AnalysisJobStatus.RUNNING,
+        architecture: "sequential",
         scope       : "FULL_BOOK",
         chapterStart: null,
         chapterEnd  : null
@@ -552,6 +555,7 @@ describe("analysis job runner", () => {
         id            : "job-failed",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -561,6 +565,7 @@ describe("analysis job runner", () => {
         id            : "job-failed",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -601,6 +606,7 @@ describe("analysis job runner", () => {
         id            : "job-skip",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -610,6 +616,7 @@ describe("analysis job runner", () => {
         id            : "job-skip",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -641,6 +648,7 @@ describe("analysis job runner", () => {
         id          : "job-range",
         bookId      : "book-1",
         status      : AnalysisJobStatus.RUNNING,
+        architecture: "sequential",
         scope       : "CHAPTER_RANGE",
         chapterStart: 2,
         chapterEnd  : 3
@@ -649,6 +657,7 @@ describe("analysis job runner", () => {
         id          : "job-range",
         bookId      : "book-1",
         status      : AnalysisJobStatus.RUNNING,
+        architecture: "sequential",
         scope       : "CHAPTER_RANGE",
         chapterStart: 2,
         chapterEnd  : 3
@@ -683,6 +692,7 @@ describe("analysis job runner", () => {
         id            : "job-list",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "CHAPTER_LIST",
         chapterStart  : null,
         chapterEnd    : null,
@@ -692,6 +702,7 @@ describe("analysis job runner", () => {
         id            : "job-list",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "CHAPTER_LIST",
         chapterStart  : null,
         chapterEnd    : null,
@@ -726,6 +737,7 @@ describe("analysis job runner", () => {
         id            : "job-incremental",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -735,6 +747,7 @@ describe("analysis job runner", () => {
         id            : "job-incremental",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -765,6 +778,7 @@ describe("analysis job runner", () => {
         id            : "job-gray-zone",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -774,6 +788,7 @@ describe("analysis job runner", () => {
         id            : "job-gray-zone",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -802,6 +817,7 @@ describe("analysis job runner", () => {
         id            : "job-validation",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -811,6 +827,7 @@ describe("analysis job runner", () => {
         id            : "job-validation",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -854,6 +871,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-errors",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -863,6 +881,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-errors",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -919,6 +938,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-fallbacks",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -928,6 +948,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-fallbacks",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1015,6 +1036,7 @@ describe("analysis job runner", () => {
         id            : "job-gray-zone-risk",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1024,6 +1046,7 @@ describe("analysis job runner", () => {
         id            : "job-gray-zone-risk",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1064,6 +1087,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-degraded",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1073,6 +1097,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-degraded",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1118,6 +1143,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-warn",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1127,6 +1153,7 @@ describe("analysis job runner", () => {
         id            : "job-validation-warn",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1162,6 +1189,7 @@ describe("analysis job runner", () => {
         id            : "job-retry",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1171,6 +1199,7 @@ describe("analysis job runner", () => {
         id            : "job-retry",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1202,226 +1231,6 @@ describe("analysis job runner", () => {
     });
   });
 
-  it("runs two-pass extraction and injects preloaded knowledge into chapter analysis", async () => {
-    const aliasLookup = new Map<string, string>([["范老爷", "范进"]]);
-    const preloadedLexiconConfig = {
-      entityExtractionRules: ["提取历史人物真名"]
-    };
-    const runtimeKnowledge = createRuntimeKnowledge({
-      aliasLookup,
-      lexiconConfig: preloadedLexiconConfig
-    });
-    const globalPersonaMap = new Map<string, string>([["范进", "persona-fan"]]);
-
-    mockedLoadFullRuntimeKnowledge.mockResolvedValueOnce(runtimeKnowledge);
-
-    const {
-      runner,
-      analysisJobFindUnique,
-      chapterFindMany,
-      bookFindUnique,
-      extractChapterEntities,
-      resolveGlobalEntities,
-      analyzeChapter,
-      analysisJobUpdate
-    } = createRunnerContext({ withTwoPass: true });
-
-    analysisJobFindUnique
-      .mockResolvedValueOnce({
-        id            : "job-two-pass",
-        bookId        : "book-1",
-        status        : AnalysisJobStatus.RUNNING,
-        architecture  : "twopass",
-        scope         : "FULL_BOOK",
-        chapterStart  : null,
-        chapterEnd    : null,
-        chapterIndices: []
-      })
-      .mockResolvedValueOnce({
-        id            : "job-two-pass",
-        bookId        : "book-1",
-        status        : AnalysisJobStatus.RUNNING,
-        architecture  : "twopass",
-        scope         : "FULL_BOOK",
-        chapterStart  : null,
-        chapterEnd    : null,
-        chapterIndices: []
-      })
-      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
-    chapterFindMany.mockResolvedValueOnce([
-      { id: "chapter-1", no: 1 },
-      { id: "chapter-2", no: 2 }
-    ]);
-    bookFindUnique.mockResolvedValueOnce({
-      title   : "儒林外史",
-      bookType: null
-    });
-    resolveGlobalEntities.mockResolvedValueOnce({ globalPersonaMap });
-    analyzeChapter.mockImplementation(async (_chapterId, context) => {
-      expect(context).toMatchObject({
-        jobId             : "job-two-pass",
-        externalPersonaMap: globalPersonaMap,
-        preloadedLexiconConfig
-      });
-      return {
-        chapterId         : "chapter-1",
-        chunkCount        : 1,
-        hallucinationCount: 0,
-        created           : { personas: 1, mentions: 1, biographies: 1, relationships: 1 }
-      };
-    });
-
-    await expect(runner.runAnalysisJobById("job-two-pass")).resolves.toBeUndefined();
-
-    expect(extractChapterEntities).toHaveBeenCalledTimes(2);
-    expect(resolveGlobalEntities).toHaveBeenCalledWith(
-      "book-1",
-      "儒林外史",
-      [
-        { chapterId: "chapter-1", chapterNo: 1, entities: [] },
-        { chapterId: "chapter-2", chapterNo: 2, entities: [] }
-      ],
-      { bookId: "book-1", jobId: "job-two-pass" },
-      runtimeKnowledge
-    );
-    expect(mockedClearKnowledgeCache).toHaveBeenCalledWith("book-1");
-    expect(mockedLoadFullRuntimeKnowledge).toHaveBeenCalledWith("book-1", null, expect.any(Object));
-    expect(analyzeChapter).toHaveBeenCalledTimes(2);
-    expect(analysisJobUpdate).toHaveBeenCalledWith({
-      where: { id: "job-two-pass" },
-      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
-    });
-  });
-
-  it("stops pass-one retries immediately for non-retryable extraction errors", async () => {
-    const {
-      runner,
-      analysisJobFindUnique,
-      chapterFindMany,
-      bookFindUnique,
-      extractChapterEntities,
-      resolveGlobalEntities,
-      analysisJobUpdate
-    } = createRunnerContext({ withTwoPass: true });
-
-    analysisJobFindUnique
-      .mockResolvedValueOnce({
-        id            : "job-two-pass-non-retryable",
-        bookId        : "book-1",
-        status        : AnalysisJobStatus.RUNNING,
-        architecture  : "twopass",
-        scope         : "FULL_BOOK",
-        chapterStart  : null,
-        chapterEnd    : null,
-        chapterIndices: []
-      })
-      .mockResolvedValueOnce({
-        id            : "job-two-pass-non-retryable",
-        bookId        : "book-1",
-        status        : AnalysisJobStatus.RUNNING,
-        architecture  : "twopass",
-        scope         : "FULL_BOOK",
-        chapterStart  : null,
-        chapterEnd    : null,
-        chapterIndices: []
-      })
-      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
-    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
-    bookFindUnique.mockResolvedValueOnce({
-      title   : "儒林外史",
-      bookType: null
-    });
-    extractChapterEntities.mockRejectedValueOnce(new Error("schema mismatch"));
-
-    await expect(runner.runAnalysisJobById("job-two-pass-non-retryable")).resolves.toBeUndefined();
-
-    expect(extractChapterEntities).toHaveBeenCalledTimes(1);
-    expect(resolveGlobalEntities).toHaveBeenCalledWith(
-      "book-1",
-      "儒林外史",
-      [],
-      { bookId: "book-1", jobId: "job-two-pass-non-retryable" },
-      expect.objectContaining({
-        aliasLookup: expect.any(Map)
-      })
-    );
-    expect(analysisJobUpdate).toHaveBeenCalledWith({
-      where: { id: "job-two-pass-non-retryable" },
-      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
-    });
-  });
-
-  it("retries retryable pass-one extraction errors before continuing", async () => {
-    vi.useFakeTimers();
-
-    const {
-      runner,
-      analysisJobFindUnique,
-      chapterFindMany,
-      bookFindUnique,
-      extractChapterEntities,
-      resolveGlobalEntities,
-      analysisJobUpdate
-    } = createRunnerContext({ withTwoPass: true });
-
-    analysisJobFindUnique
-      .mockResolvedValueOnce({
-        id            : "job-two-pass-retry",
-        bookId        : "book-1",
-        status        : AnalysisJobStatus.RUNNING,
-        architecture  : "twopass",
-        scope         : "FULL_BOOK",
-        chapterStart  : null,
-        chapterEnd    : null,
-        chapterIndices: []
-      })
-      .mockResolvedValueOnce({
-        id            : "job-two-pass-retry",
-        bookId        : "book-1",
-        status        : AnalysisJobStatus.RUNNING,
-        architecture  : "twopass",
-        scope         : "FULL_BOOK",
-        chapterStart  : null,
-        chapterEnd    : null,
-        chapterIndices: []
-      })
-      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
-    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
-    bookFindUnique.mockResolvedValueOnce({
-      title   : "儒林外史",
-      bookType: null
-    });
-    extractChapterEntities
-      .mockRejectedValueOnce(new Error("network timeout"))
-      .mockResolvedValueOnce({
-        chapterId: "chapter-1",
-        chapterNo: 1,
-        entities : [{ id: "entity-1", name: "范进" }]
-      });
-
-    const runPromise = runner.runAnalysisJobById("job-two-pass-retry");
-    await vi.advanceTimersByTimeAsync(3000);
-    await expect(runPromise).resolves.toBeUndefined();
-
-    expect(extractChapterEntities).toHaveBeenCalledTimes(2);
-    expect(resolveGlobalEntities).toHaveBeenCalledWith(
-      "book-1",
-      "儒林外史",
-      [{
-        chapterId: "chapter-1",
-        chapterNo: 1,
-        entities : [{ id: "entity-1", name: "范进" }]
-      }],
-      { bookId: "book-1", jobId: "job-two-pass-retry" },
-      expect.objectContaining({
-        aliasLookup: expect.any(Map)
-      })
-    );
-    expect(analysisJobUpdate).toHaveBeenCalledWith({
-      where: { id: "job-two-pass-retry" },
-      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
-    });
-  });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("runNextAnalysisJob prioritizes recoverable running job", async () => {
@@ -1438,6 +1247,7 @@ describe("analysis job runner", () => {
         id            : "running-job",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1447,6 +1257,7 @@ describe("analysis job runner", () => {
         id            : "running-job",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1487,6 +1298,7 @@ describe("analysis job runner", () => {
         id            : "queued-job",
         bookId        : "book-1",
         status        : AnalysisJobStatus.QUEUED,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -1496,6 +1308,7 @@ describe("analysis job runner", () => {
         id            : "queued-job",
         bookId        : "book-1",
         status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,

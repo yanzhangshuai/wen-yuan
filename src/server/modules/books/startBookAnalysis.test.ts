@@ -74,7 +74,7 @@ describe("startBookAnalysis", () => {
     expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         bookId          : "book-1",
-        architecture    : "sequential",
+        architecture    : "threestage",
         scope           : "FULL_BOOK",
         chapterIndices  : [],
         overrideStrategy: "DRAFT_ONLY",
@@ -94,7 +94,7 @@ describe("startBookAnalysis", () => {
       bookId          : "book-1",
       jobId           : "job-1",
       status          : AnalysisJobStatus.QUEUED,
-      architecture    : "sequential",
+      architecture    : "threestage",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -115,7 +115,7 @@ describe("startBookAnalysis", () => {
     tx.analysisJob.create.mockResolvedValue({
       id              : "job-2",
       status          : AnalysisJobStatus.QUEUED,
-      architecture    : "twopass",
+      architecture    : "threestage",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -131,7 +131,7 @@ describe("startBookAnalysis", () => {
 
     const service = createStartBookAnalysisService(prisma as never);
     await service.startBookAnalysis("book-1", {
-      architecture : "twopass",
+      architecture : "threestage",
       modelStrategy: {
         CHUNK_EXTRACTION: {
           modelId    : "00000000-0000-0000-0000-000000000001",
@@ -153,7 +153,7 @@ describe("startBookAnalysis", () => {
       }
     });
     expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ architecture: "twopass" })
+      data: expect.objectContaining({ architecture: "threestage" })
     }));
   });
 
@@ -161,11 +161,11 @@ describe("startBookAnalysis", () => {
     const { prisma, tx, analysisJobFindFirst } = createMockPrisma();
     prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
     prisma.chapter.count.mockResolvedValue(12);
-    analysisJobFindFirst.mockResolvedValue({ architecture: "twopass" });
+    analysisJobFindFirst.mockResolvedValue({ architecture: "threestage" });
     tx.analysisJob.create.mockResolvedValue({
       id              : "job-latest-arch",
       status          : AnalysisJobStatus.QUEUED,
-      architecture    : "twopass",
+      architecture    : "threestage",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -188,9 +188,9 @@ describe("startBookAnalysis", () => {
       select : { architecture: true }
     });
     expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ architecture: "twopass" })
+      data: expect.objectContaining({ architecture: "threestage" })
     }));
-    expect(result.architecture).toBe("twopass");
+    expect(result.architecture).toBe("threestage");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

@@ -32,7 +32,7 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   class AnalysisScopeInvalidError extends Error {}
 
   return {
-    ANALYSIS_ARCHITECTURE_VALUES     : ["sequential", "twopass"] as const,
+    ANALYSIS_ARCHITECTURE_VALUES     : ["sequential", "threestage"] as const,
     ANALYSIS_SCOPE_VALUES            : ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const,
     ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
     startBookAnalysis                : startBookAnalysisMock,
@@ -127,7 +127,7 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-arch",
       status          : AnalysisJobStatus.QUEUED,
-      architecture    : "twopass",
+      architecture    : "threestage",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
@@ -146,13 +146,13 @@ describe("POST /api/books/:id/analyze", () => {
           "Content-Type": "application/json",
           "x-auth-role" : AppRole.ADMIN
         },
-        body: JSON.stringify({ architecture: "twopass" })
+        body: JSON.stringify({ architecture: "threestage" })
       }),
       { params: Promise.resolve({ id: bookId }) }
     );
 
     expect(response.status).toBe(202);
-    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, { architecture: "twopass" });
+    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, { architecture: "threestage" });
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

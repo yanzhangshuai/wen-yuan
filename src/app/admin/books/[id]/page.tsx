@@ -149,7 +149,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             {book.dynasty && <span>朝代：{book.dynasty}</span>}
             {book.currentModel && <span>当前模型：{book.currentModel}</span>}
             {book.lastArchitecture && (
-              <span>解析架构：{book.lastArchitecture === "sequential" ? "顺序式" : "两遍式"}</span>
+              <span>解析架构：{book.lastArchitecture === "sequential" ? "顺序式" : "三阶段"}</span>
             )}
           </div>
 

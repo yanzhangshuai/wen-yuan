@@ -3,9 +3,9 @@ import {
   type SequentialPipelineDependencies
 } from "@/server/modules/analysis/pipelines/sequential/SequentialPipeline";
 import {
-  createTwoPassPipeline,
-  type TwoPassPipelineDependencies
-} from "@/server/modules/analysis/pipelines/twopass/TwoPassPipeline";
+  createThreeStagePipeline,
+  type ThreeStagePipelineDependencies
+} from "@/server/modules/analysis/pipelines/threestage/ThreeStagePipeline";
 import type {
   AnalysisArchitecture,
   AnalysisPipeline
@@ -17,12 +17,12 @@ import type {
  */
 export interface AnalysisPipelineFactoryDependencies {
   sequential?: SequentialPipelineDependencies;
-  twopass?   : TwoPassPipelineDependencies;
+  threestage?: ThreeStagePipelineDependencies;
 }
 
 /**
  * 统一的 pipeline 选择入口。
- * Phase 1 先把“如何按架构拿到实例”固定下来，后续 runAnalysisJob 只需要替换调用点即可完成编排层迁移。
+ * 按 `architecture` 字面量路由到对应目录下的实现；新增架构需同时扩展 types 与此 switch。
  */
 export function createPipeline(
   architecture: AnalysisArchitecture,
@@ -31,8 +31,8 @@ export function createPipeline(
   switch (architecture) {
     case "sequential":
       return createSequentialPipeline(dependencies.sequential);
-    case "twopass":
-      return createTwoPassPipeline(dependencies.twopass);
+    case "threestage":
+      return createThreeStagePipeline(dependencies.threestage);
     default: {
       const unsupportedArchitecture: never = architecture;
       throw new Error(`不支持的解析架构: ${String(unsupportedArchitecture)}`);

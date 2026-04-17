@@ -88,7 +88,7 @@ export interface ConfirmChapterItem {
 export type AnalyzeScope = "FULL_BOOK" | "CHAPTER_RANGE" | "CHAPTER_LIST";
 
 interface StartAnalysisBase {
-  /** 解析架构：顺序或两遍式。 */
+  /** 解析架构：顺序或三阶段。 */
   architecture? : AnalysisArchitecture;
   /** 任务级模型策略覆盖。 */
   modelStrategy?: { stages: ModelStrategyInput };

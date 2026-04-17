@@ -102,7 +102,7 @@ describe("books service", () => {
     clientMutateMock.mockResolvedValue(undefined);
     const { startAnalysis } = await import("@/lib/services/books");
     const payload = {
-      architecture : "twopass" as const,
+      architecture : "threestage" as const,
       scope        : "FULL_BOOK" as const,
       modelStrategy: {
         stages: {

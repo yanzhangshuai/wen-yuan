@@ -62,7 +62,7 @@ function normalizeModelStrategyInput(
  * 功能：启动书籍解析任务请求体校验。
  * 输入字段：
  * - `modelStrategy` 任务级阶段模型策略，可传 `{ stages: ... }` 或直接传阶段映射对象。
- * - `architecture: "sequential" | "twopass" | undefined` 解析架构；省略时由服务层继承最近任务。
+ * - `architecture: "sequential" | "threestage" | undefined` 解析架构；省略时由服务层继承最近任务。
  * - `scope: "FULL_BOOK" | "CHAPTER_RANGE" | undefined` 解析范围。
  * - `chapterStart/chapterEnd: number | null | undefined` 当 `scope=CHAPTER_RANGE` 时生效。
  * - `overrideStrategy` 冲突覆盖策略（是否覆盖旧草稿/保留版本）。

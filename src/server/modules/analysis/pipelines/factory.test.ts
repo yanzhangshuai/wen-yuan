@@ -29,12 +29,12 @@ describe("analysis pipeline factory", () => {
     );
   });
 
-  it("returns twopass pipeline and fails fast when runtime dependencies are missing", async () => {
-    const pipeline = createPipeline("twopass");
+  it("returns threestage pipeline and fails fast when runtime dependencies are missing", async () => {
+    const pipeline = createPipeline("threestage");
 
-    expect(pipeline.architecture).toBe("twopass");
+    expect(pipeline.architecture).toBe("threestage");
     await expect(pipeline.run(buildRunParams())).rejects.toThrow(
-      "TwoPassPipeline 缺少运行时依赖"
+      "ThreeStagePipeline 缺少运行时依赖"
     );
   });
 });

@@ -74,7 +74,7 @@ function formatScope(job: AnalysisJobListItem): string {
  * 将解析架构转换为可读文案。
  */
 function formatArchitecture(architecture: AnalysisJobListItem["architecture"]): string {
-  return architecture === "twopass" ? "两遍式" : "顺序式";
+  return architecture === "threestage" ? "三阶段" : "顺序式";
 }
 
 /**
