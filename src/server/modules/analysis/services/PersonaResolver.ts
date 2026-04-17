@@ -286,7 +286,7 @@ export function createPersonaResolver(
         }
       },
       take: 40
-    })) ?? [];
+    }));
 
     if (directMatches.length > 0) {
       return directMatches.map((item) => ({
@@ -312,7 +312,7 @@ export function createPersonaResolver(
         }
       },
       take: 200
-    })) ?? [];
+    }));
 
     return fallbackBookMatches.map((item) => ({
       id     : item.id,

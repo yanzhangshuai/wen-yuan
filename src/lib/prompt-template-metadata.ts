@@ -119,7 +119,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "INDEPENDENT_EXTRACTION",
     name        : "Pass 1 独立提取",
     description : "对单章原文做独立人物提取，不依赖既有人物档案。",
-    codeRef     : "buildIndependentExtractionPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "儒林外史" },
       { key: "chapterNo", label: "章节号", description: "当前章节序号。", example: "3" },
@@ -139,7 +139,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "ENTITY_RESOLUTION",
     name        : "Pass 2 实体消歧",
     description : "对全书候选人物组做同人消歧与合并判断。",
-    codeRef     : "buildEntityResolutionPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "儒林外史" },
       { key: "candidateGroups", label: "候选组", description: "待消歧的人物候选组正文。", example: SAMPLE_CANDIDATE_GROUPS },
@@ -155,7 +155,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "TITLE_RESOLUTION",
     name        : "称号溯源",
     description : "将仅以称号出现的人物溯源为真实姓名。",
-    codeRef     : "buildTitleResolutionPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "明史演义" },
       { key: "titleEntries", label: "称号列表", description: "待溯源称号的 markdown 表格行。", example: SAMPLE_TITLE_ROWS }
@@ -169,7 +169,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "TITLE_ARBITRATION",
     name        : "称号灰区仲裁",
     description : "对灰区称谓做是否已人格化的最终仲裁。",
-    codeRef     : "buildTitleArbitrationPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "笑傲江湖" },
       { key: "terms", label: "灰区称谓列表", description: "待仲裁称谓与统计证据列表。", example: SAMPLE_TERMS }
@@ -183,7 +183,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "CHAPTER_ANALYSIS",
     name        : "Pass 3 章节分析",
     description : "对章节分片提取 biographies、mentions 与 relationships。",
-    codeRef     : "buildChapterAnalysisPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "儒林外史" },
       { key: "chapterNo", label: "章节号", description: "当前章节序号。", example: "3" },
@@ -209,7 +209,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "ROSTER_DISCOVERY",
     name        : "人物名册发现",
     description : "对整章人物称谓做枚举与预归一，兼容旧链路与无外部映射场景。",
-    codeRef     : "buildRosterDiscoveryPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "儒林外史" },
       { key: "chapterNo", label: "章节号", description: "当前章节序号。", example: "3" },
@@ -233,7 +233,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "CHAPTER_VALIDATION",
     name        : "章节质量校验",
     description : "对单章解析结果做保守式质量审核。",
-    codeRef     : "buildChapterValidationPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "儒林外史" },
       { key: "chapterNo", label: "章节号", description: "当前章节序号。", example: "3" },
@@ -259,7 +259,7 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
     slug        : "BOOK_VALIDATION",
     name        : "全书质量校验",
     description : "对全书人物与关系结果做跨章节一致性检查。",
-    codeRef     : "buildBookValidationPrompt",
+    codeRef     : "resolvePromptTemplate",
     placeholders: [
       { key: "bookTitle", label: "书名", description: "当前解析书籍名称。", example: "儒林外史" },
       { key: "personas", label: "全书人物列表", description: "全书人物摘要。", example: SAMPLE_PERSONAS },

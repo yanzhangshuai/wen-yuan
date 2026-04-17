@@ -200,9 +200,9 @@ function buildStageModel(overrides: Partial<Record<string, unknown>> = {}) {
  */
 function createMockExecutor(stageHandlers: Partial<Record<string, (input: { stage: string; callFn?: unknown }) => unknown>> = {}) {
   const defaultHandlers: Record<string, () => unknown> = {
-    [PipelineStage.ROSTER_DISCOVERY]  : () => [],
-    [PipelineStage.CHUNK_EXTRACTION]  : () => ({ mentions: [], biographies: [], relationships: [] }),
-    [PipelineStage.TITLE_RESOLUTION]  : () => [],
+    [PipelineStage.ROSTER_DISCOVERY]     : () => [],
+    [PipelineStage.CHUNK_EXTRACTION]     : () => ({ mentions: [], biographies: [], relationships: [] }),
+    [PipelineStage.TITLE_RESOLUTION]     : () => [],
     [PipelineStage.GRAY_ZONE_ARBITRATION]: () => []
   };
   return {
@@ -515,10 +515,10 @@ describe("chapter analysis service", () => {
 
     expect(result.chunkCount).toBe(3);
     const rosterCalls = mockExecutor.execute.mock.calls.filter(
-      ([input]: [{ stage: string }]) => input.stage === PipelineStage.ROSTER_DISCOVERY
+      ([input]: [{ stage: string }]) => input.stage === (PipelineStage.ROSTER_DISCOVERY as string)
     );
     const chunkCalls = mockExecutor.execute.mock.calls.filter(
-      ([input]: [{ stage: string }]) => input.stage === PipelineStage.CHUNK_EXTRACTION
+      ([input]: [{ stage: string }]) => input.stage === (PipelineStage.CHUNK_EXTRACTION as string)
     );
     expect(rosterCalls).toHaveLength(2);
     expect(chunkCalls).toHaveLength(3);
@@ -547,12 +547,12 @@ describe("chapter analysis service", () => {
     const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
     await service.analyzeChapter("chapter-1", {
-      jobId: "test-job",
+      jobId             : "test-job",
       externalPersonaMap: new Map([["范老爷", "persona-18"]])
     });
 
     const rosterCalls = mockExecutor.execute.mock.calls.filter(
-      ([input]: [{ stage: string }]) => input.stage === PipelineStage.ROSTER_DISCOVERY
+      ([input]: [{ stage: string }]) => input.stage === (PipelineStage.ROSTER_DISCOVERY as string)
     );
     expect(rosterCalls).toHaveLength(0);
   });
@@ -580,13 +580,13 @@ describe("chapter analysis service", () => {
     const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
 
     await service.analyzeChapter("chapter-1", {
-      jobId: "test-job",
+      jobId             : "test-job",
       externalPersonaMap: new Map([["老爷", "GENERIC"]])
     });
 
     // 当 externalPersonaMap 只有 GENERIC 项时，不应过滤 profiles
     const rosterCalls = mockExecutor.execute.mock.calls.filter(
-      ([input]: [{ stage: string }]) => input.stage === PipelineStage.ROSTER_DISCOVERY
+      ([input]: [{ stage: string }]) => input.stage === (PipelineStage.ROSTER_DISCOVERY as string)
     );
     expect(rosterCalls).toHaveLength(0);
   });

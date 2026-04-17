@@ -220,7 +220,7 @@ function buildSummary(issues: ValidationIssue[]): ValidationSummary {
 export function createValidationAgentService(
   prismaClient: PrismaClient = prisma,
   stageAiCallExecutor: AiCallExecutor = aiCallExecutor,
-  strategyResolver: ModelStrategyResolver = modelStrategyResolver
+  _strategyResolver: ModelStrategyResolver = modelStrategyResolver
 ): ValidationAgentService {
   const { mergePersonas } = createMergePersonasService(prismaClient);
   // 同一 modelId 复用同一个 provider client，减少重复初始化和连接开销。

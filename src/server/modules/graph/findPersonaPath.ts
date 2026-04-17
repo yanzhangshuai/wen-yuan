@@ -615,8 +615,8 @@ export function createFindPersonaPathService(
             personaNameMap
           );
         }
-      } catch {
-        // Neo4j 不可用时，退化为 PostgreSQL BFS，保证接口可用。
+      } catch (error) {
+        console.warn("[findPersonaPath] Neo4j 不可用，退化为 PostgreSQL BFS", error);
       }
     }
 

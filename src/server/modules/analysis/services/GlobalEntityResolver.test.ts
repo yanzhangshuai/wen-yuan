@@ -13,8 +13,8 @@ const {
   createAiProviderClientMock,
   resolvePromptTemplateMock
 } = vi.hoisted(() => ({
-  createAiProviderClientMock     : vi.fn(),
-  resolvePromptTemplateMock: vi.fn().mockImplementation(async () => ({ system: "mock-system", user: "mock-user" }))
+  createAiProviderClientMock: vi.fn(),
+  resolvePromptTemplateMock : vi.fn().mockImplementation(async () => ({ system: "mock-system", user: "mock-user" }))
 }));
 
 vi.mock("@/server/providers/ai", () => ({

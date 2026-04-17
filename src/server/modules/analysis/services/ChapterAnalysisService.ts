@@ -1,25 +1,14 @@
-import { BioCategory, ProcessingStatus } from "@/generated/prisma/enums";
+import { ProcessingStatus } from "@/generated/prisma/enums";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { createAiProviderClient } from "@/server/providers/ai";
 import { aliasRegistryService, type AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
 import { aiCallExecutor, type AiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
 import {
   createModelStrategyResolver,
-  type ModelStrategyResolver,
-  type ResolvedFallbackModel,
-  type ResolvedStageModel
+  type ModelStrategyResolver
 } from "@/server/modules/analysis/services/ModelStrategyResolver";
 import { createPersonaResolver, type ResolveResult } from "@/server/modules/analysis/services/PersonaResolver";
 import { createMergePersonasService } from "@/server/modules/personas/mergePersonas";
-import { resolvePromptTemplate } from "@/server/modules/knowledge";
-import {
-  buildChapterAnalysisRulesText,
-  buildIndependentExtractionRulesText,
-  buildRosterDiscoveryRulesText,
-  type BuildPromptInput,
-  type RosterDiscoveryInput
-} from "@/server/modules/analysis/services/prompts";
 import {
   type BookLexiconConfig,
   type MentionPersonalizationEvidence,
@@ -28,313 +17,62 @@ import {
 } from "@/server/modules/analysis/config/lexicon";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
+import type { RosterDiscoveryInput } from "@/server/modules/analysis/services/prompts";
 import type {
   AnalysisProfileContext,
-  BioCategoryValue,
   ChapterAnalysisResponse,
   ChapterEntityList,
   EnhancedChapterRosterEntry,
-  TitleArbitrationInput,
-  TitleResolutionInput,
   RegisterAliasInput
 } from "@/types/analysis";
 import {
-  parseChapterAnalysisResponse,
-  parseEnhancedChapterRosterResponse,
-  parseIndependentExtractionResponse,
-  parseTitleArbitrationResponse,
-  parseTitleResolutionResponse
-} from "@/types/analysis";
-import { PipelineStage } from "@/types/pipeline";
+  AI_CONCURRENCY,
+  buildEntityIdMap,
+  buildProfileLookupMap,
+  collectGenericRatiosFromRoster,
+  mergeChunkResultsForAnalysis,
+  mergeRosterEntriesForAnalysis,
+  normalizeCategory,
+  normalizeLookupKey,
+  sanitizeIronyNote,
+  sanitizeRelationshipField,
+  splitContentIntoChunks
+} from "@/server/modules/analysis/services/helpers/chunk-utils";
+import {
+  analyzeChunkByStage,
+  arbitrateGrayZoneByStage,
+  discoverRosterByStage,
+  extractChapterEntitiesByStage,
+  resolveTitlesByStage
+} from "@/server/modules/analysis/services/stages/stage-calls";
 
 /**
- * 文件定位（Next.js 服务端分析核心）：
- * - 本文件是章节解析流水线的主服务，位于 `src/server/modules/analysis/services`。
- * - 它不直接承载路由，而是由 `runAnalysisJob` 在服务端调用，完成“章节 -> 人物/提及/关系/生平”结构化入库。
- *
- * 核心职责：
- * - 组织 Prompt、调用 AI、合并分段结果，并把结果映射成数据库实体；
- * - 与 PersonaResolver / AliasRegistry / ValidationAgent / ModelStrategyResolver 协同，完成识别、纠偏与策略执行；
- * - 提供称号真名溯源、灰区仲裁等后处理能力，降低泛化称谓误识别风险。
- *
- * 运行环境与边界：
- * - 仅在 Node.js 服务端运行（依赖 Prisma 与外部模型调用），不可在客户端执行。
- * - 文件中的阈值、去重键、证据截断等规则是业务规则，改动会影响数据质量与审核成本。
+ * 章节解析流水线主服务（编排层）：
+ * - 组织各阶段调用（helpers/chunk-utils + stages/stage-calls）；
+ * - 管理闭包状态（personaResolver, grayZoneMentionStore）；
+ * - 纯工具函数已提取到 helpers/chunk-utils.ts，AI 阶段调用已提取到 stages/stage-calls.ts。
  */
-// 同时解析的分段数，避免触发 API 频控，同时控制单章处理时长。
-const AI_CONCURRENCY = ANALYSIS_PIPELINE_CONFIG.chunkAiConcurrency;
-// relationship evidence 仅保留前 5 条，避免异常长证据链污染最终结构化结果。
-const RELATIONSHIP_EVIDENCE_LIMIT = 5;
-const GENERIC_IRONY_PATTERNS: readonly RegExp[] = [
-  /批判(了|的是)?社会/,
-  /揭露(了|的是)?(社会|官场|制度)/,
-  /反映(了|的是)?现实/,
-  /封建(礼教|社会)/,
-  /辛辣?讽刺/,
-  /社会(现实)?(黑暗|腐败)/
-];
 
-/**
- * 功能：定义章节分析完成后的统计结果结构。
- * 输入：无。
- * 输出：类型约束 ChapterAnalysisResult。
- * 异常：无。
- * 副作用：无。
- */
 export interface ChapterAnalysisResult {
-  /** 本次完成解析的章节 ID。 */
   chapterId         : string;
-  /** 章节被拆分成的 AI 分段数量。 */
   chunkCount        : number;
-  /** 被判定为幻觉并过滤的实体数量。 */
   hallucinationCount: number;
-  /** 本章实际新增数据计数（写库后统计）。 */
   created: {
-    /** 新建 persona 数量。 */
     personas     : number;
-    /** 新建 mention 数量。 */
     mentions     : number;
-    /** 新建 biography 数量。 */
     biographies  : number;
-    /** 新建 relationship 数量。 */
     relationships: number;
   };
-  /** 灰区称谓数量（仅启用灰区判定时返回）。 */
   grayZoneCount?: number;
 }
 
 export interface GrayZoneMentionRecord {
-  /** 灰区称谓原文。 */
   surfaceForm: string;
-  /** 灰区判定证据（出现章节数、绑定稳定性、泛化比率等）。 */
   evidence   : MentionPersonalizationEvidence;
 }
 
-/**
- * mention 去重键约定：
- * - paraIndex 存在时优先使用 personaName + rawText + paraIndex，避免跨段误去重；
- * - paraIndex 缺失时降级到 personaName + rawText，兼容历史输出。
- * - 该函数只负责“键生成”，不承担标准化写回；这样便于在测试中单独验证去重语义。
- */
-function buildMentionDedupKey(mention: ChapterAnalysisResponse["mentions"][number]): string {
-  const baseKey = `${mention.personaName}||${mention.rawText}`;
-  return typeof mention.paraIndex === "number"
-    ? `${baseKey}||${mention.paraIndex}`
-    : baseKey;
-}
-
-/**
- * 统一合并 Phase 1 人物名册结果：
- * - 优先按 suggestedRealName + aliasType 聚合（对应文档中的 normalizedName + titleType）；
- * - 若缺失 suggestedRealName，则退化到 surfaceForm + aliasType。
- */
-export function mergeRosterEntriesForAnalysis(entries: EnhancedChapterRosterEntry[]): EnhancedChapterRosterEntry[] {
-  const rosterMap = new Map<string, EnhancedChapterRosterEntry>();
-
-  for (const entry of entries) {
-    const surfaceForm = entry.surfaceForm.trim();
-    if (!surfaceForm) continue;
-
-    const normalizedName = entry.suggestedRealName?.trim().toLowerCase();
-    const typeKey = entry.aliasType ?? "_";
-    const dedupBase = normalizedName && normalizedName.length > 0
-      ? normalizedName
-      : surfaceForm.toLowerCase();
-    const dedupKey = `${dedupBase}||${typeKey}`;
-
-    const normalized: EnhancedChapterRosterEntry = {
-      ...entry,
-      surfaceForm
-    };
-    const existing = rosterMap.get(dedupKey);
-    if (!existing) {
-      rosterMap.set(dedupKey, normalized);
-      continue;
-    }
-
-    // 合并策略：保留“更完整且更可信”的字段，避免后写入的弱信息覆盖强信息。
-    rosterMap.set(dedupKey, {
-      ...existing,
-      ...normalized,
-      surfaceForm,
-      entityId         : existing.entityId ?? normalized.entityId,
-      isNew            : existing.isNew || normalized.isNew,
-      generic          : existing.generic && normalized.generic,
-      isTitleOnly      : existing.isTitleOnly || normalized.isTitleOnly,
-      suggestedRealName: existing.suggestedRealName ?? normalized.suggestedRealName,
-      aliasType        : existing.aliasType ?? normalized.aliasType,
-      aliasConfidence  : Math.max(existing.aliasConfidence ?? 0, normalized.aliasConfidence ?? 0),
-      contextHint      : existing.contextHint ?? normalized.contextHint
-    });
-  }
-
-  return Array.from(rosterMap.values());
-}
-
-/**
- * 分段结果聚合：
- * - mention：按 paraIndex 感知去重，减少跨段误折叠；
- * - relationship：同键关系保留最大权重，并聚合证据；
- * - evidence 聚合后截断到 5 条，防止异常长链污染结果与日志。
- */
-export function mergeChunkResultsForAnalysis(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse {
-  const mentionMap = new Map<string, ChapterAnalysisResponse["mentions"][number]>();
-  const biographyMap = new Map<string, ChapterAnalysisResponse["biographies"][number]>();
-  const relationshipMap = new Map<string, ChapterAnalysisResponse["relationships"][number]>();
-
-  for (const result of results) {
-    for (const mention of result.mentions) {
-      const key = buildMentionDedupKey(mention);
-      if (!mentionMap.has(key)) {
-        mentionMap.set(key, mention);
-      }
-    }
-
-    for (const biography of result.biographies) {
-      const key = `${biography.personaName}||${biography.event}`;
-      if (!biographyMap.has(key)) {
-        biographyMap.set(key, biography);
-      }
-    }
-
-    for (const relationship of result.relationships) {
-      const key = `${relationship.sourceName}||${relationship.targetName}||${relationship.type}`;
-      const existing = relationshipMap.get(key);
-      if (!existing) {
-        relationshipMap.set(key, { ...relationship });
-        continue;
-      }
-
-      // 证据字段可能已经是“；”拼接串，这里按分号拆分去重并限制上限。
-      const evidences = new Set<string>();
-      for (const evidenceChunk of [existing.evidence, relationship.evidence]) {
-        if (!evidenceChunk) {
-          continue;
-        }
-        for (const item of evidenceChunk.split("；")) {
-          const trimmed = item.trim();
-          if (trimmed) {
-            evidences.add(trimmed);
-          }
-          if (evidences.size >= RELATIONSHIP_EVIDENCE_LIMIT) {
-            break;
-          }
-        }
-        if (evidences.size >= RELATIONSHIP_EVIDENCE_LIMIT) {
-          break;
-        }
-      }
-
-      relationshipMap.set(key, {
-        ...existing,
-        // 权重采用最大值，避免高置信边被后续低置信片段“冲淡”。
-        weight     : Math.max(existing.weight ?? 0, relationship.weight ?? 0) || undefined,
-        description: existing.description ?? relationship.description,
-        evidence   : Array.from(evidences).filter(Boolean).slice(0, RELATIONSHIP_EVIDENCE_LIMIT).join("；") || undefined
-      });
-    }
-  }
-
-  return {
-    biographies  : Array.from(biographyMap.values()),
-    mentions     : Array.from(mentionMap.values()),
-    relationships: Array.from(relationshipMap.values())
-  };
-}
-
-/**
- * 功能：按段落边界切分章节内容，控制单次模型输入长度，支持相邻分片重叠以缓解边界断裂。
- * 输入：content - 章节原文；size - 单块最大长度；overlap - 相邻块重叠字符数（默认配置值）。
- * 输出：分段文本数组。
- * 异常：无。
- * 副作用：无。
- */
-function splitContentIntoChunks(
-  text: string,
-  size: number,
-  overlap: number = ANALYSIS_PIPELINE_CONFIG.chunkOverlap
-): string[] {
-  const paras = text.split(/\n+/).filter(p => p.trim());
-  const rawChunks: string[] = [];
-  let current = "";
-  for (const p of paras) {
-    if (p.length > size) {
-      if (current) {
-        rawChunks.push(current);
-        current = "";
-      }
-      for (let start = 0; start < p.length; start += size) {
-        rawChunks.push(p.slice(start, start + size));
-      }
-      continue;
-    }
-
-    if ((current + p).length > size && current) {
-      rawChunks.push(current);
-      current = p;
-    } else {
-      current += (current ? "\n\n" : "") + p;
-    }
-  }
-  if (current) rawChunks.push(current);
-
-  // 只有一个 chunk 时无需重叠
-  if (rawChunks.length <= 1 || overlap <= 0) {
-    return rawChunks;
-  }
-
-  // 为第 2 个及以后的 chunk 添加前一个 chunk 尾部的 overlap 上下文
-  const chunks: string[] = [rawChunks[0]];
-  for (let i = 1; i < rawChunks.length; i++) {
-    const prev = rawChunks[i - 1];
-    const overlapText = prev.slice(-overlap);
-    chunks.push(overlapText + rawChunks[i]);
-  }
-  return chunks;
-}
-
-function normalizeCategory(val: BioCategoryValue): BioCategory {
-  const map: Record<string, BioCategory> = {
-    BIRTH : BioCategory.BIRTH,
-    EXAM  : BioCategory.EXAM,
-    CAREER: BioCategory.CAREER,
-    TRAVEL: BioCategory.TRAVEL,
-    SOCIAL: BioCategory.SOCIAL,
-    DEATH : BioCategory.DEATH
-  };
-  return map[val] ?? BioCategory.EVENT;
-}
-
-/**
- * ironyNote 常出现"泛化标签"与"剧情猜测"，这里做保守抽取：
- * 1) 限制长度，避免把整段解释写入数据库；
- * 2) 只保留当前章节可证据化的讽刺描述；
- * 3) 若内容过于空泛（如"很讽刺""批判社会"）则置空，避免污染 biography_records。
- */
-function sanitizeIronyNote(note?: string): string | undefined {
-  if (!note) return undefined;
-  const clean = note.replace(/\s+/g, " ").trim();
-  if (clean.length < 5) return undefined;
-
-  // 过滤过于空泛的“宏大叙事式”评语，减少噪声进入结构化数据。
-  if (GENERIC_IRONY_PATTERNS.some((pattern) => pattern.test(clean)) && clean.length <= 28) {
-    return undefined;
-  }
-
-  return clean.slice(0, 300);
-}
-
-/**
- * 统一清洗关系字段（description/evidence）：
- * - 去除多余空白；
- * - 过滤过短噪声；
- * - 限制长度避免把整段原文写入关系字段。
- */
-function sanitizeRelationshipField(value?: string): string | undefined {
-  if (!value) return undefined;
-  const clean = value.replace(/\s+/g, " ").trim();
-  return clean.length < 2 ? undefined : clean.slice(0, 400);
-}
+// 向后兼容：从 helpers/chunk-utils 重新导出，避免已有消费者修改导入路径。
+export { mergeRosterEntriesForAnalysis, mergeChunkResultsForAnalysis } from "@/server/modules/analysis/services/helpers/chunk-utils";
 
 /**
  * 功能：创建章节分析服务，执行章节分析主流程并写入结构化文学数据。
@@ -347,7 +85,7 @@ export function createChapterAnalysisService(
   prismaClient: PrismaClient = prisma,
   aliasRegistry?: AliasRegistryService,
   stageAiCallExecutor: AiCallExecutor = aiCallExecutor,
-  strategyResolver: ModelStrategyResolver = createModelStrategyResolver(prismaClient)
+  _strategyResolver: ModelStrategyResolver = createModelStrategyResolver(prismaClient)
 ) {
   const personaResolver = createPersonaResolver(prismaClient, aliasRegistry);
   const { mergePersonas } = createMergePersonasService(prismaClient);
@@ -376,187 +114,6 @@ export function createChapterAnalysisService(
     runtimeKnowledge?      : FullRuntimeKnowledge;
   }
 
-  function toGenerateOptions(model: ResolvedStageModel | ResolvedFallbackModel) {
-    return {
-      temperature    : model.params.temperature,
-      maxOutputTokens: model.params.maxOutputTokens,
-      topP           : model.params.topP,
-      ...(typeof model.params.enableThinking === "boolean"
-        ? { enableThinking: model.params.enableThinking }
-        : {}),
-      ...(model.params.reasoningEffort
-        ? { reasoningEffort: model.params.reasoningEffort }
-        : {})
-    };
-  }
-
-  async function discoverRosterByStage(input: {
-    chapterId   : string;
-    stageContext: { bookId: string; jobId: string };
-    rosterInput : RosterDiscoveryInput;
-    chunkIndex? : number;
-  }): Promise<EnhancedChapterRosterEntry[]> {
-    const prompt = await resolvePromptTemplate({
-      slug        : "ROSTER_DISCOVERY",
-      replacements: {
-        bookTitle    : input.rosterInput.bookTitle,
-        chapterNo    : String(input.rosterInput.chapterNo),
-        chapterTitle : input.rosterInput.chapterTitle,
-        knownEntities: input.rosterInput.profiles.map((profile, index) => {
-          const uniqueAliases = profile.aliases.filter((alias) => alias !== profile.canonicalName);
-          const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(",") : "无";
-          return `[${index + 1}] ${profile.canonicalName}|${aliasStr}`;
-        }).join("\n") || "（本书目前尚无已建档人物）",
-        rosterRules  : buildRosterDiscoveryRulesText(input.rosterInput),
-        content      : input.rosterInput.content,
-        genericTitles: input.rosterInput.genericTitlesExample ?? ""
-      }
-    });
-    const result = await stageAiCallExecutor.execute({
-      stage     : PipelineStage.ROSTER_DISCOVERY,
-      prompt,
-      jobId     : input.stageContext.jobId,
-      chapterId : input.chapterId,
-      chunkIndex: input.chunkIndex,
-      context   : input.stageContext,
-      callFn    : async ({ model }) => {
-        const providerClient = createAiProviderClient({
-          provider : model.provider,
-          apiKey   : model.apiKey,
-          baseUrl  : model.baseUrl,
-          modelName: model.modelName
-        });
-        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
-        return {
-          data : parseEnhancedChapterRosterResponse(aiResult.content),
-          usage: aiResult.usage
-        };
-      }
-    });
-
-    return result.data;
-  }
-
-  async function analyzeChunkByStage(input: {
-    chapterId   : string;
-    stageContext: { bookId: string; jobId: string };
-    chunkInput  : BuildPromptInput;
-    chunkIndex  : number;
-  }): Promise<ChapterAnalysisResponse> {
-    const prompt = await resolvePromptTemplate({
-      slug        : "CHAPTER_ANALYSIS",
-      replacements: {
-        bookTitle    : input.chunkInput.bookTitle,
-        chapterNo    : String(input.chunkInput.chapterNo),
-        chapterTitle : input.chunkInput.chapterTitle,
-        content      : input.chunkInput.content,
-        chunkIndex   : String(input.chunkInput.chunkIndex + 1),
-        chunkCount   : String(input.chunkInput.chunkCount),
-        genericTitles: input.chunkInput.genericTitlesExample ?? "",
-        analysisRules: buildChapterAnalysisRulesText(input.chunkInput),
-        knownEntities: input.chunkInput.profiles.map((profile, index) => {
-          const uniqueAliases = profile.aliases.filter((alias) => alias !== profile.canonicalName);
-          const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(",") : "无";
-          return `[${index + 1}] ${profile.canonicalName}|${aliasStr}`;
-        }).join("\n") || "（本书目前尚无已建档人物）"
-      }
-    });
-    const result = await stageAiCallExecutor.execute({
-      stage     : PipelineStage.CHUNK_EXTRACTION,
-      prompt,
-      jobId     : input.stageContext.jobId,
-      chapterId : input.chapterId,
-      chunkIndex: input.chunkIndex,
-      context   : input.stageContext,
-      callFn    : async ({ model }) => {
-        const providerClient = createAiProviderClient({
-          provider : model.provider,
-          apiKey   : model.apiKey,
-          baseUrl  : model.baseUrl,
-          modelName: model.modelName
-        });
-        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
-        return {
-          data : parseChapterAnalysisResponse(aiResult.content),
-          usage: aiResult.usage
-        };
-      }
-    });
-
-    return result.data;
-  }
-
-  async function resolveTitlesByStage(input: {
-    stageContext: { bookId: string; jobId: string };
-    titleInput  : TitleResolutionInput;
-  }) {
-    const prompt = await resolvePromptTemplate({
-      slug        : "TITLE_RESOLUTION",
-      replacements: {
-        bookTitle   : input.titleInput.bookTitle,
-        titleEntries: input.titleInput.entries.map((entry) => `| ${entry.title} | ${entry.localSummary ?? ""} |`).join("\n")
-      }
-    });
-    const result = await stageAiCallExecutor.execute({
-      stage  : PipelineStage.TITLE_RESOLUTION,
-      prompt,
-      jobId  : input.stageContext.jobId,
-      context: input.stageContext,
-      callFn : async ({ model }) => {
-        const providerClient = createAiProviderClient({
-          provider : model.provider,
-          apiKey   : model.apiKey,
-          baseUrl  : model.baseUrl,
-          modelName: model.modelName
-        });
-        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
-        const personaIdByTitle = new Map(input.titleInput.entries.map((e) => [e.title, e.personaId]));
-        return {
-          data : parseTitleResolutionResponse(aiResult.content, personaIdByTitle),
-          usage: aiResult.usage
-        };
-      }
-    });
-
-    return result.data;
-  }
-
-  async function arbitrateGrayZoneByStage(input: {
-    stageContext    : { bookId: string; jobId: string };
-    arbitrationInput: TitleArbitrationInput;
-  }) {
-    const prompt = await resolvePromptTemplate({
-      slug        : "TITLE_ARBITRATION",
-      replacements: {
-        bookTitle: input.arbitrationInput.bookTitle,
-        terms    : input.arbitrationInput.terms.map((item) =>
-          `- "${item.surfaceForm}" (chapterAppearanceCount=${item.chapterAppearanceCount}, hasStableAliasBinding=${item.hasStableAliasBinding}, singlePersonaConsistency=${item.singlePersonaConsistency}, genericRatio=${item.genericRatio.toFixed(2)})`
-        ).join("\n")
-      }
-    });
-    const result = await stageAiCallExecutor.execute({
-      stage  : PipelineStage.GRAY_ZONE_ARBITRATION,
-      prompt,
-      jobId  : input.stageContext.jobId,
-      context: input.stageContext,
-      callFn : async ({ model }) => {
-        const providerClient = createAiProviderClient({
-          provider : model.provider,
-          apiKey   : model.apiKey,
-          baseUrl  : model.baseUrl,
-          modelName: model.modelName
-        });
-        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
-        return {
-          data : parseTitleArbitrationResponse(aiResult.content),
-          usage: aiResult.usage
-        };
-      }
-    });
-
-    return result.data;
-  }
-
   /**
    * Phase 1 长章节保护：超过阈值时按更大的切片执行名册发现，再按称谓去重合并。
    */
@@ -574,7 +131,7 @@ export function createChapterAnalysisService(
           ...input.rosterInput,
           content: input.chapterContent
         }
-      });
+      }, stageAiCallExecutor);
     }
 
     const rosterChunks = splitContentIntoChunks(
@@ -592,7 +149,7 @@ export function createChapterAnalysisService(
           ...input.rosterInput,
           content: rosterChunks[index] ?? ""
         }
-      });
+      }, stageAiCallExecutor);
       allEntries.push(...chunkRoster);
     }
 
@@ -772,7 +329,7 @@ export function createChapterAnalysisService(
           entityExtractionRules      : bookLexiconConfig.entityExtractionRules,
           relationshipExtractionRules: bookLexiconConfig.relationshipExtractionRules
         }
-      }));
+      }, stageAiCallExecutor));
       const results = await Promise.all(batchPromises);
       aiResults.push(...results);
     }
@@ -1083,7 +640,7 @@ export function createChapterAnalysisService(
         bookTitle: book.title,
         entries
       }
-    });
+    }, stageAiCallExecutor);
 
     // 3. 按置信度分流处理。
     //    mergePersonas 内部自带 $transaction，单条 update + registerAlias 用独立事务保护一致性。
@@ -1219,7 +776,7 @@ export function createChapterAnalysisService(
         bookTitle: book.title,
         terms
       }
-    });
+    }, stageAiCallExecutor);
     let written = 0;
     for (const row of results) {
       const evidence = grayZones.find((item) => item.surfaceForm === row.surfaceForm)?.evidence;
@@ -1243,12 +800,8 @@ export function createChapterAnalysisService(
     return written;
   }
 
-  /**
+    /**
    * Pass 1 独立章节实体提取：不注入任何已有 profiles，LLM 纯粹从原文提取人物。
-   * 输入：chapterId - 章节主键。
-   * 输出：ChapterEntityList（本章人物列表）。
-   * 异常：章节不存在、AI 调用失败时抛错。
-   * 副作用：无（不写库）。
    */
   async function extractChapterEntities(
     chapterId: string,
@@ -1270,37 +823,14 @@ export function createChapterAnalysisService(
         ? Array.from(buildEffectiveGenericTitles(executionContext.preloadedLexiconConfig)).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等"
         : undefined
     };
-    const prompt = await resolvePromptTemplate({
-      slug        : "INDEPENDENT_EXTRACTION",
-      replacements: {
-        bookTitle       : extractionInput.bookTitle,
-        chapterNo       : String(extractionInput.chapterNo),
-        chapterTitle    : extractionInput.chapterTitle,
-        independentRules: buildIndependentExtractionRulesText(extractionInput),
-        content         : extractionInput.content
-      }
-    });
 
     const stageContext = { bookId: chapter.bookId, jobId: executionContext.jobId };
 
-    const result = await stageAiCallExecutor.execute({
-      stage  : PipelineStage.INDEPENDENT_EXTRACTION,
-      prompt,
-      jobId  : stageContext.jobId,
+    const result = await extractChapterEntitiesByStage({
       chapterId,
-      context: stageContext,
-      callFn : async ({ model }) => {
-        const providerClient = createAiProviderClient({
-          provider : model.provider,
-          apiKey   : model.apiKey,
-          baseUrl  : model.baseUrl,
-          modelName: model.modelName
-        });
-        const aiResult = await providerClient.generateJson(prompt, toGenerateOptions(model));
-        const entities = parseIndependentExtractionResponse(aiResult.content);
-        return { data: entities, usage: aiResult.usage };
-      }
-    });
+      stageContext,
+      extractionInput
+    }, stageAiCallExecutor);
 
     log("analysis.independent_extraction", {
       chapterId,
@@ -1314,63 +844,6 @@ export function createChapterAnalysisService(
 }
 
 export const chapterAnalysisService = createChapterAnalysisService(prisma, aliasRegistryService);
-
-/**
- * 功能：将人物档案列表转为短整型 ID 映射（shortId → personaId UUID）。
- * 生成的 shortId 与 buildEntityContextLines 中的 [N] 序号完全对应（1-indexed）。
- * 输入：profiles - 按稳定顺序传入的人物档案列表。
- * 输出：Map<shortId, personaId>，用于将 Phase 1 AI 输出的 entityId 翻译回 UUID。
- * 异常：无。
- * 副作用：无。
- */
-function buildEntityIdMap(profiles: AnalysisProfileContext[]): Map<number, string> {
-  const map = new Map<number, string>();
-  profiles.forEach((p, idx) => {
-    map.set(idx + 1, p.personaId);
-  });
-  return map;
-}
-
-function normalizeLookupKey(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function buildProfileLookupMap(
-  profiles: AnalysisProfileContext[]
-): Map<string, { personaId: string; canonicalName: string }> {
-  const lookup = new Map<string, { personaId: string; canonicalName: string }>();
-  for (const profile of profiles) {
-    const names = [profile.canonicalName, ...profile.aliases];
-    for (const name of names) {
-      const key = normalizeLookupKey(name);
-      if (!key || lookup.has(key)) {
-        continue;
-      }
-
-      lookup.set(key, {
-        personaId    : profile.personaId,
-        canonicalName: profile.canonicalName
-      });
-    }
-  }
-
-  return lookup;
-}
-
-function collectGenericRatiosFromRoster(
-  roster: Array<{ surfaceForm: string; generic?: boolean }>
-): Map<string, { generic: number; nonGeneric: number }> {
-  const map = new Map<string, { generic: number; nonGeneric: number }>();
-  for (const item of roster) {
-    const key = item.surfaceForm.trim();
-    if (!key) continue;
-    const current = map.get(key) ?? { generic: 0, nonGeneric: 0 };
-    if (item.generic) current.generic += 1;
-    else current.nonGeneric += 1;
-    map.set(key, current);
-  }
-  return map;
-}
 
 /**
  * 仅供单元测试使用：暴露纯帮助函数，便于覆盖边界分支。
