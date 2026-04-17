@@ -1,0 +1,60 @@
+{
+  "description": "Simulated Stage A LLM raw output for MYTHOLOGICAL_NOVEL fixture (丁士变化为戊某 / 法号无尘).",
+  "rawMentions": [
+    {
+      "id"                 : "m1-戊某-dialogue-speaker-impersonator",
+      "surfaceForm"        : "戊某",
+      "aliasType"          : "IMPERSONATED_IDENTITY",
+      "identityClaim"      : "IMPERSONATING",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": "丁士",
+      "evidenceRawSpan"    : "戊某答道",
+      "actionVerb"         : "答道",
+      "confidence"         : 0.9
+    },
+    {
+      "id"                 : "m2-丁士-commentary",
+      "surfaceForm"        : "丁士",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "丁士修炼多年",
+      "actionVerb"         : "修炼",
+      "confidence"         : 0.88
+    },
+    {
+      "id"                 : "m3-丁士-narrative",
+      "surfaceForm"        : "丁士",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "丁士欲往人间游历",
+      "actionVerb"         : "游历",
+      "confidence"         : 0.93
+    },
+    {
+      "id"                 : "m4-无尘-quoted-dharma-name",
+      "surfaceForm"        : "无尘",
+      "aliasType"          : "NICKNAME",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": "丁士",
+      "evidenceRawSpan"    : "“无尘”",
+      "actionVerb"         : null,
+      "confidence"         : 0.6
+    },
+    {
+      "id"                 : "m5-戊某-impersonating-narrative",
+      "surfaceForm"        : "戊某",
+      "aliasType"          : "IMPERSONATED_IDENTITY",
+      "identityClaim"      : "IMPERSONATING",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": "丁士",
+      "evidenceRawSpan"    : "戊某微微一笑",
+      "actionVerb"         : "一笑",
+      "confidence"         : 0.85
+    }
+  ]
+}

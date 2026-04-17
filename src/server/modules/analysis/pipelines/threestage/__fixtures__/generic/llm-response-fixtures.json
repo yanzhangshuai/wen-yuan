@@ -1,0 +1,49 @@
+{
+  "description": "Simulated Stage A LLM raw output for GENERIC fixture (某甲与某乙对谈 / 基础叙述+对话).",
+  "rawMentions": [
+    {
+      "id"                 : "g1-某甲-dialogue-speaker",
+      "surfaceForm"        : "某甲",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "某甲道：",
+      "actionVerb"         : "道",
+      "confidence"         : 0.95
+    },
+    {
+      "id"                 : "g2-某乙-dialogue-speaker",
+      "surfaceForm"        : "某乙",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "某乙答道",
+      "actionVerb"         : "答道",
+      "confidence"         : 0.95
+    },
+    {
+      "id"                 : "g3-某甲-narrative",
+      "surfaceForm"        : "某甲",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "某甲外出经商",
+      "actionVerb"         : "经商",
+      "confidence"         : 0.9
+    },
+    {
+      "id"                 : "g4-某乙-narrative",
+      "surfaceForm"        : "某乙",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "某乙默然良久",
+      "actionVerb"         : "默然",
+      "confidence"         : 0.9
+    }
+  ]
+}

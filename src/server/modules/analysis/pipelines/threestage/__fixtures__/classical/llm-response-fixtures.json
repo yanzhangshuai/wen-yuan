@@ -1,0 +1,60 @@
+{
+  "description": "Simulated Stage A LLM raw output for CLASSICAL_NOVEL fixture. Each entry mimics one StageARawMention the LLM might return before enforceRegionOverride runs.",
+  "rawMentions": [
+    {
+      "id"                 : "c1-甲某-dialogue-speaker",
+      "surfaceForm"        : "甲某",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "甲某笑道：",
+      "actionVerb"         : "笑道",
+      "confidence"         : 0.9
+    },
+    {
+      "id"                 : "c2-乙公-quoted-identity",
+      "surfaceForm"        : "乙公",
+      "aliasType"          : "IMPERSONATED_IDENTITY",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": "甲某",
+      "evidenceRawSpan"    : "“乙公”",
+      "actionVerb"         : null,
+      "confidence"         : 0.7
+    },
+    {
+      "id"                 : "c3-乙公-commentary",
+      "surfaceForm"        : "乙公",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "原来乙公昔日文名甚盛",
+      "actionVerb"         : null,
+      "confidence"         : 0.8
+    },
+    {
+      "id"                 : "c4-甲某-narrative",
+      "surfaceForm"        : "甲某",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "甲某一时语塞",
+      "actionVerb"         : "语塞",
+      "confidence"         : 0.95
+    },
+    {
+      "id"                 : "c5-甲某-impersonating-in-commentary",
+      "surfaceForm"        : "甲某",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "IMPERSONATING",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": "乙公",
+      "evidenceRawSpan"    : "甲某守孝三日",
+      "actionVerb"         : "守孝",
+      "confidence"         : 0.85
+    }
+  ]
+}

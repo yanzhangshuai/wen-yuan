@@ -1,0 +1,48 @@
+{
+  "description": "Expected Stage A rule-layer outcomes for MYTHOLOGICAL_NOVEL fixture.",
+  "cases": [
+    {
+      "id"                   : "m1-戊某-dialogue-speaker-impersonator",
+      "identityClaim"        : "IMPERSONATING",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_SELF_PRESERVED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "m2-丁士-commentary",
+      "identityClaim"        : "REPORTED",
+      "narrativeRegionType"  : "COMMENTARY",
+      "regionOverrideApplied": "COMMENTARY_FORCE_REPORTED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "m3-丁士-narrative",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "m4-无尘-quoted-dharma-name",
+      "identityClaim"        : "QUOTED",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_QUOTED_THIRD_PARTY",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "m5-戊某-impersonating-narrative",
+      "identityClaim"        : "IMPERSONATING",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    }
+  ],
+  "distribution": {
+    "SELF"         : 1,
+    "QUOTED"       : 1,
+    "REPORTED"     : 1,
+    "HISTORICAL"   : 0,
+    "IMPERSONATING": 2,
+    "UNSURE"       : 0
+  }
+}

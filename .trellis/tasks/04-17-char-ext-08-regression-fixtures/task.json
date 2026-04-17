@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-08-regression-fixtures",
+  "name": "char-ext-08-regression-fixtures",
+  "title": "feat: 儒林外史冒名场景回归 fixture",
+  "description": "新建 __fixtures__/liurun 测试集+断言：牛浦/牛布衣分裂+冒名 alias_mapping；张铁臂/张俊民同人；严监生/严贡生独立；娄府四人独立；匡超人单 persona。用于 StageA+B+C 联调回归。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

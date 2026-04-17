@@ -1,0 +1,41 @@
+{
+  "description": "Expected Stage A rule-layer outcomes for HEROIC_NOVEL fixture.",
+  "cases": [
+    {
+      "id"                   : "h1-丙某-dialogue-speaker",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_SELF_PRESERVED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "h2-黑风-quoted-nickname",
+      "identityClaim"        : "QUOTED",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_QUOTED_THIRD_PARTY",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "h3-丙某-narrative",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "h4-丙某-commentary",
+      "identityClaim"        : "REPORTED",
+      "narrativeRegionType"  : "COMMENTARY",
+      "regionOverrideApplied": "COMMENTARY_FORCE_REPORTED",
+      "spanResolved"         : true
+    }
+  ],
+  "distribution": {
+    "SELF"         : 2,
+    "QUOTED"       : 1,
+    "REPORTED"     : 1,
+    "HISTORICAL"   : 0,
+    "IMPERSONATING": 0,
+    "UNSURE"       : 0
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "description": "Expected Stage A rule-layer outcomes after enforceRegionOverride runs over the fixtures in llm-response-fixtures.json. Indexed by rawMentions[].id.",
+  "cases": [
+    {
+      "id"                   : "c1-甲某-dialogue-speaker",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_SELF_PRESERVED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "c2-乙公-quoted-identity",
+      "identityClaim"        : "QUOTED",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_QUOTED_THIRD_PARTY",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "c3-乙公-commentary",
+      "identityClaim"        : "REPORTED",
+      "narrativeRegionType"  : "COMMENTARY",
+      "regionOverrideApplied": "COMMENTARY_FORCE_REPORTED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "c4-甲某-narrative",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "c5-甲某-impersonating-in-commentary",
+      "identityClaim"        : "REPORTED",
+      "narrativeRegionType"  : "COMMENTARY",
+      "regionOverrideApplied": "COMMENTARY_FORCE_REPORTED",
+      "spanResolved"         : true
+    }
+  ],
+  "distribution": {
+    "SELF"         : 2,
+    "QUOTED"       : 1,
+    "REPORTED"     : 2,
+    "HISTORICAL"   : 0,
+    "IMPERSONATING": 0,
+    "UNSURE"       : 0
+  }
+}

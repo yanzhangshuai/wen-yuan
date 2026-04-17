@@ -1,0 +1,60 @@
+{
+  "description": "Simulated Stage A LLM raw output for HISTORICAL_NOVEL fixture (戊公巡察 / POEM 引用古人 / 纪年叙述).",
+  "rawMentions": [
+    {
+      "id"                 : "hist1-戊公-narrative",
+      "surfaceForm"        : "戊公",
+      "aliasType"          : "TITLE",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "戊公至一郡城",
+      "actionVerb"         : "至",
+      "confidence"         : 0.9
+    },
+    {
+      "id"                 : "hist2-某戊-commentary",
+      "surfaceForm"        : "某戊",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "贤人某戊治郡",
+      "actionVerb"         : "治郡",
+      "confidence"         : 0.85
+    },
+    {
+      "id"                 : "hist3-贤人-poem",
+      "surfaceForm"        : "贤人",
+      "aliasType"          : "TITLE",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": "某戊",
+      "evidenceRawSpan"    : "贤人今不在",
+      "actionVerb"         : null,
+      "confidence"         : 0.5
+    },
+    {
+      "id"                 : "hist4-有一丁公-dialogue-speaker",
+      "surfaceForm"        : "有一丁公",
+      "aliasType"          : "TITLE",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "有一丁公答道",
+      "actionVerb"         : "答道",
+      "confidence"         : 0.88
+    },
+    {
+      "id"                 : "hist5-戊公-commentary",
+      "surfaceForm"        : "戊公",
+      "aliasType"          : "TITLE",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "且说戊公连日奔劳",
+      "actionVerb"         : "奔劳",
+      "confidence"         : 0.92
+    }
+  ]
+}

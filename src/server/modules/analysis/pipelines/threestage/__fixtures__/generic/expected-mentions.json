@@ -1,0 +1,41 @@
+{
+  "description": "Expected Stage A rule-layer outcomes for GENERIC fixture.",
+  "cases": [
+    {
+      "id"                   : "g1-某甲-dialogue-speaker",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_SELF_PRESERVED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "g2-某乙-dialogue-speaker",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_SELF_PRESERVED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "g3-某甲-narrative",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "g4-某乙-narrative",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    }
+  ],
+  "distribution": {
+    "SELF"         : 4,
+    "QUOTED"       : 0,
+    "REPORTED"     : 0,
+    "HISTORICAL"   : 0,
+    "IMPERSONATING": 0,
+    "UNSURE"       : 0
+  }
+}

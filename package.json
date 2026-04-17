@@ -16,7 +16,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "check:prompt-whitelist": "ts-node scripts/validate-prompt-whitelist.ts",
-    "check:fewshot-whitelist": "ts-node scripts/validate-fewshot-whitelist.ts"
+    "check:fewshot-whitelist": "ts-node scripts/validate-fewshot-whitelist.ts",
+    "check:fixture-whitelist": "ts-node scripts/validate-fixture-whitelist.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

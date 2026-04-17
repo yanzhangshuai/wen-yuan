@@ -1,0 +1,48 @@
+{
+  "description": "Expected Stage A rule-layer outcomes for HISTORICAL_NOVEL fixture.",
+  "cases": [
+    {
+      "id"                   : "hist1-戊公-narrative",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "NARRATIVE",
+      "regionOverrideApplied": null,
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "hist2-某戊-commentary",
+      "identityClaim"        : "REPORTED",
+      "narrativeRegionType"  : "COMMENTARY",
+      "regionOverrideApplied": "COMMENTARY_FORCE_REPORTED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "hist3-贤人-poem",
+      "identityClaim"        : "HISTORICAL",
+      "narrativeRegionType"  : "POEM",
+      "regionOverrideApplied": "POEM_FORCE_HISTORICAL",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "hist4-有一丁公-dialogue-speaker",
+      "identityClaim"        : "SELF",
+      "narrativeRegionType"  : "DIALOGUE",
+      "regionOverrideApplied": "DIALOGUE_SELF_PRESERVED",
+      "spanResolved"         : true
+    },
+    {
+      "id"                   : "hist5-戊公-commentary",
+      "identityClaim"        : "REPORTED",
+      "narrativeRegionType"  : "COMMENTARY",
+      "regionOverrideApplied": "COMMENTARY_FORCE_REPORTED",
+      "spanResolved"         : true
+    }
+  ],
+  "distribution": {
+    "SELF"         : 2,
+    "QUOTED"       : 0,
+    "REPORTED"     : 2,
+    "HISTORICAL"   : 1,
+    "IMPERSONATING": 0,
+    "UNSURE"       : 0
+  }
+}

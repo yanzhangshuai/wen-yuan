@@ -1,0 +1,17 @@
+{
+  "chapterLength": 339,
+  "coverage": {
+    "narrative": 0.551622418879056,
+    "poem": 0,
+    "dialogue": 0.44837758112094395,
+    "commentary": 0,
+    "unclassified": 0
+  },
+  "confidence": "HIGH",
+  "regionCount": 13,
+  "regionTypeCounts": {
+    "NARRATIVE": 6,
+    "DIALOGUE": 7
+  },
+  "deathMarkerCandidates": 1
+}

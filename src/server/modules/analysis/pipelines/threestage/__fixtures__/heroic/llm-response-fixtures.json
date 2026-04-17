@@ -1,0 +1,49 @@
+{
+  "description": "Simulated Stage A LLM raw output for HEROIC_NOVEL fixture (丙某 / 绰号黑风 / 同绰号强人).",
+  "rawMentions": [
+    {
+      "id"                 : "h1-丙某-dialogue-speaker",
+      "surfaceForm"        : "丙某",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "丙某答道",
+      "actionVerb"         : "答道",
+      "confidence"         : 0.92
+    },
+    {
+      "id"                 : "h2-黑风-quoted-nickname",
+      "surfaceForm"        : "黑风",
+      "aliasType"          : "NICKNAME",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "DIALOGUE",
+      "suspectedResolvesTo": "丙某",
+      "evidenceRawSpan"    : "“黑风”",
+      "actionVerb"         : null,
+      "confidence"         : 0.65
+    },
+    {
+      "id"                 : "h3-丙某-narrative",
+      "surfaceForm"        : "丙某",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "丙某行至山道",
+      "actionVerb"         : "行至",
+      "confidence"         : 0.9
+    },
+    {
+      "id"                 : "h4-丙某-commentary",
+      "surfaceForm"        : "丙某",
+      "aliasType"          : "NAMED",
+      "identityClaim"      : "SELF",
+      "narrativeRegionType": "NARRATIVE",
+      "suspectedResolvesTo": null,
+      "evidenceRawSpan"    : "不敢再冒丙某的名号",
+      "actionVerb"         : null,
+      "confidence"         : 0.8
+    }
+  ]
+}
