@@ -27,9 +27,6 @@ import * as RechartsPrimitive from "recharts";
 
 import { cn } from "@/lib/utils";
 
-// Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: "", dark: ".dark" } as const;
-
 export type ChartConfig = {
   /**
    * key：序列标识（通常与 dataKey 对齐）。
@@ -40,13 +37,9 @@ export type ChartConfig = {
     label?: React.ReactNode
     /** 可选图标组件，用于图例与 tooltip 前缀。 */
     icon? : React.ComponentType
-  } & (
-    // 两种互斥配置：
-    // 1) 直接给固定 color；
-    // 2) 按 light/dark 主题分别给色值。
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  )
+    /** 序列颜色应优先传入 CSS 变量，保持图表跟随 data-theme token。 */
+    color?: string
+  }
 };
 
 type ChartContextProps = {
@@ -104,9 +97,7 @@ function ChartContainer({
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   // 仅提取声明了颜色策略的序列，避免生成无意义 CSS 变量。
-  const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme || config.color
-  );
+  const colorConfig = Object.entries(config).filter(([, config]) => config.color);
 
   if (!colorConfig.length) {
     return null;
@@ -116,22 +107,16 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     <style
       // 通过 CSS 变量给每个图表实例注入序列色值，避免业务组件硬编码颜色。
       dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+        __html: `
+[data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color;
+    const color = itemConfig.color;
     return color ? `  --color-${key}: ${color};` : null;
   })
   .join("\n")}
 }
 `
-          )
-          .join("\n")
       }}
     />
   );

@@ -229,7 +229,7 @@ export function GraphView({
   bookAuthor,
   personaCount
 }: GraphViewProps) {
-  // 来自 next-themes：resolvedTheme 可能是 "light" | "dark" | undefined（首次水合前）
+  // 来自 next-themes：resolvedTheme 在挂载后对应当前自定义主题 ID，首次水合前可能为空。
   // 这里不自行兜底，让 ForceGraph 内部基于 CSS 变量稳定渲染。
   const { resolvedTheme } = useTheme();
   const router = useRouter();

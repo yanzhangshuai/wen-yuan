@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /* =========================================
    Font face declarations
    Noto Serif SC — CJK variable font, 100+ unicode-range slices

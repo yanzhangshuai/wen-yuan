@@ -220,7 +220,7 @@ rg -n 'useHydratedTheme\\(' src --glob '!**/*.d.ts'
 
 原因：
 - 避免“同一能力多入口”导致样式、主题映射和 hydration 语义漂移。
-- 封装层统一将业务主题（`danqing/suya/diancang/xingkong`）映射到 Sonner 支持的 `light/dark`。
+- 封装层统一将业务主题（`danqing/suya/diancang/xingkong`）映射到 Sonner 支持的 `"light"` / `"dark"` 枚举；这里的值只服务第三方组件 API，不代表项目允许重新引入 `.dark` 类或 `dark:` 变体。
 
 允许：
 - 业务页面继续直接 `import { toast } from "sonner"` 触发消息。

@@ -1,0 +1,33 @@
+{
+  "id": "remove-dark-theme-legacy",
+  "name": "remove-dark-theme-legacy",
+  "title": "remove .dark theme legacy",
+  "description": "",
+  "status": "completed",
+  "dev_type": "frontend",
+  "scope": "src/app,src/components,src/theme",
+  "package": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-16",
+  "completedAt": "2026-04-17",
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/app/globals.css",
+    "src/components/ui",
+    "src/components/theme",
+    "src/components/graph/graph-view.tsx"
+  ],
+  "notes": "Removed .dark / dark: legacy from production source, added regression guard, and verified targeted test, source scan, changed-file ESLint, and type-check. Full pnpm lint remains blocked by pre-existing server-side issues under src/server/modules/analysis/services.",
+  "meta": {}
+}

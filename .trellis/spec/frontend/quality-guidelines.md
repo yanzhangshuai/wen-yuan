@@ -60,7 +60,7 @@
 3. 为新增/变更业务逻辑补齐单元测试（同目录 `*.test.ts(x)`），覆盖 success/failure/boundary 关键分支。
 4. 覆盖率硬性门禁：每次执行单元测试与 coverage 校验时，必须同时满足 Statements >= 90%、Branches >= 90%、Functions >= 90%、Lines >= 90%；任一未达标即任务未完成，不得交付（高风险模块建议 >= 95%）。
    业务组件必须纳入全局 coverage 门禁，禁止以“画布复杂”“测试夹具未完善”等理由把真实前端交互模块移出统计；排除项只能用于生成代码、测试文件、配置文件与无业务决策的基础设施层。
-5. 手工验证受影响 UI 在 light/dark 主题下都正常。
+5. 手工验证受影响 UI 在 `suya` 与 `xingkong` 代表主题下都正常；如改动主题 token，还需抽查其余主题。
 6. 至少验证 1 条成功路径与 1 条失败/边界路径。
 7. 对涉及 `Link` 与 `Button` 改动的页面，运行：
    `rg -n -U "<Link[^>]*>\\s*\\n\\s*<Button" src`
@@ -80,7 +80,7 @@
 - 客户端 hooks 是否只用于必要交互？
 - 每个 JSX 组件是否声明并使用 `<ComponentName>Props`？
 - 根 JSX 是否包含语义化 class 命名？
-- 涉及视觉样式时是否完整覆盖 dark/light？
+- 涉及视觉样式时是否完整覆盖项目主题 token，而不是只验证单一主题？
 - 交互控件是否满足可访问性（`aria-label`、button type）？
 - 是否存在 `Link > Button` / `button > a` 等交互元素嵌套导致的 hydration 风险？
 - 是否有浏览器本地状态直接参与 SSR 首帧属性计算（`aria`/`className`/`data-*`）？

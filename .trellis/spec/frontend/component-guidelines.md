@@ -56,12 +56,55 @@
 - 默认使用 Tailwind utility classes。
 - 根 DOM 元素 className 必须包含语义化 class token（领域导向 kebab-case）。
 - 条件样式分支需保持可读，分支表达简短明确。
-- 涉及颜色时必须同时覆盖 light/dark mode。
+- 涉及颜色时必须覆盖项目多主题 token，至少验证 `suya` 与 `xingkong` 代表主题。
 - **[主题系统] 本项目使用 `data-theme` 属性（非 `.dark` CSS 类）切换主题。`dark:` Tailwind 变体在本项目中永远不生效，禁止新增任何 `dark:` 前缀类。**
 - **[下拉组件] 禁止使用原生 `<select>` 元素。必须使用 `@/components/ui/select`（Radix UI 封装），该组件的下拉内容通过 `bg-popover` CSS 变量适配所有主题，原生 `<select>` 的 OS 渲染弹出层不受 CSS 变量控制，在深色主题下会出现白色背景突兀问题。**
 - 共享 layout 中的 `max-width` / `padding` 约束必须对沉浸式页面（图谱、阅读器、全屏画布）提供显式逃生口；不要假设子页面写 `w-full` 就能突破父容器限制。
 - 当主题系统通过 root/provider 向 `body` 或应用根节点挂载全局 `fixed` 背景/装饰层时，每个一级路由壳层都必须显式建立高于背景层的 stacking context（如 `relative z-[1]`）；不要假设内容在 DOM 里写得更靠后就天然可见。
 - 主题化场景视觉（如星空图谱、博物馆首页）必须挂在语义化页面 class 上做局部覆盖，不要为修单一路由而全局扭动整个主题 token。
+
+### 主题实现约束
+
+适用范围：
+- `src/app/globals.css`
+- `src/components/ui/**`
+- 任何在运行时拼接样式字符串的主题相关组件
+
+强制规则：
+- 不得新增 `.dark` 选择器、`dark:` 变体、或二元明暗 class 分支。
+- 基础组件的颜色 class 必须收敛到语义 token；如果看起来需要“针对深色主题单独改一条 class”，优先回到 token 层调整。
+- 运行时样式注入组件如果需要主题色，只接受单一 `color` 输入，值应优先是 CSS 变量；不要设计成按明暗模式拆分的双色对象。
+- 修改主题机制时，必须同步更新或新增源码级回归测试，确保 `src/` 中不会重新引入 `.dark` / `dark:`。
+
+反例（禁止）：
+```tsx
+className="bg-background text-foreground dark:bg-zinc-950"
+
+const chartConfig = {
+  uv: {
+    theme: {
+      light: "#1d4ed8",
+      dark: "#93c5fd"
+    }
+  }
+};
+```
+
+正例（必须）：
+```tsx
+className="bg-background text-foreground"
+
+const chartConfig = {
+  uv: {
+    label: "访问量",
+    color: "var(--chart-1)"
+  }
+};
+```
+
+校验入口：
+- `pnpm exec vitest run src/theme/theme-legacy-guard.test.ts`
+- `rg -n "\\.dark|dark:" src -g '!**/*.test.ts' -g '!**/*.test.tsx' -g '!**/*.spec.ts' -g '!**/*.spec.tsx'`
 
 ### 壳层导航路由契约
 
@@ -103,7 +146,7 @@ router.push("/login");
 真实示例：
 - 语义化根 class：`home-page`、`layout-navbar`、`ui-button`
 - 导航条件样式：`src/components/layout/Navbar.tsx`
-- 布局层 light/dark 配对：`src/app/layout.tsx`
+- 布局层多主题 token 配对：`src/app/layout.tsx`
 
 校验入口：
 - 通过 `pnpm lint` + 代码评审检查语义化根 className 约定是否满足
@@ -314,4 +357,3 @@ const legendColorMap = useMemo(() =>
 - 当原始类型数量超过颜色盘大小时，直接循环会使不同类型视觉相同，用户无法区分。
 - 分组归一化把"无限原始枚举"映射到"有限固定视觉集合"，是视觉可读性的架构级保证。
 - 渲染引擎与图例各自消费不同映射（原始类型/分组标签），两者职责清晰，互不耦合。
-

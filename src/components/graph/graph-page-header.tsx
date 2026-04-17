@@ -78,12 +78,12 @@ export function GraphPageHeader({
     >
       {/* 左侧：返回按钮 + 书籍信息 */}
       <div className="flex items-center gap-4">
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs">
+        <Button asChild variant="ghost" size="sm" className="gap-1.5 h-8 text-xs">
+          <Link href="/">
             <ArrowLeft className="h-3.5 w-3.5" />
             返回书库
-          </Button>
-        </Link>
+          </Link>
+        </Button>
 
         {/* 分隔线 */}
         <div className="h-5 w-px bg-border/60" />

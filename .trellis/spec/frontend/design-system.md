@@ -33,7 +33,101 @@
 1. **所有颜色通过 CSS 变量消费**：使用 `var(--primary)`、`var(--background)` 等，禁止硬编码 hex/rgb 色值。
 2. **新增语义色须注册**：新颜色需同时在 4 套主题 token 文件（`src/theme/tokens/<theme>/index.css`）中添加。
 3. **默认回退**：缺失主题时回退到 `suya`（素雅），这是产品策略不是技术限制。
-4. **多主题测试**：新增或修改 UI 时至少在 `suya`（亮色代表）和 `xingkong`（深色代表）下验证。
+4. **多主题测试**：新增或修改 UI 时至少在 `suya` 与 `xingkong` 两个代表主题下验证。
+
+### 主题驱动实现契约
+
+#### 1. Scope / Trigger
+
+- 触发场景：修改 `src/app/globals.css`、`src/theme/tokens/**`、`src/components/ui/**`、主题 provider、或任何依赖主题色的视觉组件。
+- 风险点：把“主题切换机制”误写成“暗色模式分支机制”，会让基础组件出现死代码、局部漂色或深色主题失效。
+
+#### 2. Signatures
+
+- 根层主题切换来源：`next-themes` + `attribute="data-theme"`。
+- 主题 token 入口：`src/theme/tokens/<theme>/index.css`。
+- Tailwind 语义桥接入口：`src/app/globals.css` 中的 `@theme inline`。
+- 基础组件消费形式：`bg-background`、`text-foreground`、`border-border`、`bg-popover` 等语义 utility。
+
+#### 3. Contracts
+
+- 根节点只允许通过 `data-theme="<theme-id>"` 驱动主题；不得要求根层额外挂 `.dark` 类名。
+- `globals.css` 负责把运行时 CSS 变量桥接为 Tailwind 语义 token；不得重新引入 `@custom-variant dark` 或任何依赖 `.dark` 的别名机制。
+- 基础组件只消费语义色，不在组件内部写 `dark:*`、`.dark`、或二元明暗 class 分支。
+- 图表这类需要运行时注入样式的组件，颜色配置也必须收敛到单一 token 输入；不要保留二元明暗颜色对象再拼接 `.dark` 选择器。
+
+#### 4. Validation & Error Matrix
+
+| 场景 | 错误写法 | 正确写法 | 必须验证 |
+|------|----------|----------|----------|
+| 根层主题切换 | 依赖 `.dark` 类触发深色样式 | 依赖 `data-theme` + token 文件切换变量值 | 检查 provider 与根 DOM 输出 |
+| 基础组件配色 | `dark:bg-zinc-900 dark:text-white` | `bg-background text-foreground` | 组件源码 grep 与视觉验证 |
+| 全局样式桥接 | 在 `globals.css` 新增 `@custom-variant dark` | 只维护 `@theme inline` token 映射 | 检查 `globals.css` 无 `.dark` 机制 |
+| 图表序列色 | 按明暗模式分别配置两个颜色值 | `color: "var(--chart-1)"` | 检查样式注入不输出 `.dark` |
+
+#### 5. Good / Base / Bad Cases
+
+```tsx
+// Good: 基础组件只消费语义 token
+<div className="bg-popover text-popover-foreground border-border" />
+
+// Base: 图表颜色通过单一 token 输入
+const chartConfig = {
+  visits: { label: "访问量", color: "var(--chart-1)" }
+};
+
+// Bad: 重新回到暗色变体分支
+<div className="bg-white text-slate-900 dark:bg-slate-950 dark:text-white" />
+
+// Bad: 图表配置保留二元明暗分支
+const chartConfig = {
+  visits: {
+    theme: {
+      light: "#2563eb",
+      dark: "#60a5fa"
+    }
+  }
+};
+```
+
+#### 6. Tests Required
+
+- 新增或修改主题机制时，必须有源码级守卫测试，阻止 `src/` 中重新出现 `.dark` 或 `dark:`。
+- 当前基线测试是 [src/theme/theme-legacy-guard.test.ts](../../src/theme/theme-legacy-guard.test.ts)，后续若迁移路径，需同步更新 spec。
+- 回归验证至少包括：
+  - `pnpm exec vitest run src/theme/theme-legacy-guard.test.ts`
+  - `rg -n "\\.dark|dark:" src -g '!**/*.test.ts' -g '!**/*.test.tsx' -g '!**/*.spec.ts' -g '!**/*.spec.tsx'`
+  - `pnpm type-check`
+
+#### 7. Wrong vs Correct
+
+错误：
+
+```css
+@custom-variant dark (&:is(.dark *));
+```
+
+正确：
+
+```css
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-popover: var(--popover);
+}
+```
+
+错误：
+
+```tsx
+className="bg-popover text-popover-foreground dark:bg-zinc-950"
+```
+
+正确：
+
+```tsx
+className="bg-popover text-popover-foreground"
+```
 
 ### 派系与关系颜色
 
