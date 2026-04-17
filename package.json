@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "check:prompt-whitelist": "ts-node scripts/validate-prompt-whitelist.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

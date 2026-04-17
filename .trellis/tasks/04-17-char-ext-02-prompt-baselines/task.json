@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-02-prompt-baselines",
+  "name": "char-ext-02-prompt-baselines",
+  "title": "feat: Prompt 基线替换为 Stage A/B/C/D 四条",
+  "description": "在 prompt-template-baselines.ts 新增 STAGE_A_EXTRACT_MENTIONS/STAGE_B_RESOLVE_ENTITIES/STAGE_C_ATTRIBUTE_EVENT/STAGE_D_NOISE_FILTER 四条 baseline，通过 seed 写入 prompt_templates 表。全部面向中文古典小说、准确率优先、显式禁止基于名字相似合并、显式要求 evidence 与 identityClaim。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

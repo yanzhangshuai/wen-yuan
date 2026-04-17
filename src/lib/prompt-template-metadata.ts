@@ -6,7 +6,22 @@ export type PromptTemplateSlug =
   | "CHAPTER_ANALYSIS"
   | "ROSTER_DISCOVERY"
   | "CHAPTER_VALIDATION"
-  | "BOOK_VALIDATION";
+  | "BOOK_VALIDATION"
+  | "STAGE_A_EXTRACT_MENTIONS"
+  | "STAGE_B_RESOLVE_ENTITIES"
+  | "STAGE_C_ATTRIBUTE_EVENT";
+
+/**
+ * 三阶段架构（Stage A/B/C）新增 slug 的白名单集合。
+ * - 用途：`scripts/validate-prompt-whitelist.ts` 仅扫描这些 slug 的 baseline 内容，
+ *   确保契约 §0-1「Prompt 正文不得出现具名实体」硬约束；
+ * - 旧 twopass/sequential 管线的模板仍保留示例人物，属于历史包袱，不在本白名单范围。
+ */
+export const STAGE_BCD_PROMPT_SLUGS: readonly PromptTemplateSlug[] = [
+  "STAGE_A_EXTRACT_MENTIONS",
+  "STAGE_B_RESOLVE_ENTITIES",
+  "STAGE_C_ATTRIBUTE_EVENT"
+];
 
 export interface PromptTemplatePlaceholderSpec {
   key        : string;
@@ -113,6 +128,47 @@ const SAMPLE_SOURCE_EXCERPTS = [
   "- 第3章「周学道校士拔真才」(代表性样本)：范进听了，昏绝于地。",
   "- 第4章「荐亡斋和尚吃官司」(覆盖更多章节)：张乡绅送银相助。"
 ].join("\n");
+
+const SAMPLE_REGION_MAP = [
+  "[1] NARRATIVE：叙事主干段落",
+  "[2] DIALOGUE：人物对白段落（含引入句主语）",
+  "[3] POEM：诗词/韵文段落",
+  "[4] COMMENTARY：说书人议论/批注段落"
+].join("\n");
+
+const SAMPLE_CHAPTER_TEXT = [
+  "（示意）第一段叙事：甲某走进庭院，遇见乙公。",
+  "（示意）对白段：甲某道：“在下姓甲。”乙公答：“久仰。”",
+  "（示意）韵文段：有诗为证，云云。"
+].join("\n");
+
+const SAMPLE_STAGE_B_CANDIDATE_GROUPS = [
+  "### 候选组 [1]",
+  "  - surfaceForm=甲某 aliasType=NAMED identityClaim=SELF 出现于第1、2章",
+  "  - surfaceForm=甲先生 aliasType=TITLE identityClaim=SELF 出现于第2章",
+  "",
+  "### 候选组 [2]",
+  "  - surfaceForm=乙公 aliasType=COURTESY_NAME identityClaim=SELF 出现于第3章",
+  "  - surfaceForm=乙丙 aliasType=NAMED identityClaim=SELF 出现于第4章"
+].join("\n");
+
+const SAMPLE_STAGE_B_ALIAS_ENTRIES = [
+  "- surfaceForm=乙丙 resolvesTo=甲某 source=ALIAS_ENTRY aliasType=IMPERSONATED_IDENTITY",
+  "- surfaceForm=丙先生 resolvesTo=null source=ALIAS_ENTRY aliasType=TITLE"
+].join("\n");
+
+const SAMPLE_STAGE_C_RESOLVED_PERSONAS = [
+  "- [p1] canonicalName=甲某 aliases=[甲某,甲先生]",
+  "- [p2] canonicalName=乙公 aliases=[乙公,乙丙]"
+].join("\n");
+
+const SAMPLE_STAGE_C_MENTIONS = [
+  "- surfaceForm=甲某 regionType=NARRATIVE identityClaim=SELF evidence=\"甲某走进庭院\"",
+  "- surfaceForm=乙公 regionType=DIALOGUE identityClaim=SELF evidence=\"乙公答：久仰\""
+].join("\n");
+
+const SAMPLE_BOOK_TYPE_SPECIAL_RULES = "（运行时由 PromptTemplateVariant 注入；本样例为空）";
+const SAMPLE_BOOK_TYPE_FEW_SHOTS = "（运行时由 BookTypeExample 注入；本样例为空）";
 
 export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplateMetadataItem> = {
   INDEPENDENT_EXTRACTION: {
@@ -274,6 +330,68 @@ export const PROMPT_TEMPLATE_METADATA: Record<PromptTemplateSlug, PromptTemplate
       lowConfidencePersonas: SAMPLE_LOW_CONFIDENCE_PERSONAS,
       sourceExcerpts       : SAMPLE_SOURCE_EXCERPTS
     }
+  },
+  STAGE_A_EXTRACT_MENTIONS: {
+    slug        : "STAGE_A_EXTRACT_MENTIONS",
+    name        : "Stage A 章节 mention 硬提取",
+    description : "三阶段架构 Stage A：从章节原文 + 区段标注中逐称呼抽取 mention，禁止跨章合并。",
+    codeRef     : "resolvePromptTemplate",
+    placeholders: [
+      { key: "chapterNo", label: "章节号", description: "当前章节序号。", example: "1" },
+      { key: "chapterText", label: "章节原文", description: "当前整章原文。", example: SAMPLE_CHAPTER_TEXT },
+      { key: "regionMap", label: "区段标注", description: "ChapterPreprocessor 输出的 RegionType 列表。", example: SAMPLE_REGION_MAP },
+      { key: "bookTypeSpecialRules", label: "书籍类型专属规则", description: "PromptTemplateVariant 运行时注入。", example: SAMPLE_BOOK_TYPE_SPECIAL_RULES },
+      { key: "bookTypeFewShots", label: "书籍类型示例", description: "BookTypeExample 运行时注入。", example: SAMPLE_BOOK_TYPE_FEW_SHOTS }
+    ],
+    sampleInput: {
+      chapterNo           : "1",
+      chapterText         : SAMPLE_CHAPTER_TEXT,
+      regionMap           : SAMPLE_REGION_MAP,
+      bookTypeSpecialRules: SAMPLE_BOOK_TYPE_SPECIAL_RULES,
+      bookTypeFewShots    : SAMPLE_BOOK_TYPE_FEW_SHOTS
+    }
+  },
+  STAGE_B_RESOLVE_ENTITIES: {
+    slug        : "STAGE_B_RESOLVE_ENTITIES",
+    name        : "Stage B 实体仲裁",
+    description : "三阶段架构 Stage B：对三通道聚合的候选组做 persona 归并/分裂仲裁，要求 evidence。",
+    codeRef     : "resolvePromptTemplate",
+    placeholders: [
+      { key: "candidateGroups", label: "候选组", description: "由三通道聚合的待仲裁 mention 候选组。", example: SAMPLE_STAGE_B_CANDIDATE_GROUPS },
+      { key: "aliasEntries", label: "AliasEntry 命中", description: "运行时查出的 AliasEntry 命中列表。", example: SAMPLE_STAGE_B_ALIAS_ENTRIES },
+      { key: "bookTypeSpecialRules", label: "书籍类型专属规则", description: "PromptTemplateVariant 运行时注入。", example: SAMPLE_BOOK_TYPE_SPECIAL_RULES },
+      { key: "bookTypeFewShots", label: "书籍类型示例", description: "BookTypeExample 运行时注入。", example: SAMPLE_BOOK_TYPE_FEW_SHOTS }
+    ],
+    sampleInput: {
+      candidateGroups     : SAMPLE_STAGE_B_CANDIDATE_GROUPS,
+      aliasEntries        : SAMPLE_STAGE_B_ALIAS_ENTRIES,
+      bookTypeSpecialRules: SAMPLE_BOOK_TYPE_SPECIAL_RULES,
+      bookTypeFewShots    : SAMPLE_BOOK_TYPE_FEW_SHOTS
+    }
+  },
+  STAGE_C_ATTRIBUTE_EVENT: {
+    slug        : "STAGE_C_ATTRIBUTE_EVENT",
+    name        : "Stage C biography 归属",
+    description : "三阶段架构 Stage C：结合已解析 persona + mention，产出 biography 记录并按叙事透镜过滤。",
+    codeRef     : "resolvePromptTemplate",
+    placeholders: [
+      { key: "chapterNo", label: "章节号", description: "当前章节序号。", example: "1" },
+      { key: "chapterText", label: "章节原文", description: "当前章节原文。", example: SAMPLE_CHAPTER_TEXT },
+      { key: "regionMap", label: "区段标注", description: "ChapterPreprocessor 输出的 RegionType 列表。", example: SAMPLE_REGION_MAP },
+      { key: "resolvedPersonas", label: "已解析 persona", description: "Stage B 仲裁后的 persona 列表。", example: SAMPLE_STAGE_C_RESOLVED_PERSONAS },
+      { key: "mentions", label: "mention 集", description: "Stage A 输出的 mention 列表（归一后）。", example: SAMPLE_STAGE_C_MENTIONS },
+      { key: "bookTypeSpecialRules", label: "书籍类型专属规则", description: "PromptTemplateVariant 运行时注入。", example: SAMPLE_BOOK_TYPE_SPECIAL_RULES },
+      { key: "bookTypeFewShots", label: "书籍类型示例", description: "BookTypeExample 运行时注入。", example: SAMPLE_BOOK_TYPE_FEW_SHOTS }
+    ],
+    sampleInput: {
+      chapterNo           : "1",
+      chapterText         : SAMPLE_CHAPTER_TEXT,
+      regionMap           : SAMPLE_REGION_MAP,
+      resolvedPersonas    : SAMPLE_STAGE_C_RESOLVED_PERSONAS,
+      mentions            : SAMPLE_STAGE_C_MENTIONS,
+      bookTypeSpecialRules: SAMPLE_BOOK_TYPE_SPECIAL_RULES,
+      bookTypeFewShots    : SAMPLE_BOOK_TYPE_FEW_SHOTS
+    }
   }
 };
 
@@ -285,7 +403,10 @@ export const PROMPT_TEMPLATE_ORDER: PromptTemplateSlug[] = [
   "CHAPTER_ANALYSIS",
   "ROSTER_DISCOVERY",
   "CHAPTER_VALIDATION",
-  "BOOK_VALIDATION"
+  "BOOK_VALIDATION",
+  "STAGE_A_EXTRACT_MENTIONS",
+  "STAGE_B_RESOLVE_ENTITIES",
+  "STAGE_C_ATTRIBUTE_EVENT"
 ];
 
 export function getPromptTemplateMetadata(slug: string): PromptTemplateMetadataItem | null {

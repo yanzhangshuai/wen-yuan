@@ -42,4 +42,27 @@ describe("prompt template baselines", () => {
     expect(titleArbitration?.userPrompt).toContain("{terms}");
     expect(entityResolution?.userPrompt).toContain("{candidateGroups}");
   });
+
+  it("exposes Stage A/B/C baselines with required placeholders and enum mentions", () => {
+    const stageA = PROMPT_TEMPLATE_BASELINES.find((item) => item.slug === "STAGE_A_EXTRACT_MENTIONS");
+    const stageB = PROMPT_TEMPLATE_BASELINES.find((item) => item.slug === "STAGE_B_RESOLVE_ENTITIES");
+    const stageC = PROMPT_TEMPLATE_BASELINES.find((item) => item.slug === "STAGE_C_ATTRIBUTE_EVENT");
+
+    expect(stageA?.userPrompt).toContain("{chapterNo}");
+    expect(stageA?.userPrompt).toContain("{chapterText}");
+    expect(stageA?.userPrompt).toContain("{regionMap}");
+    expect(stageA?.userPrompt).toContain("{bookTypeSpecialRules}");
+    expect(stageA?.userPrompt).toContain("{bookTypeFewShots}");
+    expect(stageA?.userPrompt).toContain("suspectedResolvesTo");
+    expect(stageA?.userPrompt).toContain("identityClaim");
+
+    expect(stageB?.userPrompt).toContain("{candidateGroups}");
+    expect(stageB?.userPrompt).toContain("{aliasEntries}");
+    expect(stageB?.userPrompt).toContain("MERGE");
+    expect(stageB?.userPrompt).toContain("KEEP_SEPARATE");
+
+    expect(stageC?.userPrompt).toContain("{resolvedPersonas}");
+    expect(stageC?.userPrompt).toContain("{mentions}");
+    expect(stageC?.userPrompt).toContain("narrativeLens");
+  });
 });

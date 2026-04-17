@@ -265,5 +265,216 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
           "无问题返回{\"issues\":[]}。confidence<0.6不输出。仅输出有明确证据的问题。"
         ].join("\n")
       } satisfies PromptTemplateBaseline;
+
+    case "STAGE_A_EXTRACT_MENTIONS":
+      return {
+        ...meta,
+        isActive    : true,
+        systemPrompt: [
+          "你是中文长篇叙事文本的命名实体抽取助手。",
+          "本任务只做硬提取：按出现顺序逐条列出章节内每一次人物称呼，禁止跨称呼合并、禁止跨章节推断、禁止臆造原文以外的信息。"
+        ].join("\n"),
+        userPrompt: [
+          "## 任务",
+          "对章节正文进行逐 mention 硬提取。对每一次人物称呼输出一条记录，同一人物的不同称呼必须各自成条。",
+          "",
+          "## 输入",
+          "### 章节编号",
+          "第 {chapterNo} 章",
+          "",
+          "### 区段标注（RegionType 列表）",
+          "{regionMap}",
+          "",
+          "### 章节原文",
+          "{chapterText}",
+          "",
+          "## 分类规则",
+          "1. 仅输出原始 JSON，禁止 Markdown 代码块。",
+          "2. surfaceForm 必须与原文一字不差（不得改写、不得补全）。",
+          "3. aliasType 取值（9 选一，见 AliasType 枚举）：",
+          "   - TITLE 封号/尊号；POSITION 职位；KINSHIP 亲属代称；NICKNAME 绰号；COURTESY_NAME 字号；",
+          "   - NAMED 真名（同一人不同真名之一）；IMPERSONATED_IDENTITY 恶意冒名；MISIDENTIFIED_AS 误认；UNSURE 未定。",
+          "4. identityClaim 取值（6 选一，见 IdentityClaim 枚举）：SELF / IMPERSONATING / QUOTED / REPORTED / HISTORICAL / UNSURE。",
+          "5. narrativeRegionType 取值（4 选一）：NARRATIVE / DIALOGUE / POEM / COMMENTARY，取自 regionMap 标注。",
+          "6. evidenceRawSpan 为包含本次 mention 的最小原文片段（必填，禁改写）。",
+          "7. actionVerb 取 surfaceForm 紧邻的主动作动词（如 道/曰/说/走/见/答 等），不存在则填空字符串。",
+          "8. confidence ∈ [0,1]，表示本次抽取的置信度。",
+          "",
+          "## 非 NARRATIVE 区段硬约束（§0-5）",
+          "- narrativeRegionType = POEM：identityClaim 必须为 HISTORICAL（诗词典故统一归档），严禁标 SELF。",
+          "- narrativeRegionType = COMMENTARY：identityClaim 必须为 REPORTED（说书人议论视角）。",
+          "- narrativeRegionType = DIALOGUE：按下方 REV-1 规则进一步细分。",
+          "- narrativeRegionType = NARRATIVE：按实际叙事判定 SELF / IMPERSONATING / REPORTED / HISTORICAL。",
+          "",
+          "## DIALOGUE 细分规则（§0-1 REV-1）",
+          "- 引入句主语（形如「甲某道：『…』」）中的 surfaceForm：允许 identityClaim=SELF，evidenceRawSpan 必须覆盖引入句主语。",
+          "- 引号内部被提及的第三方 surfaceForm：identityClaim 强制为 QUOTED，不得判 SELF。",
+          "- 引号内部自称（形如「我是甲某」「在下姓乙」）：允许 identityClaim=SELF，但 evidenceRawSpan 必须同时覆盖本段引入句主语，以证明自称方身份。",
+          "- 无法确定引入句主语者：identityClaim=UNSURE，交由 Stage B 仲裁。",
+          "",
+          "## suspectedResolvesTo 规则（§0-8）",
+          "- 对 COURTESY_NAME / NICKNAME / TITLE / POSITION / KINSHIP 类型的 mention：必须给出 suspectedResolvesTo（≤ 8 个汉字）或显式 null，不得省略字段。",
+          "- 对 NAMED / IMPERSONATED_IDENTITY / MISIDENTIFIED_AS：suspectedResolvesTo 可为 null。",
+          "- 禁止臆造书外原型（不得把别名映射到原文未出现的历史人物）。",
+          "",
+          "## 书籍类型专属规则（运行时注入）",
+          "{bookTypeSpecialRules}",
+          "",
+          "## 书籍类型示例（运行时注入）",
+          "{bookTypeFewShots}",
+          "",
+          "## 输出格式（仅输出 JSON 对象，占位示例使用虚构代号甲/乙/丙，仅示意 schema）",
+          JSON.stringify({
+            mentions: [
+              {
+                surfaceForm        : "甲某",
+                aliasType          : "NAMED",
+                identityClaim      : "SELF",
+                narrativeRegionType: "NARRATIVE",
+                suspectedResolvesTo: null,
+                evidenceRawSpan    : "甲某走进庭院",
+                actionVerb         : "走",
+                confidence         : 0.92
+              },
+              {
+                surfaceForm        : "乙公",
+                aliasType          : "COURTESY_NAME",
+                identityClaim      : "SELF",
+                narrativeRegionType: "DIALOGUE",
+                suspectedResolvesTo: "乙丙",
+                evidenceRawSpan    : "乙公答：久仰",
+                actionVerb         : "答",
+                confidence         : 0.81
+              }
+            ]
+          }, null, 2)
+        ].join("\n")
+      } satisfies PromptTemplateBaseline;
+
+    case "STAGE_B_RESOLVE_ENTITIES":
+      return {
+        ...meta,
+        isActive    : true,
+        systemPrompt: [
+          "你是中文长篇叙事文本的实体仲裁助手。",
+          "本任务从候选组（Stage A mention 聚合 + AliasEntry 命中）出发，判定哪些 surfaceForm 指向同一人物（MERGE），哪些必须保持独立（KEEP_SEPARATE）。"
+        ].join("\n"),
+        userPrompt: [
+          "## 任务",
+          "对以下候选组逐组做归并/分裂仲裁，输出 persona 决策，每条必须附带 evidence。",
+          "",
+          "## 候选组",
+          "{candidateGroups}",
+          "",
+          "## AliasEntry 命中（知识库别名候选）",
+          "{aliasEntries}",
+          "",
+          "## 决策规则",
+          "1. action ∈ {MERGE, KEEP_SEPARATE}。",
+          "2. MERGE 的必要条件：evidence 至少覆盖两个不同章节且明确指向同一人；仅姓氏相同/称谓相同不构成 MERGE 依据。",
+          "3. aliasType=IMPERSONATED_IDENTITY 或 MISIDENTIFIED_AS 的 mention：**必须** KEEP_SEPARATE（真身与被冒名/误认者分立为两个 persona，由冒名链在 AliasEntry 关联）。",
+          "4. 同姓但不同代际/身份（如父子、兄弟、主仆）：KEEP_SEPARATE。",
+          "5. confidence ∈ [0,1]；**confidence ≥ 0.85 是必要非充分条件**，最终是否采纳由调用方强制校验（不得以高 confidence 绕过规则 2-4）。",
+          "6. canonicalName 取组内最正式的真名；若组内全为称号/字号，canonicalName 取最高频且最通用的称谓。",
+          "7. memberSurfaceForms 列出组内所有被合并的 surfaceForm（KEEP_SEPARATE 时仅含主条自身）。",
+          "8. evidence 为引自章节原文的片段或明确的章节编号对照，禁止编造原文以外的信息。",
+          "",
+          "## 书籍类型专属规则（运行时注入）",
+          "{bookTypeSpecialRules}",
+          "",
+          "## 书籍类型示例（运行时注入）",
+          "{bookTypeFewShots}",
+          "",
+          "## 输出格式（仅输出 JSON 对象，占位示例使用虚构代号甲/乙/丙，仅示意 schema）",
+          JSON.stringify({
+            decisions: [
+              {
+                canonicalName     : "甲某",
+                memberSurfaceForms: ["甲某", "甲先生"],
+                action            : "MERGE",
+                evidence          : "第1章「甲某走进庭院」与第2章「甲先生又至」指同一人",
+                confidence        : 0.9
+              },
+              {
+                canonicalName     : "乙公",
+                memberSurfaceForms: ["乙公"],
+                action            : "KEEP_SEPARATE",
+                evidence          : "乙丙为另一独立人物，见第4章独立事件；aliasType=IMPERSONATED_IDENTITY 必须分立",
+                confidence        : 0.88
+              }
+            ]
+          }, null, 2)
+        ].join("\n")
+      } satisfies PromptTemplateBaseline;
+
+    case "STAGE_C_ATTRIBUTE_EVENT":
+      return {
+        ...meta,
+        isActive    : true,
+        systemPrompt: [
+          "你是中文长篇叙事文本的 biography 归属助手。",
+          "本任务在 Stage B 解析结果之上，为章节原文生成 biography 记录，并按叙事透镜（NarrativeLens）区分真身亲历 / 冒用 / 转述 / 追忆 / 历史典故。"
+        ].join("\n"),
+        userPrompt: [
+          "## 任务",
+          "结合已解析 persona 与 mention 集，对章节事件做 biography 归属。",
+          "",
+          "## 输入",
+          "### 章节编号",
+          "第 {chapterNo} 章",
+          "",
+          "### 区段标注",
+          "{regionMap}",
+          "",
+          "### 章节原文",
+          "{chapterText}",
+          "",
+          "### 已解析 persona",
+          "{resolvedPersonas}",
+          "",
+          "### mention 集（Stage A 归一后）",
+          "{mentions}",
+          "",
+          "## 归属规则",
+          "1. personaCanonicalName 必须来自「已解析 persona」列表，禁止新增未列出的人物。",
+          "2. narrativeLens ∈ {SELF, IMPERSONATING, QUOTED, REPORTED, HISTORICAL}（NarrativeLens 枚举 5 选一）。",
+          "   - POEM 区段事件统一归为 HISTORICAL；",
+          "   - COMMENTARY 区段事件统一归为 REPORTED；",
+          "   - DIALOGUE 区段被提及第三方事件归 QUOTED；",
+          "   - IMPERSONATED_IDENTITY 类 mention 的事件归 IMPERSONATING；",
+          "   - 其余主干叙事归 SELF。",
+          "3. rawSpan 为事件对应的章节原文最小片段（必填，禁改写）。",
+          "4. category 为事件类别（BIRTH / EXAM / CAREER / TRAVEL / SOCIAL / DEATH / EVENT 等），按项目既有枚举择一。",
+          "5. chapterNo 与输入一致，用于下游聚合。",
+          "6. 同一事件涉及多个 persona 时，拆成多条记录，每条对应一个 personaCanonicalName。",
+          "7. 严禁臆造原文中未出现的事件，禁止跨章推断。",
+          "",
+          "## 书籍类型专属规则（运行时注入）",
+          "{bookTypeSpecialRules}",
+          "",
+          "## 书籍类型示例（运行时注入）",
+          "{bookTypeFewShots}",
+          "",
+          "## 输出格式（仅输出 JSON 对象，占位示例使用虚构代号甲/乙/丙，仅示意 schema）",
+          JSON.stringify({
+            records: [
+              {
+                personaCanonicalName: "甲某",
+                narrativeLens       : "SELF",
+                rawSpan             : "甲某走进庭院",
+                category            : "TRAVEL",
+                chapterNo           : 1
+              },
+              {
+                personaCanonicalName: "乙公",
+                narrativeLens       : "QUOTED",
+                rawSpan             : "乙公答：久仰",
+                category            : "SOCIAL",
+                chapterNo           : 1
+              }
+            ]
+          }, null, 2)
+        ].join("\n")
+      } satisfies PromptTemplateBaseline;
   }
 });
