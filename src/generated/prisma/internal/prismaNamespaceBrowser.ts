@@ -243,7 +243,12 @@ export const BiographyRecordScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   narrativeLens: 'narrativeLens',
-  narrativeRegionType: 'narrativeRegionType'
+  narrativeRegionType: 'narrativeRegionType',
+  rawSpan: 'rawSpan',
+  actionVerb: 'actionVerb',
+  isEffective: 'isEffective',
+  regionOverrideApplied: 'regionOverrideApplied',
+  attributionConfidence: 'attributionConfidence'
 } as const
 
 export type BiographyRecordScalarFieldEnum = (typeof BiographyRecordScalarFieldEnum)[keyof typeof BiographyRecordScalarFieldEnum]

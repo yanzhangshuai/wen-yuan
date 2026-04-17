@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-05-stage-c-attribution",
+  "name": "char-ext-05-stage-c-attribution",
+  "title": "feat: Stage C 章节事件归属服务",
+  "description": "重构 ChapterAnalysisService 为 StageCAttributor：对每条候选 biography/mention 调 Prompt C，写入 actor_true_identity=personaId / actor_used_identity_id / actor_role / evidence_raw / confidence。QUOTED/HISTORICAL 不进主时间轴。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

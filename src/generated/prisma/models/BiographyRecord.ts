@@ -28,10 +28,12 @@ export type AggregateBiographyRecord = {
 
 export type BiographyRecordAvgAggregateOutputType = {
   chapterNo: number | null
+  attributionConfidence: number | null
 }
 
 export type BiographyRecordSumAggregateOutputType = {
   chapterNo: number | null
+  attributionConfidence: number | null
 }
 
 export type BiographyRecordMinAggregateOutputType = {
@@ -52,6 +54,11 @@ export type BiographyRecordMinAggregateOutputType = {
   updatedAt: Date | null
   narrativeLens: $Enums.NarrativeLens | null
   narrativeRegionType: string | null
+  rawSpan: string | null
+  actionVerb: string | null
+  isEffective: boolean | null
+  regionOverrideApplied: string | null
+  attributionConfidence: number | null
 }
 
 export type BiographyRecordMaxAggregateOutputType = {
@@ -72,6 +79,11 @@ export type BiographyRecordMaxAggregateOutputType = {
   updatedAt: Date | null
   narrativeLens: $Enums.NarrativeLens | null
   narrativeRegionType: string | null
+  rawSpan: string | null
+  actionVerb: string | null
+  isEffective: boolean | null
+  regionOverrideApplied: string | null
+  attributionConfidence: number | null
 }
 
 export type BiographyRecordCountAggregateOutputType = {
@@ -92,16 +104,23 @@ export type BiographyRecordCountAggregateOutputType = {
   updatedAt: number
   narrativeLens: number
   narrativeRegionType: number
+  rawSpan: number
+  actionVerb: number
+  isEffective: number
+  regionOverrideApplied: number
+  attributionConfidence: number
   _all: number
 }
 
 
 export type BiographyRecordAvgAggregateInputType = {
   chapterNo?: true
+  attributionConfidence?: true
 }
 
 export type BiographyRecordSumAggregateInputType = {
   chapterNo?: true
+  attributionConfidence?: true
 }
 
 export type BiographyRecordMinAggregateInputType = {
@@ -122,6 +141,11 @@ export type BiographyRecordMinAggregateInputType = {
   updatedAt?: true
   narrativeLens?: true
   narrativeRegionType?: true
+  rawSpan?: true
+  actionVerb?: true
+  isEffective?: true
+  regionOverrideApplied?: true
+  attributionConfidence?: true
 }
 
 export type BiographyRecordMaxAggregateInputType = {
@@ -142,6 +166,11 @@ export type BiographyRecordMaxAggregateInputType = {
   updatedAt?: true
   narrativeLens?: true
   narrativeRegionType?: true
+  rawSpan?: true
+  actionVerb?: true
+  isEffective?: true
+  regionOverrideApplied?: true
+  attributionConfidence?: true
 }
 
 export type BiographyRecordCountAggregateInputType = {
@@ -162,6 +191,11 @@ export type BiographyRecordCountAggregateInputType = {
   updatedAt?: true
   narrativeLens?: true
   narrativeRegionType?: true
+  rawSpan?: true
+  actionVerb?: true
+  isEffective?: true
+  regionOverrideApplied?: true
+  attributionConfidence?: true
   _all?: true
 }
 
@@ -269,6 +303,11 @@ export type BiographyRecordGroupByOutputType = {
   updatedAt: Date
   narrativeLens: $Enums.NarrativeLens
   narrativeRegionType: string
+  rawSpan: string | null
+  actionVerb: string | null
+  isEffective: boolean
+  regionOverrideApplied: string | null
+  attributionConfidence: number
   _count: BiographyRecordCountAggregateOutputType | null
   _avg: BiographyRecordAvgAggregateOutputType | null
   _sum: BiographyRecordSumAggregateOutputType | null
@@ -312,6 +351,11 @@ export type BiographyRecordWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFilter<"BiographyRecord"> | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFilter<"BiographyRecord"> | string
+  rawSpan?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  actionVerb?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  isEffective?: Prisma.BoolFilter<"BiographyRecord"> | boolean
+  regionOverrideApplied?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  attributionConfidence?: Prisma.FloatFilter<"BiographyRecord"> | number
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
 }
@@ -334,6 +378,11 @@ export type BiographyRecordOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   narrativeLens?: Prisma.SortOrder
   narrativeRegionType?: Prisma.SortOrder
+  rawSpan?: Prisma.SortOrderInput | Prisma.SortOrder
+  actionVerb?: Prisma.SortOrderInput | Prisma.SortOrder
+  isEffective?: Prisma.SortOrder
+  regionOverrideApplied?: Prisma.SortOrderInput | Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
   persona?: Prisma.PersonaOrderByWithRelationInput
   chapter?: Prisma.ChapterOrderByWithRelationInput
 }
@@ -359,6 +408,11 @@ export type BiographyRecordWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFilter<"BiographyRecord"> | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFilter<"BiographyRecord"> | string
+  rawSpan?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  actionVerb?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  isEffective?: Prisma.BoolFilter<"BiographyRecord"> | boolean
+  regionOverrideApplied?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  attributionConfidence?: Prisma.FloatFilter<"BiographyRecord"> | number
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
 }, "id">
@@ -381,6 +435,11 @@ export type BiographyRecordOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   narrativeLens?: Prisma.SortOrder
   narrativeRegionType?: Prisma.SortOrder
+  rawSpan?: Prisma.SortOrderInput | Prisma.SortOrder
+  actionVerb?: Prisma.SortOrderInput | Prisma.SortOrder
+  isEffective?: Prisma.SortOrder
+  regionOverrideApplied?: Prisma.SortOrderInput | Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
   _count?: Prisma.BiographyRecordCountOrderByAggregateInput
   _avg?: Prisma.BiographyRecordAvgOrderByAggregateInput
   _max?: Prisma.BiographyRecordMaxOrderByAggregateInput
@@ -409,6 +468,11 @@ export type BiographyRecordScalarWhereWithAggregatesInput = {
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BiographyRecord"> | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensWithAggregatesFilter<"BiographyRecord"> | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringWithAggregatesFilter<"BiographyRecord"> | string
+  rawSpan?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
+  actionVerb?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
+  isEffective?: Prisma.BoolWithAggregatesFilter<"BiographyRecord"> | boolean
+  regionOverrideApplied?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
+  attributionConfidence?: Prisma.FloatWithAggregatesFilter<"BiographyRecord"> | number
 }
 
 export type BiographyRecordCreateInput = {
@@ -427,6 +491,11 @@ export type BiographyRecordCreateInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
   persona: Prisma.PersonaCreateNestedOneWithoutBiographiesInput
   chapter: Prisma.ChapterCreateNestedOneWithoutBiographiesInput
 }
@@ -449,6 +518,11 @@ export type BiographyRecordUncheckedCreateInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
 }
 
 export type BiographyRecordUpdateInput = {
@@ -467,6 +541,11 @@ export type BiographyRecordUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
   persona?: Prisma.PersonaUpdateOneRequiredWithoutBiographiesNestedInput
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutBiographiesNestedInput
 }
@@ -489,6 +568,11 @@ export type BiographyRecordUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 export type BiographyRecordCreateManyInput = {
@@ -509,6 +593,11 @@ export type BiographyRecordCreateManyInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
 }
 
 export type BiographyRecordUpdateManyMutationInput = {
@@ -527,6 +616,11 @@ export type BiographyRecordUpdateManyMutationInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 export type BiographyRecordUncheckedUpdateManyInput = {
@@ -547,6 +641,11 @@ export type BiographyRecordUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 export type BiographyRecordListRelationFilter = {
@@ -577,10 +676,16 @@ export type BiographyRecordCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   narrativeLens?: Prisma.SortOrder
   narrativeRegionType?: Prisma.SortOrder
+  rawSpan?: Prisma.SortOrder
+  actionVerb?: Prisma.SortOrder
+  isEffective?: Prisma.SortOrder
+  regionOverrideApplied?: Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
 }
 
 export type BiographyRecordAvgOrderByAggregateInput = {
   chapterNo?: Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
 }
 
 export type BiographyRecordMaxOrderByAggregateInput = {
@@ -601,6 +706,11 @@ export type BiographyRecordMaxOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   narrativeLens?: Prisma.SortOrder
   narrativeRegionType?: Prisma.SortOrder
+  rawSpan?: Prisma.SortOrder
+  actionVerb?: Prisma.SortOrder
+  isEffective?: Prisma.SortOrder
+  regionOverrideApplied?: Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
 }
 
 export type BiographyRecordMinOrderByAggregateInput = {
@@ -621,10 +731,16 @@ export type BiographyRecordMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   narrativeLens?: Prisma.SortOrder
   narrativeRegionType?: Prisma.SortOrder
+  rawSpan?: Prisma.SortOrder
+  actionVerb?: Prisma.SortOrder
+  isEffective?: Prisma.SortOrder
+  regionOverrideApplied?: Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
 }
 
 export type BiographyRecordSumOrderByAggregateInput = {
   chapterNo?: Prisma.SortOrder
+  attributionConfidence?: Prisma.SortOrder
 }
 
 export type BiographyRecordCreateNestedManyWithoutChapterInput = {
@@ -739,6 +855,11 @@ export type BiographyRecordCreateWithoutChapterInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
   persona: Prisma.PersonaCreateNestedOneWithoutBiographiesInput
 }
 
@@ -759,6 +880,11 @@ export type BiographyRecordUncheckedCreateWithoutChapterInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
 }
 
 export type BiographyRecordCreateOrConnectWithoutChapterInput = {
@@ -808,6 +934,11 @@ export type BiographyRecordScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFilter<"BiographyRecord"> | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFilter<"BiographyRecord"> | string
+  rawSpan?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  actionVerb?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  isEffective?: Prisma.BoolFilter<"BiographyRecord"> | boolean
+  regionOverrideApplied?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  attributionConfidence?: Prisma.FloatFilter<"BiographyRecord"> | number
 }
 
 export type BiographyRecordCreateWithoutPersonaInput = {
@@ -826,6 +957,11 @@ export type BiographyRecordCreateWithoutPersonaInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
   chapter: Prisma.ChapterCreateNestedOneWithoutBiographiesInput
 }
 
@@ -846,6 +982,11 @@ export type BiographyRecordUncheckedCreateWithoutPersonaInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
 }
 
 export type BiographyRecordCreateOrConnectWithoutPersonaInput = {
@@ -891,6 +1032,11 @@ export type BiographyRecordCreateManyChapterInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
 }
 
 export type BiographyRecordUpdateWithoutChapterInput = {
@@ -909,6 +1055,11 @@ export type BiographyRecordUpdateWithoutChapterInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
   persona?: Prisma.PersonaUpdateOneRequiredWithoutBiographiesNestedInput
 }
 
@@ -929,6 +1080,11 @@ export type BiographyRecordUncheckedUpdateWithoutChapterInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 export type BiographyRecordUncheckedUpdateManyWithoutChapterInput = {
@@ -948,6 +1104,11 @@ export type BiographyRecordUncheckedUpdateManyWithoutChapterInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 export type BiographyRecordCreateManyPersonaInput = {
@@ -967,6 +1128,11 @@ export type BiographyRecordCreateManyPersonaInput = {
   updatedAt?: Date | string
   narrativeLens?: $Enums.NarrativeLens
   narrativeRegionType?: string
+  rawSpan?: string | null
+  actionVerb?: string | null
+  isEffective?: boolean
+  regionOverrideApplied?: string | null
+  attributionConfidence?: number
 }
 
 export type BiographyRecordUpdateWithoutPersonaInput = {
@@ -985,6 +1151,11 @@ export type BiographyRecordUpdateWithoutPersonaInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutBiographiesNestedInput
 }
 
@@ -1005,6 +1176,11 @@ export type BiographyRecordUncheckedUpdateWithoutPersonaInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 export type BiographyRecordUncheckedUpdateManyWithoutPersonaInput = {
@@ -1024,6 +1200,11 @@ export type BiographyRecordUncheckedUpdateManyWithoutPersonaInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
   narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
+  rawSpan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionVerb?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEffective?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  regionOverrideApplied?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributionConfidence?: Prisma.FloatFieldUpdateOperationsInput | number
 }
 
 
@@ -1046,6 +1227,11 @@ export type BiographyRecordSelect<ExtArgs extends runtime.Types.Extensions.Inter
   updatedAt?: boolean
   narrativeLens?: boolean
   narrativeRegionType?: boolean
+  rawSpan?: boolean
+  actionVerb?: boolean
+  isEffective?: boolean
+  regionOverrideApplied?: boolean
+  attributionConfidence?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["biographyRecord"]>
@@ -1068,6 +1254,11 @@ export type BiographyRecordSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   updatedAt?: boolean
   narrativeLens?: boolean
   narrativeRegionType?: boolean
+  rawSpan?: boolean
+  actionVerb?: boolean
+  isEffective?: boolean
+  regionOverrideApplied?: boolean
+  attributionConfidence?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["biographyRecord"]>
@@ -1090,6 +1281,11 @@ export type BiographyRecordSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   updatedAt?: boolean
   narrativeLens?: boolean
   narrativeRegionType?: boolean
+  rawSpan?: boolean
+  actionVerb?: boolean
+  isEffective?: boolean
+  regionOverrideApplied?: boolean
+  attributionConfidence?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["biographyRecord"]>
@@ -1112,9 +1308,14 @@ export type BiographyRecordSelectScalar = {
   updatedAt?: boolean
   narrativeLens?: boolean
   narrativeRegionType?: boolean
+  rawSpan?: boolean
+  actionVerb?: boolean
+  isEffective?: boolean
+  regionOverrideApplied?: boolean
+  attributionConfidence?: boolean
 }
 
-export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt" | "narrativeLens" | "narrativeRegionType", ExtArgs["result"]["biographyRecord"]>
+export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt" | "narrativeLens" | "narrativeRegionType" | "rawSpan" | "actionVerb" | "isEffective" | "regionOverrideApplied" | "attributionConfidence", ExtArgs["result"]["biographyRecord"]>
 export type BiographyRecordInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -1159,6 +1360,28 @@ export type $BiographyRecordPayload<ExtArgs extends runtime.Types.Extensions.Int
      * 由 Stage 0 区段划分给出；§0-5 规则要求 POEM/COMMENTARY 段强制 REPORTED/HISTORICAL。
      */
     narrativeRegionType: string
+    /**
+     * 事件对应的章节原文最小片段（§0-6 口径之一：rawSpan.length ≥ 15）。
+     */
+    rawSpan: string | null
+    /**
+     * 事件动作动词（§0-6 口径之一：actionVerb 非空才可计入 effectiveBiographyCount）。
+     */
+    actionVerb: string | null
+    /**
+     * 是否满足 §0-6 四条件（NarrativeLens ∈ {SELF,IMPERSONATING} AND NARRATIVE AND rawSpan≥15 AND actionVerb 非空）。
+     * 仅 true 的记录会被计入 persona.effectiveBiographyCount。
+     */
+    isEffective: boolean
+    /**
+     * Stage C 区段硬约束命中的规则名（POEM_FORCE_HISTORICAL / COMMENTARY_FORCE_REPORTED /
+     * DIALOGUE_QUOTED_THIRD_PARTY / DIALOGUE_SELF_PRESERVED）；未命中为 null。
+     */
+    regionOverrideApplied: string | null
+    /**
+     * 归属置信度（0~1），由 Prompt C LLM 返回并在区段覆写后保留。
+     */
+    attributionConfidence: number
   }, ExtArgs["result"]["biographyRecord"]>
   composites: {}
 }
@@ -1601,6 +1824,11 @@ export interface BiographyRecordFieldRefs {
   readonly updatedAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
   readonly narrativeLens: Prisma.FieldRef<"BiographyRecord", 'NarrativeLens'>
   readonly narrativeRegionType: Prisma.FieldRef<"BiographyRecord", 'String'>
+  readonly rawSpan: Prisma.FieldRef<"BiographyRecord", 'String'>
+  readonly actionVerb: Prisma.FieldRef<"BiographyRecord", 'String'>
+  readonly isEffective: Prisma.FieldRef<"BiographyRecord", 'Boolean'>
+  readonly regionOverrideApplied: Prisma.FieldRef<"BiographyRecord", 'String'>
+  readonly attributionConfidence: Prisma.FieldRef<"BiographyRecord", 'Float'>
 }
     
 

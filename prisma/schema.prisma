@@ -391,6 +391,20 @@ model BiographyRecord {
   /// 由 Stage 0 区段划分给出；§0-5 规则要求 POEM/COMMENTARY 段强制 REPORTED/HISTORICAL。
   narrativeRegionType String        @default("NARRATIVE") @map("narrative_region_type")
 
+  // Stage C 归属层新增字段（§0-6 四条件 + §0-5 REV-1 审计）
+  /// 事件对应的章节原文最小片段（§0-6 口径之一：rawSpan.length ≥ 15）。
+  rawSpan               String?  @map("raw_span") @db.Text
+  /// 事件动作动词（§0-6 口径之一：actionVerb 非空才可计入 effectiveBiographyCount）。
+  actionVerb            String?  @map("action_verb")
+  /// 是否满足 §0-6 四条件（NarrativeLens ∈ {SELF,IMPERSONATING} AND NARRATIVE AND rawSpan≥15 AND actionVerb 非空）。
+  /// 仅 true 的记录会被计入 persona.effectiveBiographyCount。
+  isEffective           Boolean  @default(false) @map("is_effective")
+  /// Stage C 区段硬约束命中的规则名（POEM_FORCE_HISTORICAL / COMMENTARY_FORCE_REPORTED /
+  /// DIALOGUE_QUOTED_THIRD_PARTY / DIALOGUE_SELF_PRESERVED）；未命中为 null。
+  regionOverrideApplied String?  @map("region_override_applied")
+  /// 归属置信度（0~1），由 Prompt C LLM 返回并在区段覆写后保留。
+  attributionConfidence Float    @default(0) @map("attribution_confidence")
+
   persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
   chapter Chapter @relation(fields: [chapterId], references: [id]) // 关联章节
 
