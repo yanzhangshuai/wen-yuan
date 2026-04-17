@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-04-stage-b-resolver",
+  "name": "char-ext-04-stage-b-resolver",
+  "title": "feat: Stage B 全书实体仲裁 (含冒名建模)",
+  "description": "重写 GlobalEntityResolver→StageBResolver：聚合 candidate、规则预分组高置信同名、疑似同人送 Prompt B 仲裁（强制 evidence+decision）、SPLIT+IMPERSONATED 写 alias_mappings(target_persona_id)、应用入库门槛决定 lifecycle_status=CONFIRMED/CANDIDATE、低置信入 MergeSuggestion PENDING。彻底删除老 union-find。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
