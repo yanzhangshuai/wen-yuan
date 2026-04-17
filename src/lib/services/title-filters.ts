@@ -3,7 +3,7 @@ import { clientFetch, clientMutate } from "@/lib/client-api";
 export interface GenericTitleItem {
   id            : string;
   title         : string;
-  tier          : "SAFETY" | "DEFAULT";
+  tier          : "SAFETY" | "DEFAULT" | "RELATIONAL";
   exemptInGenres: string[] | null;
   description   : string | null;
   isActive      : boolean;
@@ -25,7 +25,7 @@ export interface GenericTitleGenerationPreview {
 
 export interface GeneratedGenericTitleCandidate {
   title            : string;
-  tier             : "SAFETY" | "DEFAULT";
+  tier             : "SAFETY" | "DEFAULT" | "RELATIONAL";
   exemptInGenres   : string[];
   description      : string | null;
   confidence       : number;
@@ -76,7 +76,7 @@ export async function fetchGenericTitles(params?: {
 
 export async function createGenericTitle(data: {
   title          : string;
-  tier?          : "SAFETY" | "DEFAULT";
+  tier?          : "SAFETY" | "DEFAULT" | "RELATIONAL";
   exemptInGenres?: string[];
   description?   : string;
   source?        : "MANUAL" | "LLM_SUGGESTED" | "IMPORTED";
@@ -89,7 +89,7 @@ export async function createGenericTitle(data: {
 }
 
 export async function updateGenericTitle(id: string, data: {
-  tier?          : "SAFETY" | "DEFAULT";
+  tier?          : "SAFETY" | "DEFAULT" | "RELATIONAL";
   exemptInGenres?: string[] | null;
   description?   : string;
   isActive?      : boolean;

@@ -5,6 +5,8 @@ import {
   BookOpenText,
   FileClock,
   Filter,
+  History,
+  Regex,
   ScrollText,
   Sparkles,
   UserRoundSearch,
@@ -24,7 +26,9 @@ export type KnowledgeBaseNavIconKey =
   | "prompt-template"
   | "ner-rule"
   | "prompt-extraction-rule"
-  | "change-log";
+  | "change-log"
+  | "historical-figure"
+  | "name-pattern";
 
 export interface KnowledgeBaseNavLink {
   href   : string;
@@ -45,6 +49,8 @@ const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
   "prompt-template"       : ScrollText,
   "ner-rule"              : BookMarked,
   "prompt-extraction-rule": ScrollText,
+  "historical-figure"     : History,
+  "name-pattern"          : Regex,
   "change-log"            : FileClock
 };
 

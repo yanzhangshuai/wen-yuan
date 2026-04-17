@@ -71,7 +71,7 @@ import {
   updateGenericTitle
 } from "@/lib/services/title-filters";
 
-type TierFilter = "all" | "SAFETY" | "DEFAULT";
+type TierFilter = "all" | "SAFETY" | "DEFAULT" | "RELATIONAL";
 
 const NO_REFERENCE_BOOK_TYPE = "all";
 
@@ -344,7 +344,7 @@ export default function TitleFiltersPage() {
                       </TableCell>
                       <TableCell className="font-medium">{item.title}</TableCell>
                       <TableCell>
-                        <Badge variant={item.tier === "SAFETY" ? "destructive" : "secondary"}>{getGenericTitleTierLabel(item.tier)}</Badge>
+                        <Badge variant={item.tier === "SAFETY" ? "destructive" : item.tier === "RELATIONAL" ? "outline" : "secondary"}>{getGenericTitleTierLabel(item.tier)}</Badge>
                       </TableCell>
                       <TableCell>{item.exemptInGenres?.length ? item.exemptInGenres.join("、") : "-"}</TableCell>
                       <TableCell className="max-w-65 truncate">{item.description ?? "-"}</TableCell>
@@ -919,7 +919,7 @@ function GenericTitleGenerationReviewDialog({
                         {candidate.description ? <div className="mt-1 text-xs text-muted-foreground">{candidate.description}</div> : null}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={candidate.tier === "SAFETY" ? "destructive" : "secondary"}>{getGenericTitleTierLabel(candidate.tier)}</Badge>
+                        <Badge variant={candidate.tier === "SAFETY" ? "destructive" : candidate.tier === "RELATIONAL" ? "outline" : "secondary"}>{getGenericTitleTierLabel(candidate.tier)}</Badge>
                       </TableCell>
                       <TableCell>{candidate.exemptInGenres.length > 0 ? candidate.exemptInGenres.join("、") : "-"}</TableCell>
                       <TableCell>{candidate.confidence.toFixed(2)}</TableCell>
@@ -970,7 +970,7 @@ function GenericTitleDialog({
   onSaved
 }: GenericTitleDialogProps) {
   const [title, setTitle] = useState("");
-  const [tier, setTier] = useState<"SAFETY" | "DEFAULT">("DEFAULT");
+  const [tier, setTier] = useState<"SAFETY" | "DEFAULT" | "RELATIONAL">("DEFAULT");
   const [exemptInGenres, setExemptInGenres] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -1032,7 +1032,7 @@ function GenericTitleDialog({
           </div>
           <div className="grid gap-2">
             <Label>层级</Label>
-            <Select value={tier} onValueChange={(value) => setTier(value as "SAFETY" | "DEFAULT")}>
+            <Select value={tier} onValueChange={(value) => setTier(value as "SAFETY" | "DEFAULT" | "RELATIONAL")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -1042,7 +1042,7 @@ function GenericTitleDialog({
                 ))}
               </SelectContent>
             </Select>
-            <div className="text-xs text-muted-foreground">内部仍使用 SAFETY/DEFAULT 枚举，但前端统一显示中文说明。</div>
+            <div className="text-xs text-muted-foreground">当前层级说明：{getGenericTitleTierDescription(tier)}</div>
           </div>
           <div className="grid gap-2">
             <Label>书籍类型豁免</Label>
@@ -1052,9 +1052,7 @@ function GenericTitleDialog({
             <Label>说明</Label>
             <Textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} />
           </div>
-          <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-            当前层级说明：{getGenericTitleTierDescription(tier)}。
-          </div>
+
           {editing ? (
             <div className="flex items-center gap-2">
               <Switch checked={isActive} onCheckedChange={setIsActive} />

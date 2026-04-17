@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, MinusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
  * 维护注意：
  * - `Indicator` 内部图标为状态核心反馈，避免随意替换为低对比度样式；
  * - `aria-invalid` 相关样式用于表单校验反馈，是业务可用性要求。
+ * - 边框使用 `border-border`（`--border` 变量）而非 `border-input`（`--input` 为输入框背景色，
+ *   与页面背景几乎相同，会导致在四个主题下复选框边框不可见）。
+ * - `indeterminate` 状态使用 MinusIcon + 与 checked 相同的填充样式，区别于全选/全不选。
  */
 function Checkbox({
   className,
@@ -27,7 +30,7 @@ function Checkbox({
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        "peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        "peer border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground data-[state=indeterminate]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
@@ -36,7 +39,11 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="flex items-center justify-center text-current transition-none"
       >
-        <CheckIcon className="size-3.5" />
+        {/* indeterminate（全选表头部分选中）显示横线；checked 显示对勾 */}
+        {props.checked === "indeterminate"
+          ? <MinusIcon className="size-3.5" />
+          : <CheckIcon className="size-3.5" />
+        }
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );

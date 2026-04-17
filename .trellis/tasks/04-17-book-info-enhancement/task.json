@@ -1,0 +1,37 @@
+{
+  "id": "04-17-book-info-enhancement",
+  "name": "04-17-book-info-enhancement",
+  "title": "feat: 书籍详情显示解析架构 + 导入向导持久书籍信息条",
+  "description": "1) 扩展 getBookById DTO 添加 lastArchitecture 字段，在书籍详情页显示；2) 导入向导步骤 2/3/4 顶部添加当前书籍信息条，避免多步骤操作上下文丢失。",
+  "status": "todo",
+  "dev_type": "feat",
+  "scope": "fullstack",
+  "package": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    { "phase": 1, "action": "implement" },
+    { "phase": 2, "action": "check" }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/types/book.ts",
+    "src/server/modules/books/getBookById.ts",
+    "src/server/modules/books/getBookById.test.ts",
+    "src/app/admin/books/[id]/page.tsx",
+    "src/app/admin/books/import/page.tsx"
+  ],
+  "notes": "详细实施步骤见 docs/superpowers/plans/2026-04-17-checkbox-book-info-plan.md Task B 部分",
+  "meta": {}
+}

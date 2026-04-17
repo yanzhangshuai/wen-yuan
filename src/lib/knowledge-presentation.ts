@@ -36,6 +36,11 @@ export const GENERIC_TITLE_TIER_OPTIONS = [
     value      : "DEFAULT",
     label      : "默认泛称",
     description: "默认按泛称处理，可按题材豁免"
+  },
+  {
+    value      : "RELATIONAL",
+    label      : "关系词",
+    description: "父母、兄弟等关系词，不应被识别为具体人物名称"
   }
 ] as const;
 

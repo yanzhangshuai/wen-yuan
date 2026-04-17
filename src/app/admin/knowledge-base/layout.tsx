@@ -50,6 +50,17 @@ const knowledgeBaseLinks = [
     label  : "Prompt 提取规则",
     iconKey: "prompt-extraction-rule"
   },
+  
+  {
+    href   : "/admin/knowledge-base/historical-figures",
+    label  : "历史人物",
+    iconKey: "historical-figure"
+  },
+  {
+    href   : "/admin/knowledge-base/name-patterns",
+    label  : "名字模式规则",
+    iconKey: "name-pattern"
+  },
   {
     href   : "/admin/knowledge-base/change-logs",
     label  : "变更日志",

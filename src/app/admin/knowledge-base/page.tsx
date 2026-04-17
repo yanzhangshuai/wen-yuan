@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookMarked, BookOpenText, FileClock, Filter, ScrollText, Sparkles, UserRoundSearch } from "lucide-react";
+import { BookMarked, BookOpenText, FileClock, Filter, History, Regex, ScrollText, Sparkles, UserRoundSearch } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -56,6 +56,18 @@ const knowledgeModules = [
     title      : "变更日志",
     description: "审计知识库对象的创建、修改、激活与导入。",
     icon       : FileClock
+  },
+  {
+    href       : "/admin/knowledge-base/historical-figures",
+    title      : "历史人物",
+    description: "维护史书展现的历史名人登记，防止 AI 把已知历史人物错误分裂或审频截断。",
+    icon       : History
+  },
+  {
+    href       : "/admin/knowledge-base/name-patterns",
+    title      : "名字模式规则",
+    description: "维护正则模式规则，阻断家族后缀、描述性短语等被错识为人名。",
+    icon       : Regex
   }
 ] as const;
 
