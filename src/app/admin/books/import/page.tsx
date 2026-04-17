@@ -42,6 +42,7 @@ import { type DragEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
+  BookOpen,
   CheckCircle2,
   Loader2,
   UploadCloud,
@@ -52,6 +53,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -540,11 +542,20 @@ export default function AdminImportPage() {
           </div>
         ))}
         <div className="absolute left-0 right-0 top-4 h-0.5 bg-border z-0 mx-8" />
-        <div
-          className="absolute left-0 top-4 h-0.5 bg-primary z-0 mx-8 transition-all duration-300"
-          style={{ width: `${((Math.min(step, 4) - 1) / 3) * 100}%` }}
-        />
+      <div
+        className="absolute left-0 top-4 h-0.5 bg-primary z-0 mx-8 transition-all duration-300"
+        style={{ width: `${((Math.min(step, 4) - 1) / 3) * 100}%` }}
+      />
       </div>
+
+      {/* 当前书籍信息条：步骤 2/3/4 保持上下文，避免多步骤操作中迷失。 */}
+      {step > 1 && createdBook && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-4 py-2.5 text-sm">
+          <BookOpen size={14} className="shrink-0 text-muted-foreground" />
+          <span className="text-muted-foreground">当前书籍：</span>
+          <strong className="text-foreground">《{createdBook.title}》</strong>
+        </div>
+      )}
 
       {/* 步骤内容区：根据当前 step 条件渲染，确保单步聚焦。 */}
       <div className="space-y-6">
@@ -903,14 +914,13 @@ export default function AdminImportPage() {
                             {previewItems.map((item, idx) => (
                               <tr key={idx} className={cn("border-t border-border first:border-0", selectedChapterIndices.has(item.index) && "bg-primary/5")}>
                                 <td className="px-3 py-2 w-8">
-                                  <input
-                                    type="checkbox"
+                                  <Checkbox
                                     aria-label={`选择 ${item.title}`}
                                     checked={selectedChapterIndices.has(item.index)}
-                                    onChange={(e) => {
+                                    onCheckedChange={(checked) => {
                                       setSelectedChapterIndices(prev => {
                                         const next = new Set(prev);
-                                        if (e.target.checked) {
+                                        if (checked) {
                                           next.add(item.index);
                                         } else {
                                           next.delete(item.index);

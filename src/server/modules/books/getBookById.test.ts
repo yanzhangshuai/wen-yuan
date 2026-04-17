@@ -35,10 +35,11 @@ describe("getBookById", () => {
       profiles      : [{ id: "profile-1" }],
       analysisJobs  : [
         {
-          updatedAt : new Date("2026-03-24T10:09:00.000Z"),
-          finishedAt: new Date("2026-03-24T10:09:30.000Z"),
-          errorLog  : null,
-          phaseLogs : [{
+          updatedAt   : new Date("2026-03-24T10:09:00.000Z"),
+          finishedAt  : new Date("2026-03-24T10:09:30.000Z"),
+          errorLog    : null,
+          architecture: "sequential",
+          phaseLogs   : [{
             model: {
               name: "DeepSeek V3"
             }
@@ -69,6 +70,7 @@ describe("getBookById", () => {
       personaCount    : 1,
       lastAnalyzedAt  : "2026-03-24T10:09:30.000Z",
       currentModel    : "DeepSeek V3",
+      lastArchitecture: "sequential",
       lastErrorSummary: null,
       createdAt       : "2026-03-24T09:10:00.000Z",
       updatedAt       : "2026-03-24T10:10:00.000Z",
@@ -80,6 +82,78 @@ describe("getBookById", () => {
         size: 999
       }
     });
+  });
+
+  it("returns null lastArchitecture when the book has never started analysis", async () => {
+    // 场景：analysisJobs 为空时，详情页不应误展示默认架构。
+    // Arrange
+    const findFirst = vi.fn().mockResolvedValue({
+      id            : "book-2",
+      title         : "红楼梦",
+      author        : "曹雪芹",
+      dynasty       : "清",
+      description   : null,
+      coverUrl      : null,
+      status        : "PENDING",
+      errorLog      : null,
+      createdAt     : new Date("2026-03-25T09:10:00.000Z"),
+      updatedAt     : new Date("2026-03-25T09:10:00.000Z"),
+      sourceFileKey : null,
+      sourceFileUrl : null,
+      sourceFileName: null,
+      sourceFileMime: null,
+      sourceFileSize: null,
+      chapters      : [],
+      profiles      : [],
+      analysisJobs  : []
+    });
+    const service = createGetBookByIdService({ book: { findFirst } } as never);
+
+    // Act
+    const result = await service.getBookById("book-2");
+
+    // Assert
+    expect(result.lastArchitecture).toBeNull();
+  });
+
+  it("maps twopass architecture from the latest analysis job", async () => {
+    // 场景：两遍式任务完成后，详情页需要展示真实架构，方便管理员回溯策略来源。
+    // Arrange
+    const findFirst = vi.fn().mockResolvedValue({
+      id            : "book-3",
+      title         : "西游记",
+      author        : "吴承恩",
+      dynasty       : "明",
+      description   : null,
+      coverUrl      : null,
+      status        : "COMPLETED",
+      errorLog      : null,
+      createdAt     : new Date("2026-03-26T09:10:00.000Z"),
+      updatedAt     : new Date("2026-03-26T10:10:00.000Z"),
+      sourceFileKey : null,
+      sourceFileUrl : null,
+      sourceFileName: null,
+      sourceFileMime: null,
+      sourceFileSize: null,
+      chapters      : [{ id: "chapter-1" }],
+      profiles      : [{ id: "profile-1" }],
+      analysisJobs  : [
+        {
+          updatedAt   : new Date("2026-03-26T10:00:00.000Z"),
+          finishedAt  : new Date("2026-03-26T10:05:00.000Z"),
+          errorLog    : null,
+          architecture: "twopass",
+          phaseLogs   : []
+        }
+      ]
+    });
+    const service = createGetBookByIdService({ book: { findFirst } } as never);
+
+    // Act
+    const result = await service.getBookById("book-3");
+
+    // Assert
+    expect(result.lastArchitecture).toBe("twopass");
   });
 
   it("throws BookNotFoundError when id does not exist", async () => {

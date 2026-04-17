@@ -145,6 +145,9 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             {book.author && <span>作者：{book.author}</span>}
             {book.dynasty && <span>朝代：{book.dynasty}</span>}
             {book.currentModel && <span>当前模型：{book.currentModel}</span>}
+            {book.lastArchitecture && (
+              <span>解析架构：{book.lastArchitecture === "sequential" ? "顺序式" : "两遍式"}</span>
+            )}
           </div>
 
           {/* 业务统计信息：章节数/人物数/创建时间/源文件。 */}

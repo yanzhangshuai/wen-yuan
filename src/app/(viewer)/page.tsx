@@ -47,6 +47,7 @@ function toLibraryBookCardData(book: BookLibraryListItem): LibraryBookCardData {
     personaCount    : book.personaCount,
     lastAnalyzedAt  : book.lastAnalyzedAt,
     currentModel    : book.currentModel,
+    lastArchitecture: book.lastArchitecture,
     lastErrorSummary: book.lastErrorSummary,
     createdAt       : book.createdAt,
     updatedAt       : book.updatedAt,

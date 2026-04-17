@@ -3,7 +3,7 @@
   "name": "04-17-book-info-enhancement",
   "title": "feat: 书籍详情显示解析架构 + 导入向导持久书籍信息条",
   "description": "1) 扩展 getBookById DTO 添加 lastArchitecture 字段，在书籍详情页显示；2) 导入向导步骤 2/3/4 顶部添加当前书籍信息条，避免多步骤操作上下文丢失。",
-  "status": "todo",
+  "status": "completed",
   "dev_type": "feat",
   "scope": "fullstack",
   "package": null,
@@ -11,14 +11,20 @@
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-04-17",
-  "completedAt": null,
+  "completedAt": "2026-04-17",
   "branch": null,
   "base_branch": "dev",
   "worktree_path": null,
   "current_phase": 0,
   "next_action": [
-    { "phase": 1, "action": "implement" },
-    { "phase": 2, "action": "check" }
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    }
   ],
   "commit": null,
   "pr_url": null,

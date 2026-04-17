@@ -65,10 +65,11 @@ interface BookDetailRow {
   profiles      : Array<{ id: string }>;
   /** 最近分析任务快照（只取最新 1 条）。 */
   analysisJobs: Array<{
-    updatedAt : Date;
-    finishedAt: Date | null;
-    errorLog  : string | null;
-    phaseLogs : Array<{
+    updatedAt   : Date;
+    finishedAt  : Date | null;
+    errorLog    : string | null;
+    architecture: string;
+    phaseLogs   : Array<{
       model: {
         name: string;
       } | null;
@@ -103,6 +104,12 @@ function resolveLastAnalyzedAt(
 function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
   const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
+  const rawArchitecture = book.analysisJobs?.[0]?.architecture ?? null;
+  const lastArchitecture = rawArchitecture === "twopass"
+    ? "twopass"
+    : rawArchitecture === "sequential"
+      ? "sequential"
+      : null;
   const lastErrorSummary = book.errorLog ?? book.analysisJobs[0]?.errorLog ?? null;
 
   return {
@@ -116,6 +123,7 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
     personaCount  : book.profiles.length,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
+    lastArchitecture,
     lastErrorSummary,
     createdAt     : book.createdAt.toISOString(),
     updatedAt     : book.updatedAt.toISOString(),
@@ -178,10 +186,11 @@ export function createGetBookByIdService(
           take   : 1,
           orderBy: { updatedAt: "desc" },
           select : {
-            updatedAt : true,
-            finishedAt: true,
-            errorLog  : true,
-            phaseLogs : {
+            updatedAt   : true,
+            finishedAt  : true,
+            errorLog    : true,
+            architecture: true,
+            phaseLogs   : {
               take   : 1,
               orderBy: { createdAt: "desc" },
               select : {

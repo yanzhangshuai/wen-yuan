@@ -135,6 +135,8 @@ export interface BookLibraryListItem {
   lastAnalyzedAt  : string | null;
   /** 当前生效模型名称（可空），用于回溯分析结果来源。 */
   currentModel    : string | null;
+  /** 最后一次解析架构（null = 从未解析过）。 */
+  lastArchitecture: "sequential" | "twopass" | null;
   /** 最近错误摘要（可空），用于列表层快速诊断失败原因。 */
   lastErrorSummary: string | null;
   /** 创建时间（ISO 字符串）。 */

@@ -69,7 +69,14 @@ describe("listBooks", () => {
         coverUrl     : true,
         errorLog     : true,
         sourceFileKey: true,
-        _count       : {
+        analysisJobs : {
+          take   : 1,
+          orderBy: { updatedAt: "desc" },
+          select : expect.objectContaining({
+            architecture: true
+          })
+        },
+        _count: {
           select: {
             chapters: true,
             profiles: {
@@ -91,6 +98,7 @@ describe("listBooks", () => {
         personaCount    : 3,
         lastAnalyzedAt  : "2026-03-24T10:08:00.000Z",
         currentModel    : "DeepSeek V3",
+        lastArchitecture: null,
         lastErrorSummary: null,
         createdAt       : "2026-03-24T09:10:00.000Z",
         updatedAt       : "2026-03-24T10:10:00.000Z",

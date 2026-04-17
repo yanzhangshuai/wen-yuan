@@ -71,6 +71,7 @@ function buildBook(partial: Partial<LibraryBookCardData>): LibraryBookCardData {
     personaCount    : partial.personaCount ?? 100,
     lastAnalyzedAt  : partial.lastAnalyzedAt ?? "2026-03-24T10:00:00.000Z",
     currentModel    : partial.currentModel ?? "DeepSeek V3",
+    lastArchitecture: partial.lastArchitecture ?? "sequential",
     lastErrorSummary: partial.lastErrorSummary ?? null,
     createdAt       : partial.createdAt ?? "2026-03-24T08:00:00.000Z",
     updatedAt       : partial.updatedAt ?? "2026-03-24T10:00:00.000Z",

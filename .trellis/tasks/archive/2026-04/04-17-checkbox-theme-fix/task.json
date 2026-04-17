@@ -3,7 +3,7 @@
   "name": "04-17-checkbox-theme-fix",
   "title": "fix: 多选框在四个主题下不明显 + 替换原生 checkbox",
   "description": "修复 Checkbox 组件未选中状态在四个主题（丹青/星空/靛藏/素雅）下边框对比度不足的问题；替换导入向导 step3 的原生 <input type='checkbox'> 为主题化 <Checkbox> 组件。",
-  "status": "todo",
+  "status": "completed",
   "dev_type": "fix",
   "scope": "frontend",
   "package": null,
@@ -11,14 +11,20 @@
   "creator": "codex-agent",
   "assignee": "codex-agent",
   "createdAt": "2026-04-17",
-  "completedAt": null,
+  "completedAt": "2026-04-17",
   "branch": null,
   "base_branch": "dev",
   "worktree_path": null,
   "current_phase": 0,
   "next_action": [
-    { "phase": 1, "action": "implement" },
-    { "phase": 2, "action": "check" }
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    }
   ],
   "commit": null,
   "pr_url": null,

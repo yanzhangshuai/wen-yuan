@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
  * - `aria-invalid` 相关样式用于表单校验反馈，是业务可用性要求。
  * - 边框使用 `border-border`（`--border` 变量）而非 `border-input`（`--input` 为输入框背景色，
  *   与页面背景几乎相同，会导致在四个主题下复选框边框不可见）。
+ * - `bg-muted/20` 为未选中状态提供轻量背景填充，提升四个主题下的边框对比度。
  * - `indeterminate` 状态使用 MinusIcon + 与 checked 相同的填充样式，区别于全选/全不选。
  */
 function Checkbox({
@@ -30,7 +31,7 @@ function Checkbox({
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        "peer border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground data-[state=indeterminate]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        "peer border-border bg-muted/20 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground data-[state=indeterminate]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
