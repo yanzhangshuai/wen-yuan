@@ -34,6 +34,7 @@ import {
   BookOpen,
   Calendar,
   FileText,
+  ShieldCheck,
   UserSearch,
   Users
 } from "lucide-react";
@@ -189,6 +190,12 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             <Link href={`/admin/books/${book.id}/candidates`} className="inline-flex items-center gap-1">
               <UserSearch size={14} />
               候选人物
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/books/${book.id}/review-center`} className="inline-flex items-center gap-1">
+              <ShieldCheck size={14} />
+              审核中心
             </Link>
           </Button>
           <BookRowActions bookId={book.id} bookTitle={book.title} />

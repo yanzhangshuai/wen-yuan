@@ -34,6 +34,7 @@ function createSuggestionRow(overrides: Partial<{
     confidence     : 0.92,
     evidenceRefs   : [{ chapterId: "c-1", paraIndex: 3 }],
     status         : "PENDING",
+    source         : "STAGE_B_AUTO",
     createdAt      : new Date("2026-03-25T08:00:00.000Z"),
     resolvedAt     : null,
     book           : { title: "儒林外史" },
@@ -270,5 +271,224 @@ describe("merge suggestions service", () => {
         status: "ACCEPTED"
       })
     }));
+  });
+
+  // ── 审核中心扩展服务（listBookSuggestionsByTab / acceptSuggestionForReviewCenter） ──
+
+  it("listBookSuggestionsByTab · tab=merge 过滤 PENDING + source in (STAGE_B_AUTO, STAGE_C_FEEDBACK)", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      createSuggestionRow({ id: "s-merge-1" }),
+      createSuggestionRow({ id: "s-merge-2" })
+    ]);
+    const count = vi.fn().mockResolvedValue(2);
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findMany, count }
+    } as never);
+
+    const result = await service.listBookSuggestionsByTab({
+      bookId  : "book-1",
+      tab     : "merge",
+      page    : 1,
+      pageSize: 20
+    });
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        bookId: "book-1",
+        status: "PENDING",
+        source: { in: ["STAGE_B_AUTO", "STAGE_C_FEEDBACK"] }
+      },
+      skip : 0,
+      take : 20
+    }));
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        bookId: "book-1",
+        status: "PENDING",
+        source: { in: ["STAGE_B_AUTO", "STAGE_C_FEEDBACK"] }
+      }
+    });
+    expect(result.total).toBe(2);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]?.source).toBe("STAGE_B_AUTO");
+  });
+
+  it("listBookSuggestionsByTab · tab=impersonation 过滤 source=STAGE_B5_TEMPORAL + PENDING", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      createSuggestionRow({ id: "s-b5", source: "STAGE_B5_TEMPORAL" } as never)
+    ]);
+    const count = vi.fn().mockResolvedValue(1);
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findMany, count }
+    } as never);
+
+    const result = await service.listBookSuggestionsByTab({
+      bookId  : "book-1",
+      tab     : "impersonation",
+      page    : 2,
+      pageSize: 10
+    });
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        bookId: "book-1",
+        status: "PENDING",
+        source: "STAGE_B5_TEMPORAL"
+      },
+      skip : 10,
+      take : 10
+    }));
+    expect(result.items[0]?.source).toBe("STAGE_B5_TEMPORAL");
+  });
+
+  it("listBookSuggestionsByTab · tab=done 过滤 status in (ACCEPTED, REJECTED)，忽略 source", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const count = vi.fn().mockResolvedValue(0);
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findMany, count }
+    } as never);
+
+    await service.listBookSuggestionsByTab({
+      bookId  : "book-1",
+      tab     : "done",
+      page    : 1,
+      pageSize: 20
+    });
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        bookId: "book-1",
+        status: { in: ["ACCEPTED", "REJECTED"] }
+      }
+    }));
+    const whereArg = findMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
+    expect(whereArg.where.source).toBeUndefined();
+  });
+
+  it("acceptSuggestionForReviewCenter · STAGE_B5_TEMPORAL 只改状态，不走合并事务", async () => {
+    const findUniqueOuter = vi.fn().mockResolvedValue({
+      id    : "s-b5",
+      bookId: "book-1",
+      source: "STAGE_B5_TEMPORAL",
+      status: "PENDING"
+    });
+    const txFindUnique = vi.fn().mockResolvedValue({ id: "s-b5", status: "PENDING" });
+    const txUpdate = vi.fn().mockResolvedValue(createSuggestionRow({
+      id: "s-b5", status: "ACCEPTED", resolvedAt: new Date("2026-04-01T00:00:00.000Z"),
+      source: "STAGE_B5_TEMPORAL"
+    } as never));
+    // 冒名分支不应调用 biographyRecord.updateMany / mention.updateMany。
+    const biographyUpdateMany = vi.fn();
+    const mentionUpdateMany = vi.fn();
+
+    const tx = {
+      mergeSuggestion: { findUnique: txFindUnique, update: txUpdate },
+      biographyRecord: { updateMany: biographyUpdateMany },
+      mention        : { updateMany: mentionUpdateMany },
+      relationship   : { findMany: vi.fn(), update: vi.fn() },
+      persona        : { update: vi.fn() }
+    };
+    const $transaction = vi.fn().mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn(tx));
+
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findUnique: findUniqueOuter },
+      $transaction
+    } as never);
+
+    const result = await service.acceptSuggestionForReviewCenter("book-1", "s-b5");
+
+    expect(result.status).toBe("ACCEPTED");
+    expect(biographyUpdateMany).not.toHaveBeenCalled();
+    expect(mentionUpdateMany).not.toHaveBeenCalled();
+    expect(txUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "s-b5" },
+      data : expect.objectContaining({ status: "ACCEPTED" })
+    }));
+  });
+
+  it("acceptSuggestionForReviewCenter · 非冒名来源走全量合并事务", async () => {
+    const findUniqueOuter = vi.fn().mockResolvedValue({
+      id    : "s-merge",
+      bookId: "book-1",
+      source: "STAGE_B_AUTO",
+      status: "PENDING"
+    });
+
+    // 事务内同时满足 accept 合并分支（biography/mention/relationship/persona）。
+    const txFindUnique = vi.fn().mockResolvedValue({
+      id             : "s-merge",
+      bookId         : "book-1",
+      sourcePersonaId: "src-p",
+      targetPersonaId: "tgt-p",
+      reason         : "r",
+      confidence     : 0.9,
+      evidenceRefs   : {},
+      status         : "PENDING",
+      source         : "STAGE_B_AUTO",
+      createdAt      : new Date(),
+      resolvedAt     : null,
+      book           : { title: "t" },
+      sourcePersona  : { id: "src-p", name: "A", aliases: [], deletedAt: null },
+      targetPersona  : { id: "tgt-p", name: "B", aliases: [], deletedAt: null }
+    });
+    const biographyUpdateMany = vi.fn();
+    const mentionUpdateMany = vi.fn();
+    const relationFindMany = vi.fn().mockResolvedValue([]);
+    const personaUpdate = vi.fn();
+    const txUpdate = vi.fn().mockResolvedValue(createSuggestionRow({
+      id: "s-merge", status: "ACCEPTED", resolvedAt: new Date()
+    } as never));
+
+    const tx = {
+      mergeSuggestion: { findUnique: txFindUnique, update: txUpdate },
+      biographyRecord: { updateMany: biographyUpdateMany },
+      mention        : { updateMany: mentionUpdateMany },
+      relationship   : { findMany: relationFindMany, update: vi.fn() },
+      persona        : { update: personaUpdate }
+    };
+    const $transaction = vi.fn().mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn(tx));
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findUnique: findUniqueOuter },
+      $transaction
+    } as never);
+
+    const result = await service.acceptSuggestionForReviewCenter("book-1", "s-merge");
+
+    expect(result.status).toBe("ACCEPTED");
+    // 全量合并事务必须迁移传记/提及。
+    expect(biographyUpdateMany).toHaveBeenCalled();
+    expect(mentionUpdateMany).toHaveBeenCalled();
+  });
+
+  it("acceptSuggestionForReviewCenter · bookId 不匹配时抛 NotFound（防越权）", async () => {
+    const findUniqueOuter = vi.fn().mockResolvedValue({
+      id    : "s-x",
+      bookId: "other-book",
+      source: "STAGE_B_AUTO",
+      status: "PENDING"
+    });
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findUnique: findUniqueOuter },
+      $transaction   : vi.fn()
+    } as never);
+
+    await expect(
+      service.acceptSuggestionForReviewCenter("book-1", "s-x")
+    ).rejects.toBeInstanceOf(MergeSuggestionNotFoundError);
+  });
+
+  it("rejectSuggestionForReviewCenter · bookId 不匹配抛 NotFound", async () => {
+    const findUniqueOuter = vi.fn().mockResolvedValue({
+      id    : "s-x",
+      bookId: "other-book"
+    });
+    const service = createMergeSuggestionsService({
+      mergeSuggestion: { findUnique: findUniqueOuter },
+      $transaction   : vi.fn()
+    } as never);
+
+    await expect(
+      service.rejectSuggestionForReviewCenter("book-1", "s-x")
+    ).rejects.toBeInstanceOf(MergeSuggestionNotFoundError);
   });
 });

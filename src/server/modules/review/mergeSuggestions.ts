@@ -84,11 +84,33 @@ export interface MergeSuggestionItem {
   evidenceRefs   : unknown;
   /** 建议状态。 */
   status         : MergeSuggestionStatus;
+  /**
+   * 建议来源（STAGE_B_AUTO / STAGE_B5_TEMPORAL / STAGE_C_FEEDBACK）。
+   *
+   * 为什么放在 DTO 里：
+   * - 审核中心 UI 需要按来源分 Tab，前端无法仅凭 reason 推断；
+   * - 接受动作在路由/服务层按 `source` 分派（MERGE vs IMPERSONATION），
+   *   返回 DTO 也保留该字段便于前端刷新时渲染正确分类。
+   */
+  source         : string;
   /** 创建时间（ISO 8601 字符串）。 */
   createdAt      : string;
   /** 处理完成时间（ISO 8601，可空）。 */
   resolvedAt     : string | null;
 }
+
+/**
+ * 审核中心 Tab 枚举。
+ *
+ * - `merge`：Stage B 自动规则 + Stage C 反馈通道的待人工审核合并建议；
+ * - `impersonation`：Stage B.5 时序一致性检测出的冒名候选（不自动合并）；
+ * - `done`：已处理（ACCEPTED/REJECTED），忽略来源维度。
+ */
+export const REVIEW_CENTER_TABS = ["merge", "impersonation", "done"] as const;
+export type ReviewCenterTab = (typeof REVIEW_CENTER_TABS)[number];
+
+/** Stage B.5 冒名候选来源标记；用于在 accept 时跳过人物合并副作用。 */
+export const STAGE_B5_TEMPORAL_SOURCE = "STAGE_B5_TEMPORAL";
 
 /** 指定合并建议不存在时抛出的异常。 */
 export class MergeSuggestionNotFoundError extends Error {
@@ -142,6 +164,7 @@ function mapSuggestionRow(item: {
   confidence     : number;
   evidenceRefs   : unknown;
   status         : string;
+  source         : string;
   createdAt      : Date;
   resolvedAt     : Date | null;
   book           : { title: string };
@@ -162,6 +185,7 @@ function mapSuggestionRow(item: {
     confidence     : item.confidence,
     evidenceRefs   : item.evidenceRefs,
     status         : item.status as MergeSuggestionStatus,
+    source         : item.source,
     createdAt      : item.createdAt.toISOString(),
     resolvedAt     : item.resolvedAt?.toISOString() ?? null
   };
@@ -222,6 +246,7 @@ export function createMergeSuggestionsService(
         confidence     : true,
         evidenceRefs   : true,
         status         : true,
+        source         : true,
         createdAt      : true,
         resolvedAt     : true,
         book           : {
@@ -277,6 +302,7 @@ export function createMergeSuggestionsService(
           confidence     : true,
           evidenceRefs   : true,
           status         : true,
+          source         : true,
           createdAt      : true,
           resolvedAt     : true,
           book           : {
@@ -454,6 +480,7 @@ export function createMergeSuggestionsService(
           confidence     : true,
           evidenceRefs   : true,
           status         : true,
+          source         : true,
           createdAt      : true,
           resolvedAt     : true,
           book           : {
@@ -527,6 +554,7 @@ export function createMergeSuggestionsService(
           confidence     : true,
           evidenceRefs   : true,
           status         : true,
+          source         : true,
           createdAt      : true,
           resolvedAt     : true,
           book           : {
@@ -573,11 +601,186 @@ export function createMergeSuggestionsService(
     return updateSuggestionStatus(suggestionId, "DEFERRED");
   }
 
+  /**
+   * 功能：按审核中心 Tab 分页列出某本书的合并建议。
+   * 输入：`bookId` + `tab` + 分页参数。
+   * 输出：`{ items, total }`，按 createdAt desc。
+   *
+   * Tab -> 过滤规则映射（不在 schema 内，属于业务规则）：
+   * - `merge`         : status=PENDING, source IN (STAGE_B_AUTO, STAGE_C_FEEDBACK)
+   * - `impersonation` : status=PENDING, source=STAGE_B5_TEMPORAL
+   * - `done`          : status IN (ACCEPTED, REJECTED)（不区分 source）
+   *
+   * 为什么在服务层集中 Tab 规则：
+   * - API 路由层、未来的服务端渲染页面都可能复用同一条件；
+   * - Tab -> 条件是“审核中心契约”，变动时需要同步前端，所以收敛到一处。
+   */
+  async function listBookSuggestionsByTab(input: {
+    bookId  : string;
+    tab     : ReviewCenterTab;
+    page    : number;
+    pageSize: number;
+  }): Promise<{ items: MergeSuggestionItem[]; total: number }> {
+    const { bookId, tab, page, pageSize } = input;
+
+    // eslint 类型：where 使用 Prisma JSON 过滤树，这里保留显式 object 写法便于审查。
+    const where: {
+      bookId : string;
+      status?: string | { in: string[] };
+      source?: string | { in: string[] };
+    } = { bookId };
+
+    if (tab === "merge") {
+      where.status = "PENDING";
+      where.source = { in: ["STAGE_B_AUTO", "STAGE_C_FEEDBACK"] };
+    } else if (tab === "impersonation") {
+      where.status = "PENDING";
+      where.source = "STAGE_B5_TEMPORAL";
+    } else {
+      where.status = { in: ["ACCEPTED", "REJECTED"] };
+    }
+
+    const commonSelect = {
+      id             : true,
+      bookId         : true,
+      sourcePersonaId: true,
+      targetPersonaId: true,
+      reason         : true,
+      confidence     : true,
+      evidenceRefs   : true,
+      status         : true,
+      source         : true,
+      createdAt      : true,
+      resolvedAt     : true,
+      book           : { select: { title: true } },
+      sourcePersona  : { select: { name: true } },
+      targetPersona  : { select: { name: true } }
+    } as const;
+
+    // 并行查询列表与总数，降低请求延迟；两者独立事务语义一致（只读）。
+    const [rows, total] = await Promise.all([
+      prismaClient.mergeSuggestion.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }],
+        skip   : (page - 1) * pageSize,
+        take   : pageSize,
+        select : commonSelect
+      }),
+      prismaClient.mergeSuggestion.count({ where })
+    ]);
+
+    return {
+      items: rows.map(mapSuggestionRow),
+      total
+    };
+  }
+
+  /**
+   * 功能：审核中心接受动作的统一入口。按建议来源分派真正的写动作。
+   * 输入：`bookId` + `suggestionId`。
+   * 输出：更新后的 `MergeSuggestionItem`。
+   *
+   * 分派规则（与 Tab 分类保持一致，集中在服务层，路由层只做 HTTP 映射）：
+   * - `STAGE_B5_TEMPORAL`：冒名候选，人工确认不等于"确认合并"。仅把建议状态改为
+   *   ACCEPTED，不迁移 persona / biography / relationship，由运营在图谱层再处理；
+   * - 其他来源（`STAGE_B_AUTO` / `STAGE_C_FEEDBACK`）：走既有 `acceptMergeSuggestion`
+   *   全量合并事务（biography/mention/relationship 迁移 + alias 归并 + source 软删除）。
+   *
+   * 防越权：校验 suggestion.bookId === bookId，避免 A 书管理员操作 B 书的建议。
+   */
+  async function acceptSuggestionForReviewCenter(
+    bookId: string,
+    suggestionId: string
+  ): Promise<MergeSuggestionItem> {
+    const existing = await prismaClient.mergeSuggestion.findUnique({
+      where : { id: suggestionId },
+      select: { id: true, bookId: true, source: true, status: true }
+    });
+
+    if (!existing || existing.bookId !== bookId) {
+      throw new MergeSuggestionNotFoundError(suggestionId);
+    }
+
+    if (existing.status !== "PENDING") {
+      throw new MergeSuggestionStateError(existing.id, existing.status);
+    }
+
+    if (existing.source === STAGE_B5_TEMPORAL_SOURCE) {
+      // 冒名候选：不改 persona/关系，只标记已审阅。
+      // 使用独立事务确保并发场景下 PENDING 守卫有效。
+      return prismaClient.$transaction(async (tx) => {
+        const current = await tx.mergeSuggestion.findUnique({
+          where : { id: suggestionId },
+          select: { id: true, status: true }
+        });
+
+        if (!current) {
+          throw new MergeSuggestionNotFoundError(suggestionId);
+        }
+        if (current.status !== "PENDING") {
+          throw new MergeSuggestionStateError(current.id, current.status);
+        }
+
+        const updated = await tx.mergeSuggestion.update({
+          where: { id: suggestionId },
+          data : {
+            status    : "ACCEPTED",
+            resolvedAt: new Date()
+          },
+          select: {
+            id             : true,
+            bookId         : true,
+            sourcePersonaId: true,
+            targetPersonaId: true,
+            reason         : true,
+            confidence     : true,
+            evidenceRefs   : true,
+            status         : true,
+            source         : true,
+            createdAt      : true,
+            resolvedAt     : true,
+            book           : { select: { title: true } },
+            sourcePersona  : { select: { name: true } },
+            targetPersona  : { select: { name: true } }
+          }
+        });
+
+        return mapSuggestionRow(updated);
+      });
+    }
+
+    return acceptMergeSuggestion(suggestionId);
+  }
+
+  /**
+   * 功能：审核中心拒绝动作。与 `rejectMergeSuggestion` 语义一致，但额外校验 bookId。
+   * 输入：`bookId` + `suggestionId`。
+   * 输出：更新后的建议。
+   */
+  async function rejectSuggestionForReviewCenter(
+    bookId: string,
+    suggestionId: string
+  ): Promise<MergeSuggestionItem> {
+    const existing = await prismaClient.mergeSuggestion.findUnique({
+      where : { id: suggestionId },
+      select: { id: true, bookId: true }
+    });
+
+    if (!existing || existing.bookId !== bookId) {
+      throw new MergeSuggestionNotFoundError(suggestionId);
+    }
+
+    return rejectMergeSuggestion(suggestionId);
+  }
+
   return {
     listMergeSuggestions,
     acceptMergeSuggestion,
     rejectMergeSuggestion,
-    deferMergeSuggestion
+    deferMergeSuggestion,
+    listBookSuggestionsByTab,
+    acceptSuggestionForReviewCenter,
+    rejectSuggestionForReviewCenter
   };
 }
 
@@ -586,7 +789,10 @@ export const {
   listMergeSuggestions,
   acceptMergeSuggestion,
   rejectMergeSuggestion,
-  deferMergeSuggestion
+  deferMergeSuggestion,
+  listBookSuggestionsByTab,
+  acceptSuggestionForReviewCenter,
+  rejectSuggestionForReviewCenter
 } = createMergeSuggestionsService();
 
 export {
