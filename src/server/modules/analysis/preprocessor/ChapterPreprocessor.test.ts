@@ -114,6 +114,11 @@ describe("preprocessChapter - 四区段切分与覆盖率自白", () => {
     // 引入句"王冕道："被包含在 DIALOGUE 区段中
     expect(dialogues[0].text.startsWith("王冕道")).toBe(true);
     expect(dialogues[1].text.startsWith("秦老笑道")).toBe(true);
+    // 新增（T03）：引入句主语 span 精确回填
+    expect(dialogues[0].speakerStart).toBe(dialogues[0].start);
+    expect(dialogues[0].speakerEnd).toBe(dialogues[0].start + 2);
+    expect(chapter.slice(dialogues[0].speakerStart, dialogues[0].speakerEnd)).toBe("王冕");
+    expect(chapter.slice(dialogues[1].speakerStart, dialogues[1].speakerEnd)).toBe("秦老");
   });
 
   it("LOW confidence：混乱拼接文本正确打标", () => {

@@ -31,13 +31,18 @@ export type PreprocessorConfidence = "HIGH" | "LOW";
  * 四区段切分出的一个具体区间（按字符偏移）。
  * - `start` 闭区间、`end` 开区间，与 `String.prototype.slice` 约定一致。
  * - `speaker` 仅 DIALOGUE 类型可能存在：从引入句中抽取的说话人 token（best-effort）。
+ * - `speakerStart` / `speakerEnd` 仅 DIALOGUE 且 `speaker` 存在时给出：说话人 token
+ *   在章节原文中的字符偏移（闭-开区间）。Stage A `enforceRegionOverride` 需要据此
+ *   区分「引入句主语」(允许 SELF，REV-1) 与「引号内被提及的第三方」(强制 QUOTED)。
  */
 export interface PreprocessRegion {
-  type    : RegionType;
-  start   : number;
-  end     : number;
-  text    : string;
-  speaker?: string;
+  type         : RegionType;
+  start        : number;
+  end          : number;
+  text         : string;
+  speaker?     : string;
+  speakerStart?: number;
+  speakerEnd?  : number;
 }
 
 /**

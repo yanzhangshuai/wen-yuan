@@ -168,6 +168,8 @@ function findDialogueRegions(
 
     let regionStart = quoteStart;
     let speaker: string | undefined;
+    let speakerStart: number | undefined;
+    let speakerEnd: number | undefined;
     if (introMatch && introMatch.index !== undefined) {
       const introAbsStart = lookbackFrom + introMatch.index;
       // 防御性：若引入句起点落在 POEM 区段内，则放弃引入句（保留 speaker 以记录）
@@ -175,6 +177,10 @@ function findDialogueRegions(
         regionStart = introAbsStart;
       }
       speaker = introMatch[1];
+      // 说话人 token 的起止偏移：introducer regex 把 speaker 置于捕获组 1 开头，
+      // 故 speakerStart = introAbsStart（捕获组从 match[0] 起即为 speaker）。
+      speakerStart = introAbsStart;
+      speakerEnd = introAbsStart + speaker.length;
     }
 
     regions.push({
@@ -182,7 +188,9 @@ function findDialogueRegions(
       start: regionStart,
       end  : quoteEnd,
       text : chapterText.slice(regionStart, quoteEnd),
-      speaker
+      speaker,
+      speakerStart,
+      speakerEnd
     });
   }
 

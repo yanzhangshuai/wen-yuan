@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-03-stage-a-extractor",
+  "name": "char-ext-03-stage-a-extractor",
+  "title": "feat: Stage A 章节硬提取服务",
+  "description": "新建 StageAExtractor 服务：逐章调用 Prompt A，解析出 ChapterMention[] 写入 persona_mention_candidates 表；原始返回写 analysis_llm_raw_outputs。禁止任何合并/推断逻辑。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
