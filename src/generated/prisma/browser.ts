@@ -159,3 +159,29 @@ export type PromptExtractionRule = Prisma.PromptExtractionRuleModel
  * @db.remark: 所有知识库对象的变更日志。
  */
 export type KnowledgeAuditLog = Prisma.KnowledgeAuditLogModel
+/**
+ * Model PersonaMention
+ * @db.remark: Stage A 章节硬提取的 mention 候选池。
+ * 语义：原文里每个称呼的每次出现都是一条记录；是否晋级为 persona 由 Stage B 聚合判定。
+ * 生命周期：Stage A 写入 → Stage B 读取聚合 → 晋级后回填 promoted_persona_id。
+ */
+export type PersonaMention = Prisma.PersonaMentionModel
+/**
+ * Model ChapterPreprocessResult
+ * @db.remark: Stage 0 预处理结果（§0-4 覆盖率自白 + §0-2 死亡标记候选）。
+ * 每个章节一条记录，输出四区段字符占比与正则死亡标记候选；unclassified>10% 打标 LOW。
+ */
+export type ChapterPreprocessResult = Prisma.ChapterPreprocessResultModel
+/**
+ * Model PromptTemplateVariant
+ * @db.remark: 按 BookType 的 Prompt 变体（§0-12 / §3.7）。
+ * 每个 stage × bookType 唯一，运行时替换 Prompt 正文的 {{bookTypeSpecialRules}} / {{bookTypeFewShots}} 占位符。
+ * 本任务只建表，不注入 Prompt（Prompt 拼接在 T10 实现）。
+ */
+export type PromptTemplateVariant = Prisma.PromptTemplateVariantModel
+/**
+ * Model BookTypeExample
+ * @db.remark: BookType 级 few-shot 示例池（§3.7）。
+ * 运行时按 bookType+stage+priority 拼接进 Prompt。本任务只建表，不 seed。
+ */
+export type BookTypeExample = Prisma.BookTypeExampleModel

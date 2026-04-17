@@ -42,6 +42,7 @@ export type MergeSuggestionMinAggregateOutputType = {
   reason: string | null
   confidence: number | null
   status: string | null
+  source: string | null
   createdAt: Date | null
   resolvedAt: Date | null
 }
@@ -54,6 +55,7 @@ export type MergeSuggestionMaxAggregateOutputType = {
   reason: string | null
   confidence: number | null
   status: string | null
+  source: string | null
   createdAt: Date | null
   resolvedAt: Date | null
 }
@@ -67,6 +69,7 @@ export type MergeSuggestionCountAggregateOutputType = {
   confidence: number
   evidenceRefs: number
   status: number
+  source: number
   createdAt: number
   resolvedAt: number
   _all: number
@@ -89,6 +92,7 @@ export type MergeSuggestionMinAggregateInputType = {
   reason?: true
   confidence?: true
   status?: true
+  source?: true
   createdAt?: true
   resolvedAt?: true
 }
@@ -101,6 +105,7 @@ export type MergeSuggestionMaxAggregateInputType = {
   reason?: true
   confidence?: true
   status?: true
+  source?: true
   createdAt?: true
   resolvedAt?: true
 }
@@ -114,6 +119,7 @@ export type MergeSuggestionCountAggregateInputType = {
   confidence?: true
   evidenceRefs?: true
   status?: true
+  source?: true
   createdAt?: true
   resolvedAt?: true
   _all?: true
@@ -214,6 +220,7 @@ export type MergeSuggestionGroupByOutputType = {
   confidence: number
   evidenceRefs: runtime.JsonValue | null
   status: string
+  source: string
   createdAt: Date
   resolvedAt: Date | null
   _count: MergeSuggestionCountAggregateOutputType | null
@@ -250,6 +257,7 @@ export type MergeSuggestionWhereInput = {
   confidence?: Prisma.FloatFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableFilter<"MergeSuggestion">
   status?: Prisma.StringFilter<"MergeSuggestion"> | string
+  source?: Prisma.StringFilter<"MergeSuggestion"> | string
   createdAt?: Prisma.DateTimeFilter<"MergeSuggestion"> | Date | string
   resolvedAt?: Prisma.DateTimeNullableFilter<"MergeSuggestion"> | Date | string | null
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
@@ -266,6 +274,7 @@ export type MergeSuggestionOrderByWithRelationInput = {
   confidence?: Prisma.SortOrder
   evidenceRefs?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   book?: Prisma.BookOrderByWithRelationInput
@@ -285,6 +294,7 @@ export type MergeSuggestionWhereUniqueInput = Prisma.AtLeast<{
   confidence?: Prisma.FloatFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableFilter<"MergeSuggestion">
   status?: Prisma.StringFilter<"MergeSuggestion"> | string
+  source?: Prisma.StringFilter<"MergeSuggestion"> | string
   createdAt?: Prisma.DateTimeFilter<"MergeSuggestion"> | Date | string
   resolvedAt?: Prisma.DateTimeNullableFilter<"MergeSuggestion"> | Date | string | null
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
@@ -301,6 +311,7 @@ export type MergeSuggestionOrderByWithAggregationInput = {
   confidence?: Prisma.SortOrder
   evidenceRefs?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.MergeSuggestionCountOrderByAggregateInput
@@ -322,6 +333,7 @@ export type MergeSuggestionScalarWhereWithAggregatesInput = {
   confidence?: Prisma.FloatWithAggregatesFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableWithAggregatesFilter<"MergeSuggestion">
   status?: Prisma.StringWithAggregatesFilter<"MergeSuggestion"> | string
+  source?: Prisma.StringWithAggregatesFilter<"MergeSuggestion"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MergeSuggestion"> | Date | string
   resolvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"MergeSuggestion"> | Date | string | null
 }
@@ -332,6 +344,7 @@ export type MergeSuggestionCreateInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   book: Prisma.BookCreateNestedOneWithoutMergeSuggestionsInput
@@ -348,6 +361,7 @@ export type MergeSuggestionUncheckedCreateInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -358,6 +372,7 @@ export type MergeSuggestionUpdateInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   book?: Prisma.BookUpdateOneRequiredWithoutMergeSuggestionsNestedInput
@@ -374,6 +389,7 @@ export type MergeSuggestionUncheckedUpdateInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -387,6 +403,7 @@ export type MergeSuggestionCreateManyInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -397,6 +414,7 @@ export type MergeSuggestionUpdateManyMutationInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -410,6 +428,7 @@ export type MergeSuggestionUncheckedUpdateManyInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -433,6 +452,7 @@ export type MergeSuggestionCountOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   evidenceRefs?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
 }
@@ -449,6 +469,7 @@ export type MergeSuggestionMaxOrderByAggregateInput = {
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
 }
@@ -461,6 +482,7 @@ export type MergeSuggestionMinOrderByAggregateInput = {
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
 }
@@ -601,6 +623,7 @@ export type MergeSuggestionCreateWithoutBookInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   sourcePersona: Prisma.PersonaCreateNestedOneWithoutSourceMergeSuggestionsInput
@@ -615,6 +638,7 @@ export type MergeSuggestionUncheckedCreateWithoutBookInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -657,6 +681,7 @@ export type MergeSuggestionScalarWhereInput = {
   confidence?: Prisma.FloatFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableFilter<"MergeSuggestion">
   status?: Prisma.StringFilter<"MergeSuggestion"> | string
+  source?: Prisma.StringFilter<"MergeSuggestion"> | string
   createdAt?: Prisma.DateTimeFilter<"MergeSuggestion"> | Date | string
   resolvedAt?: Prisma.DateTimeNullableFilter<"MergeSuggestion"> | Date | string | null
 }
@@ -667,6 +692,7 @@ export type MergeSuggestionCreateWithoutSourcePersonaInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   book: Prisma.BookCreateNestedOneWithoutMergeSuggestionsInput
@@ -681,6 +707,7 @@ export type MergeSuggestionUncheckedCreateWithoutSourcePersonaInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -701,6 +728,7 @@ export type MergeSuggestionCreateWithoutTargetPersonaInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   book: Prisma.BookCreateNestedOneWithoutMergeSuggestionsInput
@@ -715,6 +743,7 @@ export type MergeSuggestionUncheckedCreateWithoutTargetPersonaInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -769,6 +798,7 @@ export type MergeSuggestionCreateManyBookInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -779,6 +809,7 @@ export type MergeSuggestionUpdateWithoutBookInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   sourcePersona?: Prisma.PersonaUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
@@ -793,6 +824,7 @@ export type MergeSuggestionUncheckedUpdateWithoutBookInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -805,6 +837,7 @@ export type MergeSuggestionUncheckedUpdateManyWithoutBookInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -817,6 +850,7 @@ export type MergeSuggestionCreateManySourcePersonaInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -829,6 +863,7 @@ export type MergeSuggestionCreateManyTargetPersonaInput = {
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: string
+  source?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
 }
@@ -839,6 +874,7 @@ export type MergeSuggestionUpdateWithoutSourcePersonaInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   book?: Prisma.BookUpdateOneRequiredWithoutMergeSuggestionsNestedInput
@@ -853,6 +889,7 @@ export type MergeSuggestionUncheckedUpdateWithoutSourcePersonaInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -865,6 +902,7 @@ export type MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -875,6 +913,7 @@ export type MergeSuggestionUpdateWithoutTargetPersonaInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   book?: Prisma.BookUpdateOneRequiredWithoutMergeSuggestionsNestedInput
@@ -889,6 +928,7 @@ export type MergeSuggestionUncheckedUpdateWithoutTargetPersonaInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -901,6 +941,7 @@ export type MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -916,6 +957,7 @@ export type MergeSuggestionSelect<ExtArgs extends runtime.Types.Extensions.Inter
   confidence?: boolean
   evidenceRefs?: boolean
   status?: boolean
+  source?: boolean
   createdAt?: boolean
   resolvedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -932,6 +974,7 @@ export type MergeSuggestionSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   confidence?: boolean
   evidenceRefs?: boolean
   status?: boolean
+  source?: boolean
   createdAt?: boolean
   resolvedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -948,6 +991,7 @@ export type MergeSuggestionSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   confidence?: boolean
   evidenceRefs?: boolean
   status?: boolean
+  source?: boolean
   createdAt?: boolean
   resolvedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -964,11 +1008,12 @@ export type MergeSuggestionSelectScalar = {
   confidence?: boolean
   evidenceRefs?: boolean
   status?: boolean
+  source?: boolean
   createdAt?: boolean
   resolvedAt?: boolean
 }
 
-export type MergeSuggestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "sourcePersonaId" | "targetPersonaId" | "reason" | "confidence" | "evidenceRefs" | "status" | "createdAt" | "resolvedAt", ExtArgs["result"]["mergeSuggestion"]>
+export type MergeSuggestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "sourcePersonaId" | "targetPersonaId" | "reason" | "confidence" | "evidenceRefs" | "status" | "source" | "createdAt" | "resolvedAt", ExtArgs["result"]["mergeSuggestion"]>
 export type MergeSuggestionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
@@ -1001,6 +1046,11 @@ export type $MergeSuggestionPayload<ExtArgs extends runtime.Types.Extensions.Int
     confidence: number
     evidenceRefs: runtime.JsonValue | null
     status: string
+    /**
+     * 建议来源：STAGE_B_AUTO（Stage B 规则生成） | STAGE_C_FEEDBACK（Stage C 反馈通道，§0-14）。
+     * 不自动合并，等待下一次 job 的 Stage B 消费。
+     */
+    source: string
     createdAt: Date
     resolvedAt: Date | null
   }, ExtArgs["result"]["mergeSuggestion"]>
@@ -1437,6 +1487,7 @@ export interface MergeSuggestionFieldRefs {
   readonly confidence: Prisma.FieldRef<"MergeSuggestion", 'Float'>
   readonly evidenceRefs: Prisma.FieldRef<"MergeSuggestion", 'Json'>
   readonly status: Prisma.FieldRef<"MergeSuggestion", 'String'>
+  readonly source: Prisma.FieldRef<"MergeSuggestion", 'String'>
   readonly createdAt: Prisma.FieldRef<"MergeSuggestion", 'DateTime'>
   readonly resolvedAt: Prisma.FieldRef<"MergeSuggestion", 'DateTime'>
 }

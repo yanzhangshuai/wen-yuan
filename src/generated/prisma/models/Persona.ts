@@ -28,10 +28,18 @@ export type AggregatePersona = {
 
 export type PersonaAvgAggregateOutputType = {
   confidence: number | null
+  deathChapterNo: number | null
+  mentionCount: number | null
+  effectiveBiographyCount: number | null
+  distinctChapters: number | null
 }
 
 export type PersonaSumAggregateOutputType = {
   confidence: number | null
+  deathChapterNo: number | null
+  mentionCount: number | null
+  effectiveBiographyCount: number | null
+  distinctChapters: number | null
 }
 
 export type PersonaMinAggregateOutputType = {
@@ -48,6 +56,13 @@ export type PersonaMinAggregateOutputType = {
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  preprocessorConfidence: string | null
+  deathChapterNo: number | null
+  currentLocation: string | null
+  mentionCount: number | null
+  effectiveBiographyCount: number | null
+  distinctChapters: number | null
+  status: string | null
 }
 
 export type PersonaMaxAggregateOutputType = {
@@ -64,6 +79,13 @@ export type PersonaMaxAggregateOutputType = {
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  preprocessorConfidence: string | null
+  deathChapterNo: number | null
+  currentLocation: string | null
+  mentionCount: number | null
+  effectiveBiographyCount: number | null
+  distinctChapters: number | null
+  status: string | null
 }
 
 export type PersonaCountAggregateOutputType = {
@@ -82,16 +104,31 @@ export type PersonaCountAggregateOutputType = {
   deletedAt: number
   createdAt: number
   updatedAt: number
+  preprocessorConfidence: number
+  deathChapterNo: number
+  currentLocation: number
+  mentionCount: number
+  effectiveBiographyCount: number
+  distinctChapters: number
+  status: number
   _all: number
 }
 
 
 export type PersonaAvgAggregateInputType = {
   confidence?: true
+  deathChapterNo?: true
+  mentionCount?: true
+  effectiveBiographyCount?: true
+  distinctChapters?: true
 }
 
 export type PersonaSumAggregateInputType = {
   confidence?: true
+  deathChapterNo?: true
+  mentionCount?: true
+  effectiveBiographyCount?: true
+  distinctChapters?: true
 }
 
 export type PersonaMinAggregateInputType = {
@@ -108,6 +145,13 @@ export type PersonaMinAggregateInputType = {
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
+  preprocessorConfidence?: true
+  deathChapterNo?: true
+  currentLocation?: true
+  mentionCount?: true
+  effectiveBiographyCount?: true
+  distinctChapters?: true
+  status?: true
 }
 
 export type PersonaMaxAggregateInputType = {
@@ -124,6 +168,13 @@ export type PersonaMaxAggregateInputType = {
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
+  preprocessorConfidence?: true
+  deathChapterNo?: true
+  currentLocation?: true
+  mentionCount?: true
+  effectiveBiographyCount?: true
+  distinctChapters?: true
+  status?: true
 }
 
 export type PersonaCountAggregateInputType = {
@@ -142,6 +193,13 @@ export type PersonaCountAggregateInputType = {
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
+  preprocessorConfidence?: true
+  deathChapterNo?: true
+  currentLocation?: true
+  mentionCount?: true
+  effectiveBiographyCount?: true
+  distinctChapters?: true
+  status?: true
   _all?: true
 }
 
@@ -247,6 +305,13 @@ export type PersonaGroupByOutputType = {
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
+  preprocessorConfidence: string | null
+  deathChapterNo: number | null
+  currentLocation: string | null
+  mentionCount: number
+  effectiveBiographyCount: number
+  distinctChapters: number
+  status: string
   _count: PersonaCountAggregateOutputType | null
   _avg: PersonaAvgAggregateOutputType | null
   _sum: PersonaSumAggregateOutputType | null
@@ -288,12 +353,20 @@ export type PersonaWhereInput = {
   deletedAt?: Prisma.DateTimeNullableFilter<"Persona"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
+  preprocessorConfidence?: Prisma.StringNullableFilter<"Persona"> | string | null
+  deathChapterNo?: Prisma.IntNullableFilter<"Persona"> | number | null
+  currentLocation?: Prisma.StringNullableFilter<"Persona"> | string | null
+  mentionCount?: Prisma.IntFilter<"Persona"> | number
+  effectiveBiographyCount?: Prisma.IntFilter<"Persona"> | number
+  distinctChapters?: Prisma.IntFilter<"Persona"> | number
+  status?: Prisma.StringFilter<"Persona"> | string
   profiles?: Prisma.ProfileListRelationFilter
   mentions?: Prisma.MentionListRelationFilter
   biographies?: Prisma.BiographyRecordListRelationFilter
   aliasMappings?: Prisma.AliasMappingListRelationFilter
   sourceMergeSuggestions?: Prisma.MergeSuggestionListRelationFilter
   targetMergeSuggestions?: Prisma.MergeSuggestionListRelationFilter
+  personaMentions?: Prisma.PersonaMentionListRelationFilter
   sourceRels?: Prisma.RelationshipListRelationFilter
   targetRels?: Prisma.RelationshipListRelationFilter
 }
@@ -314,12 +387,20 @@ export type PersonaOrderByWithRelationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  preprocessorConfidence?: Prisma.SortOrderInput | Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrderInput | Prisma.SortOrder
+  currentLocation?: Prisma.SortOrderInput | Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   profiles?: Prisma.ProfileOrderByRelationAggregateInput
   mentions?: Prisma.MentionOrderByRelationAggregateInput
   biographies?: Prisma.BiographyRecordOrderByRelationAggregateInput
   aliasMappings?: Prisma.AliasMappingOrderByRelationAggregateInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionOrderByRelationAggregateInput
   targetMergeSuggestions?: Prisma.MergeSuggestionOrderByRelationAggregateInput
+  personaMentions?: Prisma.PersonaMentionOrderByRelationAggregateInput
   sourceRels?: Prisma.RelationshipOrderByRelationAggregateInput
   targetRels?: Prisma.RelationshipOrderByRelationAggregateInput
 }
@@ -343,12 +424,20 @@ export type PersonaWhereUniqueInput = Prisma.AtLeast<{
   deletedAt?: Prisma.DateTimeNullableFilter<"Persona"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Persona"> | Date | string
+  preprocessorConfidence?: Prisma.StringNullableFilter<"Persona"> | string | null
+  deathChapterNo?: Prisma.IntNullableFilter<"Persona"> | number | null
+  currentLocation?: Prisma.StringNullableFilter<"Persona"> | string | null
+  mentionCount?: Prisma.IntFilter<"Persona"> | number
+  effectiveBiographyCount?: Prisma.IntFilter<"Persona"> | number
+  distinctChapters?: Prisma.IntFilter<"Persona"> | number
+  status?: Prisma.StringFilter<"Persona"> | string
   profiles?: Prisma.ProfileListRelationFilter
   mentions?: Prisma.MentionListRelationFilter
   biographies?: Prisma.BiographyRecordListRelationFilter
   aliasMappings?: Prisma.AliasMappingListRelationFilter
   sourceMergeSuggestions?: Prisma.MergeSuggestionListRelationFilter
   targetMergeSuggestions?: Prisma.MergeSuggestionListRelationFilter
+  personaMentions?: Prisma.PersonaMentionListRelationFilter
   sourceRels?: Prisma.RelationshipListRelationFilter
   targetRels?: Prisma.RelationshipListRelationFilter
 }, "id">
@@ -369,6 +458,13 @@ export type PersonaOrderByWithAggregationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  preprocessorConfidence?: Prisma.SortOrderInput | Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrderInput | Prisma.SortOrder
+  currentLocation?: Prisma.SortOrderInput | Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   _count?: Prisma.PersonaCountOrderByAggregateInput
   _avg?: Prisma.PersonaAvgOrderByAggregateInput
   _max?: Prisma.PersonaMaxOrderByAggregateInput
@@ -395,6 +491,13 @@ export type PersonaScalarWhereWithAggregatesInput = {
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Persona"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Persona"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Persona"> | Date | string
+  preprocessorConfidence?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
+  deathChapterNo?: Prisma.IntNullableWithAggregatesFilter<"Persona"> | number | null
+  currentLocation?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
+  mentionCount?: Prisma.IntWithAggregatesFilter<"Persona"> | number
+  effectiveBiographyCount?: Prisma.IntWithAggregatesFilter<"Persona"> | number
+  distinctChapters?: Prisma.IntWithAggregatesFilter<"Persona"> | number
+  status?: Prisma.StringWithAggregatesFilter<"Persona"> | string
 }
 
 export type PersonaCreateInput = {
@@ -413,12 +516,20 @@ export type PersonaCreateInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -439,12 +550,20 @@ export type PersonaUncheckedCreateInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -465,12 +584,20 @@ export type PersonaUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -491,12 +618,20 @@ export type PersonaUncheckedUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -517,6 +652,13 @@ export type PersonaCreateManyInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
 }
 
 export type PersonaUpdateManyMutationInput = {
@@ -535,6 +677,13 @@ export type PersonaUpdateManyMutationInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type PersonaUncheckedUpdateManyInput = {
@@ -553,6 +702,13 @@ export type PersonaUncheckedUpdateManyInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type StringNullableListFilter<$PrismaModel = never> = {
@@ -579,10 +735,21 @@ export type PersonaCountOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  preprocessorConfidence?: Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrder
+  currentLocation?: Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type PersonaAvgOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
 }
 
 export type PersonaMaxOrderByAggregateInput = {
@@ -599,6 +766,13 @@ export type PersonaMaxOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  preprocessorConfidence?: Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrder
+  currentLocation?: Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type PersonaMinOrderByAggregateInput = {
@@ -615,10 +789,21 @@ export type PersonaMinOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  preprocessorConfidence?: Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrder
+  currentLocation?: Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type PersonaSumOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
+  deathChapterNo?: Prisma.SortOrder
+  mentionCount?: Prisma.SortOrder
+  effectiveBiographyCount?: Prisma.SortOrder
+  distinctChapters?: Prisma.SortOrder
 }
 
 export type PersonaScalarRelationFilter = {
@@ -783,6 +968,22 @@ export type PersonaUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PersonaUpdateToOneWithWhereWithoutTargetMergeSuggestionsInput, Prisma.PersonaUpdateWithoutTargetMergeSuggestionsInput>, Prisma.PersonaUncheckedUpdateWithoutTargetMergeSuggestionsInput>
 }
 
+export type PersonaCreateNestedOneWithoutPersonaMentionsInput = {
+  create?: Prisma.XOR<Prisma.PersonaCreateWithoutPersonaMentionsInput, Prisma.PersonaUncheckedCreateWithoutPersonaMentionsInput>
+  connectOrCreate?: Prisma.PersonaCreateOrConnectWithoutPersonaMentionsInput
+  connect?: Prisma.PersonaWhereUniqueInput
+}
+
+export type PersonaUpdateOneWithoutPersonaMentionsNestedInput = {
+  create?: Prisma.XOR<Prisma.PersonaCreateWithoutPersonaMentionsInput, Prisma.PersonaUncheckedCreateWithoutPersonaMentionsInput>
+  connectOrCreate?: Prisma.PersonaCreateOrConnectWithoutPersonaMentionsInput
+  upsert?: Prisma.PersonaUpsertWithoutPersonaMentionsInput
+  disconnect?: Prisma.PersonaWhereInput | boolean
+  delete?: Prisma.PersonaWhereInput | boolean
+  connect?: Prisma.PersonaWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PersonaUpdateToOneWithWhereWithoutPersonaMentionsInput, Prisma.PersonaUpdateWithoutPersonaMentionsInput>, Prisma.PersonaUncheckedUpdateWithoutPersonaMentionsInput>
+}
+
 export type PersonaCreateWithoutProfilesInput = {
   id?: string
   name: string
@@ -799,11 +1000,19 @@ export type PersonaCreateWithoutProfilesInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -824,11 +1033,19 @@ export type PersonaUncheckedCreateWithoutProfilesInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -865,11 +1082,19 @@ export type PersonaUpdateWithoutProfilesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -890,11 +1115,19 @@ export type PersonaUncheckedUpdateWithoutProfilesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -915,11 +1148,19 @@ export type PersonaCreateWithoutBiographiesInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -940,11 +1181,19 @@ export type PersonaUncheckedCreateWithoutBiographiesInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -981,11 +1230,19 @@ export type PersonaUpdateWithoutBiographiesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -1006,11 +1263,19 @@ export type PersonaUncheckedUpdateWithoutBiographiesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -1031,11 +1296,19 @@ export type PersonaCreateWithoutMentionsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -1056,11 +1329,19 @@ export type PersonaUncheckedCreateWithoutMentionsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -1097,11 +1378,19 @@ export type PersonaUpdateWithoutMentionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -1122,11 +1411,19 @@ export type PersonaUncheckedUpdateWithoutMentionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -1147,12 +1444,20 @@ export type PersonaCreateWithoutSourceRelsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
 
@@ -1172,12 +1477,20 @@ export type PersonaUncheckedCreateWithoutSourceRelsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
 
@@ -1202,12 +1515,20 @@ export type PersonaCreateWithoutTargetRelsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
 }
 
@@ -1227,12 +1548,20 @@ export type PersonaUncheckedCreateWithoutTargetRelsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
 }
 
@@ -1268,12 +1597,20 @@ export type PersonaUpdateWithoutSourceRelsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
 
@@ -1293,12 +1630,20 @@ export type PersonaUncheckedUpdateWithoutSourceRelsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
 
@@ -1329,12 +1674,20 @@ export type PersonaUpdateWithoutTargetRelsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
 }
 
@@ -1354,12 +1707,20 @@ export type PersonaUncheckedUpdateWithoutTargetRelsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
 }
 
@@ -1379,11 +1740,19 @@ export type PersonaCreateWithoutAliasMappingsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -1404,11 +1773,19 @@ export type PersonaUncheckedCreateWithoutAliasMappingsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -1445,11 +1822,19 @@ export type PersonaUpdateWithoutAliasMappingsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -1470,11 +1855,19 @@ export type PersonaUncheckedUpdateWithoutAliasMappingsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -1495,11 +1888,19 @@ export type PersonaCreateWithoutSourceMergeSuggestionsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -1520,11 +1921,19 @@ export type PersonaUncheckedCreateWithoutSourceMergeSuggestionsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -1550,11 +1959,19 @@ export type PersonaCreateWithoutTargetMergeSuggestionsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
+  personaMentions?: Prisma.PersonaMentionCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
 }
@@ -1575,11 +1992,19 @@ export type PersonaUncheckedCreateWithoutTargetMergeSuggestionsInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
   profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
   aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
+  personaMentions?: Prisma.PersonaMentionUncheckedCreateNestedManyWithoutPersonaInput
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -1616,11 +2041,19 @@ export type PersonaUpdateWithoutSourceMergeSuggestionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -1641,11 +2074,19 @@ export type PersonaUncheckedUpdateWithoutSourceMergeSuggestionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -1677,11 +2118,19 @@ export type PersonaUpdateWithoutTargetMergeSuggestionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUpdateManyWithoutPersonaNestedInput
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
 }
@@ -1702,11 +2151,167 @@ export type PersonaUncheckedUpdateWithoutTargetMergeSuggestionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
   aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
   sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  personaMentions?: Prisma.PersonaMentionUncheckedUpdateManyWithoutPersonaNestedInput
+  sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
+  targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
+}
+
+export type PersonaCreateWithoutPersonaMentionsInput = {
+  id?: string
+  name: string
+  type?: $Enums.PersonaType
+  gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
+  birthYear?: string | null
+  deathYear?: string | null
+  globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
+  profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
+  mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
+  biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
+  targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
+}
+
+export type PersonaUncheckedCreateWithoutPersonaMentionsInput = {
+  id?: string
+  name: string
+  type?: $Enums.PersonaType
+  gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
+  birthYear?: string | null
+  deathYear?: string | null
+  globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  preprocessorConfidence?: string | null
+  deathChapterNo?: number | null
+  currentLocation?: string | null
+  mentionCount?: number
+  effectiveBiographyCount?: number
+  distinctChapters?: number
+  status?: string
+  profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
+  mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
+  biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
+  targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
+}
+
+export type PersonaCreateOrConnectWithoutPersonaMentionsInput = {
+  where: Prisma.PersonaWhereUniqueInput
+  create: Prisma.XOR<Prisma.PersonaCreateWithoutPersonaMentionsInput, Prisma.PersonaUncheckedCreateWithoutPersonaMentionsInput>
+}
+
+export type PersonaUpsertWithoutPersonaMentionsInput = {
+  update: Prisma.XOR<Prisma.PersonaUpdateWithoutPersonaMentionsInput, Prisma.PersonaUncheckedUpdateWithoutPersonaMentionsInput>
+  create: Prisma.XOR<Prisma.PersonaCreateWithoutPersonaMentionsInput, Prisma.PersonaUncheckedCreateWithoutPersonaMentionsInput>
+  where?: Prisma.PersonaWhereInput
+}
+
+export type PersonaUpdateToOneWithWhereWithoutPersonaMentionsInput = {
+  where?: Prisma.PersonaWhereInput
+  data: Prisma.XOR<Prisma.PersonaUpdateWithoutPersonaMentionsInput, Prisma.PersonaUncheckedUpdateWithoutPersonaMentionsInput>
+}
+
+export type PersonaUpdateWithoutPersonaMentionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
+  mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
+  biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
+  targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
+}
+
+export type PersonaUncheckedUpdateWithoutPersonaMentionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
+  distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
+  mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
+  biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -1723,6 +2328,7 @@ export type PersonaCountOutputType = {
   aliasMappings: number
   sourceMergeSuggestions: number
   targetMergeSuggestions: number
+  personaMentions: number
   sourceRels: number
   targetRels: number
 }
@@ -1734,6 +2340,7 @@ export type PersonaCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   aliasMappings?: boolean | PersonaCountOutputTypeCountAliasMappingsArgs
   sourceMergeSuggestions?: boolean | PersonaCountOutputTypeCountSourceMergeSuggestionsArgs
   targetMergeSuggestions?: boolean | PersonaCountOutputTypeCountTargetMergeSuggestionsArgs
+  personaMentions?: boolean | PersonaCountOutputTypeCountPersonaMentionsArgs
   sourceRels?: boolean | PersonaCountOutputTypeCountSourceRelsArgs
   targetRels?: boolean | PersonaCountOutputTypeCountTargetRelsArgs
 }
@@ -1793,6 +2400,13 @@ export type PersonaCountOutputTypeCountTargetMergeSuggestionsArgs<ExtArgs extend
 /**
  * PersonaCountOutputType without action
  */
+export type PersonaCountOutputTypeCountPersonaMentionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PersonaMentionWhereInput
+}
+
+/**
+ * PersonaCountOutputType without action
+ */
 export type PersonaCountOutputTypeCountSourceRelsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.RelationshipWhereInput
 }
@@ -1821,12 +2435,20 @@ export type PersonaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  preprocessorConfidence?: boolean
+  deathChapterNo?: boolean
+  currentLocation?: boolean
+  mentionCount?: boolean
+  effectiveBiographyCount?: boolean
+  distinctChapters?: boolean
+  status?: boolean
   profiles?: boolean | Prisma.Persona$profilesArgs<ExtArgs>
   mentions?: boolean | Prisma.Persona$mentionsArgs<ExtArgs>
   biographies?: boolean | Prisma.Persona$biographiesArgs<ExtArgs>
   aliasMappings?: boolean | Prisma.Persona$aliasMappingsArgs<ExtArgs>
   sourceMergeSuggestions?: boolean | Prisma.Persona$sourceMergeSuggestionsArgs<ExtArgs>
   targetMergeSuggestions?: boolean | Prisma.Persona$targetMergeSuggestionsArgs<ExtArgs>
+  personaMentions?: boolean | Prisma.Persona$personaMentionsArgs<ExtArgs>
   sourceRels?: boolean | Prisma.Persona$sourceRelsArgs<ExtArgs>
   targetRels?: boolean | Prisma.Persona$targetRelsArgs<ExtArgs>
   _count?: boolean | Prisma.PersonaCountOutputTypeDefaultArgs<ExtArgs>
@@ -1848,6 +2470,13 @@ export type PersonaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  preprocessorConfidence?: boolean
+  deathChapterNo?: boolean
+  currentLocation?: boolean
+  mentionCount?: boolean
+  effectiveBiographyCount?: boolean
+  distinctChapters?: boolean
+  status?: boolean
 }, ExtArgs["result"]["persona"]>
 
 export type PersonaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1866,6 +2495,13 @@ export type PersonaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  preprocessorConfidence?: boolean
+  deathChapterNo?: boolean
+  currentLocation?: boolean
+  mentionCount?: boolean
+  effectiveBiographyCount?: boolean
+  distinctChapters?: boolean
+  status?: boolean
 }, ExtArgs["result"]["persona"]>
 
 export type PersonaSelectScalar = {
@@ -1884,9 +2520,16 @@ export type PersonaSelectScalar = {
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  preprocessorConfidence?: boolean
+  deathChapterNo?: boolean
+  currentLocation?: boolean
+  mentionCount?: boolean
+  effectiveBiographyCount?: boolean
+  distinctChapters?: boolean
+  status?: boolean
 }
 
-export type PersonaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "gender" | "nameType" | "recordSource" | "confidence" | "aliases" | "hometown" | "birthYear" | "deathYear" | "globalTags" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["persona"]>
+export type PersonaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "gender" | "nameType" | "recordSource" | "confidence" | "aliases" | "hometown" | "birthYear" | "deathYear" | "globalTags" | "deletedAt" | "createdAt" | "updatedAt" | "preprocessorConfidence" | "deathChapterNo" | "currentLocation" | "mentionCount" | "effectiveBiographyCount" | "distinctChapters" | "status", ExtArgs["result"]["persona"]>
 export type PersonaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   profiles?: boolean | Prisma.Persona$profilesArgs<ExtArgs>
   mentions?: boolean | Prisma.Persona$mentionsArgs<ExtArgs>
@@ -1894,6 +2537,7 @@ export type PersonaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   aliasMappings?: boolean | Prisma.Persona$aliasMappingsArgs<ExtArgs>
   sourceMergeSuggestions?: boolean | Prisma.Persona$sourceMergeSuggestionsArgs<ExtArgs>
   targetMergeSuggestions?: boolean | Prisma.Persona$targetMergeSuggestionsArgs<ExtArgs>
+  personaMentions?: boolean | Prisma.Persona$personaMentionsArgs<ExtArgs>
   sourceRels?: boolean | Prisma.Persona$sourceRelsArgs<ExtArgs>
   targetRels?: boolean | Prisma.Persona$targetRelsArgs<ExtArgs>
   _count?: boolean | Prisma.PersonaCountOutputTypeDefaultArgs<ExtArgs>
@@ -1910,6 +2554,7 @@ export type $PersonaPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     aliasMappings: Prisma.$AliasMappingPayload<ExtArgs>[]
     sourceMergeSuggestions: Prisma.$MergeSuggestionPayload<ExtArgs>[]
     targetMergeSuggestions: Prisma.$MergeSuggestionPayload<ExtArgs>[]
+    personaMentions: Prisma.$PersonaMentionPayload<ExtArgs>[]
     sourceRels: Prisma.$RelationshipPayload<ExtArgs>[]
     targetRels: Prisma.$RelationshipPayload<ExtArgs>[]
   }
@@ -1929,6 +2574,36 @@ export type $PersonaPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
+    /**
+     * Stage 0 预处理器对本角色所在章节的信心等级，取值 HIGH | LOW；
+     * 若 LOW 则下游 Stage B 合并阈值 +0.05、CONFIRMED 门槛 +1。
+     */
+    preprocessorConfidence: string | null
+    /**
+     * 正则/LLM 双源确认的死亡章节号（§0-2），用于 Stage B.5 死后行动校验。
+     */
+    deathChapterNo: number | null
+    /**
+     * 当前所在地点（§0-3 跨地点并发冲突检测所需）。
+     */
+    currentLocation: string | null
+    /**
+     * Mention 总计数（Stage B 聚合落库，用于 CONFIRMED 门槛）。
+     */
+    mentionCount: number
+    /**
+     * 有效事迹计数（§0-6 口径：SELF|IMPERSONATING + NARRATIVE + rawSpan≥15 + actionVerb 非空）。
+     */
+    effectiveBiographyCount: number
+    /**
+     * 不同章节出场计数（CONFIRMED 门槛：≥2）。
+     */
+    distinctChapters: number
+    /**
+     * 生命周期状态：CONFIRMED | CANDIDATE | NOISE | MERGED_INTO。
+     * 采用字符串以保留未来扩展空间；默认 CANDIDATE，晋级至 CONFIRMED 需满足 §0-7 门槛。
+     */
+    status: string
   }, ExtArgs["result"]["persona"]>
   composites: {}
 }
@@ -2329,6 +3004,7 @@ export interface Prisma__PersonaClient<T, Null = never, ExtArgs extends runtime.
   aliasMappings<T extends Prisma.Persona$aliasMappingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$aliasMappingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AliasMappingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sourceMergeSuggestions<T extends Prisma.Persona$sourceMergeSuggestionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$sourceMergeSuggestionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MergeSuggestionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   targetMergeSuggestions<T extends Prisma.Persona$targetMergeSuggestionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$targetMergeSuggestionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MergeSuggestionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  personaMentions<T extends Prisma.Persona$personaMentionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$personaMentionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonaMentionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sourceRels<T extends Prisma.Persona$sourceRelsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$sourceRelsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   targetRels<T extends Prisma.Persona$targetRelsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$targetRelsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -2375,6 +3051,13 @@ export interface PersonaFieldRefs {
   readonly deletedAt: Prisma.FieldRef<"Persona", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Persona", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Persona", 'DateTime'>
+  readonly preprocessorConfidence: Prisma.FieldRef<"Persona", 'String'>
+  readonly deathChapterNo: Prisma.FieldRef<"Persona", 'Int'>
+  readonly currentLocation: Prisma.FieldRef<"Persona", 'String'>
+  readonly mentionCount: Prisma.FieldRef<"Persona", 'Int'>
+  readonly effectiveBiographyCount: Prisma.FieldRef<"Persona", 'Int'>
+  readonly distinctChapters: Prisma.FieldRef<"Persona", 'Int'>
+  readonly status: Prisma.FieldRef<"Persona", 'String'>
 }
     
 
@@ -2904,6 +3587,30 @@ export type Persona$targetMergeSuggestionsArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.MergeSuggestionScalarFieldEnum | Prisma.MergeSuggestionScalarFieldEnum[]
+}
+
+/**
+ * Persona.personaMentions
+ */
+export type Persona$personaMentionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PersonaMention
+   */
+  select?: Prisma.PersonaMentionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PersonaMention
+   */
+  omit?: Prisma.PersonaMentionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PersonaMentionInclude<ExtArgs> | null
+  where?: Prisma.PersonaMentionWhereInput
+  orderBy?: Prisma.PersonaMentionOrderByWithRelationInput | Prisma.PersonaMentionOrderByWithRelationInput[]
+  cursor?: Prisma.PersonaMentionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PersonaMentionScalarFieldEnum | Prisma.PersonaMentionScalarFieldEnum[]
 }
 
 /**

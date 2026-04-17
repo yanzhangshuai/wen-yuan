@@ -67,10 +67,48 @@ export const AliasType = {
   POSITION: 'POSITION',
   KINSHIP: 'KINSHIP',
   NICKNAME: 'NICKNAME',
-  COURTESY_NAME: 'COURTESY_NAME'
+  COURTESY_NAME: 'COURTESY_NAME',
+  NAMED: 'NAMED',
+  IMPERSONATED_IDENTITY: 'IMPERSONATED_IDENTITY',
+  MISIDENTIFIED_AS: 'MISIDENTIFIED_AS',
+  UNSURE: 'UNSURE'
 } as const
 
 export type AliasType = (typeof AliasType)[keyof typeof AliasType]
+
+
+export const NarrativeLens = {
+  SELF: 'SELF',
+  IMPERSONATING: 'IMPERSONATING',
+  QUOTED: 'QUOTED',
+  REPORTED: 'REPORTED',
+  HISTORICAL: 'HISTORICAL'
+} as const
+
+export type NarrativeLens = (typeof NarrativeLens)[keyof typeof NarrativeLens]
+
+
+export const IdentityClaim = {
+  SELF: 'SELF',
+  IMPERSONATING: 'IMPERSONATING',
+  QUOTED: 'QUOTED',
+  REPORTED: 'REPORTED',
+  HISTORICAL: 'HISTORICAL',
+  UNSURE: 'UNSURE'
+} as const
+
+export type IdentityClaim = (typeof IdentityClaim)[keyof typeof IdentityClaim]
+
+
+export const BookTypeCode = {
+  CLASSICAL_NOVEL: 'CLASSICAL_NOVEL',
+  HEROIC_NOVEL: 'HEROIC_NOVEL',
+  HISTORICAL_NOVEL: 'HISTORICAL_NOVEL',
+  MYTHOLOGICAL_NOVEL: 'MYTHOLOGICAL_NOVEL',
+  GENERIC: 'GENERIC'
+} as const
+
+export type BookTypeCode = (typeof BookTypeCode)[keyof typeof BookTypeCode]
 
 
 export const AliasMappingStatus = {

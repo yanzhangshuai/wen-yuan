@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-01-schema-migration",
+  "name": "char-ext-01-schema-migration",
+  "title": "feat: 人物解析 schema 迁移 + 旧数据清洗脚本",
+  "description": "扩展 AliasType/PersonaLifecycle/ActorRole/IdentityClaim enum；Persona 删除 aliases String[] 改走 alias_mappings；AliasMapping 加 target_persona_id/evidence_chapter_nos；BiographyRecord 加 actor_used_identity/actor_role/evidence_raw；Mention 加 surface_form/alias_usage_type；新增 PersonaMentionCandidate 与 AnalysisLlmRawOutput 两张表；配套 scripts/purge-book-analysis.ts 清空指定书籍分析结果。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

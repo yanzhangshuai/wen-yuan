@@ -61,13 +61,59 @@ enum ModelStrategyScope {
 }
 
 enum AliasType {
+  // 既有五项（存量数据已写入，不可删除）
   TITLE // 封号/尊号，如太祖皇帝、吴王
   POSITION // 职位称呼，如丞相、知府
   KINSHIP // 亲属代称，如皇后、世子
   NICKNAME // 绰号/外号，如范老爷
   COURTESY_NAME // 字号，如子美
 
+  // 三阶段架构新增四项（见 §0-15 / §0.F.1），共扩至 9 值
+  NAMED // 真名（同一人的不同名字：牛浦/牛浦郎/浦郎）
+  IMPERSONATED_IDENTITY // 恶意冒名：persona=真身，target_persona=被冒名者
+  MISIDENTIFIED_AS // 误认身份：persona=真身，target_persona=被误认为者
+  UNSURE // 未确定的别名候选（Stage A 输出，Stage B 前不落 persona）
+
   @@map("alias_type")
+}
+
+/// 叙事透镜：区分 biography 的叙事视角（真身亲历 / 冒用 / 转述 / 追忆 / 历史典故）
+/// 规则：POEM/COMMENTARY/QUOTED 等非主时间轴事件依据此枚举过滤计入 effectiveBiographyCount。
+enum NarrativeLens {
+  SELF // 真身亲历
+  IMPERSONATING // 冒用他人身份行动
+  QUOTED // 他人对白转述
+  REPORTED // 叙述者追忆/回溯
+  HISTORICAL // 历史人物/典故引用
+
+  @@map("narrative_lens")
+}
+
+/// 身份主张：Stage A 输出每个 mention 的身份判定
+/// UNSURE 作为兜底值，由 Stage B 仲裁后落具体值。
+enum IdentityClaim {
+  SELF
+  IMPERSONATING
+  QUOTED
+  REPORTED
+  HISTORICAL
+  UNSURE
+
+  @@map("identity_claim")
+}
+
+/// 书籍类型代码枚举（BookTypeCode）。
+/// 与既有 `BookType` 知识库模型并列：前者用于管理 Prompt 变体 / few-shot / 阈值，后者为知识库
+/// 的类型字典。迁移命名为 `book_type_code`，避免和 `BookType` 模型表冲突。
+/// 取值集合固定五项（CLASSICAL_NOVEL/HEROIC_NOVEL/HISTORICAL_NOVEL/MYTHOLOGICAL_NOVEL/GENERIC）。
+enum BookTypeCode {
+  CLASSICAL_NOVEL // 古典世情/讽刺小说（儒林外史、红楼梦、金瓶梅）
+  HEROIC_NOVEL // 英雄侠义小说（水浒传、三侠五义）
+  HISTORICAL_NOVEL // 历史演义（三国演义、东周列国志）
+  MYTHOLOGICAL_NOVEL // 神魔小说（西游记、封神演义）
+  GENERIC // 未分类兜底
+
+  @@map("book_type_code")
 }
 
 enum AliasMappingStatus {
@@ -183,6 +229,10 @@ model Book {
   bookType       BookType? @relation(fields: [bookTypeId], references: [id])
   bookAliasPacks BookAliasPack[]
 
+  /// 三阶段架构书籍类型代码（§0-12 BookType 系统）。
+  /// 用于 Prompt 变体 / few-shot / 阈值映射；不取代 bookTypeId（知识库类型）。
+  typeCode BookTypeCode @default(GENERIC) @map("type_code")
+
   chapters          Chapter[] // 章节列表
   profiles          Profile[] // 本书角色档案
   analysisJobs      AnalysisJob[] // 解析任务记录
@@ -190,6 +240,7 @@ model Book {
   modelStrategies   ModelStrategyConfig[] @relation("BookStrategies")
   validationReports ValidationReport[] // 自检报告
   mergeSuggestions MergeSuggestion[] // 人物合并建议队列
+  personaMentions  PersonaMention[] // 三阶段 Stage A mention 候选池
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
@@ -219,6 +270,8 @@ model Chapter {
   biographies BiographyRecord[] // 本章履历事件
   relations   Relationship[] // 本章关系边
   phaseLogs   AnalysisPhaseLog[] // 阶段调用日志
+  personaMentions        PersonaMention[] // 三阶段 Stage A 候选池
+  preprocessResult       ChapterPreprocessResult? // 三阶段 Stage 0 预处理单章结果
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
@@ -246,12 +299,31 @@ model Persona {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
+  // 三阶段架构新增字段（§0-2 / §0-3 / §0-4 / §0-7）
+  /// Stage 0 预处理器对本角色所在章节的信心等级，取值 HIGH | LOW；
+  /// 若 LOW 则下游 Stage B 合并阈值 +0.05、CONFIRMED 门槛 +1。
+  preprocessorConfidence   String? @map("preprocessor_confidence")
+  /// 正则/LLM 双源确认的死亡章节号（§0-2），用于 Stage B.5 死后行动校验。
+  deathChapterNo           Int?    @map("death_chapter_no")
+  /// 当前所在地点（§0-3 跨地点并发冲突检测所需）。
+  currentLocation          String? @map("current_location")
+  /// Mention 总计数（Stage B 聚合落库，用于 CONFIRMED 门槛）。
+  mentionCount             Int     @default(0) @map("mention_count")
+  /// 有效事迹计数（§0-6 口径：SELF|IMPERSONATING + NARRATIVE + rawSpan≥15 + actionVerb 非空）。
+  effectiveBiographyCount  Int     @default(0) @map("effective_biography_count")
+  /// 不同章节出场计数（CONFIRMED 门槛：≥2）。
+  distinctChapters         Int     @default(0) @map("distinct_chapters")
+  /// 生命周期状态：CONFIRMED | CANDIDATE | NOISE | MERGED_INTO。
+  /// 采用字符串以保留未来扩展空间；默认 CANDIDATE，晋级至 CONFIRMED 需满足 §0-7 门槛。
+  status                   String  @default("CANDIDATE")
+
   profiles    Profile[] // 各书籍维度档案
   mentions    Mention[] // 角色提及集合
   biographies BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
   aliasMappings AliasMapping[] // 别名映射记录
   sourceMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionSourcePersona")
   targetMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionTargetPersona")
+  personaMentions PersonaMention[] // Stage A 候选池（晋级后反向引用）
 
   // 建立双向关系关联，方便 3D 图谱从 Persona 直接出发查询
   sourceRels Relationship[] @relation("SourcePersona")
@@ -309,12 +381,20 @@ model BiographyRecord {
   createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
+  // 三阶段架构新增字段（§0-6 effectiveBiographyCount 口径所依赖）
+  /// 叙事透镜：标记事件的叙事视角，非 SELF/IMPERSONATING 不计入主时间轴。
+  narrativeLens       NarrativeLens @default(SELF) @map("narrative_lens")
+  /// 叙事区段类型：NARRATIVE | POEM | DIALOGUE | COMMENTARY | UNCLASSIFIED。
+  /// 由 Stage 0 区段划分给出；§0-5 规则要求 POEM/COMMENTARY 段强制 REPORTED/HISTORICAL。
+  narrativeRegionType String        @default("NARRATIVE") @map("narrative_region_type")
+
   persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
   chapter Chapter @relation(fields: [chapterId], references: [id]) // 关联章节
 
   @@index([chapterNo], map: "biography_record_chapter_no_idx") // 时间轴排序索引
   @@index([personaId], map: "biography_record_persona_id_idx") // 角色维度查询索引
   @@index([status, recordSource, chapterId], map: "biography_record_review_query_idx") // 审核列表查询索引
+  @@index([narrativeLens, personaId], map: "biography_record_lens_persona_idx") // 按叙事透镜过滤主时间轴
   @@map("biography_records")
 }
 
@@ -393,6 +473,8 @@ model AnalysisJob {
   modelStrategies ModelStrategyConfig[] @relation("JobStrategies")
   phaseLogs       AnalysisPhaseLog[]
   validationReports ValidationReport[] // 该任务生成的自检报告
+  personaMentions  PersonaMention[] // 三阶段 Stage A 候选池
+  preprocessResults ChapterPreprocessResult[] // 三阶段 Stage 0 预处理结果
 
   @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
   @@index([status, createdAt], map: "analysis_jobs_status_created_at_idx") // 状态队列查询索引
@@ -502,6 +584,9 @@ model MergeSuggestion {
   confidence      Float     @default(0)
   evidenceRefs    Json?     @map("evidence_refs")
   status          String    @default("PENDING")
+  /// 建议来源：STAGE_B_AUTO（Stage B 规则生成） | STAGE_C_FEEDBACK（Stage C 反馈通道，§0-14）。
+  /// 不自动合并，等待下一次 job 的 Stage B 消费。
+  source          String    @default("STAGE_B_AUTO")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
 
@@ -830,4 +915,138 @@ model KnowledgeAuditLog {
   @@index([createdAt(sort: Desc)], map: "audit_log_created_idx")
   @@index([operatorId, createdAt(sort: Desc)], map: "audit_log_operator_idx")
   @@map("knowledge_audit_logs")
+}
+
+// =============================================================================
+// 三阶段人物解析架构（character extraction redesign · §0-FINAL）
+// =============================================================================
+
+/// @db.remark: Stage A 章节硬提取的 mention 候选池。
+/// 语义：原文里每个称呼的每次出现都是一条记录；是否晋级为 persona 由 Stage B 聚合判定。
+/// 生命周期：Stage A 写入 → Stage B 读取聚合 → 晋级后回填 promoted_persona_id。
+model PersonaMention {
+  id        String @id @default(uuid()) @db.Uuid
+  bookId    String @map("book_id") @db.Uuid
+  chapterId String @map("chapter_id") @db.Uuid
+  chapterNo Int    @map("chapter_no") // 冗余章节号，便于按章聚合
+  jobId     String? @map("job_id") @db.Uuid // 归属 Stage A 任务（可选，便于按 job 清理）
+
+  /// 原文出现的表层形式，如"牛浦郎"、"那范老爷"
+  surfaceForm         String        @map("surface_form")
+  /// Stage A 给出的别名类型提示（Stage B 可能修正）
+  aliasTypeHint       AliasType     @map("alias_type_hint")
+  /// 身份主张（§0-8）：Stage A 初判，UNSURE 为兜底
+  identityClaim       IdentityClaim @default(UNSURE) @map("identity_claim")
+  /// 疑似指向的真名（≤8 字，§0-8），作为 Stage B 三通道候选组的稳定键
+  suspectedResolvesTo String?       @map("suspected_resolves_to")
+  /// 叙事区段类型：NARRATIVE | POEM | DIALOGUE | COMMENTARY | UNCLASSIFIED
+  narrativeRegionType String        @default("NARRATIVE") @map("narrative_region_type")
+  /// 该 mention 的动作动词（§0-6 计入 effectiveBiographyCount 的必要字段）
+  actionVerb          String?       @map("action_verb")
+  /// 原文片段（evidence），Stage B 合并/去噪的原文证据
+  rawSpan             String        @map("raw_span")
+  spanStart           Int?          @map("span_start")
+  spanEnd             Int?          @map("span_end")
+  /// 场景绑定提示（≤30 字），用于 KINSHIP/GENERATIONAL 等泛称消歧
+  sceneContextHint    String?       @map("scene_context_hint")
+  /// Stage A 的本地置信度（0~1）
+  confidence          Float         @default(0)
+
+  /// 晋级后关联到正式 persona（未晋级为 null）
+  promotedPersonaId String? @map("promoted_persona_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  book    Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter Chapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  job     AnalysisJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  persona Persona?     @relation(fields: [promotedPersonaId], references: [id], onDelete: SetNull)
+
+  @@index([bookId, surfaceForm], map: "persona_mention_book_surface_idx")
+  @@index([bookId, chapterNo], map: "persona_mention_book_chapter_idx")
+  @@index([bookId, promotedPersonaId], map: "persona_mention_book_persona_idx")
+  @@index([jobId], map: "persona_mention_job_idx")
+  @@map("persona_mentions")
+}
+
+/// @db.remark: Stage 0 预处理结果（§0-4 覆盖率自白 + §0-2 死亡标记候选）。
+/// 每个章节一条记录，输出四区段字符占比与正则死亡标记候选；unclassified>10% 打标 LOW。
+model ChapterPreprocessResult {
+  id        String @id @default(uuid()) @db.Uuid
+  chapterId String @unique @map("chapter_id") @db.Uuid
+  jobId     String? @map("job_id") @db.Uuid
+
+  /// 叙事段字符占比（0~1）
+  narrativeRatio    Float @default(0) @map("narrative_ratio")
+  /// 诗词段字符占比
+  poemRatio         Float @default(0) @map("poem_ratio")
+  /// 对白段字符占比
+  dialogueRatio     Float @default(0) @map("dialogue_ratio")
+  /// 议论段字符占比
+  commentaryRatio   Float @default(0) @map("commentary_ratio")
+  /// 未分类段字符占比；>0.10 将 confidence 落为 LOW
+  unclassifiedRatio Float @default(0) @map("unclassified_ratio")
+
+  /// 预处理器信心等级：HIGH | LOW；同步写入关联 Persona.preprocessorConfidence
+  confidence String @default("HIGH")
+
+  /// 正则抽取的死亡标记候选（§0-2）：[{ marker, subject, span }]
+  deathMarkers Json? @map("death_markers")
+  /// 四区段字符区间明细：[{ type, start, end }]
+  regions      Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  chapter Chapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  job     AnalysisJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([jobId], map: "chapter_preprocess_job_idx")
+  @@map("chapter_preprocess_results")
+}
+
+/// @db.remark: 按 BookType 的 Prompt 变体（§0-12 / §3.7）。
+/// 每个 stage × bookType 唯一，运行时替换 Prompt 正文的 {{bookTypeSpecialRules}} / {{bookTypeFewShots}} 占位符。
+/// 本任务只建表，不注入 Prompt（Prompt 拼接在 T10 实现）。
+model PromptTemplateVariant {
+  id           String       @id @default(uuid()) @db.Uuid
+  /// 模板槽标识：STAGE_A_EXTRACT_MENTIONS | STAGE_B_RESOLVE_ENTITIES | STAGE_C_ATTRIBUTE_EVENT
+  templateSlug String       @map("template_slug")
+  /// 所属书籍类型代码
+  bookTypeCode BookTypeCode @map("book_type_code")
+  /// 本 BookType 的特殊规则文本（注入 Prompt）
+  specialRules String       @map("special_rules") @db.Text
+  /// 若未使用 BookTypeExample 表，可直接在此内联 few-shots
+  fewShotsJson Json?        @map("few_shots_json")
+  active       Boolean      @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([templateSlug, bookTypeCode], map: "prompt_template_variant_slug_type_key")
+  @@index([bookTypeCode], map: "prompt_template_variant_type_idx")
+  @@map("prompt_template_variants")
+}
+
+/// @db.remark: BookType 级 few-shot 示例池（§3.7）。
+/// 运行时按 bookType+stage+priority 拼接进 Prompt。本任务只建表，不 seed。
+model BookTypeExample {
+  id            String       @id @default(uuid()) @db.Uuid
+  bookTypeCode  BookTypeCode @map("book_type_code")
+  /// 适用阶段：STAGE_A | STAGE_B | STAGE_C
+  stage         String
+  /// 示例标签，如"冒名识别"、"同姓分裂"
+  label         String
+  /// 示例输入原文片段
+  exampleInput  String       @map("example_input") @db.Text
+  /// 示例期望输出（JSON 字符串，由调用方解析）
+  exampleOutput String       @map("example_output") @db.Text
+  note          String?      @db.Text
+  /// 拼接顺序（数字越大越靠前）
+  priority      Int          @default(0)
+  active        Boolean      @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([bookTypeCode, stage, priority], map: "book_type_example_lookup_idx")
+  @@map("book_type_examples")
 }

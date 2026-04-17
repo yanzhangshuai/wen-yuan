@@ -78,7 +78,11 @@ export const ModelName = {
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
   PromptExtractionRule: 'PromptExtractionRule',
-  KnowledgeAuditLog: 'KnowledgeAuditLog'
+  KnowledgeAuditLog: 'KnowledgeAuditLog',
+  PersonaMention: 'PersonaMention',
+  ChapterPreprocessResult: 'ChapterPreprocessResult',
+  PromptTemplateVariant: 'PromptTemplateVariant',
+  BookTypeExample: 'BookTypeExample'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -148,6 +152,7 @@ export const BookScalarFieldEnum = {
   parseProgress: 'parseProgress',
   parseStage: 'parseStage',
   bookTypeId: 'bookTypeId',
+  typeCode: 'typeCode',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -188,7 +193,14 @@ export const PersonaScalarFieldEnum = {
   globalTags: 'globalTags',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  preprocessorConfidence: 'preprocessorConfidence',
+  deathChapterNo: 'deathChapterNo',
+  currentLocation: 'currentLocation',
+  mentionCount: 'mentionCount',
+  effectiveBiographyCount: 'effectiveBiographyCount',
+  distinctChapters: 'distinctChapters',
+  status: 'status'
 } as const
 
 export type PersonaScalarFieldEnum = (typeof PersonaScalarFieldEnum)[keyof typeof PersonaScalarFieldEnum]
@@ -228,7 +240,9 @@ export const BiographyRecordScalarFieldEnum = {
   status: 'status',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  narrativeLens: 'narrativeLens',
+  narrativeRegionType: 'narrativeRegionType'
 } as const
 
 export type BiographyRecordScalarFieldEnum = (typeof BiographyRecordScalarFieldEnum)[keyof typeof BiographyRecordScalarFieldEnum]
@@ -371,6 +385,7 @@ export const MergeSuggestionScalarFieldEnum = {
   confidence: 'confidence',
   evidenceRefs: 'evidenceRefs',
   status: 'status',
+  source: 'source',
   createdAt: 'createdAt',
   resolvedAt: 'resolvedAt'
 } as const
@@ -583,6 +598,78 @@ export const KnowledgeAuditLogScalarFieldEnum = {
 } as const
 
 export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
+
+
+export const PersonaMentionScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  jobId: 'jobId',
+  surfaceForm: 'surfaceForm',
+  aliasTypeHint: 'aliasTypeHint',
+  identityClaim: 'identityClaim',
+  suspectedResolvesTo: 'suspectedResolvesTo',
+  narrativeRegionType: 'narrativeRegionType',
+  actionVerb: 'actionVerb',
+  rawSpan: 'rawSpan',
+  spanStart: 'spanStart',
+  spanEnd: 'spanEnd',
+  sceneContextHint: 'sceneContextHint',
+  confidence: 'confidence',
+  promotedPersonaId: 'promotedPersonaId',
+  createdAt: 'createdAt'
+} as const
+
+export type PersonaMentionScalarFieldEnum = (typeof PersonaMentionScalarFieldEnum)[keyof typeof PersonaMentionScalarFieldEnum]
+
+
+export const ChapterPreprocessResultScalarFieldEnum = {
+  id: 'id',
+  chapterId: 'chapterId',
+  jobId: 'jobId',
+  narrativeRatio: 'narrativeRatio',
+  poemRatio: 'poemRatio',
+  dialogueRatio: 'dialogueRatio',
+  commentaryRatio: 'commentaryRatio',
+  unclassifiedRatio: 'unclassifiedRatio',
+  confidence: 'confidence',
+  deathMarkers: 'deathMarkers',
+  regions: 'regions',
+  createdAt: 'createdAt'
+} as const
+
+export type ChapterPreprocessResultScalarFieldEnum = (typeof ChapterPreprocessResultScalarFieldEnum)[keyof typeof ChapterPreprocessResultScalarFieldEnum]
+
+
+export const PromptTemplateVariantScalarFieldEnum = {
+  id: 'id',
+  templateSlug: 'templateSlug',
+  bookTypeCode: 'bookTypeCode',
+  specialRules: 'specialRules',
+  fewShotsJson: 'fewShotsJson',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromptTemplateVariantScalarFieldEnum = (typeof PromptTemplateVariantScalarFieldEnum)[keyof typeof PromptTemplateVariantScalarFieldEnum]
+
+
+export const BookTypeExampleScalarFieldEnum = {
+  id: 'id',
+  bookTypeCode: 'bookTypeCode',
+  stage: 'stage',
+  label: 'label',
+  exampleInput: 'exampleInput',
+  exampleOutput: 'exampleOutput',
+  note: 'note',
+  priority: 'priority',
+  active: 'active',
+  createdAt: 'createdAt'
+} as const
+
+export type BookTypeExampleScalarFieldEnum = (typeof BookTypeExampleScalarFieldEnum)[keyof typeof BookTypeExampleScalarFieldEnum]
 
 
 export const SortOrder = {

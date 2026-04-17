@@ -50,6 +50,8 @@ export type BiographyRecordMinAggregateOutputType = {
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  narrativeLens: $Enums.NarrativeLens | null
+  narrativeRegionType: string | null
 }
 
 export type BiographyRecordMaxAggregateOutputType = {
@@ -68,6 +70,8 @@ export type BiographyRecordMaxAggregateOutputType = {
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  narrativeLens: $Enums.NarrativeLens | null
+  narrativeRegionType: string | null
 }
 
 export type BiographyRecordCountAggregateOutputType = {
@@ -86,6 +90,8 @@ export type BiographyRecordCountAggregateOutputType = {
   deletedAt: number
   createdAt: number
   updatedAt: number
+  narrativeLens: number
+  narrativeRegionType: number
   _all: number
 }
 
@@ -114,6 +120,8 @@ export type BiographyRecordMinAggregateInputType = {
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
+  narrativeLens?: true
+  narrativeRegionType?: true
 }
 
 export type BiographyRecordMaxAggregateInputType = {
@@ -132,6 +140,8 @@ export type BiographyRecordMaxAggregateInputType = {
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
+  narrativeLens?: true
+  narrativeRegionType?: true
 }
 
 export type BiographyRecordCountAggregateInputType = {
@@ -150,6 +160,8 @@ export type BiographyRecordCountAggregateInputType = {
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
+  narrativeLens?: true
+  narrativeRegionType?: true
   _all?: true
 }
 
@@ -255,6 +267,8 @@ export type BiographyRecordGroupByOutputType = {
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
+  narrativeLens: $Enums.NarrativeLens
+  narrativeRegionType: string
   _count: BiographyRecordCountAggregateOutputType | null
   _avg: BiographyRecordAvgAggregateOutputType | null
   _sum: BiographyRecordSumAggregateOutputType | null
@@ -296,6 +310,8 @@ export type BiographyRecordWhereInput = {
   deletedAt?: Prisma.DateTimeNullableFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFilter<"BiographyRecord"> | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFilter<"BiographyRecord"> | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
 }
@@ -316,6 +332,8 @@ export type BiographyRecordOrderByWithRelationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  narrativeLens?: Prisma.SortOrder
+  narrativeRegionType?: Prisma.SortOrder
   persona?: Prisma.PersonaOrderByWithRelationInput
   chapter?: Prisma.ChapterOrderByWithRelationInput
 }
@@ -339,6 +357,8 @@ export type BiographyRecordWhereUniqueInput = Prisma.AtLeast<{
   deletedAt?: Prisma.DateTimeNullableFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFilter<"BiographyRecord"> | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFilter<"BiographyRecord"> | string
   persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
 }, "id">
@@ -359,6 +379,8 @@ export type BiographyRecordOrderByWithAggregationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  narrativeLens?: Prisma.SortOrder
+  narrativeRegionType?: Prisma.SortOrder
   _count?: Prisma.BiographyRecordCountOrderByAggregateInput
   _avg?: Prisma.BiographyRecordAvgOrderByAggregateInput
   _max?: Prisma.BiographyRecordMaxOrderByAggregateInput
@@ -385,6 +407,8 @@ export type BiographyRecordScalarWhereWithAggregatesInput = {
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BiographyRecord"> | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensWithAggregatesFilter<"BiographyRecord"> | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringWithAggregatesFilter<"BiographyRecord"> | string
 }
 
 export type BiographyRecordCreateInput = {
@@ -401,6 +425,8 @@ export type BiographyRecordCreateInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
   persona: Prisma.PersonaCreateNestedOneWithoutBiographiesInput
   chapter: Prisma.ChapterCreateNestedOneWithoutBiographiesInput
 }
@@ -421,6 +447,8 @@ export type BiographyRecordUncheckedCreateInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
 }
 
 export type BiographyRecordUpdateInput = {
@@ -437,6 +465,8 @@ export type BiographyRecordUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutBiographiesNestedInput
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutBiographiesNestedInput
 }
@@ -457,6 +487,8 @@ export type BiographyRecordUncheckedUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type BiographyRecordCreateManyInput = {
@@ -475,6 +507,8 @@ export type BiographyRecordCreateManyInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
 }
 
 export type BiographyRecordUpdateManyMutationInput = {
@@ -491,6 +525,8 @@ export type BiographyRecordUpdateManyMutationInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type BiographyRecordUncheckedUpdateManyInput = {
@@ -509,6 +545,8 @@ export type BiographyRecordUncheckedUpdateManyInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type BiographyRecordListRelationFilter = {
@@ -537,6 +575,8 @@ export type BiographyRecordCountOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  narrativeLens?: Prisma.SortOrder
+  narrativeRegionType?: Prisma.SortOrder
 }
 
 export type BiographyRecordAvgOrderByAggregateInput = {
@@ -559,6 +599,8 @@ export type BiographyRecordMaxOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  narrativeLens?: Prisma.SortOrder
+  narrativeRegionType?: Prisma.SortOrder
 }
 
 export type BiographyRecordMinOrderByAggregateInput = {
@@ -577,6 +619,8 @@ export type BiographyRecordMinOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  narrativeLens?: Prisma.SortOrder
+  narrativeRegionType?: Prisma.SortOrder
 }
 
 export type BiographyRecordSumOrderByAggregateInput = {
@@ -675,6 +719,10 @@ export type EnumProcessingStatusFieldUpdateOperationsInput = {
   set?: $Enums.ProcessingStatus
 }
 
+export type EnumNarrativeLensFieldUpdateOperationsInput = {
+  set?: $Enums.NarrativeLens
+}
+
 export type BiographyRecordCreateWithoutChapterInput = {
   id?: string
   chapterNo: number
@@ -689,6 +737,8 @@ export type BiographyRecordCreateWithoutChapterInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
   persona: Prisma.PersonaCreateNestedOneWithoutBiographiesInput
 }
 
@@ -707,6 +757,8 @@ export type BiographyRecordUncheckedCreateWithoutChapterInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
 }
 
 export type BiographyRecordCreateOrConnectWithoutChapterInput = {
@@ -754,6 +806,8 @@ export type BiographyRecordScalarWhereInput = {
   deletedAt?: Prisma.DateTimeNullableFilter<"BiographyRecord"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BiographyRecord"> | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFilter<"BiographyRecord"> | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFilter<"BiographyRecord"> | string
 }
 
 export type BiographyRecordCreateWithoutPersonaInput = {
@@ -770,6 +824,8 @@ export type BiographyRecordCreateWithoutPersonaInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
   chapter: Prisma.ChapterCreateNestedOneWithoutBiographiesInput
 }
 
@@ -788,6 +844,8 @@ export type BiographyRecordUncheckedCreateWithoutPersonaInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
 }
 
 export type BiographyRecordCreateOrConnectWithoutPersonaInput = {
@@ -831,6 +889,8 @@ export type BiographyRecordCreateManyChapterInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
 }
 
 export type BiographyRecordUpdateWithoutChapterInput = {
@@ -847,6 +907,8 @@ export type BiographyRecordUpdateWithoutChapterInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.PersonaUpdateOneRequiredWithoutBiographiesNestedInput
 }
 
@@ -865,6 +927,8 @@ export type BiographyRecordUncheckedUpdateWithoutChapterInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type BiographyRecordUncheckedUpdateManyWithoutChapterInput = {
@@ -882,6 +946,8 @@ export type BiographyRecordUncheckedUpdateManyWithoutChapterInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type BiographyRecordCreateManyPersonaInput = {
@@ -899,6 +965,8 @@ export type BiographyRecordCreateManyPersonaInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  narrativeLens?: $Enums.NarrativeLens
+  narrativeRegionType?: string
 }
 
 export type BiographyRecordUpdateWithoutPersonaInput = {
@@ -915,6 +983,8 @@ export type BiographyRecordUpdateWithoutPersonaInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutBiographiesNestedInput
 }
 
@@ -933,6 +1003,8 @@ export type BiographyRecordUncheckedUpdateWithoutPersonaInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type BiographyRecordUncheckedUpdateManyWithoutPersonaInput = {
@@ -950,6 +1022,8 @@ export type BiographyRecordUncheckedUpdateManyWithoutPersonaInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  narrativeLens?: Prisma.EnumNarrativeLensFieldUpdateOperationsInput | $Enums.NarrativeLens
+  narrativeRegionType?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 
@@ -970,6 +1044,8 @@ export type BiographyRecordSelect<ExtArgs extends runtime.Types.Extensions.Inter
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  narrativeLens?: boolean
+  narrativeRegionType?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["biographyRecord"]>
@@ -990,6 +1066,8 @@ export type BiographyRecordSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  narrativeLens?: boolean
+  narrativeRegionType?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["biographyRecord"]>
@@ -1010,6 +1088,8 @@ export type BiographyRecordSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  narrativeLens?: boolean
+  narrativeRegionType?: boolean
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["biographyRecord"]>
@@ -1030,9 +1110,11 @@ export type BiographyRecordSelectScalar = {
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  narrativeLens?: boolean
+  narrativeRegionType?: boolean
 }
 
-export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["biographyRecord"]>
+export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt" | "narrativeLens" | "narrativeRegionType", ExtArgs["result"]["biographyRecord"]>
 export type BiographyRecordInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -1068,6 +1150,15 @@ export type $BiographyRecordPayload<ExtArgs extends runtime.Types.Extensions.Int
     deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
+    /**
+     * 叙事透镜：标记事件的叙事视角，非 SELF/IMPERSONATING 不计入主时间轴。
+     */
+    narrativeLens: $Enums.NarrativeLens
+    /**
+     * 叙事区段类型：NARRATIVE | POEM | DIALOGUE | COMMENTARY | UNCLASSIFIED。
+     * 由 Stage 0 区段划分给出；§0-5 规则要求 POEM/COMMENTARY 段强制 REPORTED/HISTORICAL。
+     */
+    narrativeRegionType: string
   }, ExtArgs["result"]["biographyRecord"]>
   composites: {}
 }
@@ -1508,6 +1599,8 @@ export interface BiographyRecordFieldRefs {
   readonly deletedAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"BiographyRecord", 'DateTime'>
+  readonly narrativeLens: Prisma.FieldRef<"BiographyRecord", 'NarrativeLens'>
+  readonly narrativeRegionType: Prisma.FieldRef<"BiographyRecord", 'String'>
 }
     
 

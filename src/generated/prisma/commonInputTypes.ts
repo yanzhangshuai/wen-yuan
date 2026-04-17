@@ -226,6 +226,13 @@ export type UuidNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedUuidNullableFilter<$PrismaModel> | string | null
 }
 
+export type EnumBookTypeCodeFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookTypeCode | Prisma.EnumBookTypeCodeFieldRefInput<$PrismaModel>
+  in?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookTypeCodeFilter<$PrismaModel> | $Enums.BookTypeCode
+}
+
 export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
@@ -271,6 +278,16 @@ export type UuidNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedStringNullableFilter<$PrismaModel>
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
+}
+
+export type EnumBookTypeCodeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookTypeCode | Prisma.EnumBookTypeCodeFieldRefInput<$PrismaModel>
+  in?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookTypeCodeWithAggregatesFilter<$PrismaModel> | $Enums.BookTypeCode
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBookTypeCodeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBookTypeCodeFilter<$PrismaModel>
 }
 
 export type EnumChapterTypeFilter<$PrismaModel = never> = {
@@ -433,6 +450,13 @@ export type EnumProcessingStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumProcessingStatusFilter<$PrismaModel> | $Enums.ProcessingStatus
 }
 
+export type EnumNarrativeLensFilter<$PrismaModel = never> = {
+  equals?: $Enums.NarrativeLens | Prisma.EnumNarrativeLensFieldRefInput<$PrismaModel>
+  in?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNarrativeLensFilter<$PrismaModel> | $Enums.NarrativeLens
+}
+
 export type EnumBioCategoryWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.BioCategory | Prisma.EnumBioCategoryFieldRefInput<$PrismaModel>
   in?: $Enums.BioCategory[] | Prisma.ListEnumBioCategoryFieldRefInput<$PrismaModel>
@@ -451,6 +475,16 @@ export type EnumProcessingStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumProcessingStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumProcessingStatusFilter<$PrismaModel>
+}
+
+export type EnumNarrativeLensWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NarrativeLens | Prisma.EnumNarrativeLensFieldRefInput<$PrismaModel>
+  in?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNarrativeLensWithAggregatesFilter<$PrismaModel> | $Enums.NarrativeLens
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNarrativeLensFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNarrativeLensFilter<$PrismaModel>
 }
 
 export type EnumAnalysisJobStatusFilter<$PrismaModel = never> = {
@@ -570,6 +604,23 @@ export type EnumAliasMappingStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAliasMappingStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAliasMappingStatusFilter<$PrismaModel>
+}
+
+export type EnumIdentityClaimFilter<$PrismaModel = never> = {
+  equals?: $Enums.IdentityClaim | Prisma.EnumIdentityClaimFieldRefInput<$PrismaModel>
+  in?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIdentityClaimFilter<$PrismaModel> | $Enums.IdentityClaim
+}
+
+export type EnumIdentityClaimWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IdentityClaim | Prisma.EnumIdentityClaimFieldRefInput<$PrismaModel>
+  in?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIdentityClaimWithAggregatesFilter<$PrismaModel> | $Enums.IdentityClaim
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIdentityClaimFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIdentityClaimFilter<$PrismaModel>
 }
 
 export type NestedUuidFilter<$PrismaModel = never> = {
@@ -772,6 +823,13 @@ export type NestedUuidNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedUuidNullableFilter<$PrismaModel> | string | null
 }
 
+export type NestedEnumBookTypeCodeFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookTypeCode | Prisma.EnumBookTypeCodeFieldRefInput<$PrismaModel>
+  in?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookTypeCodeFilter<$PrismaModel> | $Enums.BookTypeCode
+}
+
 export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
@@ -838,6 +896,16 @@ export type NestedUuidNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedStringNullableFilter<$PrismaModel>
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumBookTypeCodeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookTypeCode | Prisma.EnumBookTypeCodeFieldRefInput<$PrismaModel>
+  in?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookTypeCode[] | Prisma.ListEnumBookTypeCodeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookTypeCodeWithAggregatesFilter<$PrismaModel> | $Enums.BookTypeCode
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBookTypeCodeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBookTypeCodeFilter<$PrismaModel>
 }
 
 export type NestedEnumChapterTypeFilter<$PrismaModel = never> = {
@@ -962,6 +1030,13 @@ export type NestedEnumProcessingStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumProcessingStatusFilter<$PrismaModel> | $Enums.ProcessingStatus
 }
 
+export type NestedEnumNarrativeLensFilter<$PrismaModel = never> = {
+  equals?: $Enums.NarrativeLens | Prisma.EnumNarrativeLensFieldRefInput<$PrismaModel>
+  in?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNarrativeLensFilter<$PrismaModel> | $Enums.NarrativeLens
+}
+
 export type NestedEnumBioCategoryWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.BioCategory | Prisma.EnumBioCategoryFieldRefInput<$PrismaModel>
   in?: $Enums.BioCategory[] | Prisma.ListEnumBioCategoryFieldRefInput<$PrismaModel>
@@ -980,6 +1055,16 @@ export type NestedEnumProcessingStatusWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumProcessingStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumProcessingStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumNarrativeLensWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NarrativeLens | Prisma.EnumNarrativeLensFieldRefInput<$PrismaModel>
+  in?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NarrativeLens[] | Prisma.ListEnumNarrativeLensFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNarrativeLensWithAggregatesFilter<$PrismaModel> | $Enums.NarrativeLens
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNarrativeLensFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNarrativeLensFilter<$PrismaModel>
 }
 
 export type NestedEnumAnalysisJobStatusFilter<$PrismaModel = never> = {
@@ -1072,6 +1157,23 @@ export type NestedEnumAliasMappingStatusWithAggregatesFilter<$PrismaModel = neve
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAliasMappingStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAliasMappingStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumIdentityClaimFilter<$PrismaModel = never> = {
+  equals?: $Enums.IdentityClaim | Prisma.EnumIdentityClaimFieldRefInput<$PrismaModel>
+  in?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIdentityClaimFilter<$PrismaModel> | $Enums.IdentityClaim
+}
+
+export type NestedEnumIdentityClaimWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IdentityClaim | Prisma.EnumIdentityClaimFieldRefInput<$PrismaModel>
+  in?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IdentityClaim[] | Prisma.ListEnumIdentityClaimFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIdentityClaimWithAggregatesFilter<$PrismaModel> | $Enums.IdentityClaim
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIdentityClaimFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIdentityClaimFilter<$PrismaModel>
 }
 
 
