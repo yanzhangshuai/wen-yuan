@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
 import { seedKnowledgeBaseFromFile, seedKnowledgePhase7 } from "../scripts/init-knowledge-base.ts";
 import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
+import { seedBookTypeExamples } from "../scripts/init-booktype-examples.ts";
 
 /**
  * 文件定位（数据初始化层 / 运维脚本层）：
@@ -238,6 +239,9 @@ async function main() {
 
   console.log("🧩 导入知识库 Phase 7 种子数据（历史人物、名字模式、关系词、古典人物）...");
   await seedKnowledgePhase7(prisma);
+
+  console.log("🎯 导入 BookTypeExample few-shot 基线（§3.7 / T11）...");
+  await seedBookTypeExamples(prisma);
 
   console.log("✅ 种子数据录入成功！");
   console.log(`- 已预设模型数: ${result.modelCount}`);
