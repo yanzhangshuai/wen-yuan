@@ -67,6 +67,7 @@ function buildBook(partial: Partial<LibraryBookCardData>): LibraryBookCardData {
     dynasty         : partial.dynasty ?? "清",
     coverUrl        : partial.coverUrl ?? "/api/assets/books/book-1/cover.png",
     status          : partial.status ?? "PENDING",
+    typeCode        : partial.typeCode ?? "GENERIC",
     chapterCount    : partial.chapterCount ?? 10,
     personaCount    : partial.personaCount ?? 100,
     lastAnalyzedAt  : partial.lastAnalyzedAt ?? "2026-03-24T10:00:00.000Z",

@@ -43,6 +43,7 @@ function toLibraryBookCardData(book: BookLibraryListItem): LibraryBookCardData {
     dynasty         : book.dynasty,
     coverUrl        : book.coverUrl,
     status          : book.status,
+    typeCode        : book.typeCode,
     chapterCount    : book.chapterCount,
     personaCount    : book.personaCount,
     lastAnalyzedAt  : book.lastAnalyzedAt,

@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { AnalysisJobsPanel } from "./analysis-jobs-panel";
 import { BookKnowledgePanel } from "./book-knowledge-panel";
 import { BookStrategyPanel } from "./book-strategy-panel";
+import { BookTypePanel } from "./book-type-panel";
 import { ParseProgressPanel } from "./parse-progress-panel";
 import { PersonasPanel } from "./personas-panel";
 
@@ -45,7 +46,7 @@ interface BookDetailTabsProps {
  * Tab 标识。
  * 这是前端 UI 枚举，不直接等同后端字段。
  */
-type Tab = "overview" | "jobs" | "personas" | "knowledge" | "strategy";
+type Tab = "overview" | "jobs" | "personas" | "knowledge" | "strategy" | "type";
 
 /**
  * Tab 配置列表。
@@ -56,7 +57,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "jobs",     label: "解析任务" },
   { id: "personas", label: "人物"     },
   { id: "knowledge", label: "知识库"  },
-  { id: "strategy", label: "模型策略" }
+  { id: "strategy", label: "模型策略" },
+  { id: "type",     label: "体裁"     }
 ];
 
 /**
@@ -120,6 +122,10 @@ export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
 
       {activeTab === "strategy" && (
         <BookStrategyPanel bookId={bookId} />
+      )}
+
+      {activeTab === "type" && (
+        <BookTypePanel bookId={bookId} />
       )}
     </div>
   );

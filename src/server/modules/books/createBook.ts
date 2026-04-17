@@ -21,6 +21,7 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
+import type { BookTypeCode } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { provideStorage, type StorageProviderClient } from "@/server/providers/storage";
@@ -36,6 +37,11 @@ export interface CreateBookInput {
   dynasty?    : string;
   /** 书籍类型 ID（可选），用于绑定 book_types 结构化配置。 */
   bookTypeId? : string;
+  /**
+   * 三阶段管线 BookType 枚举值（§0-12 BookType 系统）。
+   * 不传时由 Prisma 使用默认值 `GENERIC`。
+   */
+  typeCode?   : BookTypeCode;
   /** 简介（可选）。 */
   description?: string;
   /** 原始上传文件名（含扩展名）。 */
@@ -116,6 +122,8 @@ export function createCreateBookService(
           author        : normalizeOptionalText(input.author) ?? null,
           dynasty       : normalizeOptionalText(input.dynasty) ?? null,
           bookTypeId    : normalizeOptionalText(input.bookTypeId) ?? null,
+          // 省略时 Prisma 使用 schema 默认值 `GENERIC`。
+          ...(input.typeCode ? { typeCode: input.typeCode } : {}),
           description   : normalizeOptionalText(input.description) ?? null,
           sourceFileKey : storedFile.key,
           sourceFileUrl : storedFile.url,
@@ -131,6 +139,7 @@ export function createCreateBookService(
         author     : book.author,
         dynasty    : book.dynasty,
         description: book.description,
+        typeCode   : book.typeCode,
         status     : normalizeBookStatus(book.status),
         sourceFile : {
           key : book.sourceFileKey,

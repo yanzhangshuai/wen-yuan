@@ -65,12 +65,14 @@ import {
   isSelectEmptyValue
 } from "@/components/ui/select";
 import {
+  BOOK_TYPE_CODE_OPTIONS,
   confirmBookChapters,
   createBook,
   fetchChapterPreview,
   startAnalysis,
   type AnalysisArchitecture,
   type AnalyzeScope,
+  type BookTypeCode,
   type ChapterPreviewItem,
   type ChapterType,
   type CreatedBookData,
@@ -179,6 +181,11 @@ export default function AdminImportPage() {
   const [author, setAuthor] = useState("");
   const [dynasty, setDynasty] = useState("");
   const [bookTypeId, setBookTypeId] = useState("");
+  /**
+   * BookTypeCode（三阶段管线 BookType 分类）。
+   * 默认 `GENERIC`：与后端 Prisma 默认值一致，导入后仍可在详情页切换。
+   */
+  const [typeCode, setTypeCode] = useState<BookTypeCode>("GENERIC");
   const [description, setDescription] = useState("");
 
   // 动态加载书籍类型列表（替代硬编码的书籍类型下拉）
@@ -318,6 +325,8 @@ export default function AdminImportPage() {
       if (author) formData.set("author", author);
       if (dynasty) formData.set("dynasty", dynasty);
       if (bookTypeId) formData.set("bookTypeId", bookTypeId);
+      // GENERIC 为 Prisma 默认值，无需显式传入；其它值由后端 zod 校验。
+      if (typeCode && typeCode !== "GENERIC") formData.set("typeCode", typeCode);
       if (description) formData.set("description", description);
 
       const data = await createBook(formData);
@@ -633,6 +642,29 @@ export default function AdminImportPage() {
                 <div className="space-y-2">
                   <label htmlFor="description" className="text-sm font-medium">简介</label>
                   <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="可选" />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="typeCode" className="text-sm font-medium">
+                    解析体裁（BookTypeCode）
+                    <span className="text-muted-foreground font-normal ml-1">控制三阶段管线的 Prompt 与阈值</span>
+                  </label>
+                  <Select
+                    value={typeCode}
+                    onValueChange={(value) => setTypeCode(value as BookTypeCode)}
+                  >
+                    <SelectTrigger id="typeCode" className="w-full">
+                      <SelectValue placeholder="选择体裁" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BOOK_TYPE_CODE_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                          <span className="text-muted-foreground ml-2 text-xs">{option.description}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* 知识库绑定（可选）：导入后解析可依赖所选知识包 */}

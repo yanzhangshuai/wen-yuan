@@ -268,6 +268,60 @@ export async function deleteBookById(bookId: string): Promise<void> {
 }
 
 /**
+ * BookTypeCode 可选值（与后端 `BookTypeCode` 枚举一致）。
+ *
+ * 前端不直接复用 `@/generated/prisma/enums` 以避免把 Prisma 运行时体积带入浏览器包。
+ * 如需与后端同步，请同时修改本联合类型和 `src/app/api/admin/books/[id]/_shared.ts`。
+ */
+export type BookTypeCode =
+  | "CLASSICAL_NOVEL"
+  | "HEROIC_NOVEL"
+  | "HISTORICAL_NOVEL"
+  | "MYTHOLOGICAL_NOVEL"
+  | "GENERIC";
+
+/** BookTypeCode 下拉选项（按管理台习惯排序，GENERIC 垫底）。 */
+export const BOOK_TYPE_CODE_OPTIONS: { value: BookTypeCode; label: string; description: string }[] = [
+  { value: "CLASSICAL_NOVEL",    label: "古典世情/讽刺小说", description: "儒林外史、红楼梦、金瓶梅" },
+  { value: "HEROIC_NOVEL",       label: "英雄侠义小说",     description: "水浒传、三侠五义" },
+  { value: "HISTORICAL_NOVEL",   label: "历史演义",         description: "三国演义、东周列国志" },
+  { value: "MYTHOLOGICAL_NOVEL", label: "神魔小说",         description: "西游记、封神演义" },
+  { value: "GENERIC",            label: "未分类/其他",      description: "默认兜底类型" }
+];
+
+/**
+ * 管理端 `PATCH /api/admin/books/:id` 成功返回的数据片段。
+ */
+export interface UpdatedBookTypeCodeData {
+  /** 书籍主键。 */
+  id       : string;
+  /** 书名（用于 toast 回显）。 */
+  title    : string;
+  /** 更新后的 BookTypeCode。 */
+  typeCode : BookTypeCode;
+  /** 更新时间（ISO 字符串）。 */
+  updatedAt: string;
+}
+
+/**
+ * 调用 `PATCH /api/admin/books/:bookId` 更新 `typeCode` 字段。
+ *
+ * 业务约束：
+ * - 仅 ADMIN 可调用（后端鉴权拦截，前端按钮也需置于管理台入口）；
+ * - 修改成功后前端应提示“需要 re-run 才生效”。
+ */
+export async function updateAdminBookTypeCode(
+  bookId: string,
+  typeCode: BookTypeCode
+): Promise<UpdatedBookTypeCodeData> {
+  return clientFetch<UpdatedBookTypeCodeData>(`/api/admin/books/${encodeURIComponent(bookId)}`, {
+    method : "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ typeCode })
+  });
+}
+
+/**
  * 解析任务列表项。
  * 对应 `GET /api/books/:bookId/jobs` 返回的单条任务。
  */

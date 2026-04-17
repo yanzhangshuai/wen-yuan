@@ -21,6 +21,7 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
+import { BookTypeCode } from "@/generated/prisma/enums";
 import { createBook } from "@/server/modules/books/createBook";
 import { listBooks } from "@/server/modules/books/listBooks";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
@@ -87,7 +88,17 @@ const createBookFormSchema = z.object({
     return trimmedValue ? trimmedValue : undefined;
   }, z.string().uuid().optional()),
   description: optionalLongTextField,
-  file       : z.instanceof(File)
+  typeCode   : z.preprocess((value) => {
+    if (typeof value !== "string") {
+      return undefined;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue ? trimmedValue : undefined;
+  }, z.nativeEnum(BookTypeCode, {
+    errorMap: () => ({ message: "BookTypeCode 取值不合法" })
+  }).optional()),
+  file: z.instanceof(File)
     .refine((file) => file.size > 0, "请上传书籍文件")
     .refine((file) => /\.txt$/i.test(file.name), "MVP 仅支持 .txt 文件导入")
     .refine((file) => file.size <= MAX_BOOK_FILE_SIZE, "文件大小不能超过 50MB")
@@ -146,6 +157,7 @@ export async function POST(request: Request): Promise<Response> {
       dynasty    : formData.get("dynasty"),
       bookTypeId : formData.get("bookTypeId"),
       description: formData.get("description"),
+      typeCode   : formData.get("typeCode"),
       file       : formData.get("file")
     });
 
@@ -161,6 +173,7 @@ export async function POST(request: Request): Promise<Response> {
       dynasty    : parsedResult.data.dynasty,
       bookTypeId : parsedResult.data.bookTypeId,
       description: parsedResult.data.description,
+      typeCode   : parsedResult.data.typeCode,
       fileName   : parsedResult.data.file.name,
       fileMime   : parsedResult.data.file.type,
       fileContent: fileBuffer

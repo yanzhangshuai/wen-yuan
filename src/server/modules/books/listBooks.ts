@@ -1,3 +1,4 @@
+import type { BookTypeCode } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { normalizeBookStatus, type BookLibraryListItem } from "@/types/book";
 import { prisma } from "@/server/db/prisma";
@@ -51,6 +52,8 @@ interface BookListRow {
   coverUrl : string | null;
   /** 原始状态字符串（数据库可扩展，前端需归一化）。 */
   status   : string;
+  /** 三阶段管线 BookType 枚举值。 */
+  typeCode : BookTypeCode;
   /** 书籍创建时间。 */
   createdAt: Date;
   /** 书籍更新时间。 */
@@ -109,6 +112,7 @@ const BOOK_LIST_SELECT = {
   dynasty  : true,
   coverUrl : true,
   status   : true,
+  typeCode : true,
   createdAt: true,
   updatedAt: true,
   errorLog : true,
@@ -203,6 +207,7 @@ function mapBook(book: BookListRow): BookLibraryListItem {
     dynasty       : book.dynasty,
     coverUrl      : book.coverUrl,
     status,
+    typeCode      : book.typeCode,
     chapterCount  : book._count.chapters,
     personaCount  : book._count.profiles,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),

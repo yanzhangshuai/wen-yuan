@@ -1,3 +1,5 @@
+import type { BookTypeCode } from "@/generated/prisma/enums";
+
 /**
  * 文件定位（Next.js 应用内角色）：
  * - 该文件是“书籍域共享类型层”，位于 `src/types`，在前端页面、后端 route handler、service DTO 映射中复用。
@@ -101,6 +103,11 @@ export interface CreateBookResponseData {
   dynasty    : string | null;
   /** 简介（可空）。 */
   description: string | null;
+  /**
+   * 三阶段管线 BookType 枚举值（§0-12 BookType 系统）。
+   * 用于 Prompt 变体 / 阈值 / few-shot 装配；默认 `GENERIC`。
+   */
+  typeCode   : BookTypeCode;
   /** 当前书籍状态，驱动前端导入进度与可操作按钮显隐。 */
   status     : BookStatus;
   /** 导入源文件快照，供上传回执和详情页展示。 */
@@ -127,6 +134,11 @@ export interface BookLibraryListItem {
   coverUrl        : string | null;
   /** 当前状态，决定卡片操作入口与状态徽标。 */
   status          : BookStatus;
+  /**
+   * 三阶段管线 BookType 枚举值（§0-12 BookType 系统）。
+   * 用于 Prompt 变体 / 阈值 / few-shot 装配；默认 `GENERIC`。
+   */
+  typeCode        : BookTypeCode;
   /** 章节总数（用于判断是否完成切分/解析）。 */
   chapterCount    : number;
   /** 人物总数（按有效未删除记录统计，用于反映解析产出规模）。 */

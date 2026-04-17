@@ -1,3 +1,4 @@
+import type { BookTypeCode } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
@@ -43,6 +44,8 @@ interface BookDetailRow {
   coverUrl      : string | null;
   /** 原始状态字符串（需经 normalizeBookStatus 归一化）。 */
   status        : string;
+  /** 三阶段管线 BookType 枚举值。 */
+  typeCode      : BookTypeCode;
   /** 书级错误摘要。 */
   errorLog      : string | null;
   /** 创建时间。 */
@@ -119,6 +122,7 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
     dynasty       : book.dynasty,
     coverUrl      : book.coverUrl,
     status,
+    typeCode      : book.typeCode,
     chapterCount  : book.chapters.length,
     personaCount  : book.profiles.length,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
@@ -162,6 +166,7 @@ export function createGetBookByIdService(
         description   : true,
         coverUrl      : true,
         status        : true,
+        typeCode      : true,
         errorLog      : true,
         createdAt     : true,
         updatedAt     : true,
