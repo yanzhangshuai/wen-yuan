@@ -471,7 +471,7 @@ model AnalysisJob {
   id           String            @id @default(uuid()) @db.Uuid // 任务主键
   bookId       String            @map("book_id") @db.Uuid // 目标书籍 ID
   status         AnalysisJobStatus @default(QUEUED) // 任务状态
-  architecture   String            @default("sequential") // sequential | twopass
+  architecture   String            @default("threestage") // sequential | threestage
   scope          String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE | CHAPTER_LIST
   chapterStart   Int?              @map("chapter_start") // 章节起点（范围任务）
   chapterEnd     Int?              @map("chapter_end") // 章节终点（范围任务）
