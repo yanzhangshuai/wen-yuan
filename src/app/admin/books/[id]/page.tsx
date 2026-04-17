@@ -34,10 +34,12 @@ import {
   BookOpen,
   Calendar,
   FileText,
+  UserSearch,
   Users
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { BookRowActions } from "@/app/admin/books/_components/book-row-actions";
 import { getBookById } from "@/server/modules/books/getBookById";
 import { BookNotFoundError } from "@/server/modules/books/errors";
@@ -182,7 +184,13 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         </div>
 
         {/* 右上角操作区（删除、重跑等），与列表页复用同一动作组件。 */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/books/${book.id}/candidates`} className="inline-flex items-center gap-1">
+              <UserSearch size={14} />
+              候选人物
+            </Link>
+          </Button>
           <BookRowActions bookId={book.id} bookTitle={book.title} />
         </div>
       </div>

@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-06-lifecycle-ui",
+  "name": "char-ext-06-lifecycle-ui",
+  "title": "feat: Persona lifecycle 过滤与 CANDIDATE 审核 Tab",
+  "description": "全栈：API 层默认仅返 CONFIRMED；Admin 审核页新增 CANDIDATE Tab 展示候选角色+一键晋级；Viewer 默认 CONFIRMED。所有现有 Persona 查询集中走 helper，禁止泄露 MERGED_INTO。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
