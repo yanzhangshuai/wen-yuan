@@ -307,6 +307,9 @@ model Persona {
   deathChapterNo           Int?    @map("death_chapter_no")
   /// 当前所在地点（§0-3 跨地点并发冲突检测所需）。
   currentLocation          String? @map("current_location")
+  /// `currentLocation` 最后一次更新对应的章节号；Stage C 按章节时序维护：
+  /// 仅当新章节号 > 本字段时才允许覆盖 `currentLocation`，避免旧章节覆盖新章节。
+  currentLocationChapter   Int?    @map("current_location_chapter")
   /// Mention 总计数（Stage B 聚合落库，用于 CONFIRMED 门槛）。
   mentionCount             Int     @default(0) @map("mention_count")
   /// 有效事迹计数（§0-6 口径：SELF|IMPERSONATING + NARRATIVE + rawSpan≥15 + actionVerb 非空）。

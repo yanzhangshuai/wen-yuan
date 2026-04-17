@@ -29,6 +29,7 @@ export type AggregatePersona = {
 export type PersonaAvgAggregateOutputType = {
   confidence: number | null
   deathChapterNo: number | null
+  currentLocationChapter: number | null
   mentionCount: number | null
   effectiveBiographyCount: number | null
   distinctChapters: number | null
@@ -37,6 +38,7 @@ export type PersonaAvgAggregateOutputType = {
 export type PersonaSumAggregateOutputType = {
   confidence: number | null
   deathChapterNo: number | null
+  currentLocationChapter: number | null
   mentionCount: number | null
   effectiveBiographyCount: number | null
   distinctChapters: number | null
@@ -59,6 +61,7 @@ export type PersonaMinAggregateOutputType = {
   preprocessorConfidence: string | null
   deathChapterNo: number | null
   currentLocation: string | null
+  currentLocationChapter: number | null
   mentionCount: number | null
   effectiveBiographyCount: number | null
   distinctChapters: number | null
@@ -82,6 +85,7 @@ export type PersonaMaxAggregateOutputType = {
   preprocessorConfidence: string | null
   deathChapterNo: number | null
   currentLocation: string | null
+  currentLocationChapter: number | null
   mentionCount: number | null
   effectiveBiographyCount: number | null
   distinctChapters: number | null
@@ -107,6 +111,7 @@ export type PersonaCountAggregateOutputType = {
   preprocessorConfidence: number
   deathChapterNo: number
   currentLocation: number
+  currentLocationChapter: number
   mentionCount: number
   effectiveBiographyCount: number
   distinctChapters: number
@@ -118,6 +123,7 @@ export type PersonaCountAggregateOutputType = {
 export type PersonaAvgAggregateInputType = {
   confidence?: true
   deathChapterNo?: true
+  currentLocationChapter?: true
   mentionCount?: true
   effectiveBiographyCount?: true
   distinctChapters?: true
@@ -126,6 +132,7 @@ export type PersonaAvgAggregateInputType = {
 export type PersonaSumAggregateInputType = {
   confidence?: true
   deathChapterNo?: true
+  currentLocationChapter?: true
   mentionCount?: true
   effectiveBiographyCount?: true
   distinctChapters?: true
@@ -148,6 +155,7 @@ export type PersonaMinAggregateInputType = {
   preprocessorConfidence?: true
   deathChapterNo?: true
   currentLocation?: true
+  currentLocationChapter?: true
   mentionCount?: true
   effectiveBiographyCount?: true
   distinctChapters?: true
@@ -171,6 +179,7 @@ export type PersonaMaxAggregateInputType = {
   preprocessorConfidence?: true
   deathChapterNo?: true
   currentLocation?: true
+  currentLocationChapter?: true
   mentionCount?: true
   effectiveBiographyCount?: true
   distinctChapters?: true
@@ -196,6 +205,7 @@ export type PersonaCountAggregateInputType = {
   preprocessorConfidence?: true
   deathChapterNo?: true
   currentLocation?: true
+  currentLocationChapter?: true
   mentionCount?: true
   effectiveBiographyCount?: true
   distinctChapters?: true
@@ -308,6 +318,7 @@ export type PersonaGroupByOutputType = {
   preprocessorConfidence: string | null
   deathChapterNo: number | null
   currentLocation: string | null
+  currentLocationChapter: number | null
   mentionCount: number
   effectiveBiographyCount: number
   distinctChapters: number
@@ -356,6 +367,7 @@ export type PersonaWhereInput = {
   preprocessorConfidence?: Prisma.StringNullableFilter<"Persona"> | string | null
   deathChapterNo?: Prisma.IntNullableFilter<"Persona"> | number | null
   currentLocation?: Prisma.StringNullableFilter<"Persona"> | string | null
+  currentLocationChapter?: Prisma.IntNullableFilter<"Persona"> | number | null
   mentionCount?: Prisma.IntFilter<"Persona"> | number
   effectiveBiographyCount?: Prisma.IntFilter<"Persona"> | number
   distinctChapters?: Prisma.IntFilter<"Persona"> | number
@@ -390,6 +402,7 @@ export type PersonaOrderByWithRelationInput = {
   preprocessorConfidence?: Prisma.SortOrderInput | Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrderInput | Prisma.SortOrder
   currentLocation?: Prisma.SortOrderInput | Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrderInput | Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -427,6 +440,7 @@ export type PersonaWhereUniqueInput = Prisma.AtLeast<{
   preprocessorConfidence?: Prisma.StringNullableFilter<"Persona"> | string | null
   deathChapterNo?: Prisma.IntNullableFilter<"Persona"> | number | null
   currentLocation?: Prisma.StringNullableFilter<"Persona"> | string | null
+  currentLocationChapter?: Prisma.IntNullableFilter<"Persona"> | number | null
   mentionCount?: Prisma.IntFilter<"Persona"> | number
   effectiveBiographyCount?: Prisma.IntFilter<"Persona"> | number
   distinctChapters?: Prisma.IntFilter<"Persona"> | number
@@ -461,6 +475,7 @@ export type PersonaOrderByWithAggregationInput = {
   preprocessorConfidence?: Prisma.SortOrderInput | Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrderInput | Prisma.SortOrder
   currentLocation?: Prisma.SortOrderInput | Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrderInput | Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -494,6 +509,7 @@ export type PersonaScalarWhereWithAggregatesInput = {
   preprocessorConfidence?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
   deathChapterNo?: Prisma.IntNullableWithAggregatesFilter<"Persona"> | number | null
   currentLocation?: Prisma.StringNullableWithAggregatesFilter<"Persona"> | string | null
+  currentLocationChapter?: Prisma.IntNullableWithAggregatesFilter<"Persona"> | number | null
   mentionCount?: Prisma.IntWithAggregatesFilter<"Persona"> | number
   effectiveBiographyCount?: Prisma.IntWithAggregatesFilter<"Persona"> | number
   distinctChapters?: Prisma.IntWithAggregatesFilter<"Persona"> | number
@@ -519,6 +535,7 @@ export type PersonaCreateInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -553,6 +570,7 @@ export type PersonaUncheckedCreateInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -587,6 +605,7 @@ export type PersonaUpdateInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -621,6 +640,7 @@ export type PersonaUncheckedUpdateInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -655,6 +675,7 @@ export type PersonaCreateManyInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -680,6 +701,7 @@ export type PersonaUpdateManyMutationInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -705,6 +727,7 @@ export type PersonaUncheckedUpdateManyInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -738,6 +761,7 @@ export type PersonaCountOrderByAggregateInput = {
   preprocessorConfidence?: Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrder
   currentLocation?: Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -747,6 +771,7 @@ export type PersonaCountOrderByAggregateInput = {
 export type PersonaAvgOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -769,6 +794,7 @@ export type PersonaMaxOrderByAggregateInput = {
   preprocessorConfidence?: Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrder
   currentLocation?: Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -792,6 +818,7 @@ export type PersonaMinOrderByAggregateInput = {
   preprocessorConfidence?: Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrder
   currentLocation?: Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -801,6 +828,7 @@ export type PersonaMinOrderByAggregateInput = {
 export type PersonaSumOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   deathChapterNo?: Prisma.SortOrder
+  currentLocationChapter?: Prisma.SortOrder
   mentionCount?: Prisma.SortOrder
   effectiveBiographyCount?: Prisma.SortOrder
   distinctChapters?: Prisma.SortOrder
@@ -1003,6 +1031,7 @@ export type PersonaCreateWithoutProfilesInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1036,6 +1065,7 @@ export type PersonaUncheckedCreateWithoutProfilesInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1085,6 +1115,7 @@ export type PersonaUpdateWithoutProfilesInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1118,6 +1149,7 @@ export type PersonaUncheckedUpdateWithoutProfilesInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1151,6 +1183,7 @@ export type PersonaCreateWithoutBiographiesInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1184,6 +1217,7 @@ export type PersonaUncheckedCreateWithoutBiographiesInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1233,6 +1267,7 @@ export type PersonaUpdateWithoutBiographiesInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1266,6 +1301,7 @@ export type PersonaUncheckedUpdateWithoutBiographiesInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1299,6 +1335,7 @@ export type PersonaCreateWithoutMentionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1332,6 +1369,7 @@ export type PersonaUncheckedCreateWithoutMentionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1381,6 +1419,7 @@ export type PersonaUpdateWithoutMentionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1414,6 +1453,7 @@ export type PersonaUncheckedUpdateWithoutMentionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1447,6 +1487,7 @@ export type PersonaCreateWithoutSourceRelsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1480,6 +1521,7 @@ export type PersonaUncheckedCreateWithoutSourceRelsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1518,6 +1560,7 @@ export type PersonaCreateWithoutTargetRelsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1551,6 +1594,7 @@ export type PersonaUncheckedCreateWithoutTargetRelsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1600,6 +1644,7 @@ export type PersonaUpdateWithoutSourceRelsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1633,6 +1678,7 @@ export type PersonaUncheckedUpdateWithoutSourceRelsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1677,6 +1723,7 @@ export type PersonaUpdateWithoutTargetRelsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1710,6 +1757,7 @@ export type PersonaUncheckedUpdateWithoutTargetRelsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1743,6 +1791,7 @@ export type PersonaCreateWithoutAliasMappingsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1776,6 +1825,7 @@ export type PersonaUncheckedCreateWithoutAliasMappingsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1825,6 +1875,7 @@ export type PersonaUpdateWithoutAliasMappingsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1858,6 +1909,7 @@ export type PersonaUncheckedUpdateWithoutAliasMappingsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1891,6 +1943,7 @@ export type PersonaCreateWithoutSourceMergeSuggestionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1924,6 +1977,7 @@ export type PersonaUncheckedCreateWithoutSourceMergeSuggestionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1962,6 +2016,7 @@ export type PersonaCreateWithoutTargetMergeSuggestionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -1995,6 +2050,7 @@ export type PersonaUncheckedCreateWithoutTargetMergeSuggestionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -2044,6 +2100,7 @@ export type PersonaUpdateWithoutSourceMergeSuggestionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2077,6 +2134,7 @@ export type PersonaUncheckedUpdateWithoutSourceMergeSuggestionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2121,6 +2179,7 @@ export type PersonaUpdateWithoutTargetMergeSuggestionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2154,6 +2213,7 @@ export type PersonaUncheckedUpdateWithoutTargetMergeSuggestionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2187,6 +2247,7 @@ export type PersonaCreateWithoutPersonaMentionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -2220,6 +2281,7 @@ export type PersonaUncheckedCreateWithoutPersonaMentionsInput = {
   preprocessorConfidence?: string | null
   deathChapterNo?: number | null
   currentLocation?: string | null
+  currentLocationChapter?: number | null
   mentionCount?: number
   effectiveBiographyCount?: number
   distinctChapters?: number
@@ -2269,6 +2331,7 @@ export type PersonaUpdateWithoutPersonaMentionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2302,6 +2365,7 @@ export type PersonaUncheckedUpdateWithoutPersonaMentionsInput = {
   preprocessorConfidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deathChapterNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currentLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentLocationChapter?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   mentionCount?: Prisma.IntFieldUpdateOperationsInput | number
   effectiveBiographyCount?: Prisma.IntFieldUpdateOperationsInput | number
   distinctChapters?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2438,6 +2502,7 @@ export type PersonaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   preprocessorConfidence?: boolean
   deathChapterNo?: boolean
   currentLocation?: boolean
+  currentLocationChapter?: boolean
   mentionCount?: boolean
   effectiveBiographyCount?: boolean
   distinctChapters?: boolean
@@ -2473,6 +2538,7 @@ export type PersonaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   preprocessorConfidence?: boolean
   deathChapterNo?: boolean
   currentLocation?: boolean
+  currentLocationChapter?: boolean
   mentionCount?: boolean
   effectiveBiographyCount?: boolean
   distinctChapters?: boolean
@@ -2498,6 +2564,7 @@ export type PersonaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   preprocessorConfidence?: boolean
   deathChapterNo?: boolean
   currentLocation?: boolean
+  currentLocationChapter?: boolean
   mentionCount?: boolean
   effectiveBiographyCount?: boolean
   distinctChapters?: boolean
@@ -2523,13 +2590,14 @@ export type PersonaSelectScalar = {
   preprocessorConfidence?: boolean
   deathChapterNo?: boolean
   currentLocation?: boolean
+  currentLocationChapter?: boolean
   mentionCount?: boolean
   effectiveBiographyCount?: boolean
   distinctChapters?: boolean
   status?: boolean
 }
 
-export type PersonaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "gender" | "nameType" | "recordSource" | "confidence" | "aliases" | "hometown" | "birthYear" | "deathYear" | "globalTags" | "deletedAt" | "createdAt" | "updatedAt" | "preprocessorConfidence" | "deathChapterNo" | "currentLocation" | "mentionCount" | "effectiveBiographyCount" | "distinctChapters" | "status", ExtArgs["result"]["persona"]>
+export type PersonaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "gender" | "nameType" | "recordSource" | "confidence" | "aliases" | "hometown" | "birthYear" | "deathYear" | "globalTags" | "deletedAt" | "createdAt" | "updatedAt" | "preprocessorConfidence" | "deathChapterNo" | "currentLocation" | "currentLocationChapter" | "mentionCount" | "effectiveBiographyCount" | "distinctChapters" | "status", ExtArgs["result"]["persona"]>
 export type PersonaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   profiles?: boolean | Prisma.Persona$profilesArgs<ExtArgs>
   mentions?: boolean | Prisma.Persona$mentionsArgs<ExtArgs>
@@ -2587,6 +2655,11 @@ export type $PersonaPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
      * 当前所在地点（§0-3 跨地点并发冲突检测所需）。
      */
     currentLocation: string | null
+    /**
+     * `currentLocation` 最后一次更新对应的章节号；Stage C 按章节时序维护：
+     * 仅当新章节号 > 本字段时才允许覆盖 `currentLocation`，避免旧章节覆盖新章节。
+     */
+    currentLocationChapter: number | null
     /**
      * Mention 总计数（Stage B 聚合落库，用于 CONFIRMED 门槛）。
      */
@@ -3054,6 +3127,7 @@ export interface PersonaFieldRefs {
   readonly preprocessorConfidence: Prisma.FieldRef<"Persona", 'String'>
   readonly deathChapterNo: Prisma.FieldRef<"Persona", 'Int'>
   readonly currentLocation: Prisma.FieldRef<"Persona", 'String'>
+  readonly currentLocationChapter: Prisma.FieldRef<"Persona", 'Int'>
   readonly mentionCount: Prisma.FieldRef<"Persona", 'Int'>
   readonly effectiveBiographyCount: Prisma.FieldRef<"Persona", 'Int'>
   readonly distinctChapters: Prisma.FieldRef<"Persona", 'Int'>

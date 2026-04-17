@@ -2938,6 +2938,7 @@ export const PersonaScalarFieldEnum = {
   preprocessorConfidence: 'preprocessorConfidence',
   deathChapterNo: 'deathChapterNo',
   currentLocation: 'currentLocation',
+  currentLocationChapter: 'currentLocationChapter',
   mentionCount: 'mentionCount',
   effectiveBiographyCount: 'effectiveBiographyCount',
   distinctChapters: 'distinctChapters',
