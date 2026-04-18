@@ -44,6 +44,19 @@ export interface PipelineRunParams {
   onProgress: (update: PipelineProgressUpdate) => Promise<void>;
 }
 
+export interface AnalysisPipelineWarning {
+  code    : string;
+  stage   : string;
+  message : string;
+  details?: Record<string, number | string | boolean | null>;
+}
+
+export interface AnalysisPipelineStageSummary {
+  stage  : string;
+  status : "SUCCESS" | "WARNING";
+  metrics: Record<string, number | string | boolean | null>;
+}
+
 /**
  * 管线执行结果目前只保留章节级统计。
  * 保持结果窄而稳定，避免在 Phase 1 过早把实现细节固化进跨文件契约。
@@ -51,6 +64,8 @@ export interface PipelineRunParams {
 export interface AnalysisPipelineResult {
   completedChapters: number;
   failedChapters   : number;
+  warnings         : AnalysisPipelineWarning[];
+  stageSummaries   : AnalysisPipelineStageSummary[];
 }
 
 /**

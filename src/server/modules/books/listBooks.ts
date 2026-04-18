@@ -2,6 +2,10 @@ import type { BookTypeCode } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { normalizeBookStatus, type BookLibraryListItem } from "@/types/book";
 import { prisma } from "@/server/db/prisma";
+import {
+  countProjectedBookPersonasByBookIds,
+  isThreestageFullBookJob
+} from "@/server/modules/personas/bookPersonaProjection";
 
 /**
  * =============================================================================
@@ -63,9 +67,11 @@ interface BookListRow {
   /** 计数字段：章节数与有效人物数。 */
   _count: {
     /** 章节总数。 */
-    chapters: number;
+    chapters : number;
     /** 人物档案总数（已过滤软删除）。 */
-    profiles: number;
+    profiles : number;
+    /** 三阶段 persona 计数测试桩。 */
+    personas?: number;
   };
   /** 最近一次解析任务快照（按 updatedAt 倒序，取 1 条）。 */
   analysisJobs: Array<{
@@ -77,6 +83,8 @@ interface BookListRow {
     errorLog    : string | null;
     /** 任务解析架构（用于列表/详情回显最近一次策略）。 */
     architecture: string;
+    /** 任务范围。 */
+    scope?      : string;
     /** 最近阶段日志（取 1 条，用于提取模型名）。 */
     phaseLogs   : Array<{
       model: {
@@ -132,6 +140,7 @@ const BOOK_LIST_SELECT = {
       finishedAt  : true,
       errorLog    : true,
       architecture: true,
+      scope       : true,
       phaseLogs   : {
         take   : 1,
         orderBy: { createdAt: "desc" },
@@ -182,7 +191,17 @@ function resolveLastAnalyzedAt(
  * @param book 原始查询行
  * @returns `BookLibraryListItem`（前端稳定契约）
  */
-function mapBook(book: BookListRow): BookLibraryListItem {
+function resolvePersonaCount(book: BookListRow, projectedPersonaCount: number | null): number {
+  if (isThreestageFullBookJob(book.analysisJobs[0])) {
+    return projectedPersonaCount
+      ?? book._count.personas
+      ?? book._count.profiles;
+  }
+
+  return book._count.profiles;
+}
+
+function mapBook(book: BookListRow, projectedPersonaCount: number | null): BookLibraryListItem {
   // 归一化状态，防止历史脏数据或扩展状态直接污染前端分支。
   const status = normalizeBookStatus(book.status);
 
@@ -209,7 +228,7 @@ function mapBook(book: BookListRow): BookLibraryListItem {
     status,
     typeCode      : book.typeCode,
     chapterCount  : book._count.chapters,
-    personaCount  : book._count.profiles,
+    personaCount  : resolvePersonaCount(book, projectedPersonaCount),
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastArchitecture,
@@ -251,7 +270,14 @@ export function createListBooksService(
       select : BOOK_LIST_SELECT
     });
 
-    return books.map((book) => mapBook(book as BookListRow));
+    const projectedCounts = await countProjectedBookPersonasByBookIds(
+      books
+        .filter((book) => isThreestageFullBookJob(book.analysisJobs[0] as { architecture?: string | null; scope?: string | null }))
+        .map((book) => book.id),
+      prismaClient
+    );
+
+    return books.map((book) => mapBook(book as BookListRow, projectedCounts.get(book.id) ?? null));
   }
 
   return { listBooks };

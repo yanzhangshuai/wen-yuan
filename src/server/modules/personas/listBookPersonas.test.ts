@@ -72,4 +72,44 @@ describe("listBookPersonas service", () => {
     await expect(service.listBookPersonas("missing"))
       .rejects.toBeInstanceOf(BookNotFoundError);
   });
+
+  it("returns personas from persona projection when the latest full-book job uses threestage", async () => {
+    const service = createListBookPersonasService({
+      book       : { findFirst: vi.fn().mockResolvedValue({ id: "book-1" }) },
+      analysisJob: {
+        findFirst: vi.fn().mockResolvedValue({
+          architecture: "threestage",
+          scope       : "FULL_BOOK"
+        })
+      },
+      persona: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id                     : "persona-1",
+            name                   : "鲍廷玺",
+            aliases                : [],
+            gender                 : null,
+            hometown               : null,
+            nameType               : "NAMED",
+            globalTags             : [],
+            confidence             : 0.88,
+            recordSource           : "AI",
+            status                 : "CONFIRMED",
+            mentionCount           : 3,
+            effectiveBiographyCount: 1,
+            distinctChapters       : 2
+          }
+        ])
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([])
+      }
+    } as never);
+
+    const result = await service.listBookPersonas("book-1");
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("persona-1");
+    expect(result[0]?.profileId).toBeNull();
+  });
 });

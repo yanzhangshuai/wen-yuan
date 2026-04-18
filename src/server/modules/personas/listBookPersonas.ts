@@ -21,6 +21,10 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import {
+  isThreestageFullBookJob,
+  listProjectedBookPersonas
+} from "@/server/modules/personas/bookPersonaProjection";
 
 /**
  * 书籍人物列表项。
@@ -29,7 +33,7 @@ export interface BookPersonaListItem {
   /** 人物 ID。 */
   id           : string;
   /** 书内档案 ID。 */
-  profileId    : string;
+  profileId    : string | null;
   /** 所属书籍 ID。 */
   bookId       : string;
   /** 标准人物名。 */
@@ -93,6 +97,19 @@ export function createListBookPersonasService(
     });
     if (!book) {
       throw new BookNotFoundError(bookId);
+    }
+
+    const latestJob = await prismaClient.analysisJob?.findFirst?.({
+      where  : { bookId },
+      orderBy: { updatedAt: "desc" },
+      select : {
+        architecture: true,
+        scope       : true
+      }
+    });
+
+    if (isThreestageFullBookJob(latestJob)) {
+      return await listProjectedBookPersonas(bookId, prismaClient) as BookPersonaListItem[];
     }
 
     const profiles = await prismaClient.profile.findMany({

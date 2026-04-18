@@ -1,0 +1,53 @@
+{
+  "id": "04-18-threestage-cutover-empty-personas",
+  "name": "04-18-threestage-cutover-empty-personas",
+  "title": "threestage cutover and empty personas investigation",
+  "description": "收口 threestage 为全书解析唯一主路径，修复 persona/profile 读写错位导致的空角色展示，并补齐异常全书作业可观测性。不包含按章分析改造。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "backend",
+  "package": null,
+  "priority": "P2",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "回归样本：book 61c34092-5295-4438-af28-46b5b0e9d558，job 1d45726b-b91a-4738-a613-231b74e21653。",
+  "meta": {}
+}

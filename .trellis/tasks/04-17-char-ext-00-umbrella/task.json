@@ -1,0 +1,71 @@
+{
+  "id": "char-ext-00-umbrella",
+  "name": "char-ext-00-umbrella",
+  "title": "feat: 《儒林外史》人物解析准确率重设计 (三阶段架构)",
+  "description": "伞任务：将当前 twopass 架构替换为三阶段。详见 docs/superpowers/specs/2026-04-17-character-extraction-accuracy-redesign.md",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "04-17-char-ext-01-schema-migration",
+    "04-17-char-ext-02-prompt-baselines",
+    "04-17-char-ext-03-stage-a-extractor",
+    "04-17-char-ext-04-stage-b-resolver",
+    "04-17-char-ext-05-stage-c-attribution",
+    "04-17-char-ext-06-lifecycle-ui",
+    "04-17-char-ext-07-alias-mapping-ui",
+    "04-17-char-ext-08-regression-fixtures",
+    "04-17-char-ext-09-rerun-and-verify",
+    "04-17-char-ext-10-booktype-system",
+    "04-17-char-ext-11-universal-fewshot",
+    "04-17-char-ext-12-chapter-preprocessor-stage-0",
+    "04-17-char-ext-13-stage-b5-temporal-consistency",
+    "04-17-char-ext-14-twopass-baseline",
+    "04-17-char-ext-15-alias-entry-audit-seed",
+    "04-17-char-ext-16-gold-set-annotation",
+    "04-17-char-ext-17-cross-location-extraction"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

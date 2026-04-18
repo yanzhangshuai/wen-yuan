@@ -293,4 +293,25 @@ describe("listBooks", () => {
       size: null
     });
   });
+
+  it("uses persona count for latest threestage full-book cards", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      createBookRow({
+        _count      : { chapters: 2, profiles: 0, personas: 2 },
+        analysisJobs: [{
+          updatedAt   : new Date("2026-04-18T00:00:00.000Z"),
+          finishedAt  : new Date("2026-04-18T00:01:00.000Z"),
+          errorLog    : null,
+          architecture: "threestage",
+          scope       : "FULL_BOOK",
+          phaseLogs   : []
+        }]
+      })
+    ]);
+
+    const service = createListBooksService({ book: { findMany } } as never);
+    const [item] = await service.listBooks();
+
+    expect(item.personaCount).toBe(2);
+  });
 });

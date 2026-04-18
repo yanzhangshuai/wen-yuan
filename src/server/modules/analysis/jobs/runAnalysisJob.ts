@@ -14,9 +14,14 @@ import {
   type FullRuntimeKnowledge
 } from "@/server/modules/knowledge/load-book-knowledge";
 import { runPostAnalysisMerger } from "@/server/modules/analysis/services/PostAnalysisMerger";
-import { createPipeline } from "@/server/modules/analysis/pipelines/factory";
+import {
+  createPipeline,
+  type AnalysisPipelineFactoryDependencies
+} from "@/server/modules/analysis/pipelines/factory";
 import type {
   AnalysisArchitecture,
+  AnalysisPipeline,
+  AnalysisPipelineResult,
   PipelineChapterTask
 } from "@/server/modules/analysis/pipelines/types";
 import type { SequentialPipelineDependencies } from "@/server/modules/analysis/pipelines/sequential/SequentialPipeline";
@@ -249,6 +254,29 @@ function toErrorMessage(error: unknown): string {
   return String(error).slice(0, 1000);
 }
 
+function formatPipelineWarningSummary(result: AnalysisPipelineResult): string | null {
+  if (result.warnings.length === 0) {
+    return null;
+  }
+
+  const summary = {
+    warningCodes: result.warnings.map((warning) => warning.code),
+    warnings    : result.warnings.map((warning) => ({
+      code   : warning.code,
+      stage  : warning.stage,
+      message: warning.message,
+      details: warning.details ?? null
+    })),
+    stages: result.stageSummaries.map((stageSummary) => ({
+      stage  : stageSummary.stage,
+      status : stageSummary.status,
+      metrics: stageSummary.metrics
+    }))
+  };
+
+  return JSON.stringify(summary).slice(0, 1000);
+}
+
 /**
  * 功能：整书解析完成后，检测 mention 数 < 2 的孤儿 Persona 并将其置信度降至 0.4。
  * 目的：帮助审核者优先关注出场极少、可能为幻觉或次要角色的实体。
@@ -435,7 +463,11 @@ function createDefaultChapterAnalyzerFactory(prismaClient: PrismaClient): Chapte
 export function createAnalysisJobRunner(
   prismaClient: PrismaClient = prisma,
   chapterAnalyzer?: ChapterAnalyzer,
-  chapterAnalyzerFactory?: ChapterAnalyzerFactory
+  chapterAnalyzerFactory?: ChapterAnalyzerFactory,
+  pipelineFactory: (
+    architecture: AnalysisArchitecture,
+    dependencies: AnalysisPipelineFactoryDependencies
+  ) => AnalysisPipeline = createPipeline
 ) {
   const resolvedAnalyzerFactory = chapterAnalyzerFactory ?? createDefaultChapterAnalyzerFactory(prismaClient);
 
@@ -729,10 +761,10 @@ export function createAnalysisJobRunner(
 
       const architecture = normalizeAnalysisArchitecture(runningJob.architecture);
       const pipeline = architecture === "threestage"
-        ? createPipeline("threestage", {
+        ? pipelineFactory("threestage", {
           threestage: createThreeStagePipelineDependencies(runningJob, await resolveThreeStageAiClient(runningJob))
         })
-        : createPipeline("sequential", {
+        : pipelineFactory("sequential", {
           sequential: createSequentialPipelineDependencies(runningJob, activeAnalyzer)
         });
 
@@ -779,13 +811,15 @@ export function createAnalysisJobRunner(
         throw new Error(`所有章节解析失败，共 ${pipelineResult.failedChapters} 章`);
       }
 
+      const warningSummary = formatPipelineWarningSummary(pipelineResult);
+
       await prismaClient.$transaction([
         prismaClient.analysisJob.update({
           where: { id: runningJob.id },
           data : {
             status    : AnalysisJobStatus.SUCCEEDED,
             finishedAt: new Date(),
-            errorLog  : null
+            errorLog  : warningSummary
           }
         }),
         prismaClient.book.update({
@@ -794,7 +828,7 @@ export function createAnalysisJobRunner(
             status       : "COMPLETED",
             parseProgress: 100,
             parseStage   : "完成",
-            errorLog     : null
+            errorLog     : warningSummary
           }
         })
       ]);

@@ -319,6 +319,103 @@ describe("analysis job runner", () => {
     });
   });
 
+  it("persists threestage warning summaries into job and book error logs", async () => {
+    const {
+      analysisJobFindUnique,
+      chapterFindMany,
+      analysisJobUpdate,
+      bookUpdate
+    } = createRunnerContext();
+    const mockPipelineRun = vi.fn().mockResolvedValue({
+      completedChapters: 1,
+      failedChapters   : 0,
+      warnings         : [
+        {
+          code   : "PERSONA_ZERO_AFTER_STAGE_B",
+          stage  : "STAGE_B",
+          message: "Stage B finished without any promoted personas."
+        }
+      ],
+      stageSummaries: [
+        {
+          stage  : "STAGE_B",
+          status : "WARNING",
+          metrics: { promotedPersonaCount: 0 }
+        }
+      ]
+    });
+    const runner = createAnalysisJobRunner({
+      analysisJob: {
+        findUnique: analysisJobFindUnique,
+        findFirst : vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update    : analysisJobUpdate
+      },
+      chapter: { findMany: chapterFindMany, findUnique: vi.fn(), updateMany: vi.fn().mockResolvedValue({ count: 1 }), update: vi.fn() },
+      book   : {
+        findUnique: vi.fn().mockResolvedValue({ title: "儒林外史" }),
+        update    : bookUpdate,
+        updateMany: vi.fn().mockResolvedValue({ count: 1 })
+      },
+      profile     : { findMany: vi.fn().mockResolvedValue([]) },
+      mention     : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
+      relationship: { findMany: vi.fn().mockResolvedValue([]) },
+      persona     : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      $transaction: vi.fn(async (ops: Promise<unknown>[]) => await Promise.all(ops))
+    } as never, {
+      analyzeChapter          : vi.fn(),
+      resolvePersonaTitles    : vi.fn().mockResolvedValue(0),
+      getTitleOnlyPersonaCount: vi.fn().mockResolvedValue(0),
+      validateChapterResult   : vi.fn(),
+      runGrayZoneArbitration  : vi.fn().mockResolvedValue(0)
+    } as never, undefined, (architecture) => ({
+      architecture,
+      run: mockPipelineRun
+    }));
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : "job-threestage-warning",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : "job-threestage-warning",
+        bookId        : "book-1",
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await runner.runAnalysisJobById("job-threestage-warning");
+
+    expect(analysisJobUpdate).toHaveBeenCalledWith({
+      where: { id: "job-threestage-warning" },
+      data : expect.objectContaining({
+        status  : AnalysisJobStatus.SUCCEEDED,
+        errorLog: expect.stringContaining("PERSONA_ZERO_AFTER_STAGE_B")
+      })
+    });
+    expect(bookUpdate).toHaveBeenCalledWith({
+      where: { id: "book-1" },
+      data : expect.objectContaining({
+        status  : "COMPLETED",
+        errorLog: expect.stringContaining("PERSONA_ZERO_AFTER_STAGE_B")
+      })
+    });
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when job does not exist", async () => {
     const { runner, analysisJobFindUnique, chapterFindMany } = createRunnerContext();

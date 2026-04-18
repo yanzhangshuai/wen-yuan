@@ -1,0 +1,53 @@
+{
+  "id": "char-ext-09-rerun-and-verify",
+  "name": "char-ext-09-rerun-and-verify",
+  "title": "feat: 清库重跑与验收报告",
+  "description": "执行 purge-book-analysis.ts --book-id=7d822600-9107-4711-95b5-e87b3e768125；以新三阶段架构重跑；执行 scripts/verify-liurun-redesign.ts 产出验收报告（CONFIRMED 数、牛浦/牛布衣检查、actor_role 分布、fixture 5 项）。全部指标达标方可合并 umbrella。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "claude-agent",
+  "createdAt": "2026-04-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-17-char-ext-00-umbrella",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

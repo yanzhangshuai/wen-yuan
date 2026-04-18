@@ -2,6 +2,10 @@ import type { BookTypeCode } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import {
+  countProjectedBookPersonasByBookIds,
+  isThreestageFullBookJob
+} from "@/server/modules/personas/bookPersonaProjection";
 import { normalizeBookStatus, type BookLibraryListItem } from "@/types/book";
 
 /**
@@ -66,12 +70,15 @@ interface BookDetailRow {
   chapters      : Array<{ id: string }>;
   /** 人物档案列表（这里只取 id，用于计数）。 */
   profiles      : Array<{ id: string }>;
+  /** 三阶段 persona 计数测试桩。 */
+  personas?     : Array<{ id: string }>;
   /** 最近分析任务快照（只取最新 1 条）。 */
   analysisJobs: Array<{
     updatedAt   : Date;
     finishedAt  : Date | null;
     errorLog    : string | null;
     architecture: string;
+    scope?      : string;
     phaseLogs   : Array<{
       model: {
         name: string;
@@ -104,7 +111,20 @@ function resolveLastAnalyzedAt(
  * 把内部查询行映射为对外 DTO（`BookLibraryListItem`）。
  * 设计目的：把状态归一、时间格式化、来源字段组装集中在一个函数里，降低上游误改风险。
  */
-function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
+function resolvePersonaCount(
+  book: BookDetailRow,
+  projectedPersonaCount: number | null
+): number {
+  if (isThreestageFullBookJob(book.analysisJobs[0])) {
+    return projectedPersonaCount
+      ?? book.personas?.length
+      ?? book.profiles.length;
+  }
+
+  return book.profiles.length;
+}
+
+function mapBookDetail(book: BookDetailRow, projectedPersonaCount: number | null): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
   const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
   const rawArchitecture = book.analysisJobs?.[0]?.architecture ?? null;
@@ -124,7 +144,7 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
     status,
     typeCode      : book.typeCode,
     chapterCount  : book.chapters.length,
-    personaCount  : book.profiles.length,
+    personaCount  : resolvePersonaCount(book, projectedPersonaCount),
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastArchitecture,
@@ -195,6 +215,7 @@ export function createGetBookByIdService(
             finishedAt  : true,
             errorLog    : true,
             architecture: true,
+            scope       : true,
             phaseLogs   : {
               take   : 1,
               orderBy: { createdAt: "desc" },
@@ -216,8 +237,12 @@ export function createGetBookByIdService(
       throw new BookNotFoundError(bookId);
     }
 
+    const projectedPersonaCount = isThreestageFullBookJob(book.analysisJobs[0])
+      ? (await countProjectedBookPersonasByBookIds([bookId], prismaClient)).get(bookId) ?? null
+      : null;
+
     // 查询结果映射成统一 DTO，供上游直接返回给前端。
-    return mapBookDetail(book as BookDetailRow);
+    return mapBookDetail(book as BookDetailRow, projectedPersonaCount);
   }
 
   return { getBookById };

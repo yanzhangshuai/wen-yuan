@@ -3,6 +3,8 @@ import type { AiProviderClient } from "@/server/providers/ai";
 import type {
   AnalysisPipeline,
   AnalysisPipelineResult,
+  AnalysisPipelineStageSummary,
+  AnalysisPipelineWarning,
   PipelineRunParams
 } from "@/server/modules/analysis/pipelines/types";
 
@@ -14,8 +16,11 @@ import type { StageAResult } from "@/server/modules/analysis/pipelines/threestag
 import type { TemporalCheckResult } from "@/server/modules/analysis/pipelines/threestage/stageB5/types";
 import type { StageBResult } from "@/server/modules/analysis/pipelines/threestage/stageB/types";
 import type { StageCResult } from "@/server/modules/analysis/pipelines/threestage/stageC/types";
+import { writeStagePhaseLog } from "@/server/modules/analysis/pipelines/threestage/phaseLogging";
 
 const THREE_STAGE_PIPELINE_DEPENDENCY_ERROR = "ThreeStagePipeline 缺少运行时依赖，无法执行三阶段分析。";
+const STAGE_A_COVERAGE_WARNING_RATIO = 0.35;
+const STAGE_C_EFFECTIVE_BIO_RATIO = 0.5;
 
 /**
  * Stage A 对外最小契约：三阶段 orchestrator 只依赖 `extract(input)`。
@@ -153,6 +158,36 @@ export function createThreeStagePipeline(
     const totalChapters = params.chapters.length;
     let completedChapters = 0;
     let failedChapters = 0;
+    let stageATotalMentions = 0;
+    let stageAChaptersWithMentions = 0;
+    let stageALowConfidenceChapters = 0;
+    const warnings: AnalysisPipelineWarning[] = [];
+    const stageSummaries: AnalysisPipelineStageSummary[] = [];
+
+    async function recordStageSummary(input: {
+      stage      : string;
+      metrics    : Record<string, number | string | boolean | null>;
+      durationMs?: number;
+      warnings?  : AnalysisPipelineWarning[];
+    }): Promise<void> {
+      const status: "SUCCESS" | "WARNING" = (input.warnings?.length ?? 0) > 0 ? "WARNING" : "SUCCESS";
+      const summary: AnalysisPipelineStageSummary = {
+        stage  : input.stage,
+        status,
+        metrics: input.metrics
+      };
+
+      stageSummaries.push(summary);
+      await writeStagePhaseLog({
+        prisma    : deps.prisma,
+        jobId     : params.jobId,
+        stage     : input.stage,
+        status,
+        durationMs: input.durationMs ?? null,
+        summary   : input.metrics,
+        warnings  : input.warnings
+      });
+    }
 
     await params.onProgress({
       progress : 0,
@@ -198,7 +233,7 @@ export function createThreeStagePipeline(
         let succeeded = false;
         for (let attempt = 0; attempt <= deps.chapterMaxRetries; attempt += 1) {
           try {
-            await stageA.extract({
+            const stageAResult = await stageA.extract({
               bookId     : params.bookId,
               chapterId  : chapterRow.id,
               chapterNo  : chapterRow.no,
@@ -206,6 +241,13 @@ export function createThreeStagePipeline(
               bookTypeCode,
               jobId      : params.jobId
             });
+            stageATotalMentions += stageAResult.mentionCount;
+            if (stageAResult.mentionCount > 0) {
+              stageAChaptersWithMentions += 1;
+            }
+            if (stageAResult.preprocessorConfidence === "LOW") {
+              stageALowConfidenceChapters += 1;
+            }
             succeeded = true;
             break;
           } catch (error) {
@@ -242,10 +284,41 @@ export function createThreeStagePipeline(
     }
 
     const concurrency = Math.max(1, Math.min(deps.chapterConcurrency, totalChapters));
+    const stageAStartedAt = Date.now();
     await Promise.all(Array.from({ length: concurrency }, () => stageAWorker()));
 
+    const stageACoverageRatio = totalChapters === 0 ? 0 : stageAChaptersWithMentions / totalChapters;
+    const stageAWarnings: AnalysisPipelineWarning[] = [];
+    if (totalChapters > 0 && stageACoverageRatio < STAGE_A_COVERAGE_WARNING_RATIO) {
+      stageAWarnings.push({
+        code   : "STAGE_A_SPARSE_COVERAGE",
+        stage  : "STAGE_A",
+        message: "Stage A produced persona mentions for too few chapters.",
+        details: {
+          totalChapters,
+          chaptersWithMentions: stageAChaptersWithMentions,
+          coverageRatio       : Number(stageACoverageRatio.toFixed(2)),
+          totalMentions       : stageATotalMentions
+        }
+      });
+    }
+    warnings.push(...stageAWarnings);
+    await recordStageSummary({
+      stage     : "STAGE_A",
+      durationMs: Date.now() - stageAStartedAt,
+      metrics   : {
+        totalChapters,
+        completedChapters,
+        failedChapters,
+        totalMentions        : stageATotalMentions,
+        chaptersWithMentions : stageAChaptersWithMentions,
+        lowConfidenceChapters: stageALowConfidenceChapters
+      },
+      warnings: stageAWarnings
+    });
+
     if (await params.isCanceled()) {
-      return { completedChapters, failedChapters };
+      return { completedChapters, failedChapters, warnings, stageSummaries };
     }
 
     // Stage B.5
@@ -255,10 +328,20 @@ export function createThreeStagePipeline(
       doneCount: stageADone,
       totalChapters
     });
-    await stageB5.check(params.bookId);
+    const stageB5StartedAt = Date.now();
+    const stageB5Result = await stageB5.check(params.bookId);
+    await recordStageSummary({
+      stage     : "STAGE_B5",
+      durationMs: Date.now() - stageB5StartedAt,
+      metrics   : {
+        personasScanned   : stageB5Result.personasScanned,
+        suggestionsCreated: stageB5Result.suggestionsCreated,
+        suggestionsSkipped: stageB5Result.suggestionsSkipped
+      }
+    });
 
     if (await params.isCanceled()) {
-      return { completedChapters, failedChapters };
+      return { completedChapters, failedChapters, warnings, stageSummaries };
     }
 
     // Stage B
@@ -268,10 +351,52 @@ export function createThreeStagePipeline(
       doneCount: stageADone,
       totalChapters
     });
-    await stageB.resolve({ bookId: params.bookId });
+    const stageBStartedAt = Date.now();
+    const stageBResult = await stageB.resolve({ bookId: params.bookId });
+    const promotedGroups = typeof deps.prisma.personaMention?.groupBy === "function"
+      ? await deps.prisma.personaMention.groupBy({
+        by   : ["promotedPersonaId"],
+        where: {
+          bookId           : params.bookId,
+          promotedPersonaId: { not: null }
+        }
+      })
+      : [];
+    const promotedPersonaCount = promotedGroups.length > 0
+      ? promotedGroups.length
+      : new Set(stageBResult.merges.map((merge) => merge.personaId)).size;
+    const stageBWarnings: AnalysisPipelineWarning[] = [];
+    if (promotedPersonaCount === 0) {
+      stageBWarnings.push({
+        code   : "PERSONA_ZERO_AFTER_STAGE_B",
+        stage  : "STAGE_B",
+        message: "Stage B finished without any promoted personas.",
+        details: {
+          candidateGroupsTotal: stageBResult.candidateGroupsTotal,
+          llmInvocations      : stageBResult.llmInvocations,
+          merges              : stageBResult.merges.length,
+          suggestions         : stageBResult.suggestions.length
+        }
+      });
+    }
+    warnings.push(...stageBWarnings);
+    await recordStageSummary({
+      stage     : "STAGE_B",
+      durationMs: Date.now() - stageBStartedAt,
+      metrics   : {
+        candidateGroupsTotal: stageBResult.candidateGroupsTotal,
+        llmInvocations      : stageBResult.llmInvocations,
+        merges              : stageBResult.merges.length,
+        suggestions         : stageBResult.suggestions.length,
+        b5Consumed          : stageBResult.b5Consumed.length,
+        aliasEntryDegraded  : stageBResult.aliasEntryDegraded,
+        promotedPersonaCount
+      },
+      warnings: stageBWarnings
+    });
 
     if (await params.isCanceled()) {
-      return { completedChapters, failedChapters };
+      return { completedChapters, failedChapters, warnings, stageSummaries };
     }
 
     // Stage C
@@ -281,7 +406,40 @@ export function createThreeStagePipeline(
       doneCount: stageADone,
       totalChapters
     });
-    await stageC.attribute({ bookId: params.bookId, jobId: params.jobId });
+    const stageCStartedAt = Date.now();
+    const stageCResult = await stageC.attribute({ bookId: params.bookId, jobId: params.jobId });
+    const biographyCoverageRatio = promotedPersonaCount === 0
+      ? 0
+      : stageCResult.effectiveBiographies / promotedPersonaCount;
+    const stageCWarnings: AnalysisPipelineWarning[] = [];
+    if (promotedPersonaCount > 0 && biographyCoverageRatio < STAGE_C_EFFECTIVE_BIO_RATIO) {
+      stageCWarnings.push({
+        code   : "STAGE_C_SPARSE_COVERAGE",
+        stage  : "STAGE_C",
+        message: "Stage C produced too few effective biographies for promoted personas.",
+        details: {
+          promotedPersonaCount,
+          biographiesCreated  : stageCResult.biographiesCreated,
+          effectiveBiographies: stageCResult.effectiveBiographies,
+          coverageRatio       : Number(biographyCoverageRatio.toFixed(2))
+        }
+      });
+    }
+    warnings.push(...stageCWarnings);
+    await recordStageSummary({
+      stage     : "STAGE_C",
+      durationMs: Date.now() - stageCStartedAt,
+      metrics   : {
+        chaptersProcessed   : stageCResult.chaptersProcessed,
+        llmInvocations      : stageCResult.llmInvocations,
+        biographiesCreated  : stageCResult.biographiesCreated,
+        effectiveBiographies: stageCResult.effectiveBiographies,
+        deathChapterUpdates : stageCResult.deathChapterUpdates.length,
+        feedbackSuggestions : stageCResult.feedbackSuggestions.length,
+        promotedPersonaCount
+      },
+      warnings: stageCWarnings
+    });
 
     await params.onProgress({
       progress : 100,
@@ -290,7 +448,7 @@ export function createThreeStagePipeline(
       totalChapters
     });
 
-    return { completedChapters, failedChapters };
+    return { completedChapters, failedChapters, warnings, stageSummaries };
   }
 
   return {

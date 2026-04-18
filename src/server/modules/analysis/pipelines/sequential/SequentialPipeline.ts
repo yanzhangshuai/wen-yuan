@@ -278,7 +278,9 @@ export async function runSequentialChapterLoop(
 
   return {
     completedChapters,
-    failedChapters
+    failedChapters,
+    warnings      : [],
+    stageSummaries: []
   };
 };
 

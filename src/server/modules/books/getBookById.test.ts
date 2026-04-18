@@ -165,4 +165,41 @@ describe("getBookById", () => {
     // Act + Assert
     await expect(service.getBookById("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);
   });
+
+  it("uses persona count instead of profile count for latest threestage book detail", async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      id            : "book-1",
+      title         : "儒林外史",
+      author        : "吴敬梓",
+      dynasty       : "清",
+      description   : null,
+      coverUrl      : null,
+      status        : "COMPLETED",
+      typeCode      : "CLASSICAL_NOVEL",
+      errorLog      : null,
+      createdAt     : new Date("2026-04-18T00:00:00.000Z"),
+      updatedAt     : new Date("2026-04-18T00:00:00.000Z"),
+      sourceFileKey : null,
+      sourceFileUrl : null,
+      sourceFileName: null,
+      sourceFileMime: null,
+      sourceFileSize: null,
+      chapters      : [{ id: "c-1" }],
+      profiles      : [],
+      personas      : [{ id: "persona-1" }, { id: "persona-2" }],
+      analysisJobs  : [{
+        updatedAt   : new Date("2026-04-18T00:00:00.000Z"),
+        finishedAt  : new Date("2026-04-18T00:01:00.000Z"),
+        errorLog    : null,
+        architecture: "threestage",
+        scope       : "FULL_BOOK",
+        phaseLogs   : []
+      }]
+    });
+
+    const service = createGetBookByIdService({ book: { findFirst } } as never);
+    const result = await service.getBookById("book-1");
+
+    expect(result.personaCount).toBe(2);
+  });
 });
