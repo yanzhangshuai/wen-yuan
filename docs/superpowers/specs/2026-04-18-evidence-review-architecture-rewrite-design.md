@@ -252,7 +252,9 @@
 - `targetMentionId`
 - `sourcePersonaCandidateId`
 - `targetPersonaCandidateId`
-- `relationType`
+- `relationTypeKey`
+- `relationLabel`
+- `relationTypeSource`
 - `direction`
 - `effectiveChapterStart`
 - `effectiveChapterEnd`
@@ -261,6 +263,14 @@
 - `confidence`
 - `status`
 - `source`
+
+要求：
+
+1. 关系类型不得设计成不可扩展的硬编码枚举。
+2. 必须同时支持“预设常用关系”和“自由输入的自定义关系”。
+3. `relationTypeKey` 用于保存归一化关系键；`relationLabel` 用于保存展示标签与原始修订结果。
+4. `relationTypeSource` 至少区分 `PRESET`、`CUSTOM`、`NORMALIZED_FROM_CUSTOM`。
+5. 审核者必须可以在不改动证据绑定的前提下，单独调整关系类型、展示名称和归一化结果。
 
 #### `time_claims`
 
@@ -362,6 +372,7 @@
 - create manual claim
 - merge persona
 - split persona
+- change relation type
 - change relation interval
 - relink evidence
 
@@ -434,11 +445,13 @@
 1. 基于通用姓氏、官称、亲属称谓、字号规则补 mention。
 2. 基于已验证知识包补 alias。
 3. 生成禁合并或疑似误认提示。
+4. 基于已验证关系类型知识，对 `relation_claims` 生成关系归一建议。
 
 要求：
 
 1. 规则补召回不能直接写最终投影。
 2. 规则命中也必须产出 claim，而不是直接更新正式 persona。
+3. 关系归一只能输出“建议的预设关系”与置信度，不能静默覆盖原始关系文本。
 
 ### 7.4 Stage B：全书身份归并
 
@@ -531,6 +544,9 @@
 3. 动态变化。
 4. 生效区间。
 5. 证据绑定。
+6. 常用关系预设快速选择。
+7. 自定义关系直接输入。
+8. 审核时调整关系类型与展示名称。
 
 但不采用“巨型图数据库管理台”交互，而采用：
 
@@ -538,6 +554,12 @@
 2. 单条关系详情抽屉。
 3. 人物对视图。
 4. 区间编辑和证据侧栏。
+
+补充要求：
+
+1. 审核页必须同时展示“原始提取关系文本”“当前归一关系”“关系来源是预设还是自定义”。
+2. 审核者可以把 AI 提取出的自定义关系归并到某个预设关系，也可以保留为自定义关系。
+3. 对高频且已审核稳定的自定义关系，应支持一键提升为作品级或作品类型级预设关系。
 
 因此，`relationship_edges` 只能是最终投影；真正可编辑对象必须是 `relation_claims` + `audit_logs`。
 
@@ -603,6 +625,7 @@ KB v2 至少应支持以下统一知识类型：
 - historical figure reference
 - name pattern rule
 - relation taxonomy rule
+- relation label mapping rule
 - relation negative rule
 - time normalization rule
 - conflict escalation rule
@@ -618,6 +641,7 @@ KB v2 至少应支持以下统一知识类型：
 3. 负向知识必须一等公民化，包括禁合并规则、禁关系规则、冲突升级规则，不能只以备注或人工常识存在。
 4. 审核通过后的人工修订结果，若具有复用价值，应可以提升为知识条目；知识条目也必须保留其来源 claim 与审核记录。
 5. 运行时模型与后台管理模型必须同构：允许读写接口不同，但不允许管理侧和运行侧采用两套相互脱节的知识概念。
+6. 关系类型体系采用“预设 + 自定义”双轨模型：预设用于提升一致性，自定义用于保留作品特有或用户自定义表达，不允许用封闭枚举强行覆盖全部关系语义。
 
 ### 9.5 KB v2 重构要求
 
@@ -631,6 +655,7 @@ KB v2 应满足以下结构性要求：
 6. 保持运行时与管理侧对称。运行时可以对知识做编译、聚合、缓存，但后台编辑与审核仍应映射到同一知识对象，而不是不同知识家族各自维护。
 7. 支持版本化与失效管理。知识不能只有“启用/禁用”，还应支持替代、废弃、时间区间生效和版本追踪。
 8. 支持证据与来源追踪。即便知识是人工总结出来的，也应能关联其来源 claim、原文证据、审核人和变更历史。
+9. 关系知识必须支持预设关系目录、关系别名映射和自定义关系提升流程。常用关系可由系统预置，但作品特有关系和用户自定义关系必须可在审核页直接创建、修改，并在必要时提升为 `BOOK` 或 `BOOK_TYPE` 级知识。
 
 如果不完成 KB v2，当前知识库仍可继续承担“抽取增强配置”的角色，但无法成为 Evidence-first Review Architecture 的正式知识基础设施。
 
