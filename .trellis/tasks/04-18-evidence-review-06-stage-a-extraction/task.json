@@ -1,0 +1,71 @@
+{
+  "id": "evidence-review-06-stage-a-extraction",
+  "name": "evidence-review-06-stage-a-extraction",
+  "title": "feat: Stage A 逐章证据抽取",
+  "description": "实现逐章提取 mention、event、relation、time claim 的 Stage A，并保留 evidence 与模型原始输出。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "analysis-stageA",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/analysis/pipelines/evidence-review/stageA",
+    "src/server/modules/analysis/claims",
+    "src/server/modules/analysis/evidence"
+  ],
+  "notes": "Stage A 的职责是抽证据，不是定最终人物。",
+  "meta": {
+    "wave": 2,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-02-text-evidence-layer",
+      "04-18-evidence-review-03-claim-storage-contracts",
+      "04-18-evidence-review-04-run-observability-retry",
+      "04-18-evidence-review-05-stage-0-segmentation"
+    ],
+    "spec": [
+      "§5.2",
+      "§7.2",
+      "§10"
+    ]
+  }
+}

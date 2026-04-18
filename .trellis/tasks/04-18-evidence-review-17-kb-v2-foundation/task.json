@@ -1,0 +1,74 @@
+{
+  "id": "evidence-review-17-kb-v2-foundation",
+  "name": "evidence-review-17-kb-v2-foundation",
+  "title": "feat: KB v2 统一知识对象基础",
+  "description": "重建知识库为 review-native 的 KB v2，统一知识对象、作用域、审核状态、负向知识与 claim 回流通道。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "knowledge-v2-foundation",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/knowledge-v2",
+    "src/server/modules/analysis/pipelines/evidence-review/stageAPlus",
+    "src/server/modules/analysis/pipelines/evidence-review/stageB",
+    "prisma/schema.prisma"
+  ],
+  "notes": "KB v2 是 review-native 知识底座，不是旧知识包设计的延长线。",
+  "meta": {
+    "wave": 1,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-01-schema-and-state-foundation",
+      "04-18-evidence-review-03-claim-storage-contracts"
+    ],
+    "spec": [
+      "§9",
+      "§9.1",
+      "§9.2",
+      "§9.3",
+      "§9.4",
+      "§9.5",
+      "§13.1"
+    ]
+  }
+}

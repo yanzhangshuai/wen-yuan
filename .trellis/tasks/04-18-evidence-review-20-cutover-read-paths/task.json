@@ -1,0 +1,77 @@
+{
+  "id": "evidence-review-20-cutover-read-paths",
+  "name": "evidence-review-20-cutover-read-paths",
+  "title": "feat: 新 projection 读路径切换与旧真相退役",
+  "description": "切换管理端与审核主路径到新 projection 真相，并退役旧 Profile/BiographyRecord/Relationship 草稿入口。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": "cutover-read-paths",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/app/admin/review",
+    "src/app",
+    "src/server/modules/review",
+    "src/server/modules/review/evidence-review/projections"
+  ],
+  "notes": "切流后审核主入口只读 projection；旧草稿真相路径必须退出主流程。",
+  "meta": {
+    "wave": 5,
+    "milestone": "Complete",
+    "dependsOn": [
+      "04-18-evidence-review-13-persona-chapter-matrix-ui",
+      "04-18-evidence-review-14-relation-editor-ui",
+      "04-18-evidence-review-15-persona-time-matrix-ui",
+      "04-18-evidence-review-16-audit-history-evidence-panel",
+      "04-18-evidence-review-21-gold-set-regression"
+    ],
+    "spec": [
+      "§3.2",
+      "§4",
+      "§7.7",
+      "§8",
+      "§12",
+      "§13.3",
+      "§15"
+    ]
+  }
+}

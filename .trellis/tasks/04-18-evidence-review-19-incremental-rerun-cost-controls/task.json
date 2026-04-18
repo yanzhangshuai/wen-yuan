@@ -1,0 +1,72 @@
+{
+  "id": "evidence-review-19-incremental-rerun-cost-controls",
+  "name": "evidence-review-19-incremental-rerun-cost-controls",
+  "title": "feat: 增量重跑与成本控制",
+  "description": "实现 dirty-set、阶段跳过、projection-only rebuild 与成本观测，避免小改动触发整书全量重跑。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "analysis-rerun-cost-control",
+  "package": null,
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/analysis/pipelines/evidence-review/rerun-planner",
+    "src/server/modules/review/evidence-review/costs",
+    "src/server/modules/analysis/pipelines/evidence-review",
+    "scripts/review-regression"
+  ],
+  "notes": "审核 mutation 默认只能触发局部 projection rebuild，不能把全书重跑当作日常路径。",
+  "meta": {
+    "wave": 5,
+    "milestone": "Standard",
+    "dependsOn": [
+      "04-18-evidence-review-04-run-observability-retry",
+      "04-18-evidence-review-11-stage-d-projection-builder",
+      "04-18-evidence-review-12-review-api-mutations"
+    ],
+    "spec": [
+      "§10",
+      "§11",
+      "§13.2",
+      "§15"
+    ]
+  }
+}

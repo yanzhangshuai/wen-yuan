@@ -1,0 +1,73 @@
+{
+  "id": "evidence-review-18-relation-types-catalog",
+  "name": "evidence-review-18-relation-types-catalog",
+  "title": "feat: 关系类型目录与治理层",
+  "description": "建立 relation_types 目录治理层，统一字符串 key、预设种子、同义映射、方向建议与自定义关系提升流程。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "knowledge-relation-types",
+  "package": null,
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/knowledge-v2/relation-types",
+    "src/server/modules/analysis/pipelines/evidence-review/stageAPlus",
+    "src/components/review/relation-editor",
+    "prisma/schema.prisma"
+  ],
+  "notes": "关系类型治理层建立在字符串 key 之上，不得退回数据库 enum。",
+  "meta": {
+    "wave": 2,
+    "milestone": "Standard",
+    "dependsOn": [
+      "04-18-evidence-review-17-kb-v2-foundation"
+    ],
+    "spec": [
+      "§5.2",
+      "§7.3",
+      "§8.3",
+      "§9.4",
+      "§9.5",
+      "§9.6",
+      "§13.2"
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "id": "evidence-review-01-schema-and-state-foundation",
+  "name": "evidence-review-01-schema-and-state-foundation",
+  "title": "feat: Evidence-first schema 与审核状态基础",
+  "description": "定义 evidence、claim、review、projection 的基础 schema 与统一状态机，为后续解析、审核与 cutover 提供底层契约。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "db+review-state",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "prisma/schema.prisma",
+    "src/server/modules/review/evidence-review",
+    "src/server/modules/analysis/claims"
+  ],
+  "notes": "不要在本任务删除旧表；先完成新真相模型的可迁移落地。",
+  "meta": {
+    "wave": 1,
+    "milestone": "MVP",
+    "dependsOn": [],
+    "spec": [
+      "§4",
+      "§5",
+      "§6",
+      "§10",
+      "§11",
+      "§12"
+    ]
+  }
+}

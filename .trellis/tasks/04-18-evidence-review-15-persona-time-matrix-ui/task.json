@@ -1,0 +1,74 @@
+{
+  "id": "evidence-review-15-persona-time-matrix-ui",
+  "name": "evidence-review-15-persona-time-matrix-ui",
+  "title": "feat: 人物 × 时间审核矩阵",
+  "description": "实现 persona x time 审核矩阵，支持不精确时间、章节回链与关系动态变化审查。",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": "review-ui-persona-time",
+  "package": null,
+  "priority": "P1",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/components/review/persona-time-matrix",
+    "src/app/admin/review",
+    "src/server/modules/review/evidence-review",
+    "src/server/modules/review/evidence-review/projections"
+  ],
+  "notes": "时间矩阵是标准版重点，需保证时间片与章节事实双向可追溯。",
+  "meta": {
+    "wave": 5,
+    "milestone": "Standard",
+    "dependsOn": [
+      "04-18-evidence-review-12-review-api-mutations",
+      "04-18-evidence-review-16-audit-history-evidence-panel",
+      "04-18-evidence-review-11-stage-d-projection-builder"
+    ],
+    "spec": [
+      "§5.2",
+      "§5.3",
+      "§7.7",
+      "§8.2",
+      "§13.2",
+      "§15"
+    ]
+  }
+}

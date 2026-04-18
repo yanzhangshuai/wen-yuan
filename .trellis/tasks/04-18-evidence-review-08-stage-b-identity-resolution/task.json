@@ -1,0 +1,70 @@
+{
+  "id": "evidence-review-08-stage-b-identity-resolution",
+  "name": "evidence-review-08-stage-b-identity-resolution",
+  "title": "feat: Stage B 全书身份归并",
+  "description": "实现 persona candidate 聚类、别名归并、同名拆分、冒名误认建模与 merge/split 建议输出。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "analysis-stageB",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/analysis/pipelines/evidence-review/stageB",
+    "src/server/modules/analysis/claims",
+    "src/server/modules/knowledge-v2"
+  ],
+  "notes": "身份归并是全书级任务，不能退回逐章强判。",
+  "meta": {
+    "wave": 3,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-06-stage-a-extraction",
+      "04-18-evidence-review-07-stage-a-plus-knowledge-recall"
+    ],
+    "spec": [
+      "§5.2",
+      "§7.4",
+      "§8.1",
+      "§9"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "id": "evidence-review-03-claim-storage-contracts",
+  "name": "evidence-review-03-claim-storage-contracts",
+  "title": "feat: Claim Storage Contracts",
+  "description": "定义 claim 类型、校验、幂等写入和人工 override 规则，统一解析写路径与审核 mutation 的数据合同。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "analysis+review-contracts",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/analysis/claims",
+    "src/server/modules/review/evidence-review",
+    "prisma/schema.prisma"
+  ],
+  "notes": "claim contract 是新架构的 API 边界，禁止后续任务绕过此层直接写表。",
+  "meta": {
+    "wave": 1,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-01-schema-and-state-foundation",
+      "04-18-evidence-review-02-text-evidence-layer"
+    ],
+    "spec": [
+      "§5.2",
+      "§6",
+      "§7",
+      "§8.3",
+      "§9.6"
+    ]
+  }
+}

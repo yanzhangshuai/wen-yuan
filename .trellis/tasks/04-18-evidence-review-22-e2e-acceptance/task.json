@@ -1,0 +1,71 @@
+{
+  "id": "evidence-review-22-e2e-acceptance",
+  "name": "evidence-review-22-e2e-acceptance",
+  "title": "feat: Evidence-first 重构最终验收",
+  "description": "完成 evidence/review/projection/knowledge/rebuild 五类闭环的端到端验收，并形成切流放行依据。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": "acceptance-e2e",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "docs/superpowers/reports",
+    "scripts/review-regression/acceptance",
+    "src/app/admin/review",
+    "src/server/modules/review/evidence-review"
+  ],
+  "notes": "最终验收必须给出 go/no-go 结论，并绑定切流与回归证据。",
+  "meta": {
+    "wave": 6,
+    "milestone": "Complete",
+    "dependsOn": [
+      "04-18-evidence-review-19-incremental-rerun-cost-controls",
+      "04-18-evidence-review-20-cutover-read-paths",
+      "04-18-evidence-review-21-gold-set-regression"
+    ],
+    "spec": [
+      "§13.3",
+      "§15",
+      "§16"
+    ]
+  }
+}

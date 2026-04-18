@@ -1,0 +1,72 @@
+{
+  "id": "evidence-review-16-audit-history-evidence-panel",
+  "name": "evidence-review-16-audit-history-evidence-panel",
+  "title": "feat: 审计历史与证据侧栏",
+  "description": "实现复用型 evidence、AI basis、audit history 侧栏，供人物矩阵、关系编辑器、时间矩阵共用。",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": "review-ui-evidence-audit",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/components/review/evidence-panel",
+    "src/components/review/audit-history",
+    "src/app/admin/review",
+    "src/server/modules/review/evidence-review"
+  ],
+  "notes": "证据与审计侧栏是所有审核页面共用基建，避免页面各自复制 evidence 展示逻辑。",
+  "meta": {
+    "wave": 4,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-12-review-api-mutations"
+    ],
+    "spec": [
+      "§5.1",
+      "§5.3",
+      "§6",
+      "§8",
+      "§10",
+      "§15"
+    ]
+  }
+}

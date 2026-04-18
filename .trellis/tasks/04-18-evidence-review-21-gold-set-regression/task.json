@@ -1,0 +1,72 @@
+{
+  "id": "evidence-review-21-gold-set-regression",
+  "name": "evidence-review-21-gold-set-regression",
+  "title": "feat: 金标回归与样例验收基线",
+  "description": "建立儒林外史与三国演义的 gold set、回归脚本与指标基线，为切流和验收提供硬证据。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "regression-gold-set",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "scripts/review-regression",
+    "tests/fixtures/review-regression",
+    "docs/superpowers/reports",
+    "src/server/modules/analysis/pipelines/evidence-review"
+  ],
+  "notes": "没有 gold set 回归，就无法证明本次重构在古典文学场景下真实提升。",
+  "meta": {
+    "wave": 5,
+    "milestone": "Standard",
+    "dependsOn": [
+      "04-18-evidence-review-11-stage-d-projection-builder",
+      "04-18-evidence-review-18-relation-types-catalog",
+      "04-18-evidence-review-19-incremental-rerun-cost-controls"
+    ],
+    "spec": [
+      "§13.1",
+      "§13.2",
+      "§14.1",
+      "§15"
+    ]
+  }
+}

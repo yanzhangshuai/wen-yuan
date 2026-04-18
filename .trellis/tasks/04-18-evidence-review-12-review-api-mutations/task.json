@@ -1,0 +1,72 @@
+{
+  "id": "evidence-review-12-review-api-mutations",
+  "name": "evidence-review-12-review-api-mutations",
+  "title": "feat: 审核 API 与 Claim Mutation",
+  "description": "建立 claim-centric 审核查询与 mutation API，统一 accept/reject/edit/defer/manual-create/merge/split/relink evidence。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": "review-api",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/review/evidence-review",
+    "src/app/api/admin/review",
+    "src/server/modules/analysis/claims",
+    "src/server/modules/review/evidence-review/projections"
+  ],
+  "notes": "审核 API 必须以 claim 为核心对象，禁止继续围绕旧草稿表设计读写接口。",
+  "meta": {
+    "wave": 4,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-03-claim-storage-contracts",
+      "04-18-evidence-review-11-stage-d-projection-builder"
+    ],
+    "spec": [
+      "§5.3",
+      "§6",
+      "§8",
+      "§10",
+      "§15"
+    ]
+  }
+}

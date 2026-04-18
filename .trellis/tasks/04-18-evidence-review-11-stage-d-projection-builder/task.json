@@ -1,0 +1,70 @@
+{
+  "id": "evidence-review-11-stage-d-projection-builder",
+  "name": "evidence-review-11-stage-d-projection-builder",
+  "title": "feat: Stage D Projection Builder",
+  "description": "实现 persona_chapter_facts、persona_time_facts、relationship_edges、timeline_events 的可重建 projection 层。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "review-projections",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/review/evidence-review/projections",
+    "src/server/modules/analysis/claims",
+    "prisma/schema.prisma"
+  ],
+  "notes": "projection 是 UI 读取真相，不得回退读取旧草稿表。",
+  "meta": {
+    "wave": 3,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-10-stage-c-fact-attribution"
+    ],
+    "spec": [
+      "§5.3",
+      "§7.7",
+      "§8",
+      "§11",
+      "§15"
+    ]
+  }
+}

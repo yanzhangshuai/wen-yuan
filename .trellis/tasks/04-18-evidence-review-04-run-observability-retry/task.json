@@ -1,0 +1,68 @@
+{
+  "id": "evidence-review-04-run-observability-retry",
+  "name": "evidence-review-04-run-observability-retry",
+  "title": "feat: Run 可观测性与 Retry 边界",
+  "description": "实现 analysis run、stage run、raw output、错误分类、重试与成本统计，保证新解析流水线可观测且可局部恢复。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "analysis+runs",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/analysis/jobs/runAnalysisJob.ts",
+    "src/server/modules/analysis/runs",
+    "prisma/schema.prisma"
+  ],
+  "notes": "后续所有 stage 任务都应复用统一 stage-run 记录，不再分散打印日志。",
+  "meta": {
+    "wave": 1,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-01-schema-and-state-foundation"
+    ],
+    "spec": [
+      "§10",
+      "§11",
+      "§15"
+    ]
+  }
+}

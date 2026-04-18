@@ -1,0 +1,71 @@
+{
+  "id": "evidence-review-13-persona-chapter-matrix-ui",
+  "name": "evidence-review-13-persona-chapter-matrix-ui",
+  "title": "feat: 人物 × 章节审核矩阵",
+  "description": "实现 persona x chapter 主审核矩阵，支持单元格下钻、证据查看、AI 依据查看与 claim 修订。",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": "review-ui-persona-chapter",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/app/admin/review",
+    "src/components/review/persona-chapter-matrix",
+    "src/components/review/shared",
+    "src/server/modules/review/evidence-review"
+  ],
+  "notes": "人物 x 章节矩阵是新审核主入口，必须围绕 projection summary 和 claim 明细设计，不得拼接旧草稿表。",
+  "meta": {
+    "wave": 4,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-12-review-api-mutations",
+      "04-18-evidence-review-16-audit-history-evidence-panel"
+    ],
+    "spec": [
+      "§5.3",
+      "§7.7",
+      "§8.1",
+      "§15"
+    ]
+  }
+}

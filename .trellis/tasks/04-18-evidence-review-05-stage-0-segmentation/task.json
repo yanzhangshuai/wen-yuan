@@ -1,0 +1,71 @@
+{
+  "id": "evidence-review-05-stage-0-segmentation",
+  "name": "evidence-review-05-stage-0-segmentation",
+  "title": "feat: Stage 0 文本规范化与章节分段",
+  "description": "实现 Stage 0：规范化章节文本、建立 offset、切分 narrative/dialogue/poem/commentary 区段并落库。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "analysis-stage0",
+  "package": null,
+  "priority": "P0",
+  "creator": "codex-agent",
+  "assignee": "codex-agent",
+  "createdAt": "2026-04-18",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "04-18-evidence-review-00-umbrella",
+  "relatedFiles": [
+    "src/server/modules/analysis/pipelines/evidence-review/stage0",
+    "src/server/modules/analysis/evidence",
+    "prisma/schema.prisma"
+  ],
+  "notes": "Stage 0 是所有后续阶段的文本定位基础，不允许跳过或旁路。",
+  "meta": {
+    "wave": 2,
+    "milestone": "MVP",
+    "dependsOn": [
+      "04-18-evidence-review-01-schema-and-state-foundation",
+      "04-18-evidence-review-02-text-evidence-layer",
+      "04-18-evidence-review-04-run-observability-retry"
+    ],
+    "spec": [
+      "§5.1",
+      "§7.1",
+      "§8",
+      "§15"
+    ]
+  }
+}
