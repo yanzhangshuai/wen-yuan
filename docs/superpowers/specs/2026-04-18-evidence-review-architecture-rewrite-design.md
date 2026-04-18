@@ -543,32 +543,96 @@
 
 ## 9. 知识库设计
 
-知识库重构为统一的审核型条目系统。
+知识库不是“给模型补提示词的附属配置”，而是 evidence-first 审核架构中的辅助知识层。
 
-### 9.1 作用域
+其职责是：
+
+1. 提高候选召回与归一化稳定性。
+2. 显式沉淀可复用的人名、称谓、关系、时间规则。
+3. 记录负向知识与禁合并知识。
+4. 接收审核结果回流，形成可推广的规则资产。
+
+知识库不得直接替代证据与人工审核；它只能影响候选生成、候选排序、冲突提示和解析约束，不能绕过 claim 审核直接写入正式图谱。
+
+### 9.1 当前知识库现状评估
+
+当前仓库中的知识库设计可以支撑过渡期的抽取提效，但不足以作为本次重构的最终知识底座。结论是：当前知识库“可用，但属于过渡设计”。
+
+判断依据如下：
+
+1. 当前数据模型按知识家族分散建模，而不是统一知识对象建模。`prisma/schema.prisma` 中并列存在 `BookType`、`AliasPack`、`AliasEntry`、`SurnameRule`、`GenericTitleRule`、`NerLexiconRule`、`HistoricalFigureEntry`、`NamePatternRule`、`PromptTemplate`、`PromptTemplateVersion`、`PromptExtractionRule`、`KnowledgeAuditLog`、`PromptTemplateVariant`、`BookTypeExample` 等独立模型，说明系统已经有知识库雏形，但尚未形成统一对象契约。
+2. 运行时侧已有“统一装载”倾向，但管理侧仍然割裂。`src/server/modules/knowledge/load-book-knowledge.ts` 会把多张规则表编译成运行时知识对象；但后台服务层 `knowledge-packs.ts`、`knowledge-entries.ts`、`book-knowledge-packs.ts` 主要围绕 `AliasPack / AliasEntry` 设计，造成“运行时统一、管理时分裂”的双轨语义。
+3. “知识包 / 知识条目”这套命名目前只真正适用于别名包，不适用于整个知识域。它容易让后续称谓规则、时间规则、禁合并规则、冲突规则被迫套入不合适的抽象。
+4. 书籍类型语义存在重复承载。`BookType`、`Book.typeCode`、`PromptTemplateVariant`、`BookTypeExample` 都在表达“作品类型差异”，这会让知识作用域、模板适配和示例管理出现多源真相。
+5. 审核与启用状态没有统一状态机。当前不同知识表分别使用 `isActive`、`reviewStatus`、`reviewedAt`、`version` 等字段表达状态，缺乏统一审核语义，不利于审核台和知识回流的一致实现。
+6. 当前知识库更偏“抽取辅助层”，还不是“审核驱动层”。它擅长给解析器补词表、补规则，但缺少把审核结论稳定回写为知识资产的标准通道。
+
+当前知识库的保留价值主要有三点：
+
+1. `GLOBAL / BOOK_TYPE / BOOK` 的作用域分层是正确方向。
+2. `load-book-knowledge.ts` 代表了统一运行时装载网关的正确思路。
+3. `KnowledgeAuditLog` 证明系统已经意识到知识变更需要审计轨迹。
+
+因此，本次重构不应把当前知识库原样扩展为最终架构；应当以其为迁移参考，设计 KB v2 作为 review-native 的统一知识层。
+
+### 9.2 作用域
 
 - `GLOBAL`
 - `BOOK_TYPE`
 - `BOOK`
 - `RUN`
 
-### 9.2 知识类型
+说明：
 
-- surname lexicon
-- title lexicon
-- kinship lexicon
-- official position lexicon
-- alias pack
-- negative merge rule
-- time normalization rule
+1. `GLOBAL` 用于跨作品复用的通用知识，例如常见姓氏、通用官称、亲属称谓、时间归一规则。
+2. `BOOK_TYPE` 用于某一类作品共享的知识，例如史传类、章回演义类的称谓偏好和时间线规则。
+3. `BOOK` 用于单部作品特有知识，例如《三国演义》中的特定别名、官职写法、历史战役别称。
+4. `RUN` 用于一次解析任务临时生成的候选知识或抑制规则，不作为长期正式知识。
+
+### 9.3 知识类型
+
+KB v2 至少应支持以下统一知识类型：
+
+- name lexicon rule
+- alias equivalence rule
+- alias negative rule
+- surname rule
+- title rule
+- kinship term rule
+- official position rule
+- historical figure reference
+- name pattern rule
 - relation taxonomy rule
-- prompt extraction rule
+- relation negative rule
+- time normalization rule
+- conflict escalation rule
+- prompt extraction hint
+- review promotion rule
 
-### 9.3 使用原则
+知识类型不再决定存储模型；不同类型共享统一知识对象，仅在 `knowledgeType` 与 `payload` 上区分。
 
-1. `VERIFIED` 知识可参与正式解析。
-2. `PENDING` 知识只能作为候选提示，不直接提升正式 persona。
-3. 人工审核确认的 alias 或禁合并规则可以提升为知识条目。
+### 9.4 使用原则
+
+1. 知识库只能影响 claim 的生成、排序、校验和冲突提示，不能绕过审核直接生成正式 persona、正式关系或正式时间线。
+2. `VERIFIED` 知识可参与正式解析；`PENDING` 知识只能作为候选提示或低权重约束。
+3. 负向知识必须一等公民化，包括禁合并规则、禁关系规则、冲突升级规则，不能只以备注或人工常识存在。
+4. 审核通过后的人工修订结果，若具有复用价值，应可以提升为知识条目；知识条目也必须保留其来源 claim 与审核记录。
+5. 运行时模型与后台管理模型必须同构：允许读写接口不同，但不允许管理侧和运行侧采用两套相互脱节的知识概念。
+
+### 9.5 KB v2 重构要求
+
+KB v2 应满足以下结构性要求：
+
+1. 统一知识对象契约。每条知识至少包含：`id`、`scopeType`、`scopeId`、`knowledgeType`、`payload`、`source`、`reviewState`、`confidence`、`effectiveFrom`、`effectiveTo`、`promotedFromClaimId`、`supersedesKnowledgeId`、`version`、`createdBy`、`reviewedBy`、`reviewedAt`。
+2. 统一知识审核状态机。知识状态不再分散在各表自定义字段中，而应统一表达 `PENDING`、`VERIFIED`、`REJECTED`、`DISABLED` 等审核语义。
+3. 统一作用域模型。`GLOBAL / BOOK_TYPE / BOOK / RUN` 应成为所有知识类型共享的基础维度，而不是部分表支持、部分表旁路实现。
+4. 一等公民化负向知识。系统必须显式支持“不要合并”“不要推断关系”“该称谓仅在特定上下文成立”“该时间归一在本书无效”等否定型知识。
+5. 建立审核回流通道。`claim -> reviewed claim -> promotable knowledge` 必须成为标准流程，而不是依赖人工线下整理再录入规则。
+6. 保持运行时与管理侧对称。运行时可以对知识做编译、聚合、缓存，但后台编辑与审核仍应映射到同一知识对象，而不是不同知识家族各自维护。
+7. 支持版本化与失效管理。知识不能只有“启用/禁用”，还应支持替代、废弃、时间区间生效和版本追踪。
+8. 支持证据与来源追踪。即便知识是人工总结出来的，也应能关联其来源 claim、原文证据、审核人和变更历史。
+
+如果不完成 KB v2，当前知识库仍可继续承担“抽取增强配置”的角色，但无法成为 Evidence-first Review Architecture 的正式知识基础设施。
 
 ## 10. 运行时与可观测性
 
