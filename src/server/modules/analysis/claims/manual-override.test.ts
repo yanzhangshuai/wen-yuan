@@ -19,13 +19,17 @@ const DEFAULT_SUMMARY: ReviewableClaimSummary = {
   source     : "AI"
 };
 
+interface RepositoryMockPair {
+  repository    : ClaimRepository;
+  transactionSpy: ReturnType<typeof vi.fn>;
+  txRepository  : ClaimRepository;
+}
+
 function createRepositoryMock(
   summary: ReviewableClaimSummary | null = DEFAULT_SUMMARY
-): ClaimRepository {
-  let repository: ClaimRepository;
-
-  repository = {
-    transaction: async <T>(work: (tx: ClaimRepository) => Promise<T>): Promise<T> => work(repository),
+): RepositoryMockPair {
+  const txRepository: ClaimRepository = {
+    transaction: async <T>(work: (tx: ClaimRepository) => Promise<T>): Promise<T> => work(txRepository),
     replaceClaimFamilyScope        : vi.fn(),
     findReviewableClaimSummary     : vi.fn().mockResolvedValue(summary),
     updateReviewableClaimReviewState: vi.fn().mockResolvedValue({
@@ -61,12 +65,32 @@ function createRepositoryMock(
     })
   };
 
-  return repository;
+  const transactionSpy = vi.fn();
+  const transaction: ClaimRepository["transaction"] = async <T>(
+    work: (tx: ClaimRepository) => Promise<T>
+  ): Promise<T> => {
+    transactionSpy();
+    return work(txRepository);
+  };
+
+  const repository: ClaimRepository = {
+    transaction,
+    replaceClaimFamilyScope        : vi.fn(),
+    findReviewableClaimSummary     : vi.fn().mockRejectedValue(new Error("Expected transactional lookup")),
+    updateReviewableClaimReviewState: vi.fn().mockRejectedValue(new Error("Expected transactional review update")),
+    createReviewableClaim          : vi.fn().mockRejectedValue(new Error("Expected transactional create"))
+  };
+
+  return {
+    repository,
+    transactionSpy,
+    txRepository
+  };
 }
 
 describe("manual override service", () => {
   it("creates an accepted manual relation claim and marks the original as edited", async () => {
-    const repository = createRepositoryMock();
+    const { repository, transactionSpy, txRepository } = createRepositoryMock();
     const service = createManualOverrideService(repository);
 
     const result = await service.createManualOverride({
@@ -98,14 +122,21 @@ describe("manual override service", () => {
       originalClaimId: RELATION_CLAIM_ID,
       manualClaimId  : "manual-relation-1"
     });
-    expect(repository.updateReviewableClaimReviewState).toHaveBeenCalledWith(
+    expect(transactionSpy).toHaveBeenCalledTimes(1);
+    expect(txRepository.findReviewableClaimSummary).toHaveBeenCalledWith(
+      "RELATION",
+      RELATION_CLAIM_ID
+    );
+    expect(repository.findReviewableClaimSummary).not.toHaveBeenCalled();
+    expect(txRepository.updateReviewableClaimReviewState).toHaveBeenCalledWith(
       expect.objectContaining({
         family     : "RELATION",
         claimId    : RELATION_CLAIM_ID,
         reviewState: "EDITED"
       })
     );
-    expect(repository.createReviewableClaim).toHaveBeenCalledWith(
+    expect(repository.updateReviewableClaimReviewState).not.toHaveBeenCalled();
+    expect(txRepository.createReviewableClaim).toHaveBeenCalledWith(
       "RELATION",
       expect.objectContaining({
         source           : "MANUAL",
@@ -116,10 +147,11 @@ describe("manual override service", () => {
         reviewedByUserId : USER_ID
       })
     );
+    expect(repository.createReviewableClaim).not.toHaveBeenCalled();
   });
 
   it("rejects overrides when the original claim cannot transition to edited", async () => {
-    const repository = createRepositoryMock({
+    const { repository } = createRepositoryMock({
       id         : RELATION_CLAIM_ID,
       reviewState: "REJECTED",
       source     : "AI"
@@ -153,7 +185,7 @@ describe("manual override service", () => {
   });
 
   it("defaults reviewNote to null when the actor does not provide one", async () => {
-    const repository = createRepositoryMock();
+    const { repository, txRepository } = createRepositoryMock();
     const service = createManualOverrideService(repository);
 
     await service.createManualOverride({
@@ -180,12 +212,12 @@ describe("manual override service", () => {
       }
     });
 
-    expect(repository.updateReviewableClaimReviewState).toHaveBeenCalledWith(
+    expect(txRepository.updateReviewableClaimReviewState).toHaveBeenCalledWith(
       expect.objectContaining({
         reviewNote: null
       })
     );
-    expect(repository.createReviewableClaim).toHaveBeenCalledWith(
+    expect(txRepository.createReviewableClaim).toHaveBeenCalledWith(
       "RELATION",
       expect.objectContaining({
         reviewNote: null
@@ -194,7 +226,7 @@ describe("manual override service", () => {
   });
 
   it("rejects overrides when the original claim does not exist", async () => {
-    const repository = createRepositoryMock(null);
+    const { repository } = createRepositoryMock(null);
     const service = createManualOverrideService(repository);
 
     await expect(service.createManualOverride({
@@ -219,7 +251,7 @@ describe("manual override service", () => {
   });
 
   it("rejects claim families that do not support manual overrides", async () => {
-    const repository = createRepositoryMock();
+    const { repository } = createRepositoryMock();
     const service = createManualOverrideService(repository);
 
     await expect(service.createManualOverride({
