@@ -59,4 +59,22 @@ describe("evidence review state helpers", () => {
       "NORMALIZED_FROM_CUSTOM"
     ]);
   });
+
+  it("freezes exported values and transition arrays at runtime", () => {
+    const pendingNextStates = getNextReviewStates("PENDING");
+
+    expect(Object.isFrozen(CLAIM_REVIEW_STATE_VALUES)).toBe(true);
+    expect(Object.isFrozen(CLAIM_SOURCE_VALUES)).toBe(true);
+    expect(Object.isFrozen(RELATION_DIRECTION_VALUES)).toBe(true);
+    expect(Object.isFrozen(RELATION_TYPE_SOURCE_VALUES)).toBe(true);
+    expect(Object.isFrozen(pendingNextStates)).toBe(true);
+
+    expect(() => {
+      Object.defineProperty(CLAIM_REVIEW_STATE_VALUES, "0", { value: "HACKED" });
+    }).toThrowError(TypeError);
+    expect(() => {
+      Object.defineProperty(pendingNextStates, "0", { value: "PENDING" });
+    }).toThrowError(TypeError);
+    expect(getNextReviewStates("PENDING")[0]).toBe("ACCEPTED");
+  });
 });
