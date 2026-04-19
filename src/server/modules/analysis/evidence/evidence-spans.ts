@@ -155,3 +155,100 @@ export function validateEvidenceSpanDraft(
     createdByRunId     : draft.createdByRunId
   };
 }
+
+export interface EvidenceSpanRow extends MaterializedEvidenceSpanData {
+  id       : string;
+  createdAt?: Date;
+}
+
+export interface EvidenceSpanNaturalKeyWhere {
+  bookId        : string;
+  chapterId     : string;
+  segmentId     : string;
+  startOffset   : number;
+  endOffset     : number;
+  createdByRunId: string;
+}
+
+export interface EvidenceSpanLookupInput {
+  chapterId?     : string;
+  segmentId?     : string;
+  createdByRunId?: string;
+}
+
+export interface EvidenceSpanPersistenceClient {
+  evidenceSpan: {
+    create(args: { data: MaterializedEvidenceSpanData }): Promise<EvidenceSpanRow>;
+    createMany(args: {
+      data: MaterializedEvidenceSpanData[];
+      skipDuplicates: boolean;
+    }): Promise<{ count: number }>;
+    findFirst(args: { where: EvidenceSpanNaturalKeyWhere }): Promise<EvidenceSpanRow | null>;
+    findMany(args: {
+      where: EvidenceSpanLookupInput;
+      orderBy: Array<{ startOffset: "asc" } | { endOffset: "asc" }>;
+    }): Promise<EvidenceSpanRow[]>;
+  };
+}
+
+export function toEvidenceSpanNaturalKey(
+  data: MaterializedEvidenceSpanData
+): EvidenceSpanNaturalKeyWhere {
+  return {
+    bookId        : data.bookId,
+    chapterId     : data.chapterId,
+    segmentId     : data.segmentId,
+    startOffset   : data.startOffset,
+    endOffset     : data.endOffset,
+    createdByRunId: data.createdByRunId
+  };
+}
+
+export async function writeEvidenceSpan(
+  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  data: MaterializedEvidenceSpanData
+): Promise<EvidenceSpanRow> {
+  return prisma.evidenceSpan.create({ data });
+}
+
+export async function writeEvidenceSpans(
+  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  data: MaterializedEvidenceSpanData[]
+): Promise<{ count: number }> {
+  if (data.length === 0) {
+    return { count: 0 };
+  }
+
+  return prisma.evidenceSpan.createMany({
+    data,
+    skipDuplicates: true
+  });
+}
+
+export async function findOrCreateEvidenceSpan(
+  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  data: MaterializedEvidenceSpanData
+): Promise<EvidenceSpanRow> {
+  const existing = await prisma.evidenceSpan.findFirst({
+    where: toEvidenceSpanNaturalKey(data)
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.evidenceSpan.create({ data });
+}
+
+export async function listEvidenceSpans(
+  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  input: EvidenceSpanLookupInput
+): Promise<EvidenceSpanRow[]> {
+  return prisma.evidenceSpan.findMany({
+    where  : input,
+    orderBy: [
+      { startOffset: "asc" },
+      { endOffset  : "asc" }
+    ]
+  });
+}

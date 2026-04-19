@@ -6,11 +6,15 @@
  * 覆盖范围：success / failure / boundary。
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   EvidenceSpanValidationError,
-  validateEvidenceSpanDraft
+  findOrCreateEvidenceSpan,
+  listEvidenceSpans,
+  validateEvidenceSpanDraft,
+  writeEvidenceSpan,
+  writeEvidenceSpans
 } from "@/server/modules/analysis/evidence/evidence-spans";
 import {
   buildOffsetMap,
@@ -37,6 +41,19 @@ const segment = {
   text          : chapterText.slice(4),
   normalizedText: chapterText.slice(4),
   speakerHint   : null
+};
+
+const materializedSpan = {
+  bookId             : BOOK_ID,
+  chapterId          : CHAPTER_ID,
+  segmentId          : SEGMENT_ID,
+  startOffset        : chapterText.indexOf("范进"),
+  endOffset          : chapterText.indexOf("范进") + 3,
+  quotedText         : "范进说",
+  normalizedText     : "范进说",
+  speakerHint        : "范进",
+  narrativeRegionType: "NARRATIVE",
+  createdByRunId     : RUN_ID
 };
 
 describe("evidence span validation", () => {
@@ -210,5 +227,103 @@ describe("offset map coverage through evidence span workflows", () => {
     expect(() => mapNormalizedRangeToOriginalRange(map, 0, 99)).toThrow(OffsetMapError);
     expect(() => findOriginalRangeByNormalizedNeedle(map, "")).toThrow(OffsetMapError);
     expect(() => findOriginalRangeByNormalizedNeedle(map, "王冕")).toThrow(OffsetMapError);
+  });
+});
+
+describe("evidence span persistence helpers", () => {
+  it("writes a single evidence span", async () => {
+    const created = { id: "span-1", ...materializedSpan };
+    const prisma = {
+      evidenceSpan: {
+        create: vi.fn().mockResolvedValue(created)
+      }
+    };
+
+    await expect(writeEvidenceSpan(prisma, materializedSpan)).resolves.toEqual(created);
+    expect(prisma.evidenceSpan.create).toHaveBeenCalledWith({ data: materializedSpan });
+  });
+
+  it("writes evidence spans in a batch and returns the created count", async () => {
+    const prisma = {
+      evidenceSpan: {
+        createMany: vi.fn().mockResolvedValue({ count: 2 })
+      }
+    };
+
+    await expect(writeEvidenceSpans(prisma, [
+      materializedSpan,
+      { ...materializedSpan, startOffset: 10, endOffset: 12, quotedText: "中了", normalizedText: "中了" }
+    ])).resolves.toEqual({ count: 2 });
+
+    expect(prisma.evidenceSpan.createMany).toHaveBeenCalledWith({
+      data          : [
+        materializedSpan,
+        { ...materializedSpan, startOffset: 10, endOffset: 12, quotedText: "中了", normalizedText: "中了" }
+      ],
+      skipDuplicates: true
+    });
+  });
+
+  it("finds an existing natural-key span before creating a duplicate", async () => {
+    const existing = { id: "span-existing", ...materializedSpan };
+    const prisma = {
+      evidenceSpan: {
+        findFirst: vi.fn().mockResolvedValue(existing),
+        create   : vi.fn()
+      }
+    };
+
+    await expect(findOrCreateEvidenceSpan(prisma, materializedSpan)).resolves.toEqual(existing);
+    expect(prisma.evidenceSpan.findFirst).toHaveBeenCalledWith({
+      where: {
+        bookId        : BOOK_ID,
+        chapterId     : CHAPTER_ID,
+        segmentId     : SEGMENT_ID,
+        startOffset   : materializedSpan.startOffset,
+        endOffset     : materializedSpan.endOffset,
+        createdByRunId: RUN_ID
+      }
+    });
+    expect(prisma.evidenceSpan.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a natural-key span when no matching span exists", async () => {
+    const created = { id: "span-created", ...materializedSpan };
+    const prisma = {
+      evidenceSpan: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create   : vi.fn().mockResolvedValue(created)
+      }
+    };
+
+    await expect(findOrCreateEvidenceSpan(prisma, materializedSpan)).resolves.toEqual(created);
+    expect(prisma.evidenceSpan.create).toHaveBeenCalledWith({ data: materializedSpan });
+  });
+
+  it("lists spans by chapter, segment, and run for review jumps", async () => {
+    const rows = [{ id: "span-1", ...materializedSpan }];
+    const prisma = {
+      evidenceSpan: {
+        findMany: vi.fn().mockResolvedValue(rows)
+      }
+    };
+
+    await expect(listEvidenceSpans(prisma, {
+      chapterId     : CHAPTER_ID,
+      segmentId     : SEGMENT_ID,
+      createdByRunId: RUN_ID
+    })).resolves.toEqual(rows);
+
+    expect(prisma.evidenceSpan.findMany).toHaveBeenCalledWith({
+      where: {
+        chapterId     : CHAPTER_ID,
+        segmentId     : SEGMENT_ID,
+        createdByRunId: RUN_ID
+      },
+      orderBy: [
+        { startOffset: "asc" },
+        { endOffset  : "asc" }
+      ]
+    });
   });
 });
