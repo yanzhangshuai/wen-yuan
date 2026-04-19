@@ -111,6 +111,29 @@ function isUniqueConflict(error: unknown): boolean {
 }
 
 export function createAnalysisRunService(prismaClient: AnalysisRunServiceClient = prisma) {
+  async function createRunRecord(
+    analysisRun: AnalysisRunCreateDelegate,
+    input: CreateJobRunInput
+  ): Promise<CreatedAnalysisRun> {
+    const created = await analysisRun.create({
+      data: {
+        jobId            : input.jobId,
+        bookId           : input.bookId,
+        trigger          : input.trigger,
+        scope            : input.scope,
+        requestedByUserId: input.requestedByUserId ?? null,
+        status           : AnalysisJobStatus.RUNNING,
+        startedAt        : new Date(),
+        finishedAt       : null,
+        currentStageKey  : null,
+        errorMessage     : null
+      },
+      select: { id: true }
+    });
+
+    return { id: created.id };
+  }
+
   async function findExistingRunningJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun | null> {
     if (!hasAnalysisRunFindFirstDelegate(prismaClient)) {
       return null;
@@ -136,35 +159,22 @@ export function createAnalysisRunService(prismaClient: AnalysisRunServiceClient 
       return { id: null };
     }
 
+    const { analysisRun } = prismaClient;
     const existing = await findExistingRunningJobRun(input);
     if (existing !== null) {
       return existing;
     }
 
     try {
-      const created = await prismaClient.analysisRun.create({
-        data: {
-          jobId            : input.jobId,
-          bookId           : input.bookId,
-          trigger          : input.trigger,
-          scope            : input.scope,
-          requestedByUserId: input.requestedByUserId ?? null,
-          status           : AnalysisJobStatus.RUNNING,
-          startedAt        : new Date(),
-          finishedAt       : null,
-          currentStageKey  : null,
-          errorMessage     : null
-        },
-        select: { id: true }
-      });
-
-      return { id: created.id };
+      return await createRunRecord(analysisRun, input);
     } catch (error) {
       if (isUniqueConflict(error)) {
         const conflicting = await findExistingRunningJobRun(input);
         if (conflicting !== null) {
           return conflicting;
         }
+
+        return createRunRecord(analysisRun, input);
       }
 
       throw error;

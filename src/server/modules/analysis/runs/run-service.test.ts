@@ -99,6 +99,28 @@ describe("analysis run service", () => {
     expect(prismaMock.analysisRun.create).toHaveBeenCalledTimes(1);
   });
 
+  it("createJobRun retries creation when the conflicting active run has already finished", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.analysisRun.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    prismaMock.analysisRun.create
+      .mockRejectedValueOnce({ code: "P2002" })
+      .mockResolvedValueOnce({ id: "run-created-after-race" });
+    const service = createAnalysisRunService(prismaMock);
+
+    const result = await service.createJobRun({
+      jobId  : "job-1",
+      bookId : "book-1",
+      scope  : "FULL_BOOK",
+      trigger: "ANALYSIS_JOB"
+    });
+
+    expect(result).toEqual({ id: "run-created-after-race" });
+    expect(prismaMock.analysisRun.findFirst).toHaveBeenCalledTimes(2);
+    expect(prismaMock.analysisRun.create).toHaveBeenCalledTimes(2);
+  });
+
   it("markCurrentStage only updates currentStageKey", async () => {
     const prismaMock = createPrismaMock();
     const service = createAnalysisRunService(prismaMock);
@@ -317,7 +339,7 @@ describe("analysis run service", () => {
     await expect(service.cancelRun("run-1")).resolves.toBeUndefined();
   });
 
-  it("createJobRun works with minimal analysisRun.create-only client", async () => {
+  it("createJobRun works with minimal analysisRun.create-only client as a non-idempotent fallback", async () => {
     const create = vi.fn().mockResolvedValue({ id: "run-minimal" });
     const service = createAnalysisRunService({
       analysisRun: {
