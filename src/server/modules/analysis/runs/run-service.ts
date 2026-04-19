@@ -31,10 +31,16 @@ export interface AnalysisRunSummary {
 type AnalysisRunDelegate = NonNullable<PrismaClient["analysisRun"]>;
 type RawOutputDelegate = NonNullable<PrismaClient["llmRawOutput"]>;
 
-function hasAnalysisRunDelegate(client: PrismaClient): client is PrismaClient & { analysisRun: AnalysisRunDelegate } {
-  return typeof client.analysisRun?.create === "function"
-    && typeof client.analysisRun?.update === "function"
-    && typeof client.analysisRun?.findFirst === "function";
+function hasAnalysisRunCreateDelegate(
+  client: PrismaClient
+): client is PrismaClient & { analysisRun: Pick<AnalysisRunDelegate, "create"> } {
+  return typeof client.analysisRun?.create === "function";
+}
+
+function hasAnalysisRunUpdateDelegate(
+  client: PrismaClient
+): client is PrismaClient & { analysisRun: Pick<AnalysisRunDelegate, "update"> } {
+  return typeof client.analysisRun?.update === "function";
 }
 
 function hasRawOutputDelegate(client: PrismaClient): client is PrismaClient & { llmRawOutput: RawOutputDelegate } {
@@ -64,7 +70,7 @@ function normalizeBigIntSum(value: bigint | number | null | undefined): bigint {
 
 export function createAnalysisRunService(prismaClient: PrismaClient = prisma): AnalysisRunService {
   async function createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun> {
-    if (!hasAnalysisRunDelegate(prismaClient)) {
+    if (!hasAnalysisRunCreateDelegate(prismaClient)) {
       return { id: null };
     }
 
@@ -88,7 +94,7 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
   }
 
   async function markCurrentStage(runId: string | null, stageKey: string | null): Promise<void> {
-    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
+    if (runId === null || !hasAnalysisRunUpdateDelegate(prismaClient)) {
       return;
     }
 
@@ -127,7 +133,7 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
   }
 
   async function succeedRun(runId: string | null): Promise<void> {
-    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
+    if (runId === null || !hasAnalysisRunUpdateDelegate(prismaClient)) {
       return;
     }
 
@@ -149,7 +155,7 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
   }
 
   async function failRun(runId: string | null, error: unknown): Promise<void> {
-    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
+    if (runId === null || !hasAnalysisRunUpdateDelegate(prismaClient)) {
       return;
     }
 
@@ -167,7 +173,7 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
   }
 
   async function cancelRun(runId: string | null): Promise<void> {
-    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
+    if (runId === null || !hasAnalysisRunUpdateDelegate(prismaClient)) {
       return;
     }
 

@@ -7,8 +7,7 @@ function createPrismaMock() {
   return {
     analysisRun: {
       create   : vi.fn().mockResolvedValue({ id: "run-1" }),
-      update   : vi.fn().mockResolvedValue({ id: "run-1" }),
-      findFirst: vi.fn().mockResolvedValue({ id: "run-1" })
+      update   : vi.fn().mockResolvedValue({ id: "run-1" })
     },
     llmRawOutput: {
       aggregate: vi.fn().mockResolvedValue({
@@ -148,8 +147,7 @@ describe("analysis run service", () => {
     const service = createAnalysisRunService({
       analysisRun: {
         create   : vi.fn(),
-        update   : vi.fn(),
-        findFirst: vi.fn()
+        update   : vi.fn()
       }
     } as never);
 
@@ -243,6 +241,24 @@ describe("analysis run service", () => {
     await expect(service.succeedRun("run-1")).resolves.toBeUndefined();
     await expect(service.failRun("run-1", "oops")).resolves.toBeUndefined();
     await expect(service.cancelRun("run-1")).resolves.toBeUndefined();
+  });
+
+  it("createJobRun works with minimal analysisRun.create-only client", async () => {
+    const create = vi.fn().mockResolvedValue({ id: "run-minimal" });
+    const service = createAnalysisRunService({
+      analysisRun: {
+        create
+      }
+    } as never);
+
+    await expect(service.createJobRun({
+      jobId  : "job-1",
+      bookId : "book-1",
+      scope  : "FULL_BOOK",
+      trigger: "ANALYSIS_JOB"
+    })).resolves.toEqual({ id: "run-minimal" });
+
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
   it("keeps null-object flow when createJobRun returns null id and then succeedRun is called", async () => {
