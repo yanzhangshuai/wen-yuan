@@ -185,3 +185,98 @@ export type PromptTemplateVariant = Prisma.PromptTemplateVariantModel
  * 运行时按 bookType+stage+priority 拼接进 Prompt。本任务只建表，不 seed。
  */
 export type BookTypeExample = Prisma.BookTypeExampleModel
+/**
+ * Model AnalysisRun
+ * 
+ */
+export type AnalysisRun = Prisma.AnalysisRunModel
+/**
+ * Model AnalysisStageRun
+ * 
+ */
+export type AnalysisStageRun = Prisma.AnalysisStageRunModel
+/**
+ * Model LlmRawOutput
+ * 
+ */
+export type LlmRawOutput = Prisma.LlmRawOutputModel
+/**
+ * Model ChapterSegment
+ * 
+ */
+export type ChapterSegment = Prisma.ChapterSegmentModel
+/**
+ * Model EvidenceSpan
+ * 
+ */
+export type EvidenceSpan = Prisma.EvidenceSpanModel
+/**
+ * Model EntityMention
+ * 
+ */
+export type EntityMention = Prisma.EntityMentionModel
+/**
+ * Model PersonaCandidate
+ * 
+ */
+export type PersonaCandidate = Prisma.PersonaCandidateModel
+/**
+ * Model AliasClaim
+ * 
+ */
+export type AliasClaim = Prisma.AliasClaimModel
+/**
+ * Model EventClaim
+ * 
+ */
+export type EventClaim = Prisma.EventClaimModel
+/**
+ * Model RelationClaim
+ * 
+ */
+export type RelationClaim = Prisma.RelationClaimModel
+/**
+ * Model TimeClaim
+ * 
+ */
+export type TimeClaim = Prisma.TimeClaimModel
+/**
+ * Model IdentityResolutionClaim
+ * 
+ */
+export type IdentityResolutionClaim = Prisma.IdentityResolutionClaimModel
+/**
+ * Model ConflictFlag
+ * 
+ */
+export type ConflictFlag = Prisma.ConflictFlagModel
+/**
+ * Model PersonaAlias
+ * 
+ */
+export type PersonaAlias = Prisma.PersonaAliasModel
+/**
+ * Model PersonaChapterFact
+ * 
+ */
+export type PersonaChapterFact = Prisma.PersonaChapterFactModel
+/**
+ * Model PersonaTimeFact
+ * 
+ */
+export type PersonaTimeFact = Prisma.PersonaTimeFactModel
+/**
+ * Model RelationshipEdge
+ * 
+ */
+export type RelationshipEdge = Prisma.RelationshipEdgeModel
+/**
+ * Model TimelineEvent
+ * 
+ */
+export type TimelineEvent = Prisma.TimelineEventModel
+/**
+ * Model ReviewAuditLog
+ * 
+ */
+export type ReviewAuditLog = Prisma.ReviewAuditLogModel

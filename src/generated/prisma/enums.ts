@@ -151,3 +151,168 @@ export const ChapterType = {
 } as const
 
 export type ChapterType = (typeof ChapterType)[keyof typeof ChapterType]
+
+
+export const ClaimReviewState = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EDITED: 'EDITED',
+  DEFERRED: 'DEFERRED',
+  CONFLICTED: 'CONFLICTED'
+} as const
+
+export type ClaimReviewState = (typeof ClaimReviewState)[keyof typeof ClaimReviewState]
+
+
+export const ClaimSource = {
+  AI: 'AI',
+  RULE: 'RULE',
+  MANUAL: 'MANUAL',
+  IMPORTED: 'IMPORTED'
+} as const
+
+export type ClaimSource = (typeof ClaimSource)[keyof typeof ClaimSource]
+
+
+export const AnalysisStageRunStatus = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  SKIPPED: 'SKIPPED',
+  CANCELED: 'CANCELED'
+} as const
+
+export type AnalysisStageRunStatus = (typeof AnalysisStageRunStatus)[keyof typeof AnalysisStageRunStatus]
+
+
+export const ChapterSegmentType = {
+  TITLE: 'TITLE',
+  NARRATIVE: 'NARRATIVE',
+  DIALOGUE_LEAD: 'DIALOGUE_LEAD',
+  DIALOGUE_CONTENT: 'DIALOGUE_CONTENT',
+  POEM: 'POEM',
+  COMMENTARY: 'COMMENTARY',
+  UNKNOWN: 'UNKNOWN'
+} as const
+
+export type ChapterSegmentType = (typeof ChapterSegmentType)[keyof typeof ChapterSegmentType]
+
+
+export const MentionKind = {
+  NAMED: 'NAMED',
+  TITLE_ONLY: 'TITLE_ONLY',
+  COURTESY_NAME: 'COURTESY_NAME',
+  KINSHIP: 'KINSHIP',
+  ORGANIZATION: 'ORGANIZATION',
+  LOCATION: 'LOCATION',
+  UNKNOWN: 'UNKNOWN'
+} as const
+
+export type MentionKind = (typeof MentionKind)[keyof typeof MentionKind]
+
+
+export const PersonaCandidateStatus = {
+  OPEN: 'OPEN',
+  CONFIRMED: 'CONFIRMED',
+  MERGED: 'MERGED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type PersonaCandidateStatus = (typeof PersonaCandidateStatus)[keyof typeof PersonaCandidateStatus]
+
+
+export const RelationDirection = {
+  FORWARD: 'FORWARD',
+  REVERSE: 'REVERSE',
+  BIDIRECTIONAL: 'BIDIRECTIONAL',
+  UNDIRECTED: 'UNDIRECTED'
+} as const
+
+export type RelationDirection = (typeof RelationDirection)[keyof typeof RelationDirection]
+
+
+export const RelationTypeSource = {
+  PRESET: 'PRESET',
+  CUSTOM: 'CUSTOM',
+  NORMALIZED_FROM_CUSTOM: 'NORMALIZED_FROM_CUSTOM'
+} as const
+
+export type RelationTypeSource = (typeof RelationTypeSource)[keyof typeof RelationTypeSource]
+
+
+export const TimeType = {
+  CHAPTER_ORDER: 'CHAPTER_ORDER',
+  RELATIVE_PHASE: 'RELATIVE_PHASE',
+  NAMED_EVENT: 'NAMED_EVENT',
+  HISTORICAL_YEAR: 'HISTORICAL_YEAR',
+  BATTLE_PHASE: 'BATTLE_PHASE',
+  UNCERTAIN: 'UNCERTAIN'
+} as const
+
+export type TimeType = (typeof TimeType)[keyof typeof TimeType]
+
+
+export const ConflictType = {
+  POSSIBLE_DUPLICATE: 'POSSIBLE_DUPLICATE',
+  POSSIBLE_SPLIT: 'POSSIBLE_SPLIT',
+  POST_MORTEM_ACTION: 'POST_MORTEM_ACTION',
+  IMPOSSIBLE_LOCATION: 'IMPOSSIBLE_LOCATION',
+  RELATION_DIRECTION_CONFLICT: 'RELATION_DIRECTION_CONFLICT',
+  ALIAS_CONFLICT: 'ALIAS_CONFLICT',
+  TIME_ORDER_CONFLICT: 'TIME_ORDER_CONFLICT',
+  LOW_EVIDENCE_CLAIM: 'LOW_EVIDENCE_CLAIM'
+} as const
+
+export type ConflictType = (typeof ConflictType)[keyof typeof ConflictType]
+
+
+export const ClaimKind = {
+  ALIAS: 'ALIAS',
+  EVENT: 'EVENT',
+  RELATION: 'RELATION',
+  TIME: 'TIME',
+  IDENTITY_RESOLUTION: 'IDENTITY_RESOLUTION',
+  CONFLICT_FLAG: 'CONFLICT_FLAG'
+} as const
+
+export type ClaimKind = (typeof ClaimKind)[keyof typeof ClaimKind]
+
+
+export const ReviewAction = {
+  ACCEPT: 'ACCEPT',
+  REJECT: 'REJECT',
+  EDIT: 'EDIT',
+  CREATE_MANUAL_CLAIM: 'CREATE_MANUAL_CLAIM',
+  MERGE_PERSONA: 'MERGE_PERSONA',
+  SPLIT_PERSONA: 'SPLIT_PERSONA',
+  CHANGE_RELATION_TYPE: 'CHANGE_RELATION_TYPE',
+  CHANGE_RELATION_INTERVAL: 'CHANGE_RELATION_INTERVAL',
+  RELINK_EVIDENCE: 'RELINK_EVIDENCE'
+} as const
+
+export type ReviewAction = (typeof ReviewAction)[keyof typeof ReviewAction]
+
+
+export const AliasClaimKind = {
+  ALIAS_OF: 'ALIAS_OF',
+  COURTESY_NAME_OF: 'COURTESY_NAME_OF',
+  TITLE_OF: 'TITLE_OF',
+  KINSHIP_REFERENCE_TO: 'KINSHIP_REFERENCE_TO',
+  IMPERSONATES: 'IMPERSONATES',
+  MISIDENTIFIED_AS: 'MISIDENTIFIED_AS',
+  UNSURE: 'UNSURE'
+} as const
+
+export type AliasClaimKind = (typeof AliasClaimKind)[keyof typeof AliasClaimKind]
+
+
+export const IdentityResolutionKind = {
+  RESOLVES_TO: 'RESOLVES_TO',
+  SPLIT_FROM: 'SPLIT_FROM',
+  MERGE_INTO: 'MERGE_INTO',
+  UNSURE: 'UNSURE'
+} as const
+
+export type IdentityResolutionKind = (typeof IdentityResolutionKind)[keyof typeof IdentityResolutionKind]

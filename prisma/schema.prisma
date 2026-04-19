@@ -163,6 +163,157 @@ enum ChapterType {
   @@map("chapter_type")
 }
 
+enum ClaimReviewState {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EDITED
+  DEFERRED
+  CONFLICTED
+
+  @@map("claim_review_state")
+}
+
+enum ClaimSource {
+  AI
+  RULE
+  MANUAL
+  IMPORTED
+
+  @@map("claim_source")
+}
+
+enum AnalysisStageRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+  CANCELED
+
+  @@map("analysis_stage_run_status")
+}
+
+enum ChapterSegmentType {
+  TITLE
+  NARRATIVE
+  DIALOGUE_LEAD
+  DIALOGUE_CONTENT
+  POEM
+  COMMENTARY
+  UNKNOWN
+
+  @@map("chapter_segment_type")
+}
+
+enum MentionKind {
+  NAMED
+  TITLE_ONLY
+  COURTESY_NAME
+  KINSHIP
+  ORGANIZATION
+  LOCATION
+  UNKNOWN
+
+  @@map("mention_kind")
+}
+
+enum PersonaCandidateStatus {
+  OPEN
+  CONFIRMED
+  MERGED
+  REJECTED
+
+  @@map("persona_candidate_status")
+}
+
+enum RelationDirection {
+  FORWARD
+  REVERSE
+  BIDIRECTIONAL
+  UNDIRECTED
+
+  @@map("relation_direction")
+}
+
+enum RelationTypeSource {
+  PRESET
+  CUSTOM
+  NORMALIZED_FROM_CUSTOM
+
+  @@map("relation_type_source")
+}
+
+enum TimeType {
+  CHAPTER_ORDER
+  RELATIVE_PHASE
+  NAMED_EVENT
+  HISTORICAL_YEAR
+  BATTLE_PHASE
+  UNCERTAIN
+
+  @@map("time_type")
+}
+
+enum ConflictType {
+  POSSIBLE_DUPLICATE
+  POSSIBLE_SPLIT
+  POST_MORTEM_ACTION
+  IMPOSSIBLE_LOCATION
+  RELATION_DIRECTION_CONFLICT
+  ALIAS_CONFLICT
+  TIME_ORDER_CONFLICT
+  LOW_EVIDENCE_CLAIM
+
+  @@map("conflict_type")
+}
+
+enum ClaimKind {
+  ALIAS
+  EVENT
+  RELATION
+  TIME
+  IDENTITY_RESOLUTION
+  CONFLICT_FLAG
+
+  @@map("claim_kind")
+}
+
+enum ReviewAction {
+  ACCEPT
+  REJECT
+  EDIT
+  CREATE_MANUAL_CLAIM
+  MERGE_PERSONA
+  SPLIT_PERSONA
+  CHANGE_RELATION_TYPE
+  CHANGE_RELATION_INTERVAL
+  RELINK_EVIDENCE
+
+  @@map("review_action")
+}
+
+enum AliasClaimKind {
+  ALIAS_OF
+  COURTESY_NAME_OF
+  TITLE_OF
+  KINSHIP_REFERENCE_TO
+  IMPERSONATES
+  MISIDENTIFIED_AS
+  UNSURE
+
+  @@map("alias_claim_kind")
+}
+
+enum IdentityResolutionKind {
+  RESOLVES_TO
+  SPLIT_FROM
+  MERGE_INTO
+  UNSURE
+
+  @@map("identity_resolution_kind")
+}
+
 // --- 核心模型 ---
 
 /// @db.remark: 系统用户。仅存 admin / viewer 账号，初始管理员由 seed 从 env 写入。
@@ -184,15 +335,15 @@ model User {
 
 /// @db.remark: AI 模型配置表。存储各模型的 Key、BaseURL 及启用状态，由设置页管理。
 model AiModel {
-  id        String     @id @default(uuid()) @db.Uuid // 模型配置主键
+  id        String  @id @default(uuid()) @db.Uuid // 模型配置主键
   provider  String // 推荐值: "deepseek" | "qwen" | "doubao" | "gemini" | "glm"
   name      String // 显示名称，如 "DeepSeek V3"
-  modelId   String     @map("model_id") // 供应商 API 调用标识，如 "deepseek-chat"
-  aliasKey  String?    @map("alias_key") // 语义别名键（用于阶段推荐与版本平滑升级）
-  baseUrl   String     @map("base_url") // 可自定义，支持私有部署
-  apiKey    String?    @map("api_key") // 前端只展示脱敏版
-  isEnabled Boolean    @default(false) @map("is_enabled") // Key 配置后才可启用
-  isDefault Boolean    @default(false) @map("is_default") // 导入向导默认选中
+  modelId   String  @map("model_id") // 供应商 API 调用标识，如 "deepseek-chat"
+  aliasKey  String? @map("alias_key") // 语义别名键（用于阶段推荐与版本平滑升级）
+  baseUrl   String  @map("base_url") // 可自定义，支持私有部署
+  apiKey    String? @map("api_key") // 前端只展示脱敏版
+  isEnabled Boolean @default(false) @map("is_enabled") // Key 配置后才可启用
+  isDefault Boolean @default(false) @map("is_default") // 导入向导默认选中
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
@@ -206,27 +357,27 @@ model AiModel {
 
 /// @db.remark: 书籍/作品库。系统的顶层容器，支持跨作品的人物对比。
 model Book {
-  id             String  @id @default(uuid()) @db.Uuid // 书籍主键
+  id             String    @id @default(uuid()) @db.Uuid // 书籍主键
   title          String // 书名，如《儒林外史》
   author         String? // 作者，如"吴敬梓"
   dynasty        String? // 背景朝代
-  description    String? @db.Text // 作品简介
-  coverUrl       String? @map("cover_url") // 3D 看板所需的封面图
-  sourceFileKey  String? @map("source_file_key") // 原始导入文件的对象存储 key
-  sourceFileUrl  String? @map("source_file_url") // 原始导入文件的可访问链接
-  sourceFileName String? @map("source_file_name") // 用户上传时的原始文件名
-  sourceFileMime String? @map("source_file_mime") // 原始文件 MIME 类型
-  sourceFileSize Int?    @map("source_file_size") // 原始文件字节数
+  description    String?   @db.Text // 作品简介
+  coverUrl       String?   @map("cover_url") // 3D 看板所需的封面图
+  sourceFileKey  String?   @map("source_file_key") // 原始导入文件的对象存储 key
+  sourceFileUrl  String?   @map("source_file_url") // 原始导入文件的可访问链接
+  sourceFileName String?   @map("source_file_name") // 用户上传时的原始文件名
+  sourceFileMime String?   @map("source_file_mime") // 原始文件 MIME 类型
+  sourceFileSize Int?      @map("source_file_size") // 原始文件字节数
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6) // 软删除时间
   // PENDING (初始), PROCESSING (解析中), COMPLETED (完成), ERROR (失败)
-  status        String  @default("PENDING") // 当前处理状态
-  errorLog      String? @map("error_log") @db.Text // 最近失败日志
-  parseProgress Int     @default(0) @map("parse_progress") // 解析进度 0-100
-  parseStage    String? @map("parse_stage") // 当前阶段文本，如"实体提取"
+  status         String    @default("PENDING") // 当前处理状态
+  errorLog       String?   @map("error_log") @db.Text // 最近失败日志
+  parseProgress  Int       @default(0) @map("parse_progress") // 解析进度 0-100
+  parseStage     String?   @map("parse_stage") // 当前阶段文本，如"实体提取"
 
   // 知识库关联：bookTypeId 为书籍类型结构化标识
-  bookTypeId     String? @map("book_type_id") @db.Uuid
-  bookType       BookType? @relation(fields: [bookTypeId], references: [id])
+  bookTypeId     String?         @map("book_type_id") @db.Uuid
+  bookType       BookType?       @relation(fields: [bookTypeId], references: [id])
   bookAliasPacks BookAliasPack[]
 
   /// 三阶段架构书籍类型代码（§0-12 BookType 系统）。
@@ -239,10 +390,10 @@ model Book {
   aliasMappings     AliasMapping[] // 别名映射记录
   modelStrategies   ModelStrategyConfig[] @relation("BookStrategies")
   validationReports ValidationReport[] // 自检报告
-  mergeSuggestions MergeSuggestion[] // 人物合并建议队列
-  personaMentions  PersonaMention[] // 三阶段 Stage A mention 候选池
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
-  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+  mergeSuggestions  MergeSuggestion[] // 人物合并建议队列
+  personaMentions   PersonaMention[] // 三阶段 Stage A mention 候选池
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
   @@index([deletedAt], map: "books_deleted_at_idx")
   @@map("books")
@@ -265,13 +416,13 @@ model Chapter {
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  book        Book              @relation(fields: [bookId], references: [id]) // 所属书籍
-  mentions    Mention[] // 本章提及记录
-  biographies BiographyRecord[] // 本章履历事件
-  relations   Relationship[] // 本章关系边
-  phaseLogs   AnalysisPhaseLog[] // 阶段调用日志
-  personaMentions        PersonaMention[] // 三阶段 Stage A 候选池
-  preprocessResult       ChapterPreprocessResult? // 三阶段 Stage 0 预处理单章结果
+  book             Book                     @relation(fields: [bookId], references: [id]) // 所属书籍
+  mentions         Mention[] // 本章提及记录
+  biographies      BiographyRecord[] // 本章履历事件
+  relations        Relationship[] // 本章关系边
+  phaseLogs        AnalysisPhaseLog[] // 阶段调用日志
+  personaMentions  PersonaMention[] // 三阶段 Stage A 候选池
+  preprocessResult ChapterPreprocessResult? // 三阶段 Stage 0 预处理单章结果
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
@@ -302,31 +453,31 @@ model Persona {
   // 三阶段架构新增字段（§0-2 / §0-3 / §0-4 / §0-7）
   /// Stage 0 预处理器对本角色所在章节的信心等级，取值 HIGH | LOW；
   /// 若 LOW 则下游 Stage B 合并阈值 +0.05、CONFIRMED 门槛 +1。
-  preprocessorConfidence   String? @map("preprocessor_confidence")
+  preprocessorConfidence  String? @map("preprocessor_confidence")
   /// 正则/LLM 双源确认的死亡章节号（§0-2），用于 Stage B.5 死后行动校验。
-  deathChapterNo           Int?    @map("death_chapter_no")
+  deathChapterNo          Int?    @map("death_chapter_no")
   /// 当前所在地点（§0-3 跨地点并发冲突检测所需）。
-  currentLocation          String? @map("current_location")
+  currentLocation         String? @map("current_location")
   /// `currentLocation` 最后一次更新对应的章节号；Stage C 按章节时序维护：
   /// 仅当新章节号 > 本字段时才允许覆盖 `currentLocation`，避免旧章节覆盖新章节。
-  currentLocationChapter   Int?    @map("current_location_chapter")
+  currentLocationChapter  Int?    @map("current_location_chapter")
   /// Mention 总计数（Stage B 聚合落库，用于 CONFIRMED 门槛）。
-  mentionCount             Int     @default(0) @map("mention_count")
+  mentionCount            Int     @default(0) @map("mention_count")
   /// 有效事迹计数（§0-6 口径：SELF|IMPERSONATING + NARRATIVE + rawSpan≥15 + actionVerb 非空）。
-  effectiveBiographyCount  Int     @default(0) @map("effective_biography_count")
+  effectiveBiographyCount Int     @default(0) @map("effective_biography_count")
   /// 不同章节出场计数（CONFIRMED 门槛：≥2）。
-  distinctChapters         Int     @default(0) @map("distinct_chapters")
+  distinctChapters        Int     @default(0) @map("distinct_chapters")
   /// 生命周期状态：CONFIRMED | CANDIDATE | NOISE | MERGED_INTO。
   /// 采用字符串以保留未来扩展空间；默认 CANDIDATE，晋级至 CONFIRMED 需满足 §0-7 门槛。
-  status                   String  @default("CANDIDATE")
+  status                  String  @default("CANDIDATE")
 
-  profiles    Profile[] // 各书籍维度档案
-  mentions    Mention[] // 角色提及集合
-  biographies BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
-  aliasMappings AliasMapping[] // 别名映射记录
+  profiles               Profile[] // 各书籍维度档案
+  mentions               Mention[] // 角色提及集合
+  biographies            BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
+  aliasMappings          AliasMapping[] // 别名映射记录
   sourceMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionSourcePersona")
   targetMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionTargetPersona")
-  personaMentions PersonaMention[] // Stage A 候选池（晋级后反向引用）
+  personaMentions        PersonaMention[] // Stage A 候选池（晋级后反向引用）
 
   // 建立双向关系关联，方便 3D 图谱从 Persona 直接出发查询
   sourceRels Relationship[] @relation("SourcePersona")
@@ -393,17 +544,17 @@ model BiographyRecord {
 
   // Stage C 归属层新增字段（§0-6 四条件 + §0-5 REV-1 审计）
   /// 事件对应的章节原文最小片段（§0-6 口径之一：rawSpan.length ≥ 15）。
-  rawSpan               String?  @map("raw_span") @db.Text
+  rawSpan               String? @map("raw_span") @db.Text
   /// 事件动作动词（§0-6 口径之一：actionVerb 非空才可计入 effectiveBiographyCount）。
-  actionVerb            String?  @map("action_verb")
+  actionVerb            String? @map("action_verb")
   /// 是否满足 §0-6 四条件（NarrativeLens ∈ {SELF,IMPERSONATING} AND NARRATIVE AND rawSpan≥15 AND actionVerb 非空）。
   /// 仅 true 的记录会被计入 persona.effectiveBiographyCount。
-  isEffective           Boolean  @default(false) @map("is_effective")
+  isEffective           Boolean @default(false) @map("is_effective")
   /// Stage C 区段硬约束命中的规则名（POEM_FORCE_HISTORICAL / COMMENTARY_FORCE_REPORTED /
   /// DIALOGUE_QUOTED_THIRD_PARTY / DIALOGUE_SELF_PRESERVED）；未命中为 null。
-  regionOverrideApplied String?  @map("region_override_applied")
+  regionOverrideApplied String? @map("region_override_applied")
   /// 归属置信度（0~1），由 Prompt C LLM 返回并在区段覆写后保留。
-  attributionConfidence Float    @default(0) @map("attribution_confidence")
+  attributionConfidence Float   @default(0) @map("attribution_confidence")
 
   persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
   chapter Chapter @relation(fields: [chapterId], references: [id]) // 关联章节
@@ -468,29 +619,29 @@ model Relationship {
 
 /// @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。
 model AnalysisJob {
-  id           String            @id @default(uuid()) @db.Uuid // 任务主键
-  bookId       String            @map("book_id") @db.Uuid // 目标书籍 ID
-  status         AnalysisJobStatus @default(QUEUED) // 任务状态
-  architecture   String            @default("threestage") // sequential | threestage
-  scope          String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE | CHAPTER_LIST
-  chapterStart   Int?              @map("chapter_start") // 章节起点（范围任务）
-  chapterEnd     Int?              @map("chapter_end") // 章节终点（范围任务）
-  chapterIndices Int[]             @default([]) @map("chapter_indices") // 指定章节编号列表（CHAPTER_LIST 任务）
-  attempt      Int               @default(1) // 当前重试次数
-  errorLog     String?           @map("error_log") @db.Text // 失败摘要
-  experimentTag String?          @map("experiment_tag")
-  overrideStrategy String?       @map("override_strategy") // DRAFT_ONLY | ALL_DRAFTS
-  keepHistory      Boolean       @default(false) @map("keep_history") // 是否保留历史草稿版本
-  startedAt    DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
-  finishedAt   DateTime?         @map("finished_at") @db.Timestamptz(6) // 完成时间
-  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
-  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+  id               String            @id @default(uuid()) @db.Uuid // 任务主键
+  bookId           String            @map("book_id") @db.Uuid // 目标书籍 ID
+  status           AnalysisJobStatus @default(QUEUED) // 任务状态
+  architecture     String            @default("threestage") // sequential | threestage
+  scope            String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE | CHAPTER_LIST
+  chapterStart     Int?              @map("chapter_start") // 章节起点（范围任务）
+  chapterEnd       Int?              @map("chapter_end") // 章节终点（范围任务）
+  chapterIndices   Int[]             @default([]) @map("chapter_indices") // 指定章节编号列表（CHAPTER_LIST 任务）
+  attempt          Int               @default(1) // 当前重试次数
+  errorLog         String?           @map("error_log") @db.Text // 失败摘要
+  experimentTag    String?           @map("experiment_tag")
+  overrideStrategy String?           @map("override_strategy") // DRAFT_ONLY | ALL_DRAFTS
+  keepHistory      Boolean           @default(false) @map("keep_history") // 是否保留历史草稿版本
+  startedAt        DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
+  finishedAt       DateTime?         @map("finished_at") @db.Timestamptz(6) // 完成时间
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  book            Book                 @relation(fields: [bookId], references: [id]) // 关联书籍
-  modelStrategies ModelStrategyConfig[] @relation("JobStrategies")
-  phaseLogs       AnalysisPhaseLog[]
+  book              Book                      @relation(fields: [bookId], references: [id]) // 关联书籍
+  modelStrategies   ModelStrategyConfig[]     @relation("JobStrategies")
+  phaseLogs         AnalysisPhaseLog[]
   validationReports ValidationReport[] // 该任务生成的自检报告
-  personaMentions  PersonaMention[] // 三阶段 Stage A 候选池
+  personaMentions   PersonaMention[] // 三阶段 Stage A 候选池
   preprocessResults ChapterPreprocessResult[] // 三阶段 Stage 0 预处理结果
 
   @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
@@ -582,7 +733,7 @@ model ValidationReport {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
   job  AnalysisJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
   @@index([bookId], map: "validation_book_idx")
@@ -626,8 +777,8 @@ model BookType {
   key         String  @unique
   name        String
   description String? @db.Text
-  isActive    Boolean @default(true)  @map("is_active")
-  sortOrder   Int     @default(0)     @map("sort_order")
+  isActive    Boolean @default(true) @map("is_active")
+  sortOrder   Int     @default(0) @map("sort_order")
 
   // presetConfig 废弃 — 配置已迁入 ner_lexicon_rules / prompt_extraction_rules
   books                 Book[]
@@ -638,7 +789,7 @@ model BookType {
   promptVersions        PromptTemplateVersion[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([key])
   @@index([isActive, sortOrder])
@@ -650,17 +801,17 @@ model AliasPack {
   name        String
   description String? @db.Text
   /// GLOBAL: 所有书籍通用 | BOOK_TYPE: 特定书籍类型自动继承 | BOOK: 需手动挂载
-  scope      String  @default("GLOBAL")
-  bookTypeId String? @map("book_type_id") @db.Uuid
-  version    Int     @default(1)
-  isActive   Boolean @default(true) @map("is_active")
+  scope       String  @default("GLOBAL")
+  bookTypeId  String? @map("book_type_id") @db.Uuid
+  version     Int     @default(1)
+  isActive    Boolean @default(true) @map("is_active")
 
-  bookType  BookType?      @relation(fields: [bookTypeId], references: [id])
+  bookType  BookType?       @relation(fields: [bookTypeId], references: [id])
   entries   AliasEntry[]
   bookPacks BookAliasPack[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([scope, isActive])
   @@index([bookTypeId, isActive])
@@ -677,14 +828,14 @@ model AliasEntry {
 
   source       String    @default("MANUAL")
   reviewStatus String    @default("PENDING") @map("review_status")
-  reviewNote   String?   @map("review_note")  @db.Text
-  reviewedAt   DateTime? @map("reviewed_at")  @db.Timestamptz(6)
+  reviewNote   String?   @map("review_note") @db.Text
+  reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
   notes        String?   @db.Text
 
   pack AliasPack @relation(fields: [packId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([packId, reviewStatus])
   @@map("alias_entries")
@@ -716,13 +867,13 @@ model SurnameRule {
   priority    Int     @default(0)
   bookTypeId  String? @map("book_type_id") @db.Uuid
   description String? @db.Text
-  isActive    Boolean @default(true)  @map("is_active")
+  isActive    Boolean @default(true) @map("is_active")
   source      String  @default("MANUAL")
 
   bookType BookType? @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([isCompound, priority])
   @@index([isActive])
@@ -747,11 +898,11 @@ model GenericTitleRule {
   exemptInBooks       String[] @default([]) @map("exempt_in_books")
 
   description String? @db.Text
-  isActive    Boolean @default(true)  @map("is_active")
+  isActive    Boolean @default(true) @map("is_active")
   source      String  @default("MANUAL")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([tier, isActive])
   @@map("generic_title_rules")
@@ -760,20 +911,20 @@ model GenericTitleRule {
 /// NER 算法配置：后缀惩罚规则与称号/职位词干
 /// 与 prompt_extraction_rules 的区别：本表配置评分算法，不注入 AI Prompt
 model NerLexiconRule {
-  id        String  @id @default(uuid()) @db.Uuid
+  id         String  @id @default(uuid()) @db.Uuid
   /// HARD_BLOCK_SUFFIX | SOFT_BLOCK_SUFFIX | TITLE_STEM | POSITION_STEM
   ruleType   String  @map("rule_type")
   content    String  @db.Text
   bookTypeId String? @map("book_type_id") @db.Uuid
-  sortOrder  Int     @default(0)  @map("sort_order")
+  sortOrder  Int     @default(0) @map("sort_order")
   isActive   Boolean @default(true) @map("is_active")
   source     String  @default("MANUAL")
-  changeNote String? @db.Text @map("change_note")
+  changeNote String? @map("change_note") @db.Text
 
   bookType BookType? @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([ruleType, isActive, sortOrder])
   @@index([bookTypeId])
@@ -795,10 +946,10 @@ model HistoricalFigureEntry {
   reviewStatus String    @default("PENDING") @map("review_status")
   reviewNote   String?   @map("review_note") @db.Text
   reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
-  isActive     Boolean   @default(true)      @map("is_active")
+  isActive     Boolean   @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([name])
   @@index([category, reviewStatus])
@@ -812,7 +963,7 @@ model HistoricalFigureEntry {
 // ============================================================
 model NamePatternRule {
   id          String  @id @default(uuid()) @db.Uuid
-  ruleType    String  @db.VarChar(30) @map("rule_type")
+  ruleType    String  @map("rule_type") @db.VarChar(30)
   pattern     String  @db.VarChar(200)
   action      String  @db.VarChar(20)
   description String? @db.Text
@@ -820,10 +971,10 @@ model NamePatternRule {
   source       String  @default("MANUAL")
   reviewStatus String  @default("PENDING") @map("review_status")
   reviewNote   String? @map("review_note") @db.Text
-  isActive     Boolean @default(true)      @map("is_active")
+  isActive     Boolean @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([ruleType, reviewStatus])
   @@map("name_pattern_rules")
@@ -844,7 +995,7 @@ model PromptTemplate {
   versions PromptTemplateVersion[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("prompt_templates")
 }
@@ -853,21 +1004,21 @@ model PromptTemplate {
 // 提示词版本：每次修改保存为一个新版本
 // ============================================================
 model PromptTemplateVersion {
-  id           String  @id @default(uuid()) @db.Uuid
-  templateId   String  @map("template_id") @db.Uuid
-  versionNo    Int     @map("version_no")
-  systemPrompt String  @db.Text @map("system_prompt")
-  userPrompt   String  @db.Text @map("user_prompt")
+  id           String @id @default(uuid()) @db.Uuid
+  templateId   String @map("template_id") @db.Uuid
+  versionNo    Int    @map("version_no")
+  systemPrompt String @map("system_prompt") @db.Text
+  userPrompt   String @map("user_prompt") @db.Text
 
   bookTypeId String? @map("book_type_id") @db.Uuid
   /// 当前是否为该 template（+ bookType 组合）的生效版本，替代 activeVersionId
   isActive   Boolean @default(false) @map("is_active")
   isBaseline Boolean @default(false) @map("is_baseline")
-  changeNote String? @db.Text @map("change_note")
+  changeNote String? @map("change_note") @db.Text
   createdBy  String? @map("created_by")
 
   template PromptTemplate @relation(fields: [templateId], references: [id])
-  bookType BookType?       @relation(fields: [bookTypeId], references: [id])
+  bookType BookType?      @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -885,15 +1036,15 @@ model PromptExtractionRule {
   ruleType   String  @map("rule_type")
   content    String  @db.Text
   bookTypeId String? @map("book_type_id") @db.Uuid
-  sortOrder  Int     @default(0)  @map("sort_order")
+  sortOrder  Int     @default(0) @map("sort_order")
   isActive   Boolean @default(true) @map("is_active")
   source     String  @default("MANUAL")
-  changeNote String? @db.Text @map("change_note")
+  changeNote String? @map("change_note") @db.Text
 
   bookType BookType? @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([ruleType, isActive, sortOrder])
   @@index([bookTypeId])
@@ -921,7 +1072,7 @@ model KnowledgeAuditLog {
 
   /// 操作人
   operatorId   String? @map("operator_id")
-  operatorNote String? @db.Text @map("operator_note")
+  operatorNote String? @map("operator_note") @db.Text
 
   /// 关联书籍
   relatedBookId String? @map("related_book_id") @db.Uuid
@@ -942,10 +1093,10 @@ model KnowledgeAuditLog {
 /// 语义：原文里每个称呼的每次出现都是一条记录；是否晋级为 persona 由 Stage B 聚合判定。
 /// 生命周期：Stage A 写入 → Stage B 读取聚合 → 晋级后回填 promoted_persona_id。
 model PersonaMention {
-  id        String @id @default(uuid()) @db.Uuid
-  bookId    String @map("book_id") @db.Uuid
-  chapterId String @map("chapter_id") @db.Uuid
-  chapterNo Int    @map("chapter_no") // 冗余章节号，便于按章聚合
+  id        String  @id @default(uuid()) @db.Uuid
+  bookId    String  @map("book_id") @db.Uuid
+  chapterId String  @map("chapter_id") @db.Uuid
+  chapterNo Int     @map("chapter_no") // 冗余章节号，便于按章聚合
   jobId     String? @map("job_id") @db.Uuid // 归属 Stage A 任务（可选，便于按 job 清理）
 
   /// 原文出现的表层形式，如"牛浦郎"、"那范老爷"
@@ -989,8 +1140,8 @@ model PersonaMention {
 /// @db.remark: Stage 0 预处理结果（§0-4 覆盖率自白 + §0-2 死亡标记候选）。
 /// 每个章节一条记录，输出四区段字符占比与正则死亡标记候选；unclassified>10% 打标 LOW。
 model ChapterPreprocessResult {
-  id        String @id @default(uuid()) @db.Uuid
-  chapterId String @unique @map("chapter_id") @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  chapterId String  @unique @map("chapter_id") @db.Uuid
   jobId     String? @map("job_id") @db.Uuid
 
   /// 叙事段字符占比（0~1）
@@ -1066,4 +1217,441 @@ model BookTypeExample {
 
   @@index([bookTypeCode, stage, priority], map: "book_type_example_lookup_idx")
   @@map("book_type_examples")
+}
+
+// =============================================================================
+// Evidence-first review architecture foundation
+// =============================================================================
+
+model AnalysisRun {
+  id                String            @id @default(uuid()) @db.Uuid
+  bookId            String            @map("book_id") @db.Uuid
+  trigger           String
+  scope             String
+  status            AnalysisJobStatus @default(QUEUED)
+  currentStageKey   String?           @map("current_stage_key")
+  requestedByUserId String?           @map("requested_by_user_id") @db.Uuid
+  startedAt         DateTime?         @map("started_at") @db.Timestamptz(6)
+  finishedAt        DateTime?         @map("finished_at") @db.Timestamptz(6)
+  errorMessage      String?           @map("error_message") @db.Text
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, createdAt], map: "analysis_runs_book_created_at_idx")
+  @@index([status, createdAt], map: "analysis_runs_status_created_at_idx")
+  @@map("analysis_runs")
+}
+
+model AnalysisStageRun {
+  id           String                 @id @default(uuid()) @db.Uuid
+  runId        String                 @map("run_id") @db.Uuid
+  bookId       String                 @map("book_id") @db.Uuid
+  chapterId    String?                @map("chapter_id") @db.Uuid
+  stageKey     String                 @map("stage_key")
+  status       AnalysisStageRunStatus @default(PENDING)
+  attempt      Int                    @default(1)
+  inputHash    String?                @map("input_hash")
+  outputHash   String?                @map("output_hash")
+  errorMessage String?                @map("error_message") @db.Text
+  startedAt    DateTime?              @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime?              @map("finished_at") @db.Timestamptz(6)
+  createdAt    DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([runId, stageKey], map: "analysis_stage_runs_run_stage_idx")
+  @@index([chapterId, stageKey], map: "analysis_stage_runs_chapter_stage_idx")
+  @@map("analysis_stage_runs")
+}
+
+model LlmRawOutput {
+  id               String   @id @default(uuid()) @db.Uuid
+  runId            String   @map("run_id") @db.Uuid
+  stageRunId       String?  @map("stage_run_id") @db.Uuid
+  bookId           String   @map("book_id") @db.Uuid
+  chapterId        String?  @map("chapter_id") @db.Uuid
+  provider         String
+  model            String
+  requestPayload   Json     @map("request_payload")
+  responseText     String   @map("response_text") @db.Text
+  responseJson     Json?    @map("response_json")
+  promptTokens     Int?     @map("prompt_tokens")
+  completionTokens Int?     @map("completion_tokens")
+  durationMs       Int?     @map("duration_ms")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([runId], map: "llm_raw_outputs_run_idx")
+  @@index([stageRunId], map: "llm_raw_outputs_stage_run_idx")
+  @@index([chapterId], map: "llm_raw_outputs_chapter_idx")
+  @@map("llm_raw_outputs")
+}
+
+model ChapterSegment {
+  id             String             @id @default(uuid()) @db.Uuid
+  bookId         String             @map("book_id") @db.Uuid
+  chapterId      String             @map("chapter_id") @db.Uuid
+  runId          String             @map("run_id") @db.Uuid
+  segmentIndex   Int                @map("segment_index")
+  segmentType    ChapterSegmentType @map("segment_type")
+  startOffset    Int                @map("start_offset")
+  endOffset      Int                @map("end_offset")
+  text           String             @db.Text
+  normalizedText String             @map("normalized_text") @db.Text
+  speakerHint    String?            @map("speaker_hint")
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([runId, chapterId, segmentIndex], map: "chapter_segments_run_chapter_index_key")
+  @@index([chapterId, segmentType], map: "chapter_segments_chapter_type_idx")
+  @@map("chapter_segments")
+}
+
+model EvidenceSpan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  bookId              String   @map("book_id") @db.Uuid
+  chapterId           String   @map("chapter_id") @db.Uuid
+  segmentId           String   @map("segment_id") @db.Uuid
+  startOffset         Int      @map("start_offset")
+  endOffset           Int      @map("end_offset")
+  quotedText          String   @map("quoted_text") @db.Text
+  normalizedText      String   @map("normalized_text") @db.Text
+  speakerHint         String?  @map("speaker_hint")
+  narrativeRegionType String   @map("narrative_region_type")
+  createdByRunId      String   @map("created_by_run_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([chapterId, startOffset], map: "evidence_spans_chapter_offset_idx")
+  @@index([segmentId], map: "evidence_spans_segment_idx")
+  @@index([createdByRunId], map: "evidence_spans_run_idx")
+  @@map("evidence_spans")
+}
+
+model EntityMention {
+  id                        String         @id @default(uuid()) @db.Uuid
+  bookId                    String         @map("book_id") @db.Uuid
+  chapterId                 String         @map("chapter_id") @db.Uuid
+  surfaceText               String         @map("surface_text")
+  mentionKind               MentionKind    @map("mention_kind")
+  identityClaim             IdentityClaim? @map("identity_claim")
+  aliasTypeHint             AliasType?     @map("alias_type_hint")
+  speakerPersonaCandidateId String?        @map("speaker_persona_candidate_id") @db.Uuid
+  suspectedResolvesTo       String?        @map("suspected_resolves_to") @db.Uuid
+  evidenceSpanId            String         @map("evidence_span_id") @db.Uuid
+  confidence                Float          @default(0)
+  source                    ClaimSource    @default(AI)
+  runId                     String         @map("run_id") @db.Uuid
+  createdAt                 DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([bookId, chapterId], map: "entity_mentions_book_chapter_idx")
+  @@index([evidenceSpanId], map: "entity_mentions_evidence_idx")
+  @@index([runId], map: "entity_mentions_run_idx")
+  @@map("entity_mentions")
+}
+
+model PersonaCandidate {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  bookId             String                 @map("book_id") @db.Uuid
+  canonicalLabel     String                 @map("canonical_label")
+  candidateStatus    PersonaCandidateStatus @default(OPEN) @map("candidate_status")
+  firstSeenChapterNo Int?                   @map("first_seen_chapter_no")
+  lastSeenChapterNo  Int?                   @map("last_seen_chapter_no")
+  mentionCount       Int                    @default(0) @map("mention_count")
+  evidenceScore      Float                  @default(0) @map("evidence_score")
+  runId              String                 @map("run_id") @db.Uuid
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, candidateStatus], map: "persona_candidates_book_status_idx")
+  @@index([runId], map: "persona_candidates_run_idx")
+  @@map("persona_candidates")
+}
+
+model AliasClaim {
+  id                       String           @id @default(uuid()) @db.Uuid
+  bookId                   String           @map("book_id") @db.Uuid
+  chapterId                String?          @map("chapter_id") @db.Uuid
+  aliasText                String           @map("alias_text")
+  aliasType                AliasType        @map("alias_type")
+  personaCandidateId       String?          @map("persona_candidate_id") @db.Uuid
+  targetPersonaCandidateId String?          @map("target_persona_candidate_id") @db.Uuid
+  claimKind                AliasClaimKind   @map("claim_kind")
+  evidenceSpanIds          String[]         @default([]) @map("evidence_span_ids")
+  confidence               Float            @default(0)
+  reviewState              ClaimReviewState @default(PENDING) @map("review_state")
+  source                   ClaimSource      @default(AI)
+  runId                    String           @map("run_id") @db.Uuid
+  supersedesClaimId        String?          @map("supersedes_claim_id") @db.Uuid
+  derivedFromClaimId       String?          @map("derived_from_claim_id") @db.Uuid
+  createdByUserId          String?          @map("created_by_user_id") @db.Uuid
+  reviewedByUserId         String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt               DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote               String?          @map("review_note") @db.Text
+  createdAt                DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, reviewState], map: "alias_claims_book_state_idx")
+  @@index([personaCandidateId], map: "alias_claims_candidate_idx")
+  @@index([runId], map: "alias_claims_run_idx")
+  @@map("alias_claims")
+}
+
+model EventClaim {
+  id                        String           @id @default(uuid()) @db.Uuid
+  bookId                    String           @map("book_id") @db.Uuid
+  chapterId                 String           @map("chapter_id") @db.Uuid
+  subjectMentionId          String?          @map("subject_mention_id") @db.Uuid
+  subjectPersonaCandidateId String?          @map("subject_persona_candidate_id") @db.Uuid
+  predicate                 String
+  objectText                String?          @map("object_text")
+  objectPersonaCandidateId  String?          @map("object_persona_candidate_id") @db.Uuid
+  locationText              String?          @map("location_text")
+  timeHintId                String?          @map("time_hint_id") @db.Uuid
+  eventCategory             BioCategory      @default(EVENT) @map("event_category")
+  narrativeLens             NarrativeLens    @default(SELF) @map("narrative_lens")
+  evidenceSpanIds           String[]         @default([]) @map("evidence_span_ids")
+  confidence                Float            @default(0)
+  reviewState               ClaimReviewState @default(PENDING) @map("review_state")
+  source                    ClaimSource      @default(AI)
+  runId                     String           @map("run_id") @db.Uuid
+  supersedesClaimId         String?          @map("supersedes_claim_id") @db.Uuid
+  derivedFromClaimId        String?          @map("derived_from_claim_id") @db.Uuid
+  createdByUserId           String?          @map("created_by_user_id") @db.Uuid
+  reviewedByUserId          String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt                DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote                String?          @map("review_note") @db.Text
+  createdAt                 DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, chapterId, reviewState], map: "event_claims_book_chapter_state_idx")
+  @@index([subjectPersonaCandidateId], map: "event_claims_subject_candidate_idx")
+  @@index([timeHintId], map: "event_claims_time_hint_idx")
+  @@map("event_claims")
+}
+
+model RelationClaim {
+  id                       String             @id @default(uuid()) @db.Uuid
+  bookId                   String             @map("book_id") @db.Uuid
+  chapterId                String             @map("chapter_id") @db.Uuid
+  sourceMentionId          String?            @map("source_mention_id") @db.Uuid
+  targetMentionId          String?            @map("target_mention_id") @db.Uuid
+  sourcePersonaCandidateId String?            @map("source_persona_candidate_id") @db.Uuid
+  targetPersonaCandidateId String?            @map("target_persona_candidate_id") @db.Uuid
+  relationTypeKey          String             @map("relation_type_key")
+  relationLabel            String             @map("relation_label")
+  relationTypeSource       RelationTypeSource @map("relation_type_source")
+  direction                RelationDirection
+  effectiveChapterStart    Int?               @map("effective_chapter_start")
+  effectiveChapterEnd      Int?               @map("effective_chapter_end")
+  timeHintId               String?            @map("time_hint_id") @db.Uuid
+  evidenceSpanIds          String[]           @default([]) @map("evidence_span_ids")
+  confidence               Float              @default(0)
+  reviewState              ClaimReviewState   @default(PENDING) @map("review_state")
+  source                   ClaimSource        @default(AI)
+  runId                    String             @map("run_id") @db.Uuid
+  supersedesClaimId        String?            @map("supersedes_claim_id") @db.Uuid
+  derivedFromClaimId       String?            @map("derived_from_claim_id") @db.Uuid
+  createdByUserId          String?            @map("created_by_user_id") @db.Uuid
+  reviewedByUserId         String?            @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt               DateTime?          @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote               String?            @map("review_note") @db.Text
+  createdAt                DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, chapterId, reviewState], map: "relation_claims_book_chapter_state_idx")
+  @@index([sourcePersonaCandidateId, targetPersonaCandidateId], map: "relation_claims_candidate_pair_idx")
+  @@index([relationTypeKey], map: "relation_claims_type_key_idx")
+  @@map("relation_claims")
+}
+
+model TimeClaim {
+  id                  String           @id @default(uuid()) @db.Uuid
+  bookId              String           @map("book_id") @db.Uuid
+  chapterId           String           @map("chapter_id") @db.Uuid
+  rawTimeText         String           @map("raw_time_text")
+  timeType            TimeType         @map("time_type")
+  normalizedLabel     String           @map("normalized_label")
+  relativeOrderWeight Float?           @map("relative_order_weight")
+  chapterRangeStart   Int?             @map("chapter_range_start")
+  chapterRangeEnd     Int?             @map("chapter_range_end")
+  evidenceSpanIds     String[]         @default([]) @map("evidence_span_ids")
+  confidence          Float            @default(0)
+  reviewState         ClaimReviewState @default(PENDING) @map("review_state")
+  source              ClaimSource      @default(AI)
+  runId               String           @map("run_id") @db.Uuid
+  supersedesClaimId   String?          @map("supersedes_claim_id") @db.Uuid
+  derivedFromClaimId  String?          @map("derived_from_claim_id") @db.Uuid
+  createdByUserId     String?          @map("created_by_user_id") @db.Uuid
+  reviewedByUserId    String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt          DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote          String?          @map("review_note") @db.Text
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, chapterId, reviewState], map: "time_claims_book_chapter_state_idx")
+  @@index([timeType], map: "time_claims_type_idx")
+  @@index([runId], map: "time_claims_run_idx")
+  @@map("time_claims")
+}
+
+model IdentityResolutionClaim {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  bookId             String                 @map("book_id") @db.Uuid
+  chapterId          String?                @map("chapter_id") @db.Uuid
+  mentionId          String                 @map("mention_id") @db.Uuid
+  personaCandidateId String?                @map("persona_candidate_id") @db.Uuid
+  resolvedPersonaId  String?                @map("resolved_persona_id") @db.Uuid
+  resolutionKind     IdentityResolutionKind @map("resolution_kind")
+  rationale          String?                @db.Text
+  evidenceSpanIds    String[]               @default([]) @map("evidence_span_ids")
+  confidence         Float                  @default(0)
+  reviewState        ClaimReviewState       @default(PENDING) @map("review_state")
+  source             ClaimSource            @default(AI)
+  runId              String                 @map("run_id") @db.Uuid
+  supersedesClaimId  String?                @map("supersedes_claim_id") @db.Uuid
+  derivedFromClaimId String?                @map("derived_from_claim_id") @db.Uuid
+  createdByUserId    String?                @map("created_by_user_id") @db.Uuid
+  reviewedByUserId   String?                @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt         DateTime?              @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote         String?                @map("review_note") @db.Text
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, reviewState], map: "identity_resolution_claims_book_state_idx")
+  @@index([mentionId], map: "identity_resolution_claims_mention_idx")
+  @@index([runId], map: "identity_resolution_claims_run_idx")
+  @@map("identity_resolution_claims")
+}
+
+model ConflictFlag {
+  id               String           @id @default(uuid()) @db.Uuid
+  bookId           String           @map("book_id") @db.Uuid
+  chapterId        String?          @map("chapter_id") @db.Uuid
+  runId            String           @map("run_id") @db.Uuid
+  conflictType     ConflictType     @map("conflict_type")
+  relatedClaimKind ClaimKind?       @map("related_claim_kind")
+  relatedClaimIds  String[]         @default([]) @map("related_claim_ids")
+  summary          String           @db.Text
+  evidenceSpanIds  String[]         @default([]) @map("evidence_span_ids")
+  reviewState      ClaimReviewState @default(CONFLICTED) @map("review_state")
+  source           ClaimSource      @default(RULE)
+  reviewedByUserId String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt       DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote       String?          @map("review_note") @db.Text
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, reviewState], map: "conflict_flags_book_state_idx")
+  @@index([runId], map: "conflict_flags_run_idx")
+  @@index([conflictType], map: "conflict_flags_type_idx")
+  @@map("conflict_flags")
+}
+
+model PersonaAlias {
+  id            String    @id @default(uuid()) @db.Uuid
+  bookId        String    @map("book_id") @db.Uuid
+  personaId     String    @map("persona_id") @db.Uuid
+  aliasText     String    @map("alias_text")
+  aliasType     AliasType @map("alias_type")
+  sourceClaimId String?   @map("source_claim_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([bookId, personaId, aliasText], map: "persona_aliases_book_persona_alias_key")
+  @@index([personaId], map: "persona_aliases_persona_idx")
+  @@map("persona_aliases")
+}
+
+model PersonaChapterFact {
+  id                 String   @id @default(uuid()) @db.Uuid
+  bookId             String   @map("book_id") @db.Uuid
+  personaId          String   @map("persona_id") @db.Uuid
+  chapterId          String   @map("chapter_id") @db.Uuid
+  chapterNo          Int      @map("chapter_no")
+  eventCount         Int      @default(0) @map("event_count")
+  relationCount      Int      @default(0) @map("relation_count")
+  conflictCount      Int      @default(0) @map("conflict_count")
+  reviewStateSummary Json     @map("review_state_summary")
+  latestUpdatedAt    DateTime @map("latest_updated_at") @db.Timestamptz(6)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([bookId, personaId, chapterId], map: "persona_chapter_facts_book_persona_chapter_key")
+  @@index([bookId, chapterNo], map: "persona_chapter_facts_book_chapter_no_idx")
+  @@index([personaId, chapterNo], map: "persona_chapter_facts_persona_chapter_no_idx")
+  @@map("persona_chapter_facts")
+}
+
+model PersonaTimeFact {
+  id                 String   @id @default(uuid()) @db.Uuid
+  bookId             String   @map("book_id") @db.Uuid
+  personaId          String   @map("persona_id") @db.Uuid
+  timeLabel          String   @map("time_label")
+  timeSortKey        Float?   @map("time_sort_key")
+  chapterRangeStart  Int?     @map("chapter_range_start")
+  chapterRangeEnd    Int?     @map("chapter_range_end")
+  eventCount         Int      @default(0) @map("event_count")
+  relationCount      Int      @default(0) @map("relation_count")
+  sourceTimeClaimIds String[] @default([]) @map("source_time_claim_ids")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, personaId], map: "persona_time_facts_book_persona_idx")
+  @@index([bookId, timeSortKey], map: "persona_time_facts_book_sort_key_idx")
+  @@map("persona_time_facts")
+}
+
+model RelationshipEdge {
+  id                    String             @id @default(uuid()) @db.Uuid
+  bookId                String             @map("book_id") @db.Uuid
+  sourcePersonaId       String             @map("source_persona_id") @db.Uuid
+  targetPersonaId       String             @map("target_persona_id") @db.Uuid
+  relationTypeKey       String             @map("relation_type_key")
+  relationLabel         String             @map("relation_label")
+  relationTypeSource    RelationTypeSource @map("relation_type_source")
+  direction             RelationDirection
+  effectiveChapterStart Int?               @map("effective_chapter_start")
+  effectiveChapterEnd   Int?               @map("effective_chapter_end")
+  sourceClaimIds        String[]           @default([]) @map("source_claim_ids")
+  latestClaimId         String?            @map("latest_claim_id") @db.Uuid
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, sourcePersonaId, targetPersonaId], map: "relationship_edges_book_pair_idx")
+  @@index([relationTypeKey], map: "relationship_edges_type_key_idx")
+  @@map("relationship_edges")
+}
+
+model TimelineEvent {
+  id             String        @id @default(uuid()) @db.Uuid
+  bookId         String        @map("book_id") @db.Uuid
+  personaId      String        @map("persona_id") @db.Uuid
+  chapterId      String?       @map("chapter_id") @db.Uuid
+  chapterNo      Int?          @map("chapter_no")
+  timeLabel      String?       @map("time_label")
+  eventLabel     String        @map("event_label")
+  narrativeLens  NarrativeLens @default(SELF) @map("narrative_lens")
+  sourceClaimIds String[]      @default([]) @map("source_claim_ids")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([bookId, personaId, chapterNo], map: "timeline_events_book_persona_chapter_idx")
+  @@index([bookId, timeLabel], map: "timeline_events_book_time_label_idx")
+  @@map("timeline_events")
+}
+
+model ReviewAuditLog {
+  id              String       @id @default(uuid()) @db.Uuid
+  bookId          String       @map("book_id") @db.Uuid
+  claimKind       ClaimKind?   @map("claim_kind")
+  claimId         String?      @map("claim_id") @db.Uuid
+  personaId       String?      @map("persona_id") @db.Uuid
+  action          ReviewAction
+  actorUserId     String?      @map("actor_user_id") @db.Uuid
+  beforeState     Json?        @map("before_state")
+  afterState      Json?        @map("after_state")
+  note            String?      @db.Text
+  evidenceSpanIds String[]     @default([]) @map("evidence_span_ids")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([bookId, createdAt], map: "review_audit_logs_book_created_at_idx")
+  @@index([claimKind, claimId], map: "review_audit_logs_claim_idx")
+  @@index([personaId], map: "review_audit_logs_persona_idx")
+  @@map("review_audit_logs")
 }

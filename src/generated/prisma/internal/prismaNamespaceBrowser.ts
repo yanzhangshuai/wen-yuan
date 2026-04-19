@@ -82,7 +82,26 @@ export const ModelName = {
   PersonaMention: 'PersonaMention',
   ChapterPreprocessResult: 'ChapterPreprocessResult',
   PromptTemplateVariant: 'PromptTemplateVariant',
-  BookTypeExample: 'BookTypeExample'
+  BookTypeExample: 'BookTypeExample',
+  AnalysisRun: 'AnalysisRun',
+  AnalysisStageRun: 'AnalysisStageRun',
+  LlmRawOutput: 'LlmRawOutput',
+  ChapterSegment: 'ChapterSegment',
+  EvidenceSpan: 'EvidenceSpan',
+  EntityMention: 'EntityMention',
+  PersonaCandidate: 'PersonaCandidate',
+  AliasClaim: 'AliasClaim',
+  EventClaim: 'EventClaim',
+  RelationClaim: 'RelationClaim',
+  TimeClaim: 'TimeClaim',
+  IdentityResolutionClaim: 'IdentityResolutionClaim',
+  ConflictFlag: 'ConflictFlag',
+  PersonaAlias: 'PersonaAlias',
+  PersonaChapterFact: 'PersonaChapterFact',
+  PersonaTimeFact: 'PersonaTimeFact',
+  RelationshipEdge: 'RelationshipEdge',
+  TimelineEvent: 'TimelineEvent',
+  ReviewAuditLog: 'ReviewAuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -676,6 +695,409 @@ export const BookTypeExampleScalarFieldEnum = {
 } as const
 
 export type BookTypeExampleScalarFieldEnum = (typeof BookTypeExampleScalarFieldEnum)[keyof typeof BookTypeExampleScalarFieldEnum]
+
+
+export const AnalysisRunScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  trigger: 'trigger',
+  scope: 'scope',
+  status: 'status',
+  currentStageKey: 'currentStageKey',
+  requestedByUserId: 'requestedByUserId',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  errorMessage: 'errorMessage',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AnalysisRunScalarFieldEnum = (typeof AnalysisRunScalarFieldEnum)[keyof typeof AnalysisRunScalarFieldEnum]
+
+
+export const AnalysisStageRunScalarFieldEnum = {
+  id: 'id',
+  runId: 'runId',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  stageKey: 'stageKey',
+  status: 'status',
+  attempt: 'attempt',
+  inputHash: 'inputHash',
+  outputHash: 'outputHash',
+  errorMessage: 'errorMessage',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AnalysisStageRunScalarFieldEnum = (typeof AnalysisStageRunScalarFieldEnum)[keyof typeof AnalysisStageRunScalarFieldEnum]
+
+
+export const LlmRawOutputScalarFieldEnum = {
+  id: 'id',
+  runId: 'runId',
+  stageRunId: 'stageRunId',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  provider: 'provider',
+  model: 'model',
+  requestPayload: 'requestPayload',
+  responseText: 'responseText',
+  responseJson: 'responseJson',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  durationMs: 'durationMs',
+  createdAt: 'createdAt'
+} as const
+
+export type LlmRawOutputScalarFieldEnum = (typeof LlmRawOutputScalarFieldEnum)[keyof typeof LlmRawOutputScalarFieldEnum]
+
+
+export const ChapterSegmentScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  runId: 'runId',
+  segmentIndex: 'segmentIndex',
+  segmentType: 'segmentType',
+  startOffset: 'startOffset',
+  endOffset: 'endOffset',
+  text: 'text',
+  normalizedText: 'normalizedText',
+  speakerHint: 'speakerHint',
+  createdAt: 'createdAt'
+} as const
+
+export type ChapterSegmentScalarFieldEnum = (typeof ChapterSegmentScalarFieldEnum)[keyof typeof ChapterSegmentScalarFieldEnum]
+
+
+export const EvidenceSpanScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  segmentId: 'segmentId',
+  startOffset: 'startOffset',
+  endOffset: 'endOffset',
+  quotedText: 'quotedText',
+  normalizedText: 'normalizedText',
+  speakerHint: 'speakerHint',
+  narrativeRegionType: 'narrativeRegionType',
+  createdByRunId: 'createdByRunId',
+  createdAt: 'createdAt'
+} as const
+
+export type EvidenceSpanScalarFieldEnum = (typeof EvidenceSpanScalarFieldEnum)[keyof typeof EvidenceSpanScalarFieldEnum]
+
+
+export const EntityMentionScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  surfaceText: 'surfaceText',
+  mentionKind: 'mentionKind',
+  identityClaim: 'identityClaim',
+  aliasTypeHint: 'aliasTypeHint',
+  speakerPersonaCandidateId: 'speakerPersonaCandidateId',
+  suspectedResolvesTo: 'suspectedResolvesTo',
+  evidenceSpanId: 'evidenceSpanId',
+  confidence: 'confidence',
+  source: 'source',
+  runId: 'runId',
+  createdAt: 'createdAt'
+} as const
+
+export type EntityMentionScalarFieldEnum = (typeof EntityMentionScalarFieldEnum)[keyof typeof EntityMentionScalarFieldEnum]
+
+
+export const PersonaCandidateScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  canonicalLabel: 'canonicalLabel',
+  candidateStatus: 'candidateStatus',
+  firstSeenChapterNo: 'firstSeenChapterNo',
+  lastSeenChapterNo: 'lastSeenChapterNo',
+  mentionCount: 'mentionCount',
+  evidenceScore: 'evidenceScore',
+  runId: 'runId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PersonaCandidateScalarFieldEnum = (typeof PersonaCandidateScalarFieldEnum)[keyof typeof PersonaCandidateScalarFieldEnum]
+
+
+export const AliasClaimScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  aliasText: 'aliasText',
+  aliasType: 'aliasType',
+  personaCandidateId: 'personaCandidateId',
+  targetPersonaCandidateId: 'targetPersonaCandidateId',
+  claimKind: 'claimKind',
+  evidenceSpanIds: 'evidenceSpanIds',
+  confidence: 'confidence',
+  reviewState: 'reviewState',
+  source: 'source',
+  runId: 'runId',
+  supersedesClaimId: 'supersedesClaimId',
+  derivedFromClaimId: 'derivedFromClaimId',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AliasClaimScalarFieldEnum = (typeof AliasClaimScalarFieldEnum)[keyof typeof AliasClaimScalarFieldEnum]
+
+
+export const EventClaimScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  subjectMentionId: 'subjectMentionId',
+  subjectPersonaCandidateId: 'subjectPersonaCandidateId',
+  predicate: 'predicate',
+  objectText: 'objectText',
+  objectPersonaCandidateId: 'objectPersonaCandidateId',
+  locationText: 'locationText',
+  timeHintId: 'timeHintId',
+  eventCategory: 'eventCategory',
+  narrativeLens: 'narrativeLens',
+  evidenceSpanIds: 'evidenceSpanIds',
+  confidence: 'confidence',
+  reviewState: 'reviewState',
+  source: 'source',
+  runId: 'runId',
+  supersedesClaimId: 'supersedesClaimId',
+  derivedFromClaimId: 'derivedFromClaimId',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EventClaimScalarFieldEnum = (typeof EventClaimScalarFieldEnum)[keyof typeof EventClaimScalarFieldEnum]
+
+
+export const RelationClaimScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  sourceMentionId: 'sourceMentionId',
+  targetMentionId: 'targetMentionId',
+  sourcePersonaCandidateId: 'sourcePersonaCandidateId',
+  targetPersonaCandidateId: 'targetPersonaCandidateId',
+  relationTypeKey: 'relationTypeKey',
+  relationLabel: 'relationLabel',
+  relationTypeSource: 'relationTypeSource',
+  direction: 'direction',
+  effectiveChapterStart: 'effectiveChapterStart',
+  effectiveChapterEnd: 'effectiveChapterEnd',
+  timeHintId: 'timeHintId',
+  evidenceSpanIds: 'evidenceSpanIds',
+  confidence: 'confidence',
+  reviewState: 'reviewState',
+  source: 'source',
+  runId: 'runId',
+  supersedesClaimId: 'supersedesClaimId',
+  derivedFromClaimId: 'derivedFromClaimId',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationClaimScalarFieldEnum = (typeof RelationClaimScalarFieldEnum)[keyof typeof RelationClaimScalarFieldEnum]
+
+
+export const TimeClaimScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  rawTimeText: 'rawTimeText',
+  timeType: 'timeType',
+  normalizedLabel: 'normalizedLabel',
+  relativeOrderWeight: 'relativeOrderWeight',
+  chapterRangeStart: 'chapterRangeStart',
+  chapterRangeEnd: 'chapterRangeEnd',
+  evidenceSpanIds: 'evidenceSpanIds',
+  confidence: 'confidence',
+  reviewState: 'reviewState',
+  source: 'source',
+  runId: 'runId',
+  supersedesClaimId: 'supersedesClaimId',
+  derivedFromClaimId: 'derivedFromClaimId',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TimeClaimScalarFieldEnum = (typeof TimeClaimScalarFieldEnum)[keyof typeof TimeClaimScalarFieldEnum]
+
+
+export const IdentityResolutionClaimScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  mentionId: 'mentionId',
+  personaCandidateId: 'personaCandidateId',
+  resolvedPersonaId: 'resolvedPersonaId',
+  resolutionKind: 'resolutionKind',
+  rationale: 'rationale',
+  evidenceSpanIds: 'evidenceSpanIds',
+  confidence: 'confidence',
+  reviewState: 'reviewState',
+  source: 'source',
+  runId: 'runId',
+  supersedesClaimId: 'supersedesClaimId',
+  derivedFromClaimId: 'derivedFromClaimId',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type IdentityResolutionClaimScalarFieldEnum = (typeof IdentityResolutionClaimScalarFieldEnum)[keyof typeof IdentityResolutionClaimScalarFieldEnum]
+
+
+export const ConflictFlagScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  runId: 'runId',
+  conflictType: 'conflictType',
+  relatedClaimKind: 'relatedClaimKind',
+  relatedClaimIds: 'relatedClaimIds',
+  summary: 'summary',
+  evidenceSpanIds: 'evidenceSpanIds',
+  reviewState: 'reviewState',
+  source: 'source',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ConflictFlagScalarFieldEnum = (typeof ConflictFlagScalarFieldEnum)[keyof typeof ConflictFlagScalarFieldEnum]
+
+
+export const PersonaAliasScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  personaId: 'personaId',
+  aliasText: 'aliasText',
+  aliasType: 'aliasType',
+  sourceClaimId: 'sourceClaimId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PersonaAliasScalarFieldEnum = (typeof PersonaAliasScalarFieldEnum)[keyof typeof PersonaAliasScalarFieldEnum]
+
+
+export const PersonaChapterFactScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  personaId: 'personaId',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  eventCount: 'eventCount',
+  relationCount: 'relationCount',
+  conflictCount: 'conflictCount',
+  reviewStateSummary: 'reviewStateSummary',
+  latestUpdatedAt: 'latestUpdatedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PersonaChapterFactScalarFieldEnum = (typeof PersonaChapterFactScalarFieldEnum)[keyof typeof PersonaChapterFactScalarFieldEnum]
+
+
+export const PersonaTimeFactScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  personaId: 'personaId',
+  timeLabel: 'timeLabel',
+  timeSortKey: 'timeSortKey',
+  chapterRangeStart: 'chapterRangeStart',
+  chapterRangeEnd: 'chapterRangeEnd',
+  eventCount: 'eventCount',
+  relationCount: 'relationCount',
+  sourceTimeClaimIds: 'sourceTimeClaimIds',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PersonaTimeFactScalarFieldEnum = (typeof PersonaTimeFactScalarFieldEnum)[keyof typeof PersonaTimeFactScalarFieldEnum]
+
+
+export const RelationshipEdgeScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  sourcePersonaId: 'sourcePersonaId',
+  targetPersonaId: 'targetPersonaId',
+  relationTypeKey: 'relationTypeKey',
+  relationLabel: 'relationLabel',
+  relationTypeSource: 'relationTypeSource',
+  direction: 'direction',
+  effectiveChapterStart: 'effectiveChapterStart',
+  effectiveChapterEnd: 'effectiveChapterEnd',
+  sourceClaimIds: 'sourceClaimIds',
+  latestClaimId: 'latestClaimId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipEdgeScalarFieldEnum = (typeof RelationshipEdgeScalarFieldEnum)[keyof typeof RelationshipEdgeScalarFieldEnum]
+
+
+export const TimelineEventScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  personaId: 'personaId',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  timeLabel: 'timeLabel',
+  eventLabel: 'eventLabel',
+  narrativeLens: 'narrativeLens',
+  sourceClaimIds: 'sourceClaimIds',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TimelineEventScalarFieldEnum = (typeof TimelineEventScalarFieldEnum)[keyof typeof TimelineEventScalarFieldEnum]
+
+
+export const ReviewAuditLogScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  claimKind: 'claimKind',
+  claimId: 'claimId',
+  personaId: 'personaId',
+  action: 'action',
+  actorUserId: 'actorUserId',
+  beforeState: 'beforeState',
+  afterState: 'afterState',
+  note: 'note',
+  evidenceSpanIds: 'evidenceSpanIds',
+  createdAt: 'createdAt'
+} as const
+
+export type ReviewAuditLogScalarFieldEnum = (typeof ReviewAuditLogScalarFieldEnum)[keyof typeof ReviewAuditLogScalarFieldEnum]
 
 
 export const SortOrder = {
