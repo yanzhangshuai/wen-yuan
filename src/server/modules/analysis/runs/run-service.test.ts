@@ -25,7 +25,7 @@ function createPrismaMock() {
 describe("analysis run service", () => {
   it("createJobRun creates RUNNING run with expected fields", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     const result = await service.createJobRun({
       jobId  : "job-1",
@@ -53,7 +53,7 @@ describe("analysis run service", () => {
 
   it("markCurrentStage only updates currentStageKey", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await service.markCurrentStage("run-1", "stage-a");
 
@@ -65,7 +65,7 @@ describe("analysis run service", () => {
 
   it("succeedRun summarizes llm output and writes tokens/cost to AnalysisRun", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await service.succeedRun("run-1");
 
@@ -93,37 +93,63 @@ describe("analysis run service", () => {
     });
   });
 
-  it("failRun truncates error message to 1000 chars", async () => {
+  it("failRun truncates error message to 1000 chars and persists usage summary", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
     const longError = new Error("x".repeat(2000));
 
     await service.failRun("run-1", longError);
 
+    expect(prismaMock.llmRawOutput.aggregate).toHaveBeenCalledWith({
+      where: { runId: "run-1" },
+      _sum : {
+        promptTokens       : true,
+        completionTokens   : true,
+        totalTokens        : true,
+        estimatedCostMicros: true
+      }
+    });
     expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
       where: { id: "run-1" },
       data : expect.objectContaining({
-        status         : AnalysisJobStatus.FAILED,
-        currentStageKey: null,
-        finishedAt     : expect.any(Date),
-        errorMessage   : "x".repeat(1000)
+        status             : AnalysisJobStatus.FAILED,
+        currentStageKey    : null,
+        finishedAt         : expect.any(Date),
+        errorMessage       : "x".repeat(1000),
+        promptTokens       : 120,
+        completionTokens   : 80,
+        totalTokens        : 200,
+        estimatedCostMicros: BigInt(4500)
       })
     });
   });
 
-  it("cancelRun marks run as CANCELED", async () => {
+  it("cancelRun marks run as CANCELED and persists usage summary", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await service.cancelRun("run-1");
 
+    expect(prismaMock.llmRawOutput.aggregate).toHaveBeenCalledWith({
+      where: { runId: "run-1" },
+      _sum : {
+        promptTokens       : true,
+        completionTokens   : true,
+        totalTokens        : true,
+        estimatedCostMicros: true
+      }
+    });
     expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
       where: { id: "run-1" },
       data : expect.objectContaining({
-        status         : AnalysisJobStatus.CANCELED,
-        currentStageKey: null,
-        errorMessage   : null,
-        finishedAt     : expect.any(Date)
+        status             : AnalysisJobStatus.CANCELED,
+        currentStageKey    : null,
+        errorMessage       : null,
+        finishedAt         : expect.any(Date),
+        promptTokens       : 120,
+        completionTokens   : 80,
+        totalTokens        : 200,
+        estimatedCostMicros: BigInt(4500)
       })
     });
   });
@@ -133,7 +159,7 @@ describe("analysis run service", () => {
       llmRawOutput: {
         aggregate: vi.fn()
       }
-    } as never);
+    });
 
     await expect(service.createJobRun({
       jobId  : "job-1",
@@ -149,7 +175,7 @@ describe("analysis run service", () => {
         create: vi.fn(),
         update: vi.fn()
       }
-    } as never);
+    });
 
     await expect(service.summarizeRun("run-1")).resolves.toEqual({
       promptTokens       : 0,
@@ -169,7 +195,7 @@ describe("analysis run service", () => {
         estimatedCostMicros: 34
       }
     });
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await expect(service.summarizeRun("run-2")).resolves.toEqual({
       promptTokens       : 0,
@@ -179,23 +205,23 @@ describe("analysis run service", () => {
     });
   });
 
-  it("failRun safely stringifies unknown error payload", async () => {
+  it("failRun serializes unknown error payload into JSON string when possible", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await service.failRun("run-1", { code: "E_UNKNOWN" });
 
     expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
       where: { id: "run-1" },
       data : expect.objectContaining({
-        errorMessage: "[object Object]"
+        errorMessage: "{\"code\":\"E_UNKNOWN\"}"
       })
     });
   });
 
   it("failRun uses raw string message as-is", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await service.failRun("run-1", "plain-message");
 
@@ -209,7 +235,7 @@ describe("analysis run service", () => {
 
   it("failRun falls back to String(error) when JSON.stringify throws", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
     const circular: { self?: unknown } = {};
     circular.self = circular;
 
@@ -235,7 +261,7 @@ describe("analysis run service", () => {
           }
         })
       }
-    } as never);
+    });
 
     await expect(service.markCurrentStage("run-1", "stage-b")).resolves.toBeUndefined();
     await expect(service.succeedRun("run-1")).resolves.toBeUndefined();
@@ -249,7 +275,7 @@ describe("analysis run service", () => {
       analysisRun: {
         create
       }
-    } as never);
+    });
 
     await expect(service.createJobRun({
       jobId  : "job-1",
@@ -266,7 +292,7 @@ describe("analysis run service", () => {
       llmRawOutput: {
         aggregate: vi.fn()
       }
-    } as never);
+    });
 
     const run = await service.createJobRun({
       jobId  : "job-1",
@@ -279,7 +305,7 @@ describe("analysis run service", () => {
 
   it("returns zero summary and no-op updates for null runId", async () => {
     const prismaMock = createPrismaMock();
-    const service = createAnalysisRunService(prismaMock as never);
+    const service = createAnalysisRunService(prismaMock);
 
     await expect(service.markCurrentStage(null, "stage-z")).resolves.toBeUndefined();
     await expect(service.summarizeRun(null)).resolves.toEqual({

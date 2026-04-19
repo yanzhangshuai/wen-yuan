@@ -30,20 +30,28 @@ export interface AnalysisRunSummary {
 
 type AnalysisRunDelegate = NonNullable<PrismaClient["analysisRun"]>;
 type RawOutputDelegate = NonNullable<PrismaClient["llmRawOutput"]>;
+type AnalysisRunCreateDelegate = Pick<AnalysisRunDelegate, "create">;
+type AnalysisRunUpdateDelegate = Pick<AnalysisRunDelegate, "update">;
+type AnalysisRunServiceClient = {
+  analysisRun? : Partial<AnalysisRunCreateDelegate & AnalysisRunUpdateDelegate>;
+  llmRawOutput?: Partial<Pick<RawOutputDelegate, "aggregate">>;
+};
 
 function hasAnalysisRunCreateDelegate(
-  client: PrismaClient
-): client is PrismaClient & { analysisRun: Pick<AnalysisRunDelegate, "create"> } {
+  client: AnalysisRunServiceClient
+): client is AnalysisRunServiceClient & { analysisRun: AnalysisRunCreateDelegate } {
   return typeof client.analysisRun?.create === "function";
 }
 
 function hasAnalysisRunUpdateDelegate(
-  client: PrismaClient
-): client is PrismaClient & { analysisRun: Pick<AnalysisRunDelegate, "update"> } {
+  client: AnalysisRunServiceClient
+): client is AnalysisRunServiceClient & { analysisRun: AnalysisRunUpdateDelegate } {
   return typeof client.analysisRun?.update === "function";
 }
 
-function hasRawOutputDelegate(client: PrismaClient): client is PrismaClient & { llmRawOutput: RawOutputDelegate } {
+function hasRawOutputDelegate(
+  client: AnalysisRunServiceClient
+): client is AnalysisRunServiceClient & { llmRawOutput: Pick<RawOutputDelegate, "aggregate"> } {
   return typeof client.llmRawOutput?.aggregate === "function";
 }
 
@@ -51,6 +59,19 @@ function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message.slice(0, 1000);
   }
+  if (typeof error === "string") {
+    return error.slice(0, 1000);
+  }
+
+  try {
+    const serialized = JSON.stringify(error);
+    if (typeof serialized === "string") {
+      return serialized.slice(0, 1000);
+    }
+  } catch {
+    // no-op: fallback to String(error)
+  }
+
   return String(error).slice(0, 1000);
 }
 
@@ -68,7 +89,7 @@ function normalizeBigIntSum(value: bigint | number | null | undefined): bigint {
   return BigInt(0);
 }
 
-export function createAnalysisRunService(prismaClient: PrismaClient = prisma) {
+export function createAnalysisRunService(prismaClient: AnalysisRunServiceClient = prisma) {
   async function createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun> {
     if (!hasAnalysisRunCreateDelegate(prismaClient)) {
       return { id: null };
@@ -159,15 +180,20 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma) {
       return;
     }
 
+    const summary = await summarizeRun(runId);
     const errorMessage = toErrorMessage(error);
 
     await prismaClient.analysisRun.update({
       where: { id: runId },
       data : {
-        status         : AnalysisJobStatus.FAILED,
-        currentStageKey: null,
-        finishedAt     : new Date(),
-        errorMessage
+        status             : AnalysisJobStatus.FAILED,
+        currentStageKey    : null,
+        finishedAt         : new Date(),
+        errorMessage,
+        promptTokens       : summary.promptTokens,
+        completionTokens   : summary.completionTokens,
+        totalTokens        : summary.totalTokens,
+        estimatedCostMicros: summary.estimatedCostMicros
       }
     });
   }
@@ -177,13 +203,19 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma) {
       return;
     }
 
+    const summary = await summarizeRun(runId);
+
     await prismaClient.analysisRun.update({
       where: { id: runId },
       data : {
-        status         : AnalysisJobStatus.CANCELED,
-        currentStageKey: null,
-        errorMessage   : null,
-        finishedAt     : new Date()
+        status             : AnalysisJobStatus.CANCELED,
+        currentStageKey    : null,
+        errorMessage       : null,
+        finishedAt         : new Date(),
+        promptTokens       : summary.promptTokens,
+        completionTokens   : summary.completionTokens,
+        totalTokens        : summary.totalTokens,
+        estimatedCostMicros: summary.estimatedCostMicros
       }
     });
   }
