@@ -108,7 +108,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T00: `docs/superpowers/tasks/2026-04-18-evidence-review/00-umbrella.md`
 - [x] T01: `docs/superpowers/tasks/2026-04-18-evidence-review/01-schema-and-state-foundation.md`
 - [x] T02: `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`
-- [ ] T03: `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
+- [x] T03: `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
 - [ ] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
 - [ ] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
 - [ ] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
@@ -179,3 +179,11 @@ Append one entry after each task:
 - Result: original-text-first evidence helpers are in place for offset lookup, span validation, quote reconstruction, jump metadata, and persistence access without introducing UI-specific logic into the server module.
 - Follow-up risks: idempotent single-span writes still rely on read-before-create natural-key checks because `EvidenceSpan` has no schema-level unique constraint yet; later claim write paths must remain tolerant of duplicate historical spans until that constraint is explicitly approved.
 - Next task: T03 `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
+
+### T03 Completion - 2026-04-19
+
+- Changed files: `src/server/modules/analysis/claims/claim-schemas.ts`, `src/server/modules/analysis/claims/claim-schemas.test.ts`, `src/server/modules/analysis/claims/claim-repository.ts`, `src/server/modules/analysis/claims/claim-repository.test.ts`, `src/server/modules/analysis/claims/claim-write-service.ts`, `src/server/modules/analysis/claims/claim-write-service.test.ts`, `src/server/modules/analysis/claims/manual-override.ts`, `src/server/modules/analysis/claims/manual-override.test.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm test src/server/modules/analysis/claims/claim-schemas.test.ts`, `pnpm test src/server/modules/analysis/claims/claim-repository.test.ts`, `pnpm test src/server/modules/analysis/claims/claim-schemas.test.ts src/server/modules/analysis/claims/claim-write-service.test.ts`, `pnpm test src/server/modules/analysis/claims/claim-schemas.test.ts src/server/modules/analysis/claims/manual-override.test.ts`, `pnpm test src/server/modules/analysis/claims`, `pnpm type-check`
+- Result: claim validation, stage-aware rerun replacement, reviewable claim updates, and manual override lineage now flow through one shared contract layer before any later stage or review API touches the claim tables.
+- Follow-up risks: stage ownership remains encoded in repository/service logic rather than schema constraints, so later extraction and review tasks must keep using this contract layer or idempotent reruns and manual supersede semantics can drift.
+- Next task: T04 `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`

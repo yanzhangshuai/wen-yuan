@@ -57,5 +57,21 @@ pnpm type-check
 
 ## Execution Record
 
-No execution recorded yet.
-
+- Status: Completed
+- Branch: `feat/t03-claim-storage-contracts`
+- Completed after T02 text and evidence layer.
+- Implemented shared claim DTO schemas, stage-aware replacement repository helpers, validated write-service orchestration, and atomic manual override helpers with lineage preservation plus explicit transaction-boundary assertions.
+- Validation:
+  - `pnpm test src/server/modules/analysis/claims/claim-schemas.test.ts`
+  - `pnpm test src/server/modules/analysis/claims/claim-repository.test.ts`
+  - `pnpm test src/server/modules/analysis/claims/claim-schemas.test.ts src/server/modules/analysis/claims/claim-write-service.test.ts`
+  - `pnpm test src/server/modules/analysis/claims/claim-schemas.test.ts src/server/modules/analysis/claims/manual-override.test.ts`
+  - `pnpm test src/server/modules/analysis/claims`
+  - `pnpm type-check`
+- Commits:
+  - `537c5b1` `feat: add claim schema contracts`
+  - `b66b739` `feat: add claim repository replacement helpers`
+  - `1e6333f` `feat: add claim write service`
+  - `99353ef` `feat: add manual claim override helpers`
+  - `05ee91e` `test: enforce manual override transaction boundary`
+- Follow-up risks: stage ownership and rerun replacement rules live in the contract layer rather than the database schema. Later Stage A/A+/B/B.5/C and review mutation tasks must keep using this repository/service path instead of writing claim tables directly, or rerun idempotency and manual lineage guarantees will drift.
