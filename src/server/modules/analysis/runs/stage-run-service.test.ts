@@ -254,6 +254,7 @@ describe("analysis stage run service", () => {
   it("classifies common retry and validation failures", () => {
     expect(classifyStageRunError(new Error("429 rate limit"))).toBe("RETRYABLE_PROVIDER");
     expect(classifyStageRunError("temporary network timeout")).toBe("RETRYABLE_PROVIDER");
+    expect(classifyStageRunError(new Error("fallback timeout"))).toBe("RETRYABLE_PROVIDER");
     expect(classifyStageRunError(new Error("JSON parse error"))).toBe("PARSE_ERROR");
     expect(classifyStageRunError(new Error("schema validation failed"))).toBe("SCHEMA_VALIDATION");
     expect(classifyStageRunError(new Error("operation cancelled by user"))).toBe("CANCELED");

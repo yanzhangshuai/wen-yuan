@@ -75,7 +75,20 @@ type StageRunCreateArgs = {
 
 type StageRunUpdateArgs = {
   where: { id: string };
-  data : Record<string, unknown>;
+  data : {
+    status?             : AnalysisStageRunStatus;
+    outputHash?         : string | null;
+    outputCount?        : number;
+    skippedCount?       : number;
+    failureCount?       : number;
+    errorClass?         : StageRunErrorClass | null;
+    errorMessage?       : string | null;
+    promptTokens?       : number;
+    completionTokens?   : number;
+    totalTokens?        : number;
+    estimatedCostMicros?: bigint;
+    finishedAt?         : Date;
+  };
 };
 
 type RawOutputCreateArgs = {
@@ -200,9 +213,6 @@ export function classifyStageRunError(error: unknown): StageRunErrorClass {
   if (message.includes("json") || message.includes("parse")) {
     return "PARSE_ERROR";
   }
-  if (message.includes("exhausted") || message.includes("fallback")) {
-    return "PROVIDER_EXHAUSTED";
-  }
   if (
     message.includes("429")
     || message.includes("rate limit")
@@ -214,6 +224,9 @@ export function classifyStageRunError(error: unknown): StageRunErrorClass {
     || message.includes("socket")
   ) {
     return "RETRYABLE_PROVIDER";
+  }
+  if (message.includes("exhausted") || message.includes("fallback")) {
+    return "PROVIDER_EXHAUSTED";
   }
 
   return "UNKNOWN";
