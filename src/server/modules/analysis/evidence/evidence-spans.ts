@@ -191,6 +191,22 @@ export interface EvidenceSpanPersistenceClient {
   };
 }
 
+export interface EvidenceSpanCreateClient {
+  evidenceSpan: Pick<EvidenceSpanPersistenceClient["evidenceSpan"], "create">;
+}
+
+export interface EvidenceSpanCreateManyClient {
+  evidenceSpan: Pick<EvidenceSpanPersistenceClient["evidenceSpan"], "createMany">;
+}
+
+export interface EvidenceSpanFindOrCreateClient {
+  evidenceSpan: Pick<EvidenceSpanPersistenceClient["evidenceSpan"], "create" | "findFirst">;
+}
+
+export interface EvidenceSpanListClient {
+  evidenceSpan: Pick<EvidenceSpanPersistenceClient["evidenceSpan"], "findMany">;
+}
+
 export function toEvidenceSpanNaturalKey(
   data: MaterializedEvidenceSpanData
 ): EvidenceSpanNaturalKeyWhere {
@@ -205,14 +221,14 @@ export function toEvidenceSpanNaturalKey(
 }
 
 export async function writeEvidenceSpan(
-  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  prisma: EvidenceSpanCreateClient,
   data: MaterializedEvidenceSpanData
 ): Promise<EvidenceSpanRow> {
   return prisma.evidenceSpan.create({ data });
 }
 
 export async function writeEvidenceSpans(
-  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  prisma: EvidenceSpanCreateManyClient,
   data: MaterializedEvidenceSpanData[]
 ): Promise<{ count: number }> {
   if (data.length === 0) {
@@ -226,7 +242,7 @@ export async function writeEvidenceSpans(
 }
 
 export async function findOrCreateEvidenceSpan(
-  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  prisma: EvidenceSpanFindOrCreateClient,
   data: MaterializedEvidenceSpanData
 ): Promise<EvidenceSpanRow> {
   const existing = await prisma.evidenceSpan.findFirst({
@@ -241,7 +257,7 @@ export async function findOrCreateEvidenceSpan(
 }
 
 export async function listEvidenceSpans(
-  prisma: Pick<EvidenceSpanPersistenceClient, "evidenceSpan">,
+  prisma: EvidenceSpanListClient,
   input: EvidenceSpanLookupInput
 ): Promise<EvidenceSpanRow[]> {
   return prisma.evidenceSpan.findMany({
