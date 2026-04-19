@@ -111,7 +111,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T03: `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
 - [x] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
 - [x] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
-- [ ] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
+- [x] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
 - [ ] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
 - [ ] T07: `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
 - [ ] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
@@ -203,3 +203,11 @@ Append one entry after each task:
 - Result: KB v2 now has one unified knowledge object, shared scope/review/source/version contracts, negative knowledge payloads, runtime loading semantics, and a reviewed-claim promotion foundation without cutting over legacy knowledge callers.
 - Follow-up risks: runtime integration into Stage A+ is still pending T07; relation catalog governance/UI is still pending T18/T12/T14; old split knowledge tables still exist until T20 cutover.
 - Next task: T05 `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
+
+### T05 Completion - 2026-04-19
+
+- Changed files: `prisma/schema.prisma`, `prisma/migrations/20260419210000_stage0_chapter_segment_confidence/migration.sql`, `src/generated/prisma/**`, `src/server/modules/analysis/pipelines/evidence-review/stage0/**`, `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm prisma format --schema prisma/schema.prisma`, `pnpm prisma validate --schema prisma/schema.prisma`, `pnpm prisma:generate`, `pnpm test src/server/modules/analysis/pipelines/evidence-review/stage0` (19 Stage 0 assertions passed, command failed on global coverage thresholds), `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stage0 --coverage=false`, `pnpm type-check`
+- Result: Stage 0 deterministic segmentation is available as the persisted evidence-review input layer for Stage A.
+- Follow-up risks: Stage A must consume `chapter_segments` directly and preserve evidence offsets; relation/persona extraction remains out of scope until T06+.
+- Next task: T06 `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
