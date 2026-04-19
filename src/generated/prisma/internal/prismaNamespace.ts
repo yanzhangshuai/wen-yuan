@@ -434,7 +434,8 @@ export const ModelName = {
   PersonaTimeFact: 'PersonaTimeFact',
   RelationshipEdge: 'RelationshipEdge',
   TimelineEvent: 'TimelineEvent',
-  ReviewAuditLog: 'ReviewAuditLog'
+  ReviewAuditLog: 'ReviewAuditLog',
+  KnowledgeItem: 'KnowledgeItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -450,7 +451,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog" | "personaMention" | "chapterPreprocessResult" | "promptTemplateVariant" | "bookTypeExample" | "analysisRun" | "analysisStageRun" | "llmRawOutput" | "chapterSegment" | "evidenceSpan" | "entityMention" | "personaCandidate" | "aliasClaim" | "eventClaim" | "relationClaim" | "timeClaim" | "identityResolutionClaim" | "conflictFlag" | "personaAlias" | "personaChapterFact" | "personaTimeFact" | "relationshipEdge" | "timelineEvent" | "reviewAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog" | "personaMention" | "chapterPreprocessResult" | "promptTemplateVariant" | "bookTypeExample" | "analysisRun" | "analysisStageRun" | "llmRawOutput" | "chapterSegment" | "evidenceSpan" | "entityMention" | "personaCandidate" | "aliasClaim" | "eventClaim" | "relationClaim" | "timeClaim" | "identityResolutionClaim" | "conflictFlag" | "personaAlias" | "personaChapterFact" | "personaTimeFact" | "relationshipEdge" | "timelineEvent" | "reviewAuditLog" | "knowledgeItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -4228,6 +4229,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    KnowledgeItem: {
+      payload: Prisma.$KnowledgeItemPayload<ExtArgs>
+      fields: Prisma.KnowledgeItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.KnowledgeItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.KnowledgeItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>
+        }
+        findFirst: {
+          args: Prisma.KnowledgeItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.KnowledgeItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>
+        }
+        findMany: {
+          args: Prisma.KnowledgeItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>[]
+        }
+        create: {
+          args: Prisma.KnowledgeItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>
+        }
+        createMany: {
+          args: Prisma.KnowledgeItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.KnowledgeItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>[]
+        }
+        delete: {
+          args: Prisma.KnowledgeItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>
+        }
+        update: {
+          args: Prisma.KnowledgeItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.KnowledgeItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.KnowledgeItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.KnowledgeItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.KnowledgeItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeItemPayload>
+        }
+        aggregate: {
+          args: Prisma.KnowledgeItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateKnowledgeItem>
+        }
+        groupBy: {
+          args: Prisma.KnowledgeItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KnowledgeItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.KnowledgeItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KnowledgeItemCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -5268,6 +5343,31 @@ export const ReviewAuditLogScalarFieldEnum = {
 export type ReviewAuditLogScalarFieldEnum = (typeof ReviewAuditLogScalarFieldEnum)[keyof typeof ReviewAuditLogScalarFieldEnum]
 
 
+export const KnowledgeItemScalarFieldEnum = {
+  id: 'id',
+  scopeType: 'scopeType',
+  scopeId: 'scopeId',
+  knowledgeType: 'knowledgeType',
+  payload: 'payload',
+  source: 'source',
+  reviewState: 'reviewState',
+  confidence: 'confidence',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
+  promotedFromClaimId: 'promotedFromClaimId',
+  promotedFromClaimFamily: 'promotedFromClaimFamily',
+  supersedesKnowledgeId: 'supersedesKnowledgeId',
+  version: 'version',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgeItemScalarFieldEnum = (typeof KnowledgeItemScalarFieldEnum)[keyof typeof KnowledgeItemScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -5804,6 +5904,48 @@ export type EnumReviewActionFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
 export type ListEnumReviewActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReviewAction[]'>
     
 
+
+/**
+ * Reference to a field of type 'KnowledgeScopeType'
+ */
+export type EnumKnowledgeScopeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeScopeType'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeScopeType[]'
+ */
+export type ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeScopeType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeSource'
+ */
+export type EnumKnowledgeSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeSource'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeSource[]'
+ */
+export type ListEnumKnowledgeSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeSource[]'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeReviewState'
+ */
+export type EnumKnowledgeReviewStateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeReviewState'>
+    
+
+
+/**
+ * Reference to a field of type 'KnowledgeReviewState[]'
+ */
+export type ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KnowledgeReviewState[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -5950,6 +6092,7 @@ export type GlobalOmitConfig = {
   relationshipEdge?: Prisma.RelationshipEdgeOmit
   timelineEvent?: Prisma.TimelineEventOmit
   reviewAuditLog?: Prisma.ReviewAuditLogOmit
+  knowledgeItem?: Prisma.KnowledgeItemOmit
 }
 
 /* Types for Logging */

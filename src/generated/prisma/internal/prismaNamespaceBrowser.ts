@@ -101,7 +101,8 @@ export const ModelName = {
   PersonaTimeFact: 'PersonaTimeFact',
   RelationshipEdge: 'RelationshipEdge',
   TimelineEvent: 'TimelineEvent',
-  ReviewAuditLog: 'ReviewAuditLog'
+  ReviewAuditLog: 'ReviewAuditLog',
+  KnowledgeItem: 'KnowledgeItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1119,6 +1120,31 @@ export const ReviewAuditLogScalarFieldEnum = {
 } as const
 
 export type ReviewAuditLogScalarFieldEnum = (typeof ReviewAuditLogScalarFieldEnum)[keyof typeof ReviewAuditLogScalarFieldEnum]
+
+
+export const KnowledgeItemScalarFieldEnum = {
+  id: 'id',
+  scopeType: 'scopeType',
+  scopeId: 'scopeId',
+  knowledgeType: 'knowledgeType',
+  payload: 'payload',
+  source: 'source',
+  reviewState: 'reviewState',
+  confidence: 'confidence',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
+  promotedFromClaimId: 'promotedFromClaimId',
+  promotedFromClaimFamily: 'promotedFromClaimFamily',
+  supersedesKnowledgeId: 'supersedesKnowledgeId',
+  version: 'version',
+  createdByUserId: 'createdByUserId',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KnowledgeItemScalarFieldEnum = (typeof KnowledgeItemScalarFieldEnum)[keyof typeof KnowledgeItemScalarFieldEnum]
 
 
 export const SortOrder = {

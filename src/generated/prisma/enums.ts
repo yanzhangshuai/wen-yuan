@@ -316,3 +316,34 @@ export const IdentityResolutionKind = {
 } as const
 
 export type IdentityResolutionKind = (typeof IdentityResolutionKind)[keyof typeof IdentityResolutionKind]
+
+
+export const KnowledgeScopeType = {
+  GLOBAL: 'GLOBAL',
+  BOOK_TYPE: 'BOOK_TYPE',
+  BOOK: 'BOOK',
+  RUN: 'RUN'
+} as const
+
+export type KnowledgeScopeType = (typeof KnowledgeScopeType)[keyof typeof KnowledgeScopeType]
+
+
+export const KnowledgeReviewState = {
+  PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED',
+  DISABLED: 'DISABLED'
+} as const
+
+export type KnowledgeReviewState = (typeof KnowledgeReviewState)[keyof typeof KnowledgeReviewState]
+
+
+export const KnowledgeSource = {
+  SYSTEM_PRESET: 'SYSTEM_PRESET',
+  MANUAL_ENTRY: 'MANUAL_ENTRY',
+  CLAIM_PROMOTION: 'CLAIM_PROMOTION',
+  IMPORTED: 'IMPORTED',
+  LEGACY_SEED: 'LEGACY_SEED'
+} as const
+
+export type KnowledgeSource = (typeof KnowledgeSource)[keyof typeof KnowledgeSource]

@@ -314,6 +314,34 @@ enum IdentityResolutionKind {
   @@map("identity_resolution_kind")
 }
 
+enum KnowledgeScopeType {
+  GLOBAL
+  BOOK_TYPE
+  BOOK
+  RUN
+
+  @@map("knowledge_scope_type")
+}
+
+enum KnowledgeReviewState {
+  PENDING
+  VERIFIED
+  REJECTED
+  DISABLED
+
+  @@map("knowledge_review_state")
+}
+
+enum KnowledgeSource {
+  SYSTEM_PRESET
+  MANUAL_ENTRY
+  CLAIM_PROMOTION
+  IMPORTED
+  LEGACY_SEED
+
+  @@map("knowledge_source")
+}
+
 // --- 核心模型 ---
 
 /// @db.remark: 系统用户。仅存 admin / viewer 账号，初始管理员由 seed 从 env 写入。
@@ -1677,4 +1705,35 @@ model ReviewAuditLog {
   @@index([claimKind, claimId], map: "review_audit_logs_claim_idx")
   @@index([personaId], map: "review_audit_logs_persona_idx")
   @@map("review_audit_logs")
+}
+
+model KnowledgeItem {
+  id                      String               @id @default(uuid()) @db.Uuid
+  scopeType               KnowledgeScopeType   @map("scope_type")
+  scopeId                 String?              @map("scope_id")
+  knowledgeType           String               @map("knowledge_type")
+  payload                 Json
+  source                  KnowledgeSource
+  reviewState             KnowledgeReviewState @default(PENDING) @map("review_state")
+  confidence              Float?
+  effectiveFrom           Json?                @map("effective_from")
+  effectiveTo             Json?                @map("effective_to")
+  promotedFromClaimId     String?              @map("promoted_from_claim_id") @db.Uuid
+  promotedFromClaimFamily String?              @map("promoted_from_claim_family")
+  supersedesKnowledgeId   String?              @map("supersedes_knowledge_id") @db.Uuid
+  version                 Int                  @default(1)
+  createdByUserId         String?              @map("created_by_user_id") @db.Uuid
+  reviewedByUserId        String?              @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt              DateTime?            @map("reviewed_at") @db.Timestamptz(6)
+  createdAt               DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  supersedesKnowledge KnowledgeItem?  @relation("KnowledgeItemVersionChain", fields: [supersedesKnowledgeId], references: [id])
+  supersededBy        KnowledgeItem[] @relation("KnowledgeItemVersionChain")
+
+  @@index([knowledgeType, scopeType, scopeId], map: "knowledge_items_type_scope_idx")
+  @@index([reviewState, scopeType, scopeId], map: "knowledge_items_review_scope_idx")
+  @@index([promotedFromClaimId], map: "knowledge_items_promoted_claim_idx")
+  @@index([supersedesKnowledgeId], map: "knowledge_items_supersedes_idx")
+  @@map("knowledge_items")
 }

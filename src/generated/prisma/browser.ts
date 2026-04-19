@@ -280,3 +280,8 @@ export type TimelineEvent = Prisma.TimelineEventModel
  * 
  */
 export type ReviewAuditLog = Prisma.ReviewAuditLogModel
+/**
+ * Model KnowledgeItem
+ * 
+ */
+export type KnowledgeItem = Prisma.KnowledgeItemModel

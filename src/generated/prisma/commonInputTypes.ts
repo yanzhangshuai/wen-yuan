@@ -976,6 +976,57 @@ export type EnumReviewActionWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumReviewActionFilter<$PrismaModel>
 }
 
+export type EnumKnowledgeScopeTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeScopeType | Prisma.EnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeScopeTypeFilter<$PrismaModel> | $Enums.KnowledgeScopeType
+}
+
+export type EnumKnowledgeSourceFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeSource | Prisma.EnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeSourceFilter<$PrismaModel> | $Enums.KnowledgeSource
+}
+
+export type EnumKnowledgeReviewStateFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeReviewState | Prisma.EnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeReviewStateFilter<$PrismaModel> | $Enums.KnowledgeReviewState
+}
+
+export type EnumKnowledgeScopeTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeScopeType | Prisma.EnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeScopeTypeWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeScopeType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeScopeTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeScopeTypeFilter<$PrismaModel>
+}
+
+export type EnumKnowledgeSourceWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeSource | Prisma.EnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeSourceWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeSource
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeSourceFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeSourceFilter<$PrismaModel>
+}
+
+export type EnumKnowledgeReviewStateWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeReviewState | Prisma.EnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeReviewStateWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeReviewState
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeReviewStateFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeReviewStateFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1869,6 +1920,57 @@ export type NestedEnumReviewActionWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumReviewActionFilter<$PrismaModel>
   _max?: Prisma.NestedEnumReviewActionFilter<$PrismaModel>
+}
+
+export type NestedEnumKnowledgeScopeTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeScopeType | Prisma.EnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeScopeTypeFilter<$PrismaModel> | $Enums.KnowledgeScopeType
+}
+
+export type NestedEnumKnowledgeSourceFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeSource | Prisma.EnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeSourceFilter<$PrismaModel> | $Enums.KnowledgeSource
+}
+
+export type NestedEnumKnowledgeReviewStateFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeReviewState | Prisma.EnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeReviewStateFilter<$PrismaModel> | $Enums.KnowledgeReviewState
+}
+
+export type NestedEnumKnowledgeScopeTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeScopeType | Prisma.EnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeScopeType[] | Prisma.ListEnumKnowledgeScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeScopeTypeWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeScopeType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeScopeTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeScopeTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumKnowledgeSourceWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeSource | Prisma.EnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeSource[] | Prisma.ListEnumKnowledgeSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeSourceWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeSource
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeSourceFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeSourceFilter<$PrismaModel>
+}
+
+export type NestedEnumKnowledgeReviewStateWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.KnowledgeReviewState | Prisma.EnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  in?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  notIn?: $Enums.KnowledgeReviewState[] | Prisma.ListEnumKnowledgeReviewStateFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumKnowledgeReviewStateWithAggregatesFilter<$PrismaModel> | $Enums.KnowledgeReviewState
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumKnowledgeReviewStateFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumKnowledgeReviewStateFilter<$PrismaModel>
 }
 
 
