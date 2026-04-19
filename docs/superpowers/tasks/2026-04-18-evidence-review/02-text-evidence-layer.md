@@ -25,16 +25,16 @@ Build the shared text, offset, segment, and evidence span infrastructure so ever
 
 ## Execution Checkpoints
 
-- [ ] Inspect current chapter/text storage models and helpers.
-- [ ] Define the offset contract: original text offsets are authoritative, normalized text is auxiliary.
-- [ ] Implement helpers for creating offset maps between raw text and normalized text.
-- [ ] Implement evidence span validation for invalid, reversed, out-of-range, and cross-segment spans.
-- [ ] Implement quote reconstruction from `chapterId`, `startOffset`, and `endOffset`.
-- [ ] Implement evidence span persistence helpers for single write, batch write, idempotent write, and lookup by chapter/segment/run.
-- [ ] Implement review-facing helpers for highlighted quote context and evidence jump metadata.
-- [ ] Export a stable evidence module API through `index.ts`.
-- [ ] Add tests for Chinese text, punctuation, line breaks, normalized lookup, invalid spans, and idempotent writes.
-- [ ] Add an execution record and mark T02 complete in the runbook only after validation passes.
+- [x] Inspect current chapter/text storage models and helpers.
+- [x] Define the offset contract: original text offsets are authoritative, normalized text is auxiliary.
+- [x] Implement helpers for creating offset maps between raw text and normalized text.
+- [x] Implement evidence span validation for invalid, reversed, out-of-range, and cross-segment spans.
+- [x] Implement quote reconstruction from `chapterId`, `startOffset`, and `endOffset`.
+- [x] Implement evidence span persistence helpers for single write, batch write, idempotent write, and lookup by chapter/segment/run.
+- [x] Implement review-facing helpers for highlighted quote context and evidence jump metadata.
+- [x] Export a stable evidence module API through `index.ts`.
+- [x] Add tests for Chinese text, punctuation, line breaks, normalized lookup, invalid spans, and idempotent writes.
+- [x] Add an execution record and mark T02 complete in the runbook only after validation passes.
 
 ## Validation
 
@@ -45,10 +45,10 @@ pnpm type-check
 
 ## Acceptance Criteria
 
-- [ ] Any evidence span can return the quoted original text.
-- [ ] Original highlighting and normalized search do not contaminate each other.
-- [ ] Stage A/C and review APIs can reuse a single evidence contract.
-- [ ] Chinese punctuation and line-break offset tests pass.
+- [x] Any evidence span can return the quoted original text.
+- [x] Original highlighting and normalized search do not contaminate each other.
+- [x] Stage A/C and review APIs can reuse a single evidence contract.
+- [x] Chinese punctuation and line-break offset tests pass.
 
 ## Stop Conditions
 

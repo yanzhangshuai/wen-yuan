@@ -25,15 +25,15 @@ Make analysis runs, stage runs, raw LLM outputs, retry boundaries, error categor
 
 ## Execution Checkpoints
 
-- [ ] Inspect existing analysis job orchestration and AI provider usage.
-- [ ] Implement run lifecycle creation, start, success, failure, cancellation, and summary updates.
-- [ ] Implement stage run lifecycle with input count, output count, skipped count, failure count, error class, token usage, cost, and chapter range.
-- [ ] Implement raw output retention for prompts, responses, parse errors, schema validation errors, and discard reasons.
-- [ ] Implement retry planning by run, stage, and chapter.
-- [ ] Define failure isolation rules: Stage A chapter failure is local; Stage B/C preserve prior outputs; projection rebuild is independently invokable.
-- [ ] Integrate the run service with the existing `runAnalysisJob.ts` at safe boundaries.
-- [ ] Add tests for lifecycle transitions, raw output persistence, retry planning, and cost aggregation.
-- [ ] Add an execution record and mark T04 complete in the runbook only after validation passes.
+- [x] Inspect existing analysis job orchestration and AI provider usage.
+- [x] Implement run lifecycle creation, start, success, failure, cancellation, and summary updates.
+- [x] Implement stage run lifecycle with input count, output count, skipped count, failure count, error class, token usage, cost, and chapter range.
+- [x] Implement raw output retention for prompts, responses, parse errors, schema validation errors, and discard reasons.
+- [x] Implement retry planning by run, stage, and chapter.
+- [x] Define failure isolation rules: Stage A chapter failure is local; Stage B/C preserve prior outputs; projection rebuild is independently invokable.
+- [x] Integrate the run service with the existing `runAnalysisJob.ts` at safe boundaries.
+- [x] Add tests for lifecycle transitions, raw output persistence, retry planning, and cost aggregation.
+- [x] Add an execution record and mark T04 complete in the runbook only after validation passes.
 
 ## Validation
 
@@ -44,10 +44,10 @@ pnpm type-check
 
 ## Acceptance Criteria
 
-- [ ] Run, stage run, and raw output records are complete.
-- [ ] A failed stage can be traced to chapter, error type, and raw output.
-- [ ] Partial retry can be planned by chapter or stage.
-- [ ] Cost summary can be aggregated by run.
+- [x] Run, stage run, and raw output records are complete.
+- [x] A failed stage can be traced to chapter, error type, and raw output.
+- [x] Partial retry can be planned by chapter or stage.
+- [x] Cost summary can be aggregated by run.
 
 ## Stop Conditions
 

@@ -25,15 +25,15 @@ Define claim DTOs, schema validation, idempotent writes, manual override rules, 
 
 ## Execution Checkpoints
 
-- [ ] Define shared claim base fields: book, chapter, run, source, confidence, review state, evidence span references, and derivation/supersede references.
-- [ ] Define schemas for `entity_mentions`, `alias_claims`, `event_claims`, `relation_claims`, `time_claims`, `identity_resolution_claims`, and `conflict_flags`.
-- [ ] Enforce the rule that one claim expresses one atomic fact.
-- [ ] Enforce evidence requirements for AI, RULE, and IMPORTED claims.
-- [ ] Define the manual claim path for user-created or user-edited facts.
-- [ ] Implement idempotent writes scoped by run, stage, chapter, and claim family.
-- [ ] Implement relation key validation: string `relationTypeKey`, display `relationLabel`, explicit `relationTypeSource`.
-- [ ] Implement tests for valid writes, missing evidence rejection, idempotent rerun replacement, manual override, and custom relation keys.
-- [ ] Add an execution record and mark T03 complete in the runbook only after validation passes.
+- [x] Define shared claim base fields: book, chapter, run, source, confidence, review state, evidence span references, and derivation/supersede references.
+- [x] Define schemas for `entity_mentions`, `alias_claims`, `event_claims`, `relation_claims`, `time_claims`, `identity_resolution_claims`, and `conflict_flags`.
+- [x] Enforce the rule that one claim expresses one atomic fact.
+- [x] Enforce evidence requirements for AI, RULE, and IMPORTED claims.
+- [x] Define the manual claim path for user-created or user-edited facts.
+- [x] Implement idempotent writes scoped by run, stage, chapter, and claim family.
+- [x] Implement relation key validation: string `relationTypeKey`, display `relationLabel`, explicit `relationTypeSource`.
+- [x] Implement tests for valid writes, missing evidence rejection, idempotent rerun replacement, manual override, and custom relation keys.
+- [x] Add an execution record and mark T03 complete in the runbook only after validation passes.
 
 ## Validation
 
@@ -44,10 +44,10 @@ pnpm type-check
 
 ## Acceptance Criteria
 
-- [ ] All claim families can be validated and written through one contract layer.
-- [ ] Idempotent reruns do not create duplicate claims.
-- [ ] Manual claims and AI claims can coexist with preserved lineage.
-- [ ] Relation type key, label, and source semantics are explicit.
+- [x] All claim families can be validated and written through one contract layer.
+- [x] Idempotent reruns do not create duplicate claims.
+- [x] Manual claims and AI claims can coexist with preserved lineage.
+- [x] Relation type key, label, and source semantics are explicit.
 
 ## Stop Conditions
 
