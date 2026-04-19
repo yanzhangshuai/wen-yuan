@@ -6,8 +6,9 @@ import { createAnalysisRunService } from "@/server/modules/analysis/runs/run-ser
 function createPrismaMock() {
   return {
     analysisRun: {
-      create: vi.fn().mockResolvedValue({ id: "run-1" }),
-      update: vi.fn().mockResolvedValue({ id: "run-1" })
+      create   : vi.fn().mockResolvedValue({ id: "run-1" }),
+      findFirst: vi.fn().mockResolvedValue(null),
+      update   : vi.fn().mockResolvedValue({ id: "run-1" })
     },
     llmRawOutput: {
       aggregate: vi.fn().mockResolvedValue({
@@ -49,6 +50,33 @@ describe("analysis run service", () => {
       }),
       select: { id: true }
     });
+  });
+
+  it("createJobRun reuses an existing RUNNING run for the same job identity", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.analysisRun.findFirst.mockResolvedValueOnce({ id: "run-existing" });
+    const service = createAnalysisRunService(prismaMock);
+
+    const result = await service.createJobRun({
+      jobId  : "job-1",
+      bookId : "book-1",
+      scope  : "FULL_BOOK",
+      trigger: "ANALYSIS_JOB"
+    });
+
+    expect(result).toEqual({ id: "run-existing" });
+    expect(prismaMock.analysisRun.findFirst).toHaveBeenCalledWith({
+      where: {
+        jobId  : "job-1",
+        bookId : "book-1",
+        scope  : "FULL_BOOK",
+        trigger: "ANALYSIS_JOB",
+        status : AnalysisJobStatus.RUNNING
+      },
+      orderBy: { createdAt: "desc" },
+      select : { id: true }
+    });
+    expect(prismaMock.analysisRun.create).not.toHaveBeenCalled();
   });
 
   it("markCurrentStage only updates currentStageKey", async () => {

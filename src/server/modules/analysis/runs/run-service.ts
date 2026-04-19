@@ -31,9 +31,10 @@ export interface AnalysisRunSummary {
 type AnalysisRunDelegate = NonNullable<PrismaClient["analysisRun"]>;
 type RawOutputDelegate = NonNullable<PrismaClient["llmRawOutput"]>;
 type AnalysisRunCreateDelegate = Pick<AnalysisRunDelegate, "create">;
+type AnalysisRunFindFirstDelegate = Pick<AnalysisRunDelegate, "findFirst">;
 type AnalysisRunUpdateDelegate = Pick<AnalysisRunDelegate, "update">;
 type AnalysisRunServiceClient = {
-  analysisRun? : Partial<AnalysisRunCreateDelegate & AnalysisRunUpdateDelegate>;
+  analysisRun? : Partial<AnalysisRunCreateDelegate & AnalysisRunFindFirstDelegate & AnalysisRunUpdateDelegate>;
   llmRawOutput?: Partial<Pick<RawOutputDelegate, "aggregate">>;
 };
 
@@ -41,6 +42,12 @@ function hasAnalysisRunCreateDelegate(
   client: AnalysisRunServiceClient
 ): client is AnalysisRunServiceClient & { analysisRun: AnalysisRunCreateDelegate } {
   return typeof client.analysisRun?.create === "function";
+}
+
+function hasAnalysisRunFindFirstDelegate(
+  client: AnalysisRunServiceClient
+): client is AnalysisRunServiceClient & { analysisRun: AnalysisRunFindFirstDelegate } {
+  return typeof client.analysisRun?.findFirst === "function";
 }
 
 function hasAnalysisRunUpdateDelegate(
@@ -93,6 +100,24 @@ export function createAnalysisRunService(prismaClient: AnalysisRunServiceClient 
   async function createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun> {
     if (!hasAnalysisRunCreateDelegate(prismaClient)) {
       return { id: null };
+    }
+
+    if (hasAnalysisRunFindFirstDelegate(prismaClient)) {
+      const existing = await prismaClient.analysisRun.findFirst({
+        where: {
+          jobId  : input.jobId,
+          bookId : input.bookId,
+          trigger: input.trigger,
+          scope  : input.scope,
+          status : AnalysisJobStatus.RUNNING
+        },
+        orderBy: { createdAt: "desc" },
+        select : { id: true }
+      });
+
+      if (existing !== null) {
+        return { id: existing.id };
+      }
     }
 
     const created = await prismaClient.analysisRun.create({
