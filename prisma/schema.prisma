@@ -1710,6 +1710,7 @@ model ReviewAuditLog {
 model KnowledgeItem {
   id                      String               @id @default(uuid()) @db.Uuid
   scopeType               KnowledgeScopeType   @map("scope_type")
+  /// DB 约束 `knowledge_items_scope_id_check`：仅 GLOBAL 可为 null，其他 scope 必须非空。
   scopeId                 String?              @map("scope_id")
   knowledgeType           String               @map("knowledge_type")
   payload                 Json
