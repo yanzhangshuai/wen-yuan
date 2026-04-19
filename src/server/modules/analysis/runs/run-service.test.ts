@@ -1,14 +1,6 @@
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
-const hoisted = vi.hoisted(() => ({
-  prisma: {}
-}));
-
-vi.mock("@/server/db/prisma", () => ({
-  prisma: hoisted.prisma
-}));
-
 import { createAnalysisRunService } from "@/server/modules/analysis/runs/run-service";
 
 function createPrismaMock() {
@@ -40,7 +32,7 @@ describe("analysis run service", () => {
       jobId  : "job-1",
       bookId : "book-1",
       scope  : "FULL_BOOK",
-      trigger: "JOB_EXECUTION"
+      trigger: "ANALYSIS_JOB"
     });
 
     expect(result).toEqual({ id: "run-1" });
@@ -49,7 +41,7 @@ describe("analysis run service", () => {
         jobId           : "job-1",
         bookId          : "book-1",
         scope           : "FULL_BOOK",
-        trigger         : "JOB_EXECUTION",
+        trigger         : "ANALYSIS_JOB",
         status          : AnalysisJobStatus.RUNNING,
         startedAt       : expect.any(Date),
         finishedAt      : null,
@@ -148,7 +140,7 @@ describe("analysis run service", () => {
       jobId  : "job-1",
       bookId : "book-1",
       scope  : "FULL_BOOK",
-      trigger: "JOB_EXECUTION"
+      trigger: "ANALYSIS_JOB"
     })).resolves.toEqual({ id: null });
   });
 
@@ -189,7 +181,7 @@ describe("analysis run service", () => {
     });
   });
 
-  it("failRun stringifies unknown error payload", async () => {
+  it("failRun safely stringifies unknown error payload", async () => {
     const prismaMock = createPrismaMock();
     const service = createAnalysisRunService(prismaMock as never);
 
@@ -198,7 +190,7 @@ describe("analysis run service", () => {
     expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
       where: { id: "run-1" },
       data : expect.objectContaining({
-        errorMessage: JSON.stringify({ code: "E_UNKNOWN" })
+        errorMessage: "[object Object]"
       })
     });
   });
@@ -251,5 +243,40 @@ describe("analysis run service", () => {
     await expect(service.succeedRun("run-1")).resolves.toBeUndefined();
     await expect(service.failRun("run-1", "oops")).resolves.toBeUndefined();
     await expect(service.cancelRun("run-1")).resolves.toBeUndefined();
+  });
+
+  it("keeps null-object flow when createJobRun returns null id and then succeedRun is called", async () => {
+    const service = createAnalysisRunService({
+      llmRawOutput: {
+        aggregate: vi.fn()
+      }
+    } as never);
+
+    const run = await service.createJobRun({
+      jobId  : "job-1",
+      bookId : "book-1",
+      scope  : "FULL_BOOK",
+      trigger: "ANALYSIS_JOB"
+    });
+    await expect(service.succeedRun(run.id)).resolves.toBeUndefined();
+  });
+
+  it("returns zero summary and no-op updates for null runId", async () => {
+    const prismaMock = createPrismaMock();
+    const service = createAnalysisRunService(prismaMock as never);
+
+    await expect(service.markCurrentStage(null, "stage-z")).resolves.toBeUndefined();
+    await expect(service.summarizeRun(null)).resolves.toEqual({
+      promptTokens       : 0,
+      completionTokens   : 0,
+      totalTokens        : 0,
+      estimatedCostMicros: BigInt(0)
+    });
+    await expect(service.succeedRun(null)).resolves.toBeUndefined();
+    await expect(service.failRun(null, "oops")).resolves.toBeUndefined();
+    await expect(service.cancelRun(null)).resolves.toBeUndefined();
+
+    expect(prismaMock.analysisRun.update).not.toHaveBeenCalled();
+    expect(prismaMock.llmRawOutput.aggregate).not.toHaveBeenCalled();
   });
 });

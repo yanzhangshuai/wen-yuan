@@ -2,10 +2,15 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 
-export type AnalysisRunTrigger = "JOB_EXECUTION" | "MANUAL_RETRY" | "SYSTEM_REPAIR" | (string & {});
+export type AnalysisRunTrigger =
+  | "ANALYSIS_JOB"
+  | "RETRY_RUN"
+  | "RETRY_STAGE"
+  | "RETRY_CHAPTER"
+  | "PROJECTION_REBUILD";
 
 export interface CreateJobRunInput {
-  jobId            : string | null;
+  jobId            : string;
   bookId           : string;
   scope            : string;
   trigger          : AnalysisRunTrigger;
@@ -23,15 +28,6 @@ export interface AnalysisRunSummary {
   estimatedCostMicros: bigint;
 }
 
-export interface AnalysisRunService {
-  createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun>;
-  markCurrentStage(runId: string, stageKey: string | null): Promise<void>;
-  summarizeRun(runId: string): Promise<AnalysisRunSummary>;
-  succeedRun(runId: string): Promise<void>;
-  failRun(runId: string, error: unknown): Promise<void>;
-  cancelRun(runId: string): Promise<void>;
-}
-
 type AnalysisRunDelegate = NonNullable<PrismaClient["analysisRun"]>;
 type RawOutputDelegate = NonNullable<PrismaClient["llmRawOutput"]>;
 
@@ -47,18 +43,9 @@ function hasRawOutputDelegate(client: PrismaClient): client is PrismaClient & { 
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    return error.message;
+    return error.message.slice(0, 1000);
   }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
+  return String(error).slice(0, 1000);
 }
 
 function normalizeSum(value: number | null | undefined): number {
@@ -100,8 +87,8 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
     return { id: created.id };
   }
 
-  async function markCurrentStage(runId: string, stageKey: string | null): Promise<void> {
-    if (!hasAnalysisRunDelegate(prismaClient)) {
+  async function markCurrentStage(runId: string | null, stageKey: string | null): Promise<void> {
+    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
       return;
     }
 
@@ -111,8 +98,8 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
     });
   }
 
-  async function summarizeRun(runId: string): Promise<AnalysisRunSummary> {
-    if (!hasRawOutputDelegate(prismaClient)) {
+  async function summarizeRun(runId: string | null): Promise<AnalysisRunSummary> {
+    if (runId === null || !hasRawOutputDelegate(prismaClient)) {
       return {
         promptTokens       : 0,
         completionTokens   : 0,
@@ -139,8 +126,8 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
     };
   }
 
-  async function succeedRun(runId: string): Promise<void> {
-    if (!hasAnalysisRunDelegate(prismaClient)) {
+  async function succeedRun(runId: string | null): Promise<void> {
+    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
       return;
     }
 
@@ -161,12 +148,12 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
     });
   }
 
-  async function failRun(runId: string, error: unknown): Promise<void> {
-    if (!hasAnalysisRunDelegate(prismaClient)) {
+  async function failRun(runId: string | null, error: unknown): Promise<void> {
+    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
       return;
     }
 
-    const errorMessage = toErrorMessage(error).slice(0, 1000);
+    const errorMessage = toErrorMessage(error);
 
     await prismaClient.analysisRun.update({
       where: { id: runId },
@@ -179,8 +166,8 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
     });
   }
 
-  async function cancelRun(runId: string): Promise<void> {
-    if (!hasAnalysisRunDelegate(prismaClient)) {
+  async function cancelRun(runId: string | null): Promise<void> {
+    if (runId === null || !hasAnalysisRunDelegate(prismaClient)) {
       return;
     }
 
@@ -204,5 +191,7 @@ export function createAnalysisRunService(prismaClient: PrismaClient = prisma): A
     cancelRun
   };
 }
+
+export type AnalysisRunService = ReturnType<typeof createAnalysisRunService>;
 
 export const analysisRunService = createAnalysisRunService();
