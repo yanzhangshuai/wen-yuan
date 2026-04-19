@@ -1224,59 +1224,82 @@ model BookTypeExample {
 // =============================================================================
 
 model AnalysisRun {
-  id                String            @id @default(uuid()) @db.Uuid
-  bookId            String            @map("book_id") @db.Uuid
-  trigger           String
-  scope             String
-  status            AnalysisJobStatus @default(QUEUED)
-  currentStageKey   String?           @map("current_stage_key")
-  requestedByUserId String?           @map("requested_by_user_id") @db.Uuid
-  startedAt         DateTime?         @map("started_at") @db.Timestamptz(6)
-  finishedAt        DateTime?         @map("finished_at") @db.Timestamptz(6)
-  errorMessage      String?           @map("error_message") @db.Text
-  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String            @id @default(uuid()) @db.Uuid
+  bookId              String            @map("book_id") @db.Uuid
+  jobId               String?           @map("job_id") @db.Uuid
+  trigger             String
+  scope               String
+  status              AnalysisJobStatus @default(QUEUED)
+  currentStageKey     String?           @map("current_stage_key")
+  requestedByUserId   String?           @map("requested_by_user_id") @db.Uuid
+  startedAt           DateTime?         @map("started_at") @db.Timestamptz(6)
+  finishedAt          DateTime?         @map("finished_at") @db.Timestamptz(6)
+  errorMessage        String?           @map("error_message") @db.Text
+  promptTokens        Int               @default(0) @map("prompt_tokens")
+  completionTokens    Int               @default(0) @map("completion_tokens")
+  totalTokens         Int               @default(0) @map("total_tokens")
+  estimatedCostMicros BigInt            @default(0) @map("estimated_cost_micros")
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([bookId, createdAt], map: "analysis_runs_book_created_at_idx")
+  @@index([jobId, createdAt], map: "analysis_runs_job_created_at_idx")
   @@index([status, createdAt], map: "analysis_runs_status_created_at_idx")
   @@map("analysis_runs")
 }
 
 model AnalysisStageRun {
-  id           String                 @id @default(uuid()) @db.Uuid
-  runId        String                 @map("run_id") @db.Uuid
-  bookId       String                 @map("book_id") @db.Uuid
-  chapterId    String?                @map("chapter_id") @db.Uuid
-  stageKey     String                 @map("stage_key")
-  status       AnalysisStageRunStatus @default(PENDING)
-  attempt      Int                    @default(1)
-  inputHash    String?                @map("input_hash")
-  outputHash   String?                @map("output_hash")
-  errorMessage String?                @map("error_message") @db.Text
-  startedAt    DateTime?              @map("started_at") @db.Timestamptz(6)
-  finishedAt   DateTime?              @map("finished_at") @db.Timestamptz(6)
-  createdAt    DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                  String                 @id @default(uuid()) @db.Uuid
+  runId               String                 @map("run_id") @db.Uuid
+  bookId              String                 @map("book_id") @db.Uuid
+  chapterId           String?                @map("chapter_id") @db.Uuid
+  stageKey            String                 @map("stage_key")
+  status              AnalysisStageRunStatus @default(PENDING)
+  attempt             Int                    @default(1)
+  inputHash           String?                @map("input_hash")
+  outputHash          String?                @map("output_hash")
+  inputCount          Int                    @default(0) @map("input_count")
+  outputCount         Int                    @default(0) @map("output_count")
+  skippedCount        Int                    @default(0) @map("skipped_count")
+  failureCount        Int                    @default(0) @map("failure_count")
+  errorClass          String?                @map("error_class")
+  errorMessage        String?                @map("error_message") @db.Text
+  promptTokens        Int                    @default(0) @map("prompt_tokens")
+  completionTokens    Int                    @default(0) @map("completion_tokens")
+  totalTokens         Int                    @default(0) @map("total_tokens")
+  estimatedCostMicros BigInt                 @default(0) @map("estimated_cost_micros")
+  chapterStartNo      Int?                   @map("chapter_start_no")
+  chapterEndNo        Int?                   @map("chapter_end_no")
+  startedAt           DateTime?              @map("started_at") @db.Timestamptz(6)
+  finishedAt          DateTime?              @map("finished_at") @db.Timestamptz(6)
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([runId, stageKey], map: "analysis_stage_runs_run_stage_idx")
   @@index([chapterId, stageKey], map: "analysis_stage_runs_chapter_stage_idx")
+  @@index([status, stageKey], map: "analysis_stage_runs_status_stage_idx")
   @@map("analysis_stage_runs")
 }
 
 model LlmRawOutput {
-  id               String   @id @default(uuid()) @db.Uuid
-  runId            String   @map("run_id") @db.Uuid
-  stageRunId       String?  @map("stage_run_id") @db.Uuid
-  bookId           String   @map("book_id") @db.Uuid
-  chapterId        String?  @map("chapter_id") @db.Uuid
-  provider         String
-  model            String
-  requestPayload   Json     @map("request_payload")
-  responseText     String   @map("response_text") @db.Text
-  responseJson     Json?    @map("response_json")
-  promptTokens     Int?     @map("prompt_tokens")
-  completionTokens Int?     @map("completion_tokens")
-  durationMs       Int?     @map("duration_ms")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                  String   @id @default(uuid()) @db.Uuid
+  runId               String   @map("run_id") @db.Uuid
+  stageRunId          String?  @map("stage_run_id") @db.Uuid
+  bookId              String   @map("book_id") @db.Uuid
+  chapterId           String?  @map("chapter_id") @db.Uuid
+  provider            String
+  model               String
+  requestPayload      Json     @map("request_payload")
+  responseText        String   @map("response_text") @db.Text
+  responseJson        Json?    @map("response_json")
+  parseError          String?  @map("parse_error") @db.Text
+  schemaError         String?  @map("schema_error") @db.Text
+  discardReason       String?  @map("discard_reason") @db.Text
+  promptTokens        Int?     @map("prompt_tokens")
+  completionTokens    Int?     @map("completion_tokens")
+  totalTokens         Int?     @map("total_tokens")
+  estimatedCostMicros BigInt?  @map("estimated_cost_micros")
+  durationMs          Int?     @map("duration_ms")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([runId], map: "llm_raw_outputs_run_idx")
   @@index([stageRunId], map: "llm_raw_outputs_stage_run_idx")

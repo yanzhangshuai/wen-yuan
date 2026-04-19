@@ -700,6 +700,7 @@ export type BookTypeExampleScalarFieldEnum = (typeof BookTypeExampleScalarFieldE
 export const AnalysisRunScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
+  jobId: 'jobId',
   trigger: 'trigger',
   scope: 'scope',
   status: 'status',
@@ -708,6 +709,10 @@ export const AnalysisRunScalarFieldEnum = {
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   errorMessage: 'errorMessage',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostMicros: 'estimatedCostMicros',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -725,7 +730,18 @@ export const AnalysisStageRunScalarFieldEnum = {
   attempt: 'attempt',
   inputHash: 'inputHash',
   outputHash: 'outputHash',
+  inputCount: 'inputCount',
+  outputCount: 'outputCount',
+  skippedCount: 'skippedCount',
+  failureCount: 'failureCount',
+  errorClass: 'errorClass',
   errorMessage: 'errorMessage',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostMicros: 'estimatedCostMicros',
+  chapterStartNo: 'chapterStartNo',
+  chapterEndNo: 'chapterEndNo',
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   createdAt: 'createdAt'
@@ -745,8 +761,13 @@ export const LlmRawOutputScalarFieldEnum = {
   requestPayload: 'requestPayload',
   responseText: 'responseText',
   responseJson: 'responseJson',
+  parseError: 'parseError',
+  schemaError: 'schemaError',
+  discardReason: 'discardReason',
   promptTokens: 'promptTokens',
   completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostMicros: 'estimatedCostMicros',
   durationMs: 'durationMs',
   createdAt: 'createdAt'
 } as const

@@ -29,12 +29,16 @@ export type AggregateLlmRawOutput = {
 export type LlmRawOutputAvgAggregateOutputType = {
   promptTokens: number | null
   completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: number | null
   durationMs: number | null
 }
 
 export type LlmRawOutputSumAggregateOutputType = {
   promptTokens: number | null
   completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
   durationMs: number | null
 }
 
@@ -47,8 +51,13 @@ export type LlmRawOutputMinAggregateOutputType = {
   provider: string | null
   model: string | null
   responseText: string | null
+  parseError: string | null
+  schemaError: string | null
+  discardReason: string | null
   promptTokens: number | null
   completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
   durationMs: number | null
   createdAt: Date | null
 }
@@ -62,8 +71,13 @@ export type LlmRawOutputMaxAggregateOutputType = {
   provider: string | null
   model: string | null
   responseText: string | null
+  parseError: string | null
+  schemaError: string | null
+  discardReason: string | null
   promptTokens: number | null
   completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
   durationMs: number | null
   createdAt: Date | null
 }
@@ -79,8 +93,13 @@ export type LlmRawOutputCountAggregateOutputType = {
   requestPayload: number
   responseText: number
   responseJson: number
+  parseError: number
+  schemaError: number
+  discardReason: number
   promptTokens: number
   completionTokens: number
+  totalTokens: number
+  estimatedCostMicros: number
   durationMs: number
   createdAt: number
   _all: number
@@ -90,12 +109,16 @@ export type LlmRawOutputCountAggregateOutputType = {
 export type LlmRawOutputAvgAggregateInputType = {
   promptTokens?: true
   completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   durationMs?: true
 }
 
 export type LlmRawOutputSumAggregateInputType = {
   promptTokens?: true
   completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   durationMs?: true
 }
 
@@ -108,8 +131,13 @@ export type LlmRawOutputMinAggregateInputType = {
   provider?: true
   model?: true
   responseText?: true
+  parseError?: true
+  schemaError?: true
+  discardReason?: true
   promptTokens?: true
   completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   durationMs?: true
   createdAt?: true
 }
@@ -123,8 +151,13 @@ export type LlmRawOutputMaxAggregateInputType = {
   provider?: true
   model?: true
   responseText?: true
+  parseError?: true
+  schemaError?: true
+  discardReason?: true
   promptTokens?: true
   completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   durationMs?: true
   createdAt?: true
 }
@@ -140,8 +173,13 @@ export type LlmRawOutputCountAggregateInputType = {
   requestPayload?: true
   responseText?: true
   responseJson?: true
+  parseError?: true
+  schemaError?: true
+  discardReason?: true
   promptTokens?: true
   completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   durationMs?: true
   createdAt?: true
   _all?: true
@@ -244,8 +282,13 @@ export type LlmRawOutputGroupByOutputType = {
   requestPayload: runtime.JsonValue
   responseText: string
   responseJson: runtime.JsonValue | null
+  parseError: string | null
+  schemaError: string | null
+  discardReason: string | null
   promptTokens: number | null
   completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
   durationMs: number | null
   createdAt: Date
   _count: LlmRawOutputCountAggregateOutputType | null
@@ -284,8 +327,13 @@ export type LlmRawOutputWhereInput = {
   requestPayload?: Prisma.JsonFilter<"LlmRawOutput">
   responseText?: Prisma.StringFilter<"LlmRawOutput"> | string
   responseJson?: Prisma.JsonNullableFilter<"LlmRawOutput">
+  parseError?: Prisma.StringNullableFilter<"LlmRawOutput"> | string | null
+  schemaError?: Prisma.StringNullableFilter<"LlmRawOutput"> | string | null
+  discardReason?: Prisma.StringNullableFilter<"LlmRawOutput"> | string | null
   promptTokens?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
   completionTokens?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
+  totalTokens?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
+  estimatedCostMicros?: Prisma.BigIntNullableFilter<"LlmRawOutput"> | bigint | number | null
   durationMs?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
   createdAt?: Prisma.DateTimeFilter<"LlmRawOutput"> | Date | string
 }
@@ -301,8 +349,13 @@ export type LlmRawOutputOrderByWithRelationInput = {
   requestPayload?: Prisma.SortOrder
   responseText?: Prisma.SortOrder
   responseJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  parseError?: Prisma.SortOrderInput | Prisma.SortOrder
+  schemaError?: Prisma.SortOrderInput | Prisma.SortOrder
+  discardReason?: Prisma.SortOrderInput | Prisma.SortOrder
   promptTokens?: Prisma.SortOrderInput | Prisma.SortOrder
   completionTokens?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalTokens?: Prisma.SortOrderInput | Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrderInput | Prisma.SortOrder
   durationMs?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -321,8 +374,13 @@ export type LlmRawOutputWhereUniqueInput = Prisma.AtLeast<{
   requestPayload?: Prisma.JsonFilter<"LlmRawOutput">
   responseText?: Prisma.StringFilter<"LlmRawOutput"> | string
   responseJson?: Prisma.JsonNullableFilter<"LlmRawOutput">
+  parseError?: Prisma.StringNullableFilter<"LlmRawOutput"> | string | null
+  schemaError?: Prisma.StringNullableFilter<"LlmRawOutput"> | string | null
+  discardReason?: Prisma.StringNullableFilter<"LlmRawOutput"> | string | null
   promptTokens?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
   completionTokens?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
+  totalTokens?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
+  estimatedCostMicros?: Prisma.BigIntNullableFilter<"LlmRawOutput"> | bigint | number | null
   durationMs?: Prisma.IntNullableFilter<"LlmRawOutput"> | number | null
   createdAt?: Prisma.DateTimeFilter<"LlmRawOutput"> | Date | string
 }, "id">
@@ -338,8 +396,13 @@ export type LlmRawOutputOrderByWithAggregationInput = {
   requestPayload?: Prisma.SortOrder
   responseText?: Prisma.SortOrder
   responseJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  parseError?: Prisma.SortOrderInput | Prisma.SortOrder
+  schemaError?: Prisma.SortOrderInput | Prisma.SortOrder
+  discardReason?: Prisma.SortOrderInput | Prisma.SortOrder
   promptTokens?: Prisma.SortOrderInput | Prisma.SortOrder
   completionTokens?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalTokens?: Prisma.SortOrderInput | Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrderInput | Prisma.SortOrder
   durationMs?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.LlmRawOutputCountOrderByAggregateInput
@@ -363,8 +426,13 @@ export type LlmRawOutputScalarWhereWithAggregatesInput = {
   requestPayload?: Prisma.JsonWithAggregatesFilter<"LlmRawOutput">
   responseText?: Prisma.StringWithAggregatesFilter<"LlmRawOutput"> | string
   responseJson?: Prisma.JsonNullableWithAggregatesFilter<"LlmRawOutput">
+  parseError?: Prisma.StringNullableWithAggregatesFilter<"LlmRawOutput"> | string | null
+  schemaError?: Prisma.StringNullableWithAggregatesFilter<"LlmRawOutput"> | string | null
+  discardReason?: Prisma.StringNullableWithAggregatesFilter<"LlmRawOutput"> | string | null
   promptTokens?: Prisma.IntNullableWithAggregatesFilter<"LlmRawOutput"> | number | null
   completionTokens?: Prisma.IntNullableWithAggregatesFilter<"LlmRawOutput"> | number | null
+  totalTokens?: Prisma.IntNullableWithAggregatesFilter<"LlmRawOutput"> | number | null
+  estimatedCostMicros?: Prisma.BigIntNullableWithAggregatesFilter<"LlmRawOutput"> | bigint | number | null
   durationMs?: Prisma.IntNullableWithAggregatesFilter<"LlmRawOutput"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"LlmRawOutput"> | Date | string
 }
@@ -380,8 +448,13 @@ export type LlmRawOutputCreateInput = {
   requestPayload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText: string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: string | null
+  schemaError?: string | null
+  discardReason?: string | null
   promptTokens?: number | null
   completionTokens?: number | null
+  totalTokens?: number | null
+  estimatedCostMicros?: bigint | number | null
   durationMs?: number | null
   createdAt?: Date | string
 }
@@ -397,8 +470,13 @@ export type LlmRawOutputUncheckedCreateInput = {
   requestPayload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText: string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: string | null
+  schemaError?: string | null
+  discardReason?: string | null
   promptTokens?: number | null
   completionTokens?: number | null
+  totalTokens?: number | null
+  estimatedCostMicros?: bigint | number | null
   durationMs?: number | null
   createdAt?: Date | string
 }
@@ -414,8 +492,13 @@ export type LlmRawOutputUpdateInput = {
   requestPayload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText?: Prisma.StringFieldUpdateOperationsInput | string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  schemaError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discardReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  estimatedCostMicros?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -431,8 +514,13 @@ export type LlmRawOutputUncheckedUpdateInput = {
   requestPayload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText?: Prisma.StringFieldUpdateOperationsInput | string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  schemaError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discardReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  estimatedCostMicros?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -448,8 +536,13 @@ export type LlmRawOutputCreateManyInput = {
   requestPayload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText: string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: string | null
+  schemaError?: string | null
+  discardReason?: string | null
   promptTokens?: number | null
   completionTokens?: number | null
+  totalTokens?: number | null
+  estimatedCostMicros?: bigint | number | null
   durationMs?: number | null
   createdAt?: Date | string
 }
@@ -465,8 +558,13 @@ export type LlmRawOutputUpdateManyMutationInput = {
   requestPayload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText?: Prisma.StringFieldUpdateOperationsInput | string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  schemaError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discardReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  estimatedCostMicros?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -482,8 +580,13 @@ export type LlmRawOutputUncheckedUpdateManyInput = {
   requestPayload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   responseText?: Prisma.StringFieldUpdateOperationsInput | string
   responseJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  schemaError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discardReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  estimatedCostMicros?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -499,8 +602,13 @@ export type LlmRawOutputCountOrderByAggregateInput = {
   requestPayload?: Prisma.SortOrder
   responseText?: Prisma.SortOrder
   responseJson?: Prisma.SortOrder
+  parseError?: Prisma.SortOrder
+  schemaError?: Prisma.SortOrder
+  discardReason?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -508,6 +616,8 @@ export type LlmRawOutputCountOrderByAggregateInput = {
 export type LlmRawOutputAvgOrderByAggregateInput = {
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
 }
 
@@ -520,8 +630,13 @@ export type LlmRawOutputMaxOrderByAggregateInput = {
   provider?: Prisma.SortOrder
   model?: Prisma.SortOrder
   responseText?: Prisma.SortOrder
+  parseError?: Prisma.SortOrder
+  schemaError?: Prisma.SortOrder
+  discardReason?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -535,8 +650,13 @@ export type LlmRawOutputMinOrderByAggregateInput = {
   provider?: Prisma.SortOrder
   model?: Prisma.SortOrder
   responseText?: Prisma.SortOrder
+  parseError?: Prisma.SortOrder
+  schemaError?: Prisma.SortOrder
+  discardReason?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -544,7 +664,17 @@ export type LlmRawOutputMinOrderByAggregateInput = {
 export type LlmRawOutputSumOrderByAggregateInput = {
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
+}
+
+export type NullableBigIntFieldUpdateOperationsInput = {
+  set?: bigint | number | null
+  increment?: bigint | number
+  decrement?: bigint | number
+  multiply?: bigint | number
+  divide?: bigint | number
 }
 
 
@@ -560,8 +690,13 @@ export type LlmRawOutputSelect<ExtArgs extends runtime.Types.Extensions.Internal
   requestPayload?: boolean
   responseText?: boolean
   responseJson?: boolean
+  parseError?: boolean
+  schemaError?: boolean
+  discardReason?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   durationMs?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["llmRawOutput"]>
@@ -577,8 +712,13 @@ export type LlmRawOutputSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   requestPayload?: boolean
   responseText?: boolean
   responseJson?: boolean
+  parseError?: boolean
+  schemaError?: boolean
+  discardReason?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   durationMs?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["llmRawOutput"]>
@@ -594,8 +734,13 @@ export type LlmRawOutputSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   requestPayload?: boolean
   responseText?: boolean
   responseJson?: boolean
+  parseError?: boolean
+  schemaError?: boolean
+  discardReason?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   durationMs?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["llmRawOutput"]>
@@ -611,13 +756,18 @@ export type LlmRawOutputSelectScalar = {
   requestPayload?: boolean
   responseText?: boolean
   responseJson?: boolean
+  parseError?: boolean
+  schemaError?: boolean
+  discardReason?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   durationMs?: boolean
   createdAt?: boolean
 }
 
-export type LlmRawOutputOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "runId" | "stageRunId" | "bookId" | "chapterId" | "provider" | "model" | "requestPayload" | "responseText" | "responseJson" | "promptTokens" | "completionTokens" | "durationMs" | "createdAt", ExtArgs["result"]["llmRawOutput"]>
+export type LlmRawOutputOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "runId" | "stageRunId" | "bookId" | "chapterId" | "provider" | "model" | "requestPayload" | "responseText" | "responseJson" | "parseError" | "schemaError" | "discardReason" | "promptTokens" | "completionTokens" | "totalTokens" | "estimatedCostMicros" | "durationMs" | "createdAt", ExtArgs["result"]["llmRawOutput"]>
 
 export type $LlmRawOutputPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "LlmRawOutput"
@@ -633,8 +783,13 @@ export type $LlmRawOutputPayload<ExtArgs extends runtime.Types.Extensions.Intern
     requestPayload: runtime.JsonValue
     responseText: string
     responseJson: runtime.JsonValue | null
+    parseError: string | null
+    schemaError: string | null
+    discardReason: string | null
     promptTokens: number | null
     completionTokens: number | null
+    totalTokens: number | null
+    estimatedCostMicros: bigint | null
     durationMs: number | null
     createdAt: Date
   }, ExtArgs["result"]["llmRawOutput"]>
@@ -1070,8 +1225,13 @@ export interface LlmRawOutputFieldRefs {
   readonly requestPayload: Prisma.FieldRef<"LlmRawOutput", 'Json'>
   readonly responseText: Prisma.FieldRef<"LlmRawOutput", 'String'>
   readonly responseJson: Prisma.FieldRef<"LlmRawOutput", 'Json'>
+  readonly parseError: Prisma.FieldRef<"LlmRawOutput", 'String'>
+  readonly schemaError: Prisma.FieldRef<"LlmRawOutput", 'String'>
+  readonly discardReason: Prisma.FieldRef<"LlmRawOutput", 'String'>
   readonly promptTokens: Prisma.FieldRef<"LlmRawOutput", 'Int'>
   readonly completionTokens: Prisma.FieldRef<"LlmRawOutput", 'Int'>
+  readonly totalTokens: Prisma.FieldRef<"LlmRawOutput", 'Int'>
+  readonly estimatedCostMicros: Prisma.FieldRef<"LlmRawOutput", 'BigInt'>
   readonly durationMs: Prisma.FieldRef<"LlmRawOutput", 'Int'>
   readonly createdAt: Prisma.FieldRef<"LlmRawOutput", 'DateTime'>
 }

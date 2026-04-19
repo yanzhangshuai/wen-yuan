@@ -20,13 +20,30 @@ export type AnalysisRunModel = runtime.Types.Result.DefaultSelection<Prisma.$Ana
 
 export type AggregateAnalysisRun = {
   _count: AnalysisRunCountAggregateOutputType | null
+  _avg: AnalysisRunAvgAggregateOutputType | null
+  _sum: AnalysisRunSumAggregateOutputType | null
   _min: AnalysisRunMinAggregateOutputType | null
   _max: AnalysisRunMaxAggregateOutputType | null
+}
+
+export type AnalysisRunAvgAggregateOutputType = {
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: number | null
+}
+
+export type AnalysisRunSumAggregateOutputType = {
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
 }
 
 export type AnalysisRunMinAggregateOutputType = {
   id: string | null
   bookId: string | null
+  jobId: string | null
   trigger: string | null
   scope: string | null
   status: $Enums.AnalysisJobStatus | null
@@ -35,6 +52,10 @@ export type AnalysisRunMinAggregateOutputType = {
   startedAt: Date | null
   finishedAt: Date | null
   errorMessage: string | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +63,7 @@ export type AnalysisRunMinAggregateOutputType = {
 export type AnalysisRunMaxAggregateOutputType = {
   id: string | null
   bookId: string | null
+  jobId: string | null
   trigger: string | null
   scope: string | null
   status: $Enums.AnalysisJobStatus | null
@@ -50,6 +72,10 @@ export type AnalysisRunMaxAggregateOutputType = {
   startedAt: Date | null
   finishedAt: Date | null
   errorMessage: string | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -57,6 +83,7 @@ export type AnalysisRunMaxAggregateOutputType = {
 export type AnalysisRunCountAggregateOutputType = {
   id: number
   bookId: number
+  jobId: number
   trigger: number
   scope: number
   status: number
@@ -65,15 +92,34 @@ export type AnalysisRunCountAggregateOutputType = {
   startedAt: number
   finishedAt: number
   errorMessage: number
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCostMicros: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type AnalysisRunAvgAggregateInputType = {
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+}
+
+export type AnalysisRunSumAggregateInputType = {
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+}
+
 export type AnalysisRunMinAggregateInputType = {
   id?: true
   bookId?: true
+  jobId?: true
   trigger?: true
   scope?: true
   status?: true
@@ -82,6 +128,10 @@ export type AnalysisRunMinAggregateInputType = {
   startedAt?: true
   finishedAt?: true
   errorMessage?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -89,6 +139,7 @@ export type AnalysisRunMinAggregateInputType = {
 export type AnalysisRunMaxAggregateInputType = {
   id?: true
   bookId?: true
+  jobId?: true
   trigger?: true
   scope?: true
   status?: true
@@ -97,6 +148,10 @@ export type AnalysisRunMaxAggregateInputType = {
   startedAt?: true
   finishedAt?: true
   errorMessage?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -104,6 +159,7 @@ export type AnalysisRunMaxAggregateInputType = {
 export type AnalysisRunCountAggregateInputType = {
   id?: true
   bookId?: true
+  jobId?: true
   trigger?: true
   scope?: true
   status?: true
@@ -112,6 +168,10 @@ export type AnalysisRunCountAggregateInputType = {
   startedAt?: true
   finishedAt?: true
   errorMessage?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -155,6 +215,18 @@ export type AnalysisRunAggregateArgs<ExtArgs extends runtime.Types.Extensions.In
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: AnalysisRunAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: AnalysisRunSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: AnalysisRunMinAggregateInputType
@@ -185,6 +257,8 @@ export type AnalysisRunGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   _count?: AnalysisRunCountAggregateInputType | true
+  _avg?: AnalysisRunAvgAggregateInputType
+  _sum?: AnalysisRunSumAggregateInputType
   _min?: AnalysisRunMinAggregateInputType
   _max?: AnalysisRunMaxAggregateInputType
 }
@@ -192,6 +266,7 @@ export type AnalysisRunGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 export type AnalysisRunGroupByOutputType = {
   id: string
   bookId: string
+  jobId: string | null
   trigger: string
   scope: string
   status: $Enums.AnalysisJobStatus
@@ -200,9 +275,15 @@ export type AnalysisRunGroupByOutputType = {
   startedAt: Date | null
   finishedAt: Date | null
   errorMessage: string | null
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCostMicros: bigint
   createdAt: Date
   updatedAt: Date
   _count: AnalysisRunCountAggregateOutputType | null
+  _avg: AnalysisRunAvgAggregateOutputType | null
+  _sum: AnalysisRunSumAggregateOutputType | null
   _min: AnalysisRunMinAggregateOutputType | null
   _max: AnalysisRunMaxAggregateOutputType | null
 }
@@ -228,6 +309,7 @@ export type AnalysisRunWhereInput = {
   NOT?: Prisma.AnalysisRunWhereInput | Prisma.AnalysisRunWhereInput[]
   id?: Prisma.UuidFilter<"AnalysisRun"> | string
   bookId?: Prisma.UuidFilter<"AnalysisRun"> | string
+  jobId?: Prisma.UuidNullableFilter<"AnalysisRun"> | string | null
   trigger?: Prisma.StringFilter<"AnalysisRun"> | string
   scope?: Prisma.StringFilter<"AnalysisRun"> | string
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisRun"> | $Enums.AnalysisJobStatus
@@ -236,6 +318,10 @@ export type AnalysisRunWhereInput = {
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisRun"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisRun"> | Date | string | null
   errorMessage?: Prisma.StringNullableFilter<"AnalysisRun"> | string | null
+  promptTokens?: Prisma.IntFilter<"AnalysisRun"> | number
+  completionTokens?: Prisma.IntFilter<"AnalysisRun"> | number
+  totalTokens?: Prisma.IntFilter<"AnalysisRun"> | number
+  estimatedCostMicros?: Prisma.BigIntFilter<"AnalysisRun"> | bigint | number
   createdAt?: Prisma.DateTimeFilter<"AnalysisRun"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisRun"> | Date | string
 }
@@ -243,6 +329,7 @@ export type AnalysisRunWhereInput = {
 export type AnalysisRunOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
+  jobId?: Prisma.SortOrderInput | Prisma.SortOrder
   trigger?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -251,6 +338,10 @@ export type AnalysisRunOrderByWithRelationInput = {
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -261,6 +352,7 @@ export type AnalysisRunWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.AnalysisRunWhereInput[]
   NOT?: Prisma.AnalysisRunWhereInput | Prisma.AnalysisRunWhereInput[]
   bookId?: Prisma.UuidFilter<"AnalysisRun"> | string
+  jobId?: Prisma.UuidNullableFilter<"AnalysisRun"> | string | null
   trigger?: Prisma.StringFilter<"AnalysisRun"> | string
   scope?: Prisma.StringFilter<"AnalysisRun"> | string
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisRun"> | $Enums.AnalysisJobStatus
@@ -269,6 +361,10 @@ export type AnalysisRunWhereUniqueInput = Prisma.AtLeast<{
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisRun"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisRun"> | Date | string | null
   errorMessage?: Prisma.StringNullableFilter<"AnalysisRun"> | string | null
+  promptTokens?: Prisma.IntFilter<"AnalysisRun"> | number
+  completionTokens?: Prisma.IntFilter<"AnalysisRun"> | number
+  totalTokens?: Prisma.IntFilter<"AnalysisRun"> | number
+  estimatedCostMicros?: Prisma.BigIntFilter<"AnalysisRun"> | bigint | number
   createdAt?: Prisma.DateTimeFilter<"AnalysisRun"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisRun"> | Date | string
 }, "id">
@@ -276,6 +372,7 @@ export type AnalysisRunWhereUniqueInput = Prisma.AtLeast<{
 export type AnalysisRunOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
+  jobId?: Prisma.SortOrderInput | Prisma.SortOrder
   trigger?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -284,11 +381,17 @@ export type AnalysisRunOrderByWithAggregationInput = {
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AnalysisRunCountOrderByAggregateInput
+  _avg?: Prisma.AnalysisRunAvgOrderByAggregateInput
   _max?: Prisma.AnalysisRunMaxOrderByAggregateInput
   _min?: Prisma.AnalysisRunMinOrderByAggregateInput
+  _sum?: Prisma.AnalysisRunSumOrderByAggregateInput
 }
 
 export type AnalysisRunScalarWhereWithAggregatesInput = {
@@ -297,6 +400,7 @@ export type AnalysisRunScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AnalysisRunScalarWhereWithAggregatesInput | Prisma.AnalysisRunScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"AnalysisRun"> | string
   bookId?: Prisma.UuidWithAggregatesFilter<"AnalysisRun"> | string
+  jobId?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisRun"> | string | null
   trigger?: Prisma.StringWithAggregatesFilter<"AnalysisRun"> | string
   scope?: Prisma.StringWithAggregatesFilter<"AnalysisRun"> | string
   status?: Prisma.EnumAnalysisJobStatusWithAggregatesFilter<"AnalysisRun"> | $Enums.AnalysisJobStatus
@@ -305,6 +409,10 @@ export type AnalysisRunScalarWhereWithAggregatesInput = {
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisRun"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisRun"> | Date | string | null
   errorMessage?: Prisma.StringNullableWithAggregatesFilter<"AnalysisRun"> | string | null
+  promptTokens?: Prisma.IntWithAggregatesFilter<"AnalysisRun"> | number
+  completionTokens?: Prisma.IntWithAggregatesFilter<"AnalysisRun"> | number
+  totalTokens?: Prisma.IntWithAggregatesFilter<"AnalysisRun"> | number
+  estimatedCostMicros?: Prisma.BigIntWithAggregatesFilter<"AnalysisRun"> | bigint | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisRun"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisRun"> | Date | string
 }
@@ -312,6 +420,7 @@ export type AnalysisRunScalarWhereWithAggregatesInput = {
 export type AnalysisRunCreateInput = {
   id?: string
   bookId: string
+  jobId?: string | null
   trigger: string
   scope: string
   status?: $Enums.AnalysisJobStatus
@@ -320,6 +429,10 @@ export type AnalysisRunCreateInput = {
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   errorMessage?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostMicros?: bigint | number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -327,6 +440,7 @@ export type AnalysisRunCreateInput = {
 export type AnalysisRunUncheckedCreateInput = {
   id?: string
   bookId: string
+  jobId?: string | null
   trigger: string
   scope: string
   status?: $Enums.AnalysisJobStatus
@@ -335,6 +449,10 @@ export type AnalysisRunUncheckedCreateInput = {
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   errorMessage?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostMicros?: bigint | number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -342,6 +460,7 @@ export type AnalysisRunUncheckedCreateInput = {
 export type AnalysisRunUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  jobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.StringFieldUpdateOperationsInput | string
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
@@ -350,6 +469,10 @@ export type AnalysisRunUpdateInput = {
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -357,6 +480,7 @@ export type AnalysisRunUpdateInput = {
 export type AnalysisRunUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  jobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.StringFieldUpdateOperationsInput | string
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
@@ -365,6 +489,10 @@ export type AnalysisRunUncheckedUpdateInput = {
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -372,6 +500,7 @@ export type AnalysisRunUncheckedUpdateInput = {
 export type AnalysisRunCreateManyInput = {
   id?: string
   bookId: string
+  jobId?: string | null
   trigger: string
   scope: string
   status?: $Enums.AnalysisJobStatus
@@ -380,6 +509,10 @@ export type AnalysisRunCreateManyInput = {
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   errorMessage?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostMicros?: bigint | number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -387,6 +520,7 @@ export type AnalysisRunCreateManyInput = {
 export type AnalysisRunUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  jobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.StringFieldUpdateOperationsInput | string
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
@@ -395,6 +529,10 @@ export type AnalysisRunUpdateManyMutationInput = {
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -402,6 +540,7 @@ export type AnalysisRunUpdateManyMutationInput = {
 export type AnalysisRunUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  jobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.StringFieldUpdateOperationsInput | string
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
@@ -410,6 +549,10 @@ export type AnalysisRunUncheckedUpdateManyInput = {
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -417,6 +560,7 @@ export type AnalysisRunUncheckedUpdateManyInput = {
 export type AnalysisRunCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
+  jobId?: Prisma.SortOrder
   trigger?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -425,13 +569,25 @@ export type AnalysisRunCountOrderByAggregateInput = {
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type AnalysisRunAvgOrderByAggregateInput = {
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
 }
 
 export type AnalysisRunMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
+  jobId?: Prisma.SortOrder
   trigger?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -440,6 +596,10 @@ export type AnalysisRunMaxOrderByAggregateInput = {
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -447,6 +607,7 @@ export type AnalysisRunMaxOrderByAggregateInput = {
 export type AnalysisRunMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
+  jobId?: Prisma.SortOrder
   trigger?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -455,8 +616,27 @@ export type AnalysisRunMinOrderByAggregateInput = {
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type AnalysisRunSumOrderByAggregateInput = {
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+}
+
+export type BigIntFieldUpdateOperationsInput = {
+  set?: bigint | number
+  increment?: bigint | number
+  decrement?: bigint | number
+  multiply?: bigint | number
+  divide?: bigint | number
 }
 
 
@@ -464,6 +644,7 @@ export type AnalysisRunMinOrderByAggregateInput = {
 export type AnalysisRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
+  jobId?: boolean
   trigger?: boolean
   scope?: boolean
   status?: boolean
@@ -472,6 +653,10 @@ export type AnalysisRunSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   startedAt?: boolean
   finishedAt?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["analysisRun"]>
@@ -479,6 +664,7 @@ export type AnalysisRunSelect<ExtArgs extends runtime.Types.Extensions.InternalA
 export type AnalysisRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
+  jobId?: boolean
   trigger?: boolean
   scope?: boolean
   status?: boolean
@@ -487,6 +673,10 @@ export type AnalysisRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   startedAt?: boolean
   finishedAt?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["analysisRun"]>
@@ -494,6 +684,7 @@ export type AnalysisRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
 export type AnalysisRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
+  jobId?: boolean
   trigger?: boolean
   scope?: boolean
   status?: boolean
@@ -502,6 +693,10 @@ export type AnalysisRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   startedAt?: boolean
   finishedAt?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["analysisRun"]>
@@ -509,6 +704,7 @@ export type AnalysisRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
 export type AnalysisRunSelectScalar = {
   id?: boolean
   bookId?: boolean
+  jobId?: boolean
   trigger?: boolean
   scope?: boolean
   status?: boolean
@@ -517,11 +713,15 @@ export type AnalysisRunSelectScalar = {
   startedAt?: boolean
   finishedAt?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AnalysisRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "trigger" | "scope" | "status" | "currentStageKey" | "requestedByUserId" | "startedAt" | "finishedAt" | "errorMessage" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisRun"]>
+export type AnalysisRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "jobId" | "trigger" | "scope" | "status" | "currentStageKey" | "requestedByUserId" | "startedAt" | "finishedAt" | "errorMessage" | "promptTokens" | "completionTokens" | "totalTokens" | "estimatedCostMicros" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisRun"]>
 
 export type $AnalysisRunPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AnalysisRun"
@@ -529,6 +729,7 @@ export type $AnalysisRunPayload<ExtArgs extends runtime.Types.Extensions.Interna
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     bookId: string
+    jobId: string | null
     trigger: string
     scope: string
     status: $Enums.AnalysisJobStatus
@@ -537,6 +738,10 @@ export type $AnalysisRunPayload<ExtArgs extends runtime.Types.Extensions.Interna
     startedAt: Date | null
     finishedAt: Date | null
     errorMessage: string | null
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+    estimatedCostMicros: bigint
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["analysisRun"]>
@@ -964,6 +1169,7 @@ export interface Prisma__AnalysisRunClient<T, Null = never, ExtArgs extends runt
 export interface AnalysisRunFieldRefs {
   readonly id: Prisma.FieldRef<"AnalysisRun", 'String'>
   readonly bookId: Prisma.FieldRef<"AnalysisRun", 'String'>
+  readonly jobId: Prisma.FieldRef<"AnalysisRun", 'String'>
   readonly trigger: Prisma.FieldRef<"AnalysisRun", 'String'>
   readonly scope: Prisma.FieldRef<"AnalysisRun", 'String'>
   readonly status: Prisma.FieldRef<"AnalysisRun", 'AnalysisJobStatus'>
@@ -972,6 +1178,10 @@ export interface AnalysisRunFieldRefs {
   readonly startedAt: Prisma.FieldRef<"AnalysisRun", 'DateTime'>
   readonly finishedAt: Prisma.FieldRef<"AnalysisRun", 'DateTime'>
   readonly errorMessage: Prisma.FieldRef<"AnalysisRun", 'String'>
+  readonly promptTokens: Prisma.FieldRef<"AnalysisRun", 'Int'>
+  readonly completionTokens: Prisma.FieldRef<"AnalysisRun", 'Int'>
+  readonly totalTokens: Prisma.FieldRef<"AnalysisRun", 'Int'>
+  readonly estimatedCostMicros: Prisma.FieldRef<"AnalysisRun", 'BigInt'>
   readonly createdAt: Prisma.FieldRef<"AnalysisRun", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AnalysisRun", 'DateTime'>
 }

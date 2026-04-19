@@ -28,10 +28,30 @@ export type AggregateAnalysisStageRun = {
 
 export type AnalysisStageRunAvgAggregateOutputType = {
   attempt: number | null
+  inputCount: number | null
+  outputCount: number | null
+  skippedCount: number | null
+  failureCount: number | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: number | null
+  chapterStartNo: number | null
+  chapterEndNo: number | null
 }
 
 export type AnalysisStageRunSumAggregateOutputType = {
   attempt: number | null
+  inputCount: number | null
+  outputCount: number | null
+  skippedCount: number | null
+  failureCount: number | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
+  chapterStartNo: number | null
+  chapterEndNo: number | null
 }
 
 export type AnalysisStageRunMinAggregateOutputType = {
@@ -44,7 +64,18 @@ export type AnalysisStageRunMinAggregateOutputType = {
   attempt: number | null
   inputHash: string | null
   outputHash: string | null
+  inputCount: number | null
+  outputCount: number | null
+  skippedCount: number | null
+  failureCount: number | null
+  errorClass: string | null
   errorMessage: string | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
+  chapterStartNo: number | null
+  chapterEndNo: number | null
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date | null
@@ -60,7 +91,18 @@ export type AnalysisStageRunMaxAggregateOutputType = {
   attempt: number | null
   inputHash: string | null
   outputHash: string | null
+  inputCount: number | null
+  outputCount: number | null
+  skippedCount: number | null
+  failureCount: number | null
+  errorClass: string | null
   errorMessage: string | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  estimatedCostMicros: bigint | null
+  chapterStartNo: number | null
+  chapterEndNo: number | null
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date | null
@@ -76,7 +118,18 @@ export type AnalysisStageRunCountAggregateOutputType = {
   attempt: number
   inputHash: number
   outputHash: number
+  inputCount: number
+  outputCount: number
+  skippedCount: number
+  failureCount: number
+  errorClass: number
   errorMessage: number
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCostMicros: number
+  chapterStartNo: number
+  chapterEndNo: number
   startedAt: number
   finishedAt: number
   createdAt: number
@@ -86,10 +139,30 @@ export type AnalysisStageRunCountAggregateOutputType = {
 
 export type AnalysisStageRunAvgAggregateInputType = {
   attempt?: true
+  inputCount?: true
+  outputCount?: true
+  skippedCount?: true
+  failureCount?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+  chapterStartNo?: true
+  chapterEndNo?: true
 }
 
 export type AnalysisStageRunSumAggregateInputType = {
   attempt?: true
+  inputCount?: true
+  outputCount?: true
+  skippedCount?: true
+  failureCount?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+  chapterStartNo?: true
+  chapterEndNo?: true
 }
 
 export type AnalysisStageRunMinAggregateInputType = {
@@ -102,7 +175,18 @@ export type AnalysisStageRunMinAggregateInputType = {
   attempt?: true
   inputHash?: true
   outputHash?: true
+  inputCount?: true
+  outputCount?: true
+  skippedCount?: true
+  failureCount?: true
+  errorClass?: true
   errorMessage?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+  chapterStartNo?: true
+  chapterEndNo?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -118,7 +202,18 @@ export type AnalysisStageRunMaxAggregateInputType = {
   attempt?: true
   inputHash?: true
   outputHash?: true
+  inputCount?: true
+  outputCount?: true
+  skippedCount?: true
+  failureCount?: true
+  errorClass?: true
   errorMessage?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+  chapterStartNo?: true
+  chapterEndNo?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -134,7 +229,18 @@ export type AnalysisStageRunCountAggregateInputType = {
   attempt?: true
   inputHash?: true
   outputHash?: true
+  inputCount?: true
+  outputCount?: true
+  skippedCount?: true
+  failureCount?: true
+  errorClass?: true
   errorMessage?: true
+  promptTokens?: true
+  completionTokens?: true
+  totalTokens?: true
+  estimatedCostMicros?: true
+  chapterStartNo?: true
+  chapterEndNo?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -237,7 +343,18 @@ export type AnalysisStageRunGroupByOutputType = {
   attempt: number
   inputHash: string | null
   outputHash: string | null
+  inputCount: number
+  outputCount: number
+  skippedCount: number
+  failureCount: number
+  errorClass: string | null
   errorMessage: string | null
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCostMicros: bigint
+  chapterStartNo: number | null
+  chapterEndNo: number | null
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date
@@ -276,7 +393,18 @@ export type AnalysisStageRunWhereInput = {
   attempt?: Prisma.IntFilter<"AnalysisStageRun"> | number
   inputHash?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
   outputHash?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
+  inputCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  outputCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  skippedCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  failureCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  errorClass?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
   errorMessage?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
+  promptTokens?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  completionTokens?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  totalTokens?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  estimatedCostMicros?: Prisma.BigIntFilter<"AnalysisStageRun"> | bigint | number
+  chapterStartNo?: Prisma.IntNullableFilter<"AnalysisStageRun"> | number | null
+  chapterEndNo?: Prisma.IntNullableFilter<"AnalysisStageRun"> | number | null
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisStageRun"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisStageRun"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisStageRun"> | Date | string
@@ -292,7 +420,18 @@ export type AnalysisStageRunOrderByWithRelationInput = {
   attempt?: Prisma.SortOrder
   inputHash?: Prisma.SortOrderInput | Prisma.SortOrder
   outputHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  errorClass?: Prisma.SortOrderInput | Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrderInput | Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -311,7 +450,18 @@ export type AnalysisStageRunWhereUniqueInput = Prisma.AtLeast<{
   attempt?: Prisma.IntFilter<"AnalysisStageRun"> | number
   inputHash?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
   outputHash?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
+  inputCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  outputCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  skippedCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  failureCount?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  errorClass?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
   errorMessage?: Prisma.StringNullableFilter<"AnalysisStageRun"> | string | null
+  promptTokens?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  completionTokens?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  totalTokens?: Prisma.IntFilter<"AnalysisStageRun"> | number
+  estimatedCostMicros?: Prisma.BigIntFilter<"AnalysisStageRun"> | bigint | number
+  chapterStartNo?: Prisma.IntNullableFilter<"AnalysisStageRun"> | number | null
+  chapterEndNo?: Prisma.IntNullableFilter<"AnalysisStageRun"> | number | null
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisStageRun"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisStageRun"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisStageRun"> | Date | string
@@ -327,7 +477,18 @@ export type AnalysisStageRunOrderByWithAggregationInput = {
   attempt?: Prisma.SortOrder
   inputHash?: Prisma.SortOrderInput | Prisma.SortOrder
   outputHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  errorClass?: Prisma.SortOrderInput | Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrderInput | Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -351,7 +512,18 @@ export type AnalysisStageRunScalarWhereWithAggregatesInput = {
   attempt?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
   inputHash?: Prisma.StringNullableWithAggregatesFilter<"AnalysisStageRun"> | string | null
   outputHash?: Prisma.StringNullableWithAggregatesFilter<"AnalysisStageRun"> | string | null
+  inputCount?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  outputCount?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  skippedCount?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  failureCount?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  errorClass?: Prisma.StringNullableWithAggregatesFilter<"AnalysisStageRun"> | string | null
   errorMessage?: Prisma.StringNullableWithAggregatesFilter<"AnalysisStageRun"> | string | null
+  promptTokens?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  completionTokens?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  totalTokens?: Prisma.IntWithAggregatesFilter<"AnalysisStageRun"> | number
+  estimatedCostMicros?: Prisma.BigIntWithAggregatesFilter<"AnalysisStageRun"> | bigint | number
+  chapterStartNo?: Prisma.IntNullableWithAggregatesFilter<"AnalysisStageRun"> | number | null
+  chapterEndNo?: Prisma.IntNullableWithAggregatesFilter<"AnalysisStageRun"> | number | null
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisStageRun"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisStageRun"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisStageRun"> | Date | string
@@ -367,7 +539,18 @@ export type AnalysisStageRunCreateInput = {
   attempt?: number
   inputHash?: string | null
   outputHash?: string | null
+  inputCount?: number
+  outputCount?: number
+  skippedCount?: number
+  failureCount?: number
+  errorClass?: string | null
   errorMessage?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostMicros?: bigint | number
+  chapterStartNo?: number | null
+  chapterEndNo?: number | null
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -383,7 +566,18 @@ export type AnalysisStageRunUncheckedCreateInput = {
   attempt?: number
   inputHash?: string | null
   outputHash?: string | null
+  inputCount?: number
+  outputCount?: number
+  skippedCount?: number
+  failureCount?: number
+  errorClass?: string | null
   errorMessage?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostMicros?: bigint | number
+  chapterStartNo?: number | null
+  chapterEndNo?: number | null
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -399,7 +593,18 @@ export type AnalysisStageRunUpdateInput = {
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   inputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  inputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  outputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  skippedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  failureCount?: Prisma.IntFieldUpdateOperationsInput | number
+  errorClass?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  chapterStartNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEndNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -415,7 +620,18 @@ export type AnalysisStageRunUncheckedUpdateInput = {
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   inputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  inputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  outputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  skippedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  failureCount?: Prisma.IntFieldUpdateOperationsInput | number
+  errorClass?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  chapterStartNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEndNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -431,7 +647,18 @@ export type AnalysisStageRunCreateManyInput = {
   attempt?: number
   inputHash?: string | null
   outputHash?: string | null
+  inputCount?: number
+  outputCount?: number
+  skippedCount?: number
+  failureCount?: number
+  errorClass?: string | null
   errorMessage?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostMicros?: bigint | number
+  chapterStartNo?: number | null
+  chapterEndNo?: number | null
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -447,7 +674,18 @@ export type AnalysisStageRunUpdateManyMutationInput = {
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   inputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  inputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  outputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  skippedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  failureCount?: Prisma.IntFieldUpdateOperationsInput | number
+  errorClass?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  chapterStartNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEndNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -463,7 +701,18 @@ export type AnalysisStageRunUncheckedUpdateManyInput = {
   attempt?: Prisma.IntFieldUpdateOperationsInput | number
   inputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outputHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  inputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  outputCount?: Prisma.IntFieldUpdateOperationsInput | number
+  skippedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  failureCount?: Prisma.IntFieldUpdateOperationsInput | number
+  errorClass?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostMicros?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  chapterStartNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEndNo?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -479,7 +728,18 @@ export type AnalysisStageRunCountOrderByAggregateInput = {
   attempt?: Prisma.SortOrder
   inputHash?: Prisma.SortOrder
   outputHash?: Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  errorClass?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -487,6 +747,16 @@ export type AnalysisStageRunCountOrderByAggregateInput = {
 
 export type AnalysisStageRunAvgOrderByAggregateInput = {
   attempt?: Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrder
 }
 
 export type AnalysisStageRunMaxOrderByAggregateInput = {
@@ -499,7 +769,18 @@ export type AnalysisStageRunMaxOrderByAggregateInput = {
   attempt?: Prisma.SortOrder
   inputHash?: Prisma.SortOrder
   outputHash?: Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  errorClass?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -515,7 +796,18 @@ export type AnalysisStageRunMinOrderByAggregateInput = {
   attempt?: Prisma.SortOrder
   inputHash?: Prisma.SortOrder
   outputHash?: Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  errorClass?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -523,6 +815,16 @@ export type AnalysisStageRunMinOrderByAggregateInput = {
 
 export type AnalysisStageRunSumOrderByAggregateInput = {
   attempt?: Prisma.SortOrder
+  inputCount?: Prisma.SortOrder
+  outputCount?: Prisma.SortOrder
+  skippedCount?: Prisma.SortOrder
+  failureCount?: Prisma.SortOrder
+  promptTokens?: Prisma.SortOrder
+  completionTokens?: Prisma.SortOrder
+  totalTokens?: Prisma.SortOrder
+  estimatedCostMicros?: Prisma.SortOrder
+  chapterStartNo?: Prisma.SortOrder
+  chapterEndNo?: Prisma.SortOrder
 }
 
 export type EnumAnalysisStageRunStatusFieldUpdateOperationsInput = {
@@ -541,7 +843,18 @@ export type AnalysisStageRunSelect<ExtArgs extends runtime.Types.Extensions.Inte
   attempt?: boolean
   inputHash?: boolean
   outputHash?: boolean
+  inputCount?: boolean
+  outputCount?: boolean
+  skippedCount?: boolean
+  failureCount?: boolean
+  errorClass?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
+  chapterStartNo?: boolean
+  chapterEndNo?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -557,7 +870,18 @@ export type AnalysisStageRunSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   attempt?: boolean
   inputHash?: boolean
   outputHash?: boolean
+  inputCount?: boolean
+  outputCount?: boolean
+  skippedCount?: boolean
+  failureCount?: boolean
+  errorClass?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
+  chapterStartNo?: boolean
+  chapterEndNo?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -573,7 +897,18 @@ export type AnalysisStageRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   attempt?: boolean
   inputHash?: boolean
   outputHash?: boolean
+  inputCount?: boolean
+  outputCount?: boolean
+  skippedCount?: boolean
+  failureCount?: boolean
+  errorClass?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
+  chapterStartNo?: boolean
+  chapterEndNo?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -589,13 +924,24 @@ export type AnalysisStageRunSelectScalar = {
   attempt?: boolean
   inputHash?: boolean
   outputHash?: boolean
+  inputCount?: boolean
+  outputCount?: boolean
+  skippedCount?: boolean
+  failureCount?: boolean
+  errorClass?: boolean
   errorMessage?: boolean
+  promptTokens?: boolean
+  completionTokens?: boolean
+  totalTokens?: boolean
+  estimatedCostMicros?: boolean
+  chapterStartNo?: boolean
+  chapterEndNo?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
 }
 
-export type AnalysisStageRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "runId" | "bookId" | "chapterId" | "stageKey" | "status" | "attempt" | "inputHash" | "outputHash" | "errorMessage" | "startedAt" | "finishedAt" | "createdAt", ExtArgs["result"]["analysisStageRun"]>
+export type AnalysisStageRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "runId" | "bookId" | "chapterId" | "stageKey" | "status" | "attempt" | "inputHash" | "outputHash" | "inputCount" | "outputCount" | "skippedCount" | "failureCount" | "errorClass" | "errorMessage" | "promptTokens" | "completionTokens" | "totalTokens" | "estimatedCostMicros" | "chapterStartNo" | "chapterEndNo" | "startedAt" | "finishedAt" | "createdAt", ExtArgs["result"]["analysisStageRun"]>
 
 export type $AnalysisStageRunPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AnalysisStageRun"
@@ -610,7 +956,18 @@ export type $AnalysisStageRunPayload<ExtArgs extends runtime.Types.Extensions.In
     attempt: number
     inputHash: string | null
     outputHash: string | null
+    inputCount: number
+    outputCount: number
+    skippedCount: number
+    failureCount: number
+    errorClass: string | null
     errorMessage: string | null
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+    estimatedCostMicros: bigint
+    chapterStartNo: number | null
+    chapterEndNo: number | null
     startedAt: Date | null
     finishedAt: Date | null
     createdAt: Date
@@ -1046,7 +1403,18 @@ export interface AnalysisStageRunFieldRefs {
   readonly attempt: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
   readonly inputHash: Prisma.FieldRef<"AnalysisStageRun", 'String'>
   readonly outputHash: Prisma.FieldRef<"AnalysisStageRun", 'String'>
+  readonly inputCount: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly outputCount: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly skippedCount: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly failureCount: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly errorClass: Prisma.FieldRef<"AnalysisStageRun", 'String'>
   readonly errorMessage: Prisma.FieldRef<"AnalysisStageRun", 'String'>
+  readonly promptTokens: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly completionTokens: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly totalTokens: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly estimatedCostMicros: Prisma.FieldRef<"AnalysisStageRun", 'BigInt'>
+  readonly chapterStartNo: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
+  readonly chapterEndNo: Prisma.FieldRef<"AnalysisStageRun", 'Int'>
   readonly startedAt: Prisma.FieldRef<"AnalysisStageRun", 'DateTime'>
   readonly finishedAt: Prisma.FieldRef<"AnalysisStageRun", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"AnalysisStageRun", 'DateTime'>
