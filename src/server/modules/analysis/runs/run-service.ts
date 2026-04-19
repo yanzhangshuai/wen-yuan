@@ -96,14 +96,27 @@ function normalizeBigIntSum(value: bigint | number | null | undefined): bigint {
   return BigInt(0);
 }
 
+function isUniqueConflict(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as { code?: unknown; message?: unknown };
+  if (candidate.code === "P2002") {
+    return true;
+  }
+
+  return typeof candidate.message === "string"
+    && candidate.message.includes("analysis_runs_active_job_identity_uidx");
+}
+
 export function createAnalysisRunService(prismaClient: AnalysisRunServiceClient = prisma) {
-  async function createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun> {
-    if (!hasAnalysisRunCreateDelegate(prismaClient)) {
-      return { id: null };
+  async function findExistingRunningJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun | null> {
+    if (!hasAnalysisRunFindFirstDelegate(prismaClient)) {
+      return null;
     }
 
-    if (hasAnalysisRunFindFirstDelegate(prismaClient)) {
-      const existing = await prismaClient.analysisRun.findFirst({
+    const existing = await prismaClient.analysisRun.findFirst({
         where: {
           jobId  : input.jobId,
           bookId : input.bookId,
@@ -115,28 +128,47 @@ export function createAnalysisRunService(prismaClient: AnalysisRunServiceClient 
         select : { id: true }
       });
 
-      if (existing !== null) {
-        return { id: existing.id };
-      }
+    return existing === null ? null : { id: existing.id };
+  }
+
+  async function createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun> {
+    if (!hasAnalysisRunCreateDelegate(prismaClient)) {
+      return { id: null };
     }
 
-    const created = await prismaClient.analysisRun.create({
-      data: {
-        jobId            : input.jobId,
-        bookId           : input.bookId,
-        trigger          : input.trigger,
-        scope            : input.scope,
-        requestedByUserId: input.requestedByUserId ?? null,
-        status           : AnalysisJobStatus.RUNNING,
-        startedAt        : new Date(),
-        finishedAt       : null,
-        currentStageKey  : null,
-        errorMessage     : null
-      },
-      select: { id: true }
-    });
+    const existing = await findExistingRunningJobRun(input);
+    if (existing !== null) {
+      return existing;
+    }
 
-    return { id: created.id };
+    try {
+      const created = await prismaClient.analysisRun.create({
+        data: {
+          jobId            : input.jobId,
+          bookId           : input.bookId,
+          trigger          : input.trigger,
+          scope            : input.scope,
+          requestedByUserId: input.requestedByUserId ?? null,
+          status           : AnalysisJobStatus.RUNNING,
+          startedAt        : new Date(),
+          finishedAt       : null,
+          currentStageKey  : null,
+          errorMessage     : null
+        },
+        select: { id: true }
+      });
+
+      return { id: created.id };
+    } catch (error) {
+      if (isUniqueConflict(error)) {
+        const conflicting = await findExistingRunningJobRun(input);
+        if (conflicting !== null) {
+          return conflicting;
+        }
+      }
+
+      throw error;
+    }
   }
 
   async function markCurrentStage(runId: string | null, stageKey: string | null): Promise<void> {

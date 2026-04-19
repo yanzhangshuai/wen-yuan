@@ -79,6 +79,26 @@ describe("analysis run service", () => {
     expect(prismaMock.analysisRun.create).not.toHaveBeenCalled();
   });
 
+  it("createJobRun re-reads the active run when create hits a unique conflict", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.analysisRun.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "run-existing" });
+    prismaMock.analysisRun.create.mockRejectedValueOnce({ code: "P2002" });
+    const service = createAnalysisRunService(prismaMock);
+
+    const result = await service.createJobRun({
+      jobId  : "job-1",
+      bookId : "book-1",
+      scope  : "FULL_BOOK",
+      trigger: "ANALYSIS_JOB"
+    });
+
+    expect(result).toEqual({ id: "run-existing" });
+    expect(prismaMock.analysisRun.findFirst).toHaveBeenCalledTimes(2);
+    expect(prismaMock.analysisRun.create).toHaveBeenCalledTimes(1);
+  });
+
   it("markCurrentStage only updates currentStageKey", async () => {
     const prismaMock = createPrismaMock();
     const service = createAnalysisRunService(prismaMock);
