@@ -13,7 +13,8 @@ function createDeps() {
     replaceChapterSegmentsForRun: vi
       .fn()
       .mockResolvedValue({ deletedCount: 0, createdCount: 0 }),
-    listChapterSegments: vi.fn()
+    listChapterSegments: vi.fn(),
+    listPersistedChapterSegments: vi.fn().mockResolvedValue([])
   };
 
   const stageRunService: AnalysisStageRunService = {
