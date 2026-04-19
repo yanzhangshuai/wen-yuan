@@ -112,7 +112,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
 - [x] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
 - [x] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
-- [ ] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
+- [x] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
 - [ ] T07: `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
 - [ ] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
 - [ ] T08: `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
@@ -211,3 +211,11 @@ Append one entry after each task:
 - Result: Stage 0 deterministic segmentation is available as the persisted evidence-review input layer for Stage A.
 - Follow-up risks: Stage A must consume `chapter_segments` directly and preserve evidence offsets; relation/persona extraction remains out of scope until T06+.
 - Next task: T06 `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
+
+### T06 Completion - 2026-04-19
+
+- Changed files: `src/server/modules/analysis/pipelines/evidence-review/stage0/repository.ts`, `src/server/modules/analysis/pipelines/evidence-review/stage0/persisted-reader.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/types.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/types.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/prompt-contracts.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/prompt-contracts.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-normalizer.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-normalizer.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-persister.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-persister.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/index.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stage0/persisted-reader.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/types.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/prompt-contracts.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/claim-normalizer.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/claim-persister.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.test.ts --coverage=false`, `pnpm exec eslint src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.ts src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/index.ts`, `pnpm type-check`
+- Result: Stage A extraction now consumes persisted Stage 0 segments, keeps raw output observability, materializes evidence-backed claims conservatively, and supports chapter-level rerun-safe persistence.
+- Follow-up risks: Stage A+ recall and relation catalog governance are still pending T07/T18; long-chapter token pressure is still managed only by one-chapter prompts until T19 cost-control work lands.
+- Next task: T07 `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`

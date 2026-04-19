@@ -24,15 +24,15 @@ Extract entity mentions, event claims, relation claims, and time claims from ind
 
 ## Execution Checkpoints
 
-- [ ] Define Stage A prompt and JSON response contract for mentions, events, relations, and time hints.
-- [ ] Ensure the prompt explicitly requires evidence text and conservative uncertainty handling.
-- [ ] Implement response parsing and schema validation.
-- [ ] Convert valid model outputs into T03 claim DTOs.
-- [ ] Reject or discard outputs that lack valid evidence spans and record discard reasons.
-- [ ] Persist raw prompts, raw responses, parse errors, and schema errors through T04 raw output retention.
-- [ ] Implement chapter-level idempotent rerun.
-- [ ] Add tests for normal extraction, empty extraction, invalid JSON, missing evidence, custom relation label, and rerun idempotency.
-- [ ] Add an execution record and mark T06 complete in the runbook only after validation passes.
+- [x] Define Stage A prompt and JSON response contract for mentions, events, relations, and time hints.
+- [x] Ensure the prompt explicitly requires evidence text and conservative uncertainty handling.
+- [x] Implement response parsing and schema validation.
+- [x] Convert valid model outputs into T03 claim DTOs.
+- [x] Reject or discard outputs that lack valid evidence spans and record discard reasons.
+- [x] Persist raw prompts, raw responses, parse errors, and schema errors through T04 raw output retention.
+- [x] Implement chapter-level idempotent rerun.
+- [x] Add tests for normal extraction, empty extraction, invalid JSON, missing evidence, custom relation label, and rerun idempotency.
+- [x] Add an execution record and mark T06 complete in the runbook only after validation passes.
 
 ## Validation
 
@@ -43,10 +43,10 @@ pnpm type-check
 
 ## Acceptance Criteria
 
-- [ ] A single chapter can produce mention, event, relation, and time claims.
-- [ ] Outputs without evidence spans are not persisted as claims.
-- [ ] Chapter reruns do not duplicate claims.
-- [ ] Raw output and discard reasons are traceable.
+- [x] A single chapter can produce mention, event, relation, and time claims.
+- [x] Outputs without evidence spans are not persisted as claims.
+- [x] Chapter reruns do not duplicate claims.
+- [x] Raw output and discard reasons are traceable.
 
 ## Stop Conditions
 
@@ -56,5 +56,10 @@ pnpm type-check
 
 ## Execution Record
 
-No execution recorded yet.
+### T06 Completion - 2026-04-19
 
+- Changed files: `src/server/modules/analysis/pipelines/evidence-review/stage0/repository.ts`, `src/server/modules/analysis/pipelines/evidence-review/stage0/persisted-reader.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/types.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/types.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/prompt-contracts.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/prompt-contracts.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-normalizer.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-normalizer.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-persister.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/claim-persister.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageA/index.ts`
+- Validation commands: `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stage0/persisted-reader.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/types.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/prompt-contracts.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/claim-normalizer.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/claim-persister.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.test.ts --coverage=false`, `pnpm exec eslint src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.ts src/server/modules/analysis/pipelines/evidence-review/stageA/StageAExtractionPipeline.test.ts src/server/modules/analysis/pipelines/evidence-review/stageA/index.ts`, `pnpm type-check`
+- Result: Stage A chapter extraction now consumes persisted `chapter_segments`, maps evidence locally from `segmentIndex + quotedText`, persists rerun-safe claim families, and keeps parse/schema/discard traces in raw output records for review.
+- Follow-up risks: Stage A+ recall and relation catalog governance are still pending T07/T18; long-chapter token pressure is still handled by one-chapter prompts until T19 cost-control work lands.
+- Next task: T07 `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
