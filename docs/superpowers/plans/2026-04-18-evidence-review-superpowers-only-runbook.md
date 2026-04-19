@@ -109,7 +109,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T01: `docs/superpowers/tasks/2026-04-18-evidence-review/01-schema-and-state-foundation.md`
 - [x] T02: `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`
 - [x] T03: `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
-- [ ] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
+- [x] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
 - [ ] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
 - [ ] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
 - [ ] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
@@ -187,3 +187,11 @@ Append one entry after each task:
 - Result: claim validation, stage-aware rerun replacement, reviewable claim updates, and manual override lineage now flow through one shared contract layer before any later stage or review API touches the claim tables.
 - Follow-up risks: stage ownership remains encoded in repository/service logic rather than schema constraints, so later extraction and review tasks must keep using this contract layer or idempotent reruns and manual supersede semantics can drift.
 - Next task: T04 `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
+
+### T04 Completion - 2026-04-19
+
+- Changed files: `prisma/schema.prisma`, `prisma/migrations/20260419090000_analysis_run_observability_metrics/migration.sql`, `prisma/migrations/20260419143000_analysis_runs_active_job_identity_unique/migration.sql`, `src/generated/prisma/**`, `src/server/modules/analysis/runs/run-service.ts`, `src/server/modules/analysis/runs/run-service.test.ts`, `src/server/modules/analysis/runs/stage-run-service.ts`, `src/server/modules/analysis/runs/stage-run-service.test.ts`, `src/server/modules/analysis/runs/retry-planner.ts`, `src/server/modules/analysis/runs/retry-planner.test.ts`, `src/server/modules/analysis/jobs/runAnalysisJob.ts`, `src/server/modules/analysis/jobs/runAnalysisJob.test.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm test src/server/modules/analysis/runs` (pass), `pnpm test src/server/modules/analysis/jobs/runAnalysisJob.test.ts` (34 tests passed, command failed on global coverage threshold), `pnpm exec vitest run src/server/modules/analysis/jobs/runAnalysisJob.test.ts --coverage.enabled=false` (pass), `pnpm prisma validate --schema prisma/schema.prisma` (pass), `pnpm prisma:generate` (pass), `pnpm type-check` (pass)
+- Result: run observability contracts are available before Stage 0/A/A+/B/B.5/C/D implement fine-grained extraction writes, and job-level cancellation now preserves the expected terminal semantics when later chapter failures cascade.
+- Follow-up risks: cost is token-first and nullable until model pricing is wired in T19; raw output security and retention policy may need tightening before production retention is enabled; repository-level `pnpm test` coverage gates currently make single-file job test commands fail even when assertions pass.
+- Next task: T17 `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`

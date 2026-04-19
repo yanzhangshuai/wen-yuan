@@ -57,5 +57,10 @@ pnpm type-check
 
 ## Execution Record
 
-No execution recorded yet.
+### T04 Completion - 2026-04-19
 
+- Changed files: `prisma/schema.prisma`, `prisma/migrations/20260419090000_analysis_run_observability_metrics/migration.sql`, `prisma/migrations/20260419143000_analysis_runs_active_job_identity_unique/migration.sql`, `src/generated/prisma/**`, `src/server/modules/analysis/runs/run-service.ts`, `src/server/modules/analysis/runs/run-service.test.ts`, `src/server/modules/analysis/runs/stage-run-service.ts`, `src/server/modules/analysis/runs/stage-run-service.test.ts`, `src/server/modules/analysis/runs/retry-planner.ts`, `src/server/modules/analysis/runs/retry-planner.test.ts`, `src/server/modules/analysis/jobs/runAnalysisJob.ts`, `src/server/modules/analysis/jobs/runAnalysisJob.test.ts`
+- Validation commands: `pnpm test src/server/modules/analysis/runs` (pass), `pnpm test src/server/modules/analysis/jobs/runAnalysisJob.test.ts` (34 tests passed, command failed on global coverage threshold), `pnpm exec vitest run src/server/modules/analysis/jobs/runAnalysisJob.test.ts --coverage.enabled=false` (pass), `pnpm prisma validate --schema prisma/schema.prisma` (pass), `pnpm prisma:generate` (pass), `pnpm type-check` (pass)
+- Result: analysis runs, stage runs, raw output retention, retry planning, and job-level observability boundaries are in place for later extraction stages; cancellation now remains terminal even when all remaining chapters fail after a user-triggered cancel.
+- Follow-up risks: provider-specific cost calculation remains nullable until T19; Stage 0/A/A+/B/B.5/C/D still need to call `stage-run-service` directly for fine-grained raw output retention; repository-level `pnpm test` coverage gates currently make single-file job test commands fail even when assertions pass.
+- Next task: T17 `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
