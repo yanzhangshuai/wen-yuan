@@ -13,15 +13,15 @@ function createDeps() {
     replaceChapterSegmentsForRun: vi
       .fn()
       .mockResolvedValue({ deletedCount: 0, createdCount: 0 }),
-    listChapterSegments: vi.fn(),
+    listChapterSegments         : vi.fn(),
     listPersistedChapterSegments: vi.fn().mockResolvedValue([])
   };
 
   const stageRunService: AnalysisStageRunService = {
-    startStageRun: vi.fn().mockResolvedValue({ id: "stage-run-1" }),
+    startStageRun  : vi.fn().mockResolvedValue({ id: "stage-run-1" }),
     succeedStageRun: vi.fn().mockResolvedValue(undefined),
-    failStageRun: vi.fn().mockResolvedValue(undefined),
-    skipStageRun: vi.fn().mockResolvedValue(undefined),
+    failStageRun   : vi.fn().mockResolvedValue(undefined),
+    skipStageRun   : vi.fn().mockResolvedValue(undefined),
     recordRawOutput: vi.fn().mockResolvedValue({ id: null })
   };
 
@@ -34,13 +34,13 @@ describe("Stage0Segmenter", () => {
     const segmenter = createStage0Segmenter({ repository, stageRunService });
 
     const result = await segmenter.runStage0ForChapters({
-      bookId: BOOK_ID,
-      runId: RUN_ID,
+      bookId  : BOOK_ID,
+      runId   : RUN_ID,
       chapters: [
         {
-          id: CHAPTER_ID,
-          no: 1,
-          title: "第一回 王冕读书",
+          id     : CHAPTER_ID,
+          no     : 1,
+          title  : "第一回 王冕读书",
           content: "第一回 王冕读书\n王冕道：“明日再谈。”"
         }
       ]
@@ -50,9 +50,9 @@ describe("Stage0Segmenter", () => {
     expect(result.inputCount).toBe(1);
     expect(result.outputCount).toBeGreaterThan(0);
     expect(repository.replaceChapterSegmentsForRun).toHaveBeenCalledWith({
-      runId: RUN_ID,
+      runId    : RUN_ID,
       chapterId: CHAPTER_ID,
-      segments: expect.arrayContaining([
+      segments : expect.arrayContaining([
         expect.objectContaining({ segmentType: "TITLE" }),
         expect.objectContaining({ segmentType: "DIALOGUE_LEAD" }),
         expect.objectContaining({ segmentType: "DIALOGUE_CONTENT" })
@@ -60,18 +60,18 @@ describe("Stage0Segmenter", () => {
     });
     expect(stageRunService.startStageRun).toHaveBeenCalledWith(
       expect.objectContaining({
-        runId: RUN_ID,
-        bookId: BOOK_ID,
-        stageKey: "STAGE_0",
-        inputCount: 1,
+        runId         : RUN_ID,
+        bookId        : BOOK_ID,
+        stageKey      : "STAGE_0",
+        inputCount    : 1,
         chapterStartNo: 1,
-        chapterEndNo: 1
+        chapterEndNo  : 1
       })
     );
     expect(stageRunService.succeedStageRun).toHaveBeenCalledWith(
       "stage-run-1",
       expect.objectContaining({
-        outputCount: result.outputCount,
+        outputCount : result.outputCount,
         skippedCount: 0
       })
     );
@@ -82,21 +82,21 @@ describe("Stage0Segmenter", () => {
     const segmenter = createStage0Segmenter({ repository, stageRunService });
 
     await segmenter.runStage0ForChapter({
-      bookId: BOOK_ID,
-      runId: RUN_ID,
+      bookId : BOOK_ID,
+      runId  : RUN_ID,
       chapter: {
-        id: CHAPTER_ID,
-        no: 7,
-        title: "第七回",
+        id     : CHAPTER_ID,
+        no     : 7,
+        title  : "第七回",
         content: "第七回\n却说王冕后来回家读书。"
       }
     });
 
     expect(stageRunService.startStageRun).toHaveBeenCalledWith(
       expect.objectContaining({
-        chapterId: CHAPTER_ID,
+        chapterId     : CHAPTER_ID,
         chapterStartNo: 7,
-        chapterEndNo: 7
+        chapterEndNo  : 7
       })
     );
     expect(repository.replaceChapterSegmentsForRun).toHaveBeenCalledTimes(1);
@@ -111,13 +111,13 @@ describe("Stage0Segmenter", () => {
 
     await expect(
       segmenter.runStage0ForChapters({
-        bookId: BOOK_ID,
-        runId: RUN_ID,
+        bookId  : BOOK_ID,
+        runId   : RUN_ID,
         chapters: [
           {
-            id: CHAPTER_ID,
-            no: 1,
-            title: "第一回",
+            id     : CHAPTER_ID,
+            no     : 1,
+            title  : "第一回",
             content: "第一回\n王冕读书。"
           }
         ]
@@ -136,15 +136,15 @@ describe("Stage0Segmenter", () => {
     const segmenter = createStage0Segmenter({ repository, stageRunService });
 
     const result = await segmenter.runStage0ForChapters({
-      bookId: BOOK_ID,
-      runId: RUN_ID,
+      bookId  : BOOK_ID,
+      runId   : RUN_ID,
       chapters: []
     });
 
     expect(result).toMatchObject({
-      inputCount: 0,
-      outputCount: 0,
-      skippedCount: 0,
+      inputCount    : 0,
+      outputCount   : 0,
+      skippedCount  : 0,
       chapterResults: []
     });
     expect(repository.replaceChapterSegmentsForRun).not.toHaveBeenCalled();

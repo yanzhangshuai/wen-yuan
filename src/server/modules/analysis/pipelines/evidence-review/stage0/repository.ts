@@ -8,37 +8,37 @@ interface ChapterSegmentCreateManyDelegate {
   }): Promise<{ count: number }>;
   createMany(args: {
     data: Array<{
-      bookId: string;
-      chapterId: string;
-      runId: string;
-      segmentIndex: number;
-      segmentType: ChapterSegmentType;
-      startOffset: number;
-      endOffset: number;
-      text: string;
+      bookId        : string;
+      chapterId     : string;
+      runId         : string;
+      segmentIndex  : number;
+      segmentType   : ChapterSegmentType;
+      startOffset   : number;
+      endOffset     : number;
+      text          : string;
       normalizedText: string;
-      confidence: number;
-      speakerHint: string | null;
+      confidence    : number;
+      speakerHint   : string | null;
     }>;
     skipDuplicates: false;
   }): Promise<{ count: number }>;
   findMany(args: {
-    where: { runId: string; chapterId: string };
+    where  : { runId: string; chapterId: string };
     orderBy: { segmentIndex: "asc" };
   }): Promise<
     Array<{
-      id: string;
-      bookId: string;
-      chapterId: string;
-      runId: string;
-      segmentIndex: number;
-      segmentType: ChapterSegmentType;
-      startOffset: number;
-      endOffset: number;
-      text: string;
+      id            : string;
+      bookId        : string;
+      chapterId     : string;
+      runId         : string;
+      segmentIndex  : number;
+      segmentType   : ChapterSegmentType;
+      startOffset   : number;
+      endOffset     : number;
+      text          : string;
       normalizedText: string;
-      confidence: number;
-      speakerHint: string | null;
+      confidence    : number;
+      speakerHint   : string | null;
     }>
   >;
 }
@@ -48,9 +48,9 @@ export interface Stage0SegmentRepositoryClient {
 }
 
 export interface ReplaceChapterSegmentsInput {
-  runId: string;
+  runId    : string;
   chapterId: string;
-  segments: Stage0SegmentDraft[];
+  segments : Stage0SegmentDraft[];
 }
 
 export interface ReplaceChapterSegmentsResult {
@@ -59,7 +59,7 @@ export interface ReplaceChapterSegmentsResult {
 }
 
 export interface ListChapterSegmentsInput {
-  runId: string;
+  runId    : string;
   chapterId: string;
 }
 
@@ -69,17 +69,17 @@ export interface PersistedStage0Segment extends Stage0SegmentDraft {
 
 function toCreateRow(segment: Stage0SegmentDraft) {
   return {
-    bookId: segment.bookId,
-    chapterId: segment.chapterId,
-    runId: segment.runId,
-    segmentIndex: segment.segmentIndex,
-    segmentType: segment.segmentType as ChapterSegmentType,
-    startOffset: segment.startOffset,
-    endOffset: segment.endOffset,
-    text: segment.rawText,
+    bookId        : segment.bookId,
+    chapterId     : segment.chapterId,
+    runId         : segment.runId,
+    segmentIndex  : segment.segmentIndex,
+    segmentType   : segment.segmentType as ChapterSegmentType,
+    startOffset   : segment.startOffset,
+    endOffset     : segment.endOffset,
+    text          : segment.rawText,
     normalizedText: segment.normalizedText,
-    confidence: segment.confidence,
-    speakerHint: segment.speakerHint
+    confidence    : segment.confidence,
+    speakerHint   : segment.speakerHint
   };
 }
 
@@ -87,17 +87,17 @@ function toSegmentDraft(
   row: Awaited<ReturnType<ChapterSegmentCreateManyDelegate["findMany"]>>[number]
 ): Stage0SegmentDraft {
   return {
-    bookId: row.bookId,
-    chapterId: row.chapterId,
-    runId: row.runId,
-    segmentIndex: row.segmentIndex,
-    segmentType: row.segmentType,
-    startOffset: row.startOffset,
-    endOffset: row.endOffset,
-    rawText: row.text,
+    bookId        : row.bookId,
+    chapterId     : row.chapterId,
+    runId         : row.runId,
+    segmentIndex  : row.segmentIndex,
+    segmentType   : row.segmentType,
+    startOffset   : row.startOffset,
+    endOffset     : row.endOffset,
+    rawText       : row.text,
     normalizedText: row.normalizedText,
-    confidence: row.confidence,
-    speakerHint: row.speakerHint
+    confidence    : row.confidence,
+    speakerHint   : row.speakerHint
   };
 }
 
@@ -105,18 +105,18 @@ function toPersistedSegment(
   row: Awaited<ReturnType<ChapterSegmentCreateManyDelegate["findMany"]>>[number]
 ): PersistedStage0Segment {
   return {
-    id: row.id,
-    bookId: row.bookId,
-    chapterId: row.chapterId,
-    runId: row.runId,
-    segmentIndex: row.segmentIndex,
-    segmentType: row.segmentType,
-    startOffset: row.startOffset,
-    endOffset: row.endOffset,
-    rawText: row.text,
+    id            : row.id,
+    bookId        : row.bookId,
+    chapterId     : row.chapterId,
+    runId         : row.runId,
+    segmentIndex  : row.segmentIndex,
+    segmentType   : row.segmentType,
+    startOffset   : row.startOffset,
+    endOffset     : row.endOffset,
+    rawText       : row.text,
     normalizedText: row.normalizedText,
-    confidence: row.confidence,
-    speakerHint: row.speakerHint
+    confidence    : row.confidence,
+    speakerHint   : row.speakerHint
   };
 }
 
@@ -128,7 +128,7 @@ export function createStage0SegmentRepository(
   ): Promise<ReplaceChapterSegmentsResult> {
     const deleted = await client.chapterSegment.deleteMany({
       where: {
-        runId: input.runId,
+        runId    : input.runId,
         chapterId: input.chapterId
       }
     });
@@ -141,7 +141,7 @@ export function createStage0SegmentRepository(
     }
 
     const created = await client.chapterSegment.createMany({
-      data: input.segments.map(toCreateRow),
+      data          : input.segments.map(toCreateRow),
       skipDuplicates: false
     });
 
@@ -156,7 +156,7 @@ export function createStage0SegmentRepository(
   ): Promise<Stage0SegmentDraft[]> {
     const rows = await client.chapterSegment.findMany({
       where: {
-        runId: input.runId,
+        runId    : input.runId,
         chapterId: input.chapterId
       },
       orderBy: { segmentIndex: "asc" }
@@ -170,7 +170,7 @@ export function createStage0SegmentRepository(
   ): Promise<PersistedStage0Segment[]> {
     const rows = await client.chapterSegment.findMany({
       where: {
-        runId: input.runId,
+        runId    : input.runId,
         chapterId: input.chapterId
       },
       orderBy: { segmentIndex: "asc" }
