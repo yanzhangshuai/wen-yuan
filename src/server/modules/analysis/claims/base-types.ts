@@ -25,12 +25,12 @@ export const claimLineageSchema = z.object({
 });
 
 export const claimAuditFieldsSchema = z.object({
-  source         : claimSourceSchema,
-  reviewState    : claimReviewStateSchema,
-  runId          : z.string().uuid(),
-  createdByUserId: z.string().uuid().nullable(),
+  source          : claimSourceSchema,
+  reviewState     : claimReviewStateSchema,
+  runId           : z.string().uuid(),
+  createdByUserId : z.string().uuid().nullable(),
   reviewedByUserId: z.string().uuid().nullable(),
-  reviewNote     : z.string().trim().min(1).nullable()
+  reviewNote      : z.string().trim().min(1).nullable()
 });
 
 export const evidenceBindingSchema = z.object({

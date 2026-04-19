@@ -37,7 +37,7 @@ describe("claim base type schemas", () => {
   });
 
   it("rejects envelopes without evidence spans", () => {
-    expect(() => claimEnvelopeSchema.parse({
+    const parsed = claimEnvelopeSchema.safeParse({
       source            : "RULE",
       reviewState       : "PENDING",
       runId             : RUN_ID,
@@ -47,7 +47,20 @@ describe("claim base type schemas", () => {
       createdByUserId   : null,
       reviewedByUserId  : null,
       reviewNote        : null
-    })).toThrowError(/at least 1/i);
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+
+    expect(parsed.error.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        path   : ["evidenceSpanIds"],
+        code   : "too_small",
+        minimum: 1
+      })
+    ]));
   });
 
   it("keeps relationTypeKey as a free string key instead of an enum", () => {
@@ -74,6 +87,8 @@ describe("claim base type schemas", () => {
 });
 
 describe("review-state helpers coverage guard", () => {
+  // 该用例仅用于满足本仓库按“导入文件”统计的覆盖率门槛；
+  // 本测试文件导入了 review-state.ts，因此需要最小化地触达其导出 helper。
   it("validates transitions and projection eligibility", () => {
     expect(getNextReviewStates("PENDING")).toContain("ACCEPTED");
     expect(canTransitionReviewState("PENDING", "ACCEPTED")).toBe(true);
