@@ -11,7 +11,7 @@
  * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
  */
 
-import { AnalysisJobStatus } from "@/generated/prisma/enums";
+import { AnalysisJobStatus, AnalysisStageRunStatus } from "@/generated/prisma/enums";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -112,12 +112,41 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const relationshipFindMany = vi.fn().mockResolvedValue([]);
   const personaFindMany = vi.fn().mockResolvedValue([]);
   const personaUpdateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const analysisRunCreate = vi.fn().mockResolvedValue({ id: "run-observable" });
+  const analysisRunUpdate = vi.fn().mockResolvedValue({});
+  const analysisRunFindFirst = vi.fn().mockResolvedValue(null);
+  const analysisStageRunCreate = vi.fn().mockResolvedValue({ id: "stage-run-observable" });
+  const analysisStageRunUpdate = vi.fn().mockResolvedValue({});
+  const llmRawOutputAggregate = vi.fn().mockResolvedValue({
+    _sum: {
+      promptTokens       : 0,
+      completionTokens   : 0,
+      totalTokens        : 0,
+      estimatedCostMicros: BigInt(0)
+    }
+  });
+  const llmRawOutputCreate = vi.fn().mockResolvedValue({ id: "raw-observable" });
 
   const runGrayZoneArbitration = vi.fn().mockResolvedValue(0);
   const chapterAnalyzer = options.withValidation
     ? { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult, validateBookResult, applyAutoFixes }
     : { analyzeChapter, resolvePersonaTitles, getTitleOnlyPersonaCount, runGrayZoneArbitration, validateChapterResult };
   const resolvedChapterAnalyzer = chapterAnalyzer;
+  const prismaMock = {
+    analysisRun: {
+      create   : analysisRunCreate,
+      update   : analysisRunUpdate,
+      findFirst: analysisRunFindFirst
+    },
+    analysisStageRun: {
+      create: analysisStageRunCreate,
+      update: analysisStageRunUpdate
+    },
+    llmRawOutput: {
+      aggregate: llmRawOutputAggregate,
+      create   : llmRawOutputCreate
+    }
+  };
 
   const runner = createAnalysisJobRunner({
     analysisJob: {
@@ -126,17 +155,21 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
       updateMany: analysisJobUpdateMany,
       update    : analysisJobUpdate
     },
-    chapter     : { findMany: chapterFindMany, findUnique: chapterFindUnique, updateMany: chapterUpdateMany, update: chapterUpdate },
-    book        : { findUnique: bookFindUnique, update: bookUpdate, updateMany: bookUpdateMany },
-    profile     : { findMany: profileFindMany },
-    mention     : { groupBy: mentionGroupBy, findMany: mentionFindMany },
-    relationship: { findMany: relationshipFindMany },
-    persona     : { findMany: personaFindMany, updateMany: personaUpdateMany },
-    $transaction: transaction
+    chapter         : { findMany: chapterFindMany, findUnique: chapterFindUnique, updateMany: chapterUpdateMany, update: chapterUpdate },
+    book            : { findUnique: bookFindUnique, update: bookUpdate, updateMany: bookUpdateMany },
+    profile         : { findMany: profileFindMany },
+    mention         : { groupBy: mentionGroupBy, findMany: mentionFindMany },
+    relationship    : { findMany: relationshipFindMany },
+    persona         : { findMany: personaFindMany, updateMany: personaUpdateMany },
+    analysisRun     : prismaMock.analysisRun,
+    analysisStageRun: prismaMock.analysisStageRun,
+    llmRawOutput    : prismaMock.llmRawOutput,
+    $transaction    : transaction
   } as never, resolvedChapterAnalyzer as never);
 
   return {
     runner,
+    prismaMock,
     analysisJobFindUnique,
     analysisJobFindFirst,
     analysisJobUpdateMany,
@@ -264,6 +297,150 @@ describe("analysis job runner", () => {
       where: { id: jobId },
       data : expect.objectContaining({
         status: AnalysisJobStatus.SUCCEEDED
+      })
+    });
+  });
+
+  it("creates analysis run and orchestration stage runs around a successful job", async () => {
+    const jobId = "job-observable";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      prismaMock
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.QUEUED,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await runner.runAnalysisJobById(jobId);
+
+    expect(prismaMock.analysisRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        jobId,
+        bookId,
+        trigger: "ANALYSIS_JOB",
+        scope  : "FULL_BOOK",
+        status : AnalysisJobStatus.RUNNING
+      }),
+      select: { id: true }
+    });
+    expect(prismaMock.analysisStageRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        runId     : "run-observable",
+        bookId,
+        stageKey  : "JOB_CHAPTER_SELECTION",
+        inputCount: 0
+      }),
+      select: { id: true }
+    });
+    expect(prismaMock.analysisStageRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        runId         : "run-observable",
+        bookId,
+        stageKey      : "PIPELINE_SEQUENTIAL",
+        inputCount    : 1,
+        chapterStartNo: 1,
+        chapterEndNo  : 1
+      }),
+      select: { id: true }
+    });
+    expect(prismaMock.analysisStageRun.update).toHaveBeenCalledWith({
+      where: { id: "stage-run-observable" },
+      data : expect.objectContaining({
+        status     : AnalysisStageRunStatus.SUCCEEDED,
+        outputCount: 1
+      })
+    });
+    expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
+      where: { id: "run-observable" },
+      data : expect.objectContaining({
+        status         : AnalysisJobStatus.SUCCEEDED,
+        currentStageKey: null
+      })
+    });
+  });
+
+  it("marks the orchestration stage and analysis run failed when chapter selection fails", async () => {
+    const jobId = "job-observable-fail";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      prismaMock
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.QUEUED,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      });
+    chapterFindMany.mockResolvedValueOnce([]);
+
+    await expect(runner.runAnalysisJobById(jobId)).rejects.toThrow("未找到可执行章节");
+
+    expect(prismaMock.analysisStageRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        runId     : "run-observable",
+        bookId,
+        stageKey  : "JOB_CHAPTER_SELECTION",
+        inputCount: 0
+      }),
+      select: { id: true }
+    });
+    expect(prismaMock.analysisStageRun.update).toHaveBeenCalledWith({
+      where: { id: "stage-run-observable" },
+      data : expect.objectContaining({
+        status      : AnalysisStageRunStatus.FAILED,
+        failureCount: 1,
+        errorMessage: expect.stringContaining("未找到可执行章节")
+      })
+    });
+    expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
+      where: { id: "run-observable" },
+      data : expect.objectContaining({
+        status         : AnalysisJobStatus.FAILED,
+        currentStageKey: null,
+        errorMessage   : expect.stringContaining("未找到可执行章节")
       })
     });
   });

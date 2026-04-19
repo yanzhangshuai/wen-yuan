@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { AnalysisStageRunStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 
@@ -131,13 +131,15 @@ type AnalysisStageRunServiceClient = {
   llmRawOutput?    : Partial<RawOutputCreateDelegate>;
 };
 
+type AnalysisStageRunServiceSource = AnalysisStageRunServiceClient | PrismaClient;
+
 const defaultAnalysisStageRunServiceClient: AnalysisStageRunServiceClient = {
   analysisStageRun: {
-    create: async (args) => prisma.analysisStageRun.create(args),
-    update: async (args) => prisma.analysisStageRun.update(args)
+    create: async (args) => await prisma.analysisStageRun.create(args),
+    update: async (args) => await prisma.analysisStageRun.update(args)
   },
   llmRawOutput: {
-    create: async (args) => prisma.llmRawOutput.create({
+    create: async (args) => await prisma.llmRawOutput.create({
       ...args,
       data: {
         ...args.data,
@@ -146,6 +148,36 @@ const defaultAnalysisStageRunServiceClient: AnalysisStageRunServiceClient = {
     })
   }
 };
+
+function isPrismaStageRunClient(
+  client: AnalysisStageRunServiceSource
+): client is PrismaClient {
+  return typeof (client as PrismaClient).$transaction === "function";
+}
+
+function toAnalysisStageRunServiceClient(
+  client: AnalysisStageRunServiceSource
+): AnalysisStageRunServiceClient {
+  if (!isPrismaStageRunClient(client)) {
+    return client;
+  }
+
+  return {
+    analysisStageRun: {
+      create: async (args) => await client.analysisStageRun.create(args),
+      update: async (args) => await client.analysisStageRun.update(args)
+    },
+    llmRawOutput: {
+      create: async (args) => await client.llmRawOutput.create({
+        ...args,
+        data: {
+          ...args.data,
+          responseJson: args.data.responseJson ?? Prisma.DbNull
+        }
+      })
+    }
+  };
+}
 
 function hasStageRunCreateDelegate(
   client: AnalysisStageRunServiceClient
@@ -233,14 +265,16 @@ export function classifyStageRunError(error: unknown): StageRunErrorClass {
 }
 
 export function createAnalysisStageRunService(
-  prismaClient: AnalysisStageRunServiceClient = defaultAnalysisStageRunServiceClient
+  prismaClient: AnalysisStageRunServiceSource = defaultAnalysisStageRunServiceClient
 ) {
+  const serviceClient = toAnalysisStageRunServiceClient(prismaClient);
+
   async function startStageRun(input: StartStageRunInput): Promise<{ id: string | null }> {
-    if (input.runId === null || !hasStageRunCreateDelegate(prismaClient)) {
+    if (input.runId === null || !hasStageRunCreateDelegate(serviceClient)) {
       return { id: null };
     }
 
-    const created = await prismaClient.analysisStageRun.create({
+    const created = await serviceClient.analysisStageRun.create({
       data: {
         runId         : input.runId,
         bookId        : input.bookId,
@@ -262,14 +296,14 @@ export function createAnalysisStageRunService(
   }
 
   async function succeedStageRun(stageRunId: string | null, input: SucceedStageRunInput = {}): Promise<void> {
-    if (stageRunId === null || !hasStageRunUpdateDelegate(prismaClient)) {
+    if (stageRunId === null || !hasStageRunUpdateDelegate(serviceClient)) {
       return;
     }
 
     const promptTokens = input.promptTokens ?? 0;
     const completionTokens = input.completionTokens ?? 0;
 
-    await prismaClient.analysisStageRun.update({
+    await serviceClient.analysisStageRun.update({
       where: { id: stageRunId },
       data : {
         status             : AnalysisStageRunStatus.SUCCEEDED,
@@ -293,11 +327,11 @@ export function createAnalysisStageRunService(
     error: unknown,
     input: FailedStageRunInput = {}
   ): Promise<void> {
-    if (stageRunId === null || !hasStageRunUpdateDelegate(prismaClient)) {
+    if (stageRunId === null || !hasStageRunUpdateDelegate(serviceClient)) {
       return;
     }
 
-    await prismaClient.analysisStageRun.update({
+    await serviceClient.analysisStageRun.update({
       where: { id: stageRunId },
       data : {
         status      : AnalysisStageRunStatus.FAILED,
@@ -310,11 +344,11 @@ export function createAnalysisStageRunService(
   }
 
   async function skipStageRun(stageRunId: string | null, skippedCount = 1): Promise<void> {
-    if (stageRunId === null || !hasStageRunUpdateDelegate(prismaClient)) {
+    if (stageRunId === null || !hasStageRunUpdateDelegate(serviceClient)) {
       return;
     }
 
-    await prismaClient.analysisStageRun.update({
+    await serviceClient.analysisStageRun.update({
       where: { id: stageRunId },
       data : {
         status    : AnalysisStageRunStatus.SKIPPED,
@@ -325,11 +359,11 @@ export function createAnalysisStageRunService(
   }
 
   async function recordRawOutput(input: RecordRawOutputInput): Promise<{ id: string | null }> {
-    if (input.runId === null || !hasRawOutputCreateDelegate(prismaClient)) {
+    if (input.runId === null || !hasRawOutputCreateDelegate(serviceClient)) {
       return { id: null };
     }
 
-    const created = await prismaClient.llmRawOutput.create({
+    const created = await serviceClient.llmRawOutput.create({
       data: {
         runId              : input.runId,
         stageRunId         : input.stageRunId ?? null,

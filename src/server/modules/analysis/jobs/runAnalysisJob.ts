@@ -18,6 +18,14 @@ import {
   createPipeline,
   type AnalysisPipelineFactoryDependencies
 } from "@/server/modules/analysis/pipelines/factory";
+import {
+  createAnalysisRunService,
+  type AnalysisRunService
+} from "@/server/modules/analysis/runs/run-service";
+import {
+  createAnalysisStageRunService,
+  type AnalysisStageRunService
+} from "@/server/modules/analysis/runs/stage-run-service";
 import type {
   AnalysisArchitecture,
   AnalysisPipeline,
@@ -470,6 +478,8 @@ export function createAnalysisJobRunner(
   ) => AnalysisPipeline = createPipeline
 ) {
   const resolvedAnalyzerFactory = chapterAnalyzerFactory ?? createDefaultChapterAnalyzerFactory(prismaClient);
+  const runService: AnalysisRunService = createAnalysisRunService(prismaClient);
+  const stageRunService: AnalysisStageRunService = createAnalysisStageRunService(prismaClient);
 
   async function runChapterValidationBlocking(
     analyzer: ChapterAnalyzer,
@@ -746,6 +756,13 @@ export function createAnalysisJobRunner(
       return;
     }
     const runningJob: AnalysisJobRow = job;
+    const analysisRun = await runService.createJobRun({
+      jobId  : runningJob.id,
+      bookId : runningJob.bookId,
+      scope  : runningJob.scope,
+      trigger: "ANALYSIS_JOB"
+    });
+    const analysisRunId = analysisRun.id;
     const activeAnalyzer = chapterAnalyzer ?? await resolvedAnalyzerFactory({
       jobId : runningJob.id,
       bookId: runningJob.bookId
@@ -754,9 +771,26 @@ export function createAnalysisJobRunner(
     let chapters: ChapterTask[] = [];
     let completedChapters = 0;
     try {
-      chapters = await loadChaptersForJob(prismaClient, runningJob);
-      if (chapters.length === 0) {
-        throw new Error(`解析任务 ${runningJob.id} 未找到可执行章节`);
+      await runService.markCurrentStage(analysisRunId, "JOB_CHAPTER_SELECTION");
+      const chapterSelectionStage = await stageRunService.startStageRun({
+        runId     : analysisRunId,
+        bookId    : runningJob.bookId,
+        stageKey  : "JOB_CHAPTER_SELECTION",
+        inputCount: 0
+      });
+
+      try {
+        chapters = await loadChaptersForJob(prismaClient, runningJob);
+        if (chapters.length === 0) {
+          throw new Error(`解析任务 ${runningJob.id} 未找到可执行章节`);
+        }
+        await stageRunService.succeedStageRun(chapterSelectionStage.id, {
+          outputCount : chapters.length,
+          skippedCount: 0
+        });
+      } catch (error) {
+        await stageRunService.failStageRun(chapterSelectionStage.id, error);
+        throw error;
       }
 
       const architecture = normalizeAnalysisArchitecture(runningJob.architecture);
@@ -785,30 +819,54 @@ export function createAnalysisJobRunner(
         }
       });
 
-      const pipelineResult = await pipeline.run({
-        jobId     : runningJob.id,
-        bookId    : runningJob.bookId,
-        chapters,
-        isCanceled: async () => await isJobCanceled(prismaClient, runningJob.id),
-        onProgress: async (update) => {
-          await updateBookProgressSafely(prismaClient, {
-            jobId        : runningJob.id,
-            bookId       : runningJob.bookId,
-            progress     : update.progress,
-            completedText: update.stage,
-            doneCount    : update.doneCount,
-            totalChapters: update.totalChapters
-          });
-        }
+      const pipelineStageKey = `PIPELINE_${architecture.toUpperCase()}`;
+      await runService.markCurrentStage(analysisRunId, pipelineStageKey);
+      const pipelineStage = await stageRunService.startStageRun({
+        runId         : analysisRunId,
+        bookId        : runningJob.bookId,
+        stageKey      : pipelineStageKey,
+        inputCount    : chapters.length,
+        chapterStartNo: chapters[0]?.no ?? null,
+        chapterEndNo  : chapters.at(-1)?.no ?? null
       });
-      completedChapters = pipelineResult.completedChapters;
 
-      if (await isJobCanceled(prismaClient, runningJob.id)) {
-        return;
+      let pipelineResult: AnalysisPipelineResult;
+      try {
+        pipelineResult = await pipeline.run({
+          jobId     : runningJob.id,
+          bookId    : runningJob.bookId,
+          chapters,
+          isCanceled: async () => await isJobCanceled(prismaClient, runningJob.id),
+          onProgress: async (update) => {
+            completedChapters = update.doneCount;
+            await updateBookProgressSafely(prismaClient, {
+              jobId        : runningJob.id,
+              bookId       : runningJob.bookId,
+              progress     : update.progress,
+              completedText: update.stage,
+              doneCount    : update.doneCount,
+              totalChapters: update.totalChapters
+            });
+          }
+        });
+        completedChapters = pipelineResult.completedChapters;
+        if (pipelineResult.completedChapters === 0 && pipelineResult.failedChapters > 0) {
+          throw new Error(`所有章节解析失败，共 ${pipelineResult.failedChapters} 章`);
+        }
+        await stageRunService.succeedStageRun(pipelineStage.id, {
+          outputCount : pipelineResult.completedChapters,
+          skippedCount: 0
+        });
+      } catch (error) {
+        await stageRunService.failStageRun(pipelineStage.id, error, {
+          failureCount: Math.max(1, chapters.length - completedChapters)
+        });
+        throw error;
       }
 
-      if (pipelineResult.completedChapters === 0 && pipelineResult.failedChapters > 0) {
-        throw new Error(`所有章节解析失败，共 ${pipelineResult.failedChapters} 章`);
+      if (await isJobCanceled(prismaClient, runningJob.id)) {
+        await runService.cancelRun(analysisRunId);
+        return;
       }
 
       const warningSummary = formatPipelineWarningSummary(pipelineResult);
@@ -832,6 +890,7 @@ export function createAnalysisJobRunner(
           }
         })
       ]);
+      await runService.succeedRun(analysisRunId);
 
       // 整书解析完成后执行孤儿检测：mention 数 < 2 的 Persona 置信度降至 0.4，供审核优先关注。
       // 仅在 FULL_BOOK 任务完成后触发，部分章节任务不做全局孤儿判断。
@@ -947,6 +1006,7 @@ export function createAnalysisJobRunner(
         })
       ]);
 
+      await runService.failRun(analysisRunId, error);
       throw error;
     }
   }
