@@ -27,6 +27,7 @@ interface ChapterSegmentCreateManyDelegate {
     orderBy: { segmentIndex: "asc" };
   }): Promise<
     Array<{
+      id: string;
       bookId: string;
       chapterId: string;
       runId: string;
@@ -62,6 +63,10 @@ export interface ListChapterSegmentsInput {
   chapterId: string;
 }
 
+export interface PersistedStage0Segment extends Stage0SegmentDraft {
+  id: string;
+}
+
 function toCreateRow(segment: Stage0SegmentDraft) {
   return {
     bookId: segment.bookId,
@@ -82,6 +87,25 @@ function toSegmentDraft(
   row: Awaited<ReturnType<ChapterSegmentCreateManyDelegate["findMany"]>>[number]
 ): Stage0SegmentDraft {
   return {
+    bookId: row.bookId,
+    chapterId: row.chapterId,
+    runId: row.runId,
+    segmentIndex: row.segmentIndex,
+    segmentType: row.segmentType,
+    startOffset: row.startOffset,
+    endOffset: row.endOffset,
+    rawText: row.text,
+    normalizedText: row.normalizedText,
+    confidence: row.confidence,
+    speakerHint: row.speakerHint
+  };
+}
+
+function toPersistedSegment(
+  row: Awaited<ReturnType<ChapterSegmentCreateManyDelegate["findMany"]>>[number]
+): PersistedStage0Segment {
+  return {
+    id: row.id,
     bookId: row.bookId,
     chapterId: row.chapterId,
     runId: row.runId,
@@ -141,9 +165,24 @@ export function createStage0SegmentRepository(
     return rows.map(toSegmentDraft);
   }
 
+  async function listPersistedChapterSegments(
+    input: ListChapterSegmentsInput
+  ): Promise<PersistedStage0Segment[]> {
+    const rows = await client.chapterSegment.findMany({
+      where: {
+        runId: input.runId,
+        chapterId: input.chapterId
+      },
+      orderBy: { segmentIndex: "asc" }
+    });
+
+    return rows.map(toPersistedSegment);
+  }
+
   return {
     replaceChapterSegmentsForRun,
-    listChapterSegments
+    listChapterSegments,
+    listPersistedChapterSegments
   };
 }
 
