@@ -6,8 +6,8 @@ import { createAnalysisRunService } from "@/server/modules/analysis/runs/run-ser
 function createPrismaMock() {
   return {
     analysisRun: {
-      create   : vi.fn().mockResolvedValue({ id: "run-1" }),
-      update   : vi.fn().mockResolvedValue({ id: "run-1" })
+      create: vi.fn().mockResolvedValue({ id: "run-1" }),
+      update: vi.fn().mockResolvedValue({ id: "run-1" })
     },
     llmRawOutput: {
       aggregate: vi.fn().mockResolvedValue({
@@ -37,15 +37,15 @@ describe("analysis run service", () => {
     expect(result).toEqual({ id: "run-1" });
     expect(prismaMock.analysisRun.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        jobId           : "job-1",
-        bookId          : "book-1",
-        scope           : "FULL_BOOK",
-        trigger         : "ANALYSIS_JOB",
-        status          : AnalysisJobStatus.RUNNING,
-        startedAt       : expect.any(Date),
-        finishedAt      : null,
-        currentStageKey : null,
-        errorMessage    : null
+        jobId          : "job-1",
+        bookId         : "book-1",
+        scope          : "FULL_BOOK",
+        trigger        : "ANALYSIS_JOB",
+        status         : AnalysisJobStatus.RUNNING,
+        startedAt      : expect.any(Date),
+        finishedAt     : null,
+        currentStageKey: null,
+        errorMessage   : null
       }),
       select: { id: true }
     });
@@ -146,8 +146,8 @@ describe("analysis run service", () => {
   it("summarizeRun returns zeros when llmRawOutput delegate is missing", async () => {
     const service = createAnalysisRunService({
       analysisRun: {
-        create   : vi.fn(),
-        update   : vi.fn()
+        create: vi.fn(),
+        update: vi.fn()
       }
     } as never);
 

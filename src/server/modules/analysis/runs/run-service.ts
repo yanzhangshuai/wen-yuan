@@ -10,10 +10,10 @@ export type AnalysisRunTrigger =
   | "PROJECTION_REBUILD";
 
 export interface CreateJobRunInput {
-  jobId            : string;
-  bookId           : string;
-  scope            : string;
-  trigger          : AnalysisRunTrigger;
+  jobId             : string;
+  bookId            : string;
+  scope             : string;
+  trigger           : AnalysisRunTrigger;
   requestedByUserId?: string | null;
 }
 
@@ -68,7 +68,7 @@ function normalizeBigIntSum(value: bigint | number | null | undefined): bigint {
   return BigInt(0);
 }
 
-export function createAnalysisRunService(prismaClient: PrismaClient = prisma): AnalysisRunService {
+export function createAnalysisRunService(prismaClient: PrismaClient = prisma) {
   async function createJobRun(input: CreateJobRunInput): Promise<CreatedAnalysisRun> {
     if (!hasAnalysisRunCreateDelegate(prismaClient)) {
       return { id: null };
