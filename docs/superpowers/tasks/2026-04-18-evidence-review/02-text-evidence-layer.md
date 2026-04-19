@@ -58,5 +58,18 @@ pnpm type-check
 
 ## Execution Record
 
-No execution recorded yet.
-
+- Status: Completed
+- Branch: `dev_2`
+- Completed after T01 schema and state foundation.
+- Implemented original-text-first offset maps, evidence span validation, quote reconstruction, evidence jump metadata, and evidence span persistence helpers.
+- Validation:
+  - `pnpm test src/server/modules/analysis/evidence`
+  - `pnpm type-check`
+- Commits:
+  - `2c37e02` `feat: add evidence offset map helpers`
+  - `8a466a1` `feat: validate evidence spans`
+  - `4e0e917` `feat: reconstruct evidence quotes`
+  - `87b1c07` `feat: add evidence span persistence helpers`
+  - `dd8157d` `feat: expose evidence module api`
+  - `79f3fed` `fix: narrow evidence persistence helper client types`
+- Follow-up risks: idempotent single-span writes use a natural-key read-before-create because T01 did not add a unique constraint for evidence spans. Keep later claim writes tolerant of duplicate historical spans until a schema-level unique key is explicitly approved.

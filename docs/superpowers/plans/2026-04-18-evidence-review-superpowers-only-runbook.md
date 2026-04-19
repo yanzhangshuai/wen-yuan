@@ -107,7 +107,7 @@ Stop and ask the user before proceeding if any of these occur:
 
 - [x] T00: `docs/superpowers/tasks/2026-04-18-evidence-review/00-umbrella.md`
 - [x] T01: `docs/superpowers/tasks/2026-04-18-evidence-review/01-schema-and-state-foundation.md`
-- [ ] T02: `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`
+- [x] T02: `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`
 - [ ] T03: `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
 - [ ] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
 - [ ] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
@@ -171,3 +171,11 @@ Append one entry after each task:
 - Result: additive evidence-review foundation is in place, `relationTypeKey` remains a string field, and no legacy truth table was repurposed as the new review truth source.
 - Follow-up risks: the new tables are intentionally relation-light until the write path lands in T02-T04, so later tasks must keep repository joins explicit; migration SQL was generated from the HEAD schema baseline because current Prisma CLI requires shadow database configuration for `--from-migrations`.
 - Next task: T02 `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`
+
+### T02 Completion - 2026-04-19
+
+- Changed files: `src/server/modules/analysis/evidence/offset-map.ts`, `src/server/modules/analysis/evidence/offset-map.test.ts`, `src/server/modules/analysis/evidence/evidence-spans.ts`, `src/server/modules/analysis/evidence/evidence-spans.test.ts`, `src/server/modules/analysis/evidence/quote-reconstruction.ts`, `src/server/modules/analysis/evidence/quote-reconstruction.test.ts`, `src/server/modules/analysis/evidence/index.ts`, `src/server/modules/analysis/evidence/index.test.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm test src/server/modules/analysis/evidence`, `pnpm type-check`
+- Result: original-text-first evidence helpers are in place for offset lookup, span validation, quote reconstruction, jump metadata, and persistence access without introducing UI-specific logic into the server module.
+- Follow-up risks: idempotent single-span writes still rely on read-before-create natural-key checks because `EvidenceSpan` has no schema-level unique constraint yet; later claim write paths must remain tolerant of duplicate historical spans until that constraint is explicitly approved.
+- Next task: T03 `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
