@@ -1346,6 +1346,7 @@ model ChapterSegment {
   endOffset      Int                @map("end_offset")
   text           String             @db.Text
   normalizedText String             @map("normalized_text") @db.Text
+  confidence     Float              @default(1)
   speakerHint    String?            @map("speaker_hint")
   createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
 

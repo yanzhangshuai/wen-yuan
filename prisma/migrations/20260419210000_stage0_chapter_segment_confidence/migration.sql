@@ -1,0 +1,2 @@
+ALTER TABLE "chapter_segments"
+ADD COLUMN "confidence" DOUBLE PRECISION NOT NULL DEFAULT 1;

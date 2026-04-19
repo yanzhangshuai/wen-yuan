@@ -30,12 +30,14 @@ export type ChapterSegmentAvgAggregateOutputType = {
   segmentIndex: number | null
   startOffset: number | null
   endOffset: number | null
+  confidence: number | null
 }
 
 export type ChapterSegmentSumAggregateOutputType = {
   segmentIndex: number | null
   startOffset: number | null
   endOffset: number | null
+  confidence: number | null
 }
 
 export type ChapterSegmentMinAggregateOutputType = {
@@ -49,6 +51,7 @@ export type ChapterSegmentMinAggregateOutputType = {
   endOffset: number | null
   text: string | null
   normalizedText: string | null
+  confidence: number | null
   speakerHint: string | null
   createdAt: Date | null
 }
@@ -64,6 +67,7 @@ export type ChapterSegmentMaxAggregateOutputType = {
   endOffset: number | null
   text: string | null
   normalizedText: string | null
+  confidence: number | null
   speakerHint: string | null
   createdAt: Date | null
 }
@@ -79,6 +83,7 @@ export type ChapterSegmentCountAggregateOutputType = {
   endOffset: number
   text: number
   normalizedText: number
+  confidence: number
   speakerHint: number
   createdAt: number
   _all: number
@@ -89,12 +94,14 @@ export type ChapterSegmentAvgAggregateInputType = {
   segmentIndex?: true
   startOffset?: true
   endOffset?: true
+  confidence?: true
 }
 
 export type ChapterSegmentSumAggregateInputType = {
   segmentIndex?: true
   startOffset?: true
   endOffset?: true
+  confidence?: true
 }
 
 export type ChapterSegmentMinAggregateInputType = {
@@ -108,6 +115,7 @@ export type ChapterSegmentMinAggregateInputType = {
   endOffset?: true
   text?: true
   normalizedText?: true
+  confidence?: true
   speakerHint?: true
   createdAt?: true
 }
@@ -123,6 +131,7 @@ export type ChapterSegmentMaxAggregateInputType = {
   endOffset?: true
   text?: true
   normalizedText?: true
+  confidence?: true
   speakerHint?: true
   createdAt?: true
 }
@@ -138,6 +147,7 @@ export type ChapterSegmentCountAggregateInputType = {
   endOffset?: true
   text?: true
   normalizedText?: true
+  confidence?: true
   speakerHint?: true
   createdAt?: true
   _all?: true
@@ -240,6 +250,7 @@ export type ChapterSegmentGroupByOutputType = {
   endOffset: number
   text: string
   normalizedText: string
+  confidence: number
   speakerHint: string | null
   createdAt: Date
   _count: ChapterSegmentCountAggregateOutputType | null
@@ -278,6 +289,7 @@ export type ChapterSegmentWhereInput = {
   endOffset?: Prisma.IntFilter<"ChapterSegment"> | number
   text?: Prisma.StringFilter<"ChapterSegment"> | string
   normalizedText?: Prisma.StringFilter<"ChapterSegment"> | string
+  confidence?: Prisma.FloatFilter<"ChapterSegment"> | number
   speakerHint?: Prisma.StringNullableFilter<"ChapterSegment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ChapterSegment"> | Date | string
 }
@@ -293,6 +305,7 @@ export type ChapterSegmentOrderByWithRelationInput = {
   endOffset?: Prisma.SortOrder
   text?: Prisma.SortOrder
   normalizedText?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   speakerHint?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -312,6 +325,7 @@ export type ChapterSegmentWhereUniqueInput = Prisma.AtLeast<{
   endOffset?: Prisma.IntFilter<"ChapterSegment"> | number
   text?: Prisma.StringFilter<"ChapterSegment"> | string
   normalizedText?: Prisma.StringFilter<"ChapterSegment"> | string
+  confidence?: Prisma.FloatFilter<"ChapterSegment"> | number
   speakerHint?: Prisma.StringNullableFilter<"ChapterSegment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ChapterSegment"> | Date | string
 }, "id" | "runId_chapterId_segmentIndex">
@@ -327,6 +341,7 @@ export type ChapterSegmentOrderByWithAggregationInput = {
   endOffset?: Prisma.SortOrder
   text?: Prisma.SortOrder
   normalizedText?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   speakerHint?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ChapterSegmentCountOrderByAggregateInput
@@ -350,6 +365,7 @@ export type ChapterSegmentScalarWhereWithAggregatesInput = {
   endOffset?: Prisma.IntWithAggregatesFilter<"ChapterSegment"> | number
   text?: Prisma.StringWithAggregatesFilter<"ChapterSegment"> | string
   normalizedText?: Prisma.StringWithAggregatesFilter<"ChapterSegment"> | string
+  confidence?: Prisma.FloatWithAggregatesFilter<"ChapterSegment"> | number
   speakerHint?: Prisma.StringNullableWithAggregatesFilter<"ChapterSegment"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ChapterSegment"> | Date | string
 }
@@ -365,6 +381,7 @@ export type ChapterSegmentCreateInput = {
   endOffset: number
   text: string
   normalizedText: string
+  confidence?: number
   speakerHint?: string | null
   createdAt?: Date | string
 }
@@ -380,6 +397,7 @@ export type ChapterSegmentUncheckedCreateInput = {
   endOffset: number
   text: string
   normalizedText: string
+  confidence?: number
   speakerHint?: string | null
   createdAt?: Date | string
 }
@@ -395,6 +413,7 @@ export type ChapterSegmentUpdateInput = {
   endOffset?: Prisma.IntFieldUpdateOperationsInput | number
   text?: Prisma.StringFieldUpdateOperationsInput | string
   normalizedText?: Prisma.StringFieldUpdateOperationsInput | string
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   speakerHint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -410,6 +429,7 @@ export type ChapterSegmentUncheckedUpdateInput = {
   endOffset?: Prisma.IntFieldUpdateOperationsInput | number
   text?: Prisma.StringFieldUpdateOperationsInput | string
   normalizedText?: Prisma.StringFieldUpdateOperationsInput | string
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   speakerHint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -425,6 +445,7 @@ export type ChapterSegmentCreateManyInput = {
   endOffset: number
   text: string
   normalizedText: string
+  confidence?: number
   speakerHint?: string | null
   createdAt?: Date | string
 }
@@ -440,6 +461,7 @@ export type ChapterSegmentUpdateManyMutationInput = {
   endOffset?: Prisma.IntFieldUpdateOperationsInput | number
   text?: Prisma.StringFieldUpdateOperationsInput | string
   normalizedText?: Prisma.StringFieldUpdateOperationsInput | string
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   speakerHint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -455,6 +477,7 @@ export type ChapterSegmentUncheckedUpdateManyInput = {
   endOffset?: Prisma.IntFieldUpdateOperationsInput | number
   text?: Prisma.StringFieldUpdateOperationsInput | string
   normalizedText?: Prisma.StringFieldUpdateOperationsInput | string
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   speakerHint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -476,6 +499,7 @@ export type ChapterSegmentCountOrderByAggregateInput = {
   endOffset?: Prisma.SortOrder
   text?: Prisma.SortOrder
   normalizedText?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   speakerHint?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -484,6 +508,7 @@ export type ChapterSegmentAvgOrderByAggregateInput = {
   segmentIndex?: Prisma.SortOrder
   startOffset?: Prisma.SortOrder
   endOffset?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
 }
 
 export type ChapterSegmentMaxOrderByAggregateInput = {
@@ -497,6 +522,7 @@ export type ChapterSegmentMaxOrderByAggregateInput = {
   endOffset?: Prisma.SortOrder
   text?: Prisma.SortOrder
   normalizedText?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   speakerHint?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -512,6 +538,7 @@ export type ChapterSegmentMinOrderByAggregateInput = {
   endOffset?: Prisma.SortOrder
   text?: Prisma.SortOrder
   normalizedText?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
   speakerHint?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -520,6 +547,7 @@ export type ChapterSegmentSumOrderByAggregateInput = {
   segmentIndex?: Prisma.SortOrder
   startOffset?: Prisma.SortOrder
   endOffset?: Prisma.SortOrder
+  confidence?: Prisma.SortOrder
 }
 
 export type EnumChapterSegmentTypeFieldUpdateOperationsInput = {
@@ -539,6 +567,7 @@ export type ChapterSegmentSelect<ExtArgs extends runtime.Types.Extensions.Intern
   endOffset?: boolean
   text?: boolean
   normalizedText?: boolean
+  confidence?: boolean
   speakerHint?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chapterSegment"]>
@@ -554,6 +583,7 @@ export type ChapterSegmentSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   endOffset?: boolean
   text?: boolean
   normalizedText?: boolean
+  confidence?: boolean
   speakerHint?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chapterSegment"]>
@@ -569,6 +599,7 @@ export type ChapterSegmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   endOffset?: boolean
   text?: boolean
   normalizedText?: boolean
+  confidence?: boolean
   speakerHint?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chapterSegment"]>
@@ -584,11 +615,12 @@ export type ChapterSegmentSelectScalar = {
   endOffset?: boolean
   text?: boolean
   normalizedText?: boolean
+  confidence?: boolean
   speakerHint?: boolean
   createdAt?: boolean
 }
 
-export type ChapterSegmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "chapterId" | "runId" | "segmentIndex" | "segmentType" | "startOffset" | "endOffset" | "text" | "normalizedText" | "speakerHint" | "createdAt", ExtArgs["result"]["chapterSegment"]>
+export type ChapterSegmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "chapterId" | "runId" | "segmentIndex" | "segmentType" | "startOffset" | "endOffset" | "text" | "normalizedText" | "confidence" | "speakerHint" | "createdAt", ExtArgs["result"]["chapterSegment"]>
 
 export type $ChapterSegmentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ChapterSegment"
@@ -604,6 +636,7 @@ export type $ChapterSegmentPayload<ExtArgs extends runtime.Types.Extensions.Inte
     endOffset: number
     text: string
     normalizedText: string
+    confidence: number
     speakerHint: string | null
     createdAt: Date
   }, ExtArgs["result"]["chapterSegment"]>
@@ -1039,6 +1072,7 @@ export interface ChapterSegmentFieldRefs {
   readonly endOffset: Prisma.FieldRef<"ChapterSegment", 'Int'>
   readonly text: Prisma.FieldRef<"ChapterSegment", 'String'>
   readonly normalizedText: Prisma.FieldRef<"ChapterSegment", 'String'>
+  readonly confidence: Prisma.FieldRef<"ChapterSegment", 'Float'>
   readonly speakerHint: Prisma.FieldRef<"ChapterSegment", 'String'>
   readonly createdAt: Prisma.FieldRef<"ChapterSegment", 'DateTime'>
 }

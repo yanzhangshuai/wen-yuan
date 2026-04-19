@@ -787,6 +787,7 @@ export const ChapterSegmentScalarFieldEnum = {
   endOffset: 'endOffset',
   text: 'text',
   normalizedText: 'normalizedText',
+  confidence: 'confidence',
   speakerHint: 'speakerHint',
   createdAt: 'createdAt'
 } as const
