@@ -80,6 +80,43 @@ describe("analysis retry planner", () => {
     });
   });
 
+  it("deduplicates repeated Stage A chapter failures and uses the highest next attempt", async () => {
+    const { prisma } = createPrismaMock([
+      {
+        stageKey      : "STAGE_A",
+        chapterId     : "chapter-3",
+        attempt       : 1,
+        chapterStartNo: 3,
+        chapterEndNo  : 3
+      },
+      {
+        stageKey      : "STAGE_A",
+        chapterId     : "chapter-3",
+        attempt       : 4,
+        chapterStartNo: 3,
+        chapterEndNo  : 3
+      }
+    ]);
+    const planner = createAnalysisRetryPlanner(prisma);
+
+    const plan = await planner.planRunRetry("run-1");
+
+    expect(plan).toEqual({
+      retryKind: "CHAPTER",
+      runId    : "run-1",
+      items    : [
+        {
+          stageKey               : "STAGE_A",
+          chapterId              : "chapter-3",
+          chapterStartNo         : 3,
+          chapterEndNo           : 3,
+          nextAttempt            : 5,
+          preservePreviousOutputs: false
+        }
+      ]
+    });
+  });
+
   it("plans stage retry that preserves previous outputs for Stage B and Stage C failures", async () => {
     const { prisma } = createPrismaMock([
       {
@@ -176,6 +213,36 @@ describe("analysis retry planner", () => {
       retryKind: "NONE",
       runId    : "run-1",
       items    : []
+    });
+  });
+
+  it("falls back to a run retry for unknown STAGE_* keys", async () => {
+    const { prisma } = createPrismaMock([
+      {
+        stageKey      : "STAGE_X",
+        chapterId     : null,
+        attempt       : 2,
+        chapterStartNo: null,
+        chapterEndNo  : null
+      }
+    ]);
+    const planner = createAnalysisRetryPlanner(prisma);
+
+    const plan = await planner.planRunRetry("run-1");
+
+    expect(plan).toEqual({
+      retryKind: "RUN",
+      runId    : "run-1",
+      items    : [
+        {
+          stageKey               : "STAGE_X",
+          chapterId              : null,
+          chapterStartNo         : null,
+          chapterEndNo           : null,
+          nextAttempt            : 3,
+          preservePreviousOutputs: true
+        }
+      ]
     });
   });
 

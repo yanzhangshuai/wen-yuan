@@ -67,9 +67,45 @@ function hasStageRunFindManyDelegate(
   return typeof client.analysisStageRun?.findMany === "function";
 }
 
+function isKnownRetryStageKey(stageKey: string): boolean {
+  return stageKey === "STAGE_A"
+    || stageKey === "STAGE_B"
+    || stageKey === "STAGE_C"
+    || stageKey === "STAGE_D";
+}
+
+function toRetryTargetKey(row: FailedStageRunRow): string {
+  return JSON.stringify([
+    row.stageKey,
+    row.chapterId,
+    row.chapterStartNo,
+    row.chapterEndNo
+  ]);
+}
+
+function dedupeFailedStageRuns(rows: FailedStageRunRow[]): FailedStageRunRow[] {
+  const dedupedRowsByTarget = new Map<string, FailedStageRunRow>();
+
+  for (const row of rows) {
+    const retryTargetKey = toRetryTargetKey(row);
+    const existingRow = dedupedRowsByTarget.get(retryTargetKey);
+
+    if (existingRow === undefined || row.attempt > existingRow.attempt) {
+      dedupedRowsByTarget.set(retryTargetKey, row);
+    }
+  }
+
+  return Array.from(dedupedRowsByTarget.values());
+}
+
 function classifyRetryKind(rows: FailedStageRunRow[]): RetryKind {
   if (rows.length === 0) {
     return "NONE";
+  }
+
+  const onlyKnownStages = rows.every((row) => isKnownRetryStageKey(row.stageKey));
+  if (!onlyKnownStages) {
+    return "RUN";
   }
 
   const onlyChapterScopedStageA = rows.every(
@@ -79,8 +115,7 @@ function classifyRetryKind(rows: FailedStageRunRow[]): RetryKind {
     return "CHAPTER";
   }
 
-  const onlyKnownStages = rows.every((row) => row.stageKey.startsWith("STAGE_"));
-  return onlyKnownStages ? "STAGE" : "RUN";
+  return "STAGE";
 }
 
 function toRetryPlanItems(rows: FailedStageRunRow[]): RetryPlanItem[] {
@@ -128,11 +163,12 @@ export function createAnalysisRetryPlanner(
 
   async function planRunRetry(runId: string): Promise<RetryPlan> {
     const failedStageRuns = await loadFailedStageRuns(runId);
+    const retryTargets = dedupeFailedStageRuns(failedStageRuns);
 
     return {
-      retryKind: classifyRetryKind(failedStageRuns),
+      retryKind: classifyRetryKind(retryTargets),
       runId,
-      items    : toRetryPlanItems(failedStageRuns)
+      items    : toRetryPlanItems(retryTargets)
     };
   }
 
