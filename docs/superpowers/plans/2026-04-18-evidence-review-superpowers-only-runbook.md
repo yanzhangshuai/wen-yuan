@@ -110,7 +110,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T02: `docs/superpowers/tasks/2026-04-18-evidence-review/02-text-evidence-layer.md`
 - [x] T03: `docs/superpowers/tasks/2026-04-18-evidence-review/03-claim-storage-contracts.md`
 - [x] T04: `docs/superpowers/tasks/2026-04-18-evidence-review/04-run-observability-retry.md`
-- [ ] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
+- [x] T17: `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
 - [ ] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
 - [ ] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
 - [ ] T07: `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
@@ -195,3 +195,11 @@ Append one entry after each task:
 - Result: run observability contracts are available before Stage 0/A/A+/B/B.5/C/D implement fine-grained extraction writes, and job-level cancellation now preserves the expected terminal semantics when later chapter failures cascade.
 - Follow-up risks: cost is token-first and nullable until model pricing is wired in T19; raw output security and retention policy may need tightening before production retention is enabled; repository-level `pnpm test` coverage gates currently make single-file job test commands fail even when assertions pass.
 - Next task: T17 `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`
+
+### T17 Completion - 2026-04-19
+
+- Changed files: `prisma/schema.prisma`, `prisma/migrations/20260419183000_knowledge_v2_foundation/migration.sql`, `src/generated/prisma/**`, `src/server/modules/knowledge-v2/base-types.ts`, `src/server/modules/knowledge-v2/base-types.test.ts`, `src/server/modules/knowledge-v2/payload-schemas.ts`, `src/server/modules/knowledge-v2/payload-schemas.test.ts`, `src/server/modules/knowledge-v2/repository.ts`, `src/server/modules/knowledge-v2/repository.test.ts`, `src/server/modules/knowledge-v2/runtime-loader.ts`, `src/server/modules/knowledge-v2/runtime-loader.test.ts`, `src/server/modules/knowledge-v2/promotion.ts`, `src/server/modules/knowledge-v2/promotion.test.ts`, `src/server/modules/knowledge-v2/index.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/17-kb-v2-foundation.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/knowledge-v2/runtime-loader.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/knowledge-v2/promotion.test.ts --coverage=false`, `pnpm test src/server/modules/knowledge-v2`, `pnpm exec eslint src/server/modules/knowledge-v2`, `pnpm prisma validate --schema prisma/schema.prisma`, `pnpm prisma:generate`, `pnpm type-check`
+- Result: KB v2 now has one unified knowledge object, shared scope/review/source/version contracts, negative knowledge payloads, runtime loading semantics, and a reviewed-claim promotion foundation without cutting over legacy knowledge callers.
+- Follow-up risks: runtime integration into Stage A+ is still pending T07; relation catalog governance/UI is still pending T18/T12/T14; old split knowledge tables still exist until T20 cutover.
+- Next task: T05 `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`

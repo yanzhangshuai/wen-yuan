@@ -1170,6 +1170,9 @@ export type $KnowledgeItemPayload<ExtArgs extends runtime.Types.Extensions.Inter
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     scopeType: $Enums.KnowledgeScopeType
+    /**
+     * DB 约束 `knowledge_items_scope_id_check`：仅 GLOBAL 可为 null，其他 scope 必须非空。
+     */
     scopeId: string | null
     knowledgeType: string
     payload: runtime.JsonValue
