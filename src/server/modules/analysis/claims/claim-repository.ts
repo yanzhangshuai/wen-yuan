@@ -16,10 +16,10 @@ export const CLAIM_STAGE_KEYS = Object.freeze([
 export type ClaimStageKey = (typeof CLAIM_STAGE_KEYS)[number];
 
 export interface ClaimWriteScope {
-  bookId   : string;
+  bookId    : string;
   chapterId?: string | null;
-  runId    : string;
-  stageKey : ClaimStageKey;
+  runId     : string;
+  stageKey  : ClaimStageKey;
 }
 
 export interface ReplaceClaimFamilyScopeInput<TFamily extends ClaimFamily> {
@@ -73,13 +73,13 @@ interface ReviewableClaimDelegate<Row> extends CreateManyDelegate<Row> {
 }
 
 export interface ClaimRepositoryTransactionClient {
-  entityMention: CreateManyDelegate<ClaimCreateDataByFamily["ENTITY_MENTION"]>;
-  aliasClaim: ReviewableClaimDelegate<ClaimCreateDataByFamily["ALIAS"]>;
-  eventClaim: ReviewableClaimDelegate<ClaimCreateDataByFamily["EVENT"]>;
-  relationClaim: ReviewableClaimDelegate<ClaimCreateDataByFamily["RELATION"]>;
-  timeClaim: ReviewableClaimDelegate<ClaimCreateDataByFamily["TIME"]>;
+  entityMention          : CreateManyDelegate<ClaimCreateDataByFamily["ENTITY_MENTION"]>;
+  aliasClaim             : ReviewableClaimDelegate<ClaimCreateDataByFamily["ALIAS"]>;
+  eventClaim             : ReviewableClaimDelegate<ClaimCreateDataByFamily["EVENT"]>;
+  relationClaim          : ReviewableClaimDelegate<ClaimCreateDataByFamily["RELATION"]>;
+  timeClaim              : ReviewableClaimDelegate<ClaimCreateDataByFamily["TIME"]>;
   identityResolutionClaim: ReviewableClaimDelegate<ClaimCreateDataByFamily["IDENTITY_RESOLUTION"]>;
-  conflictFlag: ReviewableClaimDelegate<ClaimCreateDataByFamily["CONFLICT_FLAG"]>;
+  conflictFlag           : ReviewableClaimDelegate<ClaimCreateDataByFamily["CONFLICT_FLAG"]>;
 }
 
 export interface ClaimRepositoryClient extends ClaimRepositoryTransactionClient {

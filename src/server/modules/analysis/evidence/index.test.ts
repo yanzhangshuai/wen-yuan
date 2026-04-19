@@ -98,7 +98,7 @@ describe("analysis evidence public API coverage guard", () => {
       endOffset     : chapterText.length,
       text          : chapterText.slice(4),
       normalizedText: chapterText.slice(4),
-      speakerHint   : "旁白",
+      speakerHint   : "旁白"
     };
     const startOffset = chapterText.indexOf("范进");
     const endOffset = startOffset + "范进说".length;
@@ -234,8 +234,8 @@ describe("analysis evidence public API coverage guard", () => {
     expect(quote.quotedText).toBe("范进说");
     expect(buildHighlightedQuoteContext({
       chapterText,
-      startOffset : 3,
-      endOffset   : 6,
+      startOffset  : 3,
+      endOffset    : 6,
       contextRadius: 2
     })).toEqual({
       before            : "文。",

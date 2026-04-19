@@ -65,14 +65,14 @@ describe("evidence span validation", () => {
       chapterText,
       segment,
       draft: {
-        bookId         : BOOK_ID,
-        chapterId      : CHAPTER_ID,
-        segmentId      : SEGMENT_ID,
+        bookId        : BOOK_ID,
+        chapterId     : CHAPTER_ID,
+        segmentId     : SEGMENT_ID,
         startOffset,
         endOffset,
-        expectedText   : "范进说",
-        speakerHint    : "范进",
-        createdByRunId : RUN_ID
+        expectedText  : "范进说",
+        speakerHint   : "范进",
+        createdByRunId: RUN_ID
       }
     });
 
@@ -256,7 +256,7 @@ describe("evidence span persistence helpers", () => {
     ])).resolves.toEqual({ count: 2 });
 
     expect(prisma.evidenceSpan.createMany).toHaveBeenCalledWith({
-      data          : [
+      data: [
         materializedSpan,
         { ...materializedSpan, startOffset: 10, endOffset: 12, quotedText: "中了", normalizedText: "中了" }
       ],
@@ -322,7 +322,7 @@ describe("evidence span persistence helpers", () => {
       },
       orderBy: [
         { startOffset: "asc" },
-        { endOffset  : "asc" }
+        { endOffset: "asc" }
       ]
     });
   });

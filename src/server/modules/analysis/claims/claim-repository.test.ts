@@ -104,23 +104,23 @@ describe("claim repository replace-by-scope", () => {
       },
       rows: [
         {
-          bookId                   : BOOK_ID,
-          chapterId                : CHAPTER_ID,
-          aliasText                : "范老爷",
-          aliasType                : "TITLE",
-          personaCandidateId       : null,
-          targetPersonaCandidateId : null,
-          claimKind                : "TITLE_OF",
-          evidenceSpanIds          : ["66666666-6666-4666-8666-666666666666"],
-          confidence               : 0.8,
-          reviewState              : "PENDING",
-          source                   : "AI",
-          runId                    : RUN_ID,
-          supersedesClaimId        : null,
-          derivedFromClaimId       : null,
-          createdByUserId          : null,
-          reviewedByUserId         : null,
-          reviewNote               : null
+          bookId                  : BOOK_ID,
+          chapterId               : CHAPTER_ID,
+          aliasText               : "范老爷",
+          aliasType               : "TITLE",
+          personaCandidateId      : null,
+          targetPersonaCandidateId: null,
+          claimKind               : "TITLE_OF",
+          evidenceSpanIds         : ["66666666-6666-4666-8666-666666666666"],
+          confidence              : 0.8,
+          reviewState             : "PENDING",
+          source                  : "AI",
+          runId                   : RUN_ID,
+          supersedesClaimId       : null,
+          derivedFromClaimId      : null,
+          createdByUserId         : null,
+          reviewedByUserId        : null,
+          reviewNote              : null
         }
       ]
     })).resolves.toEqual({ deletedCount: 1, createdCount: 2 });
@@ -165,18 +165,18 @@ describe("claim repository replace-by-scope", () => {
 
   it.each([
     {
-      family       : "ENTITY_MENTION" as const,
-      scope        : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_extraction" as const },
-      expectedWhere: { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "AI" },
+      family        : "ENTITY_MENTION" as const,
+      scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_extraction" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "AI" },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey : "entityMention" as const
+      deleteSpyKey  : "entityMention" as const
     },
     {
-      family       : "ALIAS" as const,
-      scope        : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
-      expectedWhere: { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
+      family        : "ALIAS" as const,
+      scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
       expectedResult: { deletedCount: 1, createdCount: 0 },
-      deleteSpyKey : "aliasClaim" as const
+      deleteSpyKey  : "aliasClaim" as const
     },
     {
       family       : "EVENT" as const,
@@ -189,14 +189,14 @@ describe("claim repository replace-by-scope", () => {
         derivedFromClaimId: null
       },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey: "eventClaim" as const
+      deleteSpyKey  : "eventClaim" as const
     },
     {
-      family       : "EVENT" as const,
-      scope        : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
-      expectedWhere: { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
+      family        : "EVENT" as const,
+      scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey : "eventClaim" as const
+      deleteSpyKey  : "eventClaim" as const
     },
     {
       family       : "EVENT" as const,
@@ -209,7 +209,7 @@ describe("claim repository replace-by-scope", () => {
         derivedFromClaimId: { not: null }
       },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey: "eventClaim" as const
+      deleteSpyKey  : "eventClaim" as const
     },
     {
       family       : "RELATION" as const,
@@ -222,14 +222,14 @@ describe("claim repository replace-by-scope", () => {
         derivedFromClaimId: null
       },
       expectedResult: { deletedCount: 4, createdCount: 0 },
-      deleteSpyKey: "relationClaim" as const
+      deleteSpyKey  : "relationClaim" as const
     },
     {
-      family       : "RELATION" as const,
-      scope        : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
-      expectedWhere: { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
+      family        : "RELATION" as const,
+      scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
       expectedResult: { deletedCount: 4, createdCount: 0 },
-      deleteSpyKey : "relationClaim" as const
+      deleteSpyKey  : "relationClaim" as const
     },
     {
       family       : "TIME" as const,
@@ -242,14 +242,14 @@ describe("claim repository replace-by-scope", () => {
         derivedFromClaimId: null
       },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey: "timeClaim" as const
+      deleteSpyKey  : "timeClaim" as const
     },
     {
-      family       : "TIME" as const,
-      scope        : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
-      expectedWhere: { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
+      family        : "TIME" as const,
+      scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey : "timeClaim" as const
+      deleteSpyKey  : "timeClaim" as const
     },
     {
       family       : "TIME" as const,
@@ -262,21 +262,21 @@ describe("claim repository replace-by-scope", () => {
         derivedFromClaimId: { not: null }
       },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey: "timeClaim" as const
+      deleteSpyKey  : "timeClaim" as const
     },
     {
-      family       : "IDENTITY_RESOLUTION" as const,
-      scope        : { bookId: BOOK_ID, runId: RUN_ID, stageKey: "stage_b_identity_resolution" as const },
-      expectedWhere: { bookId: BOOK_ID, runId: RUN_ID, source: "AI" },
+      family        : "IDENTITY_RESOLUTION" as const,
+      scope         : { bookId: BOOK_ID, runId: RUN_ID, stageKey: "stage_b_identity_resolution" as const },
+      expectedWhere : { bookId: BOOK_ID, runId: RUN_ID, source: "AI" },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey : "identityResolutionClaim" as const
+      deleteSpyKey  : "identityResolutionClaim" as const
     },
     {
-      family       : "CONFLICT_FLAG" as const,
-      scope        : { bookId: BOOK_ID, chapterId: null, runId: RUN_ID, stageKey: "stage_b5_conflict_detection" as const },
-      expectedWhere: { bookId: BOOK_ID, chapterId: null, runId: RUN_ID, source: "RULE" },
+      family        : "CONFLICT_FLAG" as const,
+      scope         : { bookId: BOOK_ID, chapterId: null, runId: RUN_ID, stageKey: "stage_b5_conflict_detection" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: null, runId: RUN_ID, source: "RULE" },
       expectedResult: { deletedCount: 0, createdCount: 0 },
-      deleteSpyKey : "conflictFlag" as const
+      deleteSpyKey  : "conflictFlag" as const
     }
   ])("builds the correct delete scope for $family at $scope.stageKey", async ({ family, scope, expectedWhere, expectedResult, deleteSpyKey }) => {
     const { prisma, tx } = createRepositoryClient();
@@ -304,7 +304,7 @@ describe("claim repository replace-by-scope", () => {
 
     await expect(repository.replaceClaimFamilyScope({
       family,
-      scope : {
+      scope: {
         bookId   : BOOK_ID,
         chapterId: CHAPTER_ID,
         runId    : RUN_ID,

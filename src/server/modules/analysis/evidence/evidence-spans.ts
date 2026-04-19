@@ -157,7 +157,7 @@ export function validateEvidenceSpanDraft(
 }
 
 export interface EvidenceSpanRow extends MaterializedEvidenceSpanData {
-  id       : string;
+  id        : string;
   createdAt?: Date;
 }
 
@@ -180,12 +180,12 @@ export interface EvidenceSpanPersistenceClient {
   evidenceSpan: {
     create(args: { data: MaterializedEvidenceSpanData }): Promise<EvidenceSpanRow>;
     createMany(args: {
-      data: MaterializedEvidenceSpanData[];
+      data          : MaterializedEvidenceSpanData[];
       skipDuplicates: boolean;
     }): Promise<{ count: number }>;
     findFirst(args: { where: EvidenceSpanNaturalKeyWhere }): Promise<EvidenceSpanRow | null>;
     findMany(args: {
-      where: EvidenceSpanLookupInput;
+      where  : EvidenceSpanLookupInput;
       orderBy: Array<{ startOffset: "asc" } | { endOffset: "asc" }>;
     }): Promise<EvidenceSpanRow[]>;
   };
@@ -264,7 +264,7 @@ export async function listEvidenceSpans(
     where  : input,
     orderBy: [
       { startOffset: "asc" },
-      { endOffset  : "asc" }
+      { endOffset: "asc" }
     ]
   });
 }

@@ -9,8 +9,8 @@ const RUN_ID = "33333333-3333-4333-8333-333333333333";
 
 function segment(content: string, title = "第一回 王冕读书") {
   return segmentChapterText({
-    bookId: BOOK_ID,
-    runId: RUN_ID,
+    bookId : BOOK_ID,
+    runId  : RUN_ID,
     chapter: {
       id: CHAPTER_ID,
       no: 1,
@@ -29,8 +29,8 @@ describe("segmentChapterText", () => {
     expect(result.segments[0]).toMatchObject({
       segmentType: "TITLE",
       startOffset: 0,
-      rawText: "第一回 王冕读书",
-      confidence: 0.85
+      rawText    : "第一回 王冕读书",
+      confidence : 0.85
     });
     expect(result.segments[0].normalizedText).toBe(
       normalizeTextForEvidence("第一回 王冕读书")
@@ -55,12 +55,12 @@ describe("segmentChapterText", () => {
     ]);
     expect(result.segments[0]).toMatchObject({
       segmentType: "DIALOGUE_LEAD",
-      rawText: "王冕道：",
+      rawText    : "王冕道：",
       speakerHint: "王冕"
     });
     expect(result.segments[1]).toMatchObject({
       segmentType: "DIALOGUE_CONTENT",
-      rawText: "“秦老深夜来此，必有要事相商。”",
+      rawText    : "“秦老深夜来此，必有要事相商。”",
       speakerHint: "王冕"
     });
   });

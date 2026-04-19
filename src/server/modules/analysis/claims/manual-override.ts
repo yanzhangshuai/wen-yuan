@@ -1,6 +1,5 @@
 import type {
   ClaimCreateDataByFamily,
-  ClaimDraftByFamily,
   ManualOverrideFamily
 } from "@/server/modules/analysis/claims/claim-schemas";
 import {
@@ -76,7 +75,7 @@ export function createManualOverrideService(repository: ClaimRepository) {
           createdByUserId   : input.actorUserId,
           reviewedByUserId  : input.actorUserId,
           reviewNote        : input.reviewNote ?? null
-        }) as ClaimDraftByFamily[TFamily];
+        });
 
         await txRepository.updateReviewableClaimReviewState({
           family          : input.family,

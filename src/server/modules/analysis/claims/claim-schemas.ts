@@ -128,29 +128,29 @@ export const aliasClaimDraftSchema = lineageCapableClaimBaseSchema.extend({
 }).superRefine(addManualCreatorIssue);
 
 export const eventClaimDraftSchema = lineageCapableClaimBaseSchema.extend({
-  claimFamily               : z.literal("EVENT"),
-  chapterId                 : uuidSchema,
-  subjectMentionId          : nullableUuidSchema,
-  subjectPersonaCandidateId : nullableUuidSchema,
-  predicate                 : z.string().trim().min(1).max(120),
-  objectText                : nullableTrimmedTextSchema,
-  objectPersonaCandidateId  : nullableUuidSchema,
-  locationText              : nullableTrimmedTextSchema,
-  timeHintId                : nullableUuidSchema,
-  eventCategory             : z.nativeEnum(BioCategory),
-  narrativeLens             : z.nativeEnum(NarrativeLens)
+  claimFamily              : z.literal("EVENT"),
+  chapterId                : uuidSchema,
+  subjectMentionId         : nullableUuidSchema,
+  subjectPersonaCandidateId: nullableUuidSchema,
+  predicate                : z.string().trim().min(1).max(120),
+  objectText               : nullableTrimmedTextSchema,
+  objectPersonaCandidateId : nullableUuidSchema,
+  locationText             : nullableTrimmedTextSchema,
+  timeHintId               : nullableUuidSchema,
+  eventCategory            : z.nativeEnum(BioCategory),
+  narrativeLens            : z.nativeEnum(NarrativeLens)
 }).superRefine(addManualCreatorIssue);
 
 export const relationClaimDraftSchema = lineageCapableClaimBaseSchema.extend({
-  claimFamily              : z.literal("RELATION"),
-  chapterId                : uuidSchema,
-  sourceMentionId          : nullableUuidSchema,
-  targetMentionId          : nullableUuidSchema,
-  sourcePersonaCandidateId : nullableUuidSchema,
-  targetPersonaCandidateId : nullableUuidSchema,
-  effectiveChapterStart    : z.number().int().positive().nullable(),
-  effectiveChapterEnd      : z.number().int().positive().nullable(),
-  timeHintId               : nullableUuidSchema
+  claimFamily             : z.literal("RELATION"),
+  chapterId               : uuidSchema,
+  sourceMentionId         : nullableUuidSchema,
+  targetMentionId         : nullableUuidSchema,
+  sourcePersonaCandidateId: nullableUuidSchema,
+  targetPersonaCandidateId: nullableUuidSchema,
+  effectiveChapterStart   : z.number().int().positive().nullable(),
+  effectiveChapterEnd     : z.number().int().positive().nullable(),
+  timeHintId              : nullableUuidSchema
 })
   .merge(relationTypeSelectionSchema)
   .superRefine((value, ctx) => {
@@ -248,13 +248,13 @@ export const claimDraftSchema = z.union([
 ]);
 
 export interface ClaimDraftByFamily {
-  ENTITY_MENTION: z.infer<typeof entityMentionDraftSchema>;
-  ALIAS: z.infer<typeof aliasClaimDraftSchema>;
-  EVENT: z.infer<typeof eventClaimDraftSchema>;
-  RELATION: z.infer<typeof relationClaimDraftSchema>;
-  TIME: z.infer<typeof timeClaimDraftSchema>;
+  ENTITY_MENTION     : z.infer<typeof entityMentionDraftSchema>;
+  ALIAS              : z.infer<typeof aliasClaimDraftSchema>;
+  EVENT              : z.infer<typeof eventClaimDraftSchema>;
+  RELATION           : z.infer<typeof relationClaimDraftSchema>;
+  TIME               : z.infer<typeof timeClaimDraftSchema>;
   IDENTITY_RESOLUTION: z.infer<typeof identityResolutionClaimDraftSchema>;
-  CONFLICT_FLAG: z.infer<typeof conflictFlagDraftSchema>;
+  CONFLICT_FLAG      : z.infer<typeof conflictFlagDraftSchema>;
 }
 
 export type ClaimDraft = ClaimDraftByFamily[ClaimFamily];

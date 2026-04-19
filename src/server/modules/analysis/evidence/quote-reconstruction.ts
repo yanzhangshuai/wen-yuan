@@ -21,9 +21,9 @@ export class QuoteReconstructionError extends Error {
 }
 
 export interface ReconstructQuoteFromTextInput {
-  chapterText : string;
-  startOffset : number;
-  endOffset   : number;
+  chapterText: string;
+  startOffset: number;
+  endOffset  : number;
 }
 
 export interface ReconstructedQuote {
@@ -136,9 +136,9 @@ export async function reconstructQuoteFromChapter(
   }
 
   const quote = reconstructQuoteFromText({
-    chapterText : chapter.content,
-    startOffset : input.startOffset,
-    endOffset   : input.endOffset
+    chapterText: chapter.content,
+    startOffset: input.startOffset,
+    endOffset  : input.endOffset
   });
 
   return {
@@ -164,13 +164,13 @@ export function buildHighlightedQuoteContext(
     before,
     quote,
     after,
-    contextText       : `${before}${quote}${after}`,
+    contextText   : `${before}${quote}${after}`,
     contextStartOffset,
     contextEndOffset,
-    highlightStart    : input.startOffset - contextStartOffset,
-    highlightEnd      : input.endOffset - contextStartOffset,
-    clippedBefore     : contextStartOffset > 0,
-    clippedAfter      : contextEndOffset < input.chapterText.length
+    highlightStart: input.startOffset - contextStartOffset,
+    highlightEnd  : input.endOffset - contextStartOffset,
+    clippedBefore : contextStartOffset > 0,
+    clippedAfter  : contextEndOffset < input.chapterText.length
   };
 }
 

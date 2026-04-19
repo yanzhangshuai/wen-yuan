@@ -119,9 +119,9 @@ describe("quote reconstruction", () => {
     }, vi.fn().mockResolvedValue(null))).rejects.toBeInstanceOf(QuoteReconstructionError);
 
     expect(() => reconstructQuoteFromText({
-      chapterText : "范进",
-      startOffset : 2,
-      endOffset   : 1
+      chapterText: "范进",
+      startOffset: 2,
+      endOffset  : 1
     })).toThrow(QuoteReconstructionError);
   });
 });

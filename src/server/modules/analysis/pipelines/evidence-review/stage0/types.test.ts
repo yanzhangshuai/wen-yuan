@@ -27,8 +27,8 @@ describe("Stage 0 type contracts", () => {
       assertStage0SegmentOffsets({
         chapterText,
         startOffset: 0,
-        endOffset: 4,
-        rawText: "王冕道："
+        endOffset  : 4,
+        rawText    : "王冕道："
       })
     ).not.toThrow();
   });
@@ -40,8 +40,8 @@ describe("Stage 0 type contracts", () => {
       assertStage0SegmentOffsets({
         chapterText,
         startOffset: 0,
-        endOffset: 999,
-        rawText: chapterText
+        endOffset  : 999,
+        rawText    : chapterText
       })
     ).toThrow(Stage0SegmentOffsetError);
   });
@@ -53,8 +53,8 @@ describe("Stage 0 type contracts", () => {
       assertStage0SegmentOffsets({
         chapterText,
         startOffset: 0,
-        endOffset: 2,
-        rawText: "秦老"
+        endOffset  : 2,
+        rawText    : "秦老"
       })
     ).toThrow("does not match chapter text");
   });

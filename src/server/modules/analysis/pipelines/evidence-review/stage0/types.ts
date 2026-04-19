@@ -13,65 +13,65 @@ export type Stage0SegmentType = (typeof STAGE0_SEGMENT_TYPE_VALUES)[number];
 export type Stage0ChapterConfidence = "HIGH" | "LOW";
 
 export interface Stage0ChapterInput {
-  bookId: string;
-  runId: string;
+  bookId : string;
+  runId  : string;
   chapter: {
-    id: string;
-    no: number;
-    title: string;
+    id     : string;
+    no     : number;
+    title  : string;
     content: string;
   };
 }
 
 export interface Stage0SegmentDraft {
-  bookId: string;
-  chapterId: string;
-  runId: string;
-  segmentIndex: number;
-  segmentType: Stage0SegmentType;
-  startOffset: number;
-  endOffset: number;
-  rawText: string;
+  bookId        : string;
+  chapterId     : string;
+  runId         : string;
+  segmentIndex  : number;
+  segmentType   : Stage0SegmentType;
+  startOffset   : number;
+  endOffset     : number;
+  rawText       : string;
   normalizedText: string;
-  confidence: number;
-  speakerHint: string | null;
+  confidence    : number;
+  speakerHint   : string | null;
 }
 
 export interface Stage0LowConfidenceReason {
-  code: "UNKNOWN_RATIO_HIGH" | "OFFSET_VALIDATION_FAILED";
+  code   : "UNKNOWN_RATIO_HIGH" | "OFFSET_VALIDATION_FAILED";
   message: string;
 }
 
 export interface Stage0ChapterSegmentationResult {
-  bookId: string;
-  chapterId: string;
-  runId: string;
-  chapterNo: number;
-  segments: Stage0SegmentDraft[];
-  confidence: Stage0ChapterConfidence;
-  unknownRatio: number;
+  bookId              : string;
+  chapterId           : string;
+  runId               : string;
+  chapterNo           : number;
+  segments            : Stage0SegmentDraft[];
+  confidence          : Stage0ChapterConfidence;
+  unknownRatio        : number;
   lowConfidenceReasons: Stage0LowConfidenceReason[];
 }
 
 export interface Stage0SegmentRunInput {
-  bookId: string;
-  runId: string | null;
+  bookId  : string;
+  runId   : string | null;
   attempt?: number;
   chapters: Array<{
-    id: string;
-    no: number;
-    title: string;
+    id     : string;
+    no     : number;
+    title  : string;
     content: string;
   }>;
 }
 
 export interface Stage0SegmentRunResult {
-  bookId: string;
-  runId: string | null;
-  stageRunId: string | null;
-  inputCount: number;
-  outputCount: number;
-  skippedCount: number;
+  bookId        : string;
+  runId         : string | null;
+  stageRunId    : string | null;
+  inputCount    : number;
+  outputCount   : number;
+  skippedCount  : number;
   chapterResults: Stage0ChapterSegmentationResult[];
 }
 
@@ -85,8 +85,8 @@ export class Stage0SegmentOffsetError extends Error {
 export function assertStage0SegmentOffsets(input: {
   chapterText: string;
   startOffset: number;
-  endOffset: number;
-  rawText: string;
+  endOffset  : number;
+  rawText    : string;
 }): void {
   if (
     !Number.isInteger(input.startOffset)

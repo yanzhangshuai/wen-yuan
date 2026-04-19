@@ -17,7 +17,7 @@ import {
 export const STAGE0_STAGE_KEY = "STAGE_0";
 
 export interface Stage0SegmenterDependencies {
-  repository?: Stage0SegmentRepository;
+  repository?     : Stage0SegmentRepository;
   stageRunService?: AnalysisStageRunService;
 }
 
@@ -26,30 +26,30 @@ function stableHash(value: unknown): string {
 }
 
 function chapterBounds(input: Stage0SegmentRunInput): {
-  chapterId: string | null;
+  chapterId     : string | null;
   chapterStartNo: number | null;
-  chapterEndNo: number | null;
+  chapterEndNo  : number | null;
 } {
   if (input.chapters.length === 1) {
     return {
-      chapterId: input.chapters[0].id,
+      chapterId     : input.chapters[0].id,
       chapterStartNo: input.chapters[0].no,
-      chapterEndNo: input.chapters[0].no
+      chapterEndNo  : input.chapters[0].no
     };
   }
 
   if (input.chapters.length === 0) {
     return {
-      chapterId: null,
+      chapterId     : null,
       chapterStartNo: null,
-      chapterEndNo: null
+      chapterEndNo  : null
     };
   }
 
   return {
-    chapterId: null,
+    chapterId     : null,
     chapterStartNo: Math.min(...input.chapters.map((chapter) => chapter.no)),
-    chapterEndNo: Math.max(...input.chapters.map((chapter) => chapter.no))
+    chapterEndNo  : Math.max(...input.chapters.map((chapter) => chapter.no))
   };
 }
 
@@ -62,12 +62,12 @@ export function createStage0Segmenter(dependencies: Stage0SegmenterDependencies 
   ): Promise<Stage0SegmentRunResult> {
     if (input.chapters.length === 0) {
       return {
-        bookId: input.bookId,
-        runId: input.runId,
-        stageRunId: null,
-        inputCount: 0,
-        outputCount: 0,
-        skippedCount: 0,
+        bookId        : input.bookId,
+        runId         : input.runId,
+        stageRunId    : null,
+        inputCount    : 0,
+        outputCount   : 0,
+        skippedCount  : 0,
         chapterResults: []
       };
     }
@@ -75,22 +75,22 @@ export function createStage0Segmenter(dependencies: Stage0SegmenterDependencies 
     const bounds = chapterBounds(input);
     const inputHash = stableHash(
       input.chapters.map((chapter) => ({
-        id: chapter.id,
-        no: chapter.no,
-        title: chapter.title,
+        id     : chapter.id,
+        no     : chapter.no,
+        title  : chapter.title,
         content: chapter.content
       }))
     );
     const started = await stageRunService.startStageRun({
-      runId: input.runId,
-      bookId: input.bookId,
-      chapterId: bounds.chapterId,
-      stageKey: STAGE0_STAGE_KEY,
-      attempt: input.attempt ?? 1,
+      runId         : input.runId,
+      bookId        : input.bookId,
+      chapterId     : bounds.chapterId,
+      stageKey      : STAGE0_STAGE_KEY,
+      attempt       : input.attempt ?? 1,
       inputHash,
-      inputCount: input.chapters.length,
+      inputCount    : input.chapters.length,
       chapterStartNo: bounds.chapterStartNo,
-      chapterEndNo: bounds.chapterEndNo
+      chapterEndNo  : bounds.chapterEndNo
     });
 
     try {
@@ -102,14 +102,14 @@ export function createStage0Segmenter(dependencies: Stage0SegmenterDependencies 
 
         const result = segmentChapterText({
           bookId: input.bookId,
-          runId: input.runId,
+          runId : input.runId,
           chapter
         });
 
         await repository.replaceChapterSegmentsForRun({
-          runId: input.runId,
+          runId    : input.runId,
           chapterId: chapter.id,
-          segments: result.segments
+          segments : result.segments
         });
 
         chapterResults.push(result);
@@ -122,9 +122,9 @@ export function createStage0Segmenter(dependencies: Stage0SegmenterDependencies 
       await stageRunService.succeedStageRun(started.id, {
         outputHash: stableHash(
           chapterResults.map((result) => ({
-            chapterId: result.chapterId,
+            chapterId   : result.chapterId,
             segmentCount: result.segments.length,
-            confidence: result.confidence,
+            confidence  : result.confidence,
             unknownRatio: result.unknownRatio
           }))
         ),
@@ -133,10 +133,10 @@ export function createStage0Segmenter(dependencies: Stage0SegmenterDependencies 
       });
 
       return {
-        bookId: input.bookId,
-        runId: input.runId,
-        stageRunId: started.id,
-        inputCount: input.chapters.length,
+        bookId      : input.bookId,
+        runId       : input.runId,
+        stageRunId  : started.id,
+        inputCount  : input.chapters.length,
         outputCount,
         skippedCount: 0,
         chapterResults
@@ -148,15 +148,15 @@ export function createStage0Segmenter(dependencies: Stage0SegmenterDependencies 
   }
 
   async function runStage0ForChapter(input: {
-    bookId: string;
-    runId: string | null;
+    bookId  : string;
+    runId   : string | null;
     attempt?: number;
-    chapter: Stage0SegmentRunInput["chapters"][number];
+    chapter : Stage0SegmentRunInput["chapters"][number];
   }): Promise<Stage0SegmentRunResult> {
     return runStage0ForChapters({
-      bookId: input.bookId,
-      runId: input.runId,
-      attempt: input.attempt,
+      bookId  : input.bookId,
+      runId   : input.runId,
+      attempt : input.attempt,
       chapters: [input.chapter]
     });
   }

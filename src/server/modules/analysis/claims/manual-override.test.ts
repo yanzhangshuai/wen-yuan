@@ -29,9 +29,9 @@ function createRepositoryMock(
   summary: ReviewableClaimSummary | null = DEFAULT_SUMMARY
 ): RepositoryMockPair {
   const txRepository: ClaimRepository = {
-    transaction: async <T>(work: (tx: ClaimRepository) => Promise<T>): Promise<T> => work(txRepository),
-    replaceClaimFamilyScope        : vi.fn(),
-    findReviewableClaimSummary     : vi.fn().mockResolvedValue(summary),
+    transaction                     : async <T>(work: (tx: ClaimRepository) => Promise<T>): Promise<T> => work(txRepository),
+    replaceClaimFamilyScope         : vi.fn(),
+    findReviewableClaimSummary      : vi.fn().mockResolvedValue(summary),
     updateReviewableClaimReviewState: vi.fn().mockResolvedValue({
       id         : summary?.id ?? RELATION_CLAIM_ID,
       reviewState: "EDITED",
@@ -75,10 +75,10 @@ function createRepositoryMock(
 
   const repository: ClaimRepository = {
     transaction,
-    replaceClaimFamilyScope        : vi.fn(),
-    findReviewableClaimSummary     : vi.fn().mockRejectedValue(new Error("Expected transactional lookup")),
+    replaceClaimFamilyScope         : vi.fn(),
+    findReviewableClaimSummary      : vi.fn().mockRejectedValue(new Error("Expected transactional lookup")),
     updateReviewableClaimReviewState: vi.fn().mockRejectedValue(new Error("Expected transactional review update")),
-    createReviewableClaim          : vi.fn().mockRejectedValue(new Error("Expected transactional create"))
+    createReviewableClaim           : vi.fn().mockRejectedValue(new Error("Expected transactional create"))
   };
 
   return {
@@ -139,12 +139,12 @@ describe("manual override service", () => {
     expect(txRepository.createReviewableClaim).toHaveBeenCalledWith(
       "RELATION",
       expect.objectContaining({
-        source           : "MANUAL",
-        reviewState      : "ACCEPTED",
-        supersedesClaimId: RELATION_CLAIM_ID,
+        source            : "MANUAL",
+        reviewState       : "ACCEPTED",
+        supersedesClaimId : RELATION_CLAIM_ID,
         derivedFromClaimId: RELATION_CLAIM_ID,
-        createdByUserId  : USER_ID,
-        reviewedByUserId : USER_ID
+        createdByUserId   : USER_ID,
+        reviewedByUserId  : USER_ID
       })
     );
     expect(repository.createReviewableClaim).not.toHaveBeenCalled();

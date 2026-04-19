@@ -36,15 +36,15 @@ const CJK_CHAR_REGEX = /[\u4e00-\u9fff]/g;
 
 interface ClaimedRange {
   startOffset: number;
-  endOffset: number;
+  endOffset  : number;
   segmentType: Stage0SegmentType;
-  confidence: number;
+  confidence : number;
   speakerHint: string | null;
 }
 
 function createSegment(input: {
-  source: Stage0ChapterInput;
-  range: ClaimedRange;
+  source      : Stage0ChapterInput;
+  range       : ClaimedRange;
   segmentIndex: number;
 }): Stage0SegmentDraft {
   const rawText = input.source.chapter.content.slice(
@@ -53,24 +53,24 @@ function createSegment(input: {
   );
 
   const segment: Stage0SegmentDraft = {
-    bookId: input.source.bookId,
-    chapterId: input.source.chapter.id,
-    runId: input.source.runId,
-    segmentIndex: input.segmentIndex,
-    segmentType: input.range.segmentType,
-    startOffset: input.range.startOffset,
-    endOffset: input.range.endOffset,
+    bookId        : input.source.bookId,
+    chapterId     : input.source.chapter.id,
+    runId         : input.source.runId,
+    segmentIndex  : input.segmentIndex,
+    segmentType   : input.range.segmentType,
+    startOffset   : input.range.startOffset,
+    endOffset     : input.range.endOffset,
     rawText,
     normalizedText: normalizeTextForEvidence(rawText),
-    confidence: input.range.confidence,
-    speakerHint: input.range.speakerHint
+    confidence    : input.range.confidence,
+    speakerHint   : input.range.speakerHint
   };
 
   assertStage0SegmentOffsets({
     chapterText: input.source.chapter.content,
     startOffset: segment.startOffset,
-    endOffset: segment.endOffset,
-    rawText: segment.rawText
+    endOffset  : segment.endOffset,
+    rawText    : segment.rawText
   });
 
   return segment;
@@ -121,9 +121,9 @@ function findTitleRange(source: Stage0ChapterInput): ClaimedRange | null {
 
   return {
     startOffset,
-    endOffset: startOffset + title.length,
+    endOffset  : startOffset + title.length,
     segmentType: "TITLE",
-    confidence: TITLE_CONFIDENCE,
+    confidence : TITLE_CONFIDENCE,
     speakerHint: null
   };
 }
@@ -166,7 +166,7 @@ function findPoemRanges(chapterText: string, protectedRanges: ClaimedRange[]): C
       startOffset,
       endOffset,
       segmentType: "POEM",
-      confidence: KNOWN_CONFIDENCE,
+      confidence : KNOWN_CONFIDENCE,
       speakerHint: null
     });
     lastEnd = endOffset;
@@ -200,9 +200,9 @@ function findDialogueRanges(chapterText: string, protectedRanges: ClaimedRange[]
         speakerHint = intro[1];
         ranges.push({
           startOffset: leadStart,
-          endOffset: quoteStart,
+          endOffset  : quoteStart,
           segmentType: "DIALOGUE_LEAD",
-          confidence: KNOWN_CONFIDENCE,
+          confidence : KNOWN_CONFIDENCE,
           speakerHint
         });
       }
@@ -210,9 +210,9 @@ function findDialogueRanges(chapterText: string, protectedRanges: ClaimedRange[]
 
     ranges.push({
       startOffset: quoteStart,
-      endOffset: quoteEnd,
+      endOffset  : quoteEnd,
       segmentType: "DIALOGUE_CONTENT",
-      confidence: KNOWN_CONFIDENCE,
+      confidence : KNOWN_CONFIDENCE,
       speakerHint
     });
   }
@@ -269,7 +269,7 @@ function subtractClaimedRanges(
     if (claimed.startOffset > cursor) {
       leftovers.push({
         startOffset: cursor,
-        endOffset: Math.min(claimed.startOffset, lineRange.endOffset)
+        endOffset  : Math.min(claimed.startOffset, lineRange.endOffset)
       });
     }
 
@@ -279,7 +279,7 @@ function subtractClaimedRanges(
   if (cursor < lineRange.endOffset) {
     leftovers.push({
       startOffset: cursor,
-      endOffset: lineRange.endOffset
+      endOffset  : lineRange.endOffset
     });
   }
 
@@ -299,7 +299,7 @@ function findLeftoverRanges(chapterText: string, claimedRanges: ClaimedRange[]):
       return {
         ...range,
         segmentType,
-        confidence: segmentType === "UNKNOWN" ? UNKNOWN_CONFIDENCE : KNOWN_CONFIDENCE,
+        confidence : segmentType === "UNKNOWN" ? UNKNOWN_CONFIDENCE : KNOWN_CONFIDENCE,
         speakerHint: null
       };
     })
@@ -329,7 +329,7 @@ export function segmentChapterText(input: Stage0ChapterInput): Stage0ChapterSegm
       return {
         ...range,
         segmentType,
-        confidence: segmentType === "UNKNOWN" ? UNKNOWN_CONFIDENCE : KNOWN_CONFIDENCE,
+        confidence : segmentType === "UNKNOWN" ? UNKNOWN_CONFIDENCE : KNOWN_CONFIDENCE,
         speakerHint: null
       } satisfies ClaimedRange;
     })
@@ -344,7 +344,7 @@ export function segmentChapterText(input: Stage0ChapterInput): Stage0ChapterSegm
 
   const segments = allRanges.map((range, index) =>
     createSegment({
-      source: input,
+      source      : input,
       range,
       segmentIndex: index
     })
@@ -360,16 +360,16 @@ export function segmentChapterText(input: Stage0ChapterInput): Stage0ChapterSegm
     confidence === "LOW"
       ? [
           {
-            code: "UNKNOWN_RATIO_HIGH",
+            code   : "UNKNOWN_RATIO_HIGH",
             message: `UNKNOWN segment ratio ${unknownRatio.toFixed(4)} exceeds 0.10`
           }
         ]
       : [];
 
   return {
-    bookId: input.bookId,
+    bookId   : input.bookId,
     chapterId: input.chapter.id,
-    runId: input.runId,
+    runId    : input.runId,
     chapterNo: input.chapter.no,
     segments,
     confidence,
