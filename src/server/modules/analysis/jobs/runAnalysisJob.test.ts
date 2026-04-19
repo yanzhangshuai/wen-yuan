@@ -445,6 +445,69 @@ describe("analysis job runner", () => {
     });
   });
 
+  it("keeps cancel semantics when all chapters fail after the job is canceled", async () => {
+    const jobId = "job-observable-canceled";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      analyzeChapter,
+      analysisJobUpdate,
+      prismaMock
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.RUNNING })
+      .mockResolvedValueOnce({ status: AnalysisJobStatus.CANCELED });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+    analyzeChapter.mockRejectedValueOnce(new Error("ai failed"));
+
+    await expect(runner.runAnalysisJobById(jobId)).resolves.toBeUndefined();
+
+    expect(prismaMock.analysisStageRun.update).toHaveBeenCalledWith({
+      where: { id: "stage-run-observable" },
+      data : expect.objectContaining({
+        status      : AnalysisStageRunStatus.FAILED,
+        failureCount: 1,
+        errorClass  : "CANCELED"
+      })
+    });
+    expect(prismaMock.analysisRun.update).toHaveBeenCalledWith({
+      where: { id: "run-observable" },
+      data : expect.objectContaining({
+        status         : AnalysisJobStatus.CANCELED,
+        currentStageKey: null
+      })
+    });
+    expect(analysisJobUpdate).not.toHaveBeenCalledWith({
+      where: { id: jobId },
+      data : expect.objectContaining({
+        status: AnalysisJobStatus.FAILED
+      })
+    });
+  });
+
   // 用例语义：章节已成功落库时，进度写入异常不应中断整书任务。
   it("keeps job successful when incremental book progress write fails", async () => {
     const {

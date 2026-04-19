@@ -850,6 +850,18 @@ export function createAnalysisJobRunner(
           }
         });
         completedChapters = pipelineResult.completedChapters;
+        if (
+          pipelineResult.completedChapters === 0
+          && pipelineResult.failedChapters > 0
+          && await isJobCanceled(prismaClient, runningJob.id)
+        ) {
+          await stageRunService.failStageRun(pipelineStage.id, new Error(`解析任务 ${runningJob.id} 已取消`), {
+            failureCount: Math.max(1, chapters.length - completedChapters),
+            errorClass  : "CANCELED"
+          });
+          await runService.cancelRun(analysisRunId);
+          return;
+        }
         if (pipelineResult.completedChapters === 0 && pipelineResult.failedChapters > 0) {
           throw new Error(`所有章节解析失败，共 ${pipelineResult.failedChapters} 章`);
         }
