@@ -137,16 +137,23 @@ function buildBaseScopeWhere(scope: ClaimWriteScope, requireChapterId = false): 
 function buildReplacementWhere(family: ClaimFamily, scope: ClaimWriteScope): DeleteWhere {
   switch (family) {
     case "ENTITY_MENTION":
-      if (scope.stageKey !== "stage_a_extraction") {
-        throw new ClaimRepositoryError(
-          `Stage ${scope.stageKey} cannot replace claim family ${family}`
-        );
+      if (scope.stageKey === "stage_a_extraction") {
+        return {
+          ...buildBaseScopeWhere(scope, true),
+          source: "AI"
+        };
       }
 
-      return {
-        ...buildBaseScopeWhere(scope, true),
-        source: "AI"
-      };
+      if (scope.stageKey === "stage_a_plus_knowledge_recall") {
+        return {
+          ...buildBaseScopeWhere(scope, true),
+          source: "RULE"
+        };
+      }
+
+      throw new ClaimRepositoryError(
+        `Stage ${scope.stageKey} cannot replace claim family ${family}`
+      );
 
     case "ALIAS":
       if (scope.stageKey === "stage_a_extraction") {

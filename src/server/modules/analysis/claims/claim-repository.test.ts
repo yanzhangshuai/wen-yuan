@@ -172,6 +172,13 @@ describe("claim repository replace-by-scope", () => {
       deleteSpyKey  : "entityMention" as const
     },
     {
+      family        : "ENTITY_MENTION" as const,
+      scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
+      expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
+      expectedResult: { deletedCount: 0, createdCount: 0 },
+      deleteSpyKey  : "entityMention" as const
+    },
+    {
       family        : "ALIAS" as const,
       scope         : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, stageKey: "stage_a_plus_knowledge_recall" as const },
       expectedWhere : { bookId: BOOK_ID, chapterId: CHAPTER_ID, runId: RUN_ID, source: "RULE" },
@@ -292,7 +299,6 @@ describe("claim repository replace-by-scope", () => {
   });
 
   it.each([
-    { family: "ENTITY_MENTION" as const, stageKey: "stage_a_plus_knowledge_recall" as const },
     { family: "ALIAS" as const, stageKey: "stage_b_identity_resolution" as const },
     { family: "EVENT" as const, stageKey: "stage_b_identity_resolution" as const },
     { family: "RELATION" as const, stageKey: "stage_b5_conflict_detection" as const },

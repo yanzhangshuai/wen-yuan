@@ -171,6 +171,56 @@ describe("claim write service", () => {
     });
   });
 
+  it("accepts stage-a-plus rule entity mention batches", async () => {
+    const repository = {
+      replaceClaimFamilyScope: vi.fn().mockResolvedValue({ deletedCount: 0, createdCount: 1 })
+    };
+    const service = createClaimWriteService(repository);
+
+    await service.writeClaimBatch({
+      family: "ENTITY_MENTION",
+      scope : {
+        bookId   : BOOK_ID,
+        chapterId: CHAPTER_ID,
+        runId    : RUN_ID,
+        stageKey : "stage_a_plus_knowledge_recall"
+      },
+      drafts: [
+        {
+          claimFamily              : "ENTITY_MENTION",
+          bookId                   : BOOK_ID,
+          chapterId                : CHAPTER_ID,
+          runId                    : RUN_ID,
+          source                   : "RULE",
+          confidence               : 0.88,
+          surfaceText              : "范老爷",
+          mentionKind              : "TITLE_ONLY",
+          identityClaim            : null,
+          aliasTypeHint            : "TITLE",
+          speakerPersonaCandidateId: null,
+          suspectedResolvesTo      : null,
+          evidenceSpanId           : EVIDENCE_ID
+        }
+      ]
+    });
+
+    expect(repository.replaceClaimFamilyScope).toHaveBeenCalledWith({
+      family: "ENTITY_MENTION",
+      scope : {
+        bookId   : BOOK_ID,
+        chapterId: CHAPTER_ID,
+        runId    : RUN_ID,
+        stageKey : "stage_a_plus_knowledge_recall"
+      },
+      rows: [
+        expect.objectContaining({
+          surfaceText: "范老爷",
+          source     : "RULE"
+        })
+      ]
+    });
+  });
+
   it("uses empty batches to clear stale machine rows during reruns", async () => {
     const repository = {
       replaceClaimFamilyScope: vi.fn().mockResolvedValue({ deletedCount: 3, createdCount: 0 })
