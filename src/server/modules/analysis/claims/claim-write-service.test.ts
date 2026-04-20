@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { BioCategory, NarrativeLens, TimeType } from "@/generated/prisma/enums";
+import {
+  AliasClaimKind,
+  AliasType,
+  BioCategory,
+  NarrativeLens,
+  TimeType
+} from "@/generated/prisma/enums";
 import { createClaimWriteService } from "@/server/modules/analysis/claims/claim-write-service";
 
 const BOOK_ID = "11111111-1111-4111-8111-111111111111";
@@ -254,6 +260,132 @@ describe("claim write service", () => {
       ]
     })).rejects.toThrowError(
       "Claim batch source mismatch for ENTITY_MENTION at stage_a_plus_knowledge_recall: expected RULE, got AI"
+    );
+
+    expect(repository.replaceClaimFamilyScope).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      family: "ALIAS" as const,
+      draft : {
+        claimFamily             : "ALIAS" as const,
+        bookId                  : BOOK_ID,
+        chapterId               : CHAPTER_ID,
+        aliasText               : "范老爷",
+        aliasType               : AliasType.TITLE,
+        personaCandidateId      : null,
+        targetPersonaCandidateId: null,
+        claimKind               : AliasClaimKind.TITLE_OF,
+        evidenceSpanIds         : [EVIDENCE_ID],
+        confidence              : 0.71,
+        reviewState             : "PENDING" as const,
+        source                  : "AI" as const,
+        runId                   : RUN_ID,
+        supersedesClaimId       : null,
+        derivedFromClaimId      : null,
+        createdByUserId         : null,
+        reviewedByUserId        : null,
+        reviewNote              : null
+      }
+    },
+    {
+      family: "EVENT" as const,
+      draft : {
+        claimFamily              : "EVENT" as const,
+        bookId                   : BOOK_ID,
+        chapterId                : CHAPTER_ID,
+        subjectMentionId         : null,
+        subjectPersonaCandidateId: null,
+        predicate                : "赴宴",
+        objectText               : null,
+        objectPersonaCandidateId : null,
+        locationText             : null,
+        timeHintId               : null,
+        eventCategory            : BioCategory.SOCIAL,
+        narrativeLens            : NarrativeLens.SELF,
+        evidenceSpanIds          : [EVIDENCE_ID],
+        confidence               : 0.72,
+        reviewState              : "PENDING" as const,
+        source                   : "AI" as const,
+        runId                    : RUN_ID,
+        supersedesClaimId        : null,
+        derivedFromClaimId       : null,
+        createdByUserId          : null,
+        reviewedByUserId         : null,
+        reviewNote               : null
+      }
+    },
+    {
+      family: "RELATION" as const,
+      draft : {
+        claimFamily             : "RELATION" as const,
+        bookId                  : BOOK_ID,
+        chapterId               : CHAPTER_ID,
+        sourceMentionId         : null,
+        targetMentionId         : null,
+        sourcePersonaCandidateId: null,
+        targetPersonaCandidateId: null,
+        relationTypeKey         : "mentor_of",
+        relationLabel           : "师徒",
+        relationTypeSource      : "CUSTOM" as const,
+        direction               : "FORWARD" as const,
+        effectiveChapterStart   : null,
+        effectiveChapterEnd     : null,
+        timeHintId              : null,
+        evidenceSpanIds         : [EVIDENCE_ID],
+        confidence              : 0.73,
+        reviewState             : "PENDING" as const,
+        source                  : "AI" as const,
+        runId                   : RUN_ID,
+        supersedesClaimId       : null,
+        derivedFromClaimId      : null,
+        createdByUserId         : null,
+        reviewedByUserId        : null,
+        reviewNote              : null
+      }
+    },
+    {
+      family: "TIME" as const,
+      draft : {
+        claimFamily        : "TIME" as const,
+        bookId             : BOOK_ID,
+        chapterId          : CHAPTER_ID,
+        rawTimeText        : "次日",
+        timeType           : TimeType.RELATIVE_PHASE,
+        normalizedLabel    : "次日",
+        relativeOrderWeight: 2,
+        chapterRangeStart  : 3,
+        chapterRangeEnd    : 3,
+        evidenceSpanIds    : [EVIDENCE_ID],
+        confidence         : 0.74,
+        reviewState        : "PENDING" as const,
+        source             : "AI" as const,
+        runId              : RUN_ID,
+        supersedesClaimId  : null,
+        derivedFromClaimId : null,
+        createdByUserId    : null,
+        reviewedByUserId   : null,
+        reviewNote         : null
+      }
+    }
+  ])("rejects stage-a-plus $family batches when source is not RULE", async ({ family, draft }) => {
+    const repository = {
+      replaceClaimFamilyScope: vi.fn()
+    };
+    const service = createClaimWriteService(repository);
+
+    await expect(service.writeClaimBatch({
+      family,
+      scope : {
+        bookId   : BOOK_ID,
+        chapterId: CHAPTER_ID,
+        runId    : RUN_ID,
+        stageKey : "stage_a_plus_knowledge_recall"
+      },
+      drafts: [draft]
+    })).rejects.toThrowError(
+      `Claim batch source mismatch for ${family} at stage_a_plus_knowledge_recall: expected RULE, got AI`
     );
 
     expect(repository.replaceClaimFamilyScope).not.toHaveBeenCalled();

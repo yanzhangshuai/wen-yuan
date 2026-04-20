@@ -37,6 +37,26 @@ function getDraftChapterId<TFamily extends ClaimFamily>(draft: ClaimDraftByFamil
   return "chapterId" in draft ? (draft.chapterId ?? null) : null;
 }
 
+function getExpectedStageScopedSource(
+  family: ClaimFamily,
+  scope: ClaimWriteScope
+): "RULE" | null {
+  if (scope.stageKey !== "stage_a_plus_knowledge_recall") {
+    return null;
+  }
+
+  switch (family) {
+    case "ENTITY_MENTION":
+    case "ALIAS":
+    case "EVENT":
+    case "RELATION":
+    case "TIME":
+      return "RULE";
+    default:
+      return null;
+  }
+}
+
 function assertDraftMatchesScope<TFamily extends ClaimFamily>(
   family: TFamily,
   scope: ClaimWriteScope,
@@ -66,13 +86,11 @@ function assertDraftMatchesScope<TFamily extends ClaimFamily>(
     );
   }
 
-  if (
-    family === "ENTITY_MENTION"
-    && scope.stageKey === "stage_a_plus_knowledge_recall"
-    && draft.source !== "RULE"
-  ) {
+  const expectedSource = getExpectedStageScopedSource(family, scope);
+
+  if (expectedSource !== null && draft.source !== expectedSource) {
     throw new ClaimWriteServiceError(
-      `Claim batch source mismatch for ${family} at ${scope.stageKey}: expected RULE, got ${draft.source}`
+      `Claim batch source mismatch for ${family} at ${scope.stageKey}: expected ${expectedSource}, got ${draft.source}`
     );
   }
 }
