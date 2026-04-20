@@ -115,7 +115,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
 - [x] T07: `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
 - [x] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
-- [ ] T08: `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
+- [x] T08: `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
 - [ ] T09: `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
 - [ ] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
 - [ ] T11: `docs/superpowers/tasks/2026-04-18-evidence-review/11-stage-d-projection-builder.md`
@@ -235,3 +235,11 @@ Append one entry after each task:
 - Result: relation types are now governed by a KB v2 backed catalog that supports presets, custom relation promotion, synonym lookup, disabled suppression, and Stage A+ reuse without introducing a closed enum.
 - Follow-up risks: review APIs and relation editor CRUD/UI still land in T12/T14; historical relation claims still keep raw labels and need review-side governance before projection.
 - Next task: T08 `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
+
+### T08 Completion - 2026-04-20
+
+- Changed files: `src/server/modules/analysis/pipelines/evidence-review/stageB/**`, `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageB --coverage=false`, `pnpm exec tsc --noEmit --pretty false --incremental false`, `pnpm exec eslint src/server/modules/analysis/pipelines/evidence-review/stageB/IdentityResolver.ts src/server/modules/analysis/pipelines/evidence-review/stageB/IdentityResolver.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB/index.ts`
+- Result: Stage B now deterministically resolves whole-book identity candidates from Stage A mentions and Stage A+ alias signals, persists review-native `persona_candidates` plus `IDENTITY_RESOLUTION` claims, preserves explicit split/unsure semantics for blocked merges, and records a cost-free Stage B run for observability.
+- Follow-up risks: T09 still needs to turn Stage B conflict semantics into explicit cross-claim consistency flags; Stage C and projection layers still need to consume `persona_candidates` rather than legacy persona tables.
+- Next task: T09 `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`

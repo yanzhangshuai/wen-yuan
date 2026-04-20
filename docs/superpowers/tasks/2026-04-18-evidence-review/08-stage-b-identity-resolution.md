@@ -24,15 +24,15 @@ Cluster chapter-level mentions and alias candidates into full-book `persona_cand
 
 ## Execution Checkpoints
 
-- [ ] Read Stage A mentions, alias claims, and Stage A+ suggestions.
-- [ ] Implement candidate clustering with confidence and evidence scoring.
-- [ ] Generate `persona_candidates`.
-- [ ] Generate `identity_resolution_claims`.
-- [ ] Generate merge, split, and keep-separate suggestions.
-- [ ] Model impersonation and misidentification as explicit identity claims or conflicts.
-- [ ] Preserve low-confidence clusters as pending or conflicted review objects.
-- [ ] Add tests for same person with multiple names, same name across different people, official-title ambiguity, kinship ambiguity, impersonation, and merge denial.
-- [ ] Add an execution record and mark T08 complete in the runbook only after validation passes.
+- [x] Read Stage A mentions, alias claims, and Stage A+ suggestions.
+- [x] Implement candidate clustering with confidence and evidence scoring.
+- [x] Generate `persona_candidates`.
+- [x] Generate `identity_resolution_claims`.
+- [x] Generate merge, split, and keep-separate suggestions.
+- [x] Model impersonation and misidentification as explicit identity claims or conflicts.
+- [x] Preserve low-confidence clusters as pending or conflicted review objects.
+- [x] Add tests for same person with multiple names, same name across different people, official-title ambiguity, kinship ambiguity, impersonation, and merge denial.
+- [x] Add an execution record and mark T08 complete in the runbook only after validation passes.
 
 ## Validation
 
@@ -43,10 +43,10 @@ pnpm type-check
 
 ## Acceptance Criteria
 
-- [ ] Full-book candidate clustering persists with mention traceability.
-- [ ] Impersonation, misidentification, and merge denial are explicit.
-- [ ] Merge and split suggestions do not create final personas.
-- [ ] Stage C and review APIs can consume resolution outputs.
+- [x] Full-book candidate clustering persists with mention traceability.
+- [x] Impersonation, misidentification, and merge denial are explicit.
+- [x] Merge and split suggestions do not create final personas.
+- [x] Stage C and review APIs can consume resolution outputs.
 
 ## Stop Conditions
 
@@ -56,5 +56,12 @@ pnpm type-check
 
 ## Execution Record
 
-No execution recorded yet.
+Completed on 2026-04-20.
 
+- Implemented `stageB/types.ts`, `alias-conflicts.ts`, `repository.ts`, `candidate-clustering.ts`, `resolution-drafts.ts`, `persister.ts`, `IdentityResolver.ts`, and `stageB/index.ts` with matching unit tests.
+- Stage B now reads whole-book Stage A mentions plus Stage A+ alias hints, clusters them conservatively into `persona_candidates`, and writes chapter-traceable `IDENTITY_RESOLUTION` claims without creating final `personas`.
+- Explicit negative alias rules, impersonation, misidentification, conflicting canonical hints, and title-only ambiguity remain surfaced as split/unsure review outputs instead of being flattened into merge signals.
+- Validation completed with:
+  - `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageB --coverage=false`
+  - `pnpm exec tsc --noEmit --pretty false --incremental false`
+  - `pnpm exec eslint src/server/modules/analysis/pipelines/evidence-review/stageB/IdentityResolver.ts src/server/modules/analysis/pipelines/evidence-review/stageB/IdentityResolver.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB/index.ts`
