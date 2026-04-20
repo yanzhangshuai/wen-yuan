@@ -6,13 +6,17 @@ import {
 } from "@/generated/prisma/enums";
 import {
   detectAliasConflicts,
+  detectImpossibleLocationConflicts,
   detectLowEvidenceClaimConflicts,
-  detectRelationDirectionConflicts
+  detectPostMortemActionConflicts,
+  detectRelationDirectionConflicts,
+  detectTimeOrderConflicts
 } from "@/server/modules/analysis/pipelines/evidence-review/stageB5/conflict-rules";
 import type {
   StageB5EventClaimRow,
   StageB5IdentityResolutionClaimRow,
-  StageB5RelationClaimRow
+  StageB5RelationClaimRow,
+  StageB5TimeClaimRow
 } from "@/server/modules/analysis/pipelines/evidence-review/stageB5/types";
 
 const BOOK_ID = "11111111-1111-4111-8111-111111111111";
@@ -94,6 +98,29 @@ function eventClaim(overrides: Partial<StageB5EventClaimRow> = {}): StageB5Event
   };
 }
 
+function timeClaim(overrides: Partial<StageB5TimeClaimRow> = {}): StageB5TimeClaimRow {
+  return {
+    id                 : "time-1",
+    bookId             : BOOK_ID,
+    chapterId          : CHAPTER_ID,
+    chapterNo          : 10,
+    runId              : RUN_ID,
+    rawTimeText        : "次日",
+    timeType           : "RELATIVE_PHASE",
+    normalizedLabel    : "次日",
+    relativeOrderWeight: 2,
+    chapterRangeStart  : 11,
+    chapterRangeEnd    : 11,
+    evidenceSpanIds    : ["evidence-7"],
+    confidence         : 0.7,
+    reviewState        : "PENDING",
+    source             : "AI",
+    derivedFromClaimId : null,
+    reviewNote         : null,
+    ...overrides
+  };
+}
+
 describe("stageB5/conflict-rules first pass", () => {
   it("emits ALIAS_CONFLICT from stage-b blocker tags", () => {
     const findings = detectAliasConflicts([
@@ -148,6 +175,88 @@ describe("stageB5/conflict-rules first pass", () => {
         recommendedActionKey: "REQUEST_MORE_EVIDENCE",
         relatedClaimKind    : "EVENT",
         relatedClaimIds     : ["event-1"]
+      })
+    ]);
+  });
+
+  it("emits POST_MORTEM_ACTION when a candidate acts after a death event", () => {
+    const findings = detectPostMortemActionConflicts([
+      eventClaim({
+        id                       : "death-event",
+        chapterNo                : 8,
+        eventCategory            : "DEATH",
+        predicate                : "病逝",
+        evidenceSpanIds          : ["evidence-8"],
+        subjectPersonaCandidateId: "candidate-1"
+      }),
+      eventClaim({
+        id                       : "later-event",
+        chapterNo                : 12,
+        eventCategory            : "EVENT",
+        predicate                : "赴宴",
+        evidenceSpanIds          : ["evidence-9"],
+        subjectPersonaCandidateId: "candidate-1"
+      })
+    ]);
+
+    expect(findings).toEqual([
+      expect.objectContaining({
+        conflictType              : ConflictType.POST_MORTEM_ACTION,
+        severity                  : ConflictSeverity.CRITICAL,
+        relatedClaimIds           : ["death-event", "later-event"],
+        relatedPersonaCandidateIds: ["candidate-1"]
+      })
+    ]);
+  });
+
+  it("emits IMPOSSIBLE_LOCATION when the same candidate appears in mutually exclusive places in one chapter", () => {
+    const findings = detectImpossibleLocationConflicts([
+      eventClaim({
+        id             : "event-beijing",
+        locationText   : "北京",
+        evidenceSpanIds: ["evidence-10"]
+      }),
+      eventClaim({
+        id             : "event-nanjing",
+        locationText   : "南京",
+        evidenceSpanIds: ["evidence-11"]
+      })
+    ]);
+
+    expect(findings).toEqual([
+      expect.objectContaining({
+        conflictType    : ConflictType.IMPOSSIBLE_LOCATION,
+        relatedClaimKind: "EVENT",
+        relatedClaimIds : ["event-beijing", "event-nanjing"]
+      })
+    ]);
+  });
+
+  it("emits TIME_ORDER_CONFLICT when an event chapter falls outside the bound time hint range", () => {
+    const findings = detectTimeOrderConflicts({
+      eventClaims: [
+        eventClaim({
+          id        : "event-out-of-range",
+          chapterNo : 20,
+          timeHintId: "time-1"
+        })
+      ],
+      relationClaims: [],
+      timeClaims    : [
+        timeClaim({
+          id               : "time-1",
+          chapterRangeStart: 4,
+          chapterRangeEnd  : 6
+        })
+      ]
+    });
+
+    expect(findings).toEqual([
+      expect.objectContaining({
+        conflictType     : ConflictType.TIME_ORDER_CONFLICT,
+        relatedClaimKind : null,
+        relatedClaimIds  : ["event-out-of-range", "time-1"],
+        relatedChapterIds: [CHAPTER_ID]
       })
     ]);
   });

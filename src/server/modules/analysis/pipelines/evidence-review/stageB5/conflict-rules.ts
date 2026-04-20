@@ -3,6 +3,7 @@ import {
   ConflictSeverity,
   ConflictType
 } from "@/generated/prisma/enums";
+import { areMutuallyExclusive } from "@/server/modules/analysis/preprocessor/locationExclusivityGraph";
 import {
   STAGE_B5_LOW_EVIDENCE_THRESHOLD,
   type StageB5AliasClaimRow,
@@ -256,4 +257,217 @@ export function detectLowEvidenceClaimConflicts(input: Pick<
     ...lowEvidenceFromFamily(ClaimKind.TIME, input.timeClaims),
     ...lowEvidenceFromFamily(ClaimKind.IDENTITY_RESOLUTION, input.identityResolutionClaims)
   ];
+}
+
+/**
+ * 保守标记同一候选人在死亡章节之后继续发生非死亡事件的情况，不尝试推断复活、梦境等文学叙事。
+ */
+export function detectPostMortemActionConflicts(
+  rows: StageB5EventClaimRow[]
+): StageB5ConflictFinding[] {
+  const deathByCandidate = new Map<string, StageB5EventClaimRow>();
+
+  for (const row of rows) {
+    const candidateId = row.subjectPersonaCandidateId;
+    if (row.eventCategory !== "DEATH" || candidateId === null) {
+      continue;
+    }
+
+    const current = deathByCandidate.get(candidateId);
+    if (!current || row.chapterNo < current.chapterNo) {
+      deathByCandidate.set(candidateId, row);
+    }
+  }
+
+  const findings: StageB5ConflictFinding[] = [];
+  for (const row of rows) {
+    const candidateId = row.subjectPersonaCandidateId;
+    if (candidateId === null || row.eventCategory === "DEATH") {
+      continue;
+    }
+
+    const death = deathByCandidate.get(candidateId);
+    if (!death || row.chapterNo <= death.chapterNo) {
+      continue;
+    }
+
+    findings.push({
+      conflictType              : ConflictType.POST_MORTEM_ACTION,
+      severity                  : ConflictSeverity.CRITICAL,
+      reason                    : `candidate=${candidateId} 在第 ${death.chapterNo} 回死亡后，又在第 ${row.chapterNo} 回出现主动事件。`,
+      summary                   : `死亡后行动冲突：candidate=${candidateId} 在死亡章节之后仍有事件。`,
+      recommendedActionKey      : "VERIFY_IDENTITY_SPLIT",
+      sourceStageKey            : "stage_a_extraction",
+      relatedClaimKind          : ClaimKind.EVENT,
+      relatedClaimIds           : uniqueSorted([death.id, row.id]),
+      relatedPersonaCandidateIds: [candidateId],
+      relatedChapterIds         : uniqueSorted([death.chapterId, row.chapterId]),
+      evidenceSpanIds           : uniqueSorted([...death.evidenceSpanIds, ...row.evidenceSpanIds]),
+      tags                      : ["POST_DEATH_EVENT"]
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * 只复用通用地点互斥表做同候选人、同章节的硬冲突检测，避免把作品专属地名常识写进规则层。
+ */
+export function detectImpossibleLocationConflicts(
+  rows: StageB5EventClaimRow[]
+): StageB5ConflictFinding[] {
+  const groups = new Map<string, StageB5EventClaimRow[]>();
+
+  for (const row of rows) {
+    const candidateId = row.subjectPersonaCandidateId;
+    if (candidateId === null || row.locationText === null) {
+      continue;
+    }
+
+    const key = `${candidateId}:${row.chapterId}`;
+    const current = groups.get(key) ?? [];
+    current.push(row);
+    groups.set(key, current);
+  }
+
+  const findings: StageB5ConflictFinding[] = [];
+  for (const group of groups.values()) {
+    for (let index = 0; index < group.length; index += 1) {
+      const left = group[index];
+      if (!left) {
+        continue;
+      }
+
+      for (let inner = index + 1; inner < group.length; inner += 1) {
+        const right = group[inner];
+        if (!right) {
+          continue;
+        }
+
+        const candidateId = left.subjectPersonaCandidateId;
+        if (
+          candidateId === null ||
+          left.locationText === null ||
+          right.locationText === null ||
+          !areMutuallyExclusive(left.locationText, right.locationText)
+        ) {
+          continue;
+        }
+
+        findings.push({
+          conflictType              : ConflictType.IMPOSSIBLE_LOCATION,
+          severity                  : ConflictSeverity.HIGH,
+          reason                    : `candidate=${candidateId} 在同一章节同时落在互斥地点 ${left.locationText} / ${right.locationText}。`,
+          summary                   : `同章跨地点冲突：${left.locationText} 与 ${right.locationText} 互斥。`,
+          recommendedActionKey      : "VERIFY_LOCATION_ATTRIBUTION",
+          sourceStageKey            : "stage_a_extraction",
+          relatedClaimKind          : ClaimKind.EVENT,
+          relatedClaimIds           : uniqueSorted([left.id, right.id]),
+          relatedPersonaCandidateIds: [candidateId],
+          relatedChapterIds         : [left.chapterId],
+          evidenceSpanIds           : uniqueSorted([...left.evidenceSpanIds, ...right.evidenceSpanIds]),
+          tags                      : ["MUTUALLY_EXCLUSIVE_LOCATIONS"]
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+export function detectTimeOrderConflicts(input: {
+  eventClaims   : StageB5EventClaimRow[];
+  relationClaims: StageB5RelationClaimRow[];
+  timeClaims    : StageB5TimeClaimRow[];
+}): StageB5ConflictFinding[] {
+  const timeById = new Map(input.timeClaims.map((row) => [row.id, row]));
+  const findings: StageB5ConflictFinding[] = [];
+
+  for (const event of input.eventClaims) {
+    if (event.timeHintId === null) {
+      continue;
+    }
+
+    const time = timeById.get(event.timeHintId);
+    if (!time) {
+      continue;
+    }
+
+    const isBeforeRange = time.chapterRangeStart !== null && event.chapterNo < time.chapterRangeStart;
+    const isAfterRange = time.chapterRangeEnd !== null && event.chapterNo > time.chapterRangeEnd;
+    if (!isBeforeRange && !isAfterRange) {
+      continue;
+    }
+
+    findings.push({
+      conflictType              : ConflictType.TIME_ORDER_CONFLICT,
+      severity                  : ConflictSeverity.HIGH,
+      reason                    : `事件 claim=${event.id} 位于第 ${event.chapterNo} 回，但 timeHint=${time.id} 约束在 ${time.chapterRangeStart}-${time.chapterRangeEnd}。`,
+      summary                   : "时间顺序冲突：事件章节超出 timeHint 范围。",
+      recommendedActionKey      : "VERIFY_TIME_ALIGNMENT",
+      sourceStageKey            : "stage_a_extraction",
+      relatedClaimKind          : null,
+      relatedClaimIds           : uniqueSorted([event.id, time.id]),
+      relatedPersonaCandidateIds: event.subjectPersonaCandidateId ? [event.subjectPersonaCandidateId] : [],
+      relatedChapterIds         : [event.chapterId],
+      evidenceSpanIds           : uniqueSorted([...event.evidenceSpanIds, ...time.evidenceSpanIds]),
+      tags                      : ["EVENT_TIME_RANGE_MISMATCH"]
+    });
+  }
+
+  for (const relation of input.relationClaims) {
+    if (relation.timeHintId === null) {
+      continue;
+    }
+
+    const time = timeById.get(relation.timeHintId);
+    if (!time) {
+      continue;
+    }
+
+    const start = relation.effectiveChapterStart ?? relation.chapterNo;
+    const end = relation.effectiveChapterEnd ?? relation.chapterNo;
+    const isBeforeRange = time.chapterRangeStart !== null && end < time.chapterRangeStart;
+    const isAfterRange = time.chapterRangeEnd !== null && start > time.chapterRangeEnd;
+    if (!isBeforeRange && !isAfterRange) {
+      continue;
+    }
+
+    const relatedPersonaCandidateIds = uniqueSorted([
+      relation.sourcePersonaCandidateId ?? "",
+      relation.targetPersonaCandidateId ?? ""
+    ].filter(Boolean));
+
+    findings.push({
+      conflictType        : ConflictType.TIME_ORDER_CONFLICT,
+      severity            : ConflictSeverity.HIGH,
+      reason              : `关系 claim=${relation.id} 的有效区间 ${start}-${end} 与 timeHint=${time.id} 的章节范围不一致。`,
+      summary             : "时间顺序冲突：关系生效区间与 timeHint 范围不一致。",
+      recommendedActionKey: "VERIFY_TIME_ALIGNMENT",
+      sourceStageKey      : "stage_a_extraction",
+      relatedClaimKind    : null,
+      relatedClaimIds     : uniqueSorted([relation.id, time.id]),
+      relatedPersonaCandidateIds,
+      relatedChapterIds   : [relation.chapterId],
+      evidenceSpanIds     : uniqueSorted([...relation.evidenceSpanIds, ...time.evidenceSpanIds]),
+      tags                : ["RELATION_TIME_RANGE_MISMATCH"]
+    });
+  }
+
+  return findings;
+}
+
+export function detectStageB5Conflicts(input: StageB5RepositoryPayload): StageB5ConflictFinding[] {
+  return [
+    ...detectAliasConflicts(input.identityResolutionClaims),
+    ...detectRelationDirectionConflicts(input.relationClaims),
+    ...detectLowEvidenceClaimConflicts(input),
+    ...detectPostMortemActionConflicts(input.eventClaims),
+    ...detectImpossibleLocationConflicts(input.eventClaims),
+    ...detectTimeOrderConflicts({
+      eventClaims   : input.eventClaims,
+      relationClaims: input.relationClaims,
+      timeClaims    : input.timeClaims
+    })
+  ].sort((left, right) => left.summary.localeCompare(right.summary));
 }
