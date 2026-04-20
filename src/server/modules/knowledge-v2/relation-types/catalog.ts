@@ -56,11 +56,11 @@ export interface CompiledRelationNegativeRule {
 }
 
 export interface RelationTypeCatalog {
-  activeEntries   : RelationCatalogEntry[];
-  disabledEntries : RelationCatalogEntry[];
-  entriesByKey    : Record<string, RelationCatalogEntry>;
-  mappingRules    : CompiledRelationLabelMappingRule[];
-  negativeRules   : CompiledRelationNegativeRule[];
+  activeEntries  : RelationCatalogEntry[];
+  disabledEntries: RelationCatalogEntry[];
+  entriesByKey   : Record<string, RelationCatalogEntry>;
+  mappingRules   : CompiledRelationLabelMappingRule[];
+  negativeRules  : CompiledRelationNegativeRule[];
 }
 
 function preferCatalogEntry(
@@ -152,7 +152,7 @@ function compileRelationNegativeRule(
 }
 
 export function buildRelationTypeCatalog(input: {
-  items: ParsedKnowledgeItem[];
+  items   : ParsedKnowledgeItem[];
   presets?: readonly RelationCatalogEntry[];
 }): RelationTypeCatalog {
   const presets = input.presets ?? RELATION_TYPE_PRESETS;
@@ -193,8 +193,8 @@ export function buildRelationTypeCatalog(input: {
   const allEntries = Object.values(entriesByKey);
 
   return {
-    activeEntries   : allEntries.filter((entry) => entry.enabled),
-    disabledEntries : allEntries.filter((entry) => !entry.enabled),
+    activeEntries  : allEntries.filter((entry) => entry.enabled),
+    disabledEntries: allEntries.filter((entry) => !entry.enabled),
     entriesByKey,
     mappingRules,
     negativeRules

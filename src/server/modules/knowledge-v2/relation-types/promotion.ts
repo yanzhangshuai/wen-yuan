@@ -36,12 +36,12 @@ export function createRelationTypePromotionService(dependencies: {
       const input = relationTypePromotionSchema.parse(rawInput);
 
       const taxonomy = await dependencies.knowledgePromotion.promoteReviewedClaim({
-        claimFamily          : "RELATION",
-        claimId              : input.claimId,
-        knowledgeType        : "relation taxonomy rule",
-        scopeType            : input.scopeType,
-        scopeId              : input.scopeId,
-        payload              : {
+        claimFamily  : "RELATION",
+        claimId      : input.claimId,
+        knowledgeType: "relation taxonomy rule",
+        scopeType    : input.scopeType,
+        scopeId      : input.scopeId,
+        payload      : {
           relationTypeKey   : input.relationTypeKey,
           displayLabel      : input.defaultLabel,
           direction         : input.direction,
@@ -64,12 +64,12 @@ export function createRelationTypePromotionService(dependencies: {
         }
 
         const mapping = await dependencies.knowledgePromotion.promoteReviewedClaim({
-          claimFamily          : "RELATION",
-          claimId              : input.claimId,
-          knowledgeType        : "relation label mapping rule",
-          scopeType            : input.scopeType,
-          scopeId              : input.scopeId,
-          payload              : {
+          claimFamily  : "RELATION",
+          claimId      : input.claimId,
+          knowledgeType: "relation label mapping rule",
+          scopeType    : input.scopeType,
+          scopeId      : input.scopeId,
+          payload      : {
             relationTypeKey   : input.relationTypeKey,
             observedLabel,
             normalizedLabel   : input.defaultLabel,

@@ -177,10 +177,10 @@ export function createKnowledgeRecallStage(
         knowledge
       });
       const relationOutput = relationNormalizer({
-        bookId         : input.bookId,
-        chapterId      : input.chapter.id,
-        runId          : input.runId,
-        relations      : stageARelations,
+        bookId   : input.bookId,
+        chapterId: input.chapter.id,
+        runId    : input.runId,
+        relations: stageARelations,
         relationCatalog
       });
       const recallOutput = {

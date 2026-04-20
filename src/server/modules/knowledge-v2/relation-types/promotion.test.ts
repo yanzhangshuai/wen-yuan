@@ -13,15 +13,15 @@ describe("relation-type promotion service", () => {
     const service = createRelationTypePromotionService({ knowledgePromotion: promotion as never });
 
     const result = await service.promoteAcceptedRelation({
-      claimId         : "claim-1",
-      actorUserId     : "user-1",
-      scopeType       : "BOOK",
-      scopeId         : "book-1",
-      relationTypeKey : "political_patron_of",
-      defaultLabel    : "政治庇护",
-      direction       : "FORWARD",
-      aliasLabels     : ["依附"],
-      observedLabels  : ["门生"]
+      claimId        : "claim-1",
+      actorUserId    : "user-1",
+      scopeType      : "BOOK",
+      scopeId        : "book-1",
+      relationTypeKey: "political_patron_of",
+      defaultLabel   : "政治庇护",
+      direction      : "FORWARD",
+      aliasLabels    : ["依附"],
+      observedLabels : ["门生"]
     });
 
     expect(result.taxonomyKnowledgeId).toBe("knowledge-taxonomy-1");
@@ -35,15 +35,15 @@ describe("relation-type promotion service", () => {
     const service = createRelationTypePromotionService({ knowledgePromotion: promotion as never });
 
     const result = await service.promoteAcceptedRelation({
-      claimId         : "claim-2",
-      actorUserId     : "user-1",
-      scopeType       : "BOOK",
-      scopeId         : "book-1",
-      relationTypeKey : "political_patron_of",
-      defaultLabel    : "政治庇护",
-      direction       : "FORWARD",
-      aliasLabels     : [],
-      observedLabels  : ["政治庇护"]
+      claimId        : "claim-2",
+      actorUserId    : "user-1",
+      scopeType      : "BOOK",
+      scopeId        : "book-1",
+      relationTypeKey: "political_patron_of",
+      defaultLabel   : "政治庇护",
+      direction      : "FORWARD",
+      aliasLabels    : [],
+      observedLabels : ["政治庇护"]
     });
 
     expect(result.mappingKnowledgeIds).toEqual([]);

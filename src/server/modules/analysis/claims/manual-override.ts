@@ -45,8 +45,9 @@ export function createManualOverrideService(repository: ClaimRepository) {
       input: CreateManualOverrideInput<TFamily>
     ): Promise<ManualOverrideResult> {
       if (!isManualOverrideFamily(input.family)) {
+        const unsupportedFamily = String(input.family);
         throw new ManualOverrideError(
-          `Claim family ${input.family} does not support manual overrides`
+          `Claim family ${unsupportedFamily} does not support manual overrides`
         );
       }
 

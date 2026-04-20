@@ -116,7 +116,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T07: `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
 - [x] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
 - [x] T08: `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
-- [ ] T09: `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
+- [x] T09: `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
 - [ ] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
 - [ ] T11: `docs/superpowers/tasks/2026-04-18-evidence-review/11-stage-d-projection-builder.md`
 - [ ] T12: `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`
@@ -243,3 +243,11 @@ Append one entry after each task:
 - Result: Stage B now deterministically resolves whole-book identity candidates from Stage A mentions and Stage A+ alias signals, persists review-native `persona_candidates` plus `IDENTITY_RESOLUTION` claims, preserves explicit split/unsure semantics for blocked merges, and records a cost-free Stage B run for observability.
 - Follow-up risks: T09 still needs to turn Stage B conflict semantics into explicit cross-claim consistency flags; Stage C and projection layers still need to consume `persona_candidates` rather than legacy persona tables.
 - Next task: T09 `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
+
+### T09 Completion - 2026-04-20
+
+- Changed files: `prisma/schema.prisma`, `src/server/modules/analysis/claims/**`, `src/server/modules/analysis/pipelines/evidence-review/stageB5/**`, `src/server/modules/analysis/pipelines/evidence-review/stageAPlus/**`, `src/server/modules/knowledge-v2/relation-types/**`, `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/analysis/claims/claim-schemas.test.ts src/server/modules/analysis/claims/claim-repository.test.ts src/server/modules/analysis/claims/manual-override.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB5/types.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB5/repository.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB5/conflict-rules.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB5/draft-builder.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB5/persister.test.ts src/server/modules/analysis/pipelines/evidence-review/stageB5/ConflictDetector.test.ts --coverage=false`, `pnpm type-check`, `pnpm lint`, `pnpm exec vitest run --coverage=false`
+- Result: Stage B.5 now deterministically detects whole-book conflict hot spots across identity, event, relation, time, location, and low-evidence claims, then persists additive `CONFLICT_FLAG` rows without mutating upstream review truth.
+- Follow-up risks: Stage C still needs to consume `CONFLICT_FLAG` rows as attribution and ranking signals; review APIs and UI still need conflict-facing filters and mutation flows in T12/T13/T14.
+- Next task: T10 `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`

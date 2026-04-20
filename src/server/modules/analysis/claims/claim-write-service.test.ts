@@ -377,7 +377,7 @@ describe("claim write service", () => {
 
     await expect(service.writeClaimBatch({
       family,
-      scope : {
+      scope: {
         bookId   : BOOK_ID,
         chapterId: CHAPTER_ID,
         runId    : RUN_ID,

@@ -19,16 +19,10 @@ const DEFAULT_SUMMARY: ReviewableClaimSummary = {
   source     : "AI"
 };
 
-interface RepositoryMockPair {
-  repository    : ClaimRepository;
-  transactionSpy: ReturnType<typeof vi.fn>;
-  txRepository  : ClaimRepository;
-}
-
 function createRepositoryMock(
   summary: ReviewableClaimSummary | null = DEFAULT_SUMMARY
-): RepositoryMockPair {
-  const txRepository: ClaimRepository = {
+) {
+  const txRepository = {
     transaction                     : async <T>(work: (tx: ClaimRepository) => Promise<T>): Promise<T> => work(txRepository),
     replaceClaimFamilyScope         : vi.fn(),
     findReviewableClaimSummary      : vi.fn().mockResolvedValue(summary),
@@ -63,7 +57,7 @@ function createRepositoryMock(
       reviewedByUserId        : USER_ID,
       reviewNote              : "人工修订"
     })
-  };
+  } satisfies ClaimRepository;
 
   const transactionSpy = vi.fn();
   const transaction: ClaimRepository["transaction"] = async <T>(
@@ -73,13 +67,13 @@ function createRepositoryMock(
     return work(txRepository);
   };
 
-  const repository: ClaimRepository = {
+  const repository = {
     transaction,
     replaceClaimFamilyScope         : vi.fn(),
     findReviewableClaimSummary      : vi.fn().mockRejectedValue(new Error("Expected transactional lookup")),
     updateReviewableClaimReviewState: vi.fn().mockRejectedValue(new Error("Expected transactional review update")),
     createReviewableClaim           : vi.fn().mockRejectedValue(new Error("Expected transactional create"))
-  };
+  } satisfies ClaimRepository;
 
   return {
     repository,

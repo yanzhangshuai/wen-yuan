@@ -69,7 +69,7 @@ function createRepositoryClient() {
     create    : vi.fn().mockResolvedValue({ id: "conflict-created" })
   };
 
-  const tx: ClaimRepositoryTransactionClient = {
+  const tx = {
     entityMention,
     aliasClaim,
     eventClaim,
@@ -77,16 +77,17 @@ function createRepositoryClient() {
     timeClaim,
     identityResolutionClaim,
     conflictFlag
-  };
+  } satisfies ClaimRepositoryTransactionClient;
 
-  const prisma: ClaimRepositoryClient = {
+  const transaction = vi.fn(
+    async (callback: (client: ClaimRepositoryTransactionClient) => Promise<unknown>) => callback(tx)
+  );
+  const prisma = {
     ...tx,
-    $transaction: vi.fn(
-      async (callback: (client: ClaimRepositoryTransactionClient) => Promise<unknown>) => callback(tx)
-    ) as unknown as ClaimRepositoryClient["$transaction"]
-  };
+    $transaction: transaction as unknown as ClaimRepositoryClient["$transaction"]
+  } satisfies ClaimRepositoryClient;
 
-  return { prisma, tx };
+  return { prisma, tx, transaction };
 }
 
 describe("claim repository replace-by-scope", () => {
@@ -426,7 +427,7 @@ describe("claim repository reviewable delegates", () => {
   });
 
   it("wraps operations in prisma transactions and reuses the transaction repository inside nested callbacks", async () => {
-    const { prisma, tx } = createRepositoryClient();
+    const { prisma, tx, transaction } = createRepositoryClient();
     const repository = createClaimRepository(prisma);
 
     await repository.transaction(async (txRepository) => {
@@ -446,7 +447,7 @@ describe("claim repository reviewable delegates", () => {
       });
     });
 
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(transaction).toHaveBeenCalledTimes(1);
     expect(tx.conflictFlag.deleteMany).toHaveBeenCalledWith({
       where: {
         bookId   : BOOK_ID,

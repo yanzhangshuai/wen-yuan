@@ -43,10 +43,10 @@ function buildCatalog(items: unknown[] = []) {
 describe("Stage A+ relation normalization", () => {
   it("creates a derived relation suggestion while preserving the raw observed label", () => {
     const result = normalizeStageAPlusRelations({
-      bookId   : BOOK_ID,
-      chapterId: CHAPTER_ID,
-      runId    : RUN_ID,
-      relations: [baseRelation()],
+      bookId         : BOOK_ID,
+      chapterId      : CHAPTER_ID,
+      runId          : RUN_ID,
+      relations      : [baseRelation()],
       relationCatalog: buildCatalog([
         {
           id           : "mapping-1",
@@ -77,10 +77,10 @@ describe("Stage A+ relation normalization", () => {
 
   it("uses taxonomy aliases as normalization candidates", () => {
     const result = normalizeStageAPlusRelations({
-      bookId   : BOOK_ID,
-      chapterId: CHAPTER_ID,
-      runId    : RUN_ID,
-      relations: [baseRelation({ relationLabel: "门生" })],
+      bookId         : BOOK_ID,
+      chapterId      : CHAPTER_ID,
+      runId          : RUN_ID,
+      relations      : [baseRelation({ relationLabel: "门生" })],
       relationCatalog: buildCatalog([
         {
           id           : "taxonomy-1",
@@ -109,10 +109,10 @@ describe("Stage A+ relation normalization", () => {
 
   it("marks pending mapping suggestions with low-confidence review notes", () => {
     const result = normalizeStageAPlusRelations({
-      bookId   : BOOK_ID,
-      chapterId: CHAPTER_ID,
-      runId    : RUN_ID,
-      relations: [baseRelation()],
+      bookId         : BOOK_ID,
+      chapterId      : CHAPTER_ID,
+      runId          : RUN_ID,
+      relations      : [baseRelation()],
       relationCatalog: buildCatalog([
         {
           id           : "pending-mapping",
@@ -139,10 +139,10 @@ describe("Stage A+ relation normalization", () => {
 
   it("turns negative relation knowledge into a conflicted derived relation claim", () => {
     const result = normalizeStageAPlusRelations({
-      bookId   : BOOK_ID,
-      chapterId: CHAPTER_ID,
-      runId    : RUN_ID,
-      relations: [baseRelation({ relationLabel: "结义兄弟", direction: "BIDIRECTIONAL" })],
+      bookId         : BOOK_ID,
+      chapterId      : CHAPTER_ID,
+      runId          : RUN_ID,
+      relations      : [baseRelation({ relationLabel: "结义兄弟", direction: "BIDIRECTIONAL" })],
       relationCatalog: buildCatalog([
         {
           id           : "relation-negative",

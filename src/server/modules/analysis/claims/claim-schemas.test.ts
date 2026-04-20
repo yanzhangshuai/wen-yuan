@@ -192,28 +192,28 @@ describe("claim schema contracts", () => {
 
   it("treats conflict flags as reviewable but not manual override families", () => {
     const parsed = validateClaimDraftByFamily("CONFLICT_FLAG", {
-      claimFamily     : "CONFLICT_FLAG",
-      bookId          : BOOK_ID,
-      chapterId       : CHAPTER_ID,
-      runId           : RUN_ID,
-      conflictType    : ConflictType.RELATION_DIRECTION_CONFLICT,
-      severity        : ConflictSeverity.HIGH,
-      reason          : "同一人物对在相近章节中出现方向相反的关系陈述。",
-      recommendedActionKey: "VERIFY_RELATION_DIRECTION",
-      sourceStageKey      : "stage_b_identity_resolution",
-      relatedClaimKind: "RELATION",
-      relatedClaimIds : ["66666666-6666-4666-8666-666666666666"],
+      claimFamily               : "CONFLICT_FLAG",
+      bookId                    : BOOK_ID,
+      chapterId                 : CHAPTER_ID,
+      runId                     : RUN_ID,
+      conflictType              : ConflictType.RELATION_DIRECTION_CONFLICT,
+      severity                  : ConflictSeverity.HIGH,
+      reason                    : "同一人物对在相近章节中出现方向相反的关系陈述。",
+      recommendedActionKey      : "VERIFY_RELATION_DIRECTION",
+      sourceStageKey            : "stage_b_identity_resolution",
+      relatedClaimKind          : "RELATION",
+      relatedClaimIds           : ["66666666-6666-4666-8666-666666666666"],
       relatedPersonaCandidateIds: [
         "77777777-7777-4777-8777-777777777777",
         "88888888-8888-4888-8888-888888888888"
       ],
       relatedChapterIds: [CHAPTER_ID],
-      summary         : "刘备与关羽的关系方向冲突",
-      evidenceSpanIds : [EVIDENCE_ID],
-      reviewState     : "CONFLICTED",
-      source          : "RULE",
-      reviewedByUserId: null,
-      reviewNote      : null
+      summary          : "刘备与关羽的关系方向冲突",
+      evidenceSpanIds  : [EVIDENCE_ID],
+      reviewState      : "CONFLICTED",
+      source           : "RULE",
+      reviewedByUserId : null,
+      reviewNote       : null
     });
 
     expect(parsed.claimFamily).toBe("CONFLICT_FLAG");
@@ -404,25 +404,25 @@ describe("claim schema contracts", () => {
     }
 
     expect(() => validateClaimDraftByFamily("CONFLICT_FLAG", {
-      claimFamily     : "CONFLICT_FLAG",
-      bookId          : BOOK_ID,
-      chapterId       : null,
-      runId           : RUN_ID,
-      conflictType    : ConflictType.ALIAS_CONFLICT,
-      severity        : ConflictSeverity.HIGH,
-      reason          : "同一别名被不同候选人物占用，且 Stage B 判定存在身份冲突。",
-      recommendedActionKey: "VERIFY_IDENTITY_SPLIT",
-      sourceStageKey      : "stage_b_identity_resolution",
-      relatedClaimKind: "ALIAS",
-      relatedClaimIds : ["66666666-6666-4666-8666-666666666666"],
+      claimFamily               : "CONFLICT_FLAG",
+      bookId                    : BOOK_ID,
+      chapterId                 : null,
+      runId                     : RUN_ID,
+      conflictType              : ConflictType.ALIAS_CONFLICT,
+      severity                  : ConflictSeverity.HIGH,
+      reason                    : "同一别名被不同候选人物占用，且 Stage B 判定存在身份冲突。",
+      recommendedActionKey      : "VERIFY_IDENTITY_SPLIT",
+      sourceStageKey            : "stage_b_identity_resolution",
+      relatedClaimKind          : "ALIAS",
+      relatedClaimIds           : ["66666666-6666-4666-8666-666666666666"],
       relatedPersonaCandidateIds: ["77777777-7777-4777-8777-777777777777"],
       relatedChapterIds         : [CHAPTER_ID],
-      summary         : "别名归并冲突",
-      evidenceSpanIds : [EVIDENCE_ID],
-      reviewState     : "CONFLICTED",
-      source          : "MANUAL",
-      reviewedByUserId: USER_ID,
-      reviewNote      : "人工复核"
+      summary                   : "别名归并冲突",
+      evidenceSpanIds           : [EVIDENCE_ID],
+      reviewState               : "CONFLICTED",
+      source                    : "MANUAL",
+      reviewedByUserId          : USER_ID,
+      reviewNote                : "人工复核"
     })).toThrowError("CONFLICT_FLAG does not support manual claim writes");
   });
 
