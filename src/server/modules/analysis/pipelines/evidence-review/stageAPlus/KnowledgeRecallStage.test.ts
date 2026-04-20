@@ -8,6 +8,11 @@ const RUN_ID = "33333333-3333-4333-8333-333333333333";
 
 describe("KnowledgeRecallStage", () => {
   it("runs Stage A+ end to end with cost-free stage metrics", async () => {
+    const relationNormalizer = vi.fn().mockReturnValue({
+      relationDrafts  : [],
+      discardRecords  : [],
+      knowledgeItemIds: []
+    });
     const stageRunService = {
       startStageRun  : vi.fn().mockResolvedValue({ id: "stage-run-1" }),
       succeedStageRun: vi.fn().mockResolvedValue(undefined),
@@ -53,11 +58,7 @@ describe("KnowledgeRecallStage", () => {
           knowledgeItemIds: []
         })
       },
-      relationNormalizer: vi.fn().mockReturnValue({
-        relationDrafts  : [],
-        discardRecords  : [],
-        knowledgeItemIds: []
-      }),
+      relationNormalizer,
       persister: {
         persistStageAPlusClaims: vi.fn().mockResolvedValue({
           persistedCounts : { mentions: 0, aliases: 0, relations: 0 },
@@ -90,6 +91,12 @@ describe("KnowledgeRecallStage", () => {
       model           : "stage-a-plus-knowledge-recall-v1",
       promptTokens    : 0,
       completionTokens: 0
+    }));
+    expect(relationNormalizer).toHaveBeenCalledWith(expect.objectContaining({
+      relationCatalog: expect.objectContaining({
+        activeEntries  : expect.any(Array),
+        disabledEntries: expect.any(Array)
+      })
     }));
   });
 

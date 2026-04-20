@@ -1,22 +1,15 @@
 import { validateClaimDraftByFamily } from "@/server/modules/analysis/claims/claim-schemas";
 import {
+  findRelationNegativeRule,
+  suggestRelationTypeByLabel,
+  type RelationTypeCatalog
+} from "@/server/modules/knowledge-v2/relation-types";
+import {
   reviewNoteForKnowledge,
   STAGE_A_PLUS_CONFIDENCE,
-  type StageAPlusCompiledKnowledge,
   type StageAPlusRelationClaimRow,
   type StageAPlusRecallOutput
 } from "@/server/modules/analysis/pipelines/evidence-review/stageAPlus/types";
-
-function labelsEqual(left: string, right: string): boolean {
-  return left.trim() === right.trim();
-}
-
-function appliesNegativeDirection(
-  relation: StageAPlusRelationClaimRow,
-  denyDirection: StageAPlusRelationClaimRow["direction"] | null
-): boolean {
-  return denyDirection === null || denyDirection === relation.direction;
-}
 
 function relationConfidence(baseConfidence: number, ruleConfidence: number): number {
   return Math.min(
@@ -25,12 +18,19 @@ function relationConfidence(baseConfidence: number, ruleConfidence: number): num
   );
 }
 
+function relationKnowledgeRef(input: {
+  knowledgeItemId: string | null;
+  relationTypeKey: string;
+}): string {
+  return input.knowledgeItemId ?? `system-preset:${input.relationTypeKey}`;
+}
+
 export function normalizeStageAPlusRelations(input: {
-  bookId   : string;
-  chapterId: string;
-  runId    : string;
-  relations: StageAPlusRelationClaimRow[];
-  knowledge: StageAPlusCompiledKnowledge;
+  bookId         : string;
+  chapterId      : string;
+  runId          : string;
+  relations      : StageAPlusRelationClaimRow[];
+  relationCatalog: RelationTypeCatalog;
 }): Pick<StageAPlusRecallOutput, "relationDrafts" | "discardRecords" | "knowledgeItemIds"> {
   const relationDrafts: StageAPlusRecallOutput["relationDrafts"] = [];
   const knowledgeItemIds: string[] = [];
@@ -46,11 +46,11 @@ export function normalizeStageAPlusRelations(input: {
   }
 
   for (const relation of input.relations) {
-    const negativeRule = input.knowledge.relationNegativeRules.find(
-      (rule) =>
-        rule.blockedLabels.some((label) => labelsEqual(label, relation.relationLabel))
-        && appliesNegativeDirection(relation, rule.denyDirection)
-    );
+    const negativeRule = findRelationNegativeRule({
+      catalog      : input.relationCatalog,
+      relationLabel: relation.relationLabel,
+      direction    : relation.direction
+    });
 
     if (negativeRule) {
       relationDrafts.push(
@@ -92,19 +92,13 @@ export function normalizeStageAPlusRelations(input: {
       continue;
     }
 
-    const mapping = input.knowledge.relationMappings.find((rule) =>
-      labelsEqual(rule.observedLabel, relation.relationLabel)
-    );
-    const taxonomy = mapping
-      ? null
-      : input.knowledge.relationTaxonomyRules.find(
-        (rule) =>
-          labelsEqual(rule.displayLabel, relation.relationLabel)
-          || rule.aliasLabels.some((label) => labelsEqual(label, relation.relationLabel))
-      );
+    const suggestion = suggestRelationTypeByLabel({
+      catalog      : input.relationCatalog,
+      relationLabel: relation.relationLabel,
+      direction    : relation.direction
+    });
 
-    const rule = mapping ?? taxonomy;
-    if (!rule) {
+    if (!suggestion) {
       continue;
     }
 
@@ -118,30 +112,36 @@ export function normalizeStageAPlusRelations(input: {
         reviewState     : "PENDING",
         createdByUserId : null,
         reviewedByUserId: null,
-        reviewNote      : rule.reviewState === "PENDING"
+        reviewNote      : suggestion.reviewState === "PENDING"
           ? reviewNoteForKnowledge(
             "KB_PENDING_HINT",
-            rule.id,
-            `relationLabel=${relation.relationLabel}; relationTypeKey=${rule.relationTypeKey}`
+            relationKnowledgeRef({
+              knowledgeItemId: suggestion.knowledgeItemId,
+              relationTypeKey: suggestion.relationTypeKey
+            }),
+            `relationLabel=${relation.relationLabel}; relationTypeKey=${suggestion.relationTypeKey}`
           )
           : reviewNoteForKnowledge(
             "KB_VERIFIED",
-            rule.id,
-            `relationLabel=${relation.relationLabel}; relationTypeKey=${rule.relationTypeKey}`
+            relationKnowledgeRef({
+              knowledgeItemId: suggestion.knowledgeItemId,
+              relationTypeKey: suggestion.relationTypeKey
+            }),
+            `relationLabel=${relation.relationLabel}; relationTypeKey=${suggestion.relationTypeKey}`
           ),
         supersedesClaimId : null,
         derivedFromClaimId: relation.id,
         evidenceSpanIds   : relation.evidenceSpanIds,
-        confidence        : rule.reviewState === "PENDING"
-          ? rule.confidence
-          : relationConfidence(relation.confidence, rule.confidence),
+        confidence        : suggestion.reviewState === "PENDING"
+          ? suggestion.confidence
+          : relationConfidence(relation.confidence, suggestion.confidence),
         sourceMentionId         : relation.sourceMentionId,
         targetMentionId         : relation.targetMentionId,
         sourcePersonaCandidateId: relation.sourcePersonaCandidateId,
         targetPersonaCandidateId: relation.targetPersonaCandidateId,
-        relationTypeKey         : rule.relationTypeKey,
+        relationTypeKey         : suggestion.relationTypeKey,
         relationLabel           : relation.relationLabel,
-        relationTypeSource      : rule.relationTypeSource === "PRESET"
+        relationTypeSource      : suggestion.relationTypeSource === "PRESET"
           ? "PRESET"
           : "NORMALIZED_FROM_CUSTOM",
         direction            : relation.direction,
@@ -150,7 +150,10 @@ export function normalizeStageAPlusRelations(input: {
         timeHintId           : relation.timeHintId
       })
     );
-    recordKnowledgeId(rule.id);
+
+    if (suggestion.knowledgeItemId !== null) {
+      recordKnowledgeId(suggestion.knowledgeItemId);
+    }
   }
 
   return {

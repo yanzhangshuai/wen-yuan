@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeStageAPlusRelations } from "@/server/modules/analysis/pipelines/evidence-review/stageAPlus/relation-normalization";
-import type {
-  StageAPlusCompiledKnowledge,
-  StageAPlusRelationClaimRow
-} from "@/server/modules/analysis/pipelines/evidence-review/stageAPlus/types";
+import type { StageAPlusRelationClaimRow } from "@/server/modules/analysis/pipelines/evidence-review/stageAPlus/types";
+import { buildRelationTypeCatalog } from "@/server/modules/knowledge-v2/relation-types";
 
 const BOOK_ID = "11111111-1111-4111-8111-111111111111";
 const CHAPTER_ID = "22222222-2222-4222-8222-222222222222";
@@ -36,19 +34,10 @@ function baseRelation(
   };
 }
 
-function baseKnowledge(
-  overrides: Partial<StageAPlusCompiledKnowledge>
-): StageAPlusCompiledKnowledge {
-  return {
-    aliasEquivalenceRules: [],
-    aliasNegativeRules   : [],
-    termRules            : [],
-    surnameRules         : [],
-    relationMappings     : [],
-    relationTaxonomyRules: [],
-    relationNegativeRules: [],
-    ...overrides
-  };
+function buildCatalog(items: unknown[] = []) {
+  return buildRelationTypeCatalog({
+    items: items as never
+  });
 }
 
 describe("Stage A+ relation normalization", () => {
@@ -58,20 +47,22 @@ describe("Stage A+ relation normalization", () => {
       chapterId: CHAPTER_ID,
       runId    : RUN_ID,
       relations: [baseRelation()],
-      knowledge: baseKnowledge({
-        relationMappings: [
-          {
-            id                : "mapping-1",
-            reviewState       : "VERIFIED",
-            confidence        : 0.9,
+      relationCatalog: buildCatalog([
+        {
+          id           : "mapping-1",
+          scopeType    : "BOOK",
+          scopeId      : BOOK_ID,
+          knowledgeType: "relation label mapping rule",
+          reviewState  : "VERIFIED",
+          confidence   : 0.9,
+          payload      : {
             relationTypeKey   : "political_patron_of",
             observedLabel     : "提携",
             normalizedLabel   : "政治庇护",
-            relationTypeSource: "NORMALIZED_FROM_CUSTOM",
-            item              : {} as never
+            relationTypeSource: "NORMALIZED_FROM_CUSTOM"
           }
-        ]
-      })
+        }
+      ])
     });
 
     expect(result.relationDrafts[0]).toMatchObject({
@@ -90,21 +81,23 @@ describe("Stage A+ relation normalization", () => {
       chapterId: CHAPTER_ID,
       runId    : RUN_ID,
       relations: [baseRelation({ relationLabel: "门生" })],
-      knowledge: baseKnowledge({
-        relationTaxonomyRules: [
-          {
-            id                : "taxonomy-1",
-            reviewState       : "VERIFIED",
-            confidence        : 0.9,
+      relationCatalog: buildCatalog([
+        {
+          id           : "taxonomy-1",
+          scopeType    : "BOOK",
+          scopeId      : BOOK_ID,
+          knowledgeType: "relation taxonomy rule",
+          reviewState  : "VERIFIED",
+          confidence   : 0.9,
+          payload      : {
             relationTypeKey   : "teacher_of",
             displayLabel      : "师生",
             direction         : "FORWARD",
             relationTypeSource: "PRESET",
-            aliasLabels       : ["门生"],
-            item              : {} as never
+            aliasLabels       : ["门生"]
           }
-        ]
-      })
+        }
+      ])
     });
 
     expect(result.relationDrafts[0]).toMatchObject({
@@ -120,20 +113,22 @@ describe("Stage A+ relation normalization", () => {
       chapterId: CHAPTER_ID,
       runId    : RUN_ID,
       relations: [baseRelation()],
-      knowledge: baseKnowledge({
-        relationMappings: [
-          {
-            id                : "pending-mapping",
-            reviewState       : "PENDING",
-            confidence        : 0.55,
+      relationCatalog: buildCatalog([
+        {
+          id           : "pending-mapping",
+          scopeType    : "BOOK",
+          scopeId      : BOOK_ID,
+          knowledgeType: "relation label mapping rule",
+          reviewState  : "PENDING",
+          confidence   : 0.55,
+          payload      : {
             relationTypeKey   : "political_patron_of",
             observedLabel     : "提携",
             normalizedLabel   : "政治庇护",
-            relationTypeSource: "NORMALIZED_FROM_CUSTOM",
-            item              : {} as never
+            relationTypeSource: "NORMALIZED_FROM_CUSTOM"
           }
-        ]
-      })
+        }
+      ])
     });
 
     expect(result.relationDrafts[0]).toMatchObject({
@@ -148,20 +143,22 @@ describe("Stage A+ relation normalization", () => {
       chapterId: CHAPTER_ID,
       runId    : RUN_ID,
       relations: [baseRelation({ relationLabel: "结义兄弟", direction: "BIDIRECTIONAL" })],
-      knowledge: baseKnowledge({
-        relationNegativeRules: [
-          {
-            id             : "relation-negative",
-            reviewState    : "VERIFIED",
-            confidence     : 0.92,
+      relationCatalog: buildCatalog([
+        {
+          id           : "relation-negative",
+          scopeType    : "BOOK",
+          scopeId      : BOOK_ID,
+          knowledgeType: "relation negative rule",
+          reviewState  : "VERIFIED",
+          confidence   : 0.92,
+          payload      : {
             relationTypeKey: "sworn_brother",
             blockedLabels  : ["结义兄弟"],
             denyDirection  : "BIDIRECTIONAL",
-            reason         : "夸饰称谓",
-            item           : {} as never
+            reason         : "夸饰称谓"
           }
-        ]
-      })
+        }
+      ])
     });
 
     expect(result.relationDrafts[0]).toMatchObject({

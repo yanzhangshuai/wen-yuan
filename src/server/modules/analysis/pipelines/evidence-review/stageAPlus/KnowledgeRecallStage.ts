@@ -11,6 +11,7 @@ import {
 } from "@/server/modules/analysis/runs/stage-run-service";
 import { prisma } from "@/server/db/prisma";
 import { createKnowledgeRepository } from "@/server/modules/knowledge-v2/repository";
+import { buildRelationTypeCatalog } from "@/server/modules/knowledge-v2/relation-types";
 import {
   createRuntimeKnowledgeLoader,
   type RuntimeKnowledgeBundle
@@ -158,6 +159,9 @@ export function createKnowledgeRecallStage(
         visibility : "INCLUDE_PENDING"
       });
       const knowledge = compileStageAPlusKnowledge(bundle);
+      const relationCatalog = buildRelationTypeCatalog({
+        items: [...bundle.verifiedItems, ...bundle.pendingItems]
+      });
       const stageARelations = await stageAPlusRepository.listStageARelationClaims({
         bookId   : input.bookId,
         chapterId: input.chapter.id,
@@ -173,11 +177,11 @@ export function createKnowledgeRecallStage(
         knowledge
       });
       const relationOutput = relationNormalizer({
-        bookId   : input.bookId,
-        chapterId: input.chapter.id,
-        runId    : input.runId,
-        relations: stageARelations,
-        knowledge
+        bookId         : input.bookId,
+        chapterId      : input.chapter.id,
+        runId          : input.runId,
+        relations      : stageARelations,
+        relationCatalog
       });
       const recallOutput = {
         mentionDrafts   : ruleOutput.mentionDrafts,
