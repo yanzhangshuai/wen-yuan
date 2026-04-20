@@ -49,6 +49,33 @@ function mergeUnique(left: string[], right: string[]): string[] {
   return Array.from(new Set([...left, ...right]));
 }
 
+function toResponseJson(input: {
+  persistedCounts : StageAPlusRunResult["persistedCounts"];
+  knowledgeItemIds: string[];
+  discardSummary  : string | null;
+  discardRecords  : StageAPlusRunResult["discardRecords"];
+}): Prisma.InputJsonObject {
+  const persistedCounts: Prisma.InputJsonObject = {
+    mentions : input.persistedCounts.mentions,
+    aliases  : input.persistedCounts.aliases,
+    relations: input.persistedCounts.relations
+  };
+  const discardRecords: Prisma.InputJsonArray = input.discardRecords.map((discard) => ({
+    kind   : discard.kind,
+    ref    : discard.ref,
+    code   : discard.code,
+    message: discard.message
+  }));
+
+  return {
+    ruleVersion     : STAGE_A_PLUS_RULE_VERSION,
+    persistedCounts,
+    knowledgeItemIds: input.knowledgeItemIds,
+    discardSummary  : input.discardSummary,
+    discardRecords
+  };
+}
+
 export interface StageAPlusKnowledgeLoader {
   load(input: {
     bookId     : string;
@@ -173,13 +200,12 @@ export function createKnowledgeRecallStage(
         + persisted.persistedCounts.aliases
         + persisted.persistedCounts.relations;
       const discardSummary = summarizeStageAPlusDiscards(recallOutput.discardRecords);
-      const responseJson = {
-        ruleVersion     : STAGE_A_PLUS_RULE_VERSION,
+      const responseJson = toResponseJson({
         persistedCounts : persisted.persistedCounts,
         knowledgeItemIds: persisted.knowledgeItemIds,
         discardSummary,
         discardRecords  : recallOutput.discardRecords
-      };
+      });
       const rawOutput = await stageRunService.recordRawOutput({
         runId         : input.runId,
         stageRunId    : started.id,
@@ -195,7 +221,7 @@ export function createKnowledgeRecallStage(
           knowledgeItemIds: [...bundle.verifiedItems, ...bundle.pendingItems].map((item) => item.id)
         } as Prisma.InputJsonValue,
         responseText       : JSON.stringify(responseJson),
-        responseJson       : responseJson as Prisma.InputJsonValue,
+        responseJson       : responseJson,
         parseError         : null,
         schemaError        : null,
         discardReason      : discardSummary,

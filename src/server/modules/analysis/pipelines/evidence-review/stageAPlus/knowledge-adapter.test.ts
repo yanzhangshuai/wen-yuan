@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { compileStageAPlusKnowledge } from "@/server/modules/analysis/pipelines/evidence-review/stageAPlus/knowledge-adapter";
+import type { RuntimeKnowledgeItem } from "@/server/modules/knowledge-v2/runtime-loader";
 
-function buildItem(overrides: Record<string, unknown>) {
+function buildItem(overrides: Partial<RuntimeKnowledgeItem> = {}): RuntimeKnowledgeItem {
   return {
     id           : "knowledge-1",
     scopeType    : "GLOBAL",
