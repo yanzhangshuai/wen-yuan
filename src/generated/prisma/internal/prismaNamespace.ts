@@ -5223,8 +5223,14 @@ export const ConflictFlagScalarFieldEnum = {
   chapterId: 'chapterId',
   runId: 'runId',
   conflictType: 'conflictType',
+  severity: 'severity',
+  reason: 'reason',
+  recommendedActionKey: 'recommendedActionKey',
+  sourceStageKey: 'sourceStageKey',
   relatedClaimKind: 'relatedClaimKind',
   relatedClaimIds: 'relatedClaimIds',
+  relatedPersonaCandidateIds: 'relatedPersonaCandidateIds',
+  relatedChapterIds: 'relatedChapterIds',
   summary: 'summary',
   evidenceSpanIds: 'evidenceSpanIds',
   reviewState: 'reviewState',
@@ -5875,6 +5881,20 @@ export type EnumConflictTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'ConflictType[]'
  */
 export type ListEnumConflictTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ConflictType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ConflictSeverity'
+ */
+export type EnumConflictSeverityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ConflictSeverity'>
+    
+
+
+/**
+ * Reference to a field of type 'ConflictSeverity[]'
+ */
+export type ListEnumConflictSeverityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ConflictSeverity[]'>
     
 
 

@@ -30,6 +30,10 @@ export type ConflictFlagMinAggregateOutputType = {
   chapterId: string | null
   runId: string | null
   conflictType: $Enums.ConflictType | null
+  severity: $Enums.ConflictSeverity | null
+  reason: string | null
+  recommendedActionKey: string | null
+  sourceStageKey: string | null
   relatedClaimKind: $Enums.ClaimKind | null
   summary: string | null
   reviewState: $Enums.ClaimReviewState | null
@@ -47,6 +51,10 @@ export type ConflictFlagMaxAggregateOutputType = {
   chapterId: string | null
   runId: string | null
   conflictType: $Enums.ConflictType | null
+  severity: $Enums.ConflictSeverity | null
+  reason: string | null
+  recommendedActionKey: string | null
+  sourceStageKey: string | null
   relatedClaimKind: $Enums.ClaimKind | null
   summary: string | null
   reviewState: $Enums.ClaimReviewState | null
@@ -64,8 +72,14 @@ export type ConflictFlagCountAggregateOutputType = {
   chapterId: number
   runId: number
   conflictType: number
+  severity: number
+  reason: number
+  recommendedActionKey: number
+  sourceStageKey: number
   relatedClaimKind: number
   relatedClaimIds: number
+  relatedPersonaCandidateIds: number
+  relatedChapterIds: number
   summary: number
   evidenceSpanIds: number
   reviewState: number
@@ -85,6 +99,10 @@ export type ConflictFlagMinAggregateInputType = {
   chapterId?: true
   runId?: true
   conflictType?: true
+  severity?: true
+  reason?: true
+  recommendedActionKey?: true
+  sourceStageKey?: true
   relatedClaimKind?: true
   summary?: true
   reviewState?: true
@@ -102,6 +120,10 @@ export type ConflictFlagMaxAggregateInputType = {
   chapterId?: true
   runId?: true
   conflictType?: true
+  severity?: true
+  reason?: true
+  recommendedActionKey?: true
+  sourceStageKey?: true
   relatedClaimKind?: true
   summary?: true
   reviewState?: true
@@ -119,8 +141,14 @@ export type ConflictFlagCountAggregateInputType = {
   chapterId?: true
   runId?: true
   conflictType?: true
+  severity?: true
+  reason?: true
+  recommendedActionKey?: true
+  sourceStageKey?: true
   relatedClaimKind?: true
   relatedClaimIds?: true
+  relatedPersonaCandidateIds?: true
+  relatedChapterIds?: true
   summary?: true
   evidenceSpanIds?: true
   reviewState?: true
@@ -211,8 +239,14 @@ export type ConflictFlagGroupByOutputType = {
   chapterId: string | null
   runId: string
   conflictType: $Enums.ConflictType
+  severity: $Enums.ConflictSeverity
+  reason: string
+  recommendedActionKey: string
+  sourceStageKey: string
   relatedClaimKind: $Enums.ClaimKind | null
   relatedClaimIds: string[]
+  relatedPersonaCandidateIds: string[]
+  relatedChapterIds: string[]
   summary: string
   evidenceSpanIds: string[]
   reviewState: $Enums.ClaimReviewState
@@ -251,8 +285,14 @@ export type ConflictFlagWhereInput = {
   chapterId?: Prisma.UuidNullableFilter<"ConflictFlag"> | string | null
   runId?: Prisma.UuidFilter<"ConflictFlag"> | string
   conflictType?: Prisma.EnumConflictTypeFilter<"ConflictFlag"> | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityFilter<"ConflictFlag"> | $Enums.ConflictSeverity
+  reason?: Prisma.StringFilter<"ConflictFlag"> | string
+  recommendedActionKey?: Prisma.StringFilter<"ConflictFlag"> | string
+  sourceStageKey?: Prisma.StringFilter<"ConflictFlag"> | string
   relatedClaimKind?: Prisma.EnumClaimKindNullableFilter<"ConflictFlag"> | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.StringNullableListFilter<"ConflictFlag">
+  relatedPersonaCandidateIds?: Prisma.StringNullableListFilter<"ConflictFlag">
+  relatedChapterIds?: Prisma.StringNullableListFilter<"ConflictFlag">
   summary?: Prisma.StringFilter<"ConflictFlag"> | string
   evidenceSpanIds?: Prisma.StringNullableListFilter<"ConflictFlag">
   reviewState?: Prisma.EnumClaimReviewStateFilter<"ConflictFlag"> | $Enums.ClaimReviewState
@@ -270,8 +310,14 @@ export type ConflictFlagOrderByWithRelationInput = {
   chapterId?: Prisma.SortOrderInput | Prisma.SortOrder
   runId?: Prisma.SortOrder
   conflictType?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
+  recommendedActionKey?: Prisma.SortOrder
+  sourceStageKey?: Prisma.SortOrder
   relatedClaimKind?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedClaimIds?: Prisma.SortOrder
+  relatedPersonaCandidateIds?: Prisma.SortOrder
+  relatedChapterIds?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   evidenceSpanIds?: Prisma.SortOrder
   reviewState?: Prisma.SortOrder
@@ -292,8 +338,14 @@ export type ConflictFlagWhereUniqueInput = Prisma.AtLeast<{
   chapterId?: Prisma.UuidNullableFilter<"ConflictFlag"> | string | null
   runId?: Prisma.UuidFilter<"ConflictFlag"> | string
   conflictType?: Prisma.EnumConflictTypeFilter<"ConflictFlag"> | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityFilter<"ConflictFlag"> | $Enums.ConflictSeverity
+  reason?: Prisma.StringFilter<"ConflictFlag"> | string
+  recommendedActionKey?: Prisma.StringFilter<"ConflictFlag"> | string
+  sourceStageKey?: Prisma.StringFilter<"ConflictFlag"> | string
   relatedClaimKind?: Prisma.EnumClaimKindNullableFilter<"ConflictFlag"> | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.StringNullableListFilter<"ConflictFlag">
+  relatedPersonaCandidateIds?: Prisma.StringNullableListFilter<"ConflictFlag">
+  relatedChapterIds?: Prisma.StringNullableListFilter<"ConflictFlag">
   summary?: Prisma.StringFilter<"ConflictFlag"> | string
   evidenceSpanIds?: Prisma.StringNullableListFilter<"ConflictFlag">
   reviewState?: Prisma.EnumClaimReviewStateFilter<"ConflictFlag"> | $Enums.ClaimReviewState
@@ -311,8 +363,14 @@ export type ConflictFlagOrderByWithAggregationInput = {
   chapterId?: Prisma.SortOrderInput | Prisma.SortOrder
   runId?: Prisma.SortOrder
   conflictType?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
+  recommendedActionKey?: Prisma.SortOrder
+  sourceStageKey?: Prisma.SortOrder
   relatedClaimKind?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedClaimIds?: Prisma.SortOrder
+  relatedPersonaCandidateIds?: Prisma.SortOrder
+  relatedChapterIds?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   evidenceSpanIds?: Prisma.SortOrder
   reviewState?: Prisma.SortOrder
@@ -336,8 +394,14 @@ export type ConflictFlagScalarWhereWithAggregatesInput = {
   chapterId?: Prisma.UuidNullableWithAggregatesFilter<"ConflictFlag"> | string | null
   runId?: Prisma.UuidWithAggregatesFilter<"ConflictFlag"> | string
   conflictType?: Prisma.EnumConflictTypeWithAggregatesFilter<"ConflictFlag"> | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityWithAggregatesFilter<"ConflictFlag"> | $Enums.ConflictSeverity
+  reason?: Prisma.StringWithAggregatesFilter<"ConflictFlag"> | string
+  recommendedActionKey?: Prisma.StringWithAggregatesFilter<"ConflictFlag"> | string
+  sourceStageKey?: Prisma.StringWithAggregatesFilter<"ConflictFlag"> | string
   relatedClaimKind?: Prisma.EnumClaimKindNullableWithAggregatesFilter<"ConflictFlag"> | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.StringNullableListFilter<"ConflictFlag">
+  relatedPersonaCandidateIds?: Prisma.StringNullableListFilter<"ConflictFlag">
+  relatedChapterIds?: Prisma.StringNullableListFilter<"ConflictFlag">
   summary?: Prisma.StringWithAggregatesFilter<"ConflictFlag"> | string
   evidenceSpanIds?: Prisma.StringNullableListFilter<"ConflictFlag">
   reviewState?: Prisma.EnumClaimReviewStateWithAggregatesFilter<"ConflictFlag"> | $Enums.ClaimReviewState
@@ -355,8 +419,14 @@ export type ConflictFlagCreateInput = {
   chapterId?: string | null
   runId: string
   conflictType: $Enums.ConflictType
+  severity: $Enums.ConflictSeverity
+  reason: string
+  recommendedActionKey: string
+  sourceStageKey: string
   relatedClaimKind?: $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagCreaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagCreaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagCreaterelatedChapterIdsInput | string[]
   summary: string
   evidenceSpanIds?: Prisma.ConflictFlagCreateevidenceSpanIdsInput | string[]
   reviewState?: $Enums.ClaimReviewState
@@ -374,8 +444,14 @@ export type ConflictFlagUncheckedCreateInput = {
   chapterId?: string | null
   runId: string
   conflictType: $Enums.ConflictType
+  severity: $Enums.ConflictSeverity
+  reason: string
+  recommendedActionKey: string
+  sourceStageKey: string
   relatedClaimKind?: $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagCreaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagCreaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagCreaterelatedChapterIdsInput | string[]
   summary: string
   evidenceSpanIds?: Prisma.ConflictFlagCreateevidenceSpanIdsInput | string[]
   reviewState?: $Enums.ClaimReviewState
@@ -393,8 +469,14 @@ export type ConflictFlagUpdateInput = {
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   runId?: Prisma.StringFieldUpdateOperationsInput | string
   conflictType?: Prisma.EnumConflictTypeFieldUpdateOperationsInput | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityFieldUpdateOperationsInput | $Enums.ConflictSeverity
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  recommendedActionKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceStageKey?: Prisma.StringFieldUpdateOperationsInput | string
   relatedClaimKind?: Prisma.NullableEnumClaimKindFieldUpdateOperationsInput | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagUpdaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagUpdaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagUpdaterelatedChapterIdsInput | string[]
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   evidenceSpanIds?: Prisma.ConflictFlagUpdateevidenceSpanIdsInput | string[]
   reviewState?: Prisma.EnumClaimReviewStateFieldUpdateOperationsInput | $Enums.ClaimReviewState
@@ -412,8 +494,14 @@ export type ConflictFlagUncheckedUpdateInput = {
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   runId?: Prisma.StringFieldUpdateOperationsInput | string
   conflictType?: Prisma.EnumConflictTypeFieldUpdateOperationsInput | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityFieldUpdateOperationsInput | $Enums.ConflictSeverity
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  recommendedActionKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceStageKey?: Prisma.StringFieldUpdateOperationsInput | string
   relatedClaimKind?: Prisma.NullableEnumClaimKindFieldUpdateOperationsInput | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagUpdaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagUpdaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagUpdaterelatedChapterIdsInput | string[]
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   evidenceSpanIds?: Prisma.ConflictFlagUpdateevidenceSpanIdsInput | string[]
   reviewState?: Prisma.EnumClaimReviewStateFieldUpdateOperationsInput | $Enums.ClaimReviewState
@@ -431,8 +519,14 @@ export type ConflictFlagCreateManyInput = {
   chapterId?: string | null
   runId: string
   conflictType: $Enums.ConflictType
+  severity: $Enums.ConflictSeverity
+  reason: string
+  recommendedActionKey: string
+  sourceStageKey: string
   relatedClaimKind?: $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagCreaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagCreaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagCreaterelatedChapterIdsInput | string[]
   summary: string
   evidenceSpanIds?: Prisma.ConflictFlagCreateevidenceSpanIdsInput | string[]
   reviewState?: $Enums.ClaimReviewState
@@ -450,8 +544,14 @@ export type ConflictFlagUpdateManyMutationInput = {
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   runId?: Prisma.StringFieldUpdateOperationsInput | string
   conflictType?: Prisma.EnumConflictTypeFieldUpdateOperationsInput | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityFieldUpdateOperationsInput | $Enums.ConflictSeverity
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  recommendedActionKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceStageKey?: Prisma.StringFieldUpdateOperationsInput | string
   relatedClaimKind?: Prisma.NullableEnumClaimKindFieldUpdateOperationsInput | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagUpdaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagUpdaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagUpdaterelatedChapterIdsInput | string[]
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   evidenceSpanIds?: Prisma.ConflictFlagUpdateevidenceSpanIdsInput | string[]
   reviewState?: Prisma.EnumClaimReviewStateFieldUpdateOperationsInput | $Enums.ClaimReviewState
@@ -469,8 +569,14 @@ export type ConflictFlagUncheckedUpdateManyInput = {
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   runId?: Prisma.StringFieldUpdateOperationsInput | string
   conflictType?: Prisma.EnumConflictTypeFieldUpdateOperationsInput | $Enums.ConflictType
+  severity?: Prisma.EnumConflictSeverityFieldUpdateOperationsInput | $Enums.ConflictSeverity
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  recommendedActionKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceStageKey?: Prisma.StringFieldUpdateOperationsInput | string
   relatedClaimKind?: Prisma.NullableEnumClaimKindFieldUpdateOperationsInput | $Enums.ClaimKind | null
   relatedClaimIds?: Prisma.ConflictFlagUpdaterelatedClaimIdsInput | string[]
+  relatedPersonaCandidateIds?: Prisma.ConflictFlagUpdaterelatedPersonaCandidateIdsInput | string[]
+  relatedChapterIds?: Prisma.ConflictFlagUpdaterelatedChapterIdsInput | string[]
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   evidenceSpanIds?: Prisma.ConflictFlagUpdateevidenceSpanIdsInput | string[]
   reviewState?: Prisma.EnumClaimReviewStateFieldUpdateOperationsInput | $Enums.ClaimReviewState
@@ -488,8 +594,14 @@ export type ConflictFlagCountOrderByAggregateInput = {
   chapterId?: Prisma.SortOrder
   runId?: Prisma.SortOrder
   conflictType?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
+  recommendedActionKey?: Prisma.SortOrder
+  sourceStageKey?: Prisma.SortOrder
   relatedClaimKind?: Prisma.SortOrder
   relatedClaimIds?: Prisma.SortOrder
+  relatedPersonaCandidateIds?: Prisma.SortOrder
+  relatedChapterIds?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   evidenceSpanIds?: Prisma.SortOrder
   reviewState?: Prisma.SortOrder
@@ -507,6 +619,10 @@ export type ConflictFlagMaxOrderByAggregateInput = {
   chapterId?: Prisma.SortOrder
   runId?: Prisma.SortOrder
   conflictType?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
+  recommendedActionKey?: Prisma.SortOrder
+  sourceStageKey?: Prisma.SortOrder
   relatedClaimKind?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   reviewState?: Prisma.SortOrder
@@ -524,6 +640,10 @@ export type ConflictFlagMinOrderByAggregateInput = {
   chapterId?: Prisma.SortOrder
   runId?: Prisma.SortOrder
   conflictType?: Prisma.SortOrder
+  severity?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
+  recommendedActionKey?: Prisma.SortOrder
+  sourceStageKey?: Prisma.SortOrder
   relatedClaimKind?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   reviewState?: Prisma.SortOrder
@@ -539,6 +659,14 @@ export type ConflictFlagCreaterelatedClaimIdsInput = {
   set: string[]
 }
 
+export type ConflictFlagCreaterelatedPersonaCandidateIdsInput = {
+  set: string[]
+}
+
+export type ConflictFlagCreaterelatedChapterIdsInput = {
+  set: string[]
+}
+
 export type ConflictFlagCreateevidenceSpanIdsInput = {
   set: string[]
 }
@@ -547,11 +675,25 @@ export type EnumConflictTypeFieldUpdateOperationsInput = {
   set?: $Enums.ConflictType
 }
 
+export type EnumConflictSeverityFieldUpdateOperationsInput = {
+  set?: $Enums.ConflictSeverity
+}
+
 export type NullableEnumClaimKindFieldUpdateOperationsInput = {
   set?: $Enums.ClaimKind | null
 }
 
 export type ConflictFlagUpdaterelatedClaimIdsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type ConflictFlagUpdaterelatedPersonaCandidateIdsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type ConflictFlagUpdaterelatedChapterIdsInput = {
   set?: string[]
   push?: string | string[]
 }
@@ -569,8 +711,14 @@ export type ConflictFlagSelect<ExtArgs extends runtime.Types.Extensions.Internal
   chapterId?: boolean
   runId?: boolean
   conflictType?: boolean
+  severity?: boolean
+  reason?: boolean
+  recommendedActionKey?: boolean
+  sourceStageKey?: boolean
   relatedClaimKind?: boolean
   relatedClaimIds?: boolean
+  relatedPersonaCandidateIds?: boolean
+  relatedChapterIds?: boolean
   summary?: boolean
   evidenceSpanIds?: boolean
   reviewState?: boolean
@@ -588,8 +736,14 @@ export type ConflictFlagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   chapterId?: boolean
   runId?: boolean
   conflictType?: boolean
+  severity?: boolean
+  reason?: boolean
+  recommendedActionKey?: boolean
+  sourceStageKey?: boolean
   relatedClaimKind?: boolean
   relatedClaimIds?: boolean
+  relatedPersonaCandidateIds?: boolean
+  relatedChapterIds?: boolean
   summary?: boolean
   evidenceSpanIds?: boolean
   reviewState?: boolean
@@ -607,8 +761,14 @@ export type ConflictFlagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   chapterId?: boolean
   runId?: boolean
   conflictType?: boolean
+  severity?: boolean
+  reason?: boolean
+  recommendedActionKey?: boolean
+  sourceStageKey?: boolean
   relatedClaimKind?: boolean
   relatedClaimIds?: boolean
+  relatedPersonaCandidateIds?: boolean
+  relatedChapterIds?: boolean
   summary?: boolean
   evidenceSpanIds?: boolean
   reviewState?: boolean
@@ -626,8 +786,14 @@ export type ConflictFlagSelectScalar = {
   chapterId?: boolean
   runId?: boolean
   conflictType?: boolean
+  severity?: boolean
+  reason?: boolean
+  recommendedActionKey?: boolean
+  sourceStageKey?: boolean
   relatedClaimKind?: boolean
   relatedClaimIds?: boolean
+  relatedPersonaCandidateIds?: boolean
+  relatedChapterIds?: boolean
   summary?: boolean
   evidenceSpanIds?: boolean
   reviewState?: boolean
@@ -639,7 +805,7 @@ export type ConflictFlagSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ConflictFlagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "chapterId" | "runId" | "conflictType" | "relatedClaimKind" | "relatedClaimIds" | "summary" | "evidenceSpanIds" | "reviewState" | "source" | "reviewedByUserId" | "reviewedAt" | "reviewNote" | "createdAt" | "updatedAt", ExtArgs["result"]["conflictFlag"]>
+export type ConflictFlagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "chapterId" | "runId" | "conflictType" | "severity" | "reason" | "recommendedActionKey" | "sourceStageKey" | "relatedClaimKind" | "relatedClaimIds" | "relatedPersonaCandidateIds" | "relatedChapterIds" | "summary" | "evidenceSpanIds" | "reviewState" | "source" | "reviewedByUserId" | "reviewedAt" | "reviewNote" | "createdAt" | "updatedAt", ExtArgs["result"]["conflictFlag"]>
 
 export type $ConflictFlagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ConflictFlag"
@@ -650,8 +816,14 @@ export type $ConflictFlagPayload<ExtArgs extends runtime.Types.Extensions.Intern
     chapterId: string | null
     runId: string
     conflictType: $Enums.ConflictType
+    severity: $Enums.ConflictSeverity
+    reason: string
+    recommendedActionKey: string
+    sourceStageKey: string
     relatedClaimKind: $Enums.ClaimKind | null
     relatedClaimIds: string[]
+    relatedPersonaCandidateIds: string[]
+    relatedChapterIds: string[]
     summary: string
     evidenceSpanIds: string[]
     reviewState: $Enums.ClaimReviewState
@@ -1089,8 +1261,14 @@ export interface ConflictFlagFieldRefs {
   readonly chapterId: Prisma.FieldRef<"ConflictFlag", 'String'>
   readonly runId: Prisma.FieldRef<"ConflictFlag", 'String'>
   readonly conflictType: Prisma.FieldRef<"ConflictFlag", 'ConflictType'>
+  readonly severity: Prisma.FieldRef<"ConflictFlag", 'ConflictSeverity'>
+  readonly reason: Prisma.FieldRef<"ConflictFlag", 'String'>
+  readonly recommendedActionKey: Prisma.FieldRef<"ConflictFlag", 'String'>
+  readonly sourceStageKey: Prisma.FieldRef<"ConflictFlag", 'String'>
   readonly relatedClaimKind: Prisma.FieldRef<"ConflictFlag", 'ClaimKind'>
   readonly relatedClaimIds: Prisma.FieldRef<"ConflictFlag", 'String[]'>
+  readonly relatedPersonaCandidateIds: Prisma.FieldRef<"ConflictFlag", 'String[]'>
+  readonly relatedChapterIds: Prisma.FieldRef<"ConflictFlag", 'String[]'>
   readonly summary: Prisma.FieldRef<"ConflictFlag", 'String'>
   readonly evidenceSpanIds: Prisma.FieldRef<"ConflictFlag", 'String[]'>
   readonly reviewState: Prisma.FieldRef<"ConflictFlag", 'ClaimReviewState'>

@@ -12,6 +12,7 @@ import {
   AliasClaimKind,
   AliasType,
   BioCategory,
+  ConflictSeverity,
   ConflictType,
   IdentityClaim,
   MentionKind,
@@ -196,8 +197,17 @@ describe("claim schema contracts", () => {
       chapterId       : CHAPTER_ID,
       runId           : RUN_ID,
       conflictType    : ConflictType.RELATION_DIRECTION_CONFLICT,
+      severity        : ConflictSeverity.HIGH,
+      reason          : "同一人物对在相近章节中出现方向相反的关系陈述。",
+      recommendedActionKey: "VERIFY_RELATION_DIRECTION",
+      sourceStageKey      : "stage_b_identity_resolution",
       relatedClaimKind: "RELATION",
       relatedClaimIds : ["66666666-6666-4666-8666-666666666666"],
+      relatedPersonaCandidateIds: [
+        "77777777-7777-4777-8777-777777777777",
+        "88888888-8888-4888-8888-888888888888"
+      ],
+      relatedChapterIds: [CHAPTER_ID],
       summary         : "刘备与关羽的关系方向冲突",
       evidenceSpanIds : [EVIDENCE_ID],
       reviewState     : "CONFLICTED",
@@ -212,6 +222,72 @@ describe("claim schema contracts", () => {
     expect(reviewableClaimFamilySchema.parse("CONFLICT_FLAG")).toBe("CONFLICT_FLAG");
     expect(isManualOverrideFamily("RELATION")).toBe(true);
     expect(isManualOverrideFamily("CONFLICT_FLAG")).toBe(false);
+  });
+
+  it("requires structured stage-b5 metadata on conflict flags", () => {
+    const parsed = validateClaimDraftByFamily("CONFLICT_FLAG", {
+      claimFamily               : "CONFLICT_FLAG",
+      bookId                    : BOOK_ID,
+      chapterId                 : CHAPTER_ID,
+      runId                     : RUN_ID,
+      conflictType              : ConflictType.POST_MORTEM_ACTION,
+      severity                  : ConflictSeverity.CRITICAL,
+      reason                    : "候选人物在死亡事件之后仍然出现主动行动事件。",
+      recommendedActionKey      : "VERIFY_IDENTITY_SPLIT",
+      sourceStageKey            : "stage_b_identity_resolution",
+      relatedClaimKind          : "EVENT",
+      relatedClaimIds           : ["66666666-6666-4666-8666-666666666666"],
+      relatedPersonaCandidateIds: ["77777777-7777-4777-8777-777777777777"],
+      relatedChapterIds         : [CHAPTER_ID],
+      summary                   : "死亡后仍有主动行动：范进候选在第 12 回后继续出现事件。",
+      evidenceSpanIds           : [EVIDENCE_ID],
+      reviewState               : "CONFLICTED",
+      source                    : "RULE",
+      reviewedByUserId          : null,
+      reviewNote                : "STAGE_B5: recommendedActionKey=VERIFY_IDENTITY_SPLIT"
+    });
+
+    expect(parsed.severity).toBe(ConflictSeverity.CRITICAL);
+    expect(toClaimCreateData(parsed)).toMatchObject({
+      severity                  : ConflictSeverity.CRITICAL,
+      reason                    : "候选人物在死亡事件之后仍然出现主动行动事件。",
+      recommendedActionKey      : "VERIFY_IDENTITY_SPLIT",
+      sourceStageKey            : "stage_b_identity_resolution",
+      relatedPersonaCandidateIds: ["77777777-7777-4777-8777-777777777777"],
+      relatedChapterIds         : [CHAPTER_ID]
+    });
+  });
+
+  it("rejects conflict flags that omit severity, reason, or chapter bindings", () => {
+    const parsed = claimDraftSchema.safeParse({
+      claimFamily     : "CONFLICT_FLAG",
+      bookId          : BOOK_ID,
+      chapterId       : null,
+      runId           : RUN_ID,
+      conflictType    : ConflictType.TIME_ORDER_CONFLICT,
+      relatedClaimKind: "TIME",
+      relatedClaimIds : ["88888888-8888-4888-8888-888888888888"],
+      summary         : "时间提示与章节顺序冲突",
+      evidenceSpanIds : [EVIDENCE_ID],
+      reviewState     : "CONFLICTED",
+      source          : "RULE",
+      reviewedByUserId: null,
+      reviewNote      : null
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+
+    expect(parsed.error.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: ["severity"] }),
+      expect.objectContaining({ path: ["reason"] }),
+      expect.objectContaining({ path: ["recommendedActionKey"] }),
+      expect.objectContaining({ path: ["sourceStageKey"] }),
+      expect.objectContaining({ path: ["relatedPersonaCandidateIds"] }),
+      expect.objectContaining({ path: ["relatedChapterIds"] })
+    ]));
   });
 
   it("strips claimFamily when converting a valid alias draft into create data", () => {
@@ -333,8 +409,14 @@ describe("claim schema contracts", () => {
       chapterId       : null,
       runId           : RUN_ID,
       conflictType    : ConflictType.ALIAS_CONFLICT,
+      severity        : ConflictSeverity.HIGH,
+      reason          : "同一别名被不同候选人物占用，且 Stage B 判定存在身份冲突。",
+      recommendedActionKey: "VERIFY_IDENTITY_SPLIT",
+      sourceStageKey      : "stage_b_identity_resolution",
       relatedClaimKind: "ALIAS",
       relatedClaimIds : ["66666666-6666-4666-8666-666666666666"],
+      relatedPersonaCandidateIds: ["77777777-7777-4777-8777-777777777777"],
+      relatedChapterIds         : [CHAPTER_ID],
       summary         : "别名归并冲突",
       evidenceSpanIds : [EVIDENCE_ID],
       reviewState     : "CONFLICTED",

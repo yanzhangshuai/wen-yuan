@@ -932,6 +932,13 @@ export type EnumConflictTypeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumConflictTypeFilter<$PrismaModel> | $Enums.ConflictType
 }
 
+export type EnumConflictSeverityFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConflictSeverity | Prisma.EnumConflictSeverityFieldRefInput<$PrismaModel>
+  in?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumConflictSeverityFilter<$PrismaModel> | $Enums.ConflictSeverity
+}
+
 export type EnumClaimKindNullableFilter<$PrismaModel = never> = {
   equals?: $Enums.ClaimKind | Prisma.EnumClaimKindFieldRefInput<$PrismaModel> | null
   in?: $Enums.ClaimKind[] | Prisma.ListEnumClaimKindFieldRefInput<$PrismaModel> | null
@@ -947,6 +954,16 @@ export type EnumConflictTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumConflictTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumConflictTypeFilter<$PrismaModel>
+}
+
+export type EnumConflictSeverityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConflictSeverity | Prisma.EnumConflictSeverityFieldRefInput<$PrismaModel>
+  in?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumConflictSeverityWithAggregatesFilter<$PrismaModel> | $Enums.ConflictSeverity
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumConflictSeverityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumConflictSeverityFilter<$PrismaModel>
 }
 
 export type EnumClaimKindNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -1878,6 +1895,13 @@ export type NestedEnumConflictTypeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumConflictTypeFilter<$PrismaModel> | $Enums.ConflictType
 }
 
+export type NestedEnumConflictSeverityFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConflictSeverity | Prisma.EnumConflictSeverityFieldRefInput<$PrismaModel>
+  in?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumConflictSeverityFilter<$PrismaModel> | $Enums.ConflictSeverity
+}
+
 export type NestedEnumClaimKindNullableFilter<$PrismaModel = never> = {
   equals?: $Enums.ClaimKind | Prisma.EnumClaimKindFieldRefInput<$PrismaModel> | null
   in?: $Enums.ClaimKind[] | Prisma.ListEnumClaimKindFieldRefInput<$PrismaModel> | null
@@ -1893,6 +1917,16 @@ export type NestedEnumConflictTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumConflictTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumConflictTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumConflictSeverityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConflictSeverity | Prisma.EnumConflictSeverityFieldRefInput<$PrismaModel>
+  in?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ConflictSeverity[] | Prisma.ListEnumConflictSeverityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumConflictSeverityWithAggregatesFilter<$PrismaModel> | $Enums.ConflictSeverity
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumConflictSeverityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumConflictSeverityFilter<$PrismaModel>
 }
 
 export type NestedEnumClaimKindNullableWithAggregatesFilter<$PrismaModel = never> = {

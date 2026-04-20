@@ -268,6 +268,15 @@ enum ConflictType {
   @@map("conflict_type")
 }
 
+enum ConflictSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("conflict_severity")
+}
+
 enum ClaimKind {
   ALIAS
   EVENT
@@ -1572,26 +1581,33 @@ model IdentityResolutionClaim {
 }
 
 model ConflictFlag {
-  id               String           @id @default(uuid()) @db.Uuid
-  bookId           String           @map("book_id") @db.Uuid
-  chapterId        String?          @map("chapter_id") @db.Uuid
-  runId            String           @map("run_id") @db.Uuid
-  conflictType     ConflictType     @map("conflict_type")
-  relatedClaimKind ClaimKind?       @map("related_claim_kind")
-  relatedClaimIds  String[]         @default([]) @map("related_claim_ids")
-  summary          String           @db.Text
-  evidenceSpanIds  String[]         @default([]) @map("evidence_span_ids")
-  reviewState      ClaimReviewState @default(CONFLICTED) @map("review_state")
-  source           ClaimSource      @default(RULE)
-  reviewedByUserId String?          @map("reviewed_by_user_id") @db.Uuid
-  reviewedAt       DateTime?        @map("reviewed_at") @db.Timestamptz(6)
-  reviewNote       String?          @map("review_note") @db.Text
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                        String           @id @default(uuid()) @db.Uuid
+  bookId                    String           @map("book_id") @db.Uuid
+  chapterId                 String?          @map("chapter_id") @db.Uuid
+  runId                     String           @map("run_id") @db.Uuid
+  conflictType              ConflictType     @map("conflict_type")
+  severity                  ConflictSeverity @map("severity")
+  reason                    String           @db.Text
+  recommendedActionKey      String           @map("recommended_action_key")
+  sourceStageKey            String           @map("source_stage_key")
+  relatedClaimKind          ClaimKind?       @map("related_claim_kind")
+  relatedClaimIds           String[]         @default([]) @map("related_claim_ids")
+  relatedPersonaCandidateIds String[]        @default([]) @map("related_persona_candidate_ids")
+  relatedChapterIds         String[]         @default([]) @map("related_chapter_ids")
+  summary                   String           @db.Text
+  evidenceSpanIds           String[]         @default([]) @map("evidence_span_ids")
+  reviewState               ClaimReviewState @default(CONFLICTED) @map("review_state")
+  source                    ClaimSource      @default(RULE)
+  reviewedByUserId          String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt                DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote                String?          @map("review_note") @db.Text
+  createdAt                 DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([bookId, reviewState], map: "conflict_flags_book_state_idx")
   @@index([runId], map: "conflict_flags_run_idx")
   @@index([conflictType], map: "conflict_flags_type_idx")
+  @@index([severity], map: "conflict_flags_severity_idx")
   @@map("conflict_flags")
 }
 

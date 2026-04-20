@@ -268,6 +268,16 @@ export const ConflictType = {
 export type ConflictType = (typeof ConflictType)[keyof typeof ConflictType]
 
 
+export const ConflictSeverity = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  CRITICAL: 'CRITICAL'
+} as const
+
+export type ConflictSeverity = (typeof ConflictSeverity)[keyof typeof ConflictSeverity]
+
+
 export const ClaimKind = {
   ALIAS: 'ALIAS',
   EVENT: 'EVENT',

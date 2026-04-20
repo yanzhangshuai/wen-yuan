@@ -11,6 +11,7 @@ import {
   AliasType,
   BioCategory,
   ClaimKind,
+  ConflictSeverity,
   ConflictType,
   IdentityClaim,
   IdentityResolutionKind,
@@ -204,19 +205,25 @@ export const identityResolutionClaimDraftSchema = lineageCapableClaimBaseSchema.
 }).superRefine(addManualCreatorIssue);
 
 export const conflictFlagDraftSchema = z.object({
-  claimFamily     : z.literal("CONFLICT_FLAG"),
-  bookId          : uuidSchema,
-  chapterId       : nullableUuidSchema,
-  runId           : uuidSchema,
-  conflictType    : z.nativeEnum(ConflictType),
-  relatedClaimKind: z.nativeEnum(ClaimKind).nullable(),
-  relatedClaimIds : z.array(uuidSchema),
-  summary         : z.string().trim().min(1),
-  evidenceSpanIds : z.array(uuidSchema).min(1),
-  reviewState     : claimReviewStateSchema,
-  source          : claimSourceSchema,
-  reviewedByUserId: nullableUuidSchema,
-  reviewNote      : nullableTrimmedTextSchema
+  claimFamily               : z.literal("CONFLICT_FLAG"),
+  bookId                    : uuidSchema,
+  chapterId                 : nullableUuidSchema,
+  runId                     : uuidSchema,
+  conflictType              : z.nativeEnum(ConflictType),
+  severity                  : z.nativeEnum(ConflictSeverity),
+  reason                    : z.string().trim().min(1),
+  recommendedActionKey      : z.string().trim().min(1),
+  sourceStageKey            : z.string().trim().min(1),
+  relatedClaimKind          : z.nativeEnum(ClaimKind).nullable(),
+  relatedClaimIds           : z.array(uuidSchema),
+  relatedPersonaCandidateIds: z.array(uuidSchema),
+  relatedChapterIds         : z.array(uuidSchema),
+  summary                   : z.string().trim().min(1),
+  evidenceSpanIds           : z.array(uuidSchema).min(1),
+  reviewState               : claimReviewStateSchema,
+  source                    : claimSourceSchema,
+  reviewedByUserId          : nullableUuidSchema,
+  reviewNote                : nullableTrimmedTextSchema
 }).superRefine((value, ctx) => {
   if (value.source === "MANUAL") {
     ctx.addIssue({
@@ -237,16 +244,6 @@ export const claimDraftSchemaByFamily = {
   CONFLICT_FLAG      : conflictFlagDraftSchema
 } as const;
 
-export const claimDraftSchema = z.union([
-  entityMentionDraftSchema,
-  aliasClaimDraftSchema,
-  eventClaimDraftSchema,
-  relationClaimDraftSchema,
-  timeClaimDraftSchema,
-  identityResolutionClaimDraftSchema,
-  conflictFlagDraftSchema
-]);
-
 export interface ClaimDraftByFamily {
   ENTITY_MENTION     : z.infer<typeof entityMentionDraftSchema>;
   ALIAS              : z.infer<typeof aliasClaimDraftSchema>;
@@ -258,6 +255,43 @@ export interface ClaimDraftByFamily {
 }
 
 export type ClaimDraft = ClaimDraftByFamily[ClaimFamily];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export const claimDraftSchema = z.any()
+  .superRefine((value, ctx) => {
+    if (!isRecord(value)) {
+      ctx.addIssue({
+        code   : z.ZodIssueCode.custom,
+        message: "Claim draft must be an object"
+      });
+      return;
+    }
+
+    const familyResult = claimFamilySchema.safeParse(value.claimFamily);
+    if (!familyResult.success) {
+      for (const issue of familyResult.error.issues) {
+        ctx.addIssue({
+          ...issue,
+          path: ["claimFamily", ...issue.path]
+        });
+      }
+      return;
+    }
+
+    const draftResult = claimDraftSchemaByFamily[familyResult.data].safeParse(value);
+    if (!draftResult.success) {
+      for (const issue of draftResult.error.issues) {
+        ctx.addIssue(issue);
+      }
+    }
+  })
+  .transform((value): ClaimDraft => {
+    const family = claimFamilySchema.parse((value as Record<string, unknown>).claimFamily);
+    return claimDraftSchemaByFamily[family].parse(value);
+  });
 
 export type ClaimCreateDataByFamily = {
   [TFamily in ClaimFamily]: Omit<ClaimDraftByFamily[TFamily], "claimFamily">;
