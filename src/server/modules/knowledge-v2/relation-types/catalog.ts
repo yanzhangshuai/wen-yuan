@@ -21,6 +21,18 @@ type RelationTaxonomyItem = ParsedKnowledgeItem<"relation taxonomy rule">;
 type RelationLabelMappingItem = ParsedKnowledgeItem<"relation label mapping rule">;
 type RelationNegativeItem = ParsedKnowledgeItem<"relation negative rule">;
 
+function isRelationTaxonomyItem(item: ParsedKnowledgeItem): item is RelationTaxonomyItem {
+  return item.knowledgeType === "relation taxonomy rule";
+}
+
+function isRelationLabelMappingItem(item: ParsedKnowledgeItem): item is RelationLabelMappingItem {
+  return item.knowledgeType === "relation label mapping rule";
+}
+
+function isRelationNegativeItem(item: ParsedKnowledgeItem): item is RelationNegativeItem {
+  return item.knowledgeType === "relation negative rule";
+}
+
 export interface CompiledRelationLabelMappingRule {
   id                : string;
   reviewState       : "VERIFIED" | "PENDING";
@@ -152,7 +164,7 @@ export function buildRelationTypeCatalog(input: {
   const negativeRules: CompiledRelationNegativeRule[] = [];
 
   for (const item of input.items) {
-    if (item.knowledgeType === "relation taxonomy rule") {
+    if (isRelationTaxonomyItem(item)) {
       const compiled = compileRelationCatalogEntry(item);
       const previous = entriesByKey[compiled.relationTypeKey];
 
@@ -162,7 +174,7 @@ export function buildRelationTypeCatalog(input: {
       continue;
     }
 
-    if (item.knowledgeType === "relation label mapping rule") {
+    if (isRelationLabelMappingItem(item)) {
       const compiled = compileRelationLabelMappingRule(item);
       if (compiled) {
         mappingRules.push(compiled);
@@ -170,7 +182,7 @@ export function buildRelationTypeCatalog(input: {
       continue;
     }
 
-    if (item.knowledgeType === "relation negative rule") {
+    if (isRelationNegativeItem(item)) {
       const compiled = compileRelationNegativeRule(item);
       if (compiled) {
         negativeRules.push(compiled);

@@ -22,7 +22,7 @@ const relationTypePromotionSchema = z.object({
   targetReviewState: z.enum(["PENDING", "VERIFIED"]).default("VERIFIED")
 });
 
-type RelationTypePromotionInput = z.infer<typeof relationTypePromotionSchema>;
+type RelationTypePromotionInput = z.input<typeof relationTypePromotionSchema>;
 
 interface RelationTypeKnowledgePromotion {
   promoteReviewedClaim(input: PromoteReviewedClaimInput): Promise<{ id: string }>;
