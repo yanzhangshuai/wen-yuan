@@ -114,7 +114,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T05: `docs/superpowers/tasks/2026-04-18-evidence-review/05-stage-0-segmentation.md`
 - [x] T06: `docs/superpowers/tasks/2026-04-18-evidence-review/06-stage-a-extraction.md`
 - [x] T07: `docs/superpowers/tasks/2026-04-18-evidence-review/07-stage-a-plus-knowledge-recall.md`
-- [ ] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
+- [x] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
 - [ ] T08: `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
 - [ ] T09: `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
 - [ ] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
@@ -227,3 +227,11 @@ Append one entry after each task:
 - Result: Stage A+ rule and KB v2 recall now enrich each chapter with review-native `RULE` mention, alias, and derived relation claims while preserving original relation labels, surfacing negative knowledge explicitly, and recording cost-free rule execution through Stage Run observability.
 - Follow-up risks: T18 still owns relation catalog governance and review-facing relation type management; T19 still owns skip/rerun policy; T08 still needs to consume Stage A+ mention and alias hints during identity resolution.
 - Next task: T18 `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
+
+### T18 Completion - 2026-04-20
+
+- Changed files: `src/server/modules/knowledge-v2/relation-types/**`, `src/server/modules/knowledge-v2/index.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageAPlus/relation-normalization.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageAPlus/relation-normalization.test.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageAPlus/KnowledgeRecallStage.ts`, `src/server/modules/analysis/pipelines/evidence-review/stageAPlus/KnowledgeRecallStage.test.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/knowledge-v2/relation-types/contracts.test.ts src/server/modules/knowledge-v2/relation-types/preset-registry.test.ts src/server/modules/knowledge-v2/relation-types/catalog.test.ts src/server/modules/knowledge-v2/relation-types/loader.test.ts src/server/modules/knowledge-v2/relation-types/promotion.test.ts src/server/modules/analysis/pipelines/evidence-review/stageAPlus/relation-normalization.test.ts src/server/modules/analysis/pipelines/evidence-review/stageAPlus/KnowledgeRecallStage.test.ts --coverage=false`, `pnpm type-check`, `git diff --exit-code -- prisma/schema.prisma prisma/migrations`
+- Result: relation types are now governed by a KB v2 backed catalog that supports presets, custom relation promotion, synonym lookup, disabled suppression, and Stage A+ reuse without introducing a closed enum.
+- Follow-up risks: review APIs and relation editor CRUD/UI still land in T12/T14; historical relation claims still keep raw labels and need review-side governance before projection.
+- Next task: T08 `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
