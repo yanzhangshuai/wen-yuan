@@ -65,6 +65,16 @@ function assertDraftMatchesScope<TFamily extends ClaimFamily>(
       `Pipeline claim writes must not use MANUAL source for ${family}`
     );
   }
+
+  if (
+    family === "ENTITY_MENTION"
+    && scope.stageKey === "stage_a_plus_knowledge_recall"
+    && draft.source !== "RULE"
+  ) {
+    throw new ClaimWriteServiceError(
+      `Claim batch source mismatch for ${family} at ${scope.stageKey}: expected RULE, got ${draft.source}`
+    );
+  }
 }
 
 export function createClaimWriteService(repository: ClaimWriteRepository) {
