@@ -117,7 +117,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T18: `docs/superpowers/tasks/2026-04-18-evidence-review/18-relation-types-catalog.md`
 - [x] T08: `docs/superpowers/tasks/2026-04-18-evidence-review/08-stage-b-identity-resolution.md`
 - [x] T09: `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
-- [ ] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
+- [x] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
 - [ ] T11: `docs/superpowers/tasks/2026-04-18-evidence-review/11-stage-d-projection-builder.md`
 - [ ] T12: `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`
 - [ ] T13: `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`
@@ -251,3 +251,11 @@ Append one entry after each task:
 - Result: Stage B.5 now deterministically detects whole-book conflict hot spots across identity, event, relation, time, location, and low-evidence claims, then persists additive `CONFLICT_FLAG` rows without mutating upstream review truth.
 - Follow-up risks: Stage C still needs to consume `CONFLICT_FLAG` rows as attribution and ranking signals; review APIs and UI still need conflict-facing filters and mutation flows in T12/T13/T14.
 - Next task: T10 `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
+
+### T10 Completion - 2026-04-20
+
+- Changed files: `src/server/modules/analysis/pipelines/evidence-review/stageC/**`, `docs/superpowers/plans/2026-04-20-t10-stage-c-fact-attribution-implementation-plan.md`, `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageC/attribution-ranking.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageC/attribution-ranking.test.ts src/server/modules/analysis/pipelines/evidence-review/stageC/draft-builder.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageC/repository.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageC/persister.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageC/FactAttributor.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/stageC --coverage=false`, `pnpm test src/server/modules/analysis/pipelines/evidence-review/stageC`, `pnpm type-check`
+- Result: Stage C fact attribution is implemented as a deterministic rule-engine stage that reads root facts plus persona candidates and conflict flags, preserves attribution alternatives as derived reviewable event/relation claims, keeps `timeHintId` links on derived facts, and records cost-free stage-run/raw-output observability.
+- Follow-up risks: `pnpm test src/server/modules/analysis/pipelines/evidence-review/stageC` passed all 13 assertions but failed global coverage because imported shared modules (`claims`, `runs`, `db`) are included in coverage accounting; standalone time-person attribution is intentionally represented through derived facts because `TimeClaim` has no persona candidate field; T11 must treat derived Stage C rows as reviewable inputs, not final graph truth.
+- Next task: T11 `docs/superpowers/tasks/2026-04-18-evidence-review/11-stage-d-projection-builder.md`
