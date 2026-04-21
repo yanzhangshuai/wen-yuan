@@ -293,6 +293,7 @@ export type ClaimKind = (typeof ClaimKind)[keyof typeof ClaimKind]
 export const ReviewAction = {
   ACCEPT: 'ACCEPT',
   REJECT: 'REJECT',
+  DEFER: 'DEFER',
   EDIT: 'EDIT',
   CREATE_MANUAL_CLAIM: 'CREATE_MANUAL_CLAIM',
   MERGE_PERSONA: 'MERGE_PERSONA',

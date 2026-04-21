@@ -22,6 +22,7 @@ import {
   getAuthContext,
   issueAuthToken,
   requireAdmin,
+  requireAdminActorUserId,
   sanitizeRedirectPath,
   verifyAuthToken
 } from "./index";
@@ -73,13 +74,13 @@ describe("getAuthContext", () => {
   it("resolves admin from cookie token when middleware headers are missing", async () => {
     process.env.JWT_SECRET = testSecret;
     const now = Math.floor(Date.now() / 1000);
-    const token = await issueAuthToken("管理员", now);
+    const token = await issueAuthToken({ userId: "user-1", name: "管理员" }, now);
     const headers = new Headers({
       cookie: `token=${token}`
     });
 
     await expect(getAuthContext(headers)).resolves.toEqual({
-      userId         : null,
+      userId         : "user-1",
       role           : AppRole.ADMIN,
       name           : "管理员",
       isAuthenticated: true
@@ -90,14 +91,14 @@ describe("getAuthContext", () => {
   it("prefers valid cookie token when middleware role header is viewer", async () => {
     process.env.JWT_SECRET = testSecret;
     const now = Math.floor(Date.now() / 1000);
-    const token = await issueAuthToken("管理员", now);
+    const token = await issueAuthToken({ userId: "user-1", name: "管理员" }, now);
     const headers = new Headers({
       "x-auth-role": AppRole.VIEWER,
       cookie       : `token=${token}`
     });
 
     await expect(getAuthContext(headers)).resolves.toEqual({
-      userId         : null,
+      userId         : "user-1",
       role           : AppRole.ADMIN,
       name           : "管理员",
       isAuthenticated: true
@@ -132,6 +133,16 @@ describe("requireAdmin", () => {
     expect(() => requireAdmin({ userId: null, role: AppRole.VIEWER, name: null, isAuthenticated: false })).toThrowError(
       new AuthError(ERROR_CODES.AUTH_FORBIDDEN, "当前用户没有管理员权限")
     );
+  });
+
+  // 这里单独锁定 actor user id 约束，避免后续 review 审计链路再次出现“管理员已登录但找不到操作者 ID”的空洞。
+  it("throws when authenticated admin context has no actor user id", () => {
+    expect(() => requireAdminActorUserId({
+      userId         : null,
+      role           : AppRole.ADMIN,
+      name           : "管理员",
+      isAuthenticated: true
+    })).toThrow("Authenticated admin context is missing userId");
   });
 });
 
@@ -168,14 +179,15 @@ describe("auth token", () => {
   it("issues a signed admin token with 7 day ttl", async () => {
     process.env.JWT_SECRET = testSecret;
 
-    const token = await issueAuthToken("管理员", 1_700_000_000);
+    const token = await issueAuthToken({ userId: "user-1", name: "管理员" }, 1_700_000_000);
     const payload = await verifyAuthToken(token, 1_700_000_100);
 
     expect(payload).toEqual({
-      role: AppRole.ADMIN,
-      name: "管理员",
-      iat : 1_700_000_000,
-      exp : 1_700_000_000 + AUTH_TOKEN_TTL_SECONDS
+      role  : AppRole.ADMIN,
+      userId: "user-1",
+      name  : "管理员",
+      iat   : 1_700_000_000,
+      exp   : 1_700_000_000 + AUTH_TOKEN_TTL_SECONDS
     });
   });
 
@@ -183,7 +195,7 @@ describe("auth token", () => {
   it("rejects tampered or expired tokens", async () => {
     process.env.JWT_SECRET = testSecret;
 
-    const token = await issueAuthToken("管理员", 1_700_000_000);
+    const token = await issueAuthToken({ userId: "user-1", name: "管理员" }, 1_700_000_000);
     const tampered = `${token.slice(0, -1)}x`;
 
     await expect(verifyAuthToken(tampered, 1_700_000_100)).resolves.toBeNull();

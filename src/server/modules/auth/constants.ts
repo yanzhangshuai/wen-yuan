@@ -47,20 +47,25 @@ export interface AuthTokenPayload {
    * 用户角色：`ADMIN` 或 `VIEWER`。
    * 字段性质：安全上下文字段（用于授权判断），不是 UI 展示字段。
    */
-  role: AuthRole;
+  role  : AuthRole;
+  /**
+   * 已认证管理员用户 ID。
+   * 字段性质：审计与写操作归属字段；review mutation 依赖它记录真实操作者。
+   */
+  userId: string;
   /**
    * 管理员展示名称。
    * 字段性质：展示字段，供后台头部等位置显示当前登录管理员名。
    */
-  name: string;
+  name  : string;
   /**
    * 签发时间戳（秒）。
    * 字段性质：会话有效性基础字段，用于回放/过期判定。
    */
-  iat : number;
+  iat   : number;
   /**
    * 过期时间戳（秒）。
    * 字段性质：安全边界字段；过期即视为未登录，必须重新登录。
    */
-  exp : number;
+  exp   : number;
 }

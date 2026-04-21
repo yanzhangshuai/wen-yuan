@@ -291,6 +291,7 @@ enum ClaimKind {
 enum ReviewAction {
   ACCEPT
   REJECT
+  DEFER
   EDIT
   CREATE_MANUAL_CLAIM
   MERGE_PERSONA

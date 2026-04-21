@@ -247,7 +247,7 @@ export async function POST(request: Request): Promise<Response> {
     // 5) 清洗 redirect，防止将用户重定向到站外恶意地址。
     const redirect = sanitizeRedirectPath(parsedResult.data.redirect);
     // 6) 签发 JWT 作为会话凭证。
-    const token = await issueAuthToken(user.name);
+    const token = await issueAuthToken({ userId: user.id, name: user.name });
     // 7) 登录成功后清空该 IP 的失败历史，避免影响后续正常登录。
     clearLoginFailures(clientIp);
 

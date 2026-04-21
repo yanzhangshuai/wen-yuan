@@ -119,7 +119,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T09: `docs/superpowers/tasks/2026-04-18-evidence-review/09-stage-b5-conflict-detection.md`
 - [x] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
 - [x] T11: `docs/superpowers/tasks/2026-04-18-evidence-review/11-stage-d-projection-builder.md`
-- [ ] T12: `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`
+- [x] T12: `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`
 - [ ] T13: `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`
 - [ ] T14: `docs/superpowers/tasks/2026-04-18-evidence-review/14-relation-editor-ui.md`
 - [ ] T16: `docs/superpowers/tasks/2026-04-18-evidence-review/16-audit-history-evidence-panel.md`
@@ -267,3 +267,11 @@ Append one entry after each task:
 - Result: Stage D projection read models can now be deterministically rebuilt from accepted claims plus review state, including book/chapter/persona/time-slice/relation-edge scoped rebuilds and projection-only refreshes.
 - Follow-up risks: focused `pnpm test src/server/modules/review/evidence-review/projections` still fails repository-wide coverage thresholds even though all 21 assertions pass; T12 must keep projections read-only and route review mutations back through claim/review-state APIs instead of treating projection rows as editable truth.
 - Next task: T12 `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`
+
+### T12 Completion - 2026-04-21
+
+- Changed files: `prisma/schema.prisma`, `prisma/migrations/20260421103000_review_action_defer/migration.sql`, `src/generated/prisma/**`, `src/server/modules/auth/constants.ts`, `src/server/modules/auth/token.ts`, `src/server/modules/auth/index.ts`, `src/server/modules/auth/edge-token.ts`, `middleware.ts`, `src/app/api/auth/login/route.ts`, `src/server/modules/review/evidence-review/review-api-schemas.ts`, `src/server/modules/review/evidence-review/review-audit-service.ts`, `src/server/modules/review/evidence-review/review-query-service.ts`, `src/server/modules/review/evidence-review/review-mutation-service.ts`, `src/app/api/admin/review/**`, `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`, `docs/superpowers/plans/2026-04-21-t12-review-api-mutations-implementation-plan.md`, `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm prisma validate --schema prisma/schema.prisma`, `pnpm prisma:generate`, `pnpm exec vitest run src/server/modules/auth/token.test.ts src/server/modules/auth/index.test.ts src/middleware.test.ts src/app/api/auth/login/route.test.ts src/server/modules/review/evidence-review/review-api-schemas.test.ts src/server/modules/review/evidence-review/review-audit-service.test.ts src/server/modules/review/evidence-review/review-query-service.test.ts src/server/modules/review/evidence-review/review-mutation-service.test.ts src/app/api/admin/review/claims/route.test.ts src/app/api/admin/review/claims/[claimKind]/[claimId]/route.test.ts src/app/api/admin/review/claims/[claimKind]/[claimId]/actions/route.test.ts src/app/api/admin/review/personas/merge/route.test.ts src/app/api/admin/review/personas/split/route.test.ts --coverage=false`, `pnpm lint`, `pnpm type-check`
+- Result: T12 now provides claim-first admin review list/detail routes, manual override and relink flows, persona merge/split review mutations, audit-log persistence, admin actor attribution, and affected-scope projection rebuild orchestration. Validation passed across Prisma, Vitest, lint, and type-check.
+- Follow-up risks: T13-T16 must reuse the normalized DTOs and avoid bypassing these mutation routes; T12 commit is intentionally deferred until you explicitly request it.
+- Next task: T13 `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`

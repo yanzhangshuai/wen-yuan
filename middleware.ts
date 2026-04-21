@@ -108,7 +108,7 @@ export function buildRedirectTarget(currentPath: string): string {
 
 /**
  * 功能：构造注入到下游请求的鉴权头。
- * 输入：requestHeaders、role、currentPath。
+ * 输入：requestHeaders、role、currentPath、userId。
  * 输出：带鉴权上下文的新 Headers。
  * 异常：无。
  * 副作用：无。
@@ -116,15 +116,15 @@ export function buildRedirectTarget(currentPath: string): string {
 export function buildInjectedHeaders(
   requestHeaders: Headers,
   role: MiddlewareAuthRole,
-  currentPath: string
+  currentPath: string,
+  userId: string | null
 ): Headers {
   // 复制原 headers，避免直接修改原对象带来框架不可预期行为。
   const headers = new Headers(requestHeaders);
   // x-auth-role：下游统一读取角色，不需要每层重复解析 token。
   headers.set("x-auth-role", role);
-  // x-auth-user-id：当前实现未在 token 中携带 userId，先占位为空字符串。
-  // 这是兼容约定，不是技术限制；后续若扩展 token 可在不破坏结构前提下填充。
-  headers.set("x-auth-user-id", "");
+  // x-auth-user-id：review 审计链路依赖它做操作者归因；游客保持空串兼容现有 header 契约。
+  headers.set("x-auth-user-id", userId ?? "");
   // x-auth-current-path：用于 layout/API 在重定向时复用当前路径，避免丢失上下文。
   headers.set("x-auth-current-path", currentPath);
 
@@ -143,9 +143,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const currentPath = buildCurrentPathFromUrl(request.url);
   // 第 2 步：读取登录 token，并在 Edge 环境做轻量角色判定。
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const role = await resolveAuthRole(token);
+  const payload = token ? await verifyAuthTokenForEdge(token) : null;
+  const role = payload ? AUTH_ADMIN_ROLE : AUTH_VIEWER_ROLE;
   // 第 3 步：把鉴权上下文写入请求头，传给后续页面/API 层。
-  const requestHeaders = buildInjectedHeaders(request.headers, role, currentPath);
+  const requestHeaders = buildInjectedHeaders(request.headers, role, currentPath, payload?.userId ?? null);
   const pathname = request.nextUrl.pathname;
 
   // 第 4 步：访客访问管理域的分支处理。

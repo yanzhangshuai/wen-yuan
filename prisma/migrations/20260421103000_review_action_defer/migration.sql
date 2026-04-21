@@ -1,0 +1,1 @@
+ALTER TYPE "review_action" ADD VALUE IF NOT EXISTS 'DEFER';

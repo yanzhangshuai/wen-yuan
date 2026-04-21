@@ -46,17 +46,21 @@ function getJwtSecretBytes(): Uint8Array {
 }
 
 /**
- * 功能：签发管理员 JWT，payload 包含 role/name/iat/exp。
- * 输入：name(展示名称)、now，秒级时间戳，默认使用当前时间。
+ * 功能：签发管理员 JWT，payload 包含 role/userId/name/iat/exp。
+ * 输入：管理员身份快照（`userId/name`）与 now，秒级时间戳，默认使用当前时间。
  * 输出：HS256 签名后的 JWT。
  * 异常：JWT_SECRET 缺失或不满足安全长度时抛错。
  * 副作用：无。
  */
-export async function issueAuthToken(name: string, now = Math.floor(Date.now() / 1000)): Promise<string> {
+export async function issueAuthToken(
+  input: { userId: string; name: string },
+  now = Math.floor(Date.now() / 1000)
+): Promise<string> {
   // 业务规则：当前系统只签发管理员 token，因此 role 固定 ADMIN。
   return new SignJWT({
-    role: AUTH_ADMIN_ROLE,
-    name
+    role  : AUTH_ADMIN_ROLE,
+    userId: input.userId,
+    name  : input.name
   })
     // 显式写 alg/typ，避免依赖库默认值导致行为不透明。
     .setProtectedHeader({ alg: JWT_ALGORITHM, typ: "JWT" })
@@ -89,17 +93,22 @@ export async function verifyAuthToken(
       return null;
     }
 
+    if (typeof payload.userId !== "string" || payload.userId.length === 0) {
+      return null;
+    }
+
     // 防御校验：iat/exp 缺失时视为非法 token，避免产生“永不过期”或不完整会话。
     if (typeof payload.iat !== "number" || typeof payload.exp !== "number") {
       return null;
     }
 
     return {
-      role: AUTH_ADMIN_ROLE,
+      role  : AUTH_ADMIN_ROLE,
+      userId: payload.userId,
       // name 不是授权字段，缺失时回退空串，避免影响鉴权判断。
-      name: typeof payload.name === "string" ? payload.name : "",
-      iat : payload.iat,
-      exp : payload.exp
+      name  : typeof payload.name === "string" ? payload.name : "",
+      iat   : payload.iat,
+      exp   : payload.exp
     };
   } catch {
     // 设计原因：上游只关心“token 是否可用”，不关心底层失败细节；

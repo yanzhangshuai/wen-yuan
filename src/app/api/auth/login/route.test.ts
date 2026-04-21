@@ -128,7 +128,7 @@ describe("POST /api/auth/login", () => {
       identifier: "admin@example.com",
       password  : "secret-123"
     });
-    expect(issueAuthTokenMock).toHaveBeenCalledWith("管理员");
+    expect(issueAuthTokenMock).toHaveBeenCalledWith({ userId: "user-1", name: "管理员" });
     expect(clearLoginFailuresMock).toHaveBeenCalledWith("203.0.113.1");
     expect(resolveClientIpMock).toHaveBeenCalledOnce();
 

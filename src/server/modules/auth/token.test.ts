@@ -19,6 +19,10 @@ import { issueAuthToken, verifyAuthToken } from "@/server/modules/auth/token";
 describe("auth token module", () => {
   const originalSecret = process.env.JWT_SECRET;
   const testSecret = "token-unit-test-secret-at-least-32-bytes";
+  const adminTokenInput = {
+    userId: "8f8b7b8e-17aa-4ae5-91a1-2c6e8dfd7f89",
+    name  : "管理员"
+  } as const;
 
   afterEach(() => {
     process.env.JWT_SECRET = originalSecret;
@@ -28,14 +32,14 @@ describe("auth token module", () => {
   it("throws when issuing token without JWT_SECRET", async () => {
     Reflect.deleteProperty(process.env, "JWT_SECRET");
 
-    await expect(issueAuthToken("管理员")).rejects.toThrow("Missing auth env: JWT_SECRET");
+    await expect(issueAuthToken(adminTokenInput)).rejects.toThrow("Missing auth env: JWT_SECRET");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws when issuing token with too-short JWT_SECRET", async () => {
     process.env.JWT_SECRET = "short-secret";
 
-    await expect(issueAuthToken("管理员")).rejects.toThrow("JWT_SECRET must be at least 32 bytes");
+    await expect(issueAuthToken(adminTokenInput)).rejects.toThrow("JWT_SECRET must be at least 32 bytes");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -46,18 +50,19 @@ describe("auth token module", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("issues and verifies admin token payload", async () => {
+  it("issues and verifies admin token payload with userId", async () => {
     process.env.JWT_SECRET = testSecret;
 
     const issuedAt = 1_700_000_000;
-    const token = await issueAuthToken("管理员", issuedAt);
+    const token = await issueAuthToken(adminTokenInput, issuedAt);
     const payload = await verifyAuthToken(token, issuedAt + 1);
 
     expect(payload).toEqual({
-      role: AppRole.ADMIN,
-      name: "管理员",
-      iat : issuedAt,
-      exp : issuedAt + AUTH_TOKEN_TTL_SECONDS
+      role  : AppRole.ADMIN,
+      userId: adminTokenInput.userId,
+      name  : "管理员",
+      iat   : issuedAt,
+      exp   : issuedAt + AUTH_TOKEN_TTL_SECONDS
     });
   });
 
@@ -66,7 +71,7 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const issuedAt = 1_700_100_000;
-    const token = await issueAuthToken("管理员", issuedAt);
+    const token = await issueAuthToken(adminTokenInput, issuedAt);
     const payload = await verifyAuthToken(token, issuedAt + 2);
 
     expect(payload).not.toBeNull();
@@ -79,7 +84,7 @@ describe("auth token module", () => {
   it("returns null for tampered token", async () => {
     process.env.JWT_SECRET = testSecret;
 
-    const token = await issueAuthToken("管理员", 1_700_000_000);
+    const token = await issueAuthToken(adminTokenInput, 1_700_000_000);
     const tampered = `${token.slice(0, -1)}x`;
 
     await expect(verifyAuthToken(tampered, 1_700_000_100)).resolves.toBeNull();
@@ -90,7 +95,7 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const issuedAt = 1_700_000_000;
-    const token = await issueAuthToken("管理员", issuedAt);
+    const token = await issueAuthToken(adminTokenInput, issuedAt);
 
     await expect(verifyAuthToken(token, issuedAt + AUTH_TOKEN_TTL_SECONDS + 1)).resolves.toBeNull();
   });
@@ -100,7 +105,7 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const secret = new TextEncoder().encode(testSecret);
-    const token = await new SignJWT({ role: AppRole.VIEWER, name: "只读" })
+    const token = await new SignJWT({ role: AppRole.VIEWER, userId: adminTokenInput.userId, name: "只读" })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setIssuedAt(1_700_000_000)
       .setExpirationTime(1_700_000_100)
@@ -114,7 +119,11 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const secret = new TextEncoder().encode(testSecret);
-    const token = await new SignJWT({ role: AppRole.ADMIN, name: "管理员" })
+    const token = await new SignJWT({
+      role  : AppRole.ADMIN,
+      userId: adminTokenInput.userId,
+      name  : "管理员"
+    })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(1_700_000_100)
       .sign(secret);
@@ -127,7 +136,11 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const secret = new TextEncoder().encode(testSecret);
-    const token = await new SignJWT({ role: AppRole.ADMIN, name: "管理员" })
+    const token = await new SignJWT({
+      role  : AppRole.ADMIN,
+      userId: adminTokenInput.userId,
+      name  : "管理员"
+    })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setIssuedAt(1_700_000_000)
       .sign(secret);
@@ -140,17 +153,18 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const secret = new TextEncoder().encode(testSecret);
-    const token = await new SignJWT({ role: AppRole.ADMIN, name: 12345 })
+    const token = await new SignJWT({ role: AppRole.ADMIN, userId: adminTokenInput.userId, name: 12345 })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setIssuedAt(1_700_000_000)
       .setExpirationTime(1_700_000_100)
       .sign(secret);
 
     await expect(verifyAuthToken(token, 1_700_000_010)).resolves.toEqual({
-      role: AppRole.ADMIN,
-      name: "",
-      iat : 1_700_000_000,
-      exp : 1_700_000_100
+      role  : AppRole.ADMIN,
+      userId: adminTokenInput.userId,
+      name  : "",
+      iat   : 1_700_000_000,
+      exp   : 1_700_000_100
     });
   });
 
@@ -159,7 +173,11 @@ describe("auth token module", () => {
     process.env.JWT_SECRET = testSecret;
 
     const secret = new TextEncoder().encode(testSecret);
-    const token = await new SignJWT({ role: AppRole.ADMIN, name: "管理员" })
+    const token = await new SignJWT({
+      role  : AppRole.ADMIN,
+      userId: adminTokenInput.userId,
+      name  : "管理员"
+    })
       .setProtectedHeader({ alg: "HS384", typ: "JWT" })
       .setIssuedAt(1_700_000_000)
       .setExpirationTime(1_700_000_100)

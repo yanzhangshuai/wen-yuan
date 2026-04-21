@@ -147,7 +147,7 @@ export function sanitizeRedirectPath(redirect: string | null | undefined): strin
 export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   // 先读取中间件注入头：这是请求链路上最轻量、最统一的鉴权上下文来源。
   const roleHeader = headers.get("x-auth-role");
-  const userIdHeader = headers.get("x-auth-user-id");
+  const userIdHeader = normalizeOptionalHeaderValue(headers.get("x-auth-user-id"));
   // 同时读取 cookie 作为兜底，覆盖“API 未命中 middleware”或“直接调用”的场景。
   const token = readCookieValue(headers.get("cookie"), AUTH_COOKIE_NAME);
   const payload = token ? await verifyAuthToken(token) : null;
@@ -155,7 +155,7 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   if (roleHeader === AUTH_ADMIN_ROLE) {
     // 分支原因：命中该分支意味着上游中间件已完成管理员校验，可直接信任角色头。
     return {
-      userId         : userIdHeader,
+      userId         : userIdHeader ?? payload?.userId ?? null,
       role           : AUTH_ADMIN_ROLE,
       name           : payload?.name ?? null,
       isAuthenticated: true
@@ -165,7 +165,7 @@ export async function getAuthContext(headers: Headers): Promise<AuthContext> {
   if (payload?.role === AUTH_ADMIN_ROLE) {
     // 分支原因：当中间件头缺失或不可信时，以 token 校验结果作为后备真实来源。
     return {
-      userId         : userIdHeader,
+      userId         : userIdHeader ?? payload.userId,
       role           : AUTH_ADMIN_ROLE,
       name           : payload.name ?? null,
       isAuthenticated: true
@@ -203,6 +203,23 @@ export function requireAdmin(auth: AuthContext): void {
     // 这里抛业务错误而非返回 boolean，是为了强制调用方显式处理权限失败分支。
     throw new AuthError(ERROR_CODES.AUTH_FORBIDDEN, "当前用户没有管理员权限");
   }
+}
+
+/**
+ * 功能：断言当前管理员上下文具备可追溯的操作者 userId。
+ * 输入：`auth: AuthContext`。
+ * 输出：非空 `userId`。
+ * 异常：非管理员或 userId 缺失时抛 `AuthError`。
+ * 副作用：无。
+ */
+export function requireAdminActorUserId(auth: AuthContext): string {
+  requireAdmin(auth);
+
+  if (auth.userId === null || auth.userId.trim().length === 0) {
+    throw new AuthError(ERROR_CODES.AUTH_UNAUTHORIZED, "Authenticated admin context is missing userId");
+  }
+
+  return auth.userId;
 }
 
 /**
@@ -252,14 +269,17 @@ export async function authenticateAdmin(
 
 /**
  * 功能：签发管理员会话 token。
- * 输入：`now`（秒级时间戳，默认当前时间）。
+ * 输入：管理员身份快照与 `now`（秒级时间戳，默认当前时间）。
  * 输出：JWT 字符串。
  * 异常：签发失败时由底层抛错。
  * 副作用：无。
  */
-export async function issueAuthToken(name: string, now = Math.floor(Date.now() / 1000)): Promise<string> {
+export async function issueAuthToken(
+  input: { userId: string; name: string },
+  now = Math.floor(Date.now() / 1000)
+): Promise<string> {
   // 仅做聚合转发，保持调用方只依赖 auth/index，不耦合底层 token 文件路径。
-  return issueAuthTokenWithJose(name, now);
+  return issueAuthTokenWithJose(input, now);
 }
 
 /**
@@ -314,6 +334,15 @@ function readCookieValue(cookieHeader: string | null, cookieName: string): strin
   }
 
   return null;
+}
+
+function normalizeOptionalHeaderValue(value: string | null): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 export {

@@ -51,7 +51,7 @@ describe("middleware helpers", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("resolves valid token to admin and invalid token to viewer", async () => {
     process.env.JWT_SECRET = testJwtSecret;
-    const token = await issueAuthToken("管理员", Math.floor(Date.now() / 1000));
+    const token = await issueAuthToken({ userId: "user-1", name: "管理员" }, Math.floor(Date.now() / 1000));
 
     return Promise.all([
       expect(resolveAuthRole(token)).resolves.toBe(AppRole.ADMIN),
@@ -95,7 +95,7 @@ describe("middleware", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("allows authenticated admin access to /admin/model and injects admin role header", async () => {
     process.env.JWT_SECRET = testJwtSecret;
-    const token = await issueAuthToken("管理员", Math.floor(Date.now() / 1000));
+    const token = await issueAuthToken({ userId: "user-1", name: "管理员" }, Math.floor(Date.now() / 1000));
     const request = new NextRequest("http://localhost/admin/model?tab=keys", {
       headers: {
         cookie: `${AUTH_COOKIE_NAME}=${token}`
@@ -106,7 +106,7 @@ describe("middleware", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-middleware-request-x-auth-role")).toBe(AppRole.ADMIN);
-    expect(response.headers.get("x-middleware-request-x-auth-user-id")).toBe("");
+    expect(response.headers.get("x-middleware-request-x-auth-user-id")).toBe("user-1");
     expect(response.headers.get("x-middleware-request-x-auth-current-path")).toBe("/admin/model?tab=keys");
   });
 
