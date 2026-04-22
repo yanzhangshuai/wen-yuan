@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 
+import {
+  CUSTOM_RELATION_TYPE,
+  buildManualRelationDraft,
+  type ManualRelationDraftState
+} from "@/components/review/relation-editor/relation-draft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,19 +44,6 @@ interface ManualEventDraftState {
   narrativeLens           : string;
 }
 
-interface ManualRelationDraftState {
-  runId                : string;
-  evidenceSpanIdsText  : string;
-  targetPersonaId      : string;
-  relationTypeChoice   : string;
-  customRelationTypeKey: string;
-  customRelationLabel  : string;
-  direction            : RelationDirection;
-  effectiveChapterStart: string;
-  effectiveChapterEnd  : string;
-  timeHintId           : string;
-}
-
 const EVENT_CATEGORY_OPTIONS = [
   ["EVENT", "一般事件"],
   ["EXAM", "科举"],
@@ -77,8 +69,6 @@ const RELATION_DIRECTION_OPTIONS: Array<[RelationDirection, string]> = [
   ["UNDIRECTED", "无方向"]
 ];
 
-const CUSTOM_RELATION_TYPE = "__custom__";
-
 function parseEvidenceSpanIds(value: string): string[] {
   return value
     .split(/[,\n]/)
@@ -89,16 +79,6 @@ function parseEvidenceSpanIds(value: string): string[] {
 function toNullableString(value: string): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function toNullableNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-
-  const numeric = Number(trimmed);
-  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function toErrorMessage(error: unknown): string {
@@ -164,41 +144,6 @@ export function buildManualEventDraft(input: {
     eventCategory            : input.draft.eventCategory,
     narrativeLens            : input.draft.narrativeLens,
     evidenceSpanIds          : parseEvidenceSpanIds(input.draft.evidenceSpanIdsText)
-  };
-}
-
-export function buildManualRelationDraft(input: {
-  bookId                  : string;
-  chapterId               : string;
-  sourcePersonaCandidateId: string;
-  targetPersonaCandidateId: string;
-  draft                   : ManualRelationDraftState;
-  relationTypeOptions     : PersonaChapterRelationTypeOptionDto[];
-}) {
-  const preset = input.relationTypeOptions.find((option) => option.relationTypeKey === input.draft.relationTypeChoice);
-  const isCustom = input.draft.relationTypeChoice === CUSTOM_RELATION_TYPE || preset === undefined;
-
-  return {
-    bookId                  : input.bookId,
-    chapterId               : input.chapterId,
-    confidence              : 1,
-    runId                   : input.draft.runId.trim(),
-    sourceMentionId         : null,
-    targetMentionId         : null,
-    sourcePersonaCandidateId: input.sourcePersonaCandidateId,
-    targetPersonaCandidateId: input.targetPersonaCandidateId,
-    relationTypeKey         : isCustom
-      ? input.draft.customRelationTypeKey.trim()
-      : preset.relationTypeKey,
-    relationLabel: isCustom
-      ? input.draft.customRelationLabel.trim()
-      : preset.label,
-    relationTypeSource   : isCustom ? "CUSTOM" : "PRESET",
-    direction            : isCustom ? input.draft.direction : preset.direction,
-    effectiveChapterStart: toNullableNumber(input.draft.effectiveChapterStart),
-    effectiveChapterEnd  : toNullableNumber(input.draft.effectiveChapterEnd),
-    timeHintId           : toNullableString(input.draft.timeHintId),
-    evidenceSpanIds      : parseEvidenceSpanIds(input.draft.evidenceSpanIdsText)
   };
 }
 

@@ -8,7 +8,10 @@ import {
   type RelationCatalogEntry
 } from "@/server/modules/knowledge-v2/relation-types";
 import { createReviewAuditService } from "@/server/modules/review/evidence-review/review-audit-service";
-import type { ReviewPersonaChapterMatrixQueryRequest } from "@/server/modules/review/evidence-review/review-api-schemas";
+import type {
+  ReviewPersonaChapterMatrixQueryRequest,
+  ReviewRelationEditorQueryRequest
+} from "@/server/modules/review/evidence-review/review-api-schemas";
 import type {
   ClaimReviewState,
   ClaimSource,
@@ -100,6 +103,67 @@ export interface PersonaChapterMatrixDto {
   chapters           : PersonaChapterMatrixChapterDto[];
   cells              : PersonaChapterMatrixCellDto[];
   relationTypeOptions: PersonaChapterRelationTypeOptionDto[];
+  generatedAt        : string;
+}
+
+export type ReviewRelationTypeOptionDto = PersonaChapterRelationTypeOptionDto;
+
+export interface ReviewRelationPersonaOptionDto {
+  personaId  : string;
+  displayName: string;
+  aliases    : string[];
+}
+
+export interface ReviewRelationPairWarningsDto {
+  directionConflict: boolean;
+  intervalConflict : boolean;
+}
+
+export interface ReviewRelationPairSummaryDto {
+  pairKey           : string;
+  leftPersonaId     : string;
+  rightPersonaId    : string;
+  leftPersonaName   : string;
+  rightPersonaName  : string;
+  totalClaims       : number;
+  activeClaims      : number;
+  latestUpdatedAt   : string;
+  relationTypeKeys  : string[];
+  reviewStateSummary: Record<string, number>;
+  warningFlags      : ReviewRelationPairWarningsDto;
+}
+
+export interface ReviewRelationClaimListItemDto {
+  claimId              : string;
+  reviewState          : ClaimReviewState;
+  source               : ClaimSource;
+  conflictState        : ConflictState;
+  relationTypeKey      : string;
+  relationLabel        : string;
+  relationTypeSource   : RelationTypeSource | null;
+  direction            : RelationDirection;
+  effectiveChapterStart: number | null;
+  effectiveChapterEnd  : number | null;
+  chapterId            : string | null;
+  chapterLabel         : string | null;
+  timeLabel            : string | null;
+  evidenceSpanIds      : string[];
+}
+
+export interface ReviewRelationSelectedPairDto {
+  pairKey     : string;
+  leftPersona : ReviewRelationPersonaOptionDto;
+  rightPersona: ReviewRelationPersonaOptionDto;
+  warnings    : ReviewRelationPairWarningsDto;
+  claims      : ReviewRelationClaimListItemDto[];
+}
+
+export interface ReviewRelationEditorDto {
+  bookId             : string;
+  personaOptions     : ReviewRelationPersonaOptionDto[];
+  relationTypeOptions: ReviewRelationTypeOptionDto[];
+  pairSummaries      : ReviewRelationPairSummaryDto[];
+  selectedPair       : ReviewRelationSelectedPairDto | null;
   generatedAt        : string;
 }
 
@@ -1089,6 +1153,39 @@ type PersonaCandidateHint = {
   personaCandidateIds      : string[];
 };
 
+type RelationClaimExtra = {
+  sourcePersonaCandidateId: string | null;
+  targetPersonaCandidateId: string | null;
+  relationTypeKey         : string;
+  relationLabel           : string;
+  relationTypeSource      : RelationTypeSource | null;
+  direction               : RelationDirection;
+  effectiveChapterStart   : number | null;
+  effectiveChapterEnd     : number | null;
+};
+
+type RelationEditorClaimRecord = {
+  claimId              : string;
+  bookId               : string;
+  chapterId            : string | null;
+  reviewState          : ClaimReviewState;
+  source               : ClaimSource;
+  conflictState        : ConflictState;
+  createdAt            : Date;
+  updatedAt            : Date;
+  relationTypeKey      : string;
+  relationLabel        : string;
+  relationTypeSource   : RelationTypeSource | null;
+  direction            : RelationDirection;
+  effectiveChapterStart: number | null;
+  effectiveChapterEnd  : number | null;
+  timeLabel            : string | null;
+  evidenceSpanIds      : string[];
+  sourcePersonaId      : string;
+  targetPersonaId      : string;
+  pairKey              : string;
+};
+
 async function loadMatrixChapters(
   prismaClient: typeof prisma,
   bookId: string
@@ -1241,6 +1338,247 @@ async function loadMatrixRelationTypeOptions(
   }
 }
 
+function buildRelationPairKey(leftPersonaId: string, rightPersonaId: string): string {
+  return leftPersonaId.localeCompare(rightPersonaId) <= 0
+    ? `${leftPersonaId}::${rightPersonaId}`
+    : `${rightPersonaId}::${leftPersonaId}`;
+}
+
+function getRelationPairPersonaIds(pairKey: string): [string, string] {
+  const [leftPersonaId, rightPersonaId] = pairKey.split("::");
+  return [leftPersonaId ?? "", rightPersonaId ?? ""];
+}
+
+function resolveSinglePersonaId(
+  candidateId: string | null | undefined,
+  personaIdsByCandidateId: PersonaIdsByCandidateIdMap
+): string | null {
+  if (!candidateId) return null;
+  const personaIds = personaIdsByCandidateId.get(candidateId);
+  if (!personaIds || personaIds.length !== 1) {
+    return null;
+  }
+  return personaIds[0] ?? null;
+}
+
+function isActiveRelationReviewState(reviewState: ClaimReviewState): boolean {
+  return reviewState !== "REJECTED";
+}
+
+function computeRelationWarnings(
+  claims: readonly RelationEditorClaimRecord[]
+): ReviewRelationPairWarningsDto {
+  const activeClaims = claims.filter((claim) => isActiveRelationReviewState(claim.reviewState));
+  if (activeClaims.length < 2) {
+    return {
+      directionConflict: false,
+      intervalConflict : false
+    };
+  }
+
+  const directionConflict = new Set(activeClaims.map((claim) => claim.direction)).size > 1;
+  const intervalConflict = new Set(activeClaims.map((claim) => (
+    `${claim.effectiveChapterStart ?? "null"}:${claim.effectiveChapterEnd ?? "null"}`
+  ))).size > 1;
+
+  return {
+    directionConflict,
+    intervalConflict
+  };
+}
+
+function sortRelationPairs(
+  left: ReviewRelationPairSummaryDto,
+  right: ReviewRelationPairSummaryDto
+): number {
+  const updatedDiff = Date.parse(right.latestUpdatedAt) - Date.parse(left.latestUpdatedAt);
+  if (updatedDiff !== 0) {
+    return updatedDiff;
+  }
+
+  const leftLabel = `${left.leftPersonaName} / ${left.rightPersonaName}`;
+  const rightLabel = `${right.leftPersonaName} / ${right.rightPersonaName}`;
+  const labelDiff = leftLabel.localeCompare(rightLabel);
+  if (labelDiff !== 0) {
+    return labelDiff;
+  }
+
+  return left.pairKey.localeCompare(right.pairKey);
+}
+
+function toRelationPersonaOption(
+  personaId: string,
+  personaRecordsById: ReadonlyMap<string, MatrixPersonaRecord>
+): ReviewRelationPersonaOptionDto {
+  const personaRecord = personaRecordsById.get(personaId);
+  return {
+    personaId,
+    displayName: personaRecord?.name ?? personaId,
+    aliases    : [...(personaRecord?.aliases ?? [])]
+  };
+}
+
+function matchesRelationEditorFilters(
+  claim: RelationEditorClaimRecord,
+  input: ReviewRelationEditorQueryRequest
+): boolean {
+  if (input.personaId && claim.sourcePersonaId !== input.personaId && claim.targetPersonaId !== input.personaId) {
+    return false;
+  }
+
+  if (input.relationTypeKeys?.length && !input.relationTypeKeys.includes(claim.relationTypeKey)) {
+    return false;
+  }
+
+  if (input.conflictState && claim.conflictState !== input.conflictState) {
+    return false;
+  }
+
+  return true;
+}
+
+function toRelationPairSummary(
+  pairKey: string,
+  claims: readonly RelationEditorClaimRecord[],
+  personaRecordsById: ReadonlyMap<string, MatrixPersonaRecord>
+): ReviewRelationPairSummaryDto {
+  const [leftPersonaId, rightPersonaId] = getRelationPairPersonaIds(pairKey);
+  const leftPersona = toRelationPersonaOption(leftPersonaId, personaRecordsById);
+  const rightPersona = toRelationPersonaOption(rightPersonaId, personaRecordsById);
+  const latestUpdatedAt = claims.reduce(
+    (latest, claim) => (claim.updatedAt.getTime() > latest.getTime() ? claim.updatedAt : latest),
+    claims[0]?.updatedAt ?? new Date(0)
+  );
+  const reviewStateSummary: Record<string, number> = {};
+  for (const claim of claims) {
+    reviewStateSummary[claim.reviewState] = (reviewStateSummary[claim.reviewState] ?? 0) + 1;
+  }
+
+  return {
+    pairKey,
+    leftPersonaId,
+    rightPersonaId,
+    leftPersonaName : leftPersona.displayName,
+    rightPersonaName: rightPersona.displayName,
+    totalClaims     : claims.length,
+    activeClaims    : claims.filter((claim) => isActiveRelationReviewState(claim.reviewState)).length,
+    latestUpdatedAt : latestUpdatedAt.toISOString(),
+    relationTypeKeys: toUniqueSortedIds(claims.map((claim) => claim.relationTypeKey)),
+    reviewStateSummary,
+    warningFlags    : computeRelationWarnings(claims)
+  };
+}
+
+function toRelationClaimListItem(
+  claim: RelationEditorClaimRecord,
+  chapterLabelById: ReadonlyMap<string, string>
+): ReviewRelationClaimListItemDto {
+  return {
+    claimId              : claim.claimId,
+    reviewState          : claim.reviewState,
+    source               : claim.source,
+    conflictState        : claim.conflictState,
+    relationTypeKey      : claim.relationTypeKey,
+    relationLabel        : claim.relationLabel,
+    relationTypeSource   : claim.relationTypeSource,
+    direction            : claim.direction,
+    effectiveChapterStart: claim.effectiveChapterStart,
+    effectiveChapterEnd  : claim.effectiveChapterEnd,
+    chapterId            : claim.chapterId,
+    chapterLabel         : claim.chapterId ? (chapterLabelById.get(claim.chapterId) ?? null) : null,
+    timeLabel            : claim.timeLabel,
+    evidenceSpanIds      : [...claim.evidenceSpanIds]
+  };
+}
+
+async function loadChapterLabelsById(
+  prismaClient: typeof prisma,
+  bookId: string,
+  chapterIds: readonly string[]
+): Promise<Map<string, string>> {
+  const uniqueChapterIds = toUniqueSortedIds(chapterIds);
+  if (uniqueChapterIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await prismaClient.chapter.findMany({
+    where: {
+      bookId,
+      id        : { in: uniqueChapterIds },
+      isAbstract: false
+    },
+    orderBy: [{ no: "asc" }, { id: "asc" }]
+  }) as MatrixChapterRecord[];
+
+  return new Map(rows.map((row) => [row.id, toMatrixChapterLabel(row)]));
+}
+
+async function loadRelationEditorClaims(
+  prismaClient: typeof prisma,
+  input: ReviewRelationEditorQueryRequest
+): Promise<RelationEditorClaimRecord[]> {
+  const relationRows = await loadRelationClaimRows(prismaClient, {
+    bookId      : input.bookId,
+    reviewStates: input.reviewStates
+  }, null);
+
+  const timeLabelByHintId = await loadTimeLabelsByHintId(
+    prismaClient,
+    input.bookId,
+    relationRows.flatMap((row) => (row.timeHintId === null ? [] : [row.timeHintId]))
+  );
+  const conflictStateMap = await loadConflictStateMap(
+    prismaClient,
+    input.bookId,
+    relationRows.map((row) => row.id)
+  );
+  const personaIdsByCandidateId = await loadAcceptedPersonaIdsByCandidateId(
+    prismaClient,
+    input.bookId,
+    extractCandidateIds(relationRows)
+  );
+
+  return relationRows.flatMap((row) => {
+    const relationExtra = row.extra as RelationClaimExtra;
+    const sourcePersonaId = resolveSinglePersonaId(
+      relationExtra.sourcePersonaCandidateId,
+      personaIdsByCandidateId
+    );
+    const targetPersonaId = resolveSinglePersonaId(
+      relationExtra.targetPersonaCandidateId,
+      personaIdsByCandidateId
+    );
+
+    if (!sourcePersonaId || !targetPersonaId || sourcePersonaId === targetPersonaId) {
+      return [];
+    }
+
+    const claim: RelationEditorClaimRecord = {
+      claimId              : row.id,
+      bookId               : row.bookId,
+      chapterId            : row.chapterId,
+      reviewState          : row.reviewState,
+      source               : row.source,
+      conflictState        : resolveConflictState(row.id, conflictStateMap),
+      createdAt            : row.createdAt,
+      updatedAt            : row.updatedAt,
+      relationTypeKey      : relationExtra.relationTypeKey,
+      relationLabel        : relationExtra.relationLabel,
+      relationTypeSource   : relationExtra.relationTypeSource,
+      direction            : relationExtra.direction,
+      effectiveChapterStart: relationExtra.effectiveChapterStart,
+      effectiveChapterEnd  : relationExtra.effectiveChapterEnd,
+      timeLabel            : resolveTimeLabel(row, timeLabelByHintId),
+      evidenceSpanIds      : [...row.evidenceSpanIds],
+      sourcePersonaId,
+      targetPersonaId,
+      pairKey              : buildRelationPairKey(sourcePersonaId, targetPersonaId)
+    };
+
+    return matchesRelationEditorFilters(claim, input) ? [claim] : [];
+  });
+}
+
 export function createReviewQueryService(
   prismaClient: typeof prisma = prisma,
   dependencies: ReviewQueryServiceDependencies = {}
@@ -1386,6 +1724,84 @@ export function createReviewQueryService(
     };
   }
 
+  async function getRelationEditorView(
+    input: ReviewRelationEditorQueryRequest
+  ): Promise<ReviewRelationEditorDto> {
+    const relationClaims = await loadRelationEditorClaims(prismaClient, input);
+    const pairClaimsMap = new Map<string, RelationEditorClaimRecord[]>();
+    for (const claim of relationClaims) {
+      const claims = pairClaimsMap.get(claim.pairKey) ?? [];
+      claims.push(claim);
+      pairClaimsMap.set(claim.pairKey, claims);
+    }
+
+    const personaIds = toUniqueSortedIds(
+      Array.from(pairClaimsMap.keys()).flatMap((pairKey) => getRelationPairPersonaIds(pairKey))
+    );
+    const personaRecordsById = await loadMatrixPersonaRecords(prismaClient, personaIds);
+    const personaOptions = personaIds
+      .map((personaId) => toRelationPersonaOption(personaId, personaRecordsById))
+      .sort((left, right) => {
+        const nameDiff = left.displayName.localeCompare(right.displayName);
+        if (nameDiff !== 0) {
+          return nameDiff;
+        }
+        return left.personaId.localeCompare(right.personaId);
+      });
+
+    const allPairSummaries = Array.from(pairClaimsMap.entries())
+      .map(([pairKey, claims]) => toRelationPairSummary(pairKey, claims, personaRecordsById))
+      .sort(sortRelationPairs);
+    const pairOffset = normalizeOffset(input.offsetPairs);
+    const pairSummaries = typeof input.limitPairs === "number"
+      ? allPairSummaries.slice(pairOffset, pairOffset + normalizeLimit(input.limitPairs))
+      : allPairSummaries.slice(pairOffset);
+
+    let selectedPair: ReviewRelationSelectedPairDto | null = null;
+    if (input.personaId && input.pairPersonaId) {
+      const selectedPairKey = buildRelationPairKey(input.personaId, input.pairPersonaId);
+      const selectedClaims = pairClaimsMap.get(selectedPairKey) ?? [];
+      if (selectedClaims.length > 0) {
+        const chapterLabelById = await loadChapterLabelsById(
+          prismaClient,
+          input.bookId,
+          selectedClaims.flatMap((claim) => (claim.chapterId ? [claim.chapterId] : []))
+        );
+        const [leftPersonaId, rightPersonaId] = getRelationPairPersonaIds(selectedPairKey);
+        selectedPair = {
+          pairKey     : selectedPairKey,
+          leftPersona : toRelationPersonaOption(leftPersonaId, personaRecordsById),
+          rightPersona: toRelationPersonaOption(rightPersonaId, personaRecordsById),
+          warnings    : computeRelationWarnings(selectedClaims),
+          claims      : [...selectedClaims]
+            .sort((left, right) => {
+              const updatedDiff = right.updatedAt.getTime() - left.updatedAt.getTime();
+              if (updatedDiff !== 0) {
+                return updatedDiff;
+              }
+
+              const createdDiff = right.createdAt.getTime() - left.createdAt.getTime();
+              if (createdDiff !== 0) {
+                return createdDiff;
+              }
+
+              return right.claimId.localeCompare(left.claimId);
+            })
+            .map((claim) => toRelationClaimListItem(claim, chapterLabelById))
+        };
+      }
+    }
+
+    return {
+      bookId             : input.bookId,
+      personaOptions,
+      relationTypeOptions: await loadMatrixRelationTypeOptions(prismaClient, input.bookId, dependencies),
+      pairSummaries,
+      selectedPair,
+      generatedAt        : new Date().toISOString()
+    };
+  }
+
   async function getClaimDetail(input: GetReviewClaimDetailInput): Promise<{
     claim            : ClaimDetailRecord;
     evidence         : unknown[];
@@ -1455,7 +1871,7 @@ export function createReviewQueryService(
     };
   }
 
-  return { listClaims, getClaimDetail, getPersonaChapterMatrix };
+  return { listClaims, getClaimDetail, getPersonaChapterMatrix, getRelationEditorView };
 }
 
 export const reviewQueryService = createReviewQueryService();

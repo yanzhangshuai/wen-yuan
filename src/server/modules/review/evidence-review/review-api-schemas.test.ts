@@ -12,6 +12,7 @@ import {
   reviewClaimListQuerySchema,
   reviewClaimRouteParamsSchema,
   reviewMergePersonasRequestSchema,
+  reviewRelationEditorQuerySchema,
   reviewPersonaChapterMatrixQuerySchema,
   reviewSplitPersonaRequestSchema
 } from "./review-api-schemas";
@@ -122,6 +123,50 @@ describe("review api schemas", () => {
       bookId       : BOOK_ID,
       chapterId    : "not-a-uuid",
       conflictState: "SOMETHING_ELSE"
+    })).toThrow();
+  });
+
+  it("parses relation editor query filters while keeping relationTypeKeys open", () => {
+    expect(reviewRelationEditorQuerySchema.parse({
+      bookId          : BOOK_ID,
+      personaId       : SOURCE_PERSONA_ID,
+      pairPersonaId   : TARGET_PERSONA_ID,
+      relationTypeKeys: ["teacher_of", "custom_patron_of"],
+      reviewStates    : ["PENDING", "EDITED"],
+      conflictState   : "ACTIVE",
+      limitPairs      : "25",
+      offsetPairs     : "5"
+    })).toEqual({
+      bookId          : BOOK_ID,
+      personaId       : SOURCE_PERSONA_ID,
+      pairPersonaId   : TARGET_PERSONA_ID,
+      relationTypeKeys: ["teacher_of", "custom_patron_of"],
+      reviewStates    : ["PENDING", "EDITED"],
+      conflictState   : "ACTIVE",
+      limitPairs      : 25,
+      offsetPairs     : 5
+    });
+  });
+
+  it("rejects invalid relation editor queries", () => {
+    expect(() => reviewRelationEditorQuerySchema.parse({
+      personaId: SOURCE_PERSONA_ID
+    })).toThrow();
+
+    expect(() => reviewRelationEditorQuerySchema.parse({
+      bookId   : "not-a-uuid",
+      personaId: SOURCE_PERSONA_ID
+    })).toThrow();
+
+    expect(() => reviewRelationEditorQuerySchema.parse({
+      bookId       : BOOK_ID,
+      pairPersonaId: TARGET_PERSONA_ID
+    })).toThrow();
+
+    expect(() => reviewRelationEditorQuerySchema.parse({
+      bookId       : BOOK_ID,
+      personaId    : SOURCE_PERSONA_ID,
+      pairPersonaId: "not-a-uuid"
     })).toThrow();
   });
 

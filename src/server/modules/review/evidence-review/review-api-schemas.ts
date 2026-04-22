@@ -45,6 +45,25 @@ export const reviewPersonaChapterMatrixQuerySchema = z.object({
   offsetPersonas: z.coerce.number().int().min(0).optional()
 });
 
+export const reviewRelationEditorQuerySchema = z.object({
+  bookId          : uuidSchema,
+  personaId       : uuidSchema.optional(),
+  pairPersonaId   : uuidSchema.optional(),
+  relationTypeKeys: z.array(z.string().trim().min(1).max(120)).optional(),
+  reviewStates    : z.array(z.enum(CLAIM_REVIEW_STATE_VALUES)).optional(),
+  conflictState   : z.enum(["ACTIVE", "NONE"] as const).optional(),
+  limitPairs      : z.coerce.number().int().min(0).optional(),
+  offsetPairs     : z.coerce.number().int().min(0).optional()
+}).superRefine((value, ctx) => {
+  if (value.pairPersonaId && !value.personaId) {
+    ctx.addIssue({
+      code   : z.ZodIssueCode.custom,
+      path   : ["pairPersonaId"],
+      message: "pairPersonaId requires personaId"
+    });
+  }
+});
+
 export const reviewClaimDetailQuerySchema = z.object({
   bookId: uuidSchema
 });
@@ -197,6 +216,7 @@ export type ReviewCreateManualClaimRequest = z.infer<typeof reviewCreateManualCl
 export type ReviewClaimListQueryRequest = z.infer<typeof reviewClaimListQuerySchema>;
 export type ReviewPersonaChapterMatrixQueryRequest =
   z.infer<typeof reviewPersonaChapterMatrixQuerySchema>;
+export type ReviewRelationEditorQueryRequest = z.infer<typeof reviewRelationEditorQuerySchema>;
 export type ReviewClaimRouteParams = z.infer<typeof reviewClaimRouteParamsSchema>;
 export type ReviewMergePersonasRequest = z.infer<typeof reviewMergePersonasRequestSchema>;
 export type ReviewSplitPersonasRequest = z.infer<typeof reviewSplitPersonasRequestSchema>;

@@ -6,6 +6,7 @@ import { getBookById } from "@/server/modules/books/getBookById";
 import { listBooks } from "@/server/modules/books/listBooks";
 import { createReviewQueryService } from "@/server/modules/review/evidence-review/review-query-service";
 import { PersonaChapterReviewPage } from "@/components/review/persona-chapter-matrix/persona-chapter-review-page";
+import { ReviewModeNav } from "@/components/review/shared/review-mode-nav";
 import { cn } from "@/lib/utils";
 
 /**
@@ -102,7 +103,8 @@ export default async function AdminBookReviewPage({
       </aside>
 
       {/* 右侧审核主体：由客户端组件承载复杂交互（筛选、批量操作、编辑等）。 */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 space-y-4">
+        <ReviewModeNav bookId={bookId} activeMode="matrix" />
         <PersonaChapterReviewPage
           bookId={bookId}
           bookTitle={book.title}

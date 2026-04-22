@@ -8,6 +8,7 @@ import type {
   ReviewClaimDetailResponse,
   ReviewClaimListItem
 } from "@/lib/services/review-matrix";
+import type * as RelationDraftModule from "@/components/review/relation-editor/relation-draft";
 
 import { ClaimActionPanel } from "./claim-action-panel";
 
@@ -20,8 +21,21 @@ const SOURCE_CANDIDATE_ID = "candidate-1";
 const TARGET_CANDIDATE_ID = "candidate-2";
 
 const hoisted = vi.hoisted(() => ({
-  submitReviewClaimActionMock: vi.fn()
+  buildRelationEditPayloadMock: vi.fn(),
+  submitReviewClaimActionMock : vi.fn()
 }));
+
+vi.mock("@/components/review/relation-editor/relation-draft", async () => {
+  const actual = await vi.importActual<typeof RelationDraftModule>(
+    "@/components/review/relation-editor/relation-draft"
+  );
+  hoisted.buildRelationEditPayloadMock.mockImplementation(actual.buildRelationEditPayload);
+
+  return {
+    ...actual,
+    buildRelationEditPayload: hoisted.buildRelationEditPayloadMock
+  };
+});
 
 vi.mock("@/lib/services/review-matrix", async () => {
   const actual = await vi.importActual("@/lib/services/review-matrix");
@@ -118,6 +132,7 @@ const relationOptions: PersonaChapterRelationTypeOptionDto[] = [
  */
 describe("ClaimActionPanel", () => {
   beforeEach(() => {
+    hoisted.buildRelationEditPayloadMock.mockClear();
     hoisted.submitReviewClaimActionMock.mockReset();
   });
 
@@ -332,6 +347,14 @@ describe("ClaimActionPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "保存编辑" }));
 
     await waitFor(() => {
+      expect(hoisted.buildRelationEditPayloadMock).toHaveBeenCalledWith({
+        bookId: BOOK_ID,
+        draft : expect.objectContaining({
+          relationTypeKey: "teacher_of",
+          relationLabel  : "师徒"
+        }),
+        relationTypeOptions: relationOptions
+      });
       expect(hoisted.submitReviewClaimActionMock).toHaveBeenCalledWith(expect.objectContaining({
         action: "EDIT",
         draft : expect.objectContaining({

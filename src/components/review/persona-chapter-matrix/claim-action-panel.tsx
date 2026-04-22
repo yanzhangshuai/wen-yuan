@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+import {
+  buildRelationEditPayload,
+  type RelationEditDraftState
+} from "@/components/review/relation-editor/relation-draft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +15,6 @@ import {
   type ClaimReviewState,
   type PersonaChapterRelationTypeOptionDto,
   type RelationDirection,
-  type RelationTypeSource,
   type ReviewClaimActionType,
   type ReviewClaimDetailRecord,
   type ReviewClaimDetailResponse,
@@ -44,23 +47,6 @@ interface EventEditDraftState {
   eventCategory            : string;
   narrativeLens            : string;
   evidenceSpanIdsText      : string;
-}
-
-interface RelationEditDraftState {
-  chapterId               : string;
-  confidence              : string;
-  runId                   : string;
-  sourceMentionId         : string;
-  targetMentionId         : string;
-  sourcePersonaCandidateId: string;
-  targetPersonaCandidateId: string;
-  relationTypeKey         : string;
-  relationLabel           : string;
-  direction               : RelationDirection;
-  effectiveChapterStart   : string;
-  effectiveChapterEnd     : string;
-  timeHintId              : string;
-  evidenceSpanIdsText     : string;
 }
 
 const EVENT_CATEGORY_OPTIONS = [
@@ -138,16 +124,6 @@ function toNullableString(value: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function toNullableNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-
-  const numeric = Number(trimmed);
-  return Number.isFinite(numeric) ? numeric : null;
-}
-
 function toEvidenceSpanIdsText(value: unknown): string {
   if (!Array.isArray(value)) {
     return "";
@@ -211,15 +187,6 @@ function toNormalizedNote(note: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function resolveRelationTypeSource(
-  relationTypeKey: string,
-  relationTypeOptions: PersonaChapterRelationTypeOptionDto[]
-): RelationTypeSource {
-  return relationTypeOptions.some((option) => option.relationTypeKey === relationTypeKey)
-    ? "PRESET"
-    : "CUSTOM";
-}
-
 function buildEventEditPayload(draft: EventEditDraftState) {
   return {
     bookId                   : "",
@@ -236,33 +203,6 @@ function buildEventEditPayload(draft: EventEditDraftState) {
     eventCategory            : draft.eventCategory,
     narrativeLens            : draft.narrativeLens,
     evidenceSpanIds          : parseEvidenceSpanIds(draft.evidenceSpanIdsText)
-  };
-}
-
-function buildRelationEditPayload(
-  draft: RelationEditDraftState,
-  relationTypeOptions: PersonaChapterRelationTypeOptionDto[]
-) {
-  return {
-    bookId                  : "",
-    chapterId               : draft.chapterId,
-    confidence              : Number(draft.confidence),
-    runId                   : draft.runId,
-    sourceMentionId         : toNullableString(draft.sourceMentionId),
-    targetMentionId         : toNullableString(draft.targetMentionId),
-    sourcePersonaCandidateId: toNullableString(draft.sourcePersonaCandidateId),
-    targetPersonaCandidateId: toNullableString(draft.targetPersonaCandidateId),
-    relationTypeKey         : draft.relationTypeKey.trim(),
-    relationLabel           : draft.relationLabel.trim(),
-    relationTypeSource      : resolveRelationTypeSource(
-      draft.relationTypeKey.trim(),
-      relationTypeOptions
-    ),
-    direction            : draft.direction,
-    effectiveChapterStart: toNullableNumber(draft.effectiveChapterStart),
-    effectiveChapterEnd  : toNullableNumber(draft.effectiveChapterEnd),
-    timeHintId           : toNullableString(draft.timeHintId),
-    evidenceSpanIds      : parseEvidenceSpanIds(draft.evidenceSpanIdsText)
   };
 }
 
@@ -386,10 +326,7 @@ export function ClaimActionPanel({
           claimId  : claim.claimId,
           action   : "EDIT",
           note     : toNormalizedNote(note),
-          draft    : {
-            ...buildRelationEditPayload(relationDraft, relationTypeOptions),
-            bookId
-          }
+          draft    : buildRelationEditPayload({ draft: relationDraft, relationTypeOptions, bookId })
         });
       }
     });

@@ -7,6 +7,7 @@ import type {
   PersonaChapterMatrixPersonaDto,
   PersonaChapterRelationTypeOptionDto
 } from "@/lib/services/review-matrix";
+import type * as RelationDraftModule from "@/components/review/relation-editor/relation-draft";
 
 import { ManualClaimForm } from "./manual-claim-form";
 
@@ -20,8 +21,21 @@ const SOURCE_CANDIDATE_ID = "77777777-7777-4777-8777-777777777777";
 const TARGET_CANDIDATE_ID = "88888888-8888-4888-8888-888888888888";
 
 const hoisted = vi.hoisted(() => ({
-  createManualReviewClaimMock: vi.fn()
+  buildManualRelationDraftMock: vi.fn(),
+  createManualReviewClaimMock : vi.fn()
 }));
+
+vi.mock("@/components/review/relation-editor/relation-draft", async () => {
+  const actual = await vi.importActual<typeof RelationDraftModule>(
+    "@/components/review/relation-editor/relation-draft"
+  );
+  hoisted.buildManualRelationDraftMock.mockImplementation(actual.buildManualRelationDraft);
+
+  return {
+    ...actual,
+    buildManualRelationDraft: hoisted.buildManualRelationDraftMock
+  };
+});
 
 vi.mock("@/lib/services/review-matrix", async () => {
   const actual = await vi.importActual("@/lib/services/review-matrix");
@@ -120,6 +134,7 @@ function renderForm(
  */
 describe("ManualClaimForm", () => {
   beforeEach(() => {
+    hoisted.buildManualRelationDraftMock.mockClear();
     hoisted.createManualReviewClaimMock.mockReset();
   });
 
@@ -187,6 +202,13 @@ describe("ManualClaimForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "创建关系" }));
 
     await waitFor(() => {
+      expect(hoisted.buildManualRelationDraftMock).toHaveBeenCalledWith(expect.objectContaining({
+        bookId                  : BOOK_ID,
+        chapterId               : CHAPTER_ID,
+        sourcePersonaCandidateId: SOURCE_CANDIDATE_ID,
+        targetPersonaCandidateId: TARGET_CANDIDATE_ID,
+        relationTypeOptions     : relationOptions
+      }));
       expect(hoisted.createManualReviewClaimMock).toHaveBeenCalledWith({
         claimKind: "RELATION",
         note     : null,

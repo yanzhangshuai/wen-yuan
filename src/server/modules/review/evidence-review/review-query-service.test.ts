@@ -16,12 +16,19 @@ const CONFLICT_ID_2 = "39393939-3939-4393-8393-393939393939";
 const CANDIDATE_ID_1 = "44444444-4444-4444-8444-444444444444";
 const CANDIDATE_ID_2 = "45454545-4545-4454-8454-454545454545";
 const CANDIDATE_ID_3 = "46464646-4646-4464-8464-464646464646";
+const CANDIDATE_ID_4 = "47474747-4747-4474-8474-474747474747";
 const PERSONA_ID_1 = "55555555-5555-4555-8555-555555555555";
 const PERSONA_ID_2 = "56565656-5656-4565-8565-565656565656";
+const PERSONA_ID_3 = "57575757-5757-4575-8575-575757575757";
 const EVIDENCE_ID_1 = "66666666-6666-4666-8666-666666666666";
 const EVIDENCE_ID_2 = "67676767-6767-4676-8676-676767676767";
 const AUDIT_ID_1 = "68686868-6868-4686-8686-686868686868";
 const AUDIT_ID_2 = "69696969-6969-4696-8696-696969696969";
+const RELATION_ID_1 = "90909090-9090-4090-8090-909090909090";
+const RELATION_ID_2 = "91919191-9191-4191-8191-919191919191";
+const RELATION_ID_3 = "92929292-9292-4292-8292-929292929292";
+const RELATION_ID_4 = "93939393-9393-4393-8393-939393939393";
+const RELATION_ID_5 = "94949494-9494-4494-8494-949494949494";
 
 type TestRow = Record<string, unknown>;
 
@@ -247,6 +254,30 @@ function identityClaim(overrides: Partial<TestRow> = {}): TestRow {
     derivedFromClaimId: null,
     createdAt         : new Date("2026-04-21T09:00:00.000Z"),
     updatedAt         : new Date("2026-04-21T09:00:00.000Z"),
+    ...overrides
+  };
+}
+
+function relationClaim(overrides: Partial<TestRow> = {}): TestRow {
+  return {
+    id                      : RELATION_ID_1,
+    bookId                  : BOOK_ID,
+    chapterId               : CHAPTER_ID_1,
+    sourcePersonaCandidateId: CANDIDATE_ID_1,
+    targetPersonaCandidateId: CANDIDATE_ID_2,
+    relationTypeKey         : "teacher_of",
+    relationLabel           : "师生",
+    relationTypeSource      : "PRESET",
+    direction               : "FORWARD",
+    effectiveChapterStart   : 1,
+    effectiveChapterEnd     : 3,
+    timeHintId              : TIME_ID_1,
+    evidenceSpanIds         : [EVIDENCE_ID_1],
+    reviewState             : "PENDING",
+    source                  : "AI",
+    derivedFromClaimId      : null,
+    createdAt               : new Date("2026-04-21T10:00:00.000Z"),
+    updatedAt               : new Date("2026-04-21T12:00:00.000Z"),
     ...overrides
   };
 }
@@ -752,6 +783,373 @@ describe("createReviewQueryService", () => {
         title    : "再会",
         label    : "第2回 再会"
       }
+    ]);
+    expect(result.relationTypeOptions).toEqual([]);
+  });
+
+  it("builds relation editor pair summaries with stable unordered pairs, warnings, and selected pair claims", async () => {
+    const relationTypeCatalogLoader = {
+      load: vi.fn().mockResolvedValue({
+        activeEntries: [
+          {
+            relationTypeKey   : "teacher_of",
+            defaultLabel      : "师生",
+            direction         : "FORWARD",
+            relationTypeSource: "PRESET",
+            aliasLabels       : ["师徒"],
+            systemPreset      : true
+          },
+          {
+            relationTypeKey   : "enemy_of",
+            defaultLabel      : "敌对",
+            direction         : "BIDIRECTIONAL",
+            relationTypeSource: "PRESET",
+            aliasLabels       : [],
+            systemPreset      : true
+          }
+        ]
+      })
+    };
+    const prismaMock = createPrismaMock({
+      books   : [bookRecord()],
+      personas: [
+        persona({ id: PERSONA_ID_1, name: "Alpha", aliases: ["甲"] }),
+        persona({ id: PERSONA_ID_2, name: "Beta", aliases: ["乙"] }),
+        persona({ id: PERSONA_ID_3, name: "Gamma", aliases: ["丙"] })
+      ],
+      relationClaims: [
+        relationClaim({
+          id                    : RELATION_ID_1,
+          sourcePersonaCandidateId: CANDIDATE_ID_1,
+          targetPersonaCandidateId: CANDIDATE_ID_2,
+          relationTypeKey       : "teacher_of",
+          relationLabel         : "师生",
+          direction             : "FORWARD",
+          effectiveChapterStart : 1,
+          effectiveChapterEnd   : 3,
+          reviewState           : "PENDING",
+          updatedAt             : new Date("2026-04-21T12:00:00.000Z")
+        }),
+        relationClaim({
+          id                    : RELATION_ID_2,
+          chapterId             : CHAPTER_ID_2,
+          sourcePersonaCandidateId: CANDIDATE_ID_2,
+          targetPersonaCandidateId: CANDIDATE_ID_1,
+          relationTypeKey       : "custom_patron_of",
+          relationLabel         : "提携",
+          relationTypeSource    : "CUSTOM",
+          direction             : "REVERSE",
+          effectiveChapterStart : 2,
+          effectiveChapterEnd   : 5,
+          reviewState           : "ACCEPTED",
+          source                : "MANUAL",
+          updatedAt             : new Date("2026-04-21T11:00:00.000Z")
+        }),
+        relationClaim({
+          id                    : RELATION_ID_3,
+          chapterId             : CHAPTER_ID_2,
+          sourcePersonaCandidateId: CANDIDATE_ID_1,
+          targetPersonaCandidateId: CANDIDATE_ID_3,
+          relationTypeKey       : "enemy_of",
+          relationLabel         : "敌对",
+          direction             : "BIDIRECTIONAL",
+          effectiveChapterStart : 6,
+          effectiveChapterEnd   : 6,
+          reviewState           : "DEFERRED",
+          updatedAt             : new Date("2026-04-21T11:30:00.000Z")
+        }),
+        relationClaim({
+          id                    : RELATION_ID_4,
+          chapterId             : CHAPTER_ID_3,
+          sourcePersonaCandidateId: CANDIDATE_ID_2,
+          targetPersonaCandidateId: CANDIDATE_ID_3,
+          relationTypeKey       : "ally_of",
+          relationLabel         : "同盟",
+          direction             : "BIDIRECTIONAL",
+          effectiveChapterStart : 7,
+          effectiveChapterEnd   : 8,
+          reviewState           : "DEFERRED",
+          updatedAt             : new Date("2026-04-21T11:30:00.000Z")
+        }),
+        relationClaim({
+          id                    : RELATION_ID_5,
+          sourcePersonaCandidateId: CANDIDATE_ID_4,
+          targetPersonaCandidateId: CANDIDATE_ID_2,
+          relationTypeKey       : "ghost_of",
+          relationLabel         : "未解析",
+          updatedAt             : new Date("2026-04-21T13:00:00.000Z")
+        })
+      ],
+      identityResolutionClaims: [
+        identityClaim({ personaCandidateId: CANDIDATE_ID_1, resolvedPersonaId: PERSONA_ID_1 }),
+        identityClaim({
+          id                : "95959595-9595-4595-8595-959595959595",
+          personaCandidateId: CANDIDATE_ID_2,
+          resolvedPersonaId : PERSONA_ID_2
+        }),
+        identityClaim({
+          id                : "96969696-9696-4696-8696-969696969696",
+          personaCandidateId: CANDIDATE_ID_3,
+          resolvedPersonaId : PERSONA_ID_3
+        })
+      ],
+      conflictFlags: [
+        conflictFlag({
+          id             : CONFLICT_ID_1,
+          relatedClaimIds: [RELATION_ID_1]
+        })
+      ]
+    });
+    const service = createReviewQueryService(prismaMock as never, {
+      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+    });
+
+    const result = await service.getRelationEditorView({
+      bookId       : BOOK_ID,
+      personaId    : PERSONA_ID_1,
+      pairPersonaId: PERSONA_ID_2
+    });
+
+    expect(result.personaOptions).toEqual([
+      { personaId: PERSONA_ID_1, displayName: "Alpha", aliases: ["甲"] },
+      { personaId: PERSONA_ID_2, displayName: "Beta", aliases: ["乙"] },
+      { personaId: PERSONA_ID_3, displayName: "Gamma", aliases: ["丙"] }
+    ]);
+    expect(result.relationTypeOptions).toEqual([
+      {
+        relationTypeKey   : "teacher_of",
+        label             : "师生",
+        direction         : "FORWARD",
+        relationTypeSource: "PRESET",
+        aliasLabels       : ["师徒"],
+        systemPreset      : true
+      },
+      {
+        relationTypeKey   : "enemy_of",
+        label             : "敌对",
+        direction         : "BIDIRECTIONAL",
+        relationTypeSource: "PRESET",
+        aliasLabels       : [],
+        systemPreset      : true
+      }
+    ]);
+    expect(result.pairSummaries.map((item) => item.pairKey)).toEqual([
+      `${PERSONA_ID_1}::${PERSONA_ID_2}`,
+      `${PERSONA_ID_1}::${PERSONA_ID_3}`
+    ]);
+    expect(result.pairSummaries[0]).toMatchObject({
+      pairKey         : `${PERSONA_ID_1}::${PERSONA_ID_2}`,
+      leftPersonaId   : PERSONA_ID_1,
+      rightPersonaId  : PERSONA_ID_2,
+      leftPersonaName : "Alpha",
+      rightPersonaName: "Beta",
+      totalClaims     : 2,
+      activeClaims    : 2,
+      relationTypeKeys: ["custom_patron_of", "teacher_of"],
+      reviewStateSummary: {
+        ACCEPTED: 1,
+        PENDING : 1
+      },
+      warningFlags: {
+        directionConflict: true,
+        intervalConflict : true
+      }
+    });
+    expect(result.selectedPair).toMatchObject({
+      pairKey: `${PERSONA_ID_1}::${PERSONA_ID_2}`,
+      leftPersona: {
+        personaId   : PERSONA_ID_1,
+        displayName : "Alpha",
+        aliases     : ["甲"]
+      },
+      rightPersona: {
+        personaId   : PERSONA_ID_2,
+        displayName : "Beta",
+        aliases     : ["乙"]
+      },
+      warnings: {
+        directionConflict: true,
+        intervalConflict : true
+      }
+    });
+    expect(result.selectedPair?.claims).toEqual([
+      expect.objectContaining({
+        claimId         : RELATION_ID_1,
+        relationTypeKey : "teacher_of",
+        relationLabel   : "师生",
+        direction       : "FORWARD",
+        reviewState     : "PENDING",
+        conflictState   : "ACTIVE",
+        effectiveChapterStart: 1,
+        effectiveChapterEnd  : 3
+      }),
+      expect.objectContaining({
+        claimId         : RELATION_ID_2,
+        relationTypeKey : "custom_patron_of",
+        relationLabel   : "提携",
+        direction       : "REVERSE",
+        reviewState     : "ACCEPTED",
+        conflictState   : "NONE",
+        effectiveChapterStart: 2,
+        effectiveChapterEnd  : 5
+      })
+    ]);
+    expect(relationTypeCatalogLoader.load).toHaveBeenCalledWith({
+      bookId     : BOOK_ID,
+      bookTypeKey: "CLASSICAL_NOVEL",
+      runId      : null,
+      mode       : "REVIEW"
+    });
+  });
+
+  it("filters and paginates relation editor pairs without dropping filter metadata", async () => {
+    const relationTypeCatalogLoader = {
+      load: vi.fn().mockResolvedValue({
+        activeEntries: [{
+          relationTypeKey   : "teacher_of",
+          defaultLabel      : "师生",
+          direction         : "FORWARD",
+          relationTypeSource: "PRESET",
+          aliasLabels       : ["师徒"],
+          systemPreset      : true
+        }]
+      })
+    };
+    const prismaMock = createPrismaMock({
+      books   : [bookRecord()],
+      personas: [
+        persona({ id: PERSONA_ID_1, name: "Alpha" }),
+        persona({ id: PERSONA_ID_2, name: "Beta" }),
+        persona({ id: PERSONA_ID_3, name: "Gamma" })
+      ],
+      relationClaims: [
+        relationClaim({
+          id                    : RELATION_ID_1,
+          sourcePersonaCandidateId: CANDIDATE_ID_1,
+          targetPersonaCandidateId: CANDIDATE_ID_2,
+          relationTypeKey       : "teacher_of",
+          reviewState           : "PENDING",
+          updatedAt             : new Date("2026-04-21T12:00:00.000Z")
+        }),
+        relationClaim({
+          id                    : RELATION_ID_2,
+          sourcePersonaCandidateId: CANDIDATE_ID_1,
+          targetPersonaCandidateId: CANDIDATE_ID_3,
+          relationTypeKey       : "enemy_of",
+          relationLabel         : "敌对",
+          direction             : "BIDIRECTIONAL",
+          reviewState           : "DEFERRED",
+          updatedAt             : new Date("2026-04-21T11:30:00.000Z")
+        }),
+        relationClaim({
+          id                    : RELATION_ID_3,
+          sourcePersonaCandidateId: CANDIDATE_ID_2,
+          targetPersonaCandidateId: CANDIDATE_ID_3,
+          relationTypeKey       : "teacher_of",
+          reviewState           : "ACCEPTED",
+          updatedAt             : new Date("2026-04-21T11:00:00.000Z")
+        })
+      ],
+      identityResolutionClaims: [
+        identityClaim({ personaCandidateId: CANDIDATE_ID_1, resolvedPersonaId: PERSONA_ID_1 }),
+        identityClaim({
+          id                : "97979797-9797-4797-8797-979797979797",
+          personaCandidateId: CANDIDATE_ID_2,
+          resolvedPersonaId : PERSONA_ID_2
+        }),
+        identityClaim({
+          id                : "98989898-9898-4898-8898-989898989898",
+          personaCandidateId: CANDIDATE_ID_3,
+          resolvedPersonaId : PERSONA_ID_3
+        })
+      ],
+      conflictFlags: [
+        conflictFlag({
+          id             : CONFLICT_ID_1,
+          relatedClaimIds: [RELATION_ID_1]
+        })
+      ]
+    });
+    const service = createReviewQueryService(prismaMock as never, {
+      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+    });
+
+    const teacherOnly = await service.getRelationEditorView({
+      bookId          : BOOK_ID,
+      relationTypeKeys: ["teacher_of"]
+    });
+    expect(teacherOnly.pairSummaries.map((item) => item.pairKey)).toEqual([
+      `${PERSONA_ID_1}::${PERSONA_ID_2}`,
+      `${PERSONA_ID_2}::${PERSONA_ID_3}`
+    ]);
+
+    const pendingOnly = await service.getRelationEditorView({
+      bookId      : BOOK_ID,
+      reviewStates: ["PENDING"]
+    });
+    expect(pendingOnly.pairSummaries.map((item) => item.pairKey)).toEqual([
+      `${PERSONA_ID_1}::${PERSONA_ID_2}`
+    ]);
+
+    const activeConflictOnly = await service.getRelationEditorView({
+      bookId       : BOOK_ID,
+      conflictState: "ACTIVE"
+    });
+    expect(activeConflictOnly.pairSummaries.map((item) => item.pairKey)).toEqual([
+      `${PERSONA_ID_1}::${PERSONA_ID_2}`
+    ]);
+
+    const paged = await service.getRelationEditorView({
+      bookId      : BOOK_ID,
+      limitPairs  : 1,
+      offsetPairs : 1
+    });
+    expect(paged.pairSummaries).toHaveLength(1);
+    expect(paged.pairSummaries[0]?.pairKey).toBe(`${PERSONA_ID_1}::${PERSONA_ID_3}`);
+    expect(paged.relationTypeOptions).toEqual([{
+      relationTypeKey   : "teacher_of",
+      label             : "师生",
+      direction         : "FORWARD",
+      relationTypeSource: "PRESET",
+      aliasLabels       : ["师徒"],
+      systemPreset      : true
+    }]);
+
+    const halfSelected = await service.getRelationEditorView({
+      bookId   : BOOK_ID,
+      personaId: PERSONA_ID_1
+    });
+    expect(halfSelected.selectedPair).toBeNull();
+  });
+
+  it("returns deterministic empty relation editor options when no catalog dependency is available", async () => {
+    const prismaMock = createPrismaMock({
+      relationClaims: [
+        relationClaim({
+          id                    : RELATION_ID_1,
+          sourcePersonaCandidateId: CANDIDATE_ID_1,
+          targetPersonaCandidateId: CANDIDATE_ID_2
+        })
+      ],
+      personas: [
+        persona({ id: PERSONA_ID_1, name: "Alpha" }),
+        persona({ id: PERSONA_ID_2, name: "Beta" })
+      ],
+      identityResolutionClaims: [
+        identityClaim({ personaCandidateId: CANDIDATE_ID_1, resolvedPersonaId: PERSONA_ID_1 }),
+        identityClaim({
+          id                : "99999999-9999-4999-8999-999999999999",
+          personaCandidateId: CANDIDATE_ID_2,
+          resolvedPersonaId : PERSONA_ID_2
+        })
+      ]
+    });
+    const service = createReviewQueryService(prismaMock as never);
+
+    const result = await service.getRelationEditorView({ bookId: BOOK_ID });
+
+    expect(result.pairSummaries.map((item) => item.pairKey)).toEqual([
+      `${PERSONA_ID_1}::${PERSONA_ID_2}`
     ]);
     expect(result.relationTypeOptions).toEqual([]);
   });
