@@ -658,7 +658,7 @@ pnpm exec vitest run src/components/review/persona-chapter-matrix --coverage=fal
 - Create: `src/components/review/persona-chapter-matrix/manual-claim-form.tsx`
 - Add/modify tests under `src/components/review/persona-chapter-matrix/**`
 
-- [ ] **Step 1: Write failing action-panel tests**
+- [x] **Step 1: Write failing action-panel tests**
 
 Cover:
 
@@ -676,7 +676,7 @@ Run RED:
 pnpm exec vitest run src/components/review/persona-chapter-matrix --coverage=false
 ```
 
-- [ ] **Step 2: Implement claim action panel**
+- [x] **Step 2: Implement claim action panel**
 
 Implementation notes:
 
@@ -690,7 +690,7 @@ Run GREEN:
 pnpm exec vitest run src/components/review/persona-chapter-matrix --coverage=false
 ```
 
-- [ ] **Step 3: Write failing manual-create tests**
+- [x] **Step 3: Write failing manual-create tests**
 
 Cover:
 
@@ -707,7 +707,7 @@ Run RED:
 pnpm exec vitest run src/components/review/persona-chapter-matrix --coverage=false
 ```
 
-- [ ] **Step 4: Implement manual claim form**
+- [x] **Step 4: Implement manual claim form**
 
 Implementation notes:
 
@@ -725,7 +725,7 @@ Run GREEN:
 pnpm exec vitest run src/components/review/persona-chapter-matrix --coverage=false
 ```
 
-- [ ] **Step 5: Refactor while green**
+- [x] **Step 5: Refactor while green**
 
 Extract draft-building helpers if needed:
 
@@ -747,7 +747,7 @@ pnpm exec vitest run src/components/review/persona-chapter-matrix --coverage=fal
 **Files:**
 - Modify tests/components from previous tasks as needed.
 
-- [ ] **Step 1: Write failing integration tests**
+- [x] **Step 1: Write failing integration tests**
 
 Cover the end-to-end component path with mocked services:
 
@@ -765,7 +765,7 @@ Run RED:
 pnpm exec vitest run src/components/review/persona-chapter-matrix/persona-chapter-review-page.test.tsx --coverage=false
 ```
 
-- [ ] **Step 2: Implement integration polish**
+- [x] **Step 2: Implement integration polish**
 
 Implementation notes:
 
@@ -780,7 +780,7 @@ Run GREEN:
 pnpm exec vitest run src/components/review/persona-chapter-matrix/persona-chapter-review-page.test.tsx --coverage=false
 ```
 
-- [ ] **Step 3: Run T13 task-scoped validation**
+- [x] **Step 3: Run T13 task-scoped validation**
 
 Run:
 
@@ -790,11 +790,11 @@ pnpm type-check
 pnpm lint
 ```
 
-- [ ] **Step 4: Fix only T13-scoped failures**
+- [x] **Step 4: Fix only T13-scoped failures**
 
 If failures are caused by T13 changes, fix them using the same red/green discipline. If failures are unrelated pre-existing issues, capture exact command output and rationale in the T13 execution record.
 
-- [ ] **Step 5: Run task doc validation commands**
+- [x] **Step 5: Run task doc validation commands**
 
 Run:
 
@@ -814,11 +814,11 @@ If `pnpm test` fails only because of global coverage thresholds while targeted t
 - Modify: `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`
 - Modify: `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
 
-- [ ] **Step 1: Update T13 task checkboxes**
+- [x] **Step 1: Update T13 task checkboxes**
 
 Mark completed checkpoints in `13-persona-chapter-matrix-ui.md` only after validation has passed or blockers are explicitly documented.
 
-- [ ] **Step 2: Append T13 execution record**
+- [x] **Step 2: Append T13 execution record**
 
 Add:
 
@@ -828,11 +828,11 @@ Add:
 - follow-up risks
 - next task: T14 relation editor UI
 
-- [ ] **Step 3: Update runbook**
+- [x] **Step 3: Update runbook**
 
-Mark T13 complete in `Task Status` and append a `T13 Completion - 2026-04-21` entry.
+Mark T13 complete in `Task Status` and append a `T13 Completion - 2026-04-22` entry.
 
-- [ ] **Step 4: Inspect final diff**
+- [x] **Step 4: Inspect final diff**
 
 Run:
 
@@ -842,12 +842,12 @@ git diff --stat
 git diff -- docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md
 ```
 
-- [ ] **Step 5: Commit T13**
+- [x] **Step 5: Commit T13**
 
 Run:
 
 ```bash
-git add src/server/modules/review/evidence-review/review-api-schemas.ts src/server/modules/review/evidence-review/review-api-schemas.test.ts src/server/modules/review/evidence-review/review-query-service.ts src/server/modules/review/evidence-review/review-query-service.test.ts src/app/api/admin/review/persona-chapter-matrix/route.ts src/app/api/admin/review/persona-chapter-matrix/route.test.ts src/lib/services/review-matrix.ts src/lib/services/review-matrix.test.ts src/app/admin/review/[bookId]/page.tsx src/app/admin/review/[bookId]/page.test.tsx src/components/review/shared src/components/review/persona-chapter-matrix src/components/review/index.ts docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md
+git add src/server/modules/review/evidence-review/review-api-schemas.ts src/server/modules/review/evidence-review/review-api-schemas.test.ts src/server/modules/review/evidence-review/review-query-service.ts src/server/modules/review/evidence-review/review-query-service.test.ts src/app/api/admin/review/persona-chapter-matrix/route.ts src/app/api/admin/review/persona-chapter-matrix/route.test.ts src/lib/services/review-matrix.ts src/lib/services/review-matrix.test.ts src/app/admin/review/[bookId]/page.tsx src/app/admin/review/[bookId]/page.test.tsx src/components/review/shared src/components/review/persona-chapter-matrix src/components/review/index.ts docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md docs/superpowers/plans/2026-04-21-t13-persona-chapter-matrix-ui-implementation-plan.md
 git commit -m "feat(review): add persona chapter matrix"
 ```
 
