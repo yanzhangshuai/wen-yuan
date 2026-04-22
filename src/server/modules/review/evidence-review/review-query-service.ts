@@ -2,8 +2,19 @@ import { prisma } from "@/server/db/prisma";
 import type { ClaimKind } from "@/generated/prisma/enums";
 import { REVIEWABLE_CLAIM_FAMILY_VALUES } from "@/server/modules/analysis/claims/claim-schemas";
 import type { ReviewableClaimFamily } from "@/server/modules/analysis/claims/claim-schemas";
+import { createKnowledgeRepository } from "@/server/modules/knowledge-v2/repository";
+import {
+  createRelationTypeCatalogLoader,
+  type RelationCatalogEntry
+} from "@/server/modules/knowledge-v2/relation-types";
 import { createReviewAuditService } from "@/server/modules/review/evidence-review/review-audit-service";
-import type { ClaimReviewState, ClaimSource } from "@/server/modules/review/evidence-review/review-state";
+import type { ReviewPersonaChapterMatrixQueryRequest } from "@/server/modules/review/evidence-review/review-api-schemas";
+import type {
+  ClaimReviewState,
+  ClaimSource,
+  RelationDirection,
+  RelationTypeSource
+} from "@/server/modules/review/evidence-review/review-state";
 
 export type ConflictState = "ACTIVE" | "NONE";
 
@@ -41,6 +52,71 @@ export interface ReviewClaimListItem {
   timeLabel          : string | null;
   relationTypeKey    : string | null;
   evidenceSpanIds    : string[];
+}
+
+export interface PersonaChapterRelationTypeOptionDto {
+  relationTypeKey   : string;
+  label             : string;
+  direction         : RelationDirection;
+  relationTypeSource: RelationTypeSource;
+  aliasLabels       : string[];
+  systemPreset      : boolean;
+}
+
+export interface PersonaChapterMatrixPersonaDto {
+  personaId                : string;
+  displayName              : string;
+  aliases                  : string[];
+  primaryPersonaCandidateId: string | null;
+  personaCandidateIds      : string[];
+  firstChapterNo           : number | null;
+  totalEventCount          : number;
+  totalRelationCount       : number;
+  totalConflictCount       : number;
+}
+
+export interface PersonaChapterMatrixChapterDto {
+  chapterId: string;
+  chapterNo: number;
+  title    : string;
+  label    : string;
+}
+
+export interface PersonaChapterMatrixCellDto {
+  bookId            : string;
+  personaId         : string;
+  chapterId         : string;
+  chapterNo         : number;
+  eventCount        : number;
+  relationCount     : number;
+  conflictCount     : number;
+  reviewStateSummary: Record<string, Record<string, number>>;
+  latestUpdatedAt   : string;
+}
+
+export interface PersonaChapterMatrixDto {
+  bookId             : string;
+  personas           : PersonaChapterMatrixPersonaDto[];
+  chapters           : PersonaChapterMatrixChapterDto[];
+  cells              : PersonaChapterMatrixCellDto[];
+  relationTypeOptions: PersonaChapterRelationTypeOptionDto[];
+  generatedAt        : string;
+}
+
+export interface ReviewQueryServiceDependencies {
+  relationTypeCatalogLoader?: {
+    load(input: {
+      bookId     : string;
+      bookTypeKey: string | null;
+      runId      : string | null;
+      mode       : "RUNTIME" | "REVIEW";
+    }): Promise<{
+      activeEntries: Array<Pick<
+        RelationCatalogEntry,
+        "relationTypeKey" | "defaultLabel" | "direction" | "relationTypeSource" | "aliasLabels" | "systemPreset"
+      >>;
+    }>;
+  };
 }
 
 type ProjectionSummary = {
@@ -190,6 +266,116 @@ function normalizeOffset(offset?: number): number {
 function normalizeLimit(limit?: number): number {
   if (typeof limit !== "number" || Number.isNaN(limit)) return 100;
   return Math.max(0, Math.trunc(limit));
+}
+
+function normalizeReviewStateSummary(value: unknown): Record<string, Record<string, number>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const normalized: Record<string, Record<string, number>> = {};
+  for (const [familyKey, familyValue] of Object.entries(value as Record<string, unknown>)) {
+    if (familyValue === null || typeof familyValue !== "object" || Array.isArray(familyValue)) {
+      continue;
+    }
+
+    const familyCounts: Record<string, number> = {};
+    for (const [stateKey, count] of Object.entries(familyValue as Record<string, unknown>)) {
+      if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) {
+        continue;
+      }
+      familyCounts[stateKey] = count;
+    }
+
+    if (Object.keys(familyCounts).length > 0) {
+      normalized[familyKey] = familyCounts;
+    }
+  }
+
+  return normalized;
+}
+
+function matchesMatrixReviewStates(
+  summary: Record<string, Record<string, number>>,
+  reviewStates?: readonly ClaimReviewState[]
+): boolean {
+  if (!reviewStates || reviewStates.length === 0) {
+    return true;
+  }
+
+  return Object.values(summary).some((stateCounts) => (
+    reviewStates.some((reviewState) => (stateCounts[reviewState] ?? 0) > 0)
+  ));
+}
+
+function matchesMatrixConflictState(
+  conflictCount: number,
+  conflictState?: ConflictState
+): boolean {
+  if (!conflictState) {
+    return true;
+  }
+
+  if (conflictState === "ACTIVE") {
+    return conflictCount > 0;
+  }
+
+  return conflictCount === 0;
+}
+
+function toMatrixChapterLabel(chapter: {
+  no     : number;
+  unit?  : string | null;
+  noText?: string | null;
+  title  : string;
+}): string {
+  const prefix = chapter.noText?.trim()
+    ? chapter.noText.trim()
+    : `第${chapter.no}${chapter.unit?.trim() || "回"}`;
+
+  return `${prefix} ${chapter.title}`.trim();
+}
+
+function sortMatrixPersonas(
+  left: PersonaChapterMatrixPersonaDto,
+  right: PersonaChapterMatrixPersonaDto
+): number {
+  const leftChapterNo = left.firstChapterNo;
+  const rightChapterNo = right.firstChapterNo;
+
+  if (leftChapterNo === null && rightChapterNo !== null) return 1;
+  if (leftChapterNo !== null && rightChapterNo === null) return -1;
+  if (leftChapterNo !== null && rightChapterNo !== null && leftChapterNo !== rightChapterNo) {
+    return leftChapterNo - rightChapterNo;
+  }
+
+  const nameCompare = left.displayName.localeCompare(right.displayName);
+  if (nameCompare !== 0) return nameCompare;
+
+  return left.personaId.localeCompare(right.personaId);
+}
+
+function summarizePersonaCells(cells: readonly PersonaChapterMatrixCellDto[]) {
+  let firstChapterNo: number | null = null;
+  let totalEventCount = 0;
+  let totalRelationCount = 0;
+  let totalConflictCount = 0;
+
+  for (const cell of cells) {
+    if (firstChapterNo === null || cell.chapterNo < firstChapterNo) {
+      firstChapterNo = cell.chapterNo;
+    }
+    totalEventCount += cell.eventCount;
+    totalRelationCount += cell.relationCount;
+    totalConflictCount += cell.conflictCount;
+  }
+
+  return {
+    firstChapterNo,
+    totalEventCount,
+    totalRelationCount,
+    totalConflictCount
+  };
 }
 
 async function resolveTimeHintIdsForLabel(
@@ -878,7 +1064,187 @@ async function loadProjectionSummary(
   return summary;
 }
 
-export function createReviewQueryService(prismaClient: typeof prisma = prisma) {
+type MatrixChapterRecord = {
+  id     : string;
+  no     : number;
+  title  : string;
+  unit?  : string | null;
+  noText?: string | null;
+};
+
+type MatrixPersonaRecord = {
+  id     : string;
+  name   : string;
+  aliases: string[];
+};
+
+type MatrixBookRecord = {
+  bookType?: {
+    key?: string | null;
+  } | null;
+} | null;
+
+type PersonaCandidateHint = {
+  primaryPersonaCandidateId: string | null;
+  personaCandidateIds      : string[];
+};
+
+async function loadMatrixChapters(
+  prismaClient: typeof prisma,
+  bookId: string
+): Promise<PersonaChapterMatrixChapterDto[]> {
+  const rows = await prismaClient.chapter.findMany({
+    where  : { bookId, isAbstract: false },
+    orderBy: [{ no: "asc" }, { id: "asc" }]
+  }) as MatrixChapterRecord[];
+
+  return rows.map((row) => ({
+    chapterId: row.id,
+    chapterNo: row.no,
+    title    : row.title,
+    label    : toMatrixChapterLabel(row)
+  }));
+}
+
+async function loadMatrixPersonaRecords(
+  prismaClient: typeof prisma,
+  personaIds: readonly string[]
+): Promise<Map<string, MatrixPersonaRecord>> {
+  const uniquePersonaIds = toUniqueSortedIds(personaIds);
+  if (uniquePersonaIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await prismaClient.persona.findMany({
+    where: { id: { in: uniquePersonaIds } }
+  }) as MatrixPersonaRecord[];
+
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
+async function loadAcceptedCandidateHintsByPersonaId(
+  prismaClient: typeof prisma,
+  bookId: string,
+  personaIds: readonly string[]
+): Promise<Map<string, PersonaCandidateHint>> {
+  const uniquePersonaIds = toUniqueSortedIds(personaIds);
+  if (uniquePersonaIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await prismaClient.identityResolutionClaim.findMany({
+    where: {
+      bookId,
+      reviewState       : "ACCEPTED",
+      resolvedPersonaId : { in: uniquePersonaIds },
+      personaCandidateId: { not: null }
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }]
+  }) as Array<{
+    personaCandidateId: string | null;
+    resolvedPersonaId : string | null;
+  }>;
+
+  const candidateIdsByPersonaId = new Map<string, string[]>();
+  for (const row of rows) {
+    if (!row.resolvedPersonaId || !row.personaCandidateId) {
+      continue;
+    }
+
+    const candidateIds = candidateIdsByPersonaId.get(row.resolvedPersonaId) ?? [];
+    if (!candidateIds.includes(row.personaCandidateId)) {
+      candidateIds.push(row.personaCandidateId);
+    }
+    candidateIdsByPersonaId.set(row.resolvedPersonaId, candidateIds);
+  }
+
+  return new Map(
+    Array.from(candidateIdsByPersonaId.entries()).map(([personaId, candidateIds]) => [
+      personaId,
+      {
+        primaryPersonaCandidateId: candidateIds[0] ?? null,
+        personaCandidateIds      : candidateIds
+      }
+    ])
+  );
+}
+
+function toRelationTypeOption(
+  entry: Pick<
+    RelationCatalogEntry,
+    "relationTypeKey" | "defaultLabel" | "direction" | "relationTypeSource" | "aliasLabels" | "systemPreset"
+  >
+): PersonaChapterRelationTypeOptionDto {
+  return {
+    relationTypeKey   : entry.relationTypeKey,
+    label             : entry.defaultLabel,
+    direction         : entry.direction,
+    relationTypeSource: entry.relationTypeSource,
+    aliasLabels       : [...entry.aliasLabels],
+    systemPreset      : entry.systemPreset
+  };
+}
+
+function canLoadDefaultRelationCatalog(prismaClient: typeof prisma): boolean {
+  const maybePrisma = prismaClient as unknown as Record<string, unknown>;
+  return (
+    typeof maybePrisma.book === "object" &&
+    maybePrisma.book !== null &&
+    typeof maybePrisma.knowledgeItem === "object" &&
+    maybePrisma.knowledgeItem !== null &&
+    typeof maybePrisma.$transaction === "function"
+  );
+}
+
+async function resolveBookTypeKey(
+  prismaClient: typeof prisma,
+  bookId: string
+): Promise<string | null> {
+  if (!("book" in prismaClient) || typeof prismaClient.book?.findUnique !== "function") {
+    return null;
+  }
+
+  const book = await prismaClient.book.findUnique({
+    where: { id: bookId }
+  }) as MatrixBookRecord;
+
+  return book?.bookType?.key ?? null;
+}
+
+async function loadMatrixRelationTypeOptions(
+  prismaClient: typeof prisma,
+  bookId: string,
+  dependencies: ReviewQueryServiceDependencies
+): Promise<PersonaChapterRelationTypeOptionDto[]> {
+  const relationTypeCatalogLoader = dependencies.relationTypeCatalogLoader
+    ?? (canLoadDefaultRelationCatalog(prismaClient)
+      ? createRelationTypeCatalogLoader({
+          knowledgeRepository: createKnowledgeRepository(prismaClient as never)
+        })
+      : null);
+
+  if (!relationTypeCatalogLoader) {
+    return [];
+  }
+
+  try {
+    const catalog = await relationTypeCatalogLoader.load({
+      bookId,
+      bookTypeKey: await resolveBookTypeKey(prismaClient, bookId),
+      runId      : null,
+      mode       : "REVIEW"
+    });
+
+    return catalog.activeEntries.map((entry) => toRelationTypeOption(entry));
+  } catch {
+    return [];
+  }
+}
+
+export function createReviewQueryService(
+  prismaClient: typeof prisma = prisma,
+  dependencies: ReviewQueryServiceDependencies = {}
+) {
   async function listClaims(input: ListReviewClaimsInput): Promise<{ items: ReviewClaimListItem[]; total: number }> {
     const claimKinds = input.claimKinds?.length
       ? input.claimKinds
@@ -915,6 +1281,108 @@ export function createReviewQueryService(prismaClient: typeof prisma = prisma) {
     return {
       items: filteredRows.slice(offset, offset + limit),
       total: filteredRows.length
+    };
+  }
+
+  async function getPersonaChapterMatrix(
+    input: ReviewPersonaChapterMatrixQueryRequest
+  ): Promise<PersonaChapterMatrixDto> {
+    const chapters = await loadMatrixChapters(prismaClient, input.bookId);
+
+    const rows = await prismaClient.personaChapterFact.findMany({
+      where: {
+        bookId: input.bookId,
+        ...(input.personaId ? { personaId: input.personaId } : {}),
+        ...(input.chapterId ? { chapterId: input.chapterId } : {})
+      },
+      orderBy: [
+        { chapterNo: "asc" },
+        { personaId: "asc" },
+        { chapterId: "asc" }
+      ]
+    }) as Array<{
+      bookId            : string;
+      personaId         : string;
+      chapterId         : string;
+      chapterNo         : number;
+      eventCount        : number;
+      relationCount     : number;
+      conflictCount     : number;
+      reviewStateSummary: unknown;
+      latestUpdatedAt   : Date;
+    }>;
+
+    const filteredCells = rows
+      .map((row) => ({
+        bookId            : row.bookId,
+        personaId         : row.personaId,
+        chapterId         : row.chapterId,
+        chapterNo         : row.chapterNo,
+        eventCount        : row.eventCount,
+        relationCount     : row.relationCount,
+        conflictCount     : row.conflictCount,
+        reviewStateSummary: normalizeReviewStateSummary(row.reviewStateSummary),
+        latestUpdatedAt   : row.latestUpdatedAt.toISOString()
+      }))
+      .filter((row) => matchesMatrixReviewStates(row.reviewStateSummary, input.reviewStates))
+      .filter((row) => matchesMatrixConflictState(row.conflictCount, input.conflictState));
+
+    const personaIds = toUniqueSortedIds(filteredCells.map((row) => row.personaId));
+    const personaRecordsById = await loadMatrixPersonaRecords(prismaClient, personaIds);
+    const candidateHintsByPersonaId = await loadAcceptedCandidateHintsByPersonaId(
+      prismaClient,
+      input.bookId,
+      personaIds
+    );
+
+    const personaMap = new Map<string, PersonaChapterMatrixPersonaDto>();
+    for (const personaId of personaIds) {
+      const personaRecord = personaRecordsById.get(personaId);
+      const personaCells = filteredCells.filter((row) => row.personaId === personaId);
+      const summary = summarizePersonaCells(personaCells);
+      const candidateHint = candidateHintsByPersonaId.get(personaId);
+
+      personaMap.set(personaId, {
+        personaId,
+        displayName              : personaRecord?.name ?? personaId,
+        aliases                  : [...(personaRecord?.aliases ?? [])],
+        primaryPersonaCandidateId: candidateHint?.primaryPersonaCandidateId ?? null,
+        personaCandidateIds      : [...(candidateHint?.personaCandidateIds ?? [])],
+        firstChapterNo           : summary.firstChapterNo,
+        totalEventCount          : summary.totalEventCount,
+        totalRelationCount       : summary.totalRelationCount,
+        totalConflictCount       : summary.totalConflictCount
+      });
+    }
+
+    const sortedPersonas = Array.from(personaMap.values()).sort(sortMatrixPersonas);
+    const personaOffset = normalizeOffset(input.offsetPersonas);
+    const pagedPersonas = typeof input.limitPersonas === "number"
+      ? sortedPersonas.slice(personaOffset, personaOffset + normalizeLimit(input.limitPersonas))
+      : sortedPersonas.slice(personaOffset);
+    const pagedPersonaIds = new Set(pagedPersonas.map((persona) => persona.personaId));
+    const personaOrder = new Map(pagedPersonas.map((persona, index) => [persona.personaId, index]));
+    const cells = filteredCells
+      .filter((row) => pagedPersonaIds.has(row.personaId))
+      .sort((left, right) => {
+        const leftPersonaOrder = personaOrder.get(left.personaId) ?? Number.MAX_SAFE_INTEGER;
+        const rightPersonaOrder = personaOrder.get(right.personaId) ?? Number.MAX_SAFE_INTEGER;
+        if (leftPersonaOrder !== rightPersonaOrder) {
+          return leftPersonaOrder - rightPersonaOrder;
+        }
+        if (left.chapterNo !== right.chapterNo) {
+          return left.chapterNo - right.chapterNo;
+        }
+        return left.chapterId.localeCompare(right.chapterId);
+      });
+
+    return {
+      bookId             : input.bookId,
+      personas           : pagedPersonas,
+      chapters,
+      cells,
+      relationTypeOptions: await loadMatrixRelationTypeOptions(prismaClient, input.bookId, dependencies),
+      generatedAt        : new Date().toISOString()
     };
   }
 
@@ -987,7 +1455,7 @@ export function createReviewQueryService(prismaClient: typeof prisma = prisma) {
     };
   }
 
-  return { listClaims, getClaimDetail };
+  return { listClaims, getClaimDetail, getPersonaChapterMatrix };
 }
 
 export const reviewQueryService = createReviewQueryService();

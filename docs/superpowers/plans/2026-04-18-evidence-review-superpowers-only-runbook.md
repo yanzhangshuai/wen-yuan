@@ -120,7 +120,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T10: `docs/superpowers/tasks/2026-04-18-evidence-review/10-stage-c-fact-attribution.md`
 - [x] T11: `docs/superpowers/tasks/2026-04-18-evidence-review/11-stage-d-projection-builder.md`
 - [x] T12: `docs/superpowers/tasks/2026-04-18-evidence-review/12-review-api-mutations.md`
-- [ ] T13: `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`
+- [x] T13: `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`
 - [ ] T14: `docs/superpowers/tasks/2026-04-18-evidence-review/14-relation-editor-ui.md`
 - [ ] T16: `docs/superpowers/tasks/2026-04-18-evidence-review/16-audit-history-evidence-panel.md`
 - [ ] T15: `docs/superpowers/tasks/2026-04-18-evidence-review/15-persona-time-matrix-ui.md`
@@ -275,3 +275,11 @@ Append one entry after each task:
 - Result: T12 now provides claim-first admin review list/detail routes, manual override and relink flows, persona merge/split review mutations, audit-log persistence, admin actor attribution, and affected-scope projection rebuild orchestration. Validation passed across Prisma, Vitest, lint, and type-check.
 - Follow-up risks: T13-T16 must reuse the normalized DTOs and avoid bypassing these mutation routes; T12 commit is intentionally deferred until you explicitly request it.
 - Next task: T13 `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`
+
+### T13 Completion - 2026-04-22
+
+- Changed files: `docs/superpowers/plans/2026-04-21-t13-persona-chapter-matrix-ui-implementation-plan.md`, `src/server/modules/review/evidence-review/review-api-schemas.ts`, `src/server/modules/review/evidence-review/review-api-schemas.test.ts`, `src/server/modules/review/evidence-review/review-query-service.ts`, `src/server/modules/review/evidence-review/review-query-service.test.ts`, `src/app/api/admin/review/persona-chapter-matrix/**`, `src/lib/services/review-matrix.ts`, `src/lib/services/review-matrix.test.ts`, `src/app/admin/review/[bookId]/page.tsx`, `src/app/admin/review/[bookId]/page.test.tsx`, `src/components/review/shared/**`, `src/components/review/persona-chapter-matrix/**`, `src/components/review/index.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/13-persona-chapter-matrix-ui.md`, and `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/review/evidence-review/review-api-schemas.test.ts src/server/modules/review/evidence-review/review-query-service.test.ts src/app/api/admin/review/persona-chapter-matrix/route.test.ts src/lib/services/review-matrix.test.ts src/components/review/shared/review-state-badge.test.tsx src/components/review/shared/temporary-evidence-audit-panel.test.tsx src/components/review/persona-chapter-matrix src/app/admin/review/\[bookId\]/page.test.tsx --coverage=false`, `pnpm test src/app/admin/review` (3 assertions passed; command failed only on global coverage thresholds), `pnpm exec vitest run src/app/admin/review/\[bookId\]/page.test.tsx --coverage=false`, `pnpm type-check`, `pnpm lint`
+- Result: `/admin/review/[bookId]` now renders the persona x chapter matrix as the primary review entry, keeps matrix summaries and drill-down flows on T11/T12 DTOs, supports evidence/AI basis inspection plus defer/edit/manual-create actions, and covers the 50 x 100 usability path with local windowing tests.
+- Follow-up risks: `matrix-grid.tsx` still relies on local DOM windowing that should be observed under larger real-book datasets; `temporary-evidence-audit-panel` is still a temporary adapter that T16 must replace; `pnpm test src/app/admin/review` remains blocked by repository-wide coverage thresholds even though T13 assertions pass.
+- Next task: T14 `docs/superpowers/tasks/2026-04-18-evidence-review/14-relation-editor-ui.md`

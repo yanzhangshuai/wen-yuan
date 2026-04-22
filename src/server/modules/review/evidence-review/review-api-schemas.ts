@@ -35,6 +35,16 @@ export const reviewClaimListQuerySchema = z.object({
   offset       : z.coerce.number().int().min(0).optional()
 });
 
+export const reviewPersonaChapterMatrixQuerySchema = z.object({
+  bookId        : uuidSchema,
+  personaId     : uuidSchema.optional(),
+  chapterId     : uuidSchema.optional(),
+  reviewStates  : z.array(z.enum(CLAIM_REVIEW_STATE_VALUES)).optional(),
+  conflictState : z.enum(["ACTIVE", "NONE"] as const).optional(),
+  limitPersonas : z.coerce.number().int().min(0).optional(),
+  offsetPersonas: z.coerce.number().int().min(0).optional()
+});
+
 export const reviewClaimDetailQuerySchema = z.object({
   bookId: uuidSchema
 });
@@ -185,6 +195,8 @@ export function parseReviewManualClaimDraft<TFamily extends ManualOverrideFamily
 export type ReviewClaimActionRequest = z.infer<typeof reviewClaimActionRequestSchema>;
 export type ReviewCreateManualClaimRequest = z.infer<typeof reviewCreateManualClaimRequestSchema>;
 export type ReviewClaimListQueryRequest = z.infer<typeof reviewClaimListQuerySchema>;
+export type ReviewPersonaChapterMatrixQueryRequest =
+  z.infer<typeof reviewPersonaChapterMatrixQuerySchema>;
 export type ReviewClaimRouteParams = z.infer<typeof reviewClaimRouteParamsSchema>;
 export type ReviewMergePersonasRequest = z.infer<typeof reviewMergePersonasRequestSchema>;
 export type ReviewSplitPersonasRequest = z.infer<typeof reviewSplitPersonasRequestSchema>;

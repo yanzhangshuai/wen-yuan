@@ -12,6 +12,7 @@ import {
   reviewClaimListQuerySchema,
   reviewClaimRouteParamsSchema,
   reviewMergePersonasRequestSchema,
+  reviewPersonaChapterMatrixQuerySchema,
   reviewSplitPersonaRequestSchema
 } from "./review-api-schemas";
 
@@ -86,6 +87,42 @@ describe("review api schemas", () => {
       claimKind: "EVENT",
       claimId  : CANDIDATE_ID_1
     });
+  });
+
+  it("parses persona-chapter matrix query filters and coerces persona pagination", () => {
+    expect(reviewPersonaChapterMatrixQuerySchema.parse({
+      bookId        : BOOK_ID,
+      personaId     : SOURCE_PERSONA_ID,
+      chapterId     : CHAPTER_ID,
+      reviewStates  : ["PENDING", "DEFERRED"],
+      conflictState : "ACTIVE",
+      limitPersonas : "25",
+      offsetPersonas: "5"
+    })).toEqual({
+      bookId        : BOOK_ID,
+      personaId     : SOURCE_PERSONA_ID,
+      chapterId     : CHAPTER_ID,
+      reviewStates  : ["PENDING", "DEFERRED"],
+      conflictState : "ACTIVE",
+      limitPersonas : 25,
+      offsetPersonas: 5
+    });
+  });
+
+  it("rejects invalid persona-chapter matrix identifiers and conflict states", () => {
+    expect(() => reviewPersonaChapterMatrixQuerySchema.parse({
+      personaId: SOURCE_PERSONA_ID
+    })).toThrow();
+
+    expect(() => reviewPersonaChapterMatrixQuerySchema.parse({
+      bookId: "not-a-uuid"
+    })).toThrow();
+
+    expect(() => reviewPersonaChapterMatrixQuerySchema.parse({
+      bookId       : BOOK_ID,
+      chapterId    : "not-a-uuid",
+      conflictState: "SOMETHING_ELSE"
+    })).toThrow();
   });
 
   it("parses family-specific manual claim drafts for route handlers", () => {

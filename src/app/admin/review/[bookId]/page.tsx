@@ -1,14 +1,11 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
 import { getBookById } from "@/server/modules/books/getBookById";
 import { listBooks } from "@/server/modules/books/listBooks";
-import { listAdminDrafts } from "@/server/modules/review/listDrafts";
-import { listMergeSuggestions } from "@/server/modules/review/mergeSuggestions";
-import { ReviewPanel } from "@/components/review/review-panel";
-import { Skeleton } from "@/components/ui/skeleton";
+import { createReviewQueryService } from "@/server/modules/review/evidence-review/review-query-service";
+import { PersonaChapterReviewPage } from "@/components/review/persona-chapter-matrix/persona-chapter-review-page";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,15 +17,15 @@ import { cn } from "@/lib/utils";
  *
  * 在 Next.js 渲染链路中的角色：
  * 1) 本文件是 Server Component 页面入口，负责首屏数据聚合；
- * 2) 首屏通过服务端并发拉取“书籍信息 + 草稿数据 + 合并建议”；
- * 3) 将首屏数据作为 props 传给客户端组件 `ReviewPanel`，用于后续交互刷新。
+ * 2) 首屏通过服务端并发拉取“书籍信息 + 书籍切换列表 + 人物章节矩阵摘要”；
+ * 3) 将首屏数据作为 props 传给 claim-first 矩阵入口，后续交互再按单元格懒加载详情。
  *
  * 业务职责：
  * - 为某本书提供完整审核工作台（左侧书籍切换 + 右侧审核主面板）。
  *
  * 关键约束：
  * - `bookId` 无效时必须走 `notFound()`，交由 Next.js 404 机制接管；
- * - 页面只负责“数据装配与布局”，具体审核动作在客户端面板和 API 层执行。
+ * - 页面只负责“数据装配与布局”，具体审核动作通过 T12/T13 客户端服务和 API 层执行。
  * =============================================================================
  */
 interface AdminBookReviewPageProps {
@@ -65,14 +62,12 @@ export default async function AdminBookReviewPage({
     notFound();
   }
 
-  // 并发请求首屏数据，减少总等待时间：
-  // - allBooks：左侧导航所需
-  // - initialDrafts：审核面板首屏草稿
-  // - initialMergeSuggestions：合并建议首屏数据
-  const [allBooks, initialDrafts, initialMergeSuggestions] = await Promise.all([
+  const reviewQueryService = createReviewQueryService();
+
+  // T13 页面入口只读取矩阵摘要，不再加载 legacy drafts/merge suggestions，避免新旧审核模型混用。
+  const [allBooks, initialMatrix] = await Promise.all([
     listBooks(),
-    listAdminDrafts({ bookId }),
-    listMergeSuggestions({ bookId })
+    reviewQueryService.getPersonaChapterMatrix({ bookId })
   ]);
 
   return (
@@ -108,23 +103,12 @@ export default async function AdminBookReviewPage({
 
       {/* 右侧审核主体：由客户端组件承载复杂交互（筛选、批量操作、编辑等）。 */}
       <div className="flex-1 min-w-0">
-        <Suspense
-          fallback={
-            <div className="flex flex-col gap-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-lg" />
-              ))}
-            </div>
-          }
-        >
-          <ReviewPanel
-            bookId={bookId}
-            bookTitle={book.title}
-            initialDrafts={initialDrafts}
-            initialMergeSuggestions={initialMergeSuggestions}
-            // 当前页面首批次不预注入 alias/validation，ReviewPanel 会在客户端按需懒加载。
-          />
-        </Suspense>
+        <PersonaChapterReviewPage
+          bookId={bookId}
+          bookTitle={book.title}
+          allBooks={allBooks}
+          initialMatrix={initialMatrix}
+        />
       </div>
     </div>
   );

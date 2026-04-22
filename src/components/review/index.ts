@@ -27,6 +27,8 @@
 
 /** 审核中心主面板：承载 Tab、筛选、批量审核、编辑、合并等核心交互。 */
 export { ReviewPanel } from "./review-panel";
+/** 人物 x 章节矩阵审核页入口：承接 T13 claim-first 审核工作台。 */
+export { PersonaChapterReviewPage } from "./persona-chapter-matrix/persona-chapter-review-page";
 /** 人物草稿编辑表单：用于审核过程中修正人物字段。 */
 export { PersonaEditForm } from "./persona-edit-form";
 /** 关系草稿编辑表单：用于修正关系类型、权重、证据、置信度。 */
