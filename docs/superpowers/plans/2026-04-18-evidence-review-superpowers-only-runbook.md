@@ -124,7 +124,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T14: `docs/superpowers/tasks/2026-04-18-evidence-review/14-relation-editor-ui.md`
 - [x] T16: `docs/superpowers/tasks/2026-04-18-evidence-review/16-audit-history-evidence-panel.md`
 - [x] T15: `docs/superpowers/tasks/2026-04-18-evidence-review/15-persona-time-matrix-ui.md`
-- [ ] T19: `docs/superpowers/tasks/2026-04-18-evidence-review/19-incremental-rerun-cost-controls.md`
+- [x] T19: `docs/superpowers/tasks/2026-04-18-evidence-review/19-incremental-rerun-cost-controls.md`
 - [ ] T21: `docs/superpowers/tasks/2026-04-18-evidence-review/21-gold-set-regression.md`
 - [ ] T20: `docs/superpowers/tasks/2026-04-18-evidence-review/20-cutover-read-paths.md`
 - [ ] T22: `docs/superpowers/tasks/2026-04-18-evidence-review/22-e2e-acceptance.md`
@@ -307,3 +307,11 @@ Append one entry after each task:
 - Result: `/admin/review/[bookId]/time` now provides a claim-first `人物 x 时间` review surface with six stable time-axis groups, reviewer-facing filter/jump controls, raw plus normalized time preservation, shared evidence/audit detail rendering, T12-backed time normalization edits, and URL-backed chapter/time deep links in both directions.
 - Follow-up risks: none at the T15 task boundary; remaining roadmap work continues in T19/T21/T20/T22.
 - Next task: T19 `docs/superpowers/tasks/2026-04-18-evidence-review/19-incremental-rerun-cost-controls.md`
+
+### T19 Completion - 2026-04-23
+
+- Changed files: `docs/superpowers/plans/2026-04-23-t19-incremental-rerun-cost-controls-implementation-plan.md`, `src/server/modules/analysis/pipelines/evidence-review/rerun-planner/**`, `src/server/modules/review/evidence-review/costs/**`, `src/app/api/admin/review/_cost-controls.ts`, `src/app/api/admin/review/rerun-plan/route.ts`, `src/app/api/admin/review/rerun-plan/route.test.ts`, `src/app/api/admin/review/cost-summary/route.ts`, `src/app/api/admin/review/cost-summary/route.test.ts`, `src/app/api/admin/review/cost-comparison/route.ts`, `src/app/api/admin/review/cost-comparison/route.test.ts`, `scripts/review-regression/compare-rerun-costs.ts`, `docs/superpowers/tasks/2026-04-18-evidence-review/19-incremental-rerun-cost-controls.md`, and `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec eslint src/server/modules/analysis/pipelines/evidence-review/rerun-planner src/server/modules/review/evidence-review/costs src/app/api/admin/review/_cost-controls.ts src/app/api/admin/review/rerun-plan/route.ts src/app/api/admin/review/rerun-plan/route.test.ts src/app/api/admin/review/cost-summary/route.ts src/app/api/admin/review/cost-summary/route.test.ts src/app/api/admin/review/cost-comparison/route.ts src/app/api/admin/review/cost-comparison/route.test.ts scripts/review-regression/compare-rerun-costs.ts`, `pnpm exec vitest run src/server/modules/analysis/pipelines/evidence-review/rerun-planner src/server/modules/review/evidence-review/costs src/app/api/admin/review/rerun-plan/route.test.ts src/app/api/admin/review/cost-summary/route.test.ts src/app/api/admin/review/cost-comparison/route.test.ts --coverage=false`, `pnpm type-check`, `pnpm lint`, `pnpm exec ts-node --esm scripts/review-regression/compare-rerun-costs.ts --help`, `git diff --name-only -- prisma src/server/db src/app/api/admin/analysis-jobs`
+- Result: T19 adds an evidence-review-specific incremental rerun planner with explainable stage/range output, keeps review mutations on projection-only local rebuilds, derives review-native run cost summaries and baseline-vs-rerun comparisons from T04 observability, serializes bigint cost fields for admin routes, and ships a regression CLI while leaving the legacy retry planner and `/api/admin/analysis-jobs/**` cost surface unchanged.
+- Follow-up risks: none at the T19 task boundary; remaining roadmap work continues in T21/T20/T22.
+- Next task: T21 `docs/superpowers/tasks/2026-04-18-evidence-review/21-gold-set-regression.md`
