@@ -10,6 +10,7 @@ import {
 import { createReviewAuditService } from "@/server/modules/review/evidence-review/review-audit-service";
 import type {
   ReviewPersonaChapterMatrixQueryRequest,
+  ReviewPersonaTimeMatrixQueryRequest,
   ReviewRelationEditorQueryRequest
 } from "@/server/modules/review/evidence-review/review-api-schemas";
 import type {
@@ -38,6 +39,77 @@ export interface GetReviewClaimDetailInput {
   bookId   : string;
   claimKind: ReviewableClaimFamily;
   claimId  : string;
+}
+
+export interface ReviewClaimEvidenceSpanDto {
+  id                 : string;
+  chapterId          : string;
+  chapterLabel       : string | null;
+  startOffset        : number | null;
+  endOffset          : number | null;
+  quotedText         : string;
+  normalizedText     : string;
+  speakerHint        : string | null;
+  narrativeRegionType: string | null;
+  createdAt          : string | null;
+}
+
+export interface ReviewClaimFieldDiffDto {
+  fieldKey  : string;
+  fieldLabel: string;
+  beforeText: string | null;
+  afterText : string | null;
+}
+
+export interface ReviewClaimAuditHistoryItemDto {
+  id             : string;
+  action         : string;
+  actorUserId    : string | null;
+  note           : string | null;
+  evidenceSpanIds: string[];
+  createdAt      : string | null;
+  beforeState    : Record<string, unknown> | null;
+  afterState     : Record<string, unknown> | null;
+  fieldDiffs     : ReviewClaimFieldDiffDto[];
+}
+
+export interface ReviewClaimRawOutputSummaryDto {
+  stageKey         : string | null;
+  provider         : string | null;
+  model            : string | null;
+  createdAt        : string | null;
+  responseExcerpt  : string | null;
+  hasStructuredJson: boolean;
+  parseError       : string | null;
+  schemaError      : string | null;
+  discardReason    : string | null;
+}
+
+export interface ReviewClaimAiBasisSummaryDto {
+  basisClaimId  : string | null;
+  basisClaimKind: ReviewableClaimFamily | null;
+  source        : ClaimSource | null;
+  runId         : string | null;
+  confidence    : number | null;
+  summaryLines  : string[];
+  rawOutput     : ReviewClaimRawOutputSummaryDto | null;
+}
+
+export interface ReviewClaimVersionDiffDto {
+  versionSource     : "AUDIT_EDIT" | "MANUAL_LINEAGE" | "NONE";
+  supersedesClaimId : string | null;
+  derivedFromClaimId: string | null;
+  fieldDiffs        : ReviewClaimFieldDiffDto[];
+}
+
+export interface ReviewClaimDetailDto {
+  claim            : ClaimDetailRecord;
+  evidence         : ReviewClaimEvidenceSpanDto[];
+  basisClaim       : ClaimDetailRecord | null;
+  aiSummary        : ReviewClaimAiBasisSummaryDto | null;
+  projectionSummary: ProjectionSummary;
+  auditHistory     : ReviewClaimAuditHistoryItemDto[];
+  versionDiff      : ReviewClaimVersionDiffDto | null;
 }
 
 export interface ReviewClaimListItem {
@@ -104,6 +176,71 @@ export interface PersonaChapterMatrixDto {
   cells              : PersonaChapterMatrixCellDto[];
   relationTypeOptions: PersonaChapterRelationTypeOptionDto[];
   generatedAt        : string;
+}
+
+export type ReviewTimeAxisType =
+  | "CHAPTER_ORDER"
+  | "RELATIVE_PHASE"
+  | "NAMED_EVENT"
+  | "HISTORICAL_YEAR"
+  | "BATTLE_PHASE"
+  | "UNCERTAIN";
+
+export interface PersonaTimeMatrixPersonaDto {
+  personaId                : string;
+  displayName              : string;
+  aliases                  : string[];
+  primaryPersonaCandidateId: string | null;
+  personaCandidateIds      : string[];
+  firstTimeSortKey         : number | null;
+  totalEventCount          : number;
+  totalRelationCount       : number;
+  totalTimeClaimCount      : number;
+}
+
+export interface PersonaTimeSliceLinkedChapterDto {
+  chapterId: string;
+  chapterNo: number;
+  label    : string;
+}
+
+export interface PersonaTimeSliceDto {
+  timeKey           : string;
+  timeType          : ReviewTimeAxisType;
+  normalizedLabel   : string;
+  rawLabels         : string[];
+  timeSortKey       : number | null;
+  chapterRangeStart : number | null;
+  chapterRangeEnd   : number | null;
+  linkedChapters    : PersonaTimeSliceLinkedChapterDto[];
+  sourceTimeClaimIds: string[];
+}
+
+export interface PersonaTimeAxisGroupDto {
+  timeType        : ReviewTimeAxisType;
+  label           : string;
+  defaultCollapsed: boolean;
+  slices          : PersonaTimeSliceDto[];
+}
+
+export interface PersonaTimeMatrixCellDto {
+  bookId            : string;
+  personaId         : string;
+  timeKey           : string;
+  normalizedLabel   : string;
+  eventCount        : number;
+  relationCount     : number;
+  timeClaimCount    : number;
+  sourceTimeClaimIds: string[];
+  latestUpdatedAt   : string | null;
+}
+
+export interface PersonaTimeMatrixDto {
+  bookId     : string;
+  personas   : PersonaTimeMatrixPersonaDto[];
+  timeGroups : PersonaTimeAxisGroupDto[];
+  cells      : PersonaTimeMatrixCellDto[];
+  generatedAt: string;
 }
 
 export type ReviewRelationTypeOptionDto = PersonaChapterRelationTypeOptionDto;
@@ -204,6 +341,9 @@ type ClaimRowBase = {
   relationTypeKey    : string | null;
   timeLabel          : string | null;
   timeHintId         : string | null;
+  runId              : string | null;
+  confidence         : number | null;
+  supersedesClaimId  : string | null;
   derivedFromClaimId : string | null;
   extra              : Record<string, unknown>;
 };
@@ -211,12 +351,171 @@ type ClaimRowBase = {
 type ClaimDetailRecord = ReviewClaimListItem & {
   claimKind         : ReviewableClaimFamily;
   id                : string;
+  runId             : string | null;
+  confidence        : number | null;
+  supersedesClaimId : string | null;
   derivedFromClaimId: string | null;
 } & Record<string, unknown>;
 
 type ConflictStateMap = ReadonlyMap<string, ConflictState>;
 type PersonaIdsByCandidateIdMap = ReadonlyMap<string, readonly string[]>;
 type TimeLabelByHintIdMap = ReadonlyMap<string, string>;
+
+type AuditStateRecord = Record<string, unknown> | null;
+
+type EvidenceSpanRow = {
+  id                 : string;
+  chapterId          : string;
+  startOffset        : number | null;
+  endOffset          : number | null;
+  quotedText         : string;
+  normalizedText     : string;
+  speakerHint        : string | null;
+  narrativeRegionType: string | null;
+  createdAt          : Date | null;
+};
+
+type LlmRawOutputRow = {
+  id           : string;
+  runId        : string;
+  stageRunId   : string | null;
+  bookId       : string;
+  chapterId    : string | null;
+  provider     : string;
+  model        : string;
+  responseText : string;
+  responseJson : unknown;
+  parseError   : string | null;
+  schemaError  : string | null;
+  discardReason: string | null;
+  createdAt    : Date | null;
+};
+
+type AnalysisStageRunRow = {
+  id      : string;
+  stageKey: string;
+};
+
+type ReviewAuditLogRow = {
+  id             : string;
+  action         : string;
+  actorUserId    : string | null;
+  note           : string | null;
+  evidenceSpanIds: string[];
+  beforeState    : unknown;
+  afterState     : unknown;
+  createdAt      : Date | null;
+};
+
+const RESPONSE_EXCERPT_MAX_LENGTH = 180;
+
+const CLAIM_DIFF_FIELD_KEYS: Record<ReviewableClaimFamily, readonly string[]> = {
+  RELATION: [
+    "relationTypeKey",
+    "relationLabel",
+    "direction",
+    "effectiveChapterStart",
+    "effectiveChapterEnd",
+    "sourcePersonaCandidateId",
+    "targetPersonaCandidateId",
+    "timeHintId",
+    "evidenceSpanIds"
+  ],
+  EVENT: [
+    "predicate",
+    "objectText",
+    "locationText",
+    "subjectPersonaCandidateId",
+    "objectPersonaCandidateId",
+    "timeHintId",
+    "eventCategory",
+    "evidenceSpanIds"
+  ],
+  TIME: [
+    "rawTimeText",
+    "normalizedLabel",
+    "timeType",
+    "chapterRangeStart",
+    "chapterRangeEnd",
+    "relativeOrderWeight",
+    "evidenceSpanIds"
+  ],
+  ALIAS: [
+    "aliasText",
+    "aliasType",
+    "personaCandidateId",
+    "targetPersonaCandidateId",
+    "claimKind",
+    "evidenceSpanIds"
+  ],
+  IDENTITY_RESOLUTION: [
+    "personaCandidateId",
+    "resolvedPersonaId",
+    "resolutionKind",
+    "rationale",
+    "evidenceSpanIds"
+  ],
+  CONFLICT_FLAG: [
+    "conflictType",
+    "severity",
+    "summary",
+    "relatedClaimIds",
+    "evidenceSpanIds"
+  ]
+};
+
+const CLAIM_DIFF_FIELD_LABELS: Record<string, string> = {
+  aliasText                : "别名文本",
+  aliasType                : "别名类型",
+  chapterRangeEnd          : "章节范围结束",
+  chapterRangeStart        : "章节范围开始",
+  claimKind                : "别名主张类型",
+  conflictType             : "冲突类型",
+  direction                : "关系方向",
+  effectiveChapterEnd      : "生效章节结束",
+  effectiveChapterStart    : "生效章节开始",
+  eventCategory            : "事件类别",
+  evidenceSpanIds          : "证据跨度",
+  locationText             : "地点",
+  normalizedLabel          : "标准时间标签",
+  objectPersonaCandidateId : "客体候选人物",
+  objectText               : "事件对象",
+  personaCandidateId       : "人物候选",
+  predicate                : "事件谓词",
+  rawTimeText              : "原始时间文本",
+  relatedClaimIds          : "关联 Claim",
+  relationLabel            : "关系显示名称",
+  relationTypeKey          : "关系类型 Key",
+  resolutionKind           : "归并类型",
+  resolvedPersonaId        : "归并人物",
+  rationale                : "归并理由",
+  severity                 : "冲突级别",
+  sourcePersonaCandidateId : "关系源人物候选",
+  subjectPersonaCandidateId: "主体候选人物",
+  summary                  : "摘要",
+  targetPersonaCandidateId : "关系目标人物候选",
+  timeHintId               : "时间锚点",
+  timeType                 : "时间类型",
+  relativeOrderWeight      : "时间排序权重"
+};
+
+const REVIEW_TIME_AXIS_TYPE_VALUES = [
+  "CHAPTER_ORDER",
+  "RELATIVE_PHASE",
+  "NAMED_EVENT",
+  "HISTORICAL_YEAR",
+  "BATTLE_PHASE",
+  "UNCERTAIN"
+] as const satisfies readonly ReviewTimeAxisType[];
+
+const REVIEW_TIME_AXIS_LABELS: Record<ReviewTimeAxisType, string> = {
+  CHAPTER_ORDER  : "章节顺序",
+  RELATIVE_PHASE : "相对阶段",
+  NAMED_EVENT    : "事件节点",
+  HISTORICAL_YEAR: "历史年份",
+  BATTLE_PHASE   : "战役阶段",
+  UNCERTAIN      : "未定时间"
+};
 
 function toUniqueSortedIds(ids: ReadonlyArray<string | null | undefined>): string[] {
   return Array.from(
@@ -258,6 +557,229 @@ function resolveTimeLabel(
   return timeLabelByHintId.get(row.timeHintId) ?? null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function toIsoString(value: Date | string | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+  }
+
+  return Number.isNaN(value.getTime()) ? null : value.toISOString();
+}
+
+function collapseWhitespace(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const collapsed = value.replace(/\s+/g, " ").trim();
+  return collapsed.length > 0 ? collapsed : null;
+}
+
+function truncateText(value: string | null, maxLength: number): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+}
+
+function describeUnknownValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  if (typeof value === "symbol") {
+    return value.description === undefined ? "Symbol()" : `Symbol(${value.description})`;
+  }
+
+  if (typeof value === "function") {
+    return "[function]";
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return Object.prototype.toString.call(value);
+  }
+}
+
+function normalizeDiffComparableValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    const normalizedItems = value.map((item) => normalizeDiffComparableValue(item));
+    normalizedItems.sort();
+    return JSON.stringify(normalizedItems);
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "object") {
+    return describeUnknownValue(value);
+  }
+
+  return describeUnknownValue(value);
+}
+
+function toDiffDisplayText(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value.map((item) => toDiffDisplayText(item)).filter((item): item is string => item !== null);
+    return parts.length > 0 ? parts.join(", ") : null;
+  }
+
+  if (typeof value === "string") {
+    return value.length > 0 ? value : null;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return describeUnknownValue(value);
+}
+
+function toAuditStateRecord(value: unknown): AuditStateRecord {
+  return isRecord(value) ? value : null;
+}
+
+function buildClaimFieldDiffs(
+  claimKind: ReviewableClaimFamily,
+  beforeState: AuditStateRecord,
+  afterState: AuditStateRecord
+): ReviewClaimFieldDiffDto[] {
+  const fieldKeys = CLAIM_DIFF_FIELD_KEYS[claimKind];
+
+  return fieldKeys.flatMap((fieldKey) => {
+    const beforeValue = beforeState?.[fieldKey];
+    const afterValue = afterState?.[fieldKey];
+
+    if (normalizeDiffComparableValue(beforeValue) === normalizeDiffComparableValue(afterValue)) {
+      return [];
+    }
+
+    return [{
+      fieldKey,
+      fieldLabel: CLAIM_DIFF_FIELD_LABELS[fieldKey] ?? fieldKey,
+      beforeText: toDiffDisplayText(beforeValue),
+      afterText : toDiffDisplayText(afterValue)
+    }];
+  });
+}
+
+function compareEvidenceSpanRows(left: EvidenceSpanRow, right: EvidenceSpanRow): number {
+  const chapterDiff = left.chapterId.localeCompare(right.chapterId);
+  if (chapterDiff !== 0) {
+    return chapterDiff;
+  }
+
+  const leftOffset = left.startOffset ?? Number.MAX_SAFE_INTEGER;
+  const rightOffset = right.startOffset ?? Number.MAX_SAFE_INTEGER;
+  if (leftOffset !== rightOffset) {
+    return leftOffset - rightOffset;
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
+function compareChapterMatch(
+  row: Pick<LlmRawOutputRow, "chapterId">,
+  chapterId: string | null
+): number {
+  if (chapterId === null) {
+    return 0;
+  }
+
+  return row.chapterId === chapterId ? 0 : 1;
+}
+
+function buildAiSummaryLines(claim: ClaimDetailRecord): string[] {
+  const relationLabel = typeof claim.relationLabel === "string" && claim.relationLabel.length > 0
+    ? claim.relationLabel
+    : null;
+  const predicate = typeof claim.predicate === "string" && claim.predicate.length > 0
+    ? claim.predicate
+    : null;
+  const objectText = typeof claim.objectText === "string" && claim.objectText.length > 0
+    ? claim.objectText
+    : null;
+  const normalizedLabel = typeof claim.normalizedLabel === "string" && claim.normalizedLabel.length > 0
+    ? claim.normalizedLabel
+    : null;
+  const rawTimeText = typeof claim.rawTimeText === "string" && claim.rawTimeText.length > 0
+    ? claim.rawTimeText
+    : null;
+  const aliasText = typeof claim.aliasText === "string" && claim.aliasText.length > 0
+    ? claim.aliasText
+    : null;
+  const rationale = typeof claim.rationale === "string" && claim.rationale.length > 0
+    ? claim.rationale
+    : null;
+  const summary = typeof claim.summary === "string" && claim.summary.length > 0
+    ? claim.summary
+    : null;
+
+  switch (claim.claimKind) {
+    case "EVENT":
+      return [
+        ["事件", [predicate, objectText].filter((value): value is string => value !== null).join(" · ") || "未命名事件"],
+        claim.timeLabel ? ["时间", claim.timeLabel] : null
+      ]
+        .filter((line): line is [string, string] => line !== null)
+        .map(([label, value]) => `${label}：${value}`);
+    case "RELATION":
+      return [
+        ["关系", relationLabel ?? claim.relationTypeKey ?? "未命名关系"],
+        typeof claim.direction === "string" ? ["方向", claim.direction] : null,
+        claim.timeLabel ? ["时间", claim.timeLabel] : null
+      ]
+        .filter((line): line is [string, string] => line !== null)
+        .map(([label, value]) => `${label}：${value}`);
+    case "TIME":
+      return [[normalizedLabel ?? rawTimeText ?? "未命名时间"]].map(([value]) => `时间：${value}`);
+    case "ALIAS":
+      return [[aliasText ?? "未命名别名"]].map(([value]) => `别名：${value}`);
+    case "IDENTITY_RESOLUTION":
+      return [
+        `归并：${typeof claim.resolutionKind === "string" ? claim.resolutionKind : "未命名归并"}`,
+        ...(rationale ? [`理由：${rationale}`] : [])
+      ];
+    case "CONFLICT_FLAG":
+      return [[summary ?? "未命名冲突"]].map(([value]) => `冲突：${value}`);
+  }
+}
+
 function toListItem(
   row: ClaimRowBase,
   personaIdsByCandidateId: PersonaIdsByCandidateIdMap,
@@ -292,6 +814,9 @@ function toClaimDetailRecord(
     ...row.extra,
     ...toListItem(row, personaIdsByCandidateId, conflictStateMap, timeLabelByHintId),
     id                : row.id,
+    runId             : row.runId,
+    confidence        : row.confidence,
+    supersedesClaimId : row.supersedesClaimId,
     derivedFromClaimId: row.derivedFromClaimId
   };
 }
@@ -442,6 +967,290 @@ function summarizePersonaCells(cells: readonly PersonaChapterMatrixCellDto[]) {
   };
 }
 
+function compareNullableNumberAsc(left: number | null, right: number | null): number {
+  if (left === null && right === null) return 0;
+  if (left === null) return 1;
+  if (right === null) return -1;
+  return left - right;
+}
+
+function normalizeReviewTimeAxisType(value: string | null | undefined): ReviewTimeAxisType {
+  switch (value) {
+    case "CHAPTER_ORDER":
+    case "RELATIVE_PHASE":
+    case "NAMED_EVENT":
+    case "HISTORICAL_YEAR":
+    case "BATTLE_PHASE":
+    case "UNCERTAIN":
+      return value;
+    default:
+      return "UNCERTAIN";
+  }
+}
+
+function buildPersonaTimeKey(input: {
+  timeType         : ReviewTimeAxisType;
+  normalizedLabel  : string;
+  timeSortKey      : number | null;
+  chapterRangeStart: number | null;
+  chapterRangeEnd  : number | null;
+}): string {
+  return [
+    input.timeType,
+    encodeURIComponent(input.normalizedLabel),
+    input.timeSortKey ?? "null",
+    input.chapterRangeStart ?? "null",
+    input.chapterRangeEnd ?? "null"
+  ].join("::");
+}
+
+function addRangeChaptersToSlice(
+  accumulator: PersonaTimeSliceAccumulator,
+  chapterByNo: ReadonlyMap<number, PersonaChapterMatrixChapterDto>,
+  chapterRangeStart: number | null,
+  chapterRangeEnd: number | null
+) {
+  if (chapterRangeStart === null || chapterRangeEnd === null) {
+    return;
+  }
+
+  const start = Math.min(chapterRangeStart, chapterRangeEnd);
+  const end = Math.max(chapterRangeStart, chapterRangeEnd);
+  for (let chapterNo = start; chapterNo <= end; chapterNo += 1) {
+    const chapter = chapterByNo.get(chapterNo);
+    if (chapter) {
+      accumulator.linkedChapterIdSet.add(chapter.chapterId);
+    }
+  }
+}
+
+function getOrCreatePersonaTimeSliceAccumulator(
+  sliceByKey: Map<string, PersonaTimeSliceAccumulator>,
+  chapterByNo: ReadonlyMap<number, PersonaChapterMatrixChapterDto>,
+  input: {
+    timeType         : ReviewTimeAxisType;
+    normalizedLabel  : string;
+    timeSortKey      : number | null;
+    chapterRangeStart: number | null;
+    chapterRangeEnd  : number | null;
+  }
+): PersonaTimeSliceAccumulator {
+  const timeKey = buildPersonaTimeKey(input);
+  const existing = sliceByKey.get(timeKey);
+  if (existing) {
+    return existing;
+  }
+
+  const created: PersonaTimeSliceAccumulator = {
+    timeKey,
+    timeType            : input.timeType,
+    normalizedLabel     : input.normalizedLabel,
+    rawLabelSet         : new Set<string>(),
+    timeSortKey         : input.timeSortKey,
+    chapterRangeStart   : input.chapterRangeStart,
+    chapterRangeEnd     : input.chapterRangeEnd,
+    linkedChapterIdSet  : new Set<string>(),
+    sourceTimeClaimIdSet: new Set<string>()
+  };
+  addRangeChaptersToSlice(
+    created,
+    chapterByNo,
+    input.chapterRangeStart,
+    input.chapterRangeEnd
+  );
+  sliceByKey.set(timeKey, created);
+  return created;
+}
+
+function comparePersonaTimeSliceDto(
+  left: PersonaTimeSliceDto,
+  right: PersonaTimeSliceDto
+): number {
+  const sortKeyDiff = compareNullableNumberAsc(left.timeSortKey, right.timeSortKey);
+  if (sortKeyDiff !== 0) return sortKeyDiff;
+
+  const chapterStartDiff = compareNullableNumberAsc(left.chapterRangeStart, right.chapterRangeStart);
+  if (chapterStartDiff !== 0) return chapterStartDiff;
+
+  const chapterEndDiff = compareNullableNumberAsc(left.chapterRangeEnd, right.chapterRangeEnd);
+  if (chapterEndDiff !== 0) return chapterEndDiff;
+
+  const labelDiff = left.normalizedLabel.localeCompare(right.normalizedLabel);
+  if (labelDiff !== 0) return labelDiff;
+
+  return left.timeKey.localeCompare(right.timeKey);
+}
+
+function sortPersonaTimePersonas(
+  left: PersonaTimeMatrixPersonaDto,
+  right: PersonaTimeMatrixPersonaDto
+): number {
+  const firstTimeDiff = compareNullableNumberAsc(left.firstTimeSortKey, right.firstTimeSortKey);
+  if (firstTimeDiff !== 0) return firstTimeDiff;
+
+  const nameDiff = left.displayName.localeCompare(right.displayName);
+  if (nameDiff !== 0) return nameDiff;
+
+  return left.personaId.localeCompare(right.personaId);
+}
+
+function buildPersonaTimeAxisGroups(
+  visibleSlices: readonly PersonaTimeSliceDto[]
+): PersonaTimeAxisGroupDto[] {
+  const slicesByType = new Map<ReviewTimeAxisType, PersonaTimeSliceDto[]>();
+  for (const timeType of REVIEW_TIME_AXIS_TYPE_VALUES) {
+    slicesByType.set(timeType, []);
+  }
+
+  for (const slice of visibleSlices) {
+    const items = slicesByType.get(slice.timeType);
+    if (items) {
+      items.push(slice);
+    }
+  }
+
+  let expandedType: ReviewTimeAxisType | null = null;
+  for (const timeType of REVIEW_TIME_AXIS_TYPE_VALUES) {
+    if ((slicesByType.get(timeType)?.length ?? 0) > 0) {
+      expandedType = timeType;
+      break;
+    }
+  }
+
+  return REVIEW_TIME_AXIS_TYPE_VALUES.map((timeType) => ({
+    timeType,
+    label           : REVIEW_TIME_AXIS_LABELS[timeType],
+    defaultCollapsed: expandedType === null ? true : timeType !== expandedType,
+    slices          : [...(slicesByType.get(timeType) ?? [])].sort(comparePersonaTimeSliceDto)
+  }));
+}
+
+function toPersonaTimeSliceDto(
+  accumulator: PersonaTimeSliceAccumulator,
+  chapterById: ReadonlyMap<string, PersonaChapterMatrixChapterDto>
+): PersonaTimeSliceDto {
+  return {
+    timeKey          : accumulator.timeKey,
+    timeType         : accumulator.timeType,
+    normalizedLabel  : accumulator.normalizedLabel,
+    rawLabels        : [...accumulator.rawLabelSet].sort(),
+    timeSortKey      : accumulator.timeSortKey,
+    chapterRangeStart: accumulator.chapterRangeStart,
+    chapterRangeEnd  : accumulator.chapterRangeEnd,
+    linkedChapters   : [...accumulator.linkedChapterIdSet]
+      .map((chapterId) => chapterById.get(chapterId))
+      .filter((chapter): chapter is PersonaChapterMatrixChapterDto => chapter !== undefined)
+      .sort((left, right) => {
+        if (left.chapterNo !== right.chapterNo) {
+          return left.chapterNo - right.chapterNo;
+        }
+        return left.chapterId.localeCompare(right.chapterId);
+      })
+      .map((chapter) => ({
+        chapterId: chapter.chapterId,
+        chapterNo: chapter.chapterNo,
+        label    : chapter.label
+      })),
+    sourceTimeClaimIds: [...accumulator.sourceTimeClaimIdSet].sort()
+  };
+}
+
+function resolvePersonaTimeSliceKey(
+  row: PersonaTimeFactRow,
+  timeClaimById: ReadonlyMap<string, PersonaTimeClaimMetadataRow>
+): string {
+  const matchingClaims = row.sourceTimeClaimIds
+    .map((claimId) => timeClaimById.get(claimId))
+    .filter((claim): claim is PersonaTimeClaimMetadataRow => claim !== undefined)
+    .sort((left, right) => {
+      const weightDiff = compareNullableNumberAsc(left.relativeOrderWeight, right.relativeOrderWeight);
+      if (weightDiff !== 0) return weightDiff;
+
+      const chapterStartDiff = compareNullableNumberAsc(left.chapterRangeStart, right.chapterRangeStart);
+      if (chapterStartDiff !== 0) return chapterStartDiff;
+
+      const chapterEndDiff = compareNullableNumberAsc(left.chapterRangeEnd, right.chapterRangeEnd);
+      if (chapterEndDiff !== 0) return chapterEndDiff;
+
+      const labelDiff = left.normalizedLabel.localeCompare(right.normalizedLabel);
+      if (labelDiff !== 0) return labelDiff;
+
+      return left.id.localeCompare(right.id);
+    });
+
+  const matchedClaim = matchingClaims[0];
+  if (matchedClaim) {
+    return buildPersonaTimeKey({
+      timeType         : normalizeReviewTimeAxisType(matchedClaim.timeType),
+      normalizedLabel  : matchedClaim.normalizedLabel,
+      timeSortKey      : matchedClaim.relativeOrderWeight,
+      chapterRangeStart: matchedClaim.chapterRangeStart,
+      chapterRangeEnd  : matchedClaim.chapterRangeEnd
+    });
+  }
+
+  return buildPersonaTimeKey({
+    timeType         : "UNCERTAIN",
+    normalizedLabel  : row.timeLabel,
+    timeSortKey      : row.timeSortKey,
+    chapterRangeStart: row.chapterRangeStart,
+    chapterRangeEnd  : row.chapterRangeEnd
+  });
+}
+
+function comparePersonaTimeCellDto(
+  left: PersonaTimeMatrixCellDto,
+  right: PersonaTimeMatrixCellDto,
+  personaOrder: ReadonlyMap<string, number>,
+  sliceOrder: ReadonlyMap<string, number>
+): number {
+  const leftPersonaOrder = personaOrder.get(left.personaId) ?? Number.MAX_SAFE_INTEGER;
+  const rightPersonaOrder = personaOrder.get(right.personaId) ?? Number.MAX_SAFE_INTEGER;
+  if (leftPersonaOrder !== rightPersonaOrder) {
+    return leftPersonaOrder - rightPersonaOrder;
+  }
+
+  const leftSliceOrder = sliceOrder.get(left.timeKey) ?? Number.MAX_SAFE_INTEGER;
+  const rightSliceOrder = sliceOrder.get(right.timeKey) ?? Number.MAX_SAFE_INTEGER;
+  if (leftSliceOrder !== rightSliceOrder) {
+    return leftSliceOrder - rightSliceOrder;
+  }
+
+  return left.timeKey.localeCompare(right.timeKey);
+}
+
+function summarizePersonaTimeCells(
+  cells: readonly PersonaTimeMatrixCellDto[],
+  sliceByKey: ReadonlyMap<string, PersonaTimeSliceDto>
+) {
+  let firstTimeSortKey: number | null = null;
+  let totalEventCount = 0;
+  let totalRelationCount = 0;
+  const timeClaimIdSet = new Set<string>();
+
+  for (const cell of cells) {
+    const maybeSortKey = sliceByKey.get(cell.timeKey)?.timeSortKey ?? null;
+    if (
+      maybeSortKey !== null &&
+      (firstTimeSortKey === null || maybeSortKey < firstTimeSortKey)
+    ) {
+      firstTimeSortKey = maybeSortKey;
+    }
+    totalEventCount += cell.eventCount;
+    totalRelationCount += cell.relationCount;
+    for (const claimId of cell.sourceTimeClaimIds) {
+      timeClaimIdSet.add(claimId);
+    }
+  }
+
+  return {
+    firstTimeSortKey,
+    totalEventCount,
+    totalRelationCount,
+    totalTimeClaimCount: timeClaimIdSet.size
+  };
+}
+
 async function resolveTimeHintIdsForLabel(
   prismaClient: typeof prisma,
   input: ListReviewClaimsInput
@@ -485,8 +1294,11 @@ async function loadEventClaimRows(
       eventCategory            : true,
       narrativeLens            : true,
       evidenceSpanIds          : true,
+      confidence               : true,
       reviewState              : true,
       source                   : true,
+      runId                    : true,
+      supersedesClaimId        : true,
       derivedFromClaimId       : true,
       createdAt                : true,
       updatedAt                : true
@@ -510,6 +1322,9 @@ async function loadEventClaimRows(
     relationTypeKey   : null,
     timeLabel         : null,
     timeHintId        : row.timeHintId,
+    runId             : row.runId,
+    confidence        : row.confidence,
+    supersedesClaimId : row.supersedesClaimId,
     derivedFromClaimId: row.derivedFromClaimId,
     extra             : {
       id                       : row.id,
@@ -524,8 +1339,11 @@ async function loadEventClaimRows(
       eventCategory            : row.eventCategory,
       narrativeLens            : row.narrativeLens,
       evidenceSpanIds          : row.evidenceSpanIds,
+      confidence               : row.confidence,
       reviewState              : row.reviewState,
       source                   : row.source,
+      runId                    : row.runId,
+      supersedesClaimId        : row.supersedesClaimId,
       derivedFromClaimId       : row.derivedFromClaimId,
       createdAt                : row.createdAt,
       updatedAt                : row.updatedAt
@@ -563,8 +1381,11 @@ async function loadRelationClaimRows(
       effectiveChapterEnd     : true,
       timeHintId              : true,
       evidenceSpanIds         : true,
+      confidence              : true,
       reviewState             : true,
       source                  : true,
+      runId                   : true,
+      supersedesClaimId       : true,
       derivedFromClaimId      : true,
       createdAt               : true,
       updatedAt               : true
@@ -588,6 +1409,9 @@ async function loadRelationClaimRows(
     relationTypeKey   : row.relationTypeKey,
     timeLabel         : null,
     timeHintId        : row.timeHintId,
+    runId             : row.runId,
+    confidence        : row.confidence,
+    supersedesClaimId : row.supersedesClaimId,
     derivedFromClaimId: row.derivedFromClaimId,
     extra             : {
       id                      : row.id,
@@ -603,8 +1427,11 @@ async function loadRelationClaimRows(
       effectiveChapterEnd     : row.effectiveChapterEnd,
       timeHintId              : row.timeHintId,
       evidenceSpanIds         : row.evidenceSpanIds,
+      confidence              : row.confidence,
       reviewState             : row.reviewState,
       source                  : row.source,
+      runId                   : row.runId,
+      supersedesClaimId       : row.supersedesClaimId,
       derivedFromClaimId      : row.derivedFromClaimId,
       createdAt               : row.createdAt,
       updatedAt               : row.updatedAt
@@ -628,8 +1455,11 @@ async function loadAliasClaimRows(
       personaCandidateId      : true,
       targetPersonaCandidateId: true,
       evidenceSpanIds         : true,
+      confidence              : true,
       reviewState             : true,
       source                  : true,
+      runId                   : true,
+      supersedesClaimId       : true,
       derivedFromClaimId      : true,
       createdAt               : true,
       updatedAt               : true
@@ -653,6 +1483,9 @@ async function loadAliasClaimRows(
     relationTypeKey   : null,
     timeLabel         : null,
     timeHintId        : null,
+    runId             : row.runId,
+    confidence        : row.confidence,
+    supersedesClaimId : row.supersedesClaimId,
     derivedFromClaimId: row.derivedFromClaimId,
     extra             : {
       id                      : row.id,
@@ -664,8 +1497,11 @@ async function loadAliasClaimRows(
       personaCandidateId      : row.personaCandidateId,
       targetPersonaCandidateId: row.targetPersonaCandidateId,
       evidenceSpanIds         : row.evidenceSpanIds,
+      confidence              : row.confidence,
       reviewState             : row.reviewState,
       source                  : row.source,
+      runId                   : row.runId,
+      supersedesClaimId       : row.supersedesClaimId,
       derivedFromClaimId      : row.derivedFromClaimId,
       createdAt               : row.createdAt,
       updatedAt               : row.updatedAt
@@ -690,8 +1526,11 @@ async function loadTimeClaimRows(
       chapterRangeStart  : true,
       chapterRangeEnd    : true,
       evidenceSpanIds    : true,
+      confidence         : true,
       reviewState        : true,
       source             : true,
+      runId              : true,
+      supersedesClaimId  : true,
       derivedFromClaimId : true,
       createdAt          : true,
       updatedAt          : true
@@ -712,6 +1551,9 @@ async function loadTimeClaimRows(
     relationTypeKey    : null,
     timeLabel          : row.normalizedLabel,
     timeHintId         : null,
+    runId              : row.runId,
+    confidence         : row.confidence,
+    supersedesClaimId  : row.supersedesClaimId,
     derivedFromClaimId : row.derivedFromClaimId,
     extra              : {
       id                 : row.id,
@@ -724,8 +1566,11 @@ async function loadTimeClaimRows(
       chapterRangeStart  : row.chapterRangeStart,
       chapterRangeEnd    : row.chapterRangeEnd,
       evidenceSpanIds    : row.evidenceSpanIds,
+      confidence         : row.confidence,
       reviewState        : row.reviewState,
       source             : row.source,
+      runId              : row.runId,
+      supersedesClaimId  : row.supersedesClaimId,
       derivedFromClaimId : row.derivedFromClaimId,
       createdAt          : row.createdAt,
       updatedAt          : row.updatedAt
@@ -749,8 +1594,11 @@ async function loadIdentityResolutionClaimRows(
       resolutionKind    : true,
       rationale         : true,
       evidenceSpanIds   : true,
+      confidence        : true,
       reviewState       : true,
       source            : true,
+      runId             : true,
+      supersedesClaimId : true,
       derivedFromClaimId: true,
       createdAt         : true,
       updatedAt         : true
@@ -771,6 +1619,9 @@ async function loadIdentityResolutionClaimRows(
     relationTypeKey    : null,
     timeLabel          : null,
     timeHintId         : null,
+    runId              : row.runId,
+    confidence         : row.confidence,
+    supersedesClaimId  : row.supersedesClaimId,
     derivedFromClaimId : row.derivedFromClaimId,
     extra              : {
       id                : row.id,
@@ -782,8 +1633,11 @@ async function loadIdentityResolutionClaimRows(
       resolutionKind    : row.resolutionKind,
       rationale         : row.rationale,
       evidenceSpanIds   : row.evidenceSpanIds,
+      confidence        : row.confidence,
       reviewState       : row.reviewState,
       source            : row.source,
+      runId             : row.runId,
+      supersedesClaimId : row.supersedesClaimId,
       derivedFromClaimId: row.derivedFromClaimId,
       createdAt         : row.createdAt,
       updatedAt         : row.updatedAt
@@ -814,6 +1668,7 @@ async function loadConflictFlagRows(
       evidenceSpanIds           : true,
       reviewState               : true,
       source                    : true,
+      runId                     : true,
       createdAt                 : true,
       updatedAt                 : true
     }
@@ -833,6 +1688,9 @@ async function loadConflictFlagRows(
     relationTypeKey    : null,
     timeLabel          : null,
     timeHintId         : null,
+    runId              : row.runId,
+    confidence         : null,
+    supersedesClaimId  : null,
     derivedFromClaimId : null,
     extra              : {
       id                        : row.id,
@@ -851,6 +1709,7 @@ async function loadConflictFlagRows(
       evidenceSpanIds           : row.evidenceSpanIds,
       reviewState               : row.reviewState,
       source                    : row.source,
+      runId                     : row.runId,
       createdAt                 : row.createdAt,
       updatedAt                 : row.updatedAt
     }
@@ -1030,7 +1889,7 @@ async function findBasisClaim(
   claim: ClaimRowBase
 ): Promise<ClaimRowBase | null> {
   if (claim.source !== "MANUAL") {
-    return claim;
+    return null;
   }
 
   const visitedClaimIds = new Set<string>([claim.id]);
@@ -1054,6 +1913,203 @@ async function findBasisClaim(
   }
 
   return null;
+}
+
+async function loadClaimEvidence(
+  prismaClient: typeof prisma,
+  bookId: string,
+  evidenceSpanIds: readonly string[]
+): Promise<ReviewClaimEvidenceSpanDto[]> {
+  const uniqueEvidenceSpanIds = toUniqueSortedIds(evidenceSpanIds);
+  if (uniqueEvidenceSpanIds.length === 0) {
+    return [];
+  }
+
+  const rows = await prismaClient.evidenceSpan.findMany({
+    where: {
+      bookId,
+      id: { in: uniqueEvidenceSpanIds }
+    },
+    orderBy: [{ chapterId: "asc" }, { startOffset: "asc" }, { id: "asc" }]
+  }) as EvidenceSpanRow[];
+
+  const chapterLabelById = await loadChapterLabelsById(
+    prismaClient,
+    bookId,
+    rows.map((row) => row.chapterId)
+  );
+
+  return [...rows]
+    .sort(compareEvidenceSpanRows)
+    .map((row) => ({
+      id                 : row.id,
+      chapterId          : row.chapterId,
+      chapterLabel       : chapterLabelById.get(row.chapterId) ?? null,
+      startOffset        : row.startOffset,
+      endOffset          : row.endOffset,
+      quotedText         : row.quotedText,
+      normalizedText     : row.normalizedText,
+      speakerHint        : row.speakerHint,
+      narrativeRegionType: row.narrativeRegionType,
+      createdAt          : toIsoString(row.createdAt)
+    }));
+}
+
+/**
+ * detail 面板只允许看到“当前 AI 结论摘要”和“可审查的原始输出摘要”，不能泄露完整 prompt/request payload。
+ * 这里按 runId 汇总 raw output，再优先挑选同章节结果，保证面板稳定且可复核。
+ */
+async function loadRawOutputSummary(
+  prismaClient: typeof prisma,
+  claim: Pick<ClaimDetailRecord, "bookId" | "chapterId" | "runId">
+): Promise<ReviewClaimRawOutputSummaryDto | null> {
+  if (claim.runId === null) {
+    return null;
+  }
+
+  const rawOutputs = await prismaClient.llmRawOutput.findMany({
+    where: {
+      bookId: claim.bookId,
+      runId : claim.runId
+    }
+  }) as LlmRawOutputRow[];
+
+  if (rawOutputs.length === 0) {
+    return null;
+  }
+
+  const selected = [...rawOutputs].sort((left, right) => {
+    const chapterMatchDiff = compareChapterMatch(left, claim.chapterId) - compareChapterMatch(right, claim.chapterId);
+    if (chapterMatchDiff !== 0) {
+      return chapterMatchDiff;
+    }
+
+    const createdDiff = (right.createdAt?.getTime() ?? 0) - (left.createdAt?.getTime() ?? 0);
+    if (createdDiff !== 0) {
+      return createdDiff;
+    }
+
+    return right.id.localeCompare(left.id);
+  })[0];
+
+  if (!selected) {
+    return null;
+  }
+
+  const stageRunIds = toUniqueSortedIds(selected.stageRunId === null ? [] : [selected.stageRunId]);
+  const stageRows = stageRunIds.length === 0
+    ? []
+    : await prismaClient.analysisStageRun.findMany({
+        where: { id: { in: stageRunIds } }
+      }) as AnalysisStageRunRow[];
+  const stageKeyById = new Map(stageRows.map((row) => [row.id, row.stageKey]));
+
+  return {
+    stageKey         : selected.stageRunId ? (stageKeyById.get(selected.stageRunId) ?? null) : null,
+    provider         : selected.provider,
+    model            : selected.model,
+    createdAt        : toIsoString(selected.createdAt),
+    responseExcerpt  : truncateText(collapseWhitespace(selected.responseText), RESPONSE_EXCERPT_MAX_LENGTH),
+    hasStructuredJson: selected.responseJson !== null && selected.responseJson !== undefined,
+    parseError       : selected.parseError,
+    schemaError      : selected.schemaError,
+    discardReason    : selected.discardReason
+  };
+}
+
+function buildAuditHistoryItems(
+  claimKind: ReviewableClaimFamily,
+  auditRows: readonly ReviewAuditLogRow[]
+): ReviewClaimAuditHistoryItemDto[] {
+  return auditRows.map((row) => {
+    const beforeState = toAuditStateRecord(row.beforeState);
+    const afterState = toAuditStateRecord(row.afterState);
+
+    return {
+      id             : row.id,
+      action         : row.action,
+      actorUserId    : row.actorUserId,
+      note           : row.note,
+      evidenceSpanIds: toUniqueSortedIds(row.evidenceSpanIds),
+      createdAt      : toIsoString(row.createdAt),
+      beforeState,
+      afterState,
+      fieldDiffs     : buildClaimFieldDiffs(claimKind, beforeState, afterState)
+    };
+  });
+}
+
+async function loadLineageComparisonClaim(
+  prismaClient: typeof prisma,
+  claim: ClaimRowBase
+): Promise<ClaimRowBase | null> {
+  const comparisonClaimId = claim.derivedFromClaimId ?? claim.supersedesClaimId;
+  if (comparisonClaimId === null) {
+    return null;
+  }
+
+  return await loadSingleClaim(prismaClient, {
+    bookId   : claim.bookId,
+    claimKind: claim.claimKind,
+    claimId  : comparisonClaimId
+  });
+}
+
+function buildVersionDiff(
+  claim: ClaimRowBase,
+  auditHistory: readonly ReviewClaimAuditHistoryItemDto[],
+  comparisonClaim: ClaimRowBase | null
+): ReviewClaimVersionDiffDto {
+  const latestEditAudit = auditHistory.find((item) => item.action === "EDIT" && item.fieldDiffs.length > 0);
+  if (latestEditAudit) {
+    return {
+      versionSource     : "AUDIT_EDIT",
+      supersedesClaimId : claim.supersedesClaimId,
+      derivedFromClaimId: claim.derivedFromClaimId,
+      fieldDiffs        : latestEditAudit.fieldDiffs
+    };
+  }
+
+  if (comparisonClaim !== null) {
+    return {
+      versionSource     : "MANUAL_LINEAGE",
+      supersedesClaimId : claim.supersedesClaimId,
+      derivedFromClaimId: claim.derivedFromClaimId,
+      fieldDiffs        : buildClaimFieldDiffs(
+        claim.claimKind,
+        comparisonClaim.extra,
+        claim.extra
+      )
+    };
+  }
+
+  return {
+    versionSource     : "NONE",
+    supersedesClaimId : claim.supersedesClaimId,
+    derivedFromClaimId: claim.derivedFromClaimId,
+    fieldDiffs        : []
+  };
+}
+
+async function buildAiSummary(
+  prismaClient: typeof prisma,
+  claim: ClaimDetailRecord,
+  basisClaim: ClaimDetailRecord | null
+): Promise<ReviewClaimAiBasisSummaryDto | null> {
+  const aiBasisClaim = basisClaim ?? (claim.source === "AI" ? claim : null);
+  if (aiBasisClaim === null) {
+    return null;
+  }
+
+  return {
+    basisClaimId  : aiBasisClaim.id,
+    basisClaimKind: aiBasisClaim.claimKind,
+    source        : aiBasisClaim.source,
+    runId         : aiBasisClaim.runId,
+    confidence    : aiBasisClaim.confidence,
+    summaryLines  : buildAiSummaryLines(aiBasisClaim),
+    rawOutput     : await loadRawOutputSummary(prismaClient, aiBasisClaim)
+  };
 }
 
 async function loadProjectionSummary(
@@ -1134,6 +2190,43 @@ type MatrixChapterRecord = {
   title  : string;
   unit?  : string | null;
   noText?: string | null;
+};
+
+type PersonaTimeFactRow = {
+  bookId            : string;
+  personaId         : string;
+  timeLabel         : string;
+  timeSortKey       : number | null;
+  chapterRangeStart : number | null;
+  chapterRangeEnd   : number | null;
+  eventCount        : number;
+  relationCount     : number;
+  sourceTimeClaimIds: string[];
+  updatedAt         : Date | null;
+};
+
+type PersonaTimeClaimMetadataRow = {
+  id                 : string;
+  chapterId          : string;
+  rawTimeText        : string;
+  timeType           : string;
+  normalizedLabel    : string;
+  relativeOrderWeight: number | null;
+  chapterRangeStart  : number | null;
+  chapterRangeEnd    : number | null;
+  updatedAt          : Date | null;
+};
+
+type PersonaTimeSliceAccumulator = {
+  timeKey             : string;
+  timeType            : ReviewTimeAxisType;
+  normalizedLabel     : string;
+  rawLabelSet         : Set<string>;
+  timeSortKey         : number | null;
+  chapterRangeStart   : number | null;
+  chapterRangeEnd     : number | null;
+  linkedChapterIdSet  : Set<string>;
+  sourceTimeClaimIdSet: Set<string>;
 };
 
 type MatrixPersonaRecord = {
@@ -1724,6 +2817,178 @@ export function createReviewQueryService(
     };
   }
 
+  async function getPersonaTimeMatrix(
+    input: ReviewPersonaTimeMatrixQueryRequest
+  ): Promise<PersonaTimeMatrixDto> {
+    const chapters = await loadMatrixChapters(prismaClient, input.bookId);
+    const chapterById = new Map(chapters.map((chapter) => [chapter.chapterId, chapter]));
+    const chapterByNo = new Map(chapters.map((chapter) => [chapter.chapterNo, chapter]));
+
+    const rows = await prismaClient.personaTimeFact.findMany({
+      where: {
+        bookId: input.bookId,
+        ...(input.personaId ? { personaId: input.personaId } : {})
+      },
+      orderBy: [
+        { timeSortKey: "asc" },
+        { chapterRangeStart: "asc" },
+        { personaId: "asc" },
+        { timeLabel: "asc" }
+      ]
+    }) as PersonaTimeFactRow[];
+
+    const sourceTimeClaimIds = toUniqueSortedIds(rows.flatMap((row) => row.sourceTimeClaimIds));
+    const timeClaimRows = sourceTimeClaimIds.length === 0
+      ? []
+      : await prismaClient.timeClaim.findMany({
+          where: {
+            bookId: input.bookId,
+            id    : { in: sourceTimeClaimIds }
+          },
+          orderBy: [
+            { relativeOrderWeight: "asc" },
+            { chapterRangeStart: "asc" },
+            { chapterRangeEnd: "asc" },
+            { normalizedLabel: "asc" },
+            { id: "asc" }
+          ]
+        }) as PersonaTimeClaimMetadataRow[];
+    const timeClaimById = new Map(timeClaimRows.map((row) => [row.id, row]));
+
+    const sliceByKey = new Map<string, PersonaTimeSliceAccumulator>();
+    for (const claim of timeClaimRows) {
+      const normalizedLabel = claim.normalizedLabel.trim() || claim.rawTimeText.trim() || "未命名时间";
+      const accumulator = getOrCreatePersonaTimeSliceAccumulator(
+        sliceByKey,
+        chapterByNo,
+        {
+          timeType         : normalizeReviewTimeAxisType(claim.timeType),
+          normalizedLabel,
+          timeSortKey      : claim.relativeOrderWeight,
+          chapterRangeStart: claim.chapterRangeStart,
+          chapterRangeEnd  : claim.chapterRangeEnd
+        }
+      );
+
+      accumulator.sourceTimeClaimIdSet.add(claim.id);
+      accumulator.linkedChapterIdSet.add(claim.chapterId);
+
+      const rawLabel = claim.rawTimeText.trim();
+      accumulator.rawLabelSet.add(rawLabel.length > 0 ? rawLabel : normalizedLabel);
+    }
+
+    for (const row of rows) {
+      const timeKey = resolvePersonaTimeSliceKey(row, timeClaimById);
+      const existing = sliceByKey.get(timeKey);
+      const accumulator = existing ?? getOrCreatePersonaTimeSliceAccumulator(
+        sliceByKey,
+        chapterByNo,
+        {
+          timeType         : "UNCERTAIN",
+          normalizedLabel  : row.timeLabel,
+          timeSortKey      : row.timeSortKey,
+          chapterRangeStart: row.chapterRangeStart,
+          chapterRangeEnd  : row.chapterRangeEnd
+        }
+      );
+      if (accumulator.rawLabelSet.size === 0) {
+        accumulator.rawLabelSet.add(row.timeLabel);
+      }
+      for (const claimId of row.sourceTimeClaimIds) {
+        accumulator.sourceTimeClaimIdSet.add(claimId);
+      }
+      addRangeChaptersToSlice(
+        accumulator,
+        chapterByNo,
+        row.chapterRangeStart,
+        row.chapterRangeEnd
+      );
+    }
+
+    const allowedTimeTypes = input.timeTypes && input.timeTypes.length > 0
+      ? new Set<ReviewTimeAxisType>(input.timeTypes)
+      : null;
+    const visibleSlices = Array.from(sliceByKey.values())
+      .map((accumulator) => toPersonaTimeSliceDto(accumulator, chapterById))
+      .filter((slice) => allowedTimeTypes === null || allowedTimeTypes.has(slice.timeType))
+      .sort(comparePersonaTimeSliceDto);
+    const visibleSliceByKey = new Map(visibleSlices.map((slice) => [slice.timeKey, slice]));
+
+    const filteredCells = rows
+      .map((row) => {
+        const timeKey = resolvePersonaTimeSliceKey(row, timeClaimById);
+        const slice = visibleSliceByKey.get(timeKey);
+        if (!slice) {
+          return null;
+        }
+
+        return {
+          bookId            : row.bookId,
+          personaId         : row.personaId,
+          timeKey,
+          normalizedLabel   : slice.normalizedLabel,
+          eventCount        : row.eventCount,
+          relationCount     : row.relationCount,
+          timeClaimCount    : toUniqueSortedIds(row.sourceTimeClaimIds).length,
+          sourceTimeClaimIds: toUniqueSortedIds(row.sourceTimeClaimIds),
+          latestUpdatedAt   : toIsoString(row.updatedAt)
+        } satisfies PersonaTimeMatrixCellDto;
+      })
+      .filter((row): row is PersonaTimeMatrixCellDto => row !== null);
+
+    const personaIds = toUniqueSortedIds(filteredCells.map((row) => row.personaId));
+    const personaRecordsById = await loadMatrixPersonaRecords(prismaClient, personaIds);
+    const candidateHintsByPersonaId = await loadAcceptedCandidateHintsByPersonaId(
+      prismaClient,
+      input.bookId,
+      personaIds
+    );
+
+    const personaMap = new Map<string, PersonaTimeMatrixPersonaDto>();
+    for (const personaId of personaIds) {
+      const personaRecord = personaRecordsById.get(personaId);
+      const personaCells = filteredCells.filter((row) => row.personaId === personaId);
+      const summary = summarizePersonaTimeCells(personaCells, visibleSliceByKey);
+      const candidateHint = candidateHintsByPersonaId.get(personaId);
+
+      personaMap.set(personaId, {
+        personaId,
+        displayName              : personaRecord?.name ?? personaId,
+        aliases                  : [...(personaRecord?.aliases ?? [])],
+        primaryPersonaCandidateId: candidateHint?.primaryPersonaCandidateId ?? null,
+        personaCandidateIds      : [...(candidateHint?.personaCandidateIds ?? [])],
+        firstTimeSortKey         : summary.firstTimeSortKey,
+        totalEventCount          : summary.totalEventCount,
+        totalRelationCount       : summary.totalRelationCount,
+        totalTimeClaimCount      : summary.totalTimeClaimCount
+      });
+    }
+
+    const sortedPersonas = Array.from(personaMap.values()).sort(sortPersonaTimePersonas);
+    const personaOffset = normalizeOffset(input.offsetPersonas);
+    const pagedPersonas = typeof input.limitPersonas === "number"
+      ? sortedPersonas.slice(personaOffset, personaOffset + normalizeLimit(input.limitPersonas))
+      : sortedPersonas.slice(personaOffset);
+
+    const timeGroups = buildPersonaTimeAxisGroups(visibleSlices);
+    const orderedSliceKeys = timeGroups.flatMap((group) => group.slices.map((slice) => slice.timeKey));
+    const sliceOrder = new Map(orderedSliceKeys.map((timeKey, index) => [timeKey, index]));
+
+    const pagedPersonaIds = new Set(pagedPersonas.map((persona) => persona.personaId));
+    const personaOrder = new Map(pagedPersonas.map((persona, index) => [persona.personaId, index]));
+    const cells = filteredCells
+      .filter((row) => pagedPersonaIds.has(row.personaId))
+      .sort((left, right) => comparePersonaTimeCellDto(left, right, personaOrder, sliceOrder));
+
+    return {
+      bookId     : input.bookId,
+      personas   : pagedPersonas,
+      timeGroups,
+      cells,
+      generatedAt: new Date().toISOString()
+    };
+  }
+
   async function getRelationEditorView(
     input: ReviewRelationEditorQueryRequest
   ): Promise<ReviewRelationEditorDto> {
@@ -1802,13 +3067,7 @@ export function createReviewQueryService(
     };
   }
 
-  async function getClaimDetail(input: GetReviewClaimDetailInput): Promise<{
-    claim            : ClaimDetailRecord;
-    evidence         : unknown[];
-    basisClaim       : ClaimDetailRecord | null;
-    projectionSummary: ProjectionSummary;
-    auditHistory     : unknown[];
-  } | null> {
+  async function getClaimDetail(input: GetReviewClaimDetailInput): Promise<ReviewClaimDetailDto | null> {
     const claim = await loadSingleClaim(prismaClient, input);
     if (claim === null) return null;
 
@@ -1843,16 +3102,12 @@ export function createReviewQueryService(
         )
       : null;
 
-    const evidence = claim.evidenceSpanIds.length === 0
-      ? []
-      : await prismaClient.evidenceSpan.findMany({
-          where  : { id: { in: claim.evidenceSpanIds }, bookId: input.bookId },
-          orderBy: [{ chapterId: "asc" }, { startOffset: "asc" }]
-        });
-    const auditHistory = await createReviewAuditService(prismaClient).listAuditTrail({
+    const evidence = await loadClaimEvidence(prismaClient, input.bookId, claim.evidenceSpanIds);
+    const auditRows = await createReviewAuditService(prismaClient).listAuditTrail({
       claimKind: claim.claimKind as ClaimKind,
       claimId  : claim.id
-    });
+    }) as ReviewAuditLogRow[];
+    const auditHistory = buildAuditHistoryItems(claim.claimKind, auditRows);
     const timeLabel = await resolveTimeLabelForClaim(prismaClient, claim);
     const personaIds = resolvePersonaIds(claim.personaCandidateIds, personaIdsByCandidateId);
     const projectionSummary = await loadProjectionSummary(
@@ -1861,17 +3116,30 @@ export function createReviewQueryService(
       personaIds,
       timeLabel
     );
+    const versionDiff = buildVersionDiff(
+      claim,
+      auditHistory,
+      await loadLineageComparisonClaim(prismaClient, claim)
+    );
 
     return {
-      claim: claimDetail,
+      claim    : claimDetail,
       evidence,
       basisClaim,
+      aiSummary: await buildAiSummary(prismaClient, claimDetail, basisClaim),
       projectionSummary,
-      auditHistory
+      auditHistory,
+      versionDiff
     };
   }
 
-  return { listClaims, getClaimDetail, getPersonaChapterMatrix, getRelationEditorView };
+  return {
+    listClaims,
+    getClaimDetail,
+    getPersonaChapterMatrix,
+    getPersonaTimeMatrix,
+    getRelationEditorView
+  };
 }
 
 export const reviewQueryService = createReviewQueryService();

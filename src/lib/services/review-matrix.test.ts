@@ -82,16 +82,92 @@ describe("review matrix service", () => {
   it("fetchReviewClaimDetail calls the T12 claim detail endpoint", async () => {
     // Arrange
     const detail = {
-      claim            : { id: CLAIM_ID, claimKind: "EVENT" },
-      evidence         : [],
-      basisClaim       : null,
+      claim: {
+        id                 : CLAIM_ID,
+        claimId            : CLAIM_ID,
+        claimKind          : "EVENT",
+        bookId             : BOOK_ID,
+        chapterId          : CHAPTER_ID,
+        reviewState        : "PENDING",
+        source             : "AI",
+        conflictState      : "NONE",
+        createdAt          : "2026-04-21T10:00:00.000Z",
+        updatedAt          : "2026-04-21T10:05:00.000Z",
+        personaCandidateIds: [PERSONA_ID],
+        personaIds         : [PERSONA_ID],
+        timeLabel          : null,
+        relationTypeKey    : null,
+        evidenceSpanIds    : [EVIDENCE_ID],
+        runId              : "run-1",
+        confidence         : 0.92,
+        supersedesClaimId  : null,
+        derivedFromClaimId : null
+      },
+      evidence: [{
+        id                 : EVIDENCE_ID,
+        chapterId          : CHAPTER_ID,
+        chapterLabel       : "第3回 周进提携",
+        startOffset        : 10,
+        endOffset          : 20,
+        quotedText         : "范进叩首称谢。",
+        normalizedText     : "范进叩首称谢。",
+        speakerHint        : "叙事",
+        narrativeRegionType: "NARRATIVE",
+        createdAt          : "2026-04-21T09:00:00.000Z"
+      }],
+      basisClaim: null,
+      aiSummary : {
+        basisClaimId  : CLAIM_ID,
+        basisClaimKind: "EVENT",
+        source        : "AI",
+        runId         : "run-1",
+        confidence    : 0.92,
+        summaryLines  : ["事件：范进赴试"],
+        rawOutput     : {
+          stageKey         : "stage_b2",
+          provider         : "openai",
+          model            : "gpt-5.4-mini",
+          createdAt        : "2026-04-21T09:00:00.000Z",
+          responseExcerpt  : "提取到范进赴试。",
+          hasStructuredJson: true,
+          parseError       : null,
+          schemaError      : null,
+          discardReason    : null
+        }
+      },
       projectionSummary: {
         personaChapterFacts: [],
         personaTimeFacts   : [],
         relationshipEdges  : [],
         timelineEvents     : []
       },
-      auditHistory: []
+      auditHistory: [{
+        id             : "audit-1",
+        action         : "EDIT",
+        actorUserId    : "user-1",
+        note           : "修订谓词",
+        evidenceSpanIds: [EVIDENCE_ID],
+        createdAt      : "2026-04-21T09:10:00.000Z",
+        beforeState    : { predicate: "赴试" },
+        afterState     : { predicate: "中举" },
+        fieldDiffs     : [{
+          fieldKey  : "predicate",
+          fieldLabel: "事件谓词",
+          beforeText: "赴试",
+          afterText : "中举"
+        }]
+      }],
+      versionDiff: {
+        versionSource     : "AUDIT_EDIT",
+        supersedesClaimId : null,
+        derivedFromClaimId: null,
+        fieldDiffs        : [{
+          fieldKey  : "predicate",
+          fieldLabel: "事件谓词",
+          beforeText: "赴试",
+          afterText : "中举"
+        }]
+      }
     };
     hoisted.clientFetchMock.mockResolvedValue(detail);
     const { fetchReviewClaimDetail } = await import("@/lib/services/review-matrix");
@@ -108,6 +184,8 @@ describe("review matrix service", () => {
       "/api/admin/review/claims/EVENT/claim%2F777?bookId=book%2F001"
     );
     expect(result).toBe(detail);
+    expect(result.aiSummary?.rawOutput?.stageKey).toBe("stage_b2");
+    expect(result.versionDiff?.versionSource).toBe("AUDIT_EDIT");
   });
 
   it("submitReviewClaimAction posts all supported action payload shapes", async () => {

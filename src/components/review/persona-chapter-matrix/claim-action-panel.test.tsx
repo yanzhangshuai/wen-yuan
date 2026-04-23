@@ -69,7 +69,7 @@ function buildClaim(overrides: Partial<ReviewClaimListItem> = {}): ReviewClaimLi
 function buildDetailRecord(
   overrides: Partial<ReviewClaimDetailRecord> = {}
 ): ReviewClaimDetailRecord {
-  return {
+  const baseRecord: ReviewClaimDetailRecord = {
     ...buildClaim(),
     id                       : CLAIM_ID,
     derivedFromClaimId       : null,
@@ -94,15 +94,24 @@ function buildDetailRecord(
     direction                : "FORWARD",
     effectiveChapterStart    : 1,
     effectiveChapterEnd      : 2,
-    ...overrides
+    supersedesClaimId        : null
+  };
+
+  return {
+    ...baseRecord,
+    ...overrides,
+    runId            : overrides.runId ?? baseRecord.runId,
+    confidence       : overrides.confidence ?? baseRecord.confidence,
+    supersedesClaimId: overrides.supersedesClaimId ?? baseRecord.supersedesClaimId
   };
 }
 
 function buildDetail(overrides: Partial<ReviewClaimDetailResponse> = {}): ReviewClaimDetailResponse {
-  return {
+  const baseDetail: ReviewClaimDetailResponse = {
     claim            : buildDetailRecord(),
     evidence         : [],
     basisClaim       : null,
+    aiSummary        : null,
     projectionSummary: {
       personaChapterFacts: [],
       personaTimeFacts   : [],
@@ -110,7 +119,14 @@ function buildDetail(overrides: Partial<ReviewClaimDetailResponse> = {}): Review
       timelineEvents     : []
     },
     auditHistory: [],
-    ...overrides
+    versionDiff : null
+  };
+
+  return {
+    ...baseDetail,
+    ...overrides,
+    aiSummary  : overrides.aiSummary ?? baseDetail.aiSummary,
+    versionDiff: overrides.versionDiff ?? baseDetail.versionDiff
   };
 }
 

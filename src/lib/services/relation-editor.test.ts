@@ -24,11 +24,11 @@ describe("relation editor service", () => {
 
   it("fetchRelationEditorView builds pair filters with repeated query params", async () => {
     const dto = {
-      bookId        : BOOK_ID,
-      personaOptions: [],
+      bookId             : BOOK_ID,
+      personaOptions     : [],
       relationTypeOptions: [],
-      pairSummaries : [],
-      selectedPair  : null
+      pairSummaries      : [],
+      selectedPair       : null
     };
     hoisted.clientFetchMock.mockResolvedValue(dto);
     const { fetchRelationEditorView } = await import("@/lib/services/relation-editor");
@@ -52,11 +52,11 @@ describe("relation editor service", () => {
 
   it("fetchRelationEditorView omits empty optional params", async () => {
     hoisted.clientFetchMock.mockResolvedValue({
-      bookId        : BOOK_ID,
-      personaOptions: [],
+      bookId             : BOOK_ID,
+      personaOptions     : [],
       relationTypeOptions: [],
-      pairSummaries : [],
-      selectedPair  : null
+      pairSummaries      : [],
+      selectedPair       : null
     });
     const { fetchRelationEditorView } = await import("@/lib/services/relation-editor");
 
@@ -80,16 +80,77 @@ describe("relation editor service", () => {
     expect(relationEditor.createManualReviewClaim).toBe(reviewMatrix.createManualReviewClaim);
 
     hoisted.clientFetchMock.mockResolvedValue({
-      claim            : { id: CLAIM_ID, claimKind: "RELATION" },
-      evidence         : [],
-      basisClaim       : null,
+      claim: {
+        id                      : CLAIM_ID,
+        claimId                 : CLAIM_ID,
+        claimKind               : "RELATION",
+        bookId                  : BOOK_ID,
+        chapterId               : "chapter-1",
+        reviewState             : "PENDING",
+        source                  : "AI",
+        conflictState           : "NONE",
+        createdAt               : "2026-04-21T10:00:00.000Z",
+        updatedAt               : "2026-04-21T10:05:00.000Z",
+        personaCandidateIds     : [PERSONA_ID, PAIR_PERSONA_ID],
+        personaIds              : [PERSONA_ID, PAIR_PERSONA_ID],
+        timeLabel               : null,
+        relationTypeKey         : "teacher_of",
+        evidenceSpanIds         : ["evidence-1"],
+        runId                   : "run-1",
+        confidence              : 0.94,
+        supersedesClaimId       : null,
+        derivedFromClaimId      : null,
+        relationLabel           : "师生",
+        relationTypeSource      : "PRESET",
+        direction               : "FORWARD",
+        sourcePersonaCandidateId: PERSONA_ID,
+        targetPersonaCandidateId: PAIR_PERSONA_ID
+      },
+      evidence: [{
+        id                 : "evidence-1",
+        chapterId          : "chapter-1",
+        chapterLabel       : "第1回 学道登场",
+        startOffset        : 10,
+        endOffset          : 18,
+        quotedText         : "周进提拔范进。",
+        normalizedText     : "周进提拔范进。",
+        speakerHint        : "叙事",
+        narrativeRegionType: "NARRATIVE",
+        createdAt          : "2026-04-21T09:00:00.000Z"
+      }],
+      basisClaim: null,
+      aiSummary : {
+        basisClaimId  : CLAIM_ID,
+        basisClaimKind: "RELATION",
+        source        : "AI",
+        runId         : "run-1",
+        confidence    : 0.94,
+        summaryLines  : ["关系：周进 -> 范进"],
+        rawOutput     : {
+          stageKey         : "stage_b3",
+          provider         : "openai",
+          model            : "gpt-5.4-mini",
+          createdAt        : "2026-04-21T09:00:00.000Z",
+          responseExcerpt  : "提取到师生关系。",
+          hasStructuredJson: true,
+          parseError       : null,
+          schemaError      : null,
+          discardReason    : null
+        }
+      },
       projectionSummary: {
         personaChapterFacts: [],
         personaTimeFacts   : [],
         relationshipEdges  : [],
         timelineEvents     : []
       },
-      auditHistory: []
+      auditHistory: [],
+      versionDiff : {
+        versionSource     : "NONE",
+        supersedesClaimId : null,
+        derivedFromClaimId: null,
+        fieldDiffs        : []
+      }
     });
 
     await relationEditor.fetchReviewClaimDetail({
@@ -101,5 +162,12 @@ describe("relation editor service", () => {
     expect(hoisted.clientFetchMock).toHaveBeenCalledWith(
       "/api/admin/review/claims/RELATION/claim%2F777?bookId=book%2F001"
     );
+    const detail = await relationEditor.fetchReviewClaimDetail({
+      bookId   : BOOK_ID,
+      claimKind: "RELATION",
+      claimId  : CLAIM_ID
+    });
+    expect(detail.aiSummary?.rawOutput?.stageKey).toBe("stage_b3");
+    expect(detail.versionDiff?.versionSource).toBe("NONE");
   });
 });

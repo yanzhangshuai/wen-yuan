@@ -57,17 +57,76 @@ describe("GET /api/admin/review/claims/:claimKind/:claimId", () => {
         timeLabel          : null,
         relationTypeKey    : null,
         evidenceSpanIds    : [],
+        runId              : "33333333-3333-4333-8333-333333333333",
+        confidence         : 0.88,
+        supersedesClaimId  : null,
         derivedFromClaimId : null
       },
-      evidence         : [],
-      basisClaim       : null,
+      evidence: [{
+        id                 : "evidence-1",
+        chapterId          : "chapter-1",
+        chapterLabel       : "第1回 学道登场",
+        startOffset        : 12,
+        endOffset          : 28,
+        quotedText         : "范进叩首称谢。",
+        normalizedText     : "范进叩首称谢。",
+        speakerHint        : "叙事",
+        narrativeRegionType: "NARRATIVE",
+        createdAt          : "2026-04-21T00:00:00.000Z"
+      }],
+      basisClaim: null,
+      aiSummary : {
+        basisClaimId  : null,
+        basisClaimKind: null,
+        source        : "AI",
+        runId         : "33333333-3333-4333-8333-333333333333",
+        confidence    : 0.88,
+        summaryLines  : ["事件：范进赴试"],
+        rawOutput     : {
+          stageKey         : "stage_b2",
+          provider         : "openai",
+          model            : "gpt-5.4-mini",
+          createdAt        : "2026-04-21T00:00:00.000Z",
+          responseExcerpt  : "提取到范进赴试。",
+          hasStructuredJson: true,
+          parseError       : null,
+          schemaError      : null,
+          discardReason    : null
+        }
+      },
       projectionSummary: {
         personaChapterFacts: [],
         personaTimeFacts   : [],
         relationshipEdges  : [],
         timelineEvents     : []
       },
-      auditHistory: []
+      auditHistory: [{
+        id             : "audit-1",
+        action         : "EDIT",
+        actorUserId    : "user-1",
+        note           : "修订谓词",
+        evidenceSpanIds: ["evidence-1"],
+        createdAt      : "2026-04-21T00:10:00.000Z",
+        beforeState    : { predicate: "赴试" },
+        afterState     : { predicate: "中举" },
+        fieldDiffs     : [{
+          fieldKey  : "predicate",
+          fieldLabel: "事件谓词",
+          beforeText: "赴试",
+          afterText : "中举"
+        }]
+      }],
+      versionDiff: {
+        versionSource     : "AUDIT_EDIT",
+        supersedesClaimId : null,
+        derivedFromClaimId: null,
+        fieldDiffs        : [{
+          fieldKey  : "predicate",
+          fieldLabel: "事件谓词",
+          beforeText: "赴试",
+          afterText : "中举"
+        }]
+      }
     });
 
     const { GET } = await import("./route");
@@ -80,6 +139,39 @@ describe("GET /api/admin/review/claims/:claimKind/:claimId", () => {
     const payload = await response.json();
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("REVIEW_CLAIM_DETAIL_FETCHED");
+    expect(payload.data).toEqual(expect.objectContaining({
+      claim: expect.objectContaining({
+        id        : CLAIM_ID,
+        runId     : "33333333-3333-4333-8333-333333333333",
+        confidence: 0.88
+      }),
+      evidence: [
+        expect.objectContaining({
+          id          : "evidence-1",
+          chapterLabel: "第1回 学道登场"
+        })
+      ],
+      aiSummary: expect.objectContaining({
+        rawOutput: expect.objectContaining({
+          stageKey       : "stage_b2",
+          responseExcerpt: "提取到范进赴试。"
+        })
+      }),
+      auditHistory: [
+        expect.objectContaining({
+          fieldDiffs: [
+            expect.objectContaining({
+              fieldKey  : "predicate",
+              beforeText: "赴试",
+              afterText : "中举"
+            })
+          ]
+        })
+      ],
+      versionDiff: expect.objectContaining({
+        versionSource: "AUDIT_EDIT"
+      })
+    }));
     expect(hoisted.getClaimDetailMock).toHaveBeenCalledWith({
       bookId   : BOOK_ID,
       claimKind: "EVENT",

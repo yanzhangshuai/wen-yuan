@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-export type ReviewModeNavMode = "matrix" | "relations";
+export type ReviewModeNavMode = "matrix" | "relations" | "time";
 
 interface ReviewModeNavProps {
   bookId    : string;
@@ -23,6 +23,11 @@ const REVIEW_MODES: Array<{
     mode : "relations",
     label: "人物关系",
     href : (bookId) => `/admin/review/${bookId}/relations`
+  },
+  {
+    mode : "time",
+    label: "人物 x 时间",
+    href : (bookId) => `/admin/review/${bookId}/time`
   }
 ];
 

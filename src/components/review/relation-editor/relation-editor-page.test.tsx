@@ -100,7 +100,7 @@ function buildSelectedPair(
 function buildDetailRecord(
   overrides: Partial<ReviewClaimDetailRecord> = {}
 ): ReviewClaimDetailRecord {
-  return {
+  const baseRecord: ReviewClaimDetailRecord = {
     id                      : "claim-1",
     claimId                 : "claim-1",
     claimKind               : "RELATION",
@@ -129,19 +129,28 @@ function buildDetailRecord(
     effectiveChapterStart   : 1,
     effectiveChapterEnd     : 2,
     timeHintId              : null,
-    ...overrides
+    supersedesClaimId       : null
+  };
+
+  return {
+    ...baseRecord,
+    ...overrides,
+    runId            : overrides.runId ?? baseRecord.runId,
+    confidence       : overrides.confidence ?? baseRecord.confidence,
+    supersedesClaimId: overrides.supersedesClaimId ?? baseRecord.supersedesClaimId
   };
 }
 
 function buildDetail(
   overrides: Partial<ReviewClaimDetailResponse> = {}
 ): ReviewClaimDetailResponse {
-  return {
+  const baseDetail: ReviewClaimDetailResponse = {
     claim   : buildDetailRecord(),
     evidence: [
       {
         id                 : "evidence-1",
         chapterId          : "chapter-1",
+        chapterLabel       : "第 1 回",
         startOffset        : 12,
         endOffset          : 24,
         quotedText         : "周进提拔范进，众人称善。",
@@ -164,8 +173,16 @@ function buildDetail(
       relationshipEdges  : [],
       timelineEvents     : []
     },
+    aiSummary   : null,
     auditHistory: [],
-    ...overrides
+    versionDiff : null
+  };
+
+  return {
+    ...baseDetail,
+    ...overrides,
+    aiSummary  : overrides.aiSummary ?? baseDetail.aiSummary,
+    versionDiff: overrides.versionDiff ?? baseDetail.versionDiff
   };
 }
 

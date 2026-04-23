@@ -23,8 +23,14 @@ export type {
   RelationDirection,
   RelationTypeSource,
   ReviewClaimActionType,
+  ReviewClaimAiBasisSummaryDto,
+  ReviewClaimAuditHistoryItemDto,
   ReviewClaimDetailRecord,
   ReviewClaimDetailResponse,
+  ReviewClaimEvidenceSpanDto,
+  ReviewClaimFieldDiffDto,
+  ReviewClaimRawOutputSummaryDto,
+  ReviewClaimVersionDiffDto,
   SubmitReviewClaimActionInput
 } from "@/lib/services/review-matrix";
 

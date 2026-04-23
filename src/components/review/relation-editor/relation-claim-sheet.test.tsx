@@ -54,6 +54,18 @@ vi.mock("@/lib/services/relation-editor", async () => {
   };
 });
 
+vi.mock("../evidence-panel", () => ({
+  ReviewClaimDetailPanel: ({ detail }: { detail: { claim: { claimId: string } } }) => (
+    <section data-testid="review-claim-detail-panel">
+      <p>原文证据</p>
+      <p>AI 提取依据</p>
+      <p>版本差异</p>
+      <p>审核记录（最新在上）</p>
+      <p>{detail.claim.claimId}</p>
+    </section>
+  )
+}));
+
 function buildSelectedPair(
   overrides: Partial<ReviewRelationSelectedPairDto> = {}
 ): ReviewRelationSelectedPairDto {
@@ -98,7 +110,7 @@ function buildSelectedPair(
 function buildDetailRecord(
   overrides: Partial<ReviewClaimDetailRecord> = {}
 ): ReviewClaimDetailRecord {
-  return {
+  const baseRecord: ReviewClaimDetailRecord = {
     id                      : CLAIM_ID,
     claimId                 : CLAIM_ID,
     claimKind               : "RELATION",
@@ -127,7 +139,15 @@ function buildDetailRecord(
     effectiveChapterStart   : 1,
     effectiveChapterEnd     : 3,
     timeHintId              : null,
-    ...overrides
+    supersedesClaimId       : null
+  };
+
+  return {
+    ...baseRecord,
+    ...overrides,
+    runId            : overrides.runId ?? baseRecord.runId,
+    confidence       : overrides.confidence ?? baseRecord.confidence,
+    supersedesClaimId: overrides.supersedesClaimId ?? baseRecord.supersedesClaimId
   };
 }
 
@@ -140,6 +160,7 @@ function buildDetail(
       {
         id                 : "evidence-1",
         chapterId          : "chapter-1",
+        chapterLabel       : "第 1 回",
         startOffset        : 12,
         endOffset          : 24,
         quotedText         : "周进提拔范进，众人称善。",
@@ -158,6 +179,15 @@ function buildDetail(
       reviewState        : "ACCEPTED",
       effectiveChapterEnd: 2
     }),
+    aiSummary: {
+      basisClaimId  : "basis-1",
+      basisClaimKind: "RELATION",
+      source        : "AI",
+      runId         : "run-1",
+      confidence    : 0.92,
+      summaryLines  : ["关系类型：teacher_of"],
+      rawOutput     : null
+    },
     projectionSummary: {
       personaChapterFacts: [],
       personaTimeFacts   : [],
@@ -165,6 +195,12 @@ function buildDetail(
       timelineEvents     : []
     },
     auditHistory: [],
+    versionDiff : {
+      versionSource     : "AUDIT_EDIT",
+      supersedesClaimId : null,
+      derivedFromClaimId: null,
+      fieldDiffs        : []
+    },
     ...overrides
   };
 }
@@ -214,6 +250,7 @@ describe("RelationClaimSheet", () => {
     expect(screen.getByLabelText("关系显示名称")).toHaveValue("师生");
     expect(screen.getByText("原文证据")).toBeInTheDocument();
     expect(screen.getByText("AI 提取依据")).toBeInTheDocument();
+    expect(screen.getByText("版本差异")).toBeInTheDocument();
     expect(screen.getByText("审核记录（最新在上）")).toBeInTheDocument();
   });
 

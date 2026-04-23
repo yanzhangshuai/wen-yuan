@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { EmptyState, ErrorState } from "@/components/ui/states";
@@ -18,7 +19,7 @@ import {
   type ReviewClaimListItem
 } from "@/lib/services/review-matrix";
 
-import { TemporaryEvidenceAuditPanel } from "../shared/temporary-evidence-audit-panel";
+import { ReviewClaimDetailPanel } from "../evidence-panel";
 
 import { ClaimActionPanel } from "./claim-action-panel";
 import { CellClaimList } from "./cell-claim-list";
@@ -48,6 +49,15 @@ function selectionExists(
 ): boolean {
   return matrix.personas.some((persona) => persona.personaId === selection.personaId)
     && matrix.chapters.some((chapter) => chapter.chapterId === selection.chapterId);
+}
+
+function buildTimeMatrixHref(bookId: string, personaId: string, timeLabel: string): string {
+  const searchParams = new URLSearchParams({
+    personaId,
+    timeLabel
+  });
+
+  return `/admin/review/${bookId}/time?${searchParams.toString()}`;
 }
 
 /**
@@ -85,6 +95,7 @@ export function CellDrilldownSheet({
   const selectedClaim = selectedClaimId === null
     ? null
     : claims.find((claim) => claim.claimId === selectedClaimId) ?? null;
+  const selectedTimeLabel = detail?.claim.timeLabel ?? selectedClaim?.timeLabel ?? null;
 
   const loadClaims = useCallback(async (nextSelection: MatrixCellSelection) => {
     const requestId = claimsRequestIdRef.current + 1;
@@ -291,7 +302,15 @@ export function CellDrilldownSheet({
               />
             ) : detail ? (
               <div className="space-y-4">
-                <TemporaryEvidenceAuditPanel detail={detail} className="rounded-xl border bg-background" />
+                {selectedTimeLabel ? (
+                  <Link
+                    href={buildTimeMatrixHref(matrix.bookId, persona.personaId, selectedTimeLabel)}
+                    className="inline-flex rounded-md border px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-accent"
+                  >
+                    查看时间矩阵
+                  </Link>
+                ) : null}
+                <ReviewClaimDetailPanel detail={detail} />
                 <ClaimActionPanel
                   bookId={matrix.bookId}
                   claim={selectedClaim}

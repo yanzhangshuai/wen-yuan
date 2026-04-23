@@ -143,6 +143,24 @@ describe("AdminBookReviewPage", () => {
     expect(matrixEntry?.props.initialMatrix).toBe(matrixDto);
   });
 
+  it("forwards chapter deep-link search params as the initial matrix selection", async () => {
+    const { default: AdminBookReviewPage } = await import("./page");
+
+    const page = await AdminBookReviewPage({
+      params      : Promise.resolve({ bookId: BOOK_ID }),
+      searchParams: Promise.resolve({
+        personaId: "persona-2",
+        chapterId: "chapter-2"
+      })
+    } as never);
+
+    const matrixEntry = findElementByProp(page, "initialMatrix", matrixDto);
+    expect(matrixEntry?.props.initialSelectedCell).toEqual({
+      personaId: "persona-2",
+      chapterId: "chapter-2"
+    });
+  });
+
   it("calls notFound when book id does not resolve to a book", async () => {
     hoisted.getBookByIdMock.mockRejectedValueOnce(new Error("missing book"));
     const { default: AdminBookReviewPage } = await import("./page");

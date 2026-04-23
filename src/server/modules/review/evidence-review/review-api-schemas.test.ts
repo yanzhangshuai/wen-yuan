@@ -12,6 +12,7 @@ import {
   reviewClaimListQuerySchema,
   reviewClaimRouteParamsSchema,
   reviewMergePersonasRequestSchema,
+  reviewPersonaTimeMatrixQuerySchema,
   reviewRelationEditorQuerySchema,
   reviewPersonaChapterMatrixQuerySchema,
   reviewSplitPersonaRequestSchema
@@ -123,6 +124,39 @@ describe("review api schemas", () => {
       bookId       : BOOK_ID,
       chapterId    : "not-a-uuid",
       conflictState: "SOMETHING_ELSE"
+    })).toThrow();
+  });
+
+  it("parses persona-time matrix query filters and coerces persona pagination", () => {
+    expect(reviewPersonaTimeMatrixQuerySchema.parse({
+      bookId        : BOOK_ID,
+      personaId     : SOURCE_PERSONA_ID,
+      timeTypes     : ["RELATIVE_PHASE", "NAMED_EVENT"],
+      limitPersonas : "25",
+      offsetPersonas: "5"
+    })).toEqual({
+      bookId        : BOOK_ID,
+      personaId     : SOURCE_PERSONA_ID,
+      timeTypes     : ["RELATIVE_PHASE", "NAMED_EVENT"],
+      limitPersonas : 25,
+      offsetPersonas: 5
+    });
+  });
+
+  it("rejects invalid persona-time matrix identifiers and unsupported time types", () => {
+    expect(() => reviewPersonaTimeMatrixQuerySchema.parse({
+      personaId: SOURCE_PERSONA_ID
+    })).toThrow();
+
+    expect(() => reviewPersonaTimeMatrixQuerySchema.parse({
+      bookId: "not-a-uuid"
+    })).toThrow();
+
+    expect(() => reviewPersonaTimeMatrixQuerySchema.parse({
+      bookId       : BOOK_ID,
+      personaId    : "not-a-uuid",
+      timeTypes    : ["SPRING"],
+      limitPersonas: -1
     })).toThrow();
   });
 

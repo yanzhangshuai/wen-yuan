@@ -29,8 +29,10 @@
 export { ReviewPanel } from "./review-panel";
 /** 人物 x 章节矩阵审核页入口：承接 T13 claim-first 审核工作台。 */
 export { PersonaChapterReviewPage } from "./persona-chapter-matrix/persona-chapter-review-page";
-/** 审核模式导航：在人物章节矩阵、人物关系与后续时间矩阵间切换。 */
+/** 审核模式导航：在人物章节矩阵、人物关系与人物时间矩阵间切换。 */
 export { ReviewModeNav } from "./shared/review-mode-nav";
+/** 共享 claim 详情面板：统一展示证据、AI 依据、版本差异和审核记录。 */
+export { ReviewClaimDetailPanel } from "./evidence-panel";
 /** 人物草稿编辑表单：用于审核过程中修正人物字段。 */
 export { PersonaEditForm } from "./persona-edit-form";
 /** 关系草稿编辑表单：用于修正关系类型、权重、证据、置信度。 */

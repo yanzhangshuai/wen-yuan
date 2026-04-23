@@ -45,6 +45,21 @@ export const reviewPersonaChapterMatrixQuerySchema = z.object({
   offsetPersonas: z.coerce.number().int().min(0).optional()
 });
 
+export const reviewPersonaTimeMatrixQuerySchema = z.object({
+  bookId   : uuidSchema,
+  personaId: uuidSchema.optional(),
+  timeTypes: z.array(z.enum([
+    "CHAPTER_ORDER",
+    "RELATIVE_PHASE",
+    "NAMED_EVENT",
+    "HISTORICAL_YEAR",
+    "BATTLE_PHASE",
+    "UNCERTAIN"
+  ] as const)).optional(),
+  limitPersonas : z.coerce.number().int().min(0).optional(),
+  offsetPersonas: z.coerce.number().int().min(0).optional()
+});
+
 export const reviewRelationEditorQuerySchema = z.object({
   bookId          : uuidSchema,
   personaId       : uuidSchema.optional(),
@@ -216,6 +231,8 @@ export type ReviewCreateManualClaimRequest = z.infer<typeof reviewCreateManualCl
 export type ReviewClaimListQueryRequest = z.infer<typeof reviewClaimListQuerySchema>;
 export type ReviewPersonaChapterMatrixQueryRequest =
   z.infer<typeof reviewPersonaChapterMatrixQuerySchema>;
+export type ReviewPersonaTimeMatrixQueryRequest =
+  z.infer<typeof reviewPersonaTimeMatrixQuerySchema>;
 export type ReviewRelationEditorQueryRequest = z.infer<typeof reviewRelationEditorQuerySchema>;
 export type ReviewClaimRouteParams = z.infer<typeof reviewClaimRouteParamsSchema>;
 export type ReviewMergePersonasRequest = z.infer<typeof reviewMergePersonasRequestSchema>;

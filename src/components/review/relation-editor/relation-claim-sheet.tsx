@@ -33,7 +33,7 @@ import {
 } from "@/lib/services/relation-editor";
 import { cn } from "@/lib/utils";
 
-import { TemporaryEvidenceAuditPanel } from "../shared/temporary-evidence-audit-panel";
+import { ReviewClaimDetailPanel } from "../evidence-panel";
 
 import {
   CUSTOM_RELATION_TYPE,
@@ -920,7 +920,7 @@ export function RelationClaimSheet({
                 </div>
               </section>
 
-              <TemporaryEvidenceAuditPanel detail={detail} />
+              <ReviewClaimDetailPanel detail={detail} />
             </>
           )}
         </div>

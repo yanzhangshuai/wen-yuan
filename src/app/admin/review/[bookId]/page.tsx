@@ -4,10 +4,49 @@ import Link from "next/link";
 
 import { getBookById } from "@/server/modules/books/getBookById";
 import { listBooks } from "@/server/modules/books/listBooks";
+import type { MatrixCellSelection } from "@/components/review/persona-chapter-matrix/types";
 import { createReviewQueryService } from "@/server/modules/review/evidence-review/review-query-service";
 import { PersonaChapterReviewPage } from "@/components/review/persona-chapter-matrix/persona-chapter-review-page";
 import { ReviewModeNav } from "@/components/review/shared/review-mode-nav";
 import { cn } from "@/lib/utils";
+
+type SearchParamValue = string | string[] | undefined;
+
+interface AdminBookReviewSearchParams {
+  personaId?: SearchParamValue;
+  chapterId?: SearchParamValue;
+}
+
+const EMPTY_SEARCH_PARAMS: AdminBookReviewSearchParams = {};
+
+function readSingleSearchParam(value: SearchParamValue): string | null {
+  if (typeof value === "string") {
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+  }
+
+  if (Array.isArray(value)) {
+    return readSingleSearchParam(value[0]);
+  }
+
+  return null;
+}
+
+function resolveInitialSelectedCell(
+  searchParams: AdminBookReviewSearchParams
+): MatrixCellSelection | null {
+  const personaId = readSingleSearchParam(searchParams.personaId);
+  const chapterId = readSingleSearchParam(searchParams.chapterId);
+
+  if (personaId === null || chapterId === null) {
+    return null;
+  }
+
+  return {
+    personaId,
+    chapterId
+  };
+}
 
 /**
  * =============================================================================
@@ -34,7 +73,8 @@ interface AdminBookReviewPageProps {
    * Next.js App Router 在服务端页面中传入的动态路由参数。
    * 这里定义为 Promise 是为了兼容当前项目的参数读取方式，调用方会 `await params`。
    */
-  params: Promise<{ bookId: string }>;
+  params       : Promise<{ bookId: string }>;
+  searchParams?: Promise<AdminBookReviewSearchParams>;
 }
 
 export async function generateMetadata({ params }: AdminBookReviewPageProps): Promise<Metadata> {
@@ -50,9 +90,12 @@ export async function generateMetadata({ params }: AdminBookReviewPageProps): Pr
 }
 
 export default async function AdminBookReviewPage({
-  params
+  params,
+  searchParams
 }: AdminBookReviewPageProps) {
   const { bookId } = await params;
+  const resolvedSearchParams = await (searchParams ?? Promise.resolve(EMPTY_SEARCH_PARAMS));
+  const initialSelectedCell = resolveInitialSelectedCell(resolvedSearchParams);
 
   let book;
   try {
@@ -110,6 +153,7 @@ export default async function AdminBookReviewPage({
           bookTitle={book.title}
           allBooks={allBooks}
           initialMatrix={initialMatrix}
+          initialSelectedCell={initialSelectedCell}
         />
       </div>
     </div>

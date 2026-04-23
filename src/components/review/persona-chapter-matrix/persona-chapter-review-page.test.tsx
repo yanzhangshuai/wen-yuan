@@ -180,6 +180,7 @@ function buildClaimDetail(overrides: Record<string, unknown> = {}) {
       {
         id                 : "evidence-1",
         chapterId          : "chapter-2",
+        chapterLabel       : "第 2 回",
         startOffset        : 10,
         endOffset          : 18,
         quotedText         : "周进在此回提携范进",
@@ -197,6 +198,15 @@ function buildClaimDetail(overrides: Record<string, unknown> = {}) {
       source       : "AI",
       chapterId    : "chapter-2"
     }),
+    aiSummary: {
+      basisClaimId  : "basis-claim-1",
+      basisClaimKind: "EVENT",
+      source        : "AI",
+      runId         : "run-1",
+      confidence    : 0.88,
+      summaryLines  : ["事迹：周进在此回提携范进"],
+      rawOutput     : null
+    },
     projectionSummary: {
       personaChapterFacts: [],
       personaTimeFacts   : [],
@@ -204,6 +214,7 @@ function buildClaimDetail(overrides: Record<string, unknown> = {}) {
       timelineEvents     : []
     },
     auditHistory: [],
+    versionDiff : null,
     ...overrides
   };
 }
@@ -382,6 +393,42 @@ describe("PersonaChapterReviewPage", () => {
     expect(
       screen.queryByRole("heading", { level: 2, name: "周进 · 第 2 回" })
     ).not.toBeInTheDocument();
+  });
+
+  it("honors an initial selected cell and keeps it stable after reload-style rerenders", () => {
+    const initialSelectedCell = {
+      personaId: "persona-2",
+      chapterId: "chapter-2"
+    };
+    const { rerender } = render(
+      <PersonaChapterReviewPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialMatrix={buildMatrix()}
+        initialSelectedCell={initialSelectedCell}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: "第 2 回 · 周进" })
+    ).toHaveAttribute("aria-pressed", "true");
+
+    rerender(
+      <PersonaChapterReviewPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialMatrix={buildMatrix({
+          generatedAt: "2026-04-21T12:00:00.000Z"
+        })}
+        initialSelectedCell={initialSelectedCell}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: "第 2 回 · 周进" })
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("opens the cell drill-down sheet only when the reviewer clicks a matrix cell", async () => {

@@ -132,23 +132,89 @@ export interface FetchCellClaimsInput {
 
 export interface ReviewClaimDetailRecord extends ReviewClaimListItem {
   id                : string;
+  runId             : string | null;
+  confidence        : number | null;
+  supersedesClaimId : string | null;
   derivedFromClaimId: string | null;
   [key: string]     : unknown;
 }
 
 export interface ReviewClaimDetailProjectionSummary {
-  personaChapterFacts: unknown[];
-  personaTimeFacts   : unknown[];
-  relationshipEdges  : unknown[];
-  timelineEvents     : unknown[];
+  personaChapterFacts: Array<Record<string, unknown>>;
+  personaTimeFacts   : Array<Record<string, unknown>>;
+  relationshipEdges  : Array<Record<string, unknown>>;
+  timelineEvents     : Array<Record<string, unknown>>;
+}
+
+export interface ReviewClaimEvidenceSpanDto {
+  id                 : string;
+  chapterId          : string;
+  chapterLabel       : string | null;
+  startOffset        : number | null;
+  endOffset          : number | null;
+  quotedText         : string;
+  normalizedText     : string;
+  speakerHint        : string | null;
+  narrativeRegionType: string | null;
+  createdAt          : string | null;
+}
+
+export interface ReviewClaimFieldDiffDto {
+  fieldKey  : string;
+  fieldLabel: string;
+  beforeText: string | null;
+  afterText : string | null;
+}
+
+export interface ReviewClaimAuditHistoryItemDto {
+  id             : string;
+  action         : string;
+  actorUserId    : string | null;
+  note           : string | null;
+  evidenceSpanIds: string[];
+  createdAt      : string | null;
+  beforeState    : Record<string, unknown> | null;
+  afterState     : Record<string, unknown> | null;
+  fieldDiffs     : ReviewClaimFieldDiffDto[];
+}
+
+export interface ReviewClaimRawOutputSummaryDto {
+  stageKey         : string | null;
+  provider         : string | null;
+  model            : string | null;
+  createdAt        : string | null;
+  responseExcerpt  : string | null;
+  hasStructuredJson: boolean;
+  parseError       : string | null;
+  schemaError      : string | null;
+  discardReason    : string | null;
+}
+
+export interface ReviewClaimAiBasisSummaryDto {
+  basisClaimId  : string | null;
+  basisClaimKind: ReviewableClaimKind | null;
+  source        : ClaimSource | null;
+  runId         : string | null;
+  confidence    : number | null;
+  summaryLines  : string[];
+  rawOutput     : ReviewClaimRawOutputSummaryDto | null;
+}
+
+export interface ReviewClaimVersionDiffDto {
+  versionSource     : "AUDIT_EDIT" | "MANUAL_LINEAGE" | "NONE";
+  supersedesClaimId : string | null;
+  derivedFromClaimId: string | null;
+  fieldDiffs        : ReviewClaimFieldDiffDto[];
 }
 
 export interface ReviewClaimDetailResponse {
   claim            : ReviewClaimDetailRecord;
-  evidence         : unknown[];
+  evidence         : ReviewClaimEvidenceSpanDto[];
   basisClaim       : ReviewClaimDetailRecord | null;
+  aiSummary        : ReviewClaimAiBasisSummaryDto | null;
   projectionSummary: ReviewClaimDetailProjectionSummary;
-  auditHistory     : unknown[];
+  auditHistory     : ReviewClaimAuditHistoryItemDto[];
+  versionDiff      : ReviewClaimVersionDiffDto | null;
 }
 
 export interface FetchReviewClaimDetailInput {

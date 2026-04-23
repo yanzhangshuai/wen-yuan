@@ -25,9 +25,9 @@ function buildRelationEditorDto() {
   return {
     bookId        : BOOK_ID,
     personaOptions: [{
-      personaId   : PERSONA_ID,
-      displayName : "诸葛亮",
-      aliases     : ["孔明"]
+      personaId  : PERSONA_ID,
+      displayName: "诸葛亮",
+      aliases    : ["孔明"]
     }],
     relationTypeOptions: [{
       relationTypeKey   : "ally_of",
@@ -38,15 +38,15 @@ function buildRelationEditorDto() {
       systemPreset      : true
     }],
     pairSummaries: [{
-      pairKey          : `${PERSONA_ID}::${PAIR_PERSONA_ID}`,
-      leftPersonaId    : PERSONA_ID,
-      rightPersonaId   : PAIR_PERSONA_ID,
-      leftPersonaName  : "诸葛亮",
-      rightPersonaName : "刘备",
-      totalClaims      : 2,
-      activeClaims     : 2,
-      latestUpdatedAt  : "2026-04-22T01:00:00.000Z",
-      relationTypeKeys : ["ally_of"],
+      pairKey           : `${PERSONA_ID}::${PAIR_PERSONA_ID}`,
+      leftPersonaId     : PERSONA_ID,
+      rightPersonaId    : PAIR_PERSONA_ID,
+      leftPersonaName   : "诸葛亮",
+      rightPersonaName  : "刘备",
+      totalClaims       : 2,
+      activeClaims      : 2,
+      latestUpdatedAt   : "2026-04-22T01:00:00.000Z",
+      relationTypeKeys  : ["ally_of"],
       reviewStateSummary: {
         ACCEPTED: 1,
         PENDING : 1
@@ -57,16 +57,16 @@ function buildRelationEditorDto() {
       }
     }],
     selectedPair: {
-      pairKey: `${PERSONA_ID}::${PAIR_PERSONA_ID}`,
+      pairKey    : `${PERSONA_ID}::${PAIR_PERSONA_ID}`,
       leftPersona: {
-        personaId   : PERSONA_ID,
-        displayName : "诸葛亮",
-        aliases     : ["孔明"]
+        personaId  : PERSONA_ID,
+        displayName: "诸葛亮",
+        aliases    : ["孔明"]
       },
       rightPersona: {
-        personaId   : PAIR_PERSONA_ID,
-        displayName : "刘备",
-        aliases     : ["玄德"]
+        personaId  : PAIR_PERSONA_ID,
+        displayName: "刘备",
+        aliases    : ["玄德"]
       },
       warnings: {
         directionConflict: false,

@@ -26,10 +26,11 @@ export interface PersonaChapterReviewBookOption {
 }
 
 export interface PersonaChapterReviewPageProps {
-  bookId       : string;
-  bookTitle    : string;
-  allBooks     : PersonaChapterReviewBookOption[];
-  initialMatrix: PersonaChapterMatrixDto;
+  bookId              : string;
+  bookTitle           : string;
+  allBooks            : PersonaChapterReviewBookOption[];
+  initialMatrix       : PersonaChapterMatrixDto;
+  initialSelectedCell?: MatrixCellSelection | null;
 }
 
 type ReviewStateFilterValue = ClaimReviewState | "";
@@ -125,6 +126,17 @@ function findSelectionForChapter(
   };
 }
 
+function resolveInitialSelectedCell(
+  matrix: PersonaChapterMatrixDto,
+  initialSelectedCell?: MatrixCellSelection | null
+): MatrixCellSelection | null {
+  if (initialSelectedCell === undefined || initialSelectedCell === null) {
+    return null;
+  }
+
+  return selectionExists(matrix, initialSelectedCell) ? initialSelectedCell : null;
+}
+
 function toChapterScrollTop(matrix: PersonaChapterMatrixDto, chapterId: string): number {
   const chapterIndex = matrix.chapters.findIndex((chapter) => chapter.chapterId === chapterId);
   if (chapterIndex < 0) {
@@ -145,31 +157,41 @@ export function PersonaChapterReviewPage({
   bookId,
   bookTitle,
   allBooks,
-  initialMatrix
+  initialMatrix,
+  initialSelectedCell = null
 }: PersonaChapterReviewPageProps) {
+  const seededSelection = resolveInitialSelectedCell(initialMatrix, initialSelectedCell);
   const [matrix, setMatrix] = useState(initialMatrix);
   const [personaKeyword, setPersonaKeyword] = useState("");
   const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilterValue>("");
   const [conflictStateFilter, setConflictStateFilter] = useState<ConflictStateFilterValue>("");
-  const [chapterJumpId, setChapterJumpId] = useState("");
-  const [selectedCell, setSelectedCell] = useState<MatrixCellSelection | null>(null);
+  const [chapterJumpId, setChapterJumpId] = useState(seededSelection?.chapterId ?? "");
+  const [selectedCell, setSelectedCell] = useState<MatrixCellSelection | null>(seededSelection);
   const [openedCell, setOpenedCell] = useState<MatrixCellSelection | null>(null);
-  const [scrollTop, setScrollTop] = useState(0);
+  const [scrollTop, setScrollTop] = useState(
+    seededSelection === null ? 0 : toChapterScrollTop(initialMatrix, seededSelection.chapterId)
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    const nextSeededSelection = resolveInitialSelectedCell(initialMatrix, initialSelectedCell);
+
     setMatrix(initialMatrix);
     setPersonaKeyword("");
     setReviewStateFilter("");
     setConflictStateFilter("");
-    setChapterJumpId("");
-    setSelectedCell(null);
+    setChapterJumpId(nextSeededSelection?.chapterId ?? "");
+    setSelectedCell(nextSeededSelection);
     setOpenedCell(null);
-    setScrollTop(0);
+    setScrollTop(
+      nextSeededSelection === null
+        ? 0
+        : toChapterScrollTop(initialMatrix, nextSeededSelection.chapterId)
+    );
     setLoadError(null);
     setIsLoading(false);
-  }, [bookId, initialMatrix]);
+  }, [bookId, initialMatrix, initialSelectedCell]);
 
   async function refreshMatrix(
     nextReviewStateFilter: ReviewStateFilterValue,

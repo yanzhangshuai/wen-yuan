@@ -100,7 +100,7 @@ function buildClaimListItem(
 function buildClaimDetailRecord(
   overrides: Partial<ReviewClaimDetailRecord> = {}
 ): ReviewClaimDetailRecord {
-  return {
+  const baseRecord: ReviewClaimDetailRecord = {
     id                 : "claim-event-1",
     claimId            : "claim-event-1",
     claimKind          : "EVENT",
@@ -116,8 +116,18 @@ function buildClaimDetailRecord(
     timeLabel          : "乡试之后",
     relationTypeKey    : null,
     evidenceSpanIds    : ["evidence-1"],
-    derivedFromClaimId : null,
-    ...overrides
+    runId              : "run-1",
+    confidence         : 0.88,
+    supersedesClaimId  : null,
+    derivedFromClaimId : null
+  };
+
+  return {
+    ...baseRecord,
+    ...overrides,
+    runId            : overrides.runId ?? baseRecord.runId,
+    confidence       : overrides.confidence ?? baseRecord.confidence,
+    supersedesClaimId: overrides.supersedesClaimId ?? baseRecord.supersedesClaimId
   };
 }
 
@@ -128,6 +138,7 @@ function buildDetail(
     claim            : buildClaimDetailRecord(),
     evidence         : [],
     basisClaim       : null,
+    aiSummary        : null,
     projectionSummary: {
       personaChapterFacts: [],
       personaTimeFacts   : [],
@@ -135,6 +146,7 @@ function buildDetail(
       timelineEvents     : []
     },
     auditHistory: [],
+    versionDiff : null,
     ...overrides
   };
 }
@@ -217,6 +229,7 @@ describe("CellDrilldownSheet", () => {
           {
             id                 : "evidence-1",
             chapterId          : "chapter-1",
+            chapterLabel       : "第 1 回",
             startOffset        : 12,
             endOffset          : 28,
             quotedText         : "范进叩首称谢，众人都道喜。",
@@ -232,7 +245,22 @@ describe("CellDrilldownSheet", () => {
           claimKind      : "RELATION",
           relationTypeKey: "mentor_of",
           reviewState    : "ACCEPTED"
-        })
+        }),
+        aiSummary: {
+          basisClaimId  : "claim-basis-1",
+          basisClaimKind: "RELATION",
+          source        : "AI",
+          runId         : "run-1",
+          confidence    : 0.88,
+          summaryLines  : ["关系类型：mentor_of"],
+          rawOutput     : null
+        },
+        versionDiff: {
+          versionSource     : "AUDIT_EDIT",
+          supersedesClaimId : null,
+          derivedFromClaimId: null,
+          fieldDiffs        : []
+        }
       })
     );
 
@@ -261,7 +289,46 @@ describe("CellDrilldownSheet", () => {
 
     expect(screen.getByText("范进叩首称谢，众人都道喜。")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "AI 提取依据" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "版本差异" })).toBeInTheDocument();
     expect(screen.getByText("关系类型：mentor_of")).toBeInTheDocument();
+  });
+
+  it("shows a time-review deep link when the selected claim exposes a time label", async () => {
+    hoisted.fetchCellClaimsMock.mockResolvedValueOnce({
+      items: [buildClaimListItem({
+        claimId  : "claim-event-2",
+        timeLabel: "乡试之后"
+      })],
+      total: 1
+    });
+    hoisted.fetchReviewClaimDetailMock.mockResolvedValueOnce(buildDetail({
+      claim: buildClaimDetailRecord({
+        claimId  : "claim-event-2",
+        id       : "claim-event-2",
+        timeLabel: "乡试之后"
+      })
+    }));
+
+    render(
+      <CellDrilldownSheet
+        open
+        matrix={buildMatrix()}
+        selection={{
+          personaId: "persona-1",
+          chapterId: "chapter-1"
+        }}
+        onOpenChange={vi.fn()}
+      />
+    );
+
+    const claimButton = await screen.findByRole("button", { name: "查看事迹" });
+    fireEvent.click(claimButton);
+
+    const timeLink = await screen.findByRole("link", { name: "查看时间矩阵" });
+    expect(timeLink).toHaveAttribute(
+      "href",
+      "/admin/review/book-1/time?personaId=persona-1&timeLabel=%E4%B9%A1%E8%AF%95%E4%B9%8B%E5%90%8E"
+    );
   });
 
   it("shows a create prompt instead of a raw empty table when the selected cell has no claims", async () => {
