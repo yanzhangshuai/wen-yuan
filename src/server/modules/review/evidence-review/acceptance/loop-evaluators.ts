@@ -20,6 +20,15 @@ interface AcceptanceLoopEvaluationResult {
   artifactPaths: string[];
 }
 
+interface AcceptanceManualCheckSummary {
+  passed  : boolean;
+  blocking: boolean;
+}
+
+interface AcceptanceRiskSummary {
+  severity: "BLOCKING" | "NON_BLOCKING";
+}
+
 interface EvidenceLoopClaim {
   claimKind  : string;
   claimId    : string;
@@ -115,4 +124,72 @@ export function evaluateProjectionLoop(input: {
         ],
     artifactPaths: []
   };
+}
+
+/**
+ * 知识闭环同时约束“知识能参与候选生成”和“知识不能绕过审核直写 truth”。
+ * 任一约束失效，都说明 KB 集成方式还不能作为上线依据。
+ */
+export function evaluateKnowledgeLoop(input: {
+  relationCatalogAvailable     : boolean;
+  reviewedClaimBackedProjection: boolean;
+}): AcceptanceLoopEvaluationResult {
+  const passed = input.relationCatalogAvailable && input.reviewedClaimBackedProjection;
+
+  return {
+    loopKey : "KNOWLEDGE",
+    passed,
+    blocking: !passed,
+    summary : passed
+      ? "Reviewed knowledge influences normalization and still flows through reviewable claims."
+      : "Knowledge loop is incomplete: catalog or reviewed-claim gating is missing.",
+    evidenceLines: [
+      `relationCatalogAvailable=${String(input.relationCatalogAvailable)}`,
+      `reviewedClaimBackedProjection=${String(input.reviewedClaimBackedProjection)}`
+    ],
+    artifactPaths: []
+  };
+}
+
+/**
+ * rebuild 闭环引用 T21 的对比结论，而不是在 T22 里再发明一套成本模型。
+ * 三个条件缺一不可：有参考报告、truth 一致、且能看到成本比较。
+ */
+export function evaluateRebuildLoop(input: {
+  hasReferenceReport: boolean;
+  rerunIdentical    : boolean;
+  hasCostComparison : boolean;
+}): AcceptanceLoopEvaluationResult {
+  const passed = input.hasReferenceReport && input.rerunIdentical && input.hasCostComparison;
+
+  return {
+    loopKey : "REBUILD",
+    passed,
+    blocking: !passed,
+    summary : passed
+      ? "T21 rerun comparison confirms identical truth and cost comparison is available."
+      : "Rebuild loop evidence is incomplete or divergent.",
+    evidenceLines: [
+      `hasReferenceReport=${String(input.hasReferenceReport)}`,
+      `rerunIdentical=${String(input.rerunIdentical)}`,
+      `hasCostComparison=${String(input.hasCostComparison)}`
+    ],
+    artifactPaths: []
+  };
+}
+
+/**
+ * 最终 go/no-go 只接受显式通过的闭环、人工核验和风险登记。
+ * 任何 blocking 失败都必须把最终决策压回 NO_GO，避免 runner 误放行。
+ */
+export function classifyFinalAcceptanceDecision(input: {
+  loopResults : Array<Pick<AcceptanceLoopEvaluationResult, "passed" | "blocking">>;
+  manualChecks: AcceptanceManualCheckSummary[];
+  risks       : AcceptanceRiskSummary[];
+}): "GO" | "NO_GO" {
+  const hasBlockingLoop = input.loopResults.some((item) => !item.passed && item.blocking);
+  const hasBlockingManual = input.manualChecks.some((item) => !item.passed && item.blocking);
+  const hasBlockingRisk = input.risks.some((item) => item.severity === "BLOCKING");
+
+  return hasBlockingLoop || hasBlockingManual || hasBlockingRisk ? "NO_GO" : "GO";
 }

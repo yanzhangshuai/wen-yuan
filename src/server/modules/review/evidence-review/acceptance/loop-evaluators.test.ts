@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  classifyFinalAcceptanceDecision,
   evaluateEvidenceLoop,
+  evaluateKnowledgeLoop,
   evaluateProjectionLoop,
+  evaluateRebuildLoop,
   evaluateReviewLoop
 } from "./loop-evaluators";
 
@@ -55,5 +58,65 @@ describe("evaluateProjectionLoop", () => {
     });
 
     expect(result.passed).toBe(true);
+  });
+});
+
+describe("evaluateKnowledgeLoop", () => {
+  it("fails when reviewed knowledge is absent or projection bypasses review", () => {
+    const result = evaluateKnowledgeLoop({
+      relationCatalogAvailable     : false,
+      reviewedClaimBackedProjection: false
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.blocking).toBe(true);
+  });
+});
+
+describe("evaluateRebuildLoop", () => {
+  it("passes when T21 rerun comparison is identical and has cost comparison", () => {
+    const result = evaluateRebuildLoop({
+      hasReferenceReport: true,
+      rerunIdentical    : true,
+      hasCostComparison : true
+    });
+
+    expect(result.passed).toBe(true);
+  });
+});
+
+describe("classifyFinalAcceptanceDecision", () => {
+  it("returns NO_GO when any blocking loop or manual check fails", () => {
+    const result = classifyFinalAcceptanceDecision({
+      loopResults: [
+        {
+          loopKey      : "EVIDENCE",
+          passed       : true,
+          blocking     : false,
+          summary      : "",
+          evidenceLines: [],
+          artifactPaths: []
+        },
+        {
+          loopKey      : "REVIEW",
+          passed       : false,
+          blocking     : true,
+          summary      : "",
+          evidenceLines: [],
+          artifactPaths: []
+        }
+      ],
+      manualChecks: [{
+        checkKey           : "persona-chapter-evidence-jump",
+        routePath          : "/admin/review/book-1",
+        expectedObservation: "jump works",
+        observed           : "not executed",
+        passed             : false,
+        blocking           : true
+      }],
+      risks: []
+    });
+
+    expect(result).toBe("NO_GO");
   });
 });
