@@ -29,9 +29,13 @@ export default defineConfig({
     environment: "node",
     // 每个测试文件执行前先加载统一初始化脚本（mock、全局变量、清理策略等）。
     setupFiles : ["./vitest.setup.ts"],
-    // 仅收集约定命名的测试文件，避免误跑业务源码。
-    include    : ["src/**/*.{test,spec}.{ts,tsx}"],
-    coverage   : {
+    // 仅收集项目内约定命名的测试文件，避免误跑业务源码。
+    // T21 在 scripts/review-regression 下为 CLI 保留薄包装测试，因此这里显式纳入该目录。
+    include    : [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "scripts/review-regression/**/*.{test,spec}.{ts,tsx}"
+    ],
+    coverage: {
       // 使用 V8 原生覆盖率引擎，性能与稳定性更适配 Node 场景。
       provider        : "v8",
       // 同时输出终端、HTML、LCOV，分别服务本地查看与 CI 平台集成。

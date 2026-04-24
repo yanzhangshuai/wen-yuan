@@ -86,6 +86,10 @@ type ProjectionRepositoryPrismaClient = ProjectionRepositoryClientBase & {
   $transaction<T>(callback: (tx: ProjectionRepositoryClientBase) => Promise<T>): Promise<T>;
 };
 
+type ProjectionRepositoryClient = ProjectionRepositoryClientBase & {
+  $transaction?: ProjectionRepositoryPrismaClient["$transaction"];
+};
+
 type PersonaChapterFactCreateData = Omit<
   PersonaChapterFactProjectionRow,
   "reviewStateSummary"
@@ -177,9 +181,14 @@ export function createProjectionBuilder(input: { repository: ProjectionRepositor
  * 创建 Stage D projection repository。默认使用全局 Prisma，测试可传入同形 mock client。
  */
 export function createProjectionRepository(
-  prismaClient: ProjectionRepositoryPrismaClient = prisma
+  prismaClient: ProjectionRepositoryClient = prisma
 ): ProjectionRepository {
-  return createRepositoryFromClient(prismaClient, prismaClient.$transaction.bind(prismaClient));
+  const transactionRunner =
+    typeof prismaClient.$transaction === "function"
+      ? prismaClient.$transaction.bind(prismaClient)
+      : undefined;
+
+  return createRepositoryFromClient(prismaClient, transactionRunner);
 }
 
 function createRepositoryFromClient(

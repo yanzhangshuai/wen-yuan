@@ -1,0 +1,227 @@
+{
+  "command": "pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/sanguo-yanyi.fixture.json --report-dir docs/superpowers/reports/review-regression/sanguo-yanyi-sample",
+  "fixturePath": "tests/fixtures/review-regression/sanguo-yanyi.fixture.json",
+  "fixture": {
+    "fixtureKey": "sanguo-yanyi-standard",
+    "bookTitle": "三国演义",
+    "bookAuthor": "罗贯中",
+    "chapterRange": {
+      "startNo": 21,
+      "endNo": 43
+    },
+    "personas": [
+      {
+        "personaName": "刘备",
+        "aliases": [
+          "玄德"
+        ],
+        "chapterNos": [
+          21,
+          37
+        ],
+        "evidenceSnippets": [
+          "玄德寄身曹操篱下"
+        ],
+        "pressureCases": []
+      },
+      {
+        "personaName": "曹操",
+        "aliases": [
+          "孟德"
+        ],
+        "chapterNos": [
+          21,
+          24
+        ],
+        "evidenceSnippets": [
+          "曹操煮酒论英雄"
+        ],
+        "pressureCases": []
+      },
+      {
+        "personaName": "诸葛亮",
+        "aliases": [
+          "孔明"
+        ],
+        "chapterNos": [
+          37,
+          38
+        ],
+        "evidenceSnippets": [
+          "玄德三顾草庐请孔明"
+        ],
+        "pressureCases": []
+      }
+    ],
+    "chapterFacts": [
+      {
+        "personaName": "刘备",
+        "chapterNo": 21,
+        "factLabel": "青梅煮酒时隐藏志向",
+        "expectedValue": "刘备在曹操面前掩饰自身抱负。",
+        "evidenceSnippets": [
+          "玄德闻雷失箸以掩饰惊惧"
+        ]
+      },
+      {
+        "personaName": "诸葛亮",
+        "chapterNo": 37,
+        "factLabel": "三顾茅庐后出山辅佐",
+        "expectedValue": "诸葛亮在三顾茅庐后出山辅佐刘备。",
+        "evidenceSnippets": [
+          "孔明出山辅佐刘备"
+        ]
+      }
+    ],
+    "relations": [
+      {
+        "sourcePersonaName": "刘备",
+        "targetPersonaName": "曹操",
+        "relationTypeKey": "guest_of",
+        "relationLabel": "暂附",
+        "direction": "FORWARD",
+        "effectiveChapterStart": 21,
+        "effectiveChapterEnd": 22,
+        "evidenceSnippets": [
+          "玄德寄身曹操篱下"
+        ]
+      },
+      {
+        "sourcePersonaName": "刘备",
+        "targetPersonaName": "曹操",
+        "relationTypeKey": "rival_of",
+        "relationLabel": "敌对",
+        "direction": "BIDIRECTIONAL",
+        "effectiveChapterStart": 24,
+        "effectiveChapterEnd": 43,
+        "evidenceSnippets": [
+          "刘备脱离曹操后分庭抗礼"
+        ]
+      },
+      {
+        "sourcePersonaName": "刘备",
+        "targetPersonaName": "诸葛亮",
+        "relationTypeKey": "political_patron_of",
+        "relationLabel": "礼聘",
+        "direction": "FORWARD",
+        "effectiveChapterStart": 37,
+        "effectiveChapterEnd": 38,
+        "evidenceSnippets": [
+          "玄德三顾草庐请孔明"
+        ]
+      }
+    ],
+    "timeFacts": [
+      {
+        "personaName": "刘备",
+        "rawTimeText": "不数日",
+        "normalizedLabel": "徐州事变后不久",
+        "timeSortKey": null,
+        "chapterRangeStart": 21,
+        "chapterRangeEnd": 22,
+        "isImprecise": true,
+        "evidenceSnippets": [
+          "不数日曹操军至"
+        ]
+      },
+      {
+        "personaName": "诸葛亮",
+        "rawTimeText": "三顾之后",
+        "normalizedLabel": "三顾茅庐后",
+        "timeSortKey": 370,
+        "chapterRangeStart": 37,
+        "chapterRangeEnd": 38,
+        "isImprecise": false,
+        "evidenceSnippets": [
+          "玄德三顾后得孔明"
+        ]
+      }
+    ],
+    "reviewActions": [
+      {
+        "scenarioKey": "edit-liu-cao-dynamic-relation",
+        "action": "EDIT_CLAIM",
+        "target": {
+          "claimKind": "RELATION",
+          "chapterNo": 24,
+          "pair": {
+            "sourcePersonaName": "刘备",
+            "targetPersonaName": "曹操",
+            "relationTypeKey": "rival_of"
+          },
+          "evidenceSnippet": "刘备脱离曹操后分庭抗礼"
+        },
+        "expected": {
+          "auditAction": "EDIT",
+          "projectionFamilies": [
+            "relationship_edges"
+          ]
+        }
+      }
+    ],
+    "rerunSamples": [
+      {
+        "sampleKey": "single-chapter-dynamic-relation-rerun",
+        "reason": "只重跑刘备与曹操关系变化章节，比较全量和增量输出是否保持人物键稳定。",
+        "changedChapterNos": [
+          24
+        ],
+        "expectedStableKeys": [
+          "persona:刘备",
+          "persona:曹操"
+        ],
+        "expectedChangedKeys": [
+          "relation:刘备:曹操:rival_of:BIDIRECTIONAL:24:43"
+        ],
+        "comparisonFriendlyLabel": "dynamic relation rerun sample",
+        "evidenceSnippets": [
+          "刘备脱离曹操后分庭抗礼"
+        ]
+      }
+    ]
+  },
+  "metrics": {
+    "personaAccuracy": {
+      "matched": 3,
+      "missing": 0,
+      "unexpected": 0,
+      "accuracyPct": 100
+    },
+    "relationStability": {
+      "matched": 3,
+      "missing": 0,
+      "changed": 0,
+      "stabilityPct": 100
+    },
+    "timeNormalizationUsability": {
+      "usable": 2,
+      "unusable": 0,
+      "usabilityPct": 100
+    },
+    "evidenceTraceability": {
+      "traced": 7,
+      "untraced": 0,
+      "traceabilityPct": 100
+    },
+    "reviewActionSuccessRate": {
+      "passed": 1,
+      "failed": 0,
+      "successPct": 100
+    }
+  },
+  "missingKeys": [],
+  "unexpectedKeys": [],
+  "changedKeys": [],
+  "actionResults": [
+    {
+      "scenarioKey": "edit-liu-cao-dynamic-relation",
+      "passed": true,
+      "message": "passed",
+      "auditAction": "EDIT"
+    }
+  ],
+  "runComparison": null,
+  "generatedAtIso": "2026-04-24T05:04:59.545Z",
+  "markdownPath": "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.md",
+  "jsonPath": "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.json"
+}

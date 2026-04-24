@@ -125,7 +125,7 @@ Stop and ask the user before proceeding if any of these occur:
 - [x] T16: `docs/superpowers/tasks/2026-04-18-evidence-review/16-audit-history-evidence-panel.md`
 - [x] T15: `docs/superpowers/tasks/2026-04-18-evidence-review/15-persona-time-matrix-ui.md`
 - [x] T19: `docs/superpowers/tasks/2026-04-18-evidence-review/19-incremental-rerun-cost-controls.md`
-- [ ] T21: `docs/superpowers/tasks/2026-04-18-evidence-review/21-gold-set-regression.md`
+- [x] T21: `docs/superpowers/tasks/2026-04-18-evidence-review/21-gold-set-regression.md`
 - [ ] T20: `docs/superpowers/tasks/2026-04-18-evidence-review/20-cutover-read-paths.md`
 - [ ] T22: `docs/superpowers/tasks/2026-04-18-evidence-review/22-e2e-acceptance.md`
 
@@ -315,3 +315,11 @@ Append one entry after each task:
 - Result: T19 adds an evidence-review-specific incremental rerun planner with explainable stage/range output, keeps review mutations on projection-only local rebuilds, derives review-native run cost summaries and baseline-vs-rerun comparisons from T04 observability, serializes bigint cost fields for admin routes, and ships a regression CLI while leaving the legacy retry planner and `/api/admin/analysis-jobs/**` cost surface unchanged.
 - Follow-up risks: none at the T19 task boundary; remaining roadmap work continues in T21/T20/T22.
 - Next task: T21 `docs/superpowers/tasks/2026-04-18-evidence-review/21-gold-set-regression.md`
+
+### T21 Completion - 2026-04-24
+
+- Changed files: `src/server/modules/review/evidence-review/regression/**`, `scripts/review-regression/run-gold-set-regression.ts`, `scripts/review-regression/run-gold-set-regression.test.ts`, `tests/fixtures/review-regression/rulin-waishi.fixture.json`, `tests/fixtures/review-regression/sanguo-yanyi.fixture.json`, `docs/superpowers/reports/review-regression/rulin-waishi-sample/**`, `docs/superpowers/reports/review-regression/sanguo-yanyi-sample/**`, `docs/superpowers/tasks/2026-04-18-evidence-review/21-gold-set-regression.md`, `docs/superpowers/plans/2026-04-23-t21-gold-set-regression-implementation-plan.md`, and `docs/superpowers/plans/2026-04-18-evidence-review-superpowers-only-runbook.md`
+- Validation commands: `pnpm exec vitest run src/server/modules/review/evidence-review/regression/contracts.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/review/evidence-review/regression/contracts.test.ts src/server/modules/review/evidence-review/regression/fixture-loader.test.ts src/server/modules/review/evidence-review/regression/review-action-harness.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/review/evidence-review/regression/snapshot-repository.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/review/evidence-review/regression/fixture-loader.test.ts --coverage=false`, `pnpm exec vitest run src/server/modules/review/evidence-review/regression scripts/review-regression/run-gold-set-regression.test.ts --coverage=false`, `pnpm type-check`, `pnpm exec eslint src/server/modules/review/evidence-review/regression scripts/review-regression/run-gold-set-regression.ts prisma/seed.ts`, `pnpm prisma:seed`, `pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/rulin-waishi.fixture.json --report-dir docs/superpowers/reports/review-regression/rulin-waishi-sample`, `pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/sanguo-yanyi.fixture.json --report-dir docs/superpowers/reports/review-regression/sanguo-yanyi-sample`
+- Result: the gold-set regression package, fixtures, CLI, and citation-ready sample reports are all green; both `儒林外史` and `三国演义` baselines now report 100% metrics with no missing, unexpected, or changed natural keys.
+- Follow-up risks: none at the T21 task boundary.
+- Next task: T20 `docs/superpowers/tasks/2026-04-18-evidence-review/20-cutover-read-paths.md`

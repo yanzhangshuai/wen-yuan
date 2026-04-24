@@ -508,6 +508,29 @@ describe("projection builder task-5 orchestration", () => {
     expect((client as Record<string, unknown>).relationship).toBeUndefined();
   });
 
+  it("repository still works with tx clients that do not expose nested transaction runners", async () => {
+    const { $transaction: _transactionRunner, ...txClient } = createPrismaClientMock();
+    const repository = createProjectionRepository(txClient);
+    const scope = { kind: "FULL_BOOK", bookId: BOOK_ID } as const;
+
+    await repository.transaction(async (txRepository) => {
+      await txRepository.loadProjectionSource(scope);
+      await txRepository.replaceProjectionRows(scope, {
+        persona_chapter_facts: [],
+        persona_time_facts   : [],
+        relationship_edges   : [],
+        timeline_events      : []
+      });
+    });
+
+    expect(txClient.chapter.findMany).toHaveBeenCalledTimes(1);
+    expect(txClient.identityResolutionClaim.findMany).toHaveBeenCalledTimes(1);
+    expect(txClient.personaChapterFact.deleteMany).toHaveBeenCalledTimes(1);
+    expect(txClient.personaTimeFact.deleteMany).toHaveBeenCalledTimes(1);
+    expect(txClient.relationshipEdge.deleteMany).toHaveBeenCalledTimes(1);
+    expect(txClient.timelineEvent.deleteMany).toHaveBeenCalledTimes(1);
+  });
+
   it("local rebuild after simulated review mutation changes only affected projection output", async () => {
     const repository = createMutableRepositoryMock(payloadWithAcceptedResolvedFacts());
     const builder = createProjectionBuilder({ repository: repository.repository });

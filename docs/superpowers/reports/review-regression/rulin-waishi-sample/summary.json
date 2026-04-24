@@ -1,0 +1,203 @@
+{
+  "command": "pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/rulin-waishi.fixture.json --report-dir docs/superpowers/reports/review-regression/rulin-waishi-sample",
+  "fixturePath": "tests/fixtures/review-regression/rulin-waishi.fixture.json",
+  "fixture": {
+    "fixtureKey": "rulin-waishi-mvp",
+    "bookTitle": "儒林外史",
+    "bookAuthor": "吴敬梓",
+    "chapterRange": {
+      "startNo": 3,
+      "endNo": 4
+    },
+    "personas": [
+      {
+        "personaName": "范进",
+        "aliases": [
+          "范举人",
+          "范老爷"
+        ],
+        "chapterNos": [
+          3
+        ],
+        "evidenceSnippets": [
+          "范进中举后众人改称老爷"
+        ],
+        "pressureCases": [
+          {
+            "caseKey": "fan-jin-title-misidentification",
+            "pressureType": "MISIDENTIFICATION",
+            "confusedWithPersonaName": "范老爷",
+            "chapterNo": 3,
+            "evidenceSnippet": "众人忽然都称范进作老爷",
+            "expectedResolution": "称谓变化应并入范进别名，不创建新人物。"
+          }
+        ]
+      },
+      {
+        "personaName": "胡屠户",
+        "aliases": [
+          "胡老爹"
+        ],
+        "chapterNos": [
+          3
+        ],
+        "evidenceSnippets": [
+          "胡屠户前倨后恭"
+        ],
+        "pressureCases": []
+      },
+      {
+        "personaName": "张乡绅",
+        "aliases": [],
+        "chapterNos": [
+          3
+        ],
+        "evidenceSnippets": [
+          "张乡绅赠银并攀谈"
+        ],
+        "pressureCases": []
+      }
+    ],
+    "chapterFacts": [
+      {
+        "personaName": "范进",
+        "chapterNo": 3,
+        "factLabel": "中举后社会身份骤变",
+        "expectedValue": "范进中举后被乡邻和乡绅重新对待。",
+        "evidenceSnippets": [
+          "中举报到，众人改口称老爷"
+        ]
+      }
+    ],
+    "relations": [
+      {
+        "sourcePersonaName": "胡屠户",
+        "targetPersonaName": "范进",
+        "relationTypeKey": "father_in_law_of",
+        "relationLabel": "岳父",
+        "direction": "FORWARD",
+        "effectiveChapterStart": 3,
+        "effectiveChapterEnd": 4,
+        "evidenceSnippets": [
+          "胡屠户认范进为女婿"
+        ]
+      },
+      {
+        "sourcePersonaName": "张乡绅",
+        "targetPersonaName": "范进",
+        "relationTypeKey": "patron_of",
+        "relationLabel": "拉拢",
+        "direction": "FORWARD",
+        "effectiveChapterStart": 3,
+        "effectiveChapterEnd": 4,
+        "evidenceSnippets": [
+          "张乡绅赠银并攀谈"
+        ]
+      }
+    ],
+    "timeFacts": [
+      {
+        "personaName": "范进",
+        "rawTimeText": "中举之后",
+        "normalizedLabel": "范进中举后",
+        "timeSortKey": 300,
+        "chapterRangeStart": 3,
+        "chapterRangeEnd": 4,
+        "isImprecise": true,
+        "evidenceSnippets": [
+          "中举之后众人改口"
+        ]
+      }
+    ],
+    "reviewActions": [
+      {
+        "scenarioKey": "merge-title-alias-into-fan-jin",
+        "action": "MERGE_PERSONA",
+        "target": {
+          "claimKind": "IDENTITY",
+          "chapterNo": 3,
+          "personaName": "范进",
+          "pair": {
+            "sourcePersonaName": "范老爷",
+            "targetPersonaName": "范进"
+          },
+          "evidenceSnippet": "众人忽然都称范进作老爷"
+        },
+        "expected": {
+          "auditAction": "MERGE_PERSONA",
+          "projectionFamilies": [
+            "persona_chapter_facts",
+            "relationship_edges"
+          ]
+        }
+      },
+      {
+        "scenarioKey": "defer-fan-jin-status-fact",
+        "action": "DEFER_CLAIM",
+        "target": {
+          "claimKind": "EVENT",
+          "chapterNo": 3,
+          "personaName": "范进",
+          "evidenceSnippet": "中举报到，众人改口称老爷"
+        },
+        "expected": {
+          "auditAction": "DEFER",
+          "projectionFamilies": [
+            "persona_chapter_facts"
+          ]
+        }
+      }
+    ],
+    "rerunSamples": []
+  },
+  "metrics": {
+    "personaAccuracy": {
+      "matched": 3,
+      "missing": 0,
+      "unexpected": 0,
+      "accuracyPct": 100
+    },
+    "relationStability": {
+      "matched": 2,
+      "missing": 0,
+      "changed": 0,
+      "stabilityPct": 100
+    },
+    "timeNormalizationUsability": {
+      "usable": 1,
+      "unusable": 0,
+      "usabilityPct": 100
+    },
+    "evidenceTraceability": {
+      "traced": 4,
+      "untraced": 0,
+      "traceabilityPct": 100
+    },
+    "reviewActionSuccessRate": {
+      "passed": 2,
+      "failed": 0,
+      "successPct": 100
+    }
+  },
+  "missingKeys": [],
+  "unexpectedKeys": [],
+  "changedKeys": [],
+  "actionResults": [
+    {
+      "scenarioKey": "merge-title-alias-into-fan-jin",
+      "passed": true,
+      "message": "passed",
+      "auditAction": "MERGE_PERSONA"
+    },
+    {
+      "scenarioKey": "defer-fan-jin-status-fact",
+      "passed": true,
+      "message": "passed",
+      "auditAction": "DEFER"
+    }
+  ],
+  "runComparison": null,
+  "generatedAtIso": "2026-04-24T05:04:51.089Z",
+  "markdownPath": "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.md",
+  "jsonPath": "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.json"
+}

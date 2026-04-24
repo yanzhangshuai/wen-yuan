@@ -6,6 +6,7 @@ import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
 import { seedKnowledgeBaseFromFile, seedKnowledgePhase7 } from "../scripts/init-knowledge-base.ts";
 import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
 import { seedBookTypeExamples } from "../scripts/init-booktype-examples.ts";
+import { seedReviewRegressionSamples } from "../src/server/modules/review/evidence-review/regression/index.ts";
 
 /**
  * 文件定位（数据初始化层 / 运维脚本层）：
@@ -242,6 +243,9 @@ async function main() {
 
   console.log("🎯 导入 BookTypeExample few-shot 基线（§3.7 / T11）...");
   await seedBookTypeExamples(prisma);
+
+  console.log("🧪 导入 review regression gold-set 样本（T21）...");
+  await seedReviewRegressionSamples({ prismaClient: prisma as never });
 
   console.log("✅ 种子数据录入成功！");
   console.log(`- 已预设模型数: ${result.modelCount}`);
