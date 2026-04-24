@@ -2,22 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { headers } from "next/headers";
 
-import { failJson, okJson } from "@/server/http/route-utils";
+import { failJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import {
-  acceptSuggestionForReviewCenter,
-  MergeSuggestionNotFoundError,
-  MergeSuggestionStateError,
-  PersonaMergeConflictError
-} from "@/server/modules/review/mergeSuggestions";
 import { ERROR_CODES } from "@/types/api";
 
-import {
-  reviewCenterBadRequestJson,
-  reviewCenterConflictJson,
-  reviewCenterNotFoundJson,
-  reviewCenterSuggestionParamsSchema
-} from "../../_shared";
+import { retiredLegacyReviewStackJson } from "../../../../../_shared/retired-legacy-review-stack";
 
 /**
  * =============================================================================
@@ -28,12 +17,10 @@ import {
  * 路由语义：
  * - `POST /api/admin/books/:id/merge-suggestions/:suggestionId/accept`
  *
- * 与全局 `/api/admin/merge-suggestions/:id/accept` 的区别：
- * - 本接口强制校验建议归属书籍（防越权）；
- * - 本接口按 source 分派：
- *   - `STAGE_B5_TEMPORAL`（冒名候选）：只改状态，不合并 persona；
- *   - 其他来源：走全量合并事务。
- * - 分派规则在服务层 `acceptSuggestionForReviewCenter`，本 route 只做 HTTP 映射。
+ * T20 之后该路径只作为旧 review-center 的退役边界保留：
+ * - 管理员鉴权仍然生效；
+ * - 通过鉴权后统一返回 410；
+ * - 旧 accept 写路径不再允许被触发。
  * =============================================================================
  */
 
@@ -46,40 +33,16 @@ export async function POST(
   const routePath = "/api/admin/books/[id]/merge-suggestions/[suggestionId]/accept";
 
   try {
-    // 写操作必须 ADMIN：可能触发 persona 合并事务（biography/mention/relationship 迁移）。
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
-
-    const parsedParams = reviewCenterSuggestionParamsSchema.safeParse(await context.params);
-    if (!parsedParams.success) {
-      return reviewCenterBadRequestJson(
-        routePath,
-        requestId,
-        startedAt,
-        parsedParams.error.issues[0]?.message ?? "请求参数不合法"
-      );
-    }
-
-    const data = await acceptSuggestionForReviewCenter(
-      parsedParams.data.id,
-      parsedParams.data.suggestionId
-    );
-
-    return okJson({
-      path   : `/api/admin/books/${parsedParams.data.id}/merge-suggestions/${parsedParams.data.suggestionId}/accept`,
+    const { id } = await context.params;
+    return retiredLegacyReviewStackJson({
+      path           : routePath,
       requestId,
       startedAt,
-      code   : "ADMIN_BOOK_MERGE_SUGGESTION_ACCEPTED",
-      message: "合并建议已接受",
-      data
+      replacementPath: `/admin/review/${id}`
     });
   } catch (error) {
-    if (error instanceof MergeSuggestionNotFoundError) {
-      return reviewCenterNotFoundJson(routePath, requestId, startedAt, error);
-    }
-    if (error instanceof MergeSuggestionStateError || error instanceof PersonaMergeConflictError) {
-      return reviewCenterConflictJson(routePath, requestId, startedAt, error);
-    }
     return failJson({
       path           : routePath,
       requestId,

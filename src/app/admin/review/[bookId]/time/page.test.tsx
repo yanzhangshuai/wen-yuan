@@ -175,4 +175,18 @@ describe("AdminBookTimeReviewPage", () => {
     expect(hoisted.listBooksMock).not.toHaveBeenCalled();
     expect(hoisted.getPersonaTimeMatrixMock).not.toHaveBeenCalled();
   });
+
+  it("bubbles projection read failures to the review error boundary without legacy fallback", async () => {
+    hoisted.getPersonaTimeMatrixMock.mockRejectedValueOnce(new Error("time projection unavailable"));
+    const { default: AdminBookTimeReviewPage } = await import("./page");
+
+    await expect(AdminBookTimeReviewPage({
+      params: Promise.resolve({ bookId: BOOK_ID })
+    })).rejects.toThrow("time projection unavailable");
+
+    expect(hoisted.notFoundMock).not.toHaveBeenCalled();
+    expect(hoisted.getPersonaTimeMatrixMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
+    expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
+    expect(hoisted.getRelationEditorViewMock).not.toHaveBeenCalled();
+  });
 });

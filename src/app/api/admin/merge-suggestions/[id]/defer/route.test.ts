@@ -20,8 +20,8 @@ vi.mock("@/server/modules/review/mergeSuggestions", () => ({
 
 /**
  * 文件定位（Next.js 动态管理接口单测）：
- * - 对应 `POST /api/admin/merge-suggestions/[id]/defer`，用于“暂缓处理”合并建议。
- * - 路由层负责鉴权、参数校验与错误映射，服务层负责状态机变更。
+ * - 对应 `POST /api/admin/merge-suggestions/[id]/defer`。
+ * - T20 后旧 defer 路径也必须统一退役，避免旧审核栈残留写口。
  */
 describe("POST /api/admin/merge-suggestions/:id/defer", () => {
   beforeEach(() => {
@@ -35,13 +35,8 @@ describe("POST /api/admin/merge-suggestions/:id/defer", () => {
     vi.resetModules();
   });
 
-  it("defers merge suggestion", async () => {
-    // 成功分支：建议单应变更为 DEFERRED，并返回管理端统一成功码。
+  it("returns 410 retirement payload and never calls the legacy defer service", async () => {
     const suggestionId = "5f08f368-f342-4f3a-9db6-b8facf48afec";
-    deferMergeSuggestionMock.mockResolvedValue({
-      id    : suggestionId,
-      status: "DEFERRED"
-    });
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -51,17 +46,19 @@ describe("POST /api/admin/merge-suggestions/:id/defer", () => {
       }
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(410);
     const payload = await response.json();
-    expect(payload.success).toBe(true);
-    expect(payload.code).toBe("ADMIN_MERGE_SUGGESTION_DEFERRED");
-    expect(deferMergeSuggestionMock).toHaveBeenCalledWith(suggestionId);
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("LEGACY_REVIEW_STACK_ROUTE_RETIRED");
+    expect(payload.error.type).toBe("RouteRetiredError");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("RETIRED_LEGACY_REVIEW_STACK");
+    expect(response.headers.get("x-wen-yuan-replacement")).toBe("/admin/review");
+    expect(deferMergeSuggestionMock).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when suggestion does not exist", async () => {
-    // 错误映射：不存在建议单 -> 404，便于前端刷新列表并提示记录已失效。
+  it("returns 403 for viewer and never calls the legacy defer service", async () => {
     const suggestionId = "5f08f368-f342-4f3a-9db6-b8facf48afec";
-    deferMergeSuggestionMock.mockRejectedValue(new MergeSuggestionNotFoundError("not found"));
+    headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.VIEWER }));
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -71,46 +68,9 @@ describe("POST /api/admin/merge-suggestions/:id/defer", () => {
       }
     );
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(403);
     const payload = await response.json();
-    expect(payload.success).toBe(false);
-    expect(payload.code).toBe("COMMON_NOT_FOUND");
-  });
-
-  it("returns 409 when suggestion status cannot be changed", async () => {
-    // 状态机冲突：当前状态不允许 defer 时，应返回冲突语义，防止重复操作。
-    const suggestionId = "5f08f368-f342-4f3a-9db6-b8facf48afec";
-    deferMergeSuggestionMock.mockRejectedValue(new MergeSuggestionStateError("invalid state"));
-    const { POST } = await import("./route");
-
-    const response = await POST(
-      new Request("http://localhost/api/admin/merge-suggestions"),
-      {
-        params: Promise.resolve({ id: suggestionId })
-      }
-    );
-
-    expect(response.status).toBe(409);
-    const payload = await response.json();
-    expect(payload.success).toBe(false);
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
-  });
-
-  it("returns 400 when params are invalid", async () => {
-    // 参数防御：动态路由 id 非法时提前拦截，避免进入服务层。
-    const { POST } = await import("./route");
-
-    const response = await POST(
-      new Request("http://localhost/api/admin/merge-suggestions"),
-      {
-        params: Promise.resolve({ id: "invalid-id" })
-      }
-    );
-
-    expect(response.status).toBe(400);
-    const payload = await response.json();
-    expect(payload.success).toBe(false);
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(payload.code).toBe("AUTH_FORBIDDEN");
     expect(deferMergeSuggestionMock).not.toHaveBeenCalled();
   });
 });

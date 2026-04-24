@@ -56,6 +56,9 @@ export default function ReviewError({
          */}
         {error.message || "加载审核数据时出错，请重试。"}
       </p>
+      <p className="max-w-md mb-6 text-sm text-amber-700">
+        系统不会回退到旧版草稿真值，请先重建或校验审核投影后再继续审核。
+      </p>
       <Button
         // `reset` 是 Next.js 错误边界提供的官方恢复机制，不是手写刷新逻辑。
         // 这是框架推荐路径，可在不离开当前路由的前提下重试渲染链路。

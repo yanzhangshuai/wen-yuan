@@ -1,18 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppRole, ProcessingStatus } from "@/generated/prisma/enums";
+import { AppRole } from "@/generated/prisma/enums";
 
 const headersMock = vi.fn();
-const bulkRejectDraftsMock = vi.fn();
-class BulkReviewInputError extends Error {}
 
 vi.mock("next/headers", () => ({
   headers: headersMock
-}));
-
-vi.mock("@/server/modules/review/bulkReview", () => ({
-  bulkRejectDrafts: bulkRejectDraftsMock,
-  BulkReviewInputError
 }));
 
 /**
@@ -32,19 +25,11 @@ describe("POST /api/admin/bulk-reject", () => {
 
   afterEach(() => {
     headersMock.mockReset();
-    bulkRejectDraftsMock.mockReset();
     vi.resetModules();
   });
 
-  it("bulk rejects drafts", async () => {
-    // 成功分支：校验请求体 ids 会按原顺序传入服务层，并返回批处理统计结果。
-    bulkRejectDraftsMock.mockResolvedValue({
-      ids                 : ["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"],
-      status              : ProcessingStatus.REJECTED,
-      relationshipCount   : 2,
-      biographyRecordCount: 1,
-      totalCount          : 3
-    });
+  it("returns 410 and replacement headers for admins", async () => {
+    // T20 退役要求：旧 bulk reject 写路径不再接受旧 review-panel 调用，管理员也只收到迁移提示。
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost/api/admin/bulk-reject", {
@@ -57,11 +42,13 @@ describe("POST /api/admin/bulk-reject", () => {
       })
     }));
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(410);
     const payload = await response.json();
-    expect(payload.success).toBe(true);
-    expect(payload.code).toBe("ADMIN_DRAFTS_BULK_REJECTED");
-    expect(bulkRejectDraftsMock).toHaveBeenCalledWith(["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"]);
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("LEGACY_REVIEW_STACK_ROUTE_RETIRED");
+    expect(payload.error.type).toBe("RouteRetiredError");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("RETIRED_LEGACY_REVIEW_STACK");
+    expect(response.headers.get("x-wen-yuan-replacement")).toBe("/admin/review");
   });
 
   it("returns 403 when viewer calls the API", async () => {
@@ -80,44 +67,5 @@ describe("POST /api/admin/bulk-reject", () => {
     }));
 
     expect(response.status).toBe(403);
-    expect(bulkRejectDraftsMock).not.toHaveBeenCalled();
-  });
-
-  it("returns 400 when body is invalid", async () => {
-    // 参数防御：非法 ID 需在入口层拒绝，避免服务层接收脏数据。
-    const { POST } = await import("./route");
-
-    const response = await POST(new Request("http://localhost/api/admin/bulk-reject", {
-      method : "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        ids: ["invalid-id"]
-      })
-    }));
-
-    expect(response.status).toBe(400);
-    expect(bulkRejectDraftsMock).not.toHaveBeenCalled();
-  });
-
-  it("maps service input error to 400", async () => {
-    // 错误映射：服务层输入异常统一转为 400，便于前端提示“请求参数问题”而非系统故障。
-    bulkRejectDraftsMock.mockRejectedValue(new BulkReviewInputError("至少需要传入一个草稿 ID"));
-    const { POST } = await import("./route");
-
-    const response = await POST(new Request("http://localhost/api/admin/bulk-reject", {
-      method : "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        ids: ["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"]
-      })
-    }));
-
-    expect(response.status).toBe(400);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
   });
 });

@@ -25,8 +25,6 @@
  * =============================================================================
  */
 
-/** 审核中心主面板：承载 Tab、筛选、批量审核、编辑、合并等核心交互。 */
-export { ReviewPanel } from "./review-panel";
 /** 人物 x 章节矩阵审核页入口：承接 T13 claim-first 审核工作台。 */
 export { PersonaChapterReviewPage } from "./persona-chapter-matrix/persona-chapter-review-page";
 /** 审核模式导航：在人物章节矩阵、人物关系与人物时间矩阵间切换。 */
@@ -35,12 +33,8 @@ export { ReviewModeNav } from "./shared/review-mode-nav";
 export { ReviewClaimDetailPanel } from "./evidence-panel";
 /** 人物草稿编辑表单：用于审核过程中修正人物字段。 */
 export { PersonaEditForm } from "./persona-edit-form";
-/** 关系草稿编辑表单：用于修正关系类型、权重、证据、置信度。 */
-export { RelationshipEditForm } from "./relationship-edit-form";
 /** 传记事件编辑表单：用于修正类别、标题、地点、事件描述。 */
 export { BiographyEditForm } from "./biography-edit-form";
-/** 实体合并工具：用于人工确认并执行“人物合并建议”。 */
-export { EntityMergeTool } from "./entity-merge-tool";
 /** 别名映射审核页签组件：处理同义名映射的通过/拒绝流程。 */
 export { AliasReviewTab } from "./alias-review-tab";
 /** 自检报告页签组件：展示并处理规则校验产生的待复核项。 */

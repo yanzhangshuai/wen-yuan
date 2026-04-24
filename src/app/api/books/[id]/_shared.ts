@@ -61,6 +61,9 @@ export interface BookRouteParamsContext {
   params: Promise<{ id: string }>;
 }
 
+/** 旧书籍读接口的临时兼容边界值。 */
+export const TEMP_READ_ONLY_COMPAT_BOUNDARY = "TEMP_READ_ONLY_COMPAT";
+
 /**
  * 统一解析并校验 `bookId` 路由参数。
  *
@@ -120,4 +123,17 @@ export async function parseBookIdFromRoute(
   return {
     bookId: parsedResult.data.id
   };
+}
+
+/**
+ * 为仍保留的旧书籍读接口打上显式兼容标记。
+ * 这些 header 只用于运维/审查定位边界，不改变现有响应体 contract。
+ */
+export function markTempReadOnlyCompat(
+  response: Response,
+  note: string
+): Response {
+  response.headers.set("x-wen-yuan-read-boundary", TEMP_READ_ONLY_COMPAT_BOUNDARY);
+  response.headers.set("x-wen-yuan-read-note", note);
+  return response;
 }

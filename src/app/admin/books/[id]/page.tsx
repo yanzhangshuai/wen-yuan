@@ -193,9 +193,9 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/books/${book.id}/review-center`} className="inline-flex items-center gap-1">
+            <Link href={`/admin/review/${book.id}`} className="inline-flex items-center gap-1">
               <ShieldCheck size={14} />
-              审核中心
+              审核工作台
             </Link>
           </Button>
           <BookRowActions bookId={book.id} bookTitle={book.title} />

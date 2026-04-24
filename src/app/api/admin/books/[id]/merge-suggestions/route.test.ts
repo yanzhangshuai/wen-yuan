@@ -16,8 +16,8 @@ vi.mock("@/server/modules/review/mergeSuggestions", () => ({
 
 /**
  * 文件定位（Next.js Route Handler 单测）：
- * - 对应 `app/api/admin/books/[id]/merge-suggestions/route.ts`；
- * - 验证书籍审核中心列表接口的鉴权、Tab 参数校验、分页 meta 回包契约。
+ * - 对应 `app/api/admin/books/[id]/merge-suggestions/route.ts`。
+ * - T20 后旧 review-center 列表接口只保留退役提示，避免继续读旧建议栈。
  */
 describe("GET /api/admin/books/:id/merge-suggestions", () => {
   const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
@@ -32,12 +32,7 @@ describe("GET /api/admin/books/:id/merge-suggestions", () => {
     vi.resetModules();
   });
 
-  it("returns paginated list with tab=merge", async () => {
-    // 成功分支：验证 Tab 参数与分页被正确透传到服务层。
-    listBookSuggestionsByTabMock.mockResolvedValue({
-      items: [{ id: "s-1", status: "PENDING", source: "STAGE_B_AUTO" }],
-      total: 1
-    });
+  it("returns 410 retirement payload and never calls the legacy review-center list service", async () => {
     const { GET } = await import("./route");
 
     const response = await GET(
@@ -45,59 +40,17 @@ describe("GET /api/admin/books/:id/merge-suggestions", () => {
       { params: Promise.resolve({ id: bookId }) }
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(410);
     const payload = await response.json();
-    expect(payload.success).toBe(true);
-    expect(payload.code).toBe("ADMIN_BOOK_MERGE_SUGGESTIONS_LISTED");
-    expect(payload.meta.pagination).toEqual({ page: 1, pageSize: 20, total: 1 });
-    expect(listBookSuggestionsByTabMock).toHaveBeenCalledWith({
-      bookId,
-      tab     : "merge",
-      page    : 1,
-      pageSize: 20
-    });
-  });
-
-  it("defaults tab to 'merge' when query missing", async () => {
-    listBookSuggestionsByTabMock.mockResolvedValue({ items: [], total: 0 });
-    const { GET } = await import("./route");
-
-    await GET(
-      new Request(`http://localhost/api/admin/books/${bookId}/merge-suggestions`),
-      { params: Promise.resolve({ id: bookId }) }
-    );
-
-    expect(listBookSuggestionsByTabMock).toHaveBeenCalledWith(expect.objectContaining({ tab: "merge" }));
-  });
-
-  it("returns 400 when tab is invalid", async () => {
-    const { GET } = await import("./route");
-
-    const response = await GET(
-      new Request(`http://localhost/api/admin/books/${bookId}/merge-suggestions?tab=invalid`),
-      { params: Promise.resolve({ id: bookId }) }
-    );
-
-    expect(response.status).toBe(400);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
-    expect(listBookSuggestionsByTabMock).not.toHaveBeenCalled();
-  });
-
-  it("returns 400 when bookId is not uuid", async () => {
-    const { GET } = await import("./route");
-
-    const response = await GET(
-      new Request("http://localhost/api/admin/books/not-uuid/merge-suggestions"),
-      { params: Promise.resolve({ id: "not-uuid" }) }
-    );
-
-    expect(response.status).toBe(400);
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("LEGACY_REVIEW_STACK_ROUTE_RETIRED");
+    expect(payload.error.type).toBe("RouteRetiredError");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("RETIRED_LEGACY_REVIEW_STACK");
+    expect(response.headers.get("x-wen-yuan-replacement")).toBe(`/admin/review/${bookId}`);
     expect(listBookSuggestionsByTabMock).not.toHaveBeenCalled();
   });
 
   it("returns 403 when auth role is viewer", async () => {
-    // 权限边界：审核中心数据暴露规则命中点，viewer 禁止访问。
     headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.VIEWER }));
     const { GET } = await import("./route");
 
@@ -109,5 +62,6 @@ describe("GET /api/admin/books/:id/merge-suggestions", () => {
     expect(response.status).toBe(403);
     const payload = await response.json();
     expect(payload.code).toBe("AUTH_FORBIDDEN");
+    expect(listBookSuggestionsByTabMock).not.toHaveBeenCalled();
   });
 });

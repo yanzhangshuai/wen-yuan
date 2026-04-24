@@ -16,9 +16,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AppRole, NameType } from "@/generated/prisma/enums";
 
+const getLegacyPersonaDetailMock = vi.fn();
 const getPersonaByIdMock = vi.fn();
 const updatePersonaMock = vi.fn();
 const deletePersonaMock = vi.fn();
+
+vi.mock("@/server/modules/review/evidence-review/persona-detail-read", () => ({
+  getLegacyPersonaDetail: getLegacyPersonaDetailMock
+}));
 
 vi.mock("@/server/modules/personas/getPersonaById", () => ({
   getPersonaById: getPersonaByIdMock
@@ -50,6 +55,7 @@ vi.mock("@/server/modules/personas/errors", () => {
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("GET /api/personas/:id", () => {
   afterEach(() => {
+    getLegacyPersonaDetailMock.mockReset();
     getPersonaByIdMock.mockReset();
     updatePersonaMock.mockReset();
     deletePersonaMock.mockReset();
@@ -58,9 +64,19 @@ describe("GET /api/personas/:id", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns persona detail", async () => {
     const personaId = "6d97e7f0-72b8-4855-b902-14f32eaf226e";
-    getPersonaByIdMock.mockResolvedValue({
-      id  : personaId,
-      name: "周进"
+    getLegacyPersonaDetailMock.mockResolvedValue({
+      id           : personaId,
+      name         : "周进",
+      aliases      : ["周学道"],
+      gender       : "男",
+      hometown     : "会稽",
+      nameType     : "NAMED",
+      recordSource : "AI",
+      confidence   : 0.9,
+      status       : "VERIFIED",
+      profiles     : [],
+      timeline     : [],
+      relationships: []
     });
     const { GET } = await import("./route");
 
@@ -73,7 +89,9 @@ describe("GET /api/personas/:id", () => {
     const payload = await response.json();
     expect(payload.success).toBe(true);
     expect(payload.code).toBe("PERSONA_FETCHED");
-    expect(getPersonaByIdMock).toHaveBeenCalledWith(personaId);
+    expect(payload.data.relationships).toEqual([]);
+    expect(getLegacyPersonaDetailMock).toHaveBeenCalledWith(personaId);
+    expect(getPersonaByIdMock).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -89,6 +107,7 @@ describe("GET /api/personas/:id", () => {
     const payload = await response.json();
     expect(payload.success).toBe(false);
     expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(getLegacyPersonaDetailMock).not.toHaveBeenCalled();
     expect(getPersonaByIdMock).not.toHaveBeenCalled();
   });
 
@@ -96,7 +115,7 @@ describe("GET /api/personas/:id", () => {
   it("returns 404 when persona is missing", async () => {
     const personaId = "6d97e7f0-72b8-4855-b902-14f32eaf226e";
     const { PersonaNotFoundError } = await import("@/server/modules/personas/errors");
-    getPersonaByIdMock.mockRejectedValue(new PersonaNotFoundError(personaId));
+    getLegacyPersonaDetailMock.mockRejectedValue(new PersonaNotFoundError(personaId));
     const { GET } = await import("./route");
 
     const response = await GET(
@@ -108,12 +127,14 @@ describe("GET /api/personas/:id", () => {
     const payload = await response.json();
     expect(payload.success).toBe(false);
     expect(payload.code).toBe("COMMON_NOT_FOUND");
+    expect(getPersonaByIdMock).not.toHaveBeenCalled();
   });
 });
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("PATCH /api/personas/:id", () => {
   afterEach(() => {
+    getLegacyPersonaDetailMock.mockReset();
     getPersonaByIdMock.mockReset();
     updatePersonaMock.mockReset();
     deletePersonaMock.mockReset();
@@ -219,6 +240,7 @@ describe("PATCH /api/personas/:id", () => {
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("DELETE /api/personas/:id", () => {
   afterEach(() => {
+    getLegacyPersonaDetailMock.mockReset();
     getPersonaByIdMock.mockReset();
     updatePersonaMock.mockReset();
     deletePersonaMock.mockReset();

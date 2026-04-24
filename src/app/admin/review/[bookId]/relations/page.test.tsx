@@ -54,8 +54,6 @@ const hoisted = vi.hoisted(() => {
   return {
     getBookByIdMock             : vi.fn(),
     listBooksMock               : vi.fn(),
-    listAdminDraftsMock         : vi.fn(),
-    listMergeSuggestionsMock    : vi.fn(),
     notFoundMock                : vi.fn(),
     getPersonaChapterMatrixMock,
     getRelationEditorViewMock,
@@ -72,14 +70,6 @@ vi.mock("@/server/modules/books/getBookById", () => ({
 
 vi.mock("@/server/modules/books/listBooks", () => ({
   listBooks: hoisted.listBooksMock
-}));
-
-vi.mock("@/server/modules/review/listDrafts", () => ({
-  listAdminDrafts: hoisted.listAdminDraftsMock
-}));
-
-vi.mock("@/server/modules/review/mergeSuggestions", () => ({
-  listMergeSuggestions: hoisted.listMergeSuggestionsMock
 }));
 
 vi.mock("@/server/modules/review/evidence-review/review-query-service", () => ({
@@ -129,8 +119,6 @@ describe("AdminBookRelationReviewPage", () => {
     hoisted.getBookByIdMock.mockResolvedValue({ id: BOOK_ID, title: "儒林外史" });
     hoisted.listBooksMock.mockResolvedValue(allBooks);
     hoisted.getRelationEditorViewMock.mockResolvedValue(relationEditorDto);
-    hoisted.listAdminDraftsMock.mockResolvedValue({ summary: {}, personas: [] });
-    hoisted.listMergeSuggestionsMock.mockResolvedValue([]);
     hoisted.notFoundMock.mockImplementation(() => {
       throw new Error("NEXT_NOT_FOUND");
     });
@@ -139,8 +127,6 @@ describe("AdminBookRelationReviewPage", () => {
   afterEach(() => {
     hoisted.getBookByIdMock.mockReset();
     hoisted.listBooksMock.mockReset();
-    hoisted.listAdminDraftsMock.mockReset();
-    hoisted.listMergeSuggestionsMock.mockReset();
     hoisted.notFoundMock.mockReset();
     hoisted.getPersonaChapterMatrixMock.mockReset();
     hoisted.getRelationEditorViewMock.mockReset();
@@ -159,8 +145,6 @@ describe("AdminBookRelationReviewPage", () => {
     expect(hoisted.listBooksMock).toHaveBeenCalledOnce();
     expect(hoisted.getRelationEditorViewMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
     expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
-    expect(hoisted.listAdminDraftsMock).not.toHaveBeenCalled();
-    expect(hoisted.listMergeSuggestionsMock).not.toHaveBeenCalled();
 
     const modeNav = findElementByProp(page, "activeMode", "relations");
     expect(modeNav?.props.bookId).toBe(BOOK_ID);
@@ -181,5 +165,18 @@ describe("AdminBookRelationReviewPage", () => {
 
     expect(hoisted.listBooksMock).not.toHaveBeenCalled();
     expect(hoisted.getRelationEditorViewMock).not.toHaveBeenCalled();
+  });
+
+  it("bubbles projection read failures to the review error boundary without legacy fallback", async () => {
+    hoisted.getRelationEditorViewMock.mockRejectedValueOnce(new Error("relation projection unavailable"));
+    const { default: AdminBookRelationReviewPage } = await import("./page");
+
+    await expect(AdminBookRelationReviewPage({
+      params: Promise.resolve({ bookId: BOOK_ID })
+    })).rejects.toThrow("relation projection unavailable");
+
+    expect(hoisted.notFoundMock).not.toHaveBeenCalled();
+    expect(hoisted.getRelationEditorViewMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
+    expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
   });
 });

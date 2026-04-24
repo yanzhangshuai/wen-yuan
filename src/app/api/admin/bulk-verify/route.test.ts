@@ -14,19 +14,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppRole, ProcessingStatus } from "@/generated/prisma/enums";
+import { AppRole } from "@/generated/prisma/enums";
 
 const headersMock = vi.fn();
-const bulkVerifyDraftsMock = vi.fn();
-class BulkReviewInputError extends Error {}
 
 vi.mock("next/headers", () => ({
   headers: headersMock
-}));
-
-vi.mock("@/server/modules/review/bulkReview", () => ({
-  bulkVerifyDrafts: bulkVerifyDraftsMock,
-  BulkReviewInputError
 }));
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
@@ -37,19 +30,11 @@ describe("POST /api/admin/bulk-verify", () => {
 
   afterEach(() => {
     headersMock.mockReset();
-    bulkVerifyDraftsMock.mockReset();
     vi.resetModules();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("bulk verifies drafts", async () => {
-    bulkVerifyDraftsMock.mockResolvedValue({
-      ids                 : ["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"],
-      status              : ProcessingStatus.VERIFIED,
-      relationshipCount   : 2,
-      biographyRecordCount: 1,
-      totalCount          : 3
-    });
+  it("returns 410 and replacement headers for admins", async () => {
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost/api/admin/bulk-verify", {
@@ -62,11 +47,13 @@ describe("POST /api/admin/bulk-verify", () => {
       })
     }));
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(410);
     const payload = await response.json();
-    expect(payload.success).toBe(true);
-    expect(payload.code).toBe("ADMIN_DRAFTS_BULK_VERIFIED");
-    expect(bulkVerifyDraftsMock).toHaveBeenCalledWith(["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"]);
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("LEGACY_REVIEW_STACK_ROUTE_RETIRED");
+    expect(payload.error.type).toBe("RouteRetiredError");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("RETIRED_LEGACY_REVIEW_STACK");
+    expect(response.headers.get("x-wen-yuan-replacement")).toBe("/admin/review");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -85,11 +72,10 @@ describe("POST /api/admin/bulk-verify", () => {
     }));
 
     expect(response.status).toBe(403);
-    expect(bulkVerifyDraftsMock).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("redirects to login when middleware headers and auth cookie are both missing", async () => {
+  it("returns 403 when middleware headers are missing", async () => {
     headersMock.mockResolvedValueOnce(new Headers());
     const { POST } = await import("./route");
 
@@ -103,48 +89,6 @@ describe("POST /api/admin/bulk-verify", () => {
       })
     }));
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost/login?redirect=%2Fapi%2Fadmin%2Fbulk-verify%3FbookId%3Dbook-1"
-    );
-    expect(bulkVerifyDraftsMock).not.toHaveBeenCalled();
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("returns 400 when body is invalid", async () => {
-    const { POST } = await import("./route");
-
-    const response = await POST(new Request("http://localhost/api/admin/bulk-verify", {
-      method : "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        ids: ["invalid-id"]
-      })
-    }));
-
-    expect(response.status).toBe(400);
-    expect(bulkVerifyDraftsMock).not.toHaveBeenCalled();
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("maps service input error to 400", async () => {
-    bulkVerifyDraftsMock.mockRejectedValue(new BulkReviewInputError("至少需要传入一个草稿 ID"));
-    const { POST } = await import("./route");
-
-    const response = await POST(new Request("http://localhost/api/admin/bulk-verify", {
-      method : "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        ids: ["8f53a01e-a9b4-420c-a55d-f4f1452f52bc"]
-      })
-    }));
-
-    expect(response.status).toBe(400);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(response.status).toBe(403);
   });
 });

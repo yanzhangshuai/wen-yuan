@@ -11,14 +11,12 @@ import {
   type DeletePersonaResult
 } from "@/server/modules/personas/deletePersona";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
-import {
-  getPersonaById,
-  type PersonaDetailSnapshot
-} from "@/server/modules/personas/getPersonaById";
+import { getLegacyPersonaDetail } from "@/server/modules/review/evidence-review/persona-detail-read";
 import {
   updatePersona,
   type UpdatePersonaResult
 } from "@/server/modules/personas/updatePersona";
+import type { PersonaDetail } from "@/types/graph";
 import { ERROR_CODES } from "@/types/api";
 import { NameType } from "@/generated/prisma/enums";
 
@@ -102,7 +100,10 @@ function notFoundJson(requestId: string, startedAt: number, personaId: string) {
 /**
  * 功能：查询人物详情快照（主档 + 关系 + 时间轴）。
  * 输入：路由参数 `id`。
- * 输出：`PersonaDetailSnapshot` 结构，供图谱侧边栏与审核页复用。
+ * 输出：`PersonaDetail` 结构，供图谱侧边栏与审核页复用。
+ * 兼容边界：公共 DTO 暂不拆分，但底层读取已切到 projection-backed reader，
+ * 仅通过只读 adapter 维持旧字段形状，避免继续把 `Profile / BiographyRecord / Relationship`
+ * 当作审核读真相。
  * 异常：参数错误 400；人物不存在 404；其余失败 500。
  * 副作用：无（只读查询）。
  */
@@ -134,10 +135,10 @@ export async function GET(
     }
 
     // Step 2) 查询人物详情。
-    const data = await getPersonaById(parsedParams.data.id);
+    const data = await getLegacyPersonaDetail(parsedParams.data.id);
 
     // Step 3) 返回标准成功响应。
-    return okJson<PersonaDetailSnapshot>({
+    return okJson<PersonaDetail>({
       path   : `/api/personas/${parsedParams.data.id}`,
       requestId,
       startedAt,

@@ -22,12 +22,8 @@ vi.mock("@/server/modules/review/mergeSuggestions", () => ({
 
 /**
  * 文件定位（Next.js 动态路由接口单测）：
- * - 对应 `app/api/admin/merge-suggestions/[id]/accept/route.ts`，处理“接受合并建议”动作。
- * - `[id]` 来自动态路由参数，本测试通过 `params: Promise.resolve({ id })` 模拟 Next.js 传参机制。
- *
- * 业务职责：
- * - 管理员确认两个人物应合并时，调用服务层推进状态流转。
- * - 路由层负责参数格式与鉴权兜底，服务层负责真正的合并规则。
+ * - 对应 `app/api/admin/merge-suggestions/[id]/accept/route.ts`。
+ * - T20 后该路径只保留为旧审核栈退役提示，不能再触发任何合并写操作。
  */
 describe("POST /api/admin/merge-suggestions/:id/accept", () => {
   beforeEach(() => {
@@ -41,13 +37,8 @@ describe("POST /api/admin/merge-suggestions/:id/accept", () => {
     vi.resetModules();
   });
 
-  it("accepts merge suggestion", async () => {
-    // 成功分支：断言路由参数被原样传入服务层，避免错误映射导致误操作其他建议单。
+  it("returns 410 retirement payload and never calls the legacy accept service", async () => {
     const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
-    acceptMergeSuggestionMock.mockResolvedValue({
-      id    : suggestionId,
-      status: "ACCEPTED"
-    });
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -57,34 +48,19 @@ describe("POST /api/admin/merge-suggestions/:id/accept", () => {
       }
     );
 
-    expect(response.status).toBe(200);
-    const payload = await response.json();
-    expect(payload.success).toBe(true);
-    expect(payload.code).toBe("ADMIN_MERGE_SUGGESTION_ACCEPTED");
-    expect(acceptMergeSuggestionMock).toHaveBeenCalledWith(suggestionId);
-  });
-
-  it("returns 400 when params are invalid", async () => {
-    // 防御分支：ID 非 UUID 时在入口拒绝，减少无意义数据库查询并统一错误码。
-    const { POST } = await import("./route");
-
-    const response = await POST(
-      new Request("http://localhost/api/admin/merge-suggestions"),
-      {
-        params: Promise.resolve({ id: "invalid-id" })
-      }
-    );
-
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410);
     const payload = await response.json();
     expect(payload.success).toBe(false);
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(payload.code).toBe("LEGACY_REVIEW_STACK_ROUTE_RETIRED");
+    expect(payload.error.type).toBe("RouteRetiredError");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("RETIRED_LEGACY_REVIEW_STACK");
+    expect(response.headers.get("x-wen-yuan-replacement")).toBe("/admin/review");
     expect(acceptMergeSuggestionMock).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when the merge suggestion no longer exists", async () => {
+  it("returns 403 for viewer and still never calls the legacy accept service", async () => {
     const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
-    acceptMergeSuggestionMock.mockRejectedValue(new MergeSuggestionNotFoundError("missing"));
+    headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.VIEWER }));
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -94,59 +70,9 @@ describe("POST /api/admin/merge-suggestions/:id/accept", () => {
       }
     );
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(403);
     const payload = await response.json();
-    expect(payload.code).toBe("COMMON_NOT_FOUND");
-  });
-
-  it("returns 409 when the merge suggestion state already changed", async () => {
-    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
-    acceptMergeSuggestionMock.mockRejectedValue(new MergeSuggestionStateError("already handled"));
-    const { POST } = await import("./route");
-
-    const response = await POST(
-      new Request("http://localhost/api/admin/merge-suggestions"),
-      {
-        params: Promise.resolve({ id: suggestionId })
-      }
-    );
-
-    expect(response.status).toBe(409);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
-  });
-
-  it("returns 409 when persona merge validation detects a conflict", async () => {
-    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
-    acceptMergeSuggestionMock.mockRejectedValue(new PersonaMergeConflictError("conflict"));
-    const { POST } = await import("./route");
-
-    const response = await POST(
-      new Request("http://localhost/api/admin/merge-suggestions"),
-      {
-        params: Promise.resolve({ id: suggestionId })
-      }
-    );
-
-    expect(response.status).toBe(409);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
-  });
-
-  it("returns 500 for unexpected failures", async () => {
-    const suggestionId = "e23d523f-0e66-4fb4-b475-d57f86886d9f";
-    acceptMergeSuggestionMock.mockRejectedValue(new Error("boom"));
-    const { POST } = await import("./route");
-
-    const response = await POST(
-      new Request("http://localhost/api/admin/merge-suggestions"),
-      {
-        params: Promise.resolve({ id: suggestionId })
-      }
-    );
-
-    expect(response.status).toBe(500);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+    expect(payload.code).toBe("AUTH_FORBIDDEN");
+    expect(acceptMergeSuggestionMock).not.toHaveBeenCalled();
   });
 });

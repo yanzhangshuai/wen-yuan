@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { parseBookIdFromRoute, type BookRouteParamsContext } from "@/app/api/books/[id]/_shared";
+import {
+  markTempReadOnlyCompat,
+  parseBookIdFromRoute,
+  type BookRouteParamsContext
+} from "@/app/api/books/[id]/_shared";
 import { NameType } from "@/generated/prisma/enums";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { readJsonBody } from "@/server/http/read-json-body";
@@ -134,6 +138,8 @@ function badRequestJson(
  * GET `/api/books/:id/personas`
  *
  * 业务职责：获取一本书的人物列表（只读操作）。
+ * 兼容边界：该接口当前只为非 review 的书籍详情人物面板保留，不作为新的审核真相来源。
+ * T20 期间明确标记为 `TEMP_READ_ONLY_COMPAT`，避免被误当作 projection review DTO。
  *
  * @param _request Request 对象。该方法无需读取请求体/查询参数。
  * @param context Next.js 动态路由上下文，含 `params.id`。
@@ -162,7 +168,7 @@ export async function GET(
     const data = await listBookPersonas(parsedRoute.bookId);
 
     // 第三步：返回标准成功响应，供管理台列表直接消费。
-    return okJson<BookPersonaListItem[]>({
+    const response = okJson<BookPersonaListItem[]>({
       path   : `/api/books/${parsedRoute.bookId}/personas`,
       requestId,
       startedAt,
@@ -170,6 +176,7 @@ export async function GET(
       message: "人物列表获取成功",
       data
     });
+    return markTempReadOnlyCompat(response, "legacy-book-persona-list");
   } catch (error) {
     if (error instanceof BookNotFoundError) {
       // 业务分支：书籍主键格式合法，但实体不存在。

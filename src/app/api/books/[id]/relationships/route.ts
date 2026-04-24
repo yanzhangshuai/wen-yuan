@@ -22,7 +22,11 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { parseBookIdFromRoute, type BookRouteParamsContext } from "@/app/api/books/[id]/_shared";
+import {
+  markTempReadOnlyCompat,
+  parseBookIdFromRoute,
+  type BookRouteParamsContext
+} from "@/app/api/books/[id]/_shared";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { readJsonBody } from "@/server/http/read-json-body";
@@ -125,6 +129,8 @@ function badRequestJson(requestId: string, startedAt: number, path: string, deta
  * 功能：读取书籍关系列表。
  * 输入：`bookId` 路由参数 + 可选查询参数 `type/status/source`。
  * 输出：统一 API 成功响应，`data` 为关系列表。
+ * 兼容边界：当前仓库里已无活跃 review UI 消费该列表，T20 仅把它保留为
+ * `TEMP_READ_ONLY_COMPAT` 的只读接口，避免把旧 `Relationship` 读模型重新接回审核流。
  * 异常：参数错误返回 400；书籍不存在返回 404；其余返回 500。
  * 副作用：无（只读接口）。
  */
@@ -158,7 +164,7 @@ export async function GET(
     }
 
     const data = await listBookRelationships(parsedRoute.bookId, parsedQuery.data);
-    return okJson<BookRelationshipListItem[]>({
+    const response = okJson<BookRelationshipListItem[]>({
       path   : `/api/books/${parsedRoute.bookId}/relationships`,
       requestId,
       startedAt,
@@ -166,6 +172,7 @@ export async function GET(
       message: "关系列表获取成功",
       data
     });
+    return markTempReadOnlyCompat(response, "legacy-book-relationship-list");
   } catch (error) {
     if (error instanceof BookNotFoundError) {
       return notFoundBookJson(requestId, startedAt, error.bookId);

@@ -1,13 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { headers } from "next/headers";
-import { z } from "zod";
 
-import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
-import { readJsonBody } from "@/server/http/read-json-body";
-import { failJson, okJson } from "@/server/http/route-utils";
-import { AUTH_COOKIE_NAME, getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { bulkVerifyDrafts, BulkReviewInputError, type BulkReviewResult } from "@/server/modules/review/bulkReview";
+import { failJson } from "@/server/http/route-utils";
+import { getAuthContext, requireAdmin } from "@/server/modules/auth";
+import { retiredLegacyReviewStackJson } from "@/app/api/admin/_shared/retired-legacy-review-stack";
 import { ERROR_CODES } from "@/types/api";
 
 /**
@@ -22,134 +19,44 @@ import { ERROR_CODES } from "@/types/api";
  * - 主要承担“入参校验 + 鉴权 + 调用领域服务 + 协议化返回”职责。
  *
  * 业务目标：
- * - 将一组 `DRAFT` 状态草稿批量改为 `VERIFIED`，用于管理员快速通过审核。
+ * - T20 起该旧写路径已退役，统一引导到新的审核工作台。
  *
  * 上游输入：
- * - 客户端 `ReviewPanel` 发起的 JSON 请求体 `{ ids: string[] }`；
+ * - 旧版 `ReviewPanel` 或历史调用方的 POST 请求；
  * - 鉴权中间件/请求头提供的登录上下文。
  *
  * 下游输出：
- * - 调用 `server/modules/review/bulkReview.ts` 完成批量状态更新；
- * - 以统一 API 响应结构返回批量统计结果。
+ * - 不再执行旧批量写入；
+ * - 统一返回 410 retired contract 和替代入口提示。
  *
  * 维护约束：
  * - 路径、错误码、响应结构均为前后端契约，属于业务规则，不应随意变更；
- * - 当前包含“Cookie 缺失时跳登录”的接口级兜底逻辑，用于覆盖 middleware 漏配场景。
+ * - 鉴权仍必须先于退役响应执行，避免把权限边界藏进迁移提示里。
  * =============================================================================
  */
 
 /**
- * 功能：批量确认审核草稿请求体校验。
- * 输入：`ids` 为待确认草稿 ID 数组（UUID），至少 1 个。
- * 输出：通过 `safeParse` 返回可安全传入 service 的强类型数据。
- * 异常：无（校验失败由调用方转换为 400 响应）。
+ * 功能：旧批量确认路由退役提示。
+ * 输入：管理员身份的历史 POST 请求。
+ * 输出：统一 410 退役响应，引导到新的审核工作台。
+ * 异常：权限不足返回 403；其余错误返回 500。
  * 副作用：无。
  */
-const bulkVerifyBodySchema = z.object({
-  ids: z.array(
-    z.string().uuid("草稿 ID 不合法")
-  ).min(1, "至少需要传入一个草稿 ID")
-});
-
-function badRequestJson(
-  requestId: string,
-  startedAt: number,
-  detail: string
-): Response {
-  // 统一的 400 构造器：确保该接口所有参数错误都返回同一消息模板，方便前端稳定处理。
-  const path = "/api/admin/bulk-verify";
-  const meta = createApiMeta(path, requestId, startedAt);
-  return toNextJson(
-    errorResponse(
-      ERROR_CODES.COMMON_BAD_REQUEST,
-      "批量确认参数不合法",
-      {
-        type: "ValidationError",
-        detail
-      },
-      meta
-    ),
-    400
-  );
-}
-
-function hasAuthCookie(cookieHeader: string | null): boolean {
-  // 仅做“是否存在登录 Cookie”快速判断，不在这里解析 token 合法性；
-  // 真正鉴权依然交给 `getAuthContext`，此处是路由层面的 UX 兜底。
-  if (!cookieHeader) {
-    return false;
-  }
-
-  return cookieHeader
-    .split(";")
-    .some((item) => item.trim().startsWith(`${AUTH_COOKIE_NAME}=`));
-}
-
-function buildCurrentPath(requestUrl: string): string {
-  // 将当前路径（含 query）编码到登录回跳参数，确保登录后能返回原审核页面。
-  const parsed = new URL(requestUrl);
-  return `${parsed.pathname}${parsed.search}`;
-}
-
-function redirectToLogin(request: Request): Response {
-  // 307 保留原方法语义；这里用于未登录时统一回到登录页，而不是直接返回 401 文本。
-  const redirectTarget = `/login?redirect=${encodeURIComponent(buildCurrentPath(request.url))}`;
-  return Response.redirect(new URL(redirectTarget, request.url), 307);
-}
-
-/**
- * 功能：确认一批 DRAFT 审核记录（关系/传记事件）。
- * 输入：管理员身份 + JSON `{ ids: string[] }`。
- * 输出：统一 API 响应，`data` 为批量确认统计结果。
- * 异常：参数不合法返回 400；权限不足返回 403；其余错误返回 500。
- * 副作用：写入数据库，将草稿状态改为 `VERIFIED`。
- */
-export async function POST(request: Request): Promise<Response> {
+export async function POST(_request: Request): Promise<Response> {
   const startedAt = Date.now();
   const requestId = randomUUID();
   const path = "/api/admin/bulk-verify";
 
   try {
-    // 1) 读取请求头，优先利用 middleware 注入的角色信息，减少重复解析成本。
-    const requestHeaders = await headers();
-    const roleHeader = requestHeaders.get("x-auth-role");
-    const cookieHeader = requestHeaders.get("cookie") ?? request.headers.get("cookie");
-
-    // 在 API 路由未命中 middleware 注入时，兜底执行登录重定向语义（与 /admin 页面保持一致）。
-    if (!roleHeader && !hasAuthCookie(cookieHeader)) {
-      return redirectToLogin(request);
-    }
-
-    const auth = await getAuthContext(requestHeaders);
+    const auth = await getAuthContext(await headers());
     requireAdmin(auth);
-
-    // 2) 读取并校验 JSON body，拒绝空数组与非法 UUID，避免把脏数据写入批量更新逻辑。
-    const parsedBody = bulkVerifyBodySchema.safeParse(await readJsonBody(request));
-    if (!parsedBody.success) {
-      return badRequestJson(
-        requestId,
-        startedAt,
-        parsedBody.error.issues[0]?.message ?? "请求参数不合法"
-      );
-    }
-
-    // 3) 执行领域服务：将符合条件的草稿状态改为 VERIFIED。
-    const data = await bulkVerifyDrafts(parsedBody.data.ids);
-    return okJson<BulkReviewResult>({
+    return retiredLegacyReviewStackJson({
       path,
       requestId,
       startedAt,
-      code   : "ADMIN_DRAFTS_BULK_VERIFIED",
-      message: "批量确认成功",
-      data
+      replacementPath: "/admin/review"
     });
   } catch (error) {
-    // 4) 输入异常转 400：比如 ID 经过 normalize 后为空，属于调用方参数问题。
-    if (error instanceof BulkReviewInputError) {
-      return badRequestJson(requestId, startedAt, error.message);
-    }
-
-    // 5) 其他异常统一走 500，保持响应格式稳定。
     return failJson({
       path,
       requestId,

@@ -104,6 +104,8 @@ describe("GET /api/books/:id/relationships", () => {
     expect(response.status).toBe(200);
     const payload = await response.json();
     expect(payload.code).toBe("BOOK_RELATIONSHIPS_FETCHED");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("TEMP_READ_ONLY_COMPAT");
+    expect(response.headers.get("x-wen-yuan-read-note")).toBe("legacy-book-relationship-list");
     expect(listBookRelationshipsMock).toHaveBeenCalledWith(bookId, {
       type  : "师生",
       status: ProcessingStatus.VERIFIED,

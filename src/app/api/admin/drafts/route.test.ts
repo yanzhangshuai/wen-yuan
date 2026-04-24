@@ -3,15 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppRole } from "@/generated/prisma/enums";
 
 const headersMock = vi.fn();
-const listAdminDraftsMock = vi.fn();
 
 vi.mock("next/headers", () => ({
   headers: headersMock
-}));
-
-vi.mock("@/server/modules/review/listDrafts", () => ({
-  REVIEW_DRAFT_TAB_VALUES: ["PERSONA", "RELATIONSHIP", "BIOGRAPHY"] as const,
-  listAdminDrafts        : listAdminDraftsMock
 }));
 
 /**
@@ -31,52 +25,24 @@ describe("GET /api/admin/drafts", () => {
 
   afterEach(() => {
     headersMock.mockReset();
-    listAdminDraftsMock.mockReset();
     vi.resetModules();
   });
 
-  it("returns admin drafts with filter", async () => {
-    // 成功分支：校验 tab/source 过滤参数能正确传入服务层，影响后台审校工作台的数据范围。
-    listAdminDraftsMock.mockResolvedValue({
-      summary: {
-        persona     : 1,
-        relationship: 2,
-        biography   : 3,
-        total       : 6
-      },
-      personas        : [],
-      relationships   : [],
-      biographyRecords: []
-    });
+  it("returns 410 and does not call legacy draft service even when filters are present", async () => {
+    // T20 退役要求：旧 drafts 接口继续保留 URL 但只能返回明确迁移提示，不能再成为可读真相入口。
     const { GET } = await import("./route");
 
     const response = await GET(
       new Request("http://localhost/api/admin/drafts?tab=RELATIONSHIP&source=AI")
     );
 
-    expect(response.status).toBe(200);
-    const payload = await response.json();
-    expect(payload.success).toBe(true);
-    expect(payload.code).toBe("ADMIN_DRAFTS_LISTED");
-    expect(listAdminDraftsMock).toHaveBeenCalledWith({
-      tab   : "RELATIONSHIP",
-      source: "AI"
-    });
-  });
-
-  it("returns 400 when query is invalid", async () => {
-    // 防御分支：非法 tab 在入口拒绝，避免出现“服务层自由兜底”导致行为不一致。
-    const { GET } = await import("./route");
-
-    const response = await GET(
-      new Request("http://localhost/api/admin/drafts?tab=INVALID")
-    );
-
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(410);
     const payload = await response.json();
     expect(payload.success).toBe(false);
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
-    expect(listAdminDraftsMock).not.toHaveBeenCalled();
+    expect(payload.code).toBe("LEGACY_REVIEW_STACK_ROUTE_RETIRED");
+    expect(payload.error.type).toBe("RouteRetiredError");
+    expect(response.headers.get("x-wen-yuan-read-boundary")).toBe("RETIRED_LEGACY_REVIEW_STACK");
+    expect(response.headers.get("x-wen-yuan-replacement")).toBe("/admin/review");
   });
 
   it("returns 403 when user is viewer", async () => {
