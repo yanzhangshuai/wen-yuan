@@ -69,5 +69,3 @@ export const ACCEPTANCE_SCENARIOS = [
     ]
   }
 ] as const;
-
-export * from "./contracts";
