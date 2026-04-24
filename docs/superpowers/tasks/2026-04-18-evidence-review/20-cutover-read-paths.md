@@ -208,4 +208,4 @@ Notes captured for downstream tasks:
   - `pnpm lint`
 - T21 baseline remains the cited reconciliation source for this cutover; no new T21 rerun was required in this pass.
 - Runbook completion was updated after validation passed.
-- No dedicated T20 commit was created in this execution pass.
+- Dedicated T20 commit created: `eea0481 feat(review): complete t20 read-path cutover and retire legacy review stack`.
