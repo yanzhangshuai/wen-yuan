@@ -1,51 +1,35 @@
-import type { ModelConnectivityErrorType, SupportedProvider } from "./index";
+import type { ModelConnectivityErrorType } from "./index";
 
-export const connectivityHostAllowList: Record<SupportedProvider, readonly string[]> = {
-  deepseek: ["api.deepseek.com", "dashscope.aliyuncs.com"],
-  qwen    : ["dashscope.aliyuncs.com"],
-  doubao  : ["ark.cn-beijing.volces.com"],
-  gemini  : ["generativelanguage.googleapis.com"],
-  glm     : ["open.bigmodel.cn"]
-};
+const BLOCKED_HOST_PATTERNS: readonly RegExp[] = [
+  /^localhost$/i,
+  /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+  /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+  /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/,
+  /^192\.168\.\d{1,3}\.\d{1,3}$/,
+  /^::1$/,
+  /^\[::1\]$/,
+  /^0\.0\.0\.0$/
+];
 
 /**
- * 功能：解析额外连通性测试白名单域名（逗号分隔）。
- * 输入：`MODEL_TEST_ALLOWED_HOSTS` 原始环境变量字符串。
- * 输出：去重前的标准化域名数组（小写、trim 后）。
+ * 功能：判断给定 hostname 是否属于需要拦截的内网/本机地址。
+ * 输入：hostname（已从 URL 解析出的主机名，不含端口）。
+ * 输出：true 表示该地址在黑名单内，应被拦截。
  * 异常：无。
  * 副作用：无。
  */
-export function parseExtraConnectivityHosts(raw: string | undefined): string[] {
-  if (!raw) {
-    return [];
-  }
-
-  return raw
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter((item) => item.length > 0);
+export function isBlockedHost(hostname: string): boolean {
+  return BLOCKED_HOST_PATTERNS.some(pattern => pattern.test(hostname));
 }
 
 /**
- * 功能：判断目标域名是否命中允许列表。
- * 输入：hostname 与 allowList。
- * 输出：布尔值，true 表示允许发起连通性请求。
- * 异常：无。
- * 副作用：无。
- */
-export function isAllowedHost(hostname: string, allowList: readonly string[]): boolean {
-  const normalizedHost = hostname.toLowerCase();
-  return allowList.some((allowedHost) => normalizedHost === allowedHost.toLowerCase());
-}
-
-/**
- * 功能：对连通性测试 BaseURL 做安全边界校验（协议 + 域名白名单）。
- * 输入：provider、baseUrl。
+ * 功能：对连通性测试 BaseURL 做安全边界校验（协议 + 内网黑名单）。
+ * 输入：baseUrl。
  * 输出：void，校验通过即允许继续请求。
- * 异常：BaseURL 非法、非 HTTPS、域名不在白名单时抛错。
+ * 异常：BaseURL 非法、非 HTTPS、域名命中内网黑名单时抛错。
  * 副作用：无。
  */
-export function assertConnectivityBaseUrlAllowed(provider: SupportedProvider, baseUrl: string): void {
+export function assertConnectivityBaseUrlAllowed(baseUrl: string): void {
   let parsedBaseUrl: URL;
 
   try {
@@ -58,15 +42,12 @@ export function assertConnectivityBaseUrlAllowed(provider: SupportedProvider, ba
     throw new Error("连通性测试仅支持 HTTPS BaseURL");
   }
 
-  const allowList = [
-    ...connectivityHostAllowList[provider],
-    ...parseExtraConnectivityHosts(process.env.MODEL_TEST_ALLOWED_HOSTS)
-  ];
-
-  if (!isAllowedHost(parsedBaseUrl.hostname, allowList)) {
-    throw new Error("连通性测试地址不在白名单内");
+  if (isBlockedHost(parsedBaseUrl.hostname)) {
+    throw new Error("连通性测试不允许访问内网地址");
   }
 }
+
+export type ConnectivityTestError = ModelConnectivityErrorType;
 
 export function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) {
