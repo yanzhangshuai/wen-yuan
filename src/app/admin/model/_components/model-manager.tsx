@@ -116,8 +116,6 @@ interface ModelDraftState {
   apiKey         : string;
   /** 是否清空已保存 API Key；用于显式表达“删除密钥”这一操作意图。 */
   clearApiKey    : boolean;
-  /** 是否启用该模型；会受“是否已配置密钥”业务规则约束。 */
-  isEnabled      : boolean;
 }
 
 /* ------------------------------------------------
@@ -135,8 +133,7 @@ function buildInitialDraft(model: AdminModelItem): ModelDraftState {
     providerModelId: model.providerModelId,
     baseUrl        : model.baseUrl,
     apiKey         : "",
-    clearApiKey    : false,
-    isEnabled      : model.isEnabled
+    clearApiKey    : false
   };
 }
 
@@ -161,7 +158,7 @@ function formatSuccessRate(successRate: number | null): string {
   return `${Math.round(successRate * 100)}%`;
 }
 
-function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState): number {
+function resolveSortBucket(model: AdminModelItem): number {
   /**
    * 排序分桶策略（业务规则）：
    * 1. 默认模型优先展示；
@@ -170,15 +167,11 @@ function resolveSortBucket(model: AdminModelItem, draft?: ModelDraftState): numb
    * 4. 最后是未配置模型。
    *
    * 设计原因：
-   * - 管理后台优先满足“先看关键模型”的运维效率，而非纯字母序。
+   * - 只依赖服务端状态排序，避免草稿变化触发重排导致卡片位置跳变。
    */
-  const isEnabled = draft ? draft.isEnabled : model.isEnabled;
-  const hasDraftApiKey = Boolean(draft?.apiKey.trim());
-  const isConfigured = model.isConfigured || hasDraftApiKey;
-
   if (model.isDefault) return 0;
-  if (isEnabled) return 1;
-  if (isConfigured) return 2;
+  if (model.isEnabled) return 1;
+  if (model.isConfigured) return 2;
   return 3;
 }
 
@@ -363,8 +356,8 @@ export function ModelManager({
      * 排序规则优先按业务分桶，再按中文名称排序。
      * - 先保障“操作优先级”，再保障“查找效率”。
      */
-    const leftBucket = resolveSortBucket(left, drafts[left.id]);
-    const rightBucket = resolveSortBucket(right, drafts[right.id]);
+    const leftBucket = resolveSortBucket(left);
+    const rightBucket = resolveSortBucket(right);
     if (leftBucket !== rightBucket) {
       return leftBucket - rightBucket;
     }
@@ -475,18 +468,11 @@ export function ModelManager({
       return;
     }
 
-    /** 业务校验：启用模型前必须保证密钥可用，防止运行时请求失败。 */
-    if (draft.isEnabled && !resolveCanEnable(model, draft)) {
-      toast.error("请先配置 API Key，再启用模型");
-      return;
-    }
-
     setLoading(model.id, "save");
 
     const body: Record<string, unknown> = {
       providerModelId: draft.providerModelId.trim(),
-      baseUrl        : draft.baseUrl.trim(),
-      isEnabled      : draft.isEnabled
+      baseUrl        : draft.baseUrl.trim()
     };
     /**
      * 分支语义：
@@ -526,6 +512,25 @@ export function ModelManager({
       toast.error(error instanceof Error ? error.message : "设置默认模型失败");
     } finally {
       setLoading(modelId, null);
+    }
+  }
+
+  async function handleToggleEnabled(model: AdminModelItem) {
+    /** 开启/关闭模型：无需点击"保存"，直接调用 API 立即生效。 */
+    const nextEnabled = !model.isEnabled;
+    if (nextEnabled && !model.isConfigured) {
+      toast.error("请先配置 API Key，再启用模型");
+      return;
+    }
+    setLoading(model.id, "save");
+    try {
+      const updatedModel = await patchModel(model.id, { isEnabled: nextEnabled });
+      replaceModel(updatedModel);
+      toast.success(nextEnabled ? "模型已启用" : "模型已关闭");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "操作失败");
+    } finally {
+      setLoading(model.id, null);
     }
   }
 
@@ -662,7 +667,7 @@ export function ModelManager({
 
                         return (
                           <div key={model.id}>
-                            <Card className={cn("relative", !draft.isEnabled && "opacity-60")}>
+                            <Card className={cn("relative", !model.isEnabled && "opacity-60")}>
                               {model.isDefault && (
                                 <Badge className="absolute -top-2 -right-2 z-10">默认</Badge>
                               )}
@@ -679,11 +684,9 @@ export function ModelManager({
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Switch
-                                      checked={draft.isEnabled}
-                                      disabled={!resolveCanEnable(model, draft) && !draft.isEnabled}
-                                      onCheckedChange={(checked) =>
-                                        updateDraft(model.id, d => ({ ...d, isEnabled: checked }))
-                                      }
+                                      checked={model.isEnabled}
+                                      disabled={loadingAction !== null || (!model.isConfigured && !model.isEnabled)}
+                                      onCheckedChange={() => void handleToggleEnabled(model)}
                                     />
                                     <button
                                       type="button"
