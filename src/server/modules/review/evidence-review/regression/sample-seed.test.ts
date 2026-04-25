@@ -10,6 +10,10 @@ const RULIN_BOOK_ID = "10000000-0000-4000-8000-000000000001";
 const SANGUO_BOOK_ID = "10000000-0000-4000-8000-000000000002";
 const CONFLICT_RULIN_BOOK_ID = "10000000-0000-4000-8000-0000000000aa";
 const CONFLICT_SANGUO_BOOK_ID = "10000000-0000-4000-8000-0000000000bb";
+const RULIN_BASELINE_RUN_ID = "1a000000-0000-4000-8000-000000000001";
+const RULIN_CANDIDATE_RUN_ID = "1a000000-0000-4000-8000-000000000002";
+const SANGUO_BASELINE_RUN_ID = "2a000000-0000-4000-8000-000000000001";
+const SANGUO_CANDIDATE_RUN_ID = "2a000000-0000-4000-8000-000000000002";
 
 function createRepositoryMock() {
   const rebuildProjection = vi.fn(async () => ({
@@ -101,6 +105,15 @@ function createRepositoryMock() {
     timelineEvent: {
       deleteMany: vi.fn(async () => ({ count: 0 }))
     },
+    analysisRun: {
+      upsert: vi.fn(async (args: { create: { id: string }; update: { id: string } }) => ({
+        id: args.create.id ?? args.update.id
+      }))
+    },
+    analysisStageRun: {
+      deleteMany: vi.fn(async () => ({ count: 0 })),
+      createMany: vi.fn(async (args: { data: unknown[] }) => ({ count: args.data.length }))
+    },
     rebuildProjection
   };
 
@@ -163,8 +176,18 @@ describe("seedReviewRegressionSamples", () => {
     expect(rebuildProjection).toHaveBeenNthCalledWith(2, { kind: "FULL_BOOK", bookId: SANGUO_BOOK_ID });
     expect(result).toEqual({
       books: [
-        { bookId: RULIN_BOOK_ID, fixtureKey: "rulin-waishi-sample" },
-        { bookId: SANGUO_BOOK_ID, fixtureKey: "sanguo-yanyi-sample" }
+        {
+          bookId        : RULIN_BOOK_ID,
+          fixtureKey    : "rulin-waishi-sample",
+          baselineRunId : RULIN_BASELINE_RUN_ID,
+          candidateRunId: RULIN_CANDIDATE_RUN_ID
+        },
+        {
+          bookId        : SANGUO_BOOK_ID,
+          fixtureKey    : "sanguo-yanyi-sample",
+          baselineRunId : SANGUO_BASELINE_RUN_ID,
+          candidateRunId: SANGUO_CANDIDATE_RUN_ID
+        }
       ]
     });
   });
@@ -188,5 +211,57 @@ describe("seedReviewRegressionSamples", () => {
     })).toBe(true);
     expect(txRepository.chapter.deleteMany).toHaveBeenCalledTimes(4);
     expect(txRepository.eventClaim.deleteMany).toHaveBeenCalledTimes(4);
+  });
+
+  it("seeds baseline and candidate runs so rerun comparison can read run-scoped claims without polluting accepted truth", async () => {
+    const { repository, txRepository } = createRepositoryMock();
+
+    const result = await seedReviewRegressionSamples({
+      prismaClient: repository,
+      now         : () => NOW
+    });
+
+    expect(txRepository.analysisRun.upsert).toHaveBeenCalledTimes(4);
+    expect(txRepository.analysisStageRun.createMany).toHaveBeenCalledTimes(2);
+    expect(txRepository.analysisStageRun.createMany.mock.calls[0]?.[0]).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({ runId: RULIN_BASELINE_RUN_ID, stageKey: "stage_a_extraction" }),
+        expect.objectContaining({ runId: RULIN_CANDIDATE_RUN_ID, stageKey: "stage_a_extraction" })
+      ])
+    });
+    expect(txRepository.analysisStageRun.createMany.mock.calls[1]?.[0]).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({ runId: SANGUO_BASELINE_RUN_ID, stageKey: "stage_a_extraction" }),
+        expect.objectContaining({ runId: SANGUO_CANDIDATE_RUN_ID, stageKey: "stage_a_extraction" })
+      ])
+    });
+    expect(txRepository.eventClaim.createMany.mock.calls[0]?.[0]).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({ runId: RULIN_BASELINE_RUN_ID, reviewState: "ACCEPTED" }),
+        expect.objectContaining({ runId: RULIN_CANDIDATE_RUN_ID, reviewState: "PENDING" })
+      ])
+    });
+    expect(txRepository.relationClaim.createMany.mock.calls[1]?.[0]).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({ runId: SANGUO_BASELINE_RUN_ID, reviewState: "ACCEPTED" }),
+        expect.objectContaining({ runId: SANGUO_CANDIDATE_RUN_ID, reviewState: "PENDING" })
+      ])
+    });
+    expect(result).toEqual({
+      books: [
+        {
+          bookId        : RULIN_BOOK_ID,
+          fixtureKey    : "rulin-waishi-sample",
+          baselineRunId : RULIN_BASELINE_RUN_ID,
+          candidateRunId: RULIN_CANDIDATE_RUN_ID
+        },
+        {
+          bookId        : SANGUO_BOOK_ID,
+          fixtureKey    : "sanguo-yanyi-sample",
+          baselineRunId : SANGUO_BASELINE_RUN_ID,
+          candidateRunId: SANGUO_CANDIDATE_RUN_ID
+        }
+      ]
+    });
   });
 });

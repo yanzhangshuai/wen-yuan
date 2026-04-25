@@ -35,19 +35,19 @@ describe("acceptance contracts", () => {
       generatedAtIso : "2026-04-24T00:00:00.000Z",
       overallDecision: "GO",
       bookReports    : [{
-        scenarioKey       : "rulin-waishi-sample",
-        bookId            : "book-1",
-        bookTitle         : "儒林外史",
-        generatedAtIso    : "2026-04-24T00:00:00.000Z",
+        scenarioKey        : "rulin-waishi-sample",
+        bookId             : "book-1",
+        bookTitle          : "儒林外史",
+        generatedAtIso     : "2026-04-24T00:00:00.000Z",
         referencedArtifacts: {
           t20TaskPath    : "docs/superpowers/tasks/2026-04-18-evidence-review/20-cutover-read-paths.md",
           t21MarkdownPath: "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.md",
           t21JsonPath    : "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.json"
         },
-        loopResults: [],
+        loopResults : [],
         manualChecks: [],
-        risks      : [],
-        decision   : "GO"
+        risks       : [],
+        decision    : "GO"
       }],
       blockingRisks   : [],
       nonBlockingRisks: [],
@@ -64,10 +64,10 @@ describe("acceptance contracts", () => {
     const parsed = acceptanceManualObservationFileSchema.parse({
       scenarioKey: "rulin-waishi-sample",
       checks     : [{
-        checkKey      : "persona-chapter-evidence-jump",
-        observed      : "Claim detail panel opened and jumped to chapter evidence.",
-        passed        : true,
-        observedAtIso : "2026-04-24T00:00:00.000Z"
+        checkKey     : "persona-chapter-evidence-jump",
+        observed     : "Claim detail panel opened and jumped to chapter evidence.",
+        passed       : true,
+        observedAtIso: "2026-04-24T00:00:00.000Z"
       }]
     });
 

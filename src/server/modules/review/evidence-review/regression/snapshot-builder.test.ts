@@ -359,4 +359,33 @@ describe("buildRunScopedReviewRegressionSnapshot", () => {
       evidenceSnippets : ["范进中举"]
     });
   });
+
+  it("treats non-accepted rerun claims as comparison truth without leaking them into current projections", () => {
+    const rows = runScopedRows();
+    rows.identityResolutionClaims = rows.identityResolutionClaims.map((claim) => ({
+      ...claim,
+      reviewState: "PENDING"
+    }));
+    rows.eventClaims = rows.eventClaims.map((claim) => ({
+      ...claim,
+      reviewState: "PENDING"
+    }));
+    rows.relationClaims = rows.relationClaims.map((claim) => ({
+      ...claim,
+      reviewState: "PENDING"
+    }));
+    rows.timeClaims = rows.timeClaims.map((claim) => ({
+      ...claim,
+      reviewState: "PENDING"
+    }));
+
+    const snapshot = buildRunScopedReviewRegressionSnapshot(context, rows);
+
+    expect(snapshot.personas.map((persona) => persona.personaName)).toEqual(["范进", "周进"]);
+    expect(snapshot.chapterFacts).toEqual([
+      { personaName: "范进", chapterNo: 1, factLabel: "中举", evidenceSnippets: ["范进中举"] }
+    ]);
+    expect(snapshot.relations[0]?.relationTypeKey).toBe("mentor.custom");
+    expect(snapshot.timeFacts[0]?.normalizedLabel).toBe("第一回");
+  });
 });

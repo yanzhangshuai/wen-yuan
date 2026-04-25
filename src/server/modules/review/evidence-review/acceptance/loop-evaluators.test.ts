@@ -42,6 +42,16 @@ describe("evaluateReviewLoop", () => {
     expect(result.passed).toBe(false);
     expect(result.evidenceLines.join("\n")).toMatch(/SPLIT_PERSONA/);
   });
+
+  it("uses scenario-declared expected actions when provided", () => {
+    const result = evaluateReviewLoop({
+      auditActions   : ["MERGE_PERSONA", "DEFER"],
+      expectedActions: ["MERGE_PERSONA", "DEFER"]
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.summary).toContain("expected");
+  });
 });
 
 describe("evaluateProjectionLoop", () => {

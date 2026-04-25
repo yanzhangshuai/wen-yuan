@@ -1,5 +1,5 @@
 {
-  "command": "pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/sanguo-yanyi.fixture.json --report-dir docs/superpowers/reports/review-regression/sanguo-yanyi-sample",
+  "command": "pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/sanguo-yanyi.fixture.json --report-dir docs/superpowers/reports/review-regression/sanguo-yanyi-sample --baseline-run 2a000000-0000-4000-8000-000000000001 --candidate-run 2a000000-0000-4000-8000-000000000002",
   "fixturePath": "tests/fixtures/review-regression/sanguo-yanyi.fixture.json",
   "fixture": {
     "fixtureKey": "sanguo-yanyi-standard",
@@ -220,8 +220,99 @@
       "auditAction": "EDIT"
     }
   ],
-  "runComparison": null,
-  "generatedAtIso": "2026-04-24T05:04:59.545Z",
+  "runComparison": {
+    "baselineRunId": "2a000000-0000-4000-8000-000000000001",
+    "candidateRunId": "2a000000-0000-4000-8000-000000000002",
+    "snapshotDiff": {
+      "identical": true,
+      "addedKeys": [],
+      "removedKeys": [],
+      "changedKeys": []
+    },
+    "costComparison": {
+      "baseline": {
+        "runId": "2a000000-0000-4000-8000-000000000001",
+        "bookId": "10000000-0000-4000-8000-000000000002",
+        "trigger": "REVIEW_REGRESSION_SAMPLE",
+        "scope": "FULL_BOOK",
+        "rerunReason": null,
+        "totals": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0,
+          "estimatedCostMicros": "0",
+          "durationMs": 0,
+          "skippedCount": 0
+        },
+        "stages": [
+          {
+            "stageKey": "STAGE_A",
+            "status": "SUCCEEDED",
+            "chapterStartNo": 21,
+            "chapterEndNo": 43,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "estimatedCostMicros": "0",
+            "durationMs": 0,
+            "skippedCount": 0
+          }
+        ]
+      },
+      "candidate": {
+        "runId": "2a000000-0000-4000-8000-000000000002",
+        "bookId": "10000000-0000-4000-8000-000000000002",
+        "trigger": "REVIEW_REGRESSION_SAMPLE",
+        "scope": "FULL_BOOK",
+        "rerunReason": null,
+        "totals": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0,
+          "estimatedCostMicros": "0",
+          "durationMs": 0,
+          "skippedCount": 0
+        },
+        "stages": [
+          {
+            "stageKey": "STAGE_A",
+            "status": "SUCCEEDED",
+            "chapterStartNo": 21,
+            "chapterEndNo": 43,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "estimatedCostMicros": "0",
+            "durationMs": 0,
+            "skippedCount": 0
+          }
+        ]
+      },
+      "delta": {
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "totalTokens": 0,
+        "estimatedCostMicros": "0",
+        "durationMs": 0,
+        "skippedCount": 0
+      },
+      "savings": {
+        "totalTokenSavingsPct": null,
+        "costSavingsPct": null,
+        "durationSavingsPct": null
+      },
+      "stageCoverage": {
+        "baselineStageKeys": [
+          "STAGE_A"
+        ],
+        "candidateStageKeys": [
+          "STAGE_A"
+        ],
+        "skippedStageKeys": []
+      }
+    }
+  },
+  "generatedAtIso": "2026-04-24T14:41:40.142Z",
   "markdownPath": "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.md",
   "jsonPath": "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.json"
 }

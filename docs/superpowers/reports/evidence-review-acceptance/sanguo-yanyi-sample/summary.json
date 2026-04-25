@@ -1,0 +1,115 @@
+{
+  "scenarioKey": "sanguo-yanyi-sample",
+  "bookId": "10000000-0000-4000-8000-000000000002",
+  "bookTitle": "三国演义",
+  "generatedAtIso": "2026-04-24T14:52:31.648Z",
+  "referencedArtifacts": {
+    "t20TaskPath": "docs/superpowers/tasks/2026-04-18-evidence-review/20-cutover-read-paths.md",
+    "t21MarkdownPath": "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.md",
+    "t21JsonPath": "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.json"
+  },
+  "loopResults": [
+    {
+      "loopKey": "EVIDENCE",
+      "passed": true,
+      "summary": "Validated 10 accepted claim evidence chains.",
+      "evidenceLines": [
+        "RELATION:25000000-0000-4000-8000-000000000003 has evidence",
+        "RELATION:25000000-0000-4000-8000-000000000002 has evidence",
+        "RELATION:25000000-0000-4000-8000-000000000001 has evidence",
+        "EVENT:24000000-0000-4000-8000-000000000002 has evidence",
+        "EVENT:24000000-0000-4000-8000-000000000001 has evidence",
+        "TIME:26000000-0000-4000-8000-000000000002 has evidence",
+        "TIME:26000000-0000-4000-8000-000000000001 has evidence",
+        "IDENTITY_RESOLUTION:23000000-0000-4000-8000-000000000003 has evidence",
+        "IDENTITY_RESOLUTION:23000000-0000-4000-8000-000000000002 has evidence",
+        "IDENTITY_RESOLUTION:23000000-0000-4000-8000-000000000001 has evidence"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "REVIEW",
+      "passed": true,
+      "summary": "Observed all expected review mutations.",
+      "evidenceLines": [
+        "Observed EDIT"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "PROJECTION",
+      "passed": true,
+      "summary": "Projection rebuild preserved 10 canonical keys.",
+      "evidenceLines": [
+        "Preserved chapter:21|persona:刘备|fact:青梅煮酒时隐藏志向|evidence:玄德闻雷失箸以掩饰惊惧",
+        "Preserved chapter:37|persona:诸葛亮|fact:三顾茅庐后出山辅佐|evidence:孔明出山辅佐刘备",
+        "Preserved persona:刘备|aliases:玄德",
+        "Preserved persona:曹操|aliases:孟德",
+        "Preserved persona:诸葛亮|aliases:孔明",
+        "Preserved relation:刘备->曹操:guest_of:FORWARD:21:22|evidence:玄德寄身曹操篱下",
+        "Preserved relation:刘备->曹操:rival_of:BIDIRECTIONAL:24:43|evidence:刘备脱离曹操后分庭抗礼",
+        "Preserved relation:刘备->诸葛亮:political_patron_of:FORWARD:37:38|evidence:玄德三顾草庐请孔明",
+        "Preserved time:刘备:徐州事变后不久:null:21:22|evidence:不数日曹操军至",
+        "Preserved time:诸葛亮:三顾茅庐后:370:37:38|evidence:三顾之后"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "KNOWLEDGE",
+      "passed": true,
+      "summary": "Reviewed knowledge influences normalization and still flows through reviewable claims.",
+      "evidenceLines": [
+        "relationCatalogAvailable=true",
+        "reviewedClaimBackedProjection=true"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "REBUILD",
+      "passed": true,
+      "summary": "T21 rerun comparison confirms identical truth and cost comparison is available.",
+      "evidenceLines": [
+        "hasReferenceReport=true",
+        "rerunIdentical=true",
+        "hasCostComparison=true"
+      ],
+      "artifactPaths": [
+        "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.md",
+        "docs/superpowers/reports/review-regression/sanguo-yanyi-sample/summary.json"
+      ],
+      "blocking": false
+    }
+  ],
+  "manualChecks": [
+    {
+      "checkKey": "persona-chapter-evidence-jump",
+      "routePath": "/admin/review/10000000-0000-4000-8000-000000000002",
+      "expectedObservation": "人物x章节矩阵可追到战役相关原文。",
+      "observed": "PENDING_MANUAL_VERIFICATION",
+      "passed": false,
+      "blocking": true
+    },
+    {
+      "checkKey": "relation-editor-evidence-jump",
+      "routePath": "/admin/review/10000000-0000-4000-8000-000000000002/relations",
+      "expectedObservation": "关系页可编辑动态关系并保留方向。",
+      "observed": "PENDING_MANUAL_VERIFICATION",
+      "passed": false,
+      "blocking": true
+    },
+    {
+      "checkKey": "persona-time-evidence-jump",
+      "routePath": "/admin/review/10000000-0000-4000-8000-000000000002/time",
+      "expectedObservation": "人物x时间矩阵可展示模糊时间片并回跳章节。",
+      "observed": "PENDING_MANUAL_VERIFICATION",
+      "passed": false,
+      "blocking": true
+    }
+  ],
+  "risks": [],
+  "decision": "NO_GO"
+}

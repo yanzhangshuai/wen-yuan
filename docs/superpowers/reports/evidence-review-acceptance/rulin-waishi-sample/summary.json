@@ -1,0 +1,111 @@
+{
+  "scenarioKey": "rulin-waishi-sample",
+  "bookId": "10000000-0000-4000-8000-000000000001",
+  "bookTitle": "儒林外史",
+  "generatedAtIso": "2026-04-24T14:52:31.648Z",
+  "referencedArtifacts": {
+    "t20TaskPath": "docs/superpowers/tasks/2026-04-18-evidence-review/20-cutover-read-paths.md",
+    "t21MarkdownPath": "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.md",
+    "t21JsonPath": "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.json"
+  },
+  "loopResults": [
+    {
+      "loopKey": "EVIDENCE",
+      "passed": true,
+      "summary": "Validated 8 accepted claim evidence chains.",
+      "evidenceLines": [
+        "RELATION:18000000-0000-4000-8000-000000000002 has evidence",
+        "RELATION:18000000-0000-4000-8000-000000000001 has evidence",
+        "EVENT:17000000-0000-4000-8000-000000000001 has evidence",
+        "TIME:19000000-0000-4000-8000-000000000001 has evidence",
+        "IDENTITY_RESOLUTION:16000000-0000-4000-8000-000000000004 has evidence",
+        "IDENTITY_RESOLUTION:16000000-0000-4000-8000-000000000003 has evidence",
+        "IDENTITY_RESOLUTION:16000000-0000-4000-8000-000000000002 has evidence",
+        "IDENTITY_RESOLUTION:16000000-0000-4000-8000-000000000001 has evidence"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "REVIEW",
+      "passed": true,
+      "summary": "Observed all expected review mutations.",
+      "evidenceLines": [
+        "Observed MERGE_PERSONA",
+        "Observed DEFER"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "PROJECTION",
+      "passed": true,
+      "summary": "Projection rebuild preserved 7 canonical keys.",
+      "evidenceLines": [
+        "Preserved chapter:3|persona:范进|fact:中举后社会身份骤变|evidence:中举报到，众人改口称老爷",
+        "Preserved persona:张乡绅|aliases:",
+        "Preserved persona:胡屠户|aliases:胡老爹",
+        "Preserved persona:范进|aliases:范举人,范老爷",
+        "Preserved relation:张乡绅->范进:patron_of:FORWARD:3:4|evidence:张乡绅赠银并攀谈",
+        "Preserved relation:胡屠户->范进:father_in_law_of:FORWARD:3:4|evidence:胡屠户认范进为女婿",
+        "Preserved time:范进:范进中举后:300:3:4|evidence:中举之后众人改口"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "KNOWLEDGE",
+      "passed": true,
+      "summary": "Reviewed knowledge influences normalization and still flows through reviewable claims.",
+      "evidenceLines": [
+        "relationCatalogAvailable=true",
+        "reviewedClaimBackedProjection=true"
+      ],
+      "artifactPaths": [],
+      "blocking": false
+    },
+    {
+      "loopKey": "REBUILD",
+      "passed": true,
+      "summary": "T21 rerun comparison confirms identical truth and cost comparison is available.",
+      "evidenceLines": [
+        "hasReferenceReport=true",
+        "rerunIdentical=true",
+        "hasCostComparison=true"
+      ],
+      "artifactPaths": [
+        "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.md",
+        "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.json"
+      ],
+      "blocking": false
+    }
+  ],
+  "manualChecks": [
+    {
+      "checkKey": "persona-chapter-evidence-jump",
+      "routePath": "/admin/review/10000000-0000-4000-8000-000000000001",
+      "expectedObservation": "人物x章节矩阵可打开共享明细面板并跳转原文证据。",
+      "observed": "PENDING_MANUAL_VERIFICATION",
+      "passed": false,
+      "blocking": true
+    },
+    {
+      "checkKey": "relation-editor-evidence-jump",
+      "routePath": "/admin/review/10000000-0000-4000-8000-000000000001/relations",
+      "expectedObservation": "关系编辑页可查看方向、生效区间与证据原文。",
+      "observed": "PENDING_MANUAL_VERIFICATION",
+      "passed": false,
+      "blocking": true
+    },
+    {
+      "checkKey": "persona-time-evidence-jump",
+      "routePath": "/admin/review/10000000-0000-4000-8000-000000000001/time",
+      "expectedObservation": "人物x时间矩阵可打开共享明细面板并查看关联章节。",
+      "observed": "PENDING_MANUAL_VERIFICATION",
+      "passed": false,
+      "blocking": true
+    }
+  ],
+  "risks": [],
+  "decision": "NO_GO"
+}

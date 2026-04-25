@@ -1,5 +1,7 @@
 import { prisma } from "@/server/db/prisma";
 import {
+  AnalysisJobStatus,
+  AnalysisStageRunStatus,
   AliasType,
   BioCategory,
   BookTypeCode,
@@ -29,6 +31,10 @@ type SeedDeleteCreateManyDelegate = SeedDeleteManyDelegate & {
   createMany(args: { data: unknown[] }): Promise<unknown>;
 };
 
+type SeedUpsertDelegate = {
+  upsert(args: unknown): Promise<Record<string, unknown>>;
+};
+
 type SeedBookRow = {
   id: string;
 };
@@ -39,6 +45,8 @@ type SeedTransactionClient = {
     updateMany(args: unknown): Promise<unknown>;
     upsert(args: unknown): Promise<SeedBookRow>;
   };
+  analysisRun     : SeedUpsertDelegate;
+  analysisStageRun: SeedDeleteCreateManyDelegate;
   persona: {
     upsert(args: unknown): Promise<Record<string, unknown>>;
   };
@@ -72,8 +80,10 @@ export interface SeedReviewRegressionSamplesInput {
 
 export interface SeedReviewRegressionSamplesResult {
   books: Array<{
-    bookId    : string;
-    fixtureKey: string;
+    bookId        : string;
+    fixtureKey    : string;
+    baselineRunId : string;
+    candidateRunId: string;
   }>;
 }
 
@@ -155,12 +165,14 @@ type SampleEvidenceSpec = {
 };
 
 type SampleBookSeed = {
-  fixtureKey: string;
-  bookId    : string;
-  title     : string;
-  author    : string;
-  typeCode  : keyof typeof BookTypeCode;
-  runId     : string;
+  fixtureKey    : string;
+  bookId        : string;
+  title         : string;
+  author        : string;
+  typeCode      : keyof typeof BookTypeCode;
+  baselineRunId : string;
+  candidateRunId: string;
+  actionRunId?  : string;
   chapters       : Array<{
     id     : string;
     no     : number;
@@ -176,8 +188,13 @@ type SampleBookSeed = {
   timeClaims    : SampleTimeClaimSeed[];
 };
 
-const RULIN_BOOK_ID = "10000000-0000-4000-8000-000000000001";
-const SANGUO_BOOK_ID = "10000000-0000-4000-8000-000000000002";
+export const RULIN_BOOK_ID = "10000000-0000-4000-8000-000000000001";
+export const SANGUO_BOOK_ID = "10000000-0000-4000-8000-000000000002";
+export const RULIN_BASELINE_RUN_ID = "1a000000-0000-4000-8000-000000000001";
+export const RULIN_CANDIDATE_RUN_ID = "1a000000-0000-4000-8000-000000000002";
+const RULIN_ACTION_RUN_ID = "1a000000-0000-4000-8000-000000000099";
+export const SANGUO_BASELINE_RUN_ID = "2a000000-0000-4000-8000-000000000001";
+export const SANGUO_CANDIDATE_RUN_ID = "2a000000-0000-4000-8000-000000000002";
 
 const SAMPLE_BOOKS: readonly SampleBookSeed[] = [
   buildRulinWaishiSample(),
@@ -197,11 +214,18 @@ export async function seedReviewRegressionSamples(
     for (const sample of SAMPLE_BOOKS) {
       await softDeleteConflictingBooks(tx, sample, seededAt);
       await upsertSampleBook(tx, sample);
+      await upsertSampleRuns(tx, sample);
+      await replaceSampleStageRuns(tx, sample);
       await upsertSamplePersonas(tx, sample.personas);
       await clearBookScopedRows(tx, sample.bookId);
       await insertBookScopedRows(tx, sample);
       await rebuildSampleProjection(tx, sample.bookId);
-      books.push({ bookId: sample.bookId, fixtureKey: sample.fixtureKey });
+      books.push({
+        bookId        : sample.bookId,
+        fixtureKey    : sample.fixtureKey,
+        baselineRunId : sample.baselineRunId,
+        candidateRunId: sample.candidateRunId
+      });
     }
 
     return { books };
@@ -285,6 +309,58 @@ async function upsertSamplePersonas(
   }
 }
 
+async function upsertSampleRuns(
+  tx: SeedTransactionClient,
+  sample: SampleBookSeed
+): Promise<void> {
+  for (const runId of [sample.baselineRunId, sample.candidateRunId]) {
+    await tx.analysisRun.upsert({
+      where : { id: runId },
+      update: {
+        id             : runId,
+        bookId         : sample.bookId,
+        trigger        : "REVIEW_REGRESSION_SAMPLE",
+        scope          : "FULL_BOOK",
+        status         : AnalysisJobStatus.SUCCEEDED,
+        currentStageKey: "stage_a_extraction"
+      },
+      create: {
+        id             : runId,
+        bookId         : sample.bookId,
+        trigger        : "REVIEW_REGRESSION_SAMPLE",
+        scope          : "FULL_BOOK",
+        status         : AnalysisJobStatus.SUCCEEDED,
+        currentStageKey: "stage_a_extraction"
+      }
+    });
+  }
+}
+
+async function replaceSampleStageRuns(
+  tx: SeedTransactionClient,
+  sample: SampleBookSeed
+): Promise<void> {
+  await tx.analysisStageRun.deleteMany({
+    where: { runId: { in: [sample.baselineRunId, sample.candidateRunId] } }
+  });
+
+  const chapterNos = sample.chapters.map((chapter) => chapter.no);
+  const chapterStartNo = Math.min(...chapterNos);
+  const chapterEndNo = Math.max(...chapterNos);
+
+  await tx.analysisStageRun.createMany({
+    data: [sample.baselineRunId, sample.candidateRunId].map((runId) => ({
+      runId,
+      bookId  : sample.bookId,
+      stageKey: "stage_a_extraction",
+      status  : AnalysisStageRunStatus.SUCCEEDED,
+      attempt : 1,
+      chapterStartNo,
+      chapterEndNo
+    }))
+  });
+}
+
 async function clearBookScopedRows(tx: SeedTransactionClient, bookId: string): Promise<void> {
   await tx.timelineEvent.deleteMany({ where: { bookId } });
   await tx.relationshipEdge.deleteMany({ where: { bookId } });
@@ -311,7 +387,7 @@ async function insertBookScopedRows(
     id            : spec.segmentId,
     bookId        : sample.bookId,
     chapterId     : requireChapterId(chapterIdByNo, sample, spec.chapterNo),
-    runId         : sample.runId,
+    runId         : sample.baselineRunId,
     segmentIndex  : spec.segmentIndex,
     segmentType   : ChapterSegmentType.NARRATIVE,
     startOffset   : 0,
@@ -332,8 +408,13 @@ async function insertBookScopedRows(
     normalizedText     : spec.snippet,
     speakerHint        : null,
     narrativeRegionType: "NARRATION",
-    createdByRunId     : sample.runId
+    createdByRunId     : sample.baselineRunId
   }));
+  const candidateTimeIdByBaselineId = new Map(
+    sample.timeClaims.map((claim) => [claim.id, buildCandidateCloneId(claim.id)])
+  );
+  const acceptedIdentityClaims = sample.identityClaims.filter((claim) => claim.reviewState === "ACCEPTED");
+  const actionIdentityClaims = sample.identityClaims.filter((claim) => claim.reviewState !== "ACCEPTED");
 
   await tx.chapter.createMany({
     data: sample.chapters.map((chapter) => ({
@@ -371,87 +452,185 @@ async function insertBookScopedRows(
       lastSeenChapterNo : candidate.lastSeenChapterNo,
       mentionCount      : 1,
       evidenceScore     : 1,
-      runId             : sample.runId
+      runId             : sample.baselineRunId
     }))
   });
   await tx.identityResolutionClaim.createMany({
-    data: sample.identityClaims.map((claim) => ({
-      id                : claim.id,
-      bookId            : sample.bookId,
-      chapterId         : claim.chapterNo === null ? null : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
-      mentionId         : claim.mentionId,
-      personaCandidateId: claim.personaCandidateId,
-      resolvedPersonaId : claim.resolvedPersonaId,
-      resolutionKind    : IdentityResolutionKind.RESOLVES_TO,
-      rationale         : claim.rationale,
-      evidenceSpanIds   : claim.evidenceSpanIds,
-      confidence        : claim.reviewState === "ACCEPTED" ? 0.98 : 0.62,
-      reviewState       : ClaimReviewState[claim.reviewState],
-      source            : ClaimSource.AI,
-      runId             : sample.runId
-    }))
+    data: [
+      ...acceptedIdentityClaims.map((claim) => ({
+        id                : claim.id,
+        bookId            : sample.bookId,
+        chapterId         : claim.chapterNo === null ? null : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        mentionId         : claim.mentionId,
+        personaCandidateId: claim.personaCandidateId,
+        resolvedPersonaId : claim.resolvedPersonaId,
+        resolutionKind    : IdentityResolutionKind.RESOLVES_TO,
+        rationale         : claim.rationale,
+        evidenceSpanIds   : claim.evidenceSpanIds,
+        confidence        : 0.98,
+        reviewState       : ClaimReviewState.ACCEPTED,
+        source            : ClaimSource.AI,
+        runId             : sample.baselineRunId
+      })),
+      ...acceptedIdentityClaims.map((claim) => ({
+        id                : buildCandidateCloneId(claim.id),
+        bookId            : sample.bookId,
+        chapterId         : claim.chapterNo === null ? null : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        mentionId         : claim.mentionId,
+        personaCandidateId: claim.personaCandidateId,
+        resolvedPersonaId : claim.resolvedPersonaId,
+        resolutionKind    : IdentityResolutionKind.RESOLVES_TO,
+        rationale         : claim.rationale,
+        evidenceSpanIds   : claim.evidenceSpanIds,
+        confidence        : 0.62,
+        reviewState       : ClaimReviewState.PENDING,
+        source            : ClaimSource.AI,
+        runId             : sample.candidateRunId
+      })),
+      ...actionIdentityClaims.map((claim) => ({
+        id                : claim.id,
+        bookId            : sample.bookId,
+        chapterId         : claim.chapterNo === null ? null : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        mentionId         : claim.mentionId,
+        personaCandidateId: claim.personaCandidateId,
+        resolvedPersonaId : claim.resolvedPersonaId,
+        resolutionKind    : IdentityResolutionKind.RESOLVES_TO,
+        rationale         : claim.rationale,
+        evidenceSpanIds   : claim.evidenceSpanIds,
+        confidence        : 0.62,
+        reviewState       : ClaimReviewState[claim.reviewState],
+        source            : ClaimSource.AI,
+        runId             : requireActionRunId(sample, claim.id)
+      }))
+    ]
   });
   await tx.timeClaim.createMany({
-    data: sample.timeClaims.map((claim) => ({
-      id                 : claim.id,
-      bookId             : sample.bookId,
-      chapterId          : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
-      rawTimeText        : claim.rawTimeText,
-      timeType           : TimeType[claim.timeType],
-      normalizedLabel    : claim.normalizedLabel,
-      relativeOrderWeight: claim.relativeOrderWeight,
-      chapterRangeStart  : claim.chapterRangeStart,
-      chapterRangeEnd    : claim.chapterRangeEnd,
-      evidenceSpanIds    : claim.evidenceSpanIds,
-      confidence         : 0.95,
-      reviewState        : ClaimReviewState.ACCEPTED,
-      source             : ClaimSource.AI,
-      runId              : sample.runId
-    }))
+    data: [
+      ...sample.timeClaims.map((claim) => ({
+        id                 : claim.id,
+        bookId             : sample.bookId,
+        chapterId          : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        rawTimeText        : claim.rawTimeText,
+        timeType           : TimeType[claim.timeType],
+        normalizedLabel    : claim.normalizedLabel,
+        relativeOrderWeight: claim.relativeOrderWeight,
+        chapterRangeStart  : claim.chapterRangeStart,
+        chapterRangeEnd    : claim.chapterRangeEnd,
+        evidenceSpanIds    : claim.evidenceSpanIds,
+        confidence         : 0.95,
+        reviewState        : ClaimReviewState.ACCEPTED,
+        source             : ClaimSource.AI,
+        runId              : sample.baselineRunId
+      })),
+      ...sample.timeClaims.map((claim) => ({
+        id                 : requireCandidateCloneId(candidateTimeIdByBaselineId, claim.id),
+        bookId             : sample.bookId,
+        chapterId          : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        rawTimeText        : claim.rawTimeText,
+        timeType           : TimeType[claim.timeType],
+        normalizedLabel    : claim.normalizedLabel,
+        relativeOrderWeight: claim.relativeOrderWeight,
+        chapterRangeStart  : claim.chapterRangeStart,
+        chapterRangeEnd    : claim.chapterRangeEnd,
+        evidenceSpanIds    : claim.evidenceSpanIds,
+        confidence         : 0.72,
+        reviewState        : ClaimReviewState.PENDING,
+        source             : ClaimSource.AI,
+        runId              : sample.candidateRunId
+      }))
+    ]
   });
   await tx.eventClaim.createMany({
-    data: sample.eventClaims.map((claim) => ({
-      id                       : claim.id,
-      bookId                   : sample.bookId,
-      chapterId                : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
-      subjectMentionId         : null,
-      subjectPersonaCandidateId: claim.subjectPersonaCandidateId,
-      predicate                : claim.predicate,
-      objectText               : null,
-      objectPersonaCandidateId : null,
-      locationText             : null,
-      timeHintId               : claim.timeHintId,
-      eventCategory            : BioCategory[claim.eventCategory],
-      narrativeLens            : NarrativeLens.SELF,
-      evidenceSpanIds          : claim.evidenceSpanIds,
-      confidence               : 0.95,
-      reviewState              : ClaimReviewState.ACCEPTED,
-      source                   : ClaimSource.AI,
-      runId                    : sample.runId
-    }))
+    data: [
+      ...sample.eventClaims.map((claim) => ({
+        id                       : claim.id,
+        bookId                   : sample.bookId,
+        chapterId                : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        subjectMentionId         : null,
+        subjectPersonaCandidateId: claim.subjectPersonaCandidateId,
+        predicate                : claim.predicate,
+        objectText               : null,
+        objectPersonaCandidateId : null,
+        locationText             : null,
+        timeHintId               : claim.timeHintId,
+        eventCategory            : BioCategory[claim.eventCategory],
+        narrativeLens            : NarrativeLens.SELF,
+        evidenceSpanIds          : claim.evidenceSpanIds,
+        confidence               : 0.95,
+        reviewState              : ClaimReviewState.ACCEPTED,
+        source                   : ClaimSource.AI,
+        runId                    : sample.baselineRunId
+      })),
+      ...sample.eventClaims.map((claim) => ({
+        id                       : buildCandidateCloneId(claim.id),
+        bookId                   : sample.bookId,
+        chapterId                : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        subjectMentionId         : null,
+        subjectPersonaCandidateId: claim.subjectPersonaCandidateId,
+        predicate                : claim.predicate,
+        objectText               : null,
+        objectPersonaCandidateId : null,
+        locationText             : null,
+        timeHintId               : claim.timeHintId === null
+          ? null
+          : requireCandidateCloneId(candidateTimeIdByBaselineId, claim.timeHintId),
+        eventCategory  : BioCategory[claim.eventCategory],
+        narrativeLens  : NarrativeLens.SELF,
+        evidenceSpanIds: claim.evidenceSpanIds,
+        confidence     : 0.73,
+        reviewState    : ClaimReviewState.PENDING,
+        source         : ClaimSource.AI,
+        runId          : sample.candidateRunId
+      }))
+    ]
   });
   await tx.relationClaim.createMany({
-    data: sample.relationClaims.map((claim) => ({
-      id                      : claim.id,
-      bookId                  : sample.bookId,
-      chapterId               : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
-      sourceMentionId         : null,
-      targetMentionId         : null,
-      sourcePersonaCandidateId: claim.sourcePersonaCandidateId,
-      targetPersonaCandidateId: claim.targetPersonaCandidateId,
-      relationTypeKey         : claim.relationTypeKey,
-      relationLabel           : claim.relationLabel,
-      relationTypeSource      : RelationTypeSource[claim.relationTypeSource],
-      direction               : RelationDirection[claim.direction],
-      effectiveChapterStart   : claim.effectiveChapterStart,
-      effectiveChapterEnd     : claim.effectiveChapterEnd,
-      timeHintId              : claim.timeHintId,
-      evidenceSpanIds         : claim.evidenceSpanIds,
-      confidence              : 0.94,
-      reviewState             : ClaimReviewState.ACCEPTED,
-      source                  : ClaimSource.AI,
-      runId                   : sample.runId
-    }))
+    data: [
+      ...sample.relationClaims.map((claim) => ({
+        id                      : claim.id,
+        bookId                  : sample.bookId,
+        chapterId               : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        sourceMentionId         : null,
+        targetMentionId         : null,
+        sourcePersonaCandidateId: claim.sourcePersonaCandidateId,
+        targetPersonaCandidateId: claim.targetPersonaCandidateId,
+        relationTypeKey         : claim.relationTypeKey,
+        relationLabel           : claim.relationLabel,
+        relationTypeSource      : RelationTypeSource[claim.relationTypeSource],
+        direction               : RelationDirection[claim.direction],
+        effectiveChapterStart   : claim.effectiveChapterStart,
+        effectiveChapterEnd     : claim.effectiveChapterEnd,
+        timeHintId              : claim.timeHintId,
+        evidenceSpanIds         : claim.evidenceSpanIds,
+        confidence              : 0.94,
+        reviewState             : ClaimReviewState.ACCEPTED,
+        source                  : ClaimSource.AI,
+        runId                   : sample.baselineRunId
+      })),
+      ...sample.relationClaims.map((claim) => ({
+        id                      : buildCandidateCloneId(claim.id),
+        bookId                  : sample.bookId,
+        chapterId               : requireChapterId(chapterIdByNo, sample, claim.chapterNo),
+        sourceMentionId         : null,
+        targetMentionId         : null,
+        sourcePersonaCandidateId: claim.sourcePersonaCandidateId,
+        targetPersonaCandidateId: claim.targetPersonaCandidateId,
+        relationTypeKey         : claim.relationTypeKey,
+        relationLabel           : claim.relationLabel,
+        relationTypeSource      : RelationTypeSource[claim.relationTypeSource],
+        direction               : RelationDirection[claim.direction],
+        effectiveChapterStart   : claim.effectiveChapterStart,
+        effectiveChapterEnd     : claim.effectiveChapterEnd,
+        timeHintId              : claim.timeHintId === null
+          ? null
+          : requireCandidateCloneId(candidateTimeIdByBaselineId, claim.timeHintId),
+        evidenceSpanIds: claim.evidenceSpanIds,
+        confidence     : 0.71,
+        reviewState    : ClaimReviewState.PENDING,
+        source         : ClaimSource.AI,
+        runId          : sample.candidateRunId
+      }))
+    ]
   });
 }
 
@@ -481,6 +660,34 @@ function requireChapterId(
     throw new Error(`Missing chapter ${chapterNo} for sample ${sample.fixtureKey}`);
   }
   return chapterId;
+}
+
+function requireActionRunId(sample: SampleBookSeed, claimId: string): string {
+  if (sample.actionRunId === undefined) {
+    throw new Error(`Sample ${sample.fixtureKey} is missing actionRunId for pending claim ${claimId}`);
+  }
+
+  return sample.actionRunId;
+}
+
+function buildCandidateCloneId(id: string): string {
+  if (id.length === 0 || id[0]?.toLowerCase() === "f") {
+    throw new Error(`Cannot derive deterministic candidate clone id from ${id}`);
+  }
+
+  return `f${id.slice(1)}`;
+}
+
+function requireCandidateCloneId(
+  candidateIdByBaselineId: ReadonlyMap<string, string>,
+  baselineId: string
+): string {
+  const candidateId = candidateIdByBaselineId.get(baselineId);
+  if (candidateId === undefined) {
+    throw new Error(`Missing candidate clone id for ${baselineId}`);
+  }
+
+  return candidateId;
 }
 
 function resolveSnippetOffset(text: string, snippet: string): number {
@@ -535,13 +742,15 @@ function buildRulinWaishiSample(): SampleBookSeed {
   } as const;
 
   return {
-    fixtureKey: "rulin-waishi-sample",
-    bookId    : RULIN_BOOK_ID,
-    title     : "儒林外史",
-    author    : "吴敬梓",
-    typeCode  : "CLASSICAL_NOVEL",
-    runId     : "1a000000-0000-4000-8000-000000000001",
-    chapters  : [
+    fixtureKey    : "rulin-waishi-sample",
+    bookId        : RULIN_BOOK_ID,
+    title         : "儒林外史",
+    author        : "吴敬梓",
+    typeCode      : "CLASSICAL_NOVEL",
+    baselineRunId : RULIN_BASELINE_RUN_ID,
+    candidateRunId: RULIN_CANDIDATE_RUN_ID,
+    actionRunId   : RULIN_ACTION_RUN_ID,
+    chapters      : [
       {
         id     : chapters.chapter3,
         no     : 3,
@@ -793,14 +1002,15 @@ function buildSanguoYanyiSample(): SampleBookSeed {
   });
 
   return {
-    fixtureKey   : "sanguo-yanyi-sample",
-    bookId       : SANGUO_BOOK_ID,
-    title        : "三国演义",
-    author       : "罗贯中",
-    typeCode     : "HISTORICAL_NOVEL",
-    runId        : "2a000000-0000-4000-8000-000000000001",
+    fixtureKey    : "sanguo-yanyi-sample",
+    bookId        : SANGUO_BOOK_ID,
+    title         : "三国演义",
+    author        : "罗贯中",
+    typeCode      : "HISTORICAL_NOVEL",
+    baselineRunId : SANGUO_BASELINE_RUN_ID,
+    candidateRunId: SANGUO_CANDIDATE_RUN_ID,
     chapters,
-    evidenceSpecs: [
+    evidenceSpecs : [
       {
         id          : evidence.eventLiuBei,
         chapterNo   : 21,

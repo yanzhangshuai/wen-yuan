@@ -25,12 +25,12 @@ export const acceptanceLoopResultSchema = z.object({
 });
 
 export const acceptanceManualCheckResultSchema = z.object({
-  checkKey            : z.string().min(1),
-  routePath           : z.string().min(1),
-  expectedObservation : z.string().min(1),
-  observed            : z.string().min(1),
-  passed              : z.boolean(),
-  blocking            : z.boolean()
+  checkKey           : z.string().min(1),
+  routePath          : z.string().min(1),
+  expectedObservation: z.string().min(1),
+  observed           : z.string().min(1),
+  passed             : z.boolean(),
+  blocking           : z.boolean()
 });
 
 export const acceptanceManualObservationFileSchema = z.object({
@@ -44,10 +44,10 @@ export const acceptanceManualObservationFileSchema = z.object({
 });
 
 export const acceptanceBookReportSchema = z.object({
-  scenarioKey       : z.string().min(1),
-  bookId            : z.string().min(1),
-  bookTitle         : z.string().min(1),
-  generatedAtIso    : z.string().datetime(),
+  scenarioKey        : z.string().min(1),
+  bookId             : z.string().min(1),
+  bookTitle          : z.string().min(1),
+  generatedAtIso     : z.string().datetime(),
   referencedArtifacts: z.object({
     t20TaskPath    : z.string().min(1),
     t21MarkdownPath: z.string().min(1),
@@ -60,12 +60,12 @@ export const acceptanceBookReportSchema = z.object({
 });
 
 export const finalAcceptanceReportSchema = z.object({
-  generatedAtIso   : z.string().datetime(),
-  overallDecision  : z.enum(["GO", "NO_GO"]),
-  bookReports      : z.array(acceptanceBookReportSchema),
-  blockingRisks    : z.array(acceptanceRiskItemSchema),
-  nonBlockingRisks : z.array(acceptanceRiskItemSchema),
-  summaryLines     : z.array(z.string().min(1))
+  generatedAtIso  : z.string().datetime(),
+  overallDecision : z.enum(["GO", "NO_GO"]),
+  bookReports     : z.array(acceptanceBookReportSchema),
+  blockingRisks   : z.array(acceptanceRiskItemSchema),
+  nonBlockingRisks: z.array(acceptanceRiskItemSchema),
+  summaryLines    : z.array(z.string().min(1))
 });
 
 export type AcceptanceBookReport = z.infer<typeof acceptanceBookReportSchema>;

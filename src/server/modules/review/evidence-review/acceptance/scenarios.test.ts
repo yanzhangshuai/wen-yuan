@@ -11,6 +11,11 @@ describe("acceptance scenarios", () => {
       "rulin-waishi-sample",
       "sanguo-yanyi-sample"
     ]);
+    expect(ACCEPTANCE_SCENARIOS[0]).toMatchObject({
+      sampleBookId  : "10000000-0000-4000-8000-000000000001",
+      baselineRunId : "1a000000-0000-4000-8000-000000000001",
+      candidateRunId: "1a000000-0000-4000-8000-000000000002"
+    });
     expect(ACCEPTANCE_SCENARIOS[0].reportPaths.markdownPath)
       .toBe("docs/superpowers/reports/evidence-review-acceptance/rulin-waishi-sample/summary.md");
     expect(ACCEPTANCE_SCENARIOS[1].referenceReports.t21JsonPath)

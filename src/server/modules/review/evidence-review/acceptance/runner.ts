@@ -44,6 +44,9 @@ import {
 
 type AcceptanceScenario = {
   scenarioKey          : string;
+  sampleBookId         : string;
+  baselineRunId        : string;
+  candidateRunId       : string;
   bookTitle            : string;
   fixturePath          : string;
   manualObservationPath: string;
@@ -56,7 +59,7 @@ type AcceptanceScenario = {
     t21MarkdownPath: string;
     t21JsonPath    : string;
   };
-  manualChecks: Array<{
+  manualChecks: ReadonlyArray<{
     checkKey           : string;
     routeKind          : "personaChapter" | "relationEditor" | "personaTime";
     expectedObservation: string;
@@ -64,11 +67,24 @@ type AcceptanceScenario = {
 };
 
 type AcceptanceRegressionReport = {
-  markdownPath : string;
-  jsonPath     : string;
+  markdownPath  : string;
+  jsonPath      : string;
+  actionResults?: Array<{
+    scenarioKey: string;
+    passed     : boolean;
+    message    : string;
+    auditAction: string | null;
+  }>;
   runComparison: {
-    snapshotDiff  : { identical: boolean };
-    costComparison: Record<string, unknown> | null;
+    baselineRunId? : string;
+    candidateRunId?: string;
+    snapshotDiff  : {
+      identical   : boolean;
+      addedKeys?  : string[];
+      removedKeys?: string[];
+      changedKeys?: string[];
+    };
+    costComparison?: unknown;
   } | null;
 };
 
@@ -101,6 +117,7 @@ export interface ManualChecklistRecorder {
 interface AcceptanceRepositoryAdapter {
   loadBookContext(input: {
     scenarioKey: string;
+    bookId?    : string;
     bookTitle  : string;
   }): Promise<AcceptanceBookContext>;
 }
@@ -114,6 +131,8 @@ interface RunEndToEndAcceptanceInput {
   finalReportPaths      : { markdownPath: string; jsonPath: string };
   ensureRegressionReport: (scenario: {
     fixturePath     : string;
+    baselineRunId   : string;
+    candidateRunId  : string;
     referenceReports: AcceptanceScenario["referenceReports"];
   }) => Promise<AcceptanceRegressionReport>;
   acceptanceRepository: AcceptanceRepositoryAdapter;
@@ -196,6 +215,33 @@ function buildLoopRisks(
       owner     : "AI acceptance runner",
       mitigation: "Fix failing loop before launch."
     }));
+}
+
+function collectObservedReviewActions(input: {
+  auditActions : string[];
+  actionResults: AcceptanceRegressionReport["actionResults"];
+}): string[] {
+  const observedActions = new Set(input.auditActions);
+
+  for (const result of input.actionResults ?? []) {
+    if (result.passed && typeof result.auditAction === "string" && result.auditAction.trim().length > 0) {
+      observedActions.add(result.auditAction);
+    }
+  }
+
+  return [...observedActions];
+}
+
+function collectExpectedReviewActions(
+  actionResults: AcceptanceRegressionReport["actionResults"]
+): string[] {
+  return [...new Set(
+    (actionResults ?? [])
+      .map((result) => result.auditAction)
+      .filter((auditAction): auditAction is string => {
+        return typeof auditAction === "string" && auditAction.trim().length > 0;
+      })
+  )];
 }
 
 /**
@@ -305,10 +351,13 @@ export async function runEndToEndAcceptance(
   for (const scenario of input.scenarios) {
     const regression = await input.ensureRegressionReport({
       fixturePath     : scenario.fixturePath,
+      baselineRunId   : scenario.baselineRunId,
+      candidateRunId  : scenario.candidateRunId,
       referenceReports: scenario.referenceReports
     });
     const context = await input.acceptanceRepository.loadBookContext({
       scenarioKey: scenario.scenarioKey,
+      bookId     : scenario.sampleBookId,
       bookTitle  : scenario.bookTitle
     });
     const projection = await input.snapshotProvider.buildBeforeAfter({
@@ -330,7 +379,11 @@ export async function runEndToEndAcceptance(
       claimDetails: context.claimDetails
     }));
     const reviewLoop = acceptanceLoopResultSchema.parse(evaluateReviewLoop({
-      auditActions: context.auditActions
+      auditActions: collectObservedReviewActions({
+        auditActions : context.auditActions,
+        actionResults: regression.actionResults
+      }),
+      expectedActions: collectExpectedReviewActions(regression.actionResults)
     }));
     const projectionLoop = acceptanceLoopResultSchema.parse(evaluateProjectionLoop({
       beforeSnapshotKeys: projection.beforeSnapshotKeys,
@@ -345,8 +398,10 @@ export async function runEndToEndAcceptance(
         hasReferenceReport:
           regression.markdownPath.trim().length > 0
           && regression.jsonPath.trim().length > 0,
-        rerunIdentical   : regression.runComparison?.snapshotDiff.identical ?? false,
-        hasCostComparison: regression.runComparison?.costComparison !== null
+        rerunIdentical: regression.runComparison?.snapshotDiff.identical ?? false,
+        hasCostComparison:
+          regression.runComparison !== null
+          && regression.runComparison.costComparison !== null
       }),
       artifactPaths: [regression.markdownPath, regression.jsonPath]
     });

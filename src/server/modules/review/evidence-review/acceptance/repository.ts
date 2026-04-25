@@ -61,6 +61,7 @@ interface AcceptanceClaimSummary {
 }
 
 interface AcceptanceBookLookup {
+  findById(id: string): Promise<AcceptanceBookLookupRecord | null>;
   findByTitle(title: string): Promise<AcceptanceBookLookupRecord | null>;
 }
 
@@ -111,6 +112,34 @@ function buildReviewRoutes(bookId: string): AcceptanceBookContext["routes"] {
 
 function createDefaultBookLookup(prismaClient: typeof prisma): AcceptanceBookLookup {
   return {
+    async findById(id: string) {
+      const book = await prismaClient.book.findFirst({
+        where: {
+          id,
+          deletedAt: null
+        },
+        select: {
+          id      : true,
+          title   : true,
+          bookType: {
+            select: {
+              key: true
+            }
+          }
+        }
+      }) as DefaultBookLookupRecord | null;
+
+      if (book === null) {
+        return null;
+      }
+
+      return {
+        id         : book.id,
+        title      : book.title,
+        bookTypeKey: book.bookType?.key ?? null
+      };
+    },
+
     async findByTitle(title: string) {
       const book = await prismaClient.book.findFirst({
         where: {
@@ -262,12 +291,16 @@ export function createAcceptanceRepository(
   return {
     async loadBookContext(input: {
       scenarioKey: string;
+      bookId?    : string;
       bookTitle  : string;
     }): Promise<AcceptanceBookContext> {
-      const book = await bookLookup.findByTitle(input.bookTitle);
+      const book = typeof input.bookId === "string" && input.bookId.trim().length > 0
+        ? await bookLookup.findById(input.bookId)
+        : await bookLookup.findByTitle(input.bookTitle);
 
       if (book === null) {
-        throw new Error(`Acceptance book not found: ${input.bookTitle}`);
+        const lookupKey = input.bookId ?? input.bookTitle;
+        throw new Error(`Acceptance book not found: ${lookupKey}`);
       }
 
       const claimRows = await reviewQuery.listReviewClaims(book.id);

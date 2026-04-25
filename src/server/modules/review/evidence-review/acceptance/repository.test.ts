@@ -6,6 +6,7 @@ describe("createAcceptanceRepository", () => {
   it("hydrates claim details, audit rows, projection counts, and route paths", async () => {
     // Arrange
     const bookLookup = {
+      findById   : vi.fn(),
       findByTitle: vi.fn().mockResolvedValue({
         id         : "book-1",
         title      : "儒林外史",
@@ -101,5 +102,47 @@ describe("createAcceptanceRepository", () => {
     });
     expect(relationCatalog.hasEntry).toHaveBeenCalledWith("book-1", "CLASSICAL_NOVEL");
     expect(context.relationCatalogAvailable).toBe(true);
+  });
+
+  it("prefers deterministic sample bookId lookup over title lookup", async () => {
+    const bookLookup = {
+      findById: vi.fn().mockResolvedValue({
+        id         : "10000000-0000-4000-8000-000000000001",
+        title      : "儒林外史",
+        bookTypeKey: "CLASSICAL_NOVEL"
+      }),
+      findByTitle: vi.fn()
+    };
+    const repository = createAcceptanceRepository({
+      bookLookup,
+      reviewQuery: {
+        listReviewClaims: vi.fn().mockResolvedValue([]),
+        getClaimDetail  : vi.fn()
+      },
+      auditQuery: {
+        listActions: vi.fn().mockResolvedValue([])
+      },
+      projectionQuery: {
+        getCounts: vi.fn().mockResolvedValue({
+          personaChapterFacts: 0,
+          personaTimeFacts   : 0,
+          relationshipEdges  : 0,
+          timelineEvents     : 0
+        })
+      },
+      relationCatalog: {
+        hasEntry: vi.fn().mockResolvedValue(true)
+      }
+    } as never);
+
+    const context = await repository.loadBookContext({
+      scenarioKey: "rulin-waishi-sample",
+      bookId     : "10000000-0000-4000-8000-000000000001",
+      bookTitle  : "儒林外史"
+    });
+
+    expect(bookLookup.findById).toHaveBeenCalledWith("10000000-0000-4000-8000-000000000001");
+    expect(bookLookup.findByTitle).not.toHaveBeenCalled();
+    expect(context.book.id).toBe("10000000-0000-4000-8000-000000000001");
   });
 });

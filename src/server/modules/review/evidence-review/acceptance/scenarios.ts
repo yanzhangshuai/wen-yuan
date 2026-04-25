@@ -1,3 +1,12 @@
+import {
+  RULIN_BASELINE_RUN_ID,
+  RULIN_BOOK_ID,
+  RULIN_CANDIDATE_RUN_ID,
+  SANGUO_BASELINE_RUN_ID,
+  SANGUO_BOOK_ID,
+  SANGUO_CANDIDATE_RUN_ID
+} from "@/server/modules/review/evidence-review/regression/sample-seed";
+
 export const FINAL_ACCEPTANCE_REPORT_PATHS = {
   markdownPath: "docs/superpowers/reports/evidence-review-acceptance/final-go-no-go.md",
   jsonPath    : "docs/superpowers/reports/evidence-review-acceptance/final-go-no-go.json"
@@ -6,6 +15,9 @@ export const FINAL_ACCEPTANCE_REPORT_PATHS = {
 export const ACCEPTANCE_SCENARIOS = [
   {
     scenarioKey          : "rulin-waishi-sample",
+    sampleBookId         : RULIN_BOOK_ID,
+    baselineRunId        : RULIN_BASELINE_RUN_ID,
+    candidateRunId       : RULIN_CANDIDATE_RUN_ID,
     bookTitle            : "儒林外史",
     fixturePath          : "tests/fixtures/review-regression/rulin-waishi.fixture.json",
     manualObservationPath: "docs/superpowers/reports/evidence-review-acceptance/manual-checks/rulin-waishi-sample.json",
@@ -38,6 +50,9 @@ export const ACCEPTANCE_SCENARIOS = [
   },
   {
     scenarioKey          : "sanguo-yanyi-sample",
+    sampleBookId         : SANGUO_BOOK_ID,
+    baselineRunId        : SANGUO_BASELINE_RUN_ID,
+    candidateRunId       : SANGUO_CANDIDATE_RUN_ID,
     bookTitle            : "三国演义",
     fixturePath          : "tests/fixtures/review-regression/sanguo-yanyi.fixture.json",
     manualObservationPath: "docs/superpowers/reports/evidence-review-acceptance/manual-checks/sanguo-yanyi-sample.json",

@@ -1,5 +1,5 @@
 {
-  "command": "pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/rulin-waishi.fixture.json --report-dir docs/superpowers/reports/review-regression/rulin-waishi-sample",
+  "command": "pnpm exec tsx scripts/review-regression/run-gold-set-regression.ts --fixture tests/fixtures/review-regression/rulin-waishi.fixture.json --report-dir docs/superpowers/reports/review-regression/rulin-waishi-sample --baseline-run 1a000000-0000-4000-8000-000000000001 --candidate-run 1a000000-0000-4000-8000-000000000002",
   "fixturePath": "tests/fixtures/review-regression/rulin-waishi.fixture.json",
   "fixture": {
     "fixtureKey": "rulin-waishi-mvp",
@@ -196,8 +196,99 @@
       "auditAction": "DEFER"
     }
   ],
-  "runComparison": null,
-  "generatedAtIso": "2026-04-24T05:04:51.089Z",
+  "runComparison": {
+    "baselineRunId": "1a000000-0000-4000-8000-000000000001",
+    "candidateRunId": "1a000000-0000-4000-8000-000000000002",
+    "snapshotDiff": {
+      "identical": true,
+      "addedKeys": [],
+      "removedKeys": [],
+      "changedKeys": []
+    },
+    "costComparison": {
+      "baseline": {
+        "runId": "1a000000-0000-4000-8000-000000000001",
+        "bookId": "10000000-0000-4000-8000-000000000001",
+        "trigger": "REVIEW_REGRESSION_SAMPLE",
+        "scope": "FULL_BOOK",
+        "rerunReason": null,
+        "totals": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0,
+          "estimatedCostMicros": "0",
+          "durationMs": 0,
+          "skippedCount": 0
+        },
+        "stages": [
+          {
+            "stageKey": "STAGE_A",
+            "status": "SUCCEEDED",
+            "chapterStartNo": 3,
+            "chapterEndNo": 4,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "estimatedCostMicros": "0",
+            "durationMs": 0,
+            "skippedCount": 0
+          }
+        ]
+      },
+      "candidate": {
+        "runId": "1a000000-0000-4000-8000-000000000002",
+        "bookId": "10000000-0000-4000-8000-000000000001",
+        "trigger": "REVIEW_REGRESSION_SAMPLE",
+        "scope": "FULL_BOOK",
+        "rerunReason": null,
+        "totals": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0,
+          "estimatedCostMicros": "0",
+          "durationMs": 0,
+          "skippedCount": 0
+        },
+        "stages": [
+          {
+            "stageKey": "STAGE_A",
+            "status": "SUCCEEDED",
+            "chapterStartNo": 3,
+            "chapterEndNo": 4,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "estimatedCostMicros": "0",
+            "durationMs": 0,
+            "skippedCount": 0
+          }
+        ]
+      },
+      "delta": {
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "totalTokens": 0,
+        "estimatedCostMicros": "0",
+        "durationMs": 0,
+        "skippedCount": 0
+      },
+      "savings": {
+        "totalTokenSavingsPct": null,
+        "costSavingsPct": null,
+        "durationSavingsPct": null
+      },
+      "stageCoverage": {
+        "baselineStageKeys": [
+          "STAGE_A"
+        ],
+        "candidateStageKeys": [
+          "STAGE_A"
+        ],
+        "skippedStageKeys": []
+      }
+    }
+  },
+  "generatedAtIso": "2026-04-24T14:41:39.626Z",
   "markdownPath": "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.md",
   "jsonPath": "docs/superpowers/reports/review-regression/rulin-waishi-sample/summary.json"
 }

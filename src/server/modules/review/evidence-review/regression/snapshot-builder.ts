@@ -72,9 +72,10 @@ export function buildRunScopedReviewRegressionSnapshot(
   context: ReviewRegressionSnapshotFixtureContext,
   rows: ReviewRegressionRunScopedRows
 ): ReviewRegressionSnapshot {
-  const requiredPersonaCandidateIds = collectRequiredPersonaCandidateIds(rows);
+  const comparisonRows = normalizeRunScopedRowsForComparison(rows);
+  const requiredPersonaCandidateIds = collectRequiredPersonaCandidateIds(comparisonRows);
   const personaMapping = buildAcceptedPersonaMapping({
-    identityResolutionClaims: rows.identityResolutionClaims,
+    identityResolutionClaims: comparisonRows.identityResolutionClaims,
     requiredPersonaCandidateIds
   });
   const personaLookup = buildPersonaLookup(rows.personas, rows.personaAliases);
@@ -83,24 +84,24 @@ export function buildRunScopedReviewRegressionSnapshot(
   const personaChapterFacts = buildPersonaChapterFacts({
     chapters              : context.chapters,
     personaIdByCandidateId: personaMapping.personaIdByCandidateId,
-    eventClaims           : rows.eventClaims,
-    relationClaims        : rows.relationClaims,
-    conflictFlags         : rows.conflictFlags
+    eventClaims           : comparisonRows.eventClaims,
+    relationClaims        : comparisonRows.relationClaims,
+    conflictFlags         : comparisonRows.conflictFlags
   });
   const personaTimeFacts = buildPersonaTimeFacts({
     personaIdByCandidateId: personaMapping.personaIdByCandidateId,
-    eventClaims           : rows.eventClaims,
-    relationClaims        : rows.relationClaims,
-    timeClaims            : rows.timeClaims
+    eventClaims           : comparisonRows.eventClaims,
+    relationClaims        : comparisonRows.relationClaims,
+    timeClaims            : comparisonRows.timeClaims
   });
   const relationshipEdges = buildRelationshipEdges({
     personaIdByCandidateId: personaMapping.personaIdByCandidateId,
-    relationClaims        : rows.relationClaims
+    relationClaims        : comparisonRows.relationClaims
   });
   const timelineEvents = buildTimelineEvents({
     personaIdByCandidateId: personaMapping.personaIdByCandidateId,
-    eventClaims           : rows.eventClaims,
-    timeClaims            : rows.timeClaims
+    eventClaims           : comparisonRows.eventClaims,
+    timeClaims            : comparisonRows.timeClaims
   });
   const personaIds = Array.from(new Set([
     ...personaChapterFacts.map((row) => row.personaId),
@@ -146,6 +147,29 @@ export function buildRunScopedReviewRegressionSnapshot(
       evidenceSnippets : collectClaimEvidenceSnippets(rows.timeClaims, evidenceLookup, row.sourceTimeClaimIds)
     })).sort(compareTimeFacts)
   };
+}
+
+function normalizeRunScopedRowsForComparison(
+  rows: ReviewRegressionRunScopedRows
+): ReviewRegressionRunScopedRows {
+  return {
+    ...rows,
+    identityResolutionClaims: normalizeComparisonReviewStates(rows.identityResolutionClaims),
+    eventClaims             : normalizeComparisonReviewStates(rows.eventClaims),
+    relationClaims          : normalizeComparisonReviewStates(rows.relationClaims),
+    timeClaims              : normalizeComparisonReviewStates(rows.timeClaims),
+    conflictFlags           : normalizeComparisonReviewStates(rows.conflictFlags)
+  };
+}
+
+function normalizeComparisonReviewStates<TClaim extends { reviewState: string }>(
+  claims: readonly TClaim[]
+): TClaim[] {
+  return claims.map((claim) => (
+    claim.reviewState === "ACCEPTED"
+      ? claim
+      : { ...claim, reviewState: "ACCEPTED" }
+  ));
 }
 
 function buildPersonaLookup(

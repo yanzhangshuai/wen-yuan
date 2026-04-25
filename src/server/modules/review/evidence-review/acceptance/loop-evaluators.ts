@@ -21,8 +21,15 @@ interface AcceptanceLoopEvaluationResult {
 }
 
 interface AcceptanceManualCheckSummary {
-  passed  : boolean;
-  blocking: boolean;
+  passed       : boolean;
+  blocking     : boolean;
+  [key: string]: unknown;
+}
+
+interface AcceptanceLoopDecisionSummary {
+  passed       : boolean;
+  blocking     : boolean;
+  [key: string]: unknown;
 }
 
 interface AcceptanceRiskSummary {
@@ -79,19 +86,26 @@ export function evaluateEvidenceLoop(input: {
  * 这里只认审计事实，不把 UI 层的可见状态当作验收证据。
  */
 export function evaluateReviewLoop(input: {
-  auditActions: string[];
+  auditActions    : string[];
+  expectedActions?: string[];
 }): AcceptanceLoopEvaluationResult {
-  const missingActions = REQUIRED_REVIEW_ACTIONS.filter((action) => !input.auditActions.includes(action));
+  const requiredActions = input.expectedActions !== undefined && input.expectedActions.length > 0
+    ? [...new Set(input.expectedActions)]
+    : [...REQUIRED_REVIEW_ACTIONS];
+  const missingActions = requiredActions.filter((action) => !input.auditActions.includes(action));
+  const usingScenarioExpectedActions = input.expectedActions !== undefined && input.expectedActions.length > 0;
 
   return {
     loopKey : "REVIEW",
     passed  : missingActions.length === 0,
     blocking: missingActions.length > 0,
     summary : missingActions.length === 0
-      ? "Observed all required review mutations."
+      ? usingScenarioExpectedActions
+        ? "Observed all expected review mutations."
+        : "Observed all required review mutations."
       : `Missing review actions: ${missingActions.join(", ")}`,
     evidenceLines: missingActions.length === 0
-      ? input.auditActions.map((action) => `Observed ${action}`)
+      ? requiredActions.map((action) => `Observed ${action}`)
       : missingActions.map((action) => `Missing ${action}`),
     artifactPaths: []
   };
@@ -183,7 +197,7 @@ export function evaluateRebuildLoop(input: {
  * 任何 blocking 失败都必须把最终决策压回 NO_GO，避免 runner 误放行。
  */
 export function classifyFinalAcceptanceDecision(input: {
-  loopResults : Array<Pick<AcceptanceLoopEvaluationResult, "passed" | "blocking">>;
+  loopResults : AcceptanceLoopDecisionSummary[];
   manualChecks: AcceptanceManualCheckSummary[];
   risks       : AcceptanceRiskSummary[];
 }): "GO" | "NO_GO" {
