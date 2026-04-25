@@ -708,7 +708,7 @@ function SurnameGenerationDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {modelOptions.length === 0 ? (
-                    <SelectItem value="__no_model_available__" disabled>暂无可用模型（请在模型管理中启用并配置 Key）</SelectItem>
+                    <SelectItem value="__no_model_available__" disabled>暂无可用模型（请在模型管理中配置 API Key）</SelectItem>
                   ) : modelOptions.map((model) => (
                     <SelectItem key={model.id} value={model.id}>{formatGenerationModelOption(model)}</SelectItem>
                   ))}
@@ -735,7 +735,7 @@ function SurnameGenerationDialog({
 
           {modelsError ? <p className="text-xs text-destructive">模型列表加载失败：{modelsError}</p> : null}
           {!modelsLoading && !modelsError && modelOptions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">当前暂无可用模型。请前往&quot;模型管理&quot;页面，至少启用并配置 1 个模型后再生成。</p>
+            <p className="text-xs text-muted-foreground">当前暂无可用模型。请前往&quot;模型管理&quot;页面，至少配置 1 个模型的 API Key 后再生成。</p>
           ) : null}
 
           {/* 当前选择概述 */}

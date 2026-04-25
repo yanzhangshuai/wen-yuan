@@ -554,16 +554,23 @@ export function ModelManager({
 
 
 
+  /**
+   * 可用于"默认模型"下拉的模型列表：
+   * - 过滤条件改为 `isConfigured`（已配置 API Key），而非 `isEnabled`；
+   * - 这样用户只要填了 Key 即可在此选择，无需额外手动开启"启用"开关。
+   * - 同时兼容草稿态：若当前草稿已输入 API Key，也纳入候选。
+   */
   const enabledModels = sortedModels.filter(m => {
-    /**
-     * 这里使用草稿态优先，是为了让“默认模型下拉”实时反映当前页面上的启用切换，
-     * 提升所见即所得体验。
-     */
     const draft = drafts[m.id];
-    return draft ? draft.isEnabled : m.isEnabled;
+    const draftHasKey = draft ? draft.apiKey.trim() !== "" : false;
+    return m.isConfigured || draftHasKey;
   });
+  /**
+   * 可用于"解析策略"选择的模型列表：
+   * - 同样改为 `isConfigured`，与"默认模型"下拉保持一致。
+   */
   const strategyEnabledModels: EnabledModelItem[] = models
-    .filter(model => model.isEnabled)
+    .filter(model => model.isConfigured)
     .map(model => ({
       id             : model.id,
       name           : model.name,

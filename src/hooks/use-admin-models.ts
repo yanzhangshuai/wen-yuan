@@ -39,8 +39,8 @@ let cachePromise: Promise<AdminModelItem[]> | null = null;
 
 interface UseAdminModelsOptions {
   /**
-   * 是否只返回已启用的模型（`isEnabled = true`）。
-   * 生成弹框建议开启，避免把禁用模型暴露给用户。
+   * 是否只返回已配置 API Key 的模型（`isConfigured = true`）。
+   * 分析/生成等功能开启此项，避免把未配置密钥的模型暴露给用户。
    * 默认：`false`（返回全量列表）。
    */
   onlyEnabled?: boolean;
@@ -125,8 +125,8 @@ export function useAdminModels(opts?: UseAdminModelsOptions): UseAdminModelsResu
     return () => { cancelled = true; };
   }, [forceCount]);
 
-  // 按 onlyEnabled 过滤
-  const models = onlyEnabled ? allModels.filter((m) => m.isEnabled) : allModels;
+  // 按 onlyEnabled（实际语义为 isConfigured）过滤：只保留已配置 API Key 的模型
+  const models = onlyEnabled ? allModels.filter((m) => m.isConfigured) : allModels;
 
   // 默认模型：isDefault 优先，其次取 first
   const defaultModel = models.find((m) => m.isDefault) ?? models[0];

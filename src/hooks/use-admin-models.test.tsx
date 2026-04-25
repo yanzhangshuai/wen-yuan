@@ -44,12 +44,12 @@ async function importHook() {
 }
 
 describe("useAdminModels", () => {
-  it("filters disabled models and exposes default model under onlyEnabled mode", async () => {
+  it("filters unconfigured models and exposes default model under onlyEnabled mode", async () => {
     fetchModelsMock.mockReset();
     fetchModelsMock.mockResolvedValueOnce([
-      buildModel({ id: "disabled-default", isEnabled: false, isDefault: true }),
-      buildModel({ id: "enabled-a", isEnabled: true, isDefault: false }),
-      buildModel({ id: "enabled-b", isEnabled: true, isDefault: true })
+      buildModel({ id: "unconfigured-default", isConfigured: false, isEnabled: false, isDefault: true }),
+      buildModel({ id: "enabled-a", isConfigured: true, isEnabled: true, isDefault: false }),
+      buildModel({ id: "enabled-b", isConfigured: true, isEnabled: true, isDefault: true })
     ]);
 
     const { useAdminModels } = await importHook();

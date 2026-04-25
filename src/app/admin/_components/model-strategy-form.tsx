@@ -476,7 +476,7 @@ export function ModelStrategyForm({
            * - 明确给出下一步路径（去模型管理启用），避免用户卡在当前页。
            */
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground space-y-2">
-            <p>暂无可用模型，请先在模型管理中启用至少一个模型。</p>
+            <p>暂无可用模型，请先在模型管理中为至少一个模型配置 API Key。</p>
             <Link href="/admin/model" className="interactive-text-link text-primary hover:underline">
               前往模型管理
             </Link>
