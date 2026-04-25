@@ -256,11 +256,88 @@ src/components/review/shared/
 | 角色未在矩阵中 | matrix 摘要的 personas 来源是 evidence，覆盖完整；缺漏时 sidebar 项 disabled |
 | 三页同步重构工作量 | 分阶段落地（第 9 节），每阶段独立可上线 |
 
-## 11. 验证标准（DoD）
+## 11. 进阶交互与可访问性（第二轮纳入）
+
+### 11.1 键盘导航（必做）
+
+`PersonaSidebar` 与 `ReviewWorkbenchShell` 协同支持以下快捷键：
+
+| 键 | 行为 |
+|---|---|
+| `↑` / `↓` | 在角色列表中上下移动选中项（带循环） |
+| `Enter` | 确认选中（写 URL `?personaId=`） |
+| `F` | 切换 `focusOnly` 开关 |
+| `/` | 聚焦角色搜索框 |
+| `Esc` | 清除选中角色（`?personaId=` 移除）并取消 focusOnly |
+
+实现：`ReviewWorkbenchShell` 内 `useEffect` 注册 `keydown` 全局监听，输入框聚焦时跳过非 `Esc/Enter` 快捷键。
+
+### 11.2 进度可视化
+
+- **PersonaCard 进度条**：底部一根 `h-1` 条，宽度 = `(totalClaimCount - pendingClaimCount) / totalClaimCount`；颜色随状态：全部已审为 `bg-success/40`，有冲突为 `bg-warning/40`，否则 `bg-primary/30`
+- **Sidebar 顶部全书进度**：搜索框上方一行小字 + 进度条："已审 312 / 总 487 · 64%"。`PersonaListItem[]` 已可计算总和，无需新接口
+
+### 11.3 "下一个待审角色"按钮
+
+Sidebar 顶部按钮 `跳到下一个待审 →`：
+
+- 优先级排序：`pendingClaimCount` 降序，平局按 `firstChapterNo` 升序
+- 跳过当前已选角色
+- 全部已审完时按钮 disabled，文字变 `全部已审 ✓`
+
+### 11.4 合并候选徽标
+
+当 `persona.personaCandidateIds.length > 1`（候选未完全消解），PersonaCard 右上角加一个紫色 ⓘ 徽标，hover 提示 "存在 N 个未消解候选，建议先到知识库消解"。点击徽标 → 跳转 `/admin/books/[id]` 的人物消解入口（深链已存在则用，未实现先打 toast）。
+
+### 11.5 跨页持久（matrix → relations → time）
+
+切换 `ReviewModeNav` Tab 时保留 `selectedPersonaId` 与 `focusOnly`：
+
+- 通过 URL `?personaId=&focus=` 传递（已设计）
+- `<ReviewModeNav>` 链接生成 `href` 时带上当前 query string
+- sessionStorage 兜底：`reviewWorkbench:lastSelectedPersonaId:{bookId}` 在没有 URL 参数时回填
+
+### 11.6 面包屑深链
+
+选中角色时，`PageContainer` 的面包屑追加最后一段：`书库管理 / 儒林外史 / 审核中心 / 周进`。该段也可点击 → 移除选中（等价 Esc）。便于协作者复制 URL 直接定位到某角色。
+
+### 11.7 可访问性
+
+- `PersonaSidebar` 列表区使用 `role="listbox"`，每个 `PersonaCard` 改为 `role="option"` + `aria-selected`，配合键盘导航
+- 选中列高亮 `bg-primary/10` 在 light/dark 双主题下校验 WCAG AA 对比度，必要时改 `bg-primary/15`
+- 焦点环统一使用 `focus-visible:ring-2 ring-ring` 而非 `ring-primary/60`，避免选中态与焦点态视觉冲突
+- `<FocusOnlySwitch>` 携带 `aria-label="只看当前角色相关 claim"` 与 disabled 时的 `aria-describedby` 提示
+
+### 11.8 性能 memoize
+
+- `buildPersonaListItems(matrix)` 在父组件用 `useMemo([matrix])`
+- `sortPersonaListItems` / `filterPersonaListItems` 同样 memoize 以避免每次输入字符都全量排序
+- `PersonaCard` 用 `React.memo`，仅在 `isSelected` 或自身 item 字段变化时重渲
+
+## 12. Future Work（不在此次 MVP）
+
+下列优化已识别但延后，避免本次重构范围发散：
+
+- 角色 sparkline（章节分布密度条）
+- `lastChapterNo` 与首末出场区段
+- 别名 tooltip 完整展开
+- Sidebar 折叠为 `w-12` 图标列模式
+- 角色头像/首字 avatar
+- 拖拽角色批量接受/拒绝该角色 PENDING（需要后端批量 API）
+- 关系/时间页 sidebar 数据延迟加载（Suspense + skeleton）
+
+## 13. 验证标准（DoD）
 
 - 三页都展示左侧角色列表，且角色卡片包含别名、首章、计数、待审/冲突状态
 - 顶部书籍选择器替代旧 w-44 书籍栏，主区获得更多水平空间
 - 选中角色：默认列高亮且自动滚动到可见区域；开关"只看当前角色"后退化为单列
 - 角色搜索/排序/状态 chip 与 URL `?personaId=&focus=` 同步
 - 既有矩阵单元格 / 关系编辑 / 时间钻取交互保持向后兼容
+- 键盘快捷键（↑↓/Enter/F///Esc）在三页一致生效
+- Sidebar 顶部全书进度与 PersonaCard 进度条正确反映已审/待审比例
+- "下一个待审角色"按钮按 pendingClaimCount 跳转，全审完后 disabled
+- 含多个候选的角色显示合并候选徽标
+- 切换三页 Tab 时 `selectedPersonaId` 与 `focusOnly` 保留
+- 面包屑在选中角色时追加角色段，且可点击清除
+- 列表 `role="listbox"`/`role="option"` a11y 校验通过；焦点环不与选中态冲突
 - `pnpm lint && pnpm type-check && pnpm test` 全绿，覆盖率不下降
