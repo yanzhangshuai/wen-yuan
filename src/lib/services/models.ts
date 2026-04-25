@@ -19,7 +19,7 @@
  * - 通过统一服务函数，降低多个页面重复实现网络请求的维护成本。
  * ============================================================================
  */
-import { clientFetch } from "@/lib/client-api";
+import { clientFetch, clientMutate } from "@/lib/client-api";
 
 /* ------------------------------------------------
    Types
@@ -125,6 +125,22 @@ export interface PatchModelBody {
   isEnabled?      : boolean;
 }
 
+/**
+ * 新建模型配置的请求体。
+ */
+export interface CreateModelPayload {
+  /** 供应商标识（自由字符串，如 deepseek / openai / my-provider）。 */
+  provider       : string;
+  /** 管理端展示名称。 */
+  name           : string;
+  /** 供应商侧模型 ID（实际调用时使用）。 */
+  providerModelId: string;
+  /** API 基础地址（合法 HTTPS URL）。 */
+  baseUrl        : string;
+  /** 明文 API Key（可选）。 */
+  apiKey?        : string;
+}
+
 /* ------------------------------------------------
    Service functions
    ------------------------------------------------ */
@@ -196,5 +212,37 @@ export async function setDefaultModel(id: string): Promise<AdminModelItem> {
 export async function testModel(id: string): Promise<ModelTestResult> {
   return clientFetch<ModelTestResult>(`/api/admin/models/${id}/test`, {
     method: "POST"
+  });
+}
+
+/**
+ * 创建新模型配置。
+ * 对应接口：POST /api/admin/models
+ *
+ * 成功时返回新创建的模型项（isEnabled=false，isDefault=false）。
+ * 失败时抛出 Error。
+ *
+ * @param payload 模型创建参数
+ * @returns 新创建的 AdminModelItem
+ */
+export async function createAdminModel(payload: CreateModelPayload): Promise<AdminModelItem> {
+  return clientFetch<AdminModelItem>("/api/admin/models", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(payload)
+  });
+}
+
+/**
+ * 永久删除指定模型配置（不可恢复）。
+ * 对应接口：DELETE /api/admin/models/:id
+ *
+ * 成功时无返回值；失败时抛出 Error。
+ *
+ * @param id 模型 ID
+ */
+export async function deleteAdminModel(id: string): Promise<void> {
+  await clientMutate(`/api/admin/models/${id}`, {
+    method: "DELETE"
   });
 }
