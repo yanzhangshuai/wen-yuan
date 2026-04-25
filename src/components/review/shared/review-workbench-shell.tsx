@@ -8,12 +8,16 @@ import { PersonaSidebar } from "./persona-sidebar";
 import { type PersonaListItem } from "./persona-list-summary";
 
 interface ReviewWorkbenchShellProps {
-  bookId                   : string;
-  bookTitle                : string;
-  books                    : BookOption[];
-  mode                     : ReviewMode;
-  personaItems             : PersonaListItem[];
-  renderMain               : (state: { selectedPersonaId: string | null; focusOnly: boolean }) => ReactNode;
+  bookId      : string;
+  bookTitle   : string;
+  books       : BookOption[];
+  mode        : ReviewMode;
+  personaItems: PersonaListItem[];
+  renderMain  : (state: { 
+    selectedPersonaId: string | null; 
+    focusOnly        : boolean;
+    onFocusOnlyChange: (next: boolean) => void;
+  }) => ReactNode;
   initialSelectedPersonaId?: string | null;
   initialFocusOnly        ?: boolean;
 }
@@ -95,7 +99,10 @@ export function ReviewWorkbenchShell({
     return () => window.removeEventListener("keydown", onKey);
   }, [focusOnly, handleSelect, handleToggleFocus, selectedPersonaId]);
 
-  const mainState = useMemo(() => ({ selectedPersonaId, focusOnly }), [selectedPersonaId, focusOnly]);
+  const mainState = useMemo(
+    () => ({ selectedPersonaId, focusOnly, onFocusOnlyChange: handleToggleFocus }),
+    [selectedPersonaId, focusOnly, handleToggleFocus]
+  );
 
   return (
     <div className="flex flex-col gap-4">

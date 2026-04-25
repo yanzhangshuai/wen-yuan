@@ -103,4 +103,27 @@ describe("ReviewWorkbenchShell", () => {
     await user.keyboard("{Escape}");
     expect(screen.getByTestId("main")).toHaveTextContent("persona=null");
   });
+
+  it("renderMain 接收 onFocusOnlyChange 回调", () => {
+    const renderMain = vi.fn().mockReturnValue(<div data-testid="main">test</div>);
+    
+    render(
+      <ReviewWorkbenchShell
+        bookId                  ="b1"
+        bookTitle               ="儒林外史"
+        books                   ={[{ id: "b1", title: "儒林外史" }]}
+        mode                    ="matrix"
+        personaItems            ={items}
+        initialSelectedPersonaId="p1"
+        renderMain              ={renderMain}
+      />
+    );
+
+    expect(renderMain).toHaveBeenCalled();
+    const callArgs = renderMain.mock.calls[0][0];
+    expect(callArgs).toHaveProperty("selectedPersonaId");
+    expect(callArgs).toHaveProperty("focusOnly");
+    expect(callArgs).toHaveProperty("onFocusOnlyChange");
+    expect(typeof callArgs.onFocusOnlyChange).toBe("function");
+  });
 });

@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 
 import { getBookById } from "@/server/modules/books/getBookById";
 import { listBooks } from "@/server/modules/books/listBooks";
 import type { MatrixCellSelection } from "@/components/review/persona-chapter-matrix/types";
 import { createReviewQueryService } from "@/server/modules/review/evidence-review/review-query-service";
 import { PersonaChapterReviewPage } from "@/components/review/persona-chapter-matrix/persona-chapter-review-page";
-import { ReviewModeNav } from "@/components/review/shared/review-mode-nav";
-import { cn } from "@/lib/utils";
+import { ReviewWorkbenchShell } from "@/components/review/shared/review-workbench-shell";
+import { buildPersonaListItems } from "@/components/review/shared/persona-list-summary";
 
 type SearchParamValue = string | string[] | undefined;
 
 interface AdminBookReviewSearchParams {
   personaId?: SearchParamValue;
   chapterId?: SearchParamValue;
+  focus    ?: SearchParamValue;
 }
 
 const EMPTY_SEARCH_PARAMS: AdminBookReviewSearchParams = {};
@@ -96,6 +96,8 @@ export default async function AdminBookReviewPage({
   const { bookId } = await params;
   const resolvedSearchParams = await (searchParams ?? Promise.resolve(EMPTY_SEARCH_PARAMS));
   const initialSelectedCell = resolveInitialSelectedCell(resolvedSearchParams);
+  const initialSelectedPersonaId = readSingleSearchParam(resolvedSearchParams.personaId);
+  const initialFocusOnly = resolvedSearchParams.focus === "1";
 
   let book;
   try {
@@ -114,48 +116,30 @@ export default async function AdminBookReviewPage({
     reviewQueryService.getPersonaChapterMatrix({ bookId })
   ]);
 
-  return (
-    <div className="flex gap-6 items-start">
-      {/* 左侧书籍导航：支持在审核页内部快速切换书籍，减少来回跳转。 */}
-      <aside className="w-44 shrink-0">
-        <div className="sticky top-20">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 px-2 uppercase tracking-wider">
-            选择书籍
-          </h2>
-          <nav className="space-y-0.5">
-            {allBooks.map((b) => (
-              <Link
-                key={b.id}
-                href={`/admin/review/${b.id}`}
-                className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors",
-                  b.id === bookId
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-foreground hover:bg-accent"
-                )}
-              >
-                {/* 标题可能较长，使用 truncate 防止挤压右侧数字。 */}
-                <span className="truncate">{b.title}</span>
-                <span className="ml-2 text-xs text-muted-foreground/70 shrink-0 tabular-nums">
-                  {b.personaCount}
-                </span>
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </aside>
+  const personaItems = buildPersonaListItems(initialMatrix);
+  const books = allBooks.map((b) => ({ id: b.id, title: b.title }));
 
-      {/* 右侧审核主体：由客户端组件承载复杂交互（筛选、批量操作、编辑等）。 */}
-      <div className="flex-1 min-w-0 space-y-4">
-        <ReviewModeNav bookId={bookId} activeMode="matrix" />
+  return (
+    <ReviewWorkbenchShell
+      bookId                  ={bookId}
+      bookTitle               ={book.title}
+      books                   ={books}
+      mode                    ="matrix"
+      personaItems            ={personaItems}
+      initialSelectedPersonaId={initialSelectedPersonaId}
+      initialFocusOnly        ={initialFocusOnly}
+      renderMain              ={({ selectedPersonaId, focusOnly, onFocusOnlyChange }) => (
         <PersonaChapterReviewPage
-          bookId={bookId}
-          bookTitle={book.title}
-          allBooks={allBooks}
-          initialMatrix={initialMatrix}
-          initialSelectedCell={initialSelectedCell}
+          bookId              ={bookId}
+          bookTitle           ={book.title}
+          allBooks            ={allBooks}
+          initialMatrix       ={initialMatrix}
+          selectedPersonaId   ={selectedPersonaId}
+          focusOnly           ={focusOnly}
+          onFocusOnlyChange   ={onFocusOnlyChange}
+          initialSelectedCell ={initialSelectedCell}
         />
-      </div>
-    </div>
+      )}
+    />
   );
 }
