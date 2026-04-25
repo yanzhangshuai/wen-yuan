@@ -88,6 +88,11 @@ export interface PersonaChapterMatrixDto {
   generatedAt?        : string;
 }
 
+// Type aliases for convenience
+export type PersonaChapterMatrixPersona = PersonaChapterMatrixPersonaDto;
+export type PersonaChapterMatrixCell = PersonaChapterMatrixCellDto;
+export type PersonaChapterMatrixChapter = PersonaChapterMatrixChapterDto;
+
 export interface FetchPersonaChapterMatrixInput {
   bookId         : string;
   personaId?     : string;
