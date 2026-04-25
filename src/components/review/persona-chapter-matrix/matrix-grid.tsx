@@ -13,14 +13,15 @@ import {
 } from "./types";
 
 interface MatrixGridProps {
-  matrix         : PersonaChapterMatrixDto;
-  selectedCell   : MatrixCellSelection | null;
-  onSelectCell ? : (selection: MatrixCellSelection) => void;
-  viewportHeight?: number;
-  viewportWidth ?: number;
-  scrollTop     ?: number;
-  scrollLeft    ?: number;
-  className     ?: string;
+  matrix              : PersonaChapterMatrixDto;
+  selectedCell        : MatrixCellSelection | null;
+  onSelectCell      ? : (selection: MatrixCellSelection) => void;
+  viewportHeight     ?: number;
+  viewportWidth      ?: number;
+  scrollTop          ?: number;
+  scrollLeft         ?: number;
+  highlightedPersonaId?: string | null;
+  className          ?: string;
 }
 
 interface MatrixAxisItemSegment {
@@ -123,6 +124,7 @@ export function MatrixGrid({
   viewportWidth = PERSONA_CHAPTER_MATRIX_COLUMN_WIDTH * 4,
   scrollTop = 0,
   scrollLeft = 0,
+  highlightedPersonaId = null,
   className
 }: MatrixGridProps) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -185,6 +187,28 @@ export function MatrixGrid({
     }
   }, [scrollLeft, scrollTop]);
 
+  useEffect(() => {
+    const node = scrollerRef.current;
+    if (node === null || highlightedPersonaId === null) {
+      return;
+    }
+
+    const highlightedIndex = matrix.personas.findIndex(
+      (persona) => persona.personaId === highlightedPersonaId
+    );
+
+    if (highlightedIndex < 0) {
+      return;
+    }
+
+    const viewportPadding = 32;
+    const targetScrollLeft = highlightedIndex * PERSONA_CHAPTER_MATRIX_COLUMN_WIDTH - viewportPadding;
+
+    if (targetScrollLeft >= 0) {
+      node.scrollLeft = targetScrollLeft;
+    }
+  }, [highlightedPersonaId, matrix.personas]);
+
   return (
     <div
       ref={scrollerRef}
@@ -240,12 +264,17 @@ export function MatrixGrid({
               }
 
               const persona = matrix.personas[segment.index];
+              const isHighlighted = highlightedPersonaId === persona.personaId;
 
               return (
                 <th
                   key={persona.personaId}
                   scope="col"
-                  className="min-w-56 rounded-lg bg-muted/40 p-3 text-left align-top"
+                  data-highlighted={isHighlighted ? "true" : undefined}
+                  className={cn(
+                    "min-w-56 rounded-lg bg-muted/40 p-3 text-left align-top",
+                    isHighlighted && "bg-primary/10"
+                  )}
                   style={{
                     minWidth: windowResult.columnWidth,
                     width   : windowResult.columnWidth
@@ -322,11 +351,15 @@ export function MatrixGrid({
                   const isSelected = selectedCell !== null
                     && selectedCell.personaId === selection.personaId
                     && selectedCell.chapterId === selection.chapterId;
+                  const isCellInHighlightedColumn = highlightedPersonaId === persona.personaId;
 
                   return (
                     <td
                       key={key}
-                      className="min-w-56 align-top"
+                      className={cn(
+                        "min-w-56 align-top",
+                        isCellInHighlightedColumn && "border-x border-primary/30"
+                      )}
                       style={{
                         minWidth: windowResult.columnWidth,
                         width   : windowResult.columnWidth

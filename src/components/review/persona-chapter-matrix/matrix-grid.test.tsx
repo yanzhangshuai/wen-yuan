@@ -138,4 +138,49 @@ describe("MatrixGrid", () => {
     expect(conflictCell).toHaveClass("bg-warning/10");
     expect(conflictCell).toHaveAttribute("aria-pressed", "true");
   });
+
+  it("highlights the specified persona column with data attribute and styling", () => {
+    render(
+      <MatrixGrid
+        matrix={buildMatrix()}
+        selectedCell={null}
+        highlightedPersonaId="persona-1"
+        viewportHeight={480}
+        viewportWidth={640}
+      />
+    );
+
+    const highlightedHeader = document.querySelector('[data-highlighted="true"]');
+    expect(highlightedHeader).toBeInTheDocument();
+    expect(highlightedHeader).toHaveTextContent("范进");
+
+    const allHeaders = screen.getAllByRole("columnheader");
+    const zhouJinHeader = allHeaders.find((header) => header.textContent?.includes("周进"));
+    expect(zhouJinHeader).not.toHaveAttribute("data-highlighted");
+  });
+
+  it("auto-scrolls to the highlighted persona column on mount and when highlightedPersonaId changes", () => {
+    const { rerender } = render(
+      <MatrixGrid
+        matrix={buildMatrix()}
+        selectedCell={null}
+        highlightedPersonaId="persona-1"
+        viewportHeight={480}
+        viewportWidth={640}
+      />
+    );
+
+    const scroller = document.querySelector(".matrix-grid");
+    expect(scroller).toBeInTheDocument();
+
+    rerender(
+      <MatrixGrid
+        matrix={buildMatrix()}
+        selectedCell={null}
+        highlightedPersonaId="persona-2"
+        viewportHeight={480}
+        viewportWidth={640}
+      />
+    );
+  });
 });
