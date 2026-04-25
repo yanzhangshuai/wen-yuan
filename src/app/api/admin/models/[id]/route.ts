@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { updateAdminModel } from "@/server/modules/models";
+import { deleteAdminModel, updateAdminModel } from "@/server/modules/models";
 import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, modelRouteParamsSchema, updateModelBodySchema } from "../_shared";
@@ -84,6 +84,55 @@ export async function PATCH(
       error,
       fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
       fallbackMessage: "模型配置更新失败"
+    });
+  }
+}
+
+/**
+ * DELETE `/api/admin/models/:id`
+ * 功能：永久删除指定模型配置（不可恢复）。
+ * 入参：路由参数 `id`（模型 UUID）。
+ * 返回：删除成功的标准响应（data 为 null）。
+ */
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+): Promise<Response> {
+  const startedAt = Date.now();
+  const requestId = randomUUID();
+
+  try {
+    const auth = await getAuthContext(await headers());
+    requireAdmin(auth);
+
+    const parsedParams = modelRouteParamsSchema.safeParse(await context.params);
+    if (!parsedParams.success) {
+      return badRequestJson(
+        "/api/admin/models/[id]",
+        requestId,
+        startedAt,
+        parsedParams.error.issues[0]?.message ?? "请求参数不合法"
+      );
+    }
+
+    await deleteAdminModel(parsedParams.data.id);
+
+    return okJson({
+      path     : `/api/admin/models/${parsedParams.data.id}`,
+      requestId,
+      startedAt,
+      code     : "ADMIN_MODEL_DELETED",
+      message  : "模型已删除",
+      data     : null
+    });
+  } catch (error) {
+    return failJson({
+      path           : "/api/admin/models/[id]",
+      requestId,
+      startedAt,
+      error,
+      fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
+      fallbackMessage: "模型删除失败"
     });
   }
 }
