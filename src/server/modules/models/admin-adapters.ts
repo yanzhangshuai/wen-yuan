@@ -1,5 +1,6 @@
 import type {
   ApiKeyChange,
+  CreateModelInput,
   ModelConnectivityResult,
   ModelListItem,
   UpdateAdminModelPayload,
@@ -76,5 +77,13 @@ export async function setDefaultAdminModel(id: string): Promise<ModelListItem> {
 
 export async function testAdminModelConnection(id: string): Promise<ModelConnectivityResult> {
   return testModelConnectivity(id);
+}
+
+export async function createAdminModel(input: CreateModelInput): Promise<ModelListItem> {
+  return (await getDefaultModelsModule()).createModel(input);
+}
+
+export async function deleteAdminModel(id: string): Promise<void> {
+  return (await getDefaultModelsModule()).deleteModel(id);
 }
 

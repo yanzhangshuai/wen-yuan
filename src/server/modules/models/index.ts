@@ -670,6 +670,8 @@ export function createModelsModule(
 
 // ── Admin adapters (re-exported for backward compatibility) ──────────────
 export {
+  createAdminModel,
+  deleteAdminModel,
   listAdminModels,
   listModels,
   setDefaultAdminModel,
