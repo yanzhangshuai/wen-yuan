@@ -65,7 +65,10 @@ const createModelInputSchema = z.object({
   provider       : z.string().trim().min(1, "供应商不能为空"),
   name           : z.string().trim().min(1, "名称不能为空"),
   providerModelId: providerModelIdSchema,
-  baseUrl        : z.string().trim().url("BaseURL 格式不合法"),
+  baseUrl        : z.string().trim().url("BaseURL 格式不合法").refine(
+    val => val.startsWith("https://"),
+    "BaseURL 必须使用 HTTPS"
+  ),
   apiKey         : z.string().trim().min(1, "API Key 不能为空").optional()
 });
 
@@ -289,7 +292,7 @@ function readStoredApiKey(apiKey: string | null): string | null {
  * 功能：将数据库模型记录映射为管理端安全输出模型。
  * 输入：AiModelRecord。
  * 输出：脱敏后的 ModelListItem（不暴露明文 Key）。
- * 异常：provider 非受支持值时由 zod 抛错。
+ * 异常：apiKey 密文格式非法时，下游调用 decryptValue 时抛错。
  * 副作用：无。
  */
 function toModelListItem(
@@ -300,7 +303,7 @@ function toModelListItem(
 
   return {
     id             : model.id,
-    provider       : model.provider.toLowerCase(),
+    provider       : (model.provider?.trim() || "unknown").toLowerCase(),
     name           : model.name,
     providerModelId: model.modelId,
     aliasKey       : model.aliasKey,
