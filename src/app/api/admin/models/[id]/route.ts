@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { headers } from "next/headers";
 
+import { Prisma } from "@/generated/prisma/client";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
@@ -14,7 +15,7 @@ import { badRequestJson, modelRouteParamsSchema, updateModelBodySchema } from ".
  * 文件定位（Next.js App Router Route Handler）：
  * - 文件名 `route.ts` + 目录 `app/api/admin/models/[id]` 会被 Next.js 自动映射为
  *   `/api/admin/models/:id` 接口。
- * - 本文件只处理 PATCH 方法，属于“管理员模型配置修改”接口层。
+ * - 本文件处理 PATCH（更新配置）和 DELETE（删除模型）两个方法。
  *
  * 执行时机与环境：
  * - 每次客户端/服务端请求该 API 时在服务端执行；
@@ -126,6 +127,23 @@ export async function DELETE(
       data     : null
     });
   } catch (error) {
+    // Handle Prisma P2025 (record not found) as 404
+    const isPrismaNotFound = (e: unknown): e is { code: string } => {
+       if (e instanceof Prisma.PrismaClientKnownRequestError) return (e as { code: string }).code === "P2025";
+       return e != null && typeof e === "object" && "code" in e && (e as { code: string }).code === "P2025";
+    };
+    if (isPrismaNotFound(error)) {
+      return okJson({
+         path     : "/api/admin/models/[id]",
+        requestId,
+        startedAt,
+        code     : "COMMON_NOT_FOUND",
+        message  : "模型不存在",
+        data     : null,
+        status   : 404
+      });
+    }
+
     return failJson({
       path           : "/api/admin/models/[id]",
       requestId,

@@ -263,4 +263,23 @@ describe("DELETE /api/admin/models/:id", () => {
     const payload = await response.json();
     expect(payload.message).toBe("模型删除失败");
   });
+
+  it("returns 404 when model does not exist", async () => {
+    // Simulate Prisma P2025 "record not found"
+    const notFoundError = Object.assign(new Error("Record not found"), {
+      code: "P2025",
+      name: "PrismaClientKnownRequestError"
+    });
+    deleteAdminModelMock.mockRejectedValue(notFoundError);
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(
+      new Request(`http://localhost/api/admin/models/${validId}`, { method: "DELETE" }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(404);
+    const payload = await response.json();
+    expect(payload.message).toBe("模型不存在");
+  });
 });
