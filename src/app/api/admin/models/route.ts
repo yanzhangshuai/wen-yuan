@@ -94,11 +94,11 @@ export async function POST(request: Request): Promise<Response> {
     const data = await createAdminModel(parsedBody.data);
 
     return okJson({
-      path     : "/api/admin/models",
+      path   : "/api/admin/models",
       requestId,
       startedAt,
-      code     : "ADMIN_MODEL_CREATED",
-      message  : "模型创建成功",
+      code   : "ADMIN_MODEL_CREATED",
+      message: "模型创建成功",
       data
     });
   } catch (error) {

@@ -119,12 +119,12 @@ export async function DELETE(
     await deleteAdminModel(parsedParams.data.id);
 
     return okJson({
-      path     : `/api/admin/models/${parsedParams.data.id}`,
+      path   : `/api/admin/models/${parsedParams.data.id}`,
       requestId,
       startedAt,
-      code     : "ADMIN_MODEL_DELETED",
-      message  : "模型已删除",
-      data     : null
+      code   : "ADMIN_MODEL_DELETED",
+      message: "模型已删除",
+      data   : null
     });
   } catch (error) {
     // Handle Prisma P2025 (record not found) as 404
@@ -134,13 +134,13 @@ export async function DELETE(
     };
     if (isPrismaNotFound(error)) {
       return okJson({
-         path     : "/api/admin/models/[id]",
+         path   : "/api/admin/models/[id]",
         requestId,
         startedAt,
-        code     : "COMMON_NOT_FOUND",
-        message  : "模型不存在",
-        data     : null,
-        status   : 404
+        code   : "COMMON_NOT_FOUND",
+        message: "模型不存在",
+        data   : null,
+        status : 404
       });
     }
 
