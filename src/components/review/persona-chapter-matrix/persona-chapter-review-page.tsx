@@ -275,7 +275,8 @@ export function PersonaChapterReviewPage({
 
       <div className="mt-4 space-y-4">
         <MatrixToolbar
-          personaKeyword={personaKeyword}
+          selectedPersonaId={null}
+          focusOnly={false}
           reviewStateFilter={reviewStateFilter}
           conflictStateFilter={conflictStateFilter}
           chapterJumpId={chapterJumpId}
@@ -284,7 +285,7 @@ export function PersonaChapterReviewPage({
           chapterCount={matrix.chapters.length}
           cellCount={visibleMatrix.cells.length}
           isLoading={isLoading}
-          onPersonaKeywordChange={setPersonaKeyword}
+          onFocusOnlyChange={() => {}}
           onReviewStateChange={handleReviewStateChange}
           onConflictStateChange={handleConflictStateChange}
           onChapterJump={handleChapterJump}

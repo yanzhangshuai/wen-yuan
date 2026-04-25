@@ -13,15 +13,15 @@ import {
 } from "./types";
 
 interface MatrixGridProps {
-  matrix              : PersonaChapterMatrixDto;
-  selectedCell        : MatrixCellSelection | null;
-  onSelectCell      ? : (selection: MatrixCellSelection) => void;
-  viewportHeight     ?: number;
-  viewportWidth      ?: number;
-  scrollTop          ?: number;
-  scrollLeft         ?: number;
+  matrix               : PersonaChapterMatrixDto;
+  selectedCell         : MatrixCellSelection | null;
+  onSelectCell       ? : (selection: MatrixCellSelection) => void;
+  viewportHeight     ? : number;
+  viewportWidth      ? : number;
+  scrollTop          ? : number;
+  scrollLeft         ? : number;
   highlightedPersonaId?: string | null;
-  className          ?: string;
+  className          ? : string;
 }
 
 interface MatrixAxisItemSegment {

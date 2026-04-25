@@ -4,6 +4,7 @@ import type {
   PersonaChapterMatrixChapterDto
 } from "@/lib/services/review-matrix";
 import { cn } from "@/lib/utils";
+import { FocusOnlySwitch } from "@/components/review/shared/focus-only-switch";
 
 type ReviewStateFilterValue = ClaimReviewState | "";
 type ConflictStateFilterValue = ConflictState | "";
@@ -25,21 +26,24 @@ const CONFLICT_STATE_OPTIONS: Array<{ value: ConflictStateFilterValue; label: st
 ];
 
 interface MatrixToolbarProps {
-  personaKeyword        : string;
-  reviewStateFilter     : ReviewStateFilterValue;
-  conflictStateFilter   : ConflictStateFilterValue;
-  chapterJumpId         : string;
-  chapters              : PersonaChapterMatrixChapterDto[];
-  visiblePersonaCount   : number;
-  chapterCount          : number;
-  cellCount             : number;
-  isLoading             : boolean;
-  onPersonaKeywordChange: (value: string) => void;
-  onReviewStateChange   : (value: ReviewStateFilterValue) => void;
-  onConflictStateChange : (value: ConflictStateFilterValue) => void;
-  onChapterJump         : (chapterId: string) => void;
-  onReset               : () => void;
-  className           ? : string;
+  selectedPersonaId          : string | null;
+  selectedPersonaDisplayName?: string | null;
+  focusOnly                  : boolean;
+  reviewStateFilter          : ReviewStateFilterValue;
+  conflictStateFilter        : ConflictStateFilterValue;
+  chapterJumpId              : string;
+  chapters                   : PersonaChapterMatrixChapterDto[];
+  visiblePersonaCount        : number;
+  chapterCount               : number;
+  cellCount                  : number;
+  isLoading                  : boolean;
+  onFocusOnlyChange          : (next: boolean) => void;
+  onReviewStateChange        : (value: ReviewStateFilterValue) => void;
+  onConflictStateChange      : (value: ConflictStateFilterValue) => void;
+  onChapterJump              : (chapterId: string) => void;
+  onReset                    : () => void;
+  onClearSelectedPersona   ? : () => void;
+  className                ? : string;
 }
 
 function toReviewStateFilterValue(value: string): ReviewStateFilterValue {
@@ -54,12 +58,14 @@ function toConflictStateFilterValue(value: string): ConflictStateFilterValue {
 
 /**
  * 矩阵工具栏：
- * - 本地人物检索只影响已加载列；
+ * - 聚焦模式开关影响已加载列；
  * - 审核状态/冲突状态会回源刷新矩阵摘要；
  * - 章节跳转只更新页面定位与选中单元格，不提前加载 claim detail。
  */
 export function MatrixToolbar({
-  personaKeyword,
+  selectedPersonaId,
+  selectedPersonaDisplayName,
+  focusOnly,
   reviewStateFilter,
   conflictStateFilter,
   chapterJumpId,
@@ -68,26 +74,48 @@ export function MatrixToolbar({
   chapterCount,
   cellCount,
   isLoading,
-  onPersonaKeywordChange,
+  onFocusOnlyChange,
   onReviewStateChange,
   onConflictStateChange,
   onChapterJump,
   onReset,
+  onClearSelectedPersona,
   className
 }: MatrixToolbarProps) {
+  const showFocusBanner = focusOnly && selectedPersonaId !== null;
+
   return (
     <div className={cn("rounded-xl border bg-background p-4", className)}>
-      <div className="grid gap-3 lg:grid-cols-[minmax(12rem,1.4fr)_repeat(3,minmax(9rem,1fr))_auto]">
-        <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-          搜索人物
-          <input
-            aria-label="搜索人物"
-            value={personaKeyword}
-            onChange={(event) => onPersonaKeywordChange(event.target.value)}
-            placeholder="输入人物名、别名或字号"
-            className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/60"
+      {showFocusBanner && (
+        <div className="mb-3 flex items-center justify-between rounded-lg bg-orange-100 px-4 py-2 text-sm text-orange-900 dark:bg-orange-900/20 dark:text-orange-200">
+          <span>
+            仅显示「{selectedPersonaDisplayName ?? "当前角色"}」相关单元格
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (onClearSelectedPersona) {
+                onClearSelectedPersona();
+              } else {
+                onFocusOnlyChange(false);
+              }
+            }}
+            className="text-xs font-medium text-orange-700 hover:text-orange-900 dark:text-orange-300 dark:hover:text-orange-100"
+            aria-label="清除聚焦"
+          >
+            清除聚焦
+          </button>
+        </div>
+      )}
+
+      <div className="grid gap-3 lg:grid-cols-[minmax(9rem,1fr)_repeat(3,minmax(9rem,1fr))_auto]">
+        <div className="flex items-end">
+          <FocusOnlySwitch
+            checked={focusOnly}
+            onCheckedChange={onFocusOnlyChange}
+            disabled={selectedPersonaId === null}
           />
-        </label>
+        </div>
 
         <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
           审核状态
