@@ -54,6 +54,7 @@ import {
   enforceBiographyRegionConstraint,
   isEffectiveBiography
 } from "@/server/modules/analysis/pipelines/threestage/stageC/enforceBiographyRegionConstraint";
+import { parseLlmJsonSafely } from "@/server/modules/analysis/pipelines/threestage/shared/parseLlmJson";
 import type {
   DeathChapterUpdate,
   StageCBiography,
@@ -100,6 +101,7 @@ export type StageCPrismaClient = Pick<
   | "biographyRecord"
   | "mergeSuggestion"
   | "chapterPreprocessResult"
+  | "analysisPhaseLog"
   | "$transaction"
 >;
 
@@ -210,10 +212,8 @@ function parseRawBiography(raw: unknown): StageCRawBiography | null {
  * 支持顶层形态：`{records: [...]}` 或 `[...]`（兜底）。
  */
 export function parseStageCResponse(content: string): StageCRawBiography[] {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
+  const parsed = parseLlmJsonSafely(content);
+  if (parsed === null) {
     throw new StageCAttributionError("Stage C JSON 解析失败", content);
   }
 
@@ -324,6 +324,7 @@ export class StageCAttributor {
     const overrideHits: Record<string, number> = {};
     const feedbackSuggestions: StageCFeedbackAction[] = [];
     let llmInvocations = 0;
+    let failedChapters = 0;
 
     const deathStage0ByPersona = new Map<string, number>(); // personaId → earliest chapterNo
     const deathStageCByPersona = new Map<string, number>();
@@ -357,9 +358,39 @@ export class StageCAttributor {
         bookTypeCode: book.typeCode
       });
 
-      const aiResult = await this.aiClient.generateJson(prompt, { temperature: 0 });
-      llmInvocations += 1;
-      const rawBiographies = parseStageCResponse(aiResult.content);
+      // §0-15 单章容错：LLM 调用 / JSON 解析失败时记录 phase log 但不中断整本书 Stage C。
+      let rawBiographies: StageCRawBiography[];
+      const chapterStartedAt = Date.now();
+      try {
+        const aiResult = await this.aiClient.generateJson(prompt, { temperature: 0 });
+        llmInvocations += 1;
+        rawBiographies = parseStageCResponse(aiResult.content);
+      } catch (error) {
+        failedChapters += 1;
+        const errorPreview = error instanceof StageCAttributionError
+          ? `${error.message} | rawHead=${error.rawResponse.slice(0, 200)}`
+          : (error instanceof Error ? error.message : String(error));
+        console.warn(
+          "[analysis.runner] stageC.chapter.failed",
+          JSON.stringify({
+            jobId,
+            chapterId: group.chapterId,
+            chapterNo: group.chapterNo,
+            error    : errorPreview.slice(0, 500)
+          })
+        );
+        if (jobId) {
+          await this.writeChapterPhaseLog({
+            jobId,
+            chapterId   : group.chapterId,
+            stage       : "STAGE_C",
+            status      : "FAILED",
+            durationMs  : Date.now() - chapterStartedAt,
+            errorMessage: errorPreview.slice(0, 1000)
+          });
+        }
+        continue;
+      }
 
       for (const raw of rawBiographies) {
         // 解析 personaCanonicalName → personaId
@@ -468,6 +499,7 @@ export class StageCAttributor {
     return {
       bookId,
       chaptersProcessed  : chapterGroups.length,
+      failedChapters,
       llmInvocations,
       biographiesCreated : allBiographies.length,
       effectiveBiographies,
@@ -479,6 +511,31 @@ export class StageCAttributor {
   }
 
   // ────────────────────────────── 数据加载 ──────────────────────────────
+
+  private async writeChapterPhaseLog(params: {
+    jobId       : string;
+    chapterId   : string;
+    stage       : "STAGE_A" | "STAGE_B" | "STAGE_C";
+    status      : "FAILED" | "WARNING";
+    durationMs  : number;
+    errorMessage: string;
+  }): Promise<void> {
+    try {
+      await this.prisma.analysisPhaseLog.create({
+        data: {
+          jobId       : params.jobId,
+          chapterId   : params.chapterId,
+          stage       : params.stage,
+          modelSource : "SYSTEM",
+          status      : params.status,
+          durationMs  : params.durationMs,
+          errorMessage: params.errorMessage
+        }
+      });
+    } catch (err) {
+      console.warn("[analysis.runner] phaseLog.write.failed", err instanceof Error ? err.message : String(err));
+    }
+  }
 
   private async loadPromotedMentions(bookId: string): Promise<StageCMentionRow[]> {
     const rows = await this.prisma.personaMention.findMany({
@@ -816,6 +873,7 @@ export class StageCAttributor {
     return {
       bookId,
       chaptersProcessed   : 0,
+      failedChapters      : 0,
       llmInvocations      : 0,
       biographiesCreated  : 0,
       effectiveBiographies: 0,

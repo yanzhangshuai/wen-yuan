@@ -252,15 +252,33 @@ export function createThreeStagePipeline(
             break;
           } catch (error) {
             if (!isRetryable(error) || attempt >= deps.chapterMaxRetries) {
+              const errorPreview = String(error).slice(0, 500);
               console.warn(
                 "[analysis.runner] stageA.extract.failed",
                 JSON.stringify({
                   jobId    : params.jobId,
                   chapterId: chapter.id,
                   chapterNo: chapter.no,
-                  error    : String(error).slice(0, 500)
+                  error    : errorPreview
                 })
               );
+              try {
+                await deps.prisma.analysisPhaseLog.create({
+                  data: {
+                    jobId       : params.jobId,
+                    chapterId   : chapter.id,
+                    stage       : "STAGE_A",
+                    modelSource : "SYSTEM",
+                    status      : "FAILED",
+                    errorMessage: errorPreview
+                  }
+                });
+              } catch (logErr) {
+                console.warn(
+                  "[analysis.runner] stageA.phaseLog.write.failed",
+                  logErr instanceof Error ? logErr.message : String(logErr)
+                );
+              }
               break;
             }
 

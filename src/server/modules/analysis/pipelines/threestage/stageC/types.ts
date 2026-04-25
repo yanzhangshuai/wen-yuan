@@ -97,6 +97,8 @@ export interface StageCFeedbackAction {
 export interface StageCResult {
   bookId              : string;
   chaptersProcessed   : number;
+  /** 章节级 LLM 调用失败（含 JSON 解析失败）数量；写入 phase log 但不阻塞整本书。 */
+  failedChapters      : number;
   llmInvocations      : number;
   biographiesCreated  : number;
   effectiveBiographies: number;

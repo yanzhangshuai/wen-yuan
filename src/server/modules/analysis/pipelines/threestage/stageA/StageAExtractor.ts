@@ -33,6 +33,8 @@ import type {
 import { resolvePromptTemplate } from "@/server/modules/knowledge";
 import { getFewShots } from "@/server/modules/analysis/prompts/resolveBookTypeFewShots";
 import { enforceRegionOverride } from "@/server/modules/analysis/pipelines/threestage/stageA/enforceRegionOverride";
+import { filterGenericMentions } from "@/server/modules/analysis/pipelines/threestage/stageA/genericTermFilter";
+import { parseLlmJsonSafely } from "@/server/modules/analysis/pipelines/threestage/shared/parseLlmJson";
 import type {
   RegionBreakdown,
   StageAMention,
@@ -171,10 +173,8 @@ function parseRawMention(raw: unknown): StageARawMention | null {
  * 解析失败直接抛 `StageAExtractionError`。
  */
 export function parseStageAResponse(content: string): StageARawMention[] {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
+  const parsed = parseLlmJsonSafely(content);
+  if (parsed === null) {
     throw new StageAExtractionError("Stage A JSON 解析失败", content);
   }
 
@@ -247,9 +247,22 @@ export class StageAExtractor {
 
     // 4. 解析 + 覆写
     const rawMentions = parseStageAResponse(aiResult.content);
-    const mentions: StageAMention[] = rawMentions.map((m) =>
+    const overridden: StageAMention[] = rawMentions.map((m) =>
       enforceRegionOverride(m, chapterText, pre.regions)
     );
+    // 4.1 过滤纯泛称 / 代词指代（"母亲、儿、娘、道士、虔婆、他母亲、令叔祖" 等）
+    const { kept: mentions, dropped: genericDropped } = filterGenericMentions(overridden);
+    if (genericDropped.length > 0) {
+      console.info(
+        "[StageAExtractor] generic.filter",
+        JSON.stringify({
+          chapterId,
+          chapterNo,
+          dropped: genericDropped.map((m) => m.surfaceForm).slice(0, 20),
+          count  : genericDropped.length
+        })
+      );
+    }
 
     // 5. 持久化（幂等：同 (bookId, chapterId) 重跑先删旧）
     await this.persist({ bookId, chapterId, chapterNo, jobId, mentions });
