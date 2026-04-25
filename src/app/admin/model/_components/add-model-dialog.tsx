@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 
-import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+
+import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
