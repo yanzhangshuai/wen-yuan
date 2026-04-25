@@ -283,6 +283,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -294,24 +296,61 @@ describe("PersonaChapterReviewPage", () => {
     expect(screen.getByRole("columnheader", { name: /周进/ })).toBeInTheDocument();
   });
 
-  // TODO(4.4): re-enable after wiring persona filtering
-  it.skip("narrows visible persona columns locally when the persona search text changes", () => {
+  it("narrows visible persona columns when focusOnly=true with selectedPersonaId", () => {
     render(
       <PersonaChapterReviewPage
         bookId={BOOK_ID}
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId="persona-1"
+        focusOnly={true}
       />
     );
 
-    fireEvent.change(screen.getByRole("textbox", { name: "搜索人物" }), {
-      target: { value: "范" }
-    });
-
     expect(screen.getByRole("columnheader", { name: /范进/ })).toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: /周进/ })).not.toBeInTheDocument();
-    expect(hoisted.fetchPersonaChapterMatrixMock).not.toHaveBeenCalled();
+    expect(screen.getByText("1 名人物列")).toBeInTheDocument();
+    expect(screen.getByText("1 个事实单元格")).toBeInTheDocument();
+  });
+
+  it("displays full matrix when focusOnly=false with selectedPersonaId", () => {
+    render(
+      <PersonaChapterReviewPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialMatrix={buildMatrix()}
+        selectedPersonaId="persona-1"
+        focusOnly={false}
+      />
+    );
+
+    expect(screen.getByRole("columnheader", { name: /范进/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /周进/ })).toBeInTheDocument();
+    expect(screen.getByText("2 名人物列")).toBeInTheDocument();
+    expect(screen.getByText("2 个事实单元格")).toBeInTheDocument();
+  });
+
+  it("calls onFocusOnlyChange when the focus switch is toggled", () => {
+    const handleFocusOnlyChange = vi.fn();
+    
+    render(
+      <PersonaChapterReviewPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialMatrix={buildMatrix()}
+        selectedPersonaId="persona-1"
+        focusOnly={false}
+        onFocusOnlyChange={handleFocusOnlyChange}
+      />
+    );
+
+    const focusSwitch = screen.getByRole("switch", { name: /只看当前角色/ });
+    fireEvent.click(focusSwitch);
+
+    expect(handleFocusOnlyChange).toHaveBeenCalledWith(true);
   });
 
   it("refetches the matrix when the review state filter changes", async () => {
@@ -328,6 +367,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -358,6 +399,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -381,6 +424,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -407,6 +452,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
         initialSelectedCell={initialSelectedCell}
       />
     );
@@ -423,6 +470,8 @@ describe("PersonaChapterReviewPage", () => {
         initialMatrix={buildMatrix({
           generatedAt: "2026-04-21T12:00:00.000Z"
         })}
+        selectedPersonaId={null}
+        focusOnly={false}
         initialSelectedCell={initialSelectedCell}
       />
     );
@@ -461,6 +510,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -479,8 +530,7 @@ describe("PersonaChapterReviewPage", () => {
     ).toBeInTheDocument();
   });
 
-  // TODO(4.4): re-enable after wiring persona filtering
-  it.skip("resets local and remote filters back to the initial query", async () => {
+  it("resets remote filters back to the initial query", async () => {
     hoisted.fetchPersonaChapterMatrixMock
       .mockResolvedValueOnce(
         buildMatrix({
@@ -496,12 +546,11 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
-    fireEvent.change(screen.getByRole("textbox", { name: "搜索人物" }), {
-      target: { value: "范" }
-    });
     fireEvent.change(screen.getByRole("combobox", { name: "审核状态" }), {
       target: { value: "PENDING" }
     });
@@ -521,7 +570,6 @@ describe("PersonaChapterReviewPage", () => {
       });
     });
 
-    expect(screen.getByRole("textbox", { name: "搜索人物" })).toHaveValue("");
     expect(screen.getByRole("columnheader", { name: /范进/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /周进/ })).toBeInTheDocument();
   });
@@ -536,6 +584,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -564,6 +614,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -591,6 +643,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -651,6 +705,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -733,6 +789,8 @@ describe("PersonaChapterReviewPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialMatrix={buildLargeMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 

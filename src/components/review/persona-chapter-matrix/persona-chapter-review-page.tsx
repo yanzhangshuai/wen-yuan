@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState, ErrorState } from "@/components/ui/states";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/review-matrix";
 
 import { CellDrilldownSheet } from "./cell-drilldown-sheet";
+import { filterMatrixByPersonaId } from "./filter-by-persona";
 import { MatrixGrid } from "./matrix-grid";
 import { MatrixToolbar } from "./matrix-toolbar";
 import {
@@ -30,49 +31,14 @@ export interface PersonaChapterReviewPageProps {
   bookTitle           : string;
   allBooks            : PersonaChapterReviewBookOption[];
   initialMatrix       : PersonaChapterMatrixDto;
+  selectedPersonaId   : string | null;
+  focusOnly           : boolean;
+  onFocusOnlyChange  ?: (next: boolean) => void;
   initialSelectedCell?: MatrixCellSelection | null;
 }
 
 type ReviewStateFilterValue = ClaimReviewState | "";
 type ConflictStateFilterValue = ConflictState | "";
-
-function normalizeSearchText(value: string): string {
-  return value.trim().toLocaleLowerCase();
-}
-
-function isPersonaMatched(
-  persona: PersonaChapterMatrixDto["personas"][number],
-  keyword: string
-): boolean {
-  if (keyword.length === 0) {
-    return true;
-  }
-
-  const searchableTexts = [persona.displayName, ...persona.aliases];
-  return searchableTexts.some((text) => text.toLocaleLowerCase().includes(keyword));
-}
-
-function filterMatrixByPersonaKeyword(
-  matrix: PersonaChapterMatrixDto,
-  personaKeyword: string
-): PersonaChapterMatrixDto {
-  const normalizedKeyword = normalizeSearchText(personaKeyword);
-  if (normalizedKeyword.length === 0) {
-    return matrix;
-  }
-
-  const personas = matrix.personas.filter((persona) => isPersonaMatched(
-    persona,
-    normalizedKeyword
-  ));
-  const personaIds = new Set(personas.map((persona) => persona.personaId));
-
-  return {
-    ...matrix,
-    personas,
-    cells: matrix.cells.filter((cell) => personaIds.has(cell.personaId))
-  };
-}
 
 function buildMatrixQuery(
   bookId: string,
@@ -158,11 +124,13 @@ export function PersonaChapterReviewPage({
   bookTitle,
   allBooks,
   initialMatrix,
+  selectedPersonaId,
+  focusOnly,
+  onFocusOnlyChange,
   initialSelectedCell = null
 }: PersonaChapterReviewPageProps) {
   const seededSelection = resolveInitialSelectedCell(initialMatrix, initialSelectedCell);
   const [matrix, setMatrix] = useState(initialMatrix);
-  const [personaKeyword, setPersonaKeyword] = useState("");
   const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilterValue>("");
   const [conflictStateFilter, setConflictStateFilter] = useState<ConflictStateFilterValue>("");
   const [chapterJumpId, setChapterJumpId] = useState(seededSelection?.chapterId ?? "");
@@ -178,7 +146,6 @@ export function PersonaChapterReviewPage({
     const nextSeededSelection = resolveInitialSelectedCell(initialMatrix, initialSelectedCell);
 
     setMatrix(initialMatrix);
-    setPersonaKeyword("");
     setReviewStateFilter("");
     setConflictStateFilter("");
     setChapterJumpId(nextSeededSelection?.chapterId ?? "");
@@ -236,7 +203,6 @@ export function PersonaChapterReviewPage({
   }
 
   function handleReset() {
-    setPersonaKeyword("");
     setChapterJumpId("");
     setSelectedCell(null);
     setOpenedCell(null);
@@ -252,16 +218,28 @@ export function PersonaChapterReviewPage({
       return;
     }
 
-    const selection = findSelectionForChapter(visibleMatrix, chapterId);
+    const selection = findSelectionForChapter(displayedMatrix, chapterId);
     setSelectedCell(selection);
     setScrollTop(toChapterScrollTop(matrix, chapterId));
   }
 
-  const visibleMatrix = filterMatrixByPersonaKeyword(matrix, personaKeyword);
-  const visibleSelectedCell = selectionExists(visibleMatrix, selectedCell)
+  function handleClearSelectedPersona() {
+    onFocusOnlyChange?.(false);
+  }
+
+  const displayedMatrix = useMemo(
+    () => focusOnly ? filterMatrixByPersonaId(matrix, selectedPersonaId) : matrix,
+    [matrix, focusOnly, selectedPersonaId]
+  );
+
+  const selectedPersonaDisplayName = matrix.personas.find(
+    (p) => p.personaId === selectedPersonaId
+  )?.displayName ?? null;
+
+  const visibleSelectedCell = selectionExists(displayedMatrix, selectedCell)
     ? selectedCell
     : null;
-  const hasVisibleMatrix = visibleMatrix.chapters.length > 0 && visibleMatrix.personas.length > 0;
+  const hasVisibleMatrix = displayedMatrix.chapters.length > 0 && displayedMatrix.personas.length > 0;
 
   return (
     <section className="persona-chapter-review-page rounded-xl border bg-card p-6 shadow-sm">
@@ -275,21 +253,23 @@ export function PersonaChapterReviewPage({
 
       <div className="mt-4 space-y-4">
         <MatrixToolbar
-          selectedPersonaId={null}
-          focusOnly={false}
+          selectedPersonaId={selectedPersonaId}
+          selectedPersonaDisplayName={selectedPersonaDisplayName}
+          focusOnly={focusOnly}
           reviewStateFilter={reviewStateFilter}
           conflictStateFilter={conflictStateFilter}
           chapterJumpId={chapterJumpId}
           chapters={matrix.chapters}
-          visiblePersonaCount={visibleMatrix.personas.length}
+          visiblePersonaCount={displayedMatrix.personas.length}
           chapterCount={matrix.chapters.length}
-          cellCount={visibleMatrix.cells.length}
+          cellCount={displayedMatrix.cells.length}
           isLoading={isLoading}
-          onFocusOnlyChange={() => {}}
+          onFocusOnlyChange={onFocusOnlyChange ?? (() => {})}
           onReviewStateChange={handleReviewStateChange}
           onConflictStateChange={handleConflictStateChange}
           onChapterJump={handleChapterJump}
           onReset={handleReset}
+          onClearSelectedPersona={handleClearSelectedPersona}
         />
 
         {isLoading ? (
@@ -313,8 +293,9 @@ export function PersonaChapterReviewPage({
           />
         ) : hasVisibleMatrix ? (
           <MatrixGrid
-            matrix={visibleMatrix}
+            matrix={displayedMatrix}
             selectedCell={visibleSelectedCell}
+            highlightedPersonaId={!focusOnly ? selectedPersonaId : null}
             onSelectCell={(selection) => {
               setSelectedCell(selection);
               setOpenedCell(selection);
