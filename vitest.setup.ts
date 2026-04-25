@@ -19,6 +19,30 @@ import { afterEach } from "vitest";
  */
 process.env.DATABASE_URL ??= "postgresql://user:pass@127.0.0.1:5432/testdb";
 
+/**
+ * 为 jsdom 环境提供 ResizeObserver polyfill。
+ * - cmdk 组件需要 ResizeObserver 来处理命令列表布局。
+ */
+if (typeof global !== "undefined" && typeof global.ResizeObserver === "undefined") {
+  global.ResizeObserver = class ResizeObserver {
+    observe() {}
+
+    unobserve() {}
+
+    disconnect() {}
+  } as any;
+}
+
+/**
+ * 为 jsdom 环境提供 scrollIntoView polyfill。
+ * - cmdk 组件需要 scrollIntoView 来处理选项导航。
+ */
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {
+    // noop
+  };
+}
+
 afterEach(() => {
   // 仅在存在 document（如 jsdom 场景）时执行 cleanup。
   // 原因：当前项目默认 test environment 为 node，直接调用 cleanup 可能触发无效 DOM 访问。
