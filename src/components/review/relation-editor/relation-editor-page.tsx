@@ -8,6 +8,7 @@ import {
   type FetchRelationEditorViewInput,
   type ReviewRelationEditorDto
 } from "@/lib/services/relation-editor";
+import { FocusOnlySwitch } from "@/components/review/shared/focus-only-switch";
 
 import { RelationClaimSheet } from "./relation-claim-sheet";
 import { RelationClaimList } from "./relation-claim-list";
@@ -25,10 +26,13 @@ export interface RelationEditorBookOption {
 }
 
 export interface RelationEditorPageProps {
-  bookId               : string;
-  bookTitle            : string;
-  allBooks             : RelationEditorBookOption[];
-  initialRelationEditor: ReviewRelationEditorDto;
+  bookId                : string;
+  bookTitle             : string;
+  allBooks              : RelationEditorBookOption[];
+  initialRelationEditor : ReviewRelationEditorDto;
+  selectedPersonaId     : string | null;
+  focusOnly             : boolean;
+  onFocusOnlyChange    ?: (next: boolean) => void;
 }
 
 interface SelectedPairState {
@@ -127,7 +131,10 @@ export function RelationEditorPage({
   bookId,
   bookTitle,
   allBooks,
-  initialRelationEditor
+  initialRelationEditor,
+  selectedPersonaId,
+  focusOnly,
+  onFocusOnlyChange
 }: RelationEditorPageProps) {
   const [filters, setFilters] = useState(EMPTY_RELATION_EDITOR_FILTERS);
   const [relationEditor, setRelationEditor] = useState(initialRelationEditor);
@@ -137,6 +144,14 @@ export function RelationEditorPage({
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const displayedPairSummaries = (focusOnly && selectedPersonaId)
+    ? relationEditor.pairSummaries.filter((pair) =>
+        pair.leftPersonaId === selectedPersonaId || pair.rightPersonaId === selectedPersonaId
+      )
+    : relationEditor.pairSummaries;
+
+  const highlightedPersonaId = (!focusOnly && selectedPersonaId) ? selectedPersonaId : null;
 
   useEffect(() => {
     setFilters(EMPTY_RELATION_EDITOR_FILTERS);
@@ -219,15 +234,27 @@ export function RelationEditorPage({
       </header>
 
       <div className="mt-4 space-y-4">
-        <RelationEditorToolbar
-          filters={filters}
-          personaOptions={relationEditor.personaOptions}
-          relationTypeOptions={relationEditor.relationTypeOptions}
-          pairCount={relationEditor.pairSummaries.length}
-          isLoading={isLoading}
-          onFiltersChange={handleFiltersChange}
-          onReset={handleReset}
-        />
+        <div className="space-y-3">
+          <RelationEditorToolbar
+            filters={filters}
+            personaOptions={relationEditor.personaOptions}
+            relationTypeOptions={relationEditor.relationTypeOptions}
+            pairCount={relationEditor.pairSummaries.length}
+            isLoading={isLoading}
+            onFiltersChange={handleFiltersChange}
+            onReset={handleReset}
+          />
+
+          {onFocusOnlyChange && selectedPersonaId && (
+            <div className="rounded-xl border bg-background px-4 py-3">
+              <FocusOnlySwitch
+                checked={focusOnly}
+                onCheckedChange={onFocusOnlyChange}
+                disabled={isLoading}
+              />
+            </div>
+          )}
+        </div>
 
         {isLoading ? (
           <div
@@ -251,10 +278,11 @@ export function RelationEditorPage({
         ) : (
           <div className="grid gap-4 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)]">
             <RelationPairList
-              pairSummaries={relationEditor.pairSummaries}
+              pairSummaries={displayedPairSummaries}
               relationTypeOptions={relationEditor.relationTypeOptions}
               selectedPairKey={selectedPair?.pairKey ?? null}
               onSelectPair={handleSelectPair}
+              highlightedPersonaId={highlightedPersonaId}
             />
 
             <RelationClaimList

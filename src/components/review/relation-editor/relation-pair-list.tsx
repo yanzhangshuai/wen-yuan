@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/states";
 import type {
@@ -11,11 +13,12 @@ import { cn } from "@/lib/utils";
 import { getRelationTypeLabel } from "./types";
 
 interface RelationPairListProps {
-  pairSummaries      : ReviewRelationPairSummaryDto[];
-  relationTypeOptions: ReviewRelationTypeOptionDto[];
-  selectedPairKey    : string | null;
-  onSelectPair       : (pairKey: string) => void;
-  className        ? : string;
+  pairSummaries       : ReviewRelationPairSummaryDto[];
+  relationTypeOptions : ReviewRelationTypeOptionDto[];
+  selectedPairKey     : string | null;
+  onSelectPair        : (pairKey: string) => void;
+  highlightedPersonaId?: string | null;
+  className          ? : string;
 }
 
 function renderWarningBadges(pair: ReviewRelationPairSummaryDto) {
@@ -40,8 +43,17 @@ export function RelationPairList({
   relationTypeOptions,
   selectedPairKey,
   onSelectPair,
+  highlightedPersonaId = null,
   className
 }: RelationPairListProps) {
+  const firstHighlightedRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (highlightedPersonaId && firstHighlightedRef.current) {
+      firstHighlightedRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [highlightedPersonaId]);
+
   if (pairSummaries.length === 0) {
     return (
       <EmptyState
@@ -51,6 +63,8 @@ export function RelationPairList({
       />
     );
   }
+
+  let firstHighlightedAssigned = false;
 
   return (
     <section className={cn("relation-pair-list rounded-xl border bg-background p-3", className)}>
@@ -62,10 +76,18 @@ export function RelationPairList({
       <div className="space-y-2">
         {pairSummaries.map((pair) => {
           const isSelected = pair.pairKey === selectedPairKey;
+          const isHighlighted = highlightedPersonaId !== null
+            && (pair.leftPersonaId === highlightedPersonaId || pair.rightPersonaId === highlightedPersonaId);
+
+          const shouldAssignRef = isHighlighted && !firstHighlightedAssigned;
+          if (shouldAssignRef) {
+            firstHighlightedAssigned = true;
+          }
 
           return (
             <button
               key={pair.pairKey}
+              ref={shouldAssignRef ? firstHighlightedRef : null}
               type="button"
               aria-pressed={isSelected}
               onClick={() => onSelectPair(pair.pairKey)}
@@ -73,7 +95,8 @@ export function RelationPairList({
                 "w-full rounded-lg border p-3 text-left transition-colors",
                 isSelected
                   ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:bg-muted/50"
+                  : "border-border bg-card hover:bg-muted/50",
+                isHighlighted && !isSelected && "bg-primary/5"
               )}
             >
               <div className="flex items-start justify-between gap-3">

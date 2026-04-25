@@ -138,6 +138,39 @@ describe("RelationPairList", () => {
 
     expect(screen.getByText("当前筛选下暂无人物关系")).toBeInTheDocument();
   });
+
+  it("applies bg-primary/5 highlighting to pairs touching highlightedPersonaId", () => {
+    render(
+      <RelationPairList
+        pairSummaries={pairSummaries}
+        relationTypeOptions={relationTypeOptions}
+        selectedPairKey={null}
+        onSelectPair={vi.fn()}
+        highlightedPersonaId="persona-1"
+      />
+    );
+
+    const firstPairButton = screen.getByRole("button", { name: /范进.*周进/ });
+    const secondPairButton = screen.getByRole("button", { name: /周进.*梅玖/ });
+
+    expect(firstPairButton).toHaveClass("bg-primary/5");
+    expect(secondPairButton).not.toHaveClass("bg-primary/5");
+  });
+
+  it("does not highlight when highlightedPersonaId is null", () => {
+    render(
+      <RelationPairList
+        pairSummaries={pairSummaries}
+        relationTypeOptions={relationTypeOptions}
+        selectedPairKey={null}
+        onSelectPair={vi.fn()}
+        highlightedPersonaId={null}
+      />
+    );
+
+    const firstPairButton = screen.getByRole("button", { name: /范进.*周进/ });
+    expect(firstPairButton).not.toHaveClass("bg-primary/5");
+  });
 });
 
 describe("RelationEditorToolbar", () => {

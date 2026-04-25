@@ -264,6 +264,8 @@ describe("RelationEditorPage", () => {
         initialRelationEditor={buildRelationEditorDto({
           selectedPair: buildSelectedPair()
         })}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -288,6 +290,8 @@ describe("RelationEditorPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -345,6 +349,8 @@ describe("RelationEditorPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -392,6 +398,8 @@ describe("RelationEditorPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -429,6 +437,8 @@ describe("RelationEditorPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -468,6 +478,8 @@ describe("RelationEditorPage", () => {
         bookTitle="儒林外史"
         allBooks={allBooks}
         initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId={null}
+        focusOnly={false}
       />
     );
 
@@ -526,5 +538,57 @@ describe("RelationEditorPage", () => {
         hidden: true
       })).toBeInTheDocument();
     });
+  });
+
+  it("shows all pairs when focusOnly=false but highlights matching ones", () => {
+    render(
+      <RelationEditorPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId="persona-1"
+        focusOnly={false}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /范进.*周进/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /周进.*梅玖/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /范进.*周进/ })).toHaveClass("bg-primary/5");
+  });
+
+  it("filters to only related pairs when focusOnly=true and selectedPersonaId set", () => {
+    render(
+      <RelationEditorPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId="persona-1"
+        focusOnly={true}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /范进.*周进/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /周进.*梅玖/ })).not.toBeInTheDocument();
+  });
+
+  it("triggers onFocusOnlyChange when focus toggle is clicked", () => {
+    const onFocusOnlyChange = vi.fn();
+
+    render(
+      <RelationEditorPage
+        bookId={BOOK_ID}
+        bookTitle="儒林外史"
+        allBooks={allBooks}
+        initialRelationEditor={buildRelationEditorDto()}
+        selectedPersonaId="persona-1"
+        focusOnly={false}
+        onFocusOnlyChange={onFocusOnlyChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("switch", { name: "只看当前角色相关 claim" }));
+    expect(onFocusOnlyChange).toHaveBeenCalledWith(true);
   });
 });
