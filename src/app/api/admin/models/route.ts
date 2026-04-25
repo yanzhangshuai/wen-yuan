@@ -2,10 +2,13 @@ import { randomUUID } from "node:crypto";
 
 import { headers } from "next/headers";
 
+import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { listAdminModels } from "@/server/modules/models";
+import { createAdminModel, listAdminModels } from "@/server/modules/models";
 import { ERROR_CODES } from "@/types/api";
+
+import { badRequestJson, createModelBodySchema } from "./_shared";
 
 /**
  * 文件定位（Next.js Route Handler）：
@@ -60,6 +63,52 @@ export async function GET(): Promise<Response> {
       error,
       fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
       fallbackMessage: "模型列表获取失败"
+    });
+  }
+}
+
+/**
+ * POST `/api/admin/models`
+ * 功能：创建新模型配置。
+ * 入参：provider、name、providerModelId、baseUrl（必须）；apiKey（可选）。
+ * 返回：新创建的模型配置快照（isEnabled=false，isDefault=false）。
+ */
+export async function POST(request: Request): Promise<Response> {
+  const startedAt = Date.now();
+  const requestId = randomUUID();
+
+  try {
+    const auth = await getAuthContext(await headers());
+    requireAdmin(auth);
+
+    const parsedBody = createModelBodySchema.safeParse(await readJsonBody(request));
+    if (!parsedBody.success) {
+      return badRequestJson(
+        "/api/admin/models",
+        requestId,
+        startedAt,
+        parsedBody.error.issues[0]?.message ?? "请求参数不合法"
+      );
+    }
+
+    const data = await createAdminModel(parsedBody.data);
+
+    return okJson({
+      path     : "/api/admin/models",
+      requestId,
+      startedAt,
+      code     : "ADMIN_MODEL_CREATED",
+      message  : "模型创建成功",
+      data
+    });
+  } catch (error) {
+    return failJson({
+      path           : "/api/admin/models",
+      requestId,
+      startedAt,
+      error,
+      fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
+      fallbackMessage: "模型创建失败"
     });
   }
 }

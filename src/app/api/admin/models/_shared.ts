@@ -60,3 +60,17 @@ export function badRequestJson(
     400
   );
 }
+
+/** 创建模型请求体 Schema。 */
+export const createModelBodySchema = z.object({
+  /** 供应商标识，自由字符串（如 deepseek / openai / my-provider）。 */
+  provider       : z.string({ required_error: "供应商不能为空" }).trim().min(1, "供应商不能为空"),
+  /** 管理端展示名称。 */
+  name           : z.string({ required_error: "名称不能为空" }).trim().min(1, "名称不能为空"),
+  /** 供应商侧模型标识（实际调用使用）。 */
+  providerModelId: z.string({ required_error: "模型标识不能为空" }).trim().min(1, "模型标识不能为空"),
+  /** API 基础地址（合法 HTTPS URL）。 */
+  baseUrl        : z.string({ required_error: "BaseURL 格式不合法" }).trim().url("BaseURL 格式不合法"),
+  /** 明文 API Key（可选）。 */
+  apiKey         : z.string().trim().min(1, "API Key 不能为空").optional()
+});
