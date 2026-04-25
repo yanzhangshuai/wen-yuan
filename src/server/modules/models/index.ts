@@ -15,7 +15,7 @@
  *
  * 关键业务约束：
  * - API Key 必须以密文存储，读取时仅在必要路径解密；
- * - 连通性测试必须走白名单域名校验，防止 SSRF 风险；
+ * - 连通性测试走内网黑名单校验，防止 SSRF 风险；
  * - “默认模型唯一”是业务规则，不是技术偶然，涉及全局推理链路稳定性。
  * =============================================================================
  */
@@ -37,9 +37,7 @@ import {
 /** 便于测试注入的 fetch 签名类型，避免在单测里强耦合全局 fetch。 */
 type FetchImpl = typeof fetch;
 /** 平台当前支持的 AI 提供商枚举（与数据库 provider 字段取值保持一致）。 */
-export type SupportedProvider = "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
-
-const providerSchema = z.enum(["deepseek", "qwen", "doubao", "gemini", "glm"]);
+export type SupportedProvider = string;
 
 const idSchema = z.string().trim().min(1, "模型 ID 不能为空");
 const providerModelIdSchema = z.string().trim().min(1, "模型标识不能为空");
@@ -61,6 +59,14 @@ const updateModelInputSchema = z.object({
       value : z.string().trim().min(1, "API Key 不能为空")
     })
   ]).optional()
+});
+
+const createModelInputSchema = z.object({
+  provider       : z.string().trim().min(1, "供应商不能为空"),
+  name           : z.string().trim().min(1, "名称不能为空"),
+  providerModelId: providerModelIdSchema,
+  baseUrl        : z.string().trim().url("BaseURL 格式不合法"),
+  apiKey         : z.string().trim().min(1, "API Key 不能为空").optional()
 });
 
 /**
@@ -118,7 +124,7 @@ export interface ModelListItem {
   /** 模型 ID。 */
   id             : string;
   /** 提供商。 */
-  provider       : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
+  provider       : string;
   /** 管理台显示名。 */
   name           : string;
   /** 提供商模型标识。 */
@@ -168,6 +174,19 @@ export interface UpdateAdminModelPayload {
   isEnabled?      : boolean;
   /** 管理端输入的明文密钥；null 表示显式清空。 */
   apiKey?         : string | null;
+}
+
+export interface CreateModelInput {
+  /** 供应商标识，自由字符串（如 deepseek / openai / my-provider）。 */
+  provider       : string;
+  /** 管理端展示名称。 */
+  name           : string;
+  /** 供应商侧模型 ID（实际调用时使用）。 */
+  providerModelId: string;
+  /** 提供商 API Base URL（必须是合法 HTTPS URL）。 */
+  baseUrl        : string;
+  /** 明文 API Key（可选；不传表示暂不配置）。 */
+  apiKey?        : string;
 }
 
 export type ModelConnectivityErrorType =
@@ -281,7 +300,7 @@ function toModelListItem(
 
   return {
     id             : model.id,
-    provider       : providerSchema.parse(model.provider.toLowerCase()),
+    provider       : model.provider.toLowerCase(),
     name           : model.name,
     providerModelId: model.modelId,
     aliasKey       : model.aliasKey,
@@ -514,7 +533,7 @@ export function createModelsModule(
   async function testModelConnectivity(id: string): Promise<ModelConnectivityResult> {
     const parsedId = idSchema.parse(id);
     const model = await getModelRecord(parsedId);
-    const provider = providerSchema.parse(model.provider.toLowerCase());
+    const provider = model.provider.toLowerCase();
     const apiKey = readStoredApiKey(model.apiKey);
 
     if (!apiKey) {
@@ -522,7 +541,7 @@ export function createModelsModule(
     }
 
     const baseUrl = normalizeBaseUrl(model.baseUrl);
-    assertConnectivityBaseUrlAllowed(provider, baseUrl);
+    assertConnectivityBaseUrlAllowed(baseUrl);
     const startedAt = Date.now();
 
     try {
@@ -609,11 +628,39 @@ export function createModelsModule(
     }
   }
 
+  async function createModel(input: CreateModelInput): Promise<ModelListItem> {
+    const parsed = createModelInputSchema.parse(input);
+    const apiKeyEncrypted = parsed.apiKey ? encryptValue(parsed.apiKey) : null;
+
+    const record = await prismaClient.aiModel.create({
+      data: {
+        provider : parsed.provider,
+        name     : parsed.name,
+        modelId  : parsed.providerModelId,
+        baseUrl  : parsed.baseUrl,
+        apiKey   : apiKeyEncrypted,
+        isEnabled: false,
+        isDefault: false,
+        aliasKey : null
+      },
+      select: modelSelect
+    });
+
+    return toModelListItem(record);
+  }
+
+  async function deleteModel(id: string): Promise<void> {
+    const parsedId = idSchema.parse(id);
+    await prismaClient.aiModel.delete({ where: { id: parsedId } });
+  }
+
   return {
     listModels,
     updateModel,
     setDefaultModel,
-    testModelConnectivity
+    testModelConnectivity,
+    createModel,
+    deleteModel
   };
 }
 

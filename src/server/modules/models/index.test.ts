@@ -542,14 +542,14 @@ describe("models module", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("rejects connectivity test when base url host is not in allowlist", async () => {
+  it("rejects connectivity test when base url is a private IP", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const fetchMock = vi.fn();
     const prismaClient = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
-          baseUrl: "https://internal.example.com",
+          baseUrl: "https://192.168.1.100",
           apiKey : encryptValue("secret-api-key")
         }))
       }
@@ -557,7 +557,7 @@ describe("models module", () => {
 
     const modelsModule = createModelsModule(prismaClient, fetchMock);
 
-    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试地址不在白名单内");
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试不允许访问内网地址");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -589,27 +589,6 @@ describe("models module", () => {
     expect(result.success).toBe(false);
     expect(result.errorType).toBe("AUTH_ERROR");
     expect(result.errorMessage).toBe("invalid api key");
-  });
-
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws when list API detects unsupported provider", async () => {
-    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
-
-    const prismaClient = {
-      aiModel: {
-        findMany: vi.fn().mockResolvedValue([
-          createAiModelRecord({
-            provider: "openai"
-          })
-        ])
-      },
-      analysisPhaseLog: {
-        groupBy: vi.fn().mockResolvedValue([])
-      }
-    } as never;
-
-    const modelsModule = createModelsModule(prismaClient);
-    await expect(modelsModule.listModels()).rejects.toThrow();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -1571,5 +1550,122 @@ describe("models module", () => {
     expect(directResult.success).toBe(true);
     expect(adminResult.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates a new model with encrypted api key and returns ModelListItem", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const createdRecord = createAiModelRecord({
+      id      : "new-model-id",
+      provider: "openai",
+      name    : "GPT-4o",
+      modelId : "gpt-4o",
+      baseUrl : "https://api.openai.com",
+      apiKey  : encryptValue("sk-test-key")
+    });
+
+    const prismaClient = {
+      aiModel: {
+        create: vi.fn().mockResolvedValue(createdRecord)
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+
+    const result = await modelsModule.createModel({
+      provider       : "openai",
+      name           : "GPT-4o",
+      providerModelId: "gpt-4o",
+      baseUrl        : "https://api.openai.com",
+      apiKey         : "sk-test-key"
+    });
+
+    expect(result.id).toBe("new-model-id");
+    expect(result.provider).toBe("openai");
+    expect(result.name).toBe("GPT-4o");
+    expect(result.providerModelId).toBe("gpt-4o");
+    expect(result.isEnabled).toBe(false);
+    expect(result.isDefault).toBe(false);
+    expect(result.isConfigured).toBe(true);
+
+    const createCall = (prismaClient as { aiModel: { create: ReturnType<typeof vi.fn> } }).aiModel.create;
+    expect(createCall).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        provider : "openai",
+        name     : "GPT-4o",
+        modelId  : "gpt-4o",
+        baseUrl  : "https://api.openai.com",
+        isEnabled: false,
+        isDefault: false,
+        aliasKey : null
+      })
+    }));
+
+    // API key must be stored encrypted, not plaintext
+    const storedApiKey: string = createCall.mock.calls[0][0].data.apiKey;
+    expect(storedApiKey).toMatch(/^enc:v1:/);
+    expect(decryptValue(storedApiKey)).toBe("sk-test-key");
+  });
+
+  it("creates a model without api key when apiKey is omitted", async () => {
+    const createdRecord = createAiModelRecord({
+      id     : "new-model-no-key",
+      apiKey : null,
+      baseUrl: "https://api.custom.com"
+    });
+
+    const prismaClient = {
+      aiModel: {
+        create: vi.fn().mockResolvedValue(createdRecord)
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+
+    const result = await modelsModule.createModel({
+      provider       : "custom",
+      name           : "Custom Model",
+      providerModelId: "custom-v1",
+      baseUrl        : "https://api.custom.com"
+    });
+
+    expect(result.isConfigured).toBe(false);
+    expect(result.apiKeyMasked).toBeNull();
+
+    const createCall = (prismaClient as { aiModel: { create: ReturnType<typeof vi.fn> } }).aiModel.create;
+    expect(createCall.mock.calls[0][0].data.apiKey).toBeNull();
+  });
+
+  it("throws when creating a model with missing required fields", async () => {
+    const prismaClient = { aiModel: { create: vi.fn() } } as never;
+    const modelsModule = createModelsModule(prismaClient);
+
+    await expect(modelsModule.createModel({
+      provider       : "",
+      name           : "Bad Model",
+      providerModelId: "model-id",
+      baseUrl        : "https://api.example.com"
+    })).rejects.toThrow("供应商不能为空");
+  });
+
+  it("deletes a model by id", async () => {
+    const prismaClient = {
+      aiModel: {
+        delete: vi.fn().mockResolvedValue(undefined)
+      }
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await modelsModule.deleteModel("model-1");
+
+    expect((prismaClient as { aiModel: { delete: ReturnType<typeof vi.fn> } }).aiModel.delete)
+      .toHaveBeenCalledWith({ where: { id: "model-1" } });
+  });
+
+  it("throws when deleting with an empty id", async () => {
+    const prismaClient = { aiModel: { delete: vi.fn() } } as never;
+    const modelsModule = createModelsModule(prismaClient);
+
+    await expect(modelsModule.deleteModel("")).rejects.toThrow("模型 ID 不能为空");
   });
 });
