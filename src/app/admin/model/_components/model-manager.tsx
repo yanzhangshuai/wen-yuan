@@ -436,9 +436,10 @@ export function ModelManager({
   }
 
   function handleAddModel(item: AdminModelItem) {
-    /** 新增模型成功后将其追加到本地模型列表并初始化草稿。 */
+    /** 新增模型成功后将其追加到本地模型列表并初始化草稿与加载状态。 */
     setModels(prev => [...prev, item]);
     setDrafts(prev => ({ ...prev, [item.id]: buildInitialDraft(item) }));
+    setLoadingActions(prev => ({ ...prev, [item.id]: null }));
   }
 
   async function handleDeleteModel(id: string) {
@@ -446,6 +447,11 @@ export function ModelManager({
       await deleteAdminModel(id);
       setModels(prev => prev.filter(m => m.id !== id));
       setDrafts(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setLoadingActions(prev => {
         const next = { ...prev };
         delete next[id];
         return next;
