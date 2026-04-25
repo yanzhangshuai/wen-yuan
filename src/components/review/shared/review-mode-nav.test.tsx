@@ -1,8 +1,12 @@
 /** @vitest-environment jsdom */
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ReviewModeNav } from "./review-mode-nav";
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams("personaId=p1&focus=1")
+}));
 
 const BOOK_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -61,5 +65,14 @@ describe("ReviewModeNav", () => {
     expect(screen.getByRole("link", { name: "人物关系" })).not.toHaveAttribute(
       "aria-current"
     );
+  });
+});
+
+describe("ReviewModeNav preserveQuery", () => {
+  it("preserveQuery=true 时 Tab 链接保留 query", () => {
+    render(<ReviewModeNav bookId={BOOK_ID} active="matrix" preserveQuery />);
+    const link = screen.getByRole("link", { name: /关系/ });
+    expect(link.getAttribute("href")).toContain("personaId=p1");
+    expect(link.getAttribute("href")).toContain("focus=1");
   });
 });

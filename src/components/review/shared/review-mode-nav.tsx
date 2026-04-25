@@ -1,12 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
 export type ReviewModeNavMode = "matrix" | "relations" | "time";
+export type ReviewMode = ReviewModeNavMode;
 
 interface ReviewModeNavProps {
-  bookId    : string;
-  activeMode: ReviewModeNavMode;
+  bookId        : string;
+  activeMode   ?: ReviewModeNavMode;
+  active       ?: ReviewModeNavMode;
+  preserveQuery?: boolean;
 }
 
 const REVIEW_MODES: Array<{
@@ -37,20 +43,28 @@ const REVIEW_MODES: Array<{
  */
 export function ReviewModeNav({
   bookId,
-  activeMode
+  activeMode,
+  active,
+  preserveQuery
 }: ReviewModeNavProps) {
+  const current      = active ?? activeMode;
+  const searchParams = useSearchParams();
+  const queryString  = preserveQuery ? (searchParams?.toString() ?? "") : "";
+
   return (
     <nav
       aria-label="审核模式"
       className="review-mode-nav flex flex-wrap gap-2 rounded-lg border bg-muted/30 p-1"
     >
       {REVIEW_MODES.map((item) => {
-        const isActive = item.mode === activeMode;
+        const isActive = item.mode === current;
+        const baseHref = item.href(bookId);
+        const href     = queryString ? `${baseHref}?${queryString}` : baseHref;
 
         return (
           <Link
             key={item.mode}
-            href={item.href(bookId)}
+            href={href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
