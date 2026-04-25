@@ -69,7 +69,7 @@ const createModelInputSchema = z.object({
     val => val.startsWith("https://"),
     "BaseURL 必须使用 HTTPS"
   ),
-  apiKey         : z.string().trim().min(1, "API Key 不能为空").optional()
+  apiKey: z.string().trim().min(1, "API Key 不能为空").optional()
 });
 
 /**
@@ -633,6 +633,7 @@ export function createModelsModule(
 
   async function createModel(input: CreateModelInput): Promise<ModelListItem> {
     const parsed = createModelInputSchema.parse(input);
+    assertConnectivityBaseUrlAllowed(parsed.baseUrl);
     const apiKeyEncrypted = parsed.apiKey ? encryptValue(parsed.apiKey) : null;
 
     const record = await prismaClient.aiModel.create({

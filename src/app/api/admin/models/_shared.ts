@@ -70,7 +70,10 @@ export const createModelBodySchema = z.object({
   /** 供应商侧模型标识（实际调用使用）。 */
   providerModelId: z.string({ required_error: "模型标识不能为空" }).trim().min(1, "模型标识不能为空"),
   /** API 基础地址（合法 HTTPS URL）。 */
-  baseUrl        : z.string({ required_error: "BaseURL 不能为空" }).trim().url("BaseURL 格式不合法"),
+  baseUrl        : z.string({ required_error: "BaseURL 不能为空" })
+    .trim()
+    .url("BaseURL 格式不合法")
+    .refine(val => val.startsWith("https://"), "BaseURL 必须使用 HTTPS"),
   /** 明文 API Key（可选）。 */
   apiKey         : z.string().trim().min(1, "API Key 不能为空").optional()
 });
