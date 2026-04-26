@@ -873,6 +873,55 @@ describe("createReviewQueryService", () => {
     expect(result.relationTypeOptions).toEqual([]);
   });
 
+  it("returns personas from persona chapter facts without reading legacy profiles", async () => {
+    // Arrange: seed two projection rows for two distinct personas.
+    // A `profile` spy is attached to the mock to prove the legacy table is
+    // never consulted — the review center must be architecture-neutral and
+    // derive its persona list exclusively from persona_chapter_facts.
+    const profileFindMany = vi.fn();
+
+    const prismaMock = Object.assign(
+      createPrismaMock({
+        chapters: [
+          chapter({ id: CHAPTER_ID_1, no: 1, title: "初登场" })
+        ],
+        personas: [
+          persona({ id: PERSONA_ID_1, name: "Alpha", aliases: ["甲"] }),
+          persona({ id: PERSONA_ID_2, name: "Beta",  aliases: ["乙"] })
+        ],
+        personaChapterFacts: [
+          personaChapterFact({
+            id       : "fa000001-0000-4000-8000-000000000001",
+            personaId: PERSONA_ID_1,
+            chapterId: CHAPTER_ID_1,
+            chapterNo: 1
+          }),
+          personaChapterFact({
+            id       : "fa000002-0000-4000-8000-000000000002",
+            personaId: PERSONA_ID_2,
+            chapterId: CHAPTER_ID_1,
+            chapterNo: 1
+          })
+        ]
+      }),
+      // Inject a `profile` spy that must never be called.
+      { profile: { findMany: profileFindMany, findUnique: profileFindMany } }
+    );
+
+    const service = createReviewQueryService(prismaMock as never);
+
+    // Act
+    const result = await service.getPersonaChapterMatrix({ bookId: BOOK_ID });
+
+    // Assert: both personas surface from projection rows.
+    expect(result.personas.map((p) => p.personaId).sort()).toEqual(
+      [PERSONA_ID_1, PERSONA_ID_2].sort()
+    );
+
+    // Assert: legacy profile table was never touched.
+    expect(profileFindMany).not.toHaveBeenCalled();
+  });
+
   it("builds persona-time matrix summaries with stable time groups and linked chapter metadata", async () => {
     const prismaMock = createPrismaMock({
       chapters: [
