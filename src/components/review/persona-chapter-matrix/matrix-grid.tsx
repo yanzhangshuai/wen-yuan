@@ -273,7 +273,7 @@ export function MatrixGrid({
                   data-highlighted={isHighlighted ? "true" : undefined}
                   className={cn(
                     "min-w-56 rounded-lg bg-muted/40 p-3 text-left align-top",
-                    isHighlighted && "bg-primary/10"
+                    isHighlighted && "bg-primary/15"
                   )}
                   style={{
                     minWidth: windowResult.columnWidth,

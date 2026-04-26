@@ -27,7 +27,7 @@ export function PersonaCard({ item, isSelected, onSelect }: PersonaCardProps) {
       onClick      ={() => onSelect(item.personaId)}
       className    ={cn(
         "w-full rounded-lg border bg-card p-3 text-left transition",
-        "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         isSelected && "ring-2 ring-primary bg-primary/5"
       )}
     >
