@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Users } from "lucide-react";
+import { memo } from "react";
 import { type PersonaListItem } from "./persona-list-summary";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ interface PersonaCardProps {
   onSelect  : (personaId: string) => void;
 }
 
-export function PersonaCard({ item, isSelected, onSelect }: PersonaCardProps) {
+export const PersonaCard = memo(function PersonaCard({ item, isSelected, onSelect }: PersonaCardProps) {
   const showAliases    = item.aliases.slice(0, 2);
   const aliasOverflow  = item.aliases.length - showAliases.length;
   const hasConflict    = item.totalConflictCount > 0;
@@ -80,4 +81,4 @@ export function PersonaCard({ item, isSelected, onSelect }: PersonaCardProps) {
       </div>
     </button>
   );
-}
+});
