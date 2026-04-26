@@ -119,6 +119,12 @@ describe("AdminBookRelationReviewPage", () => {
     hoisted.getBookByIdMock.mockResolvedValue({ id: BOOK_ID, title: "儒林外史" });
     hoisted.listBooksMock.mockResolvedValue(allBooks);
     hoisted.getRelationEditorViewMock.mockResolvedValue(relationEditorDto);
+    hoisted.getPersonaChapterMatrixMock.mockResolvedValue({
+      bookId  : BOOK_ID,
+      personas: [],
+      chapters: [],
+      cells   : []
+    });
     hoisted.notFoundMock.mockImplementation(() => {
       throw new Error("NEXT_NOT_FOUND");
     });
