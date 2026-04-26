@@ -104,12 +104,32 @@ export function ReviewWorkbenchShell({
     [selectedPersonaId, focusOnly, handleToggleFocus]
   );
 
+  const selectedPersona = useMemo(
+    () => personaItems.find((p) => p.personaId === selectedPersonaId),
+    [personaItems, selectedPersonaId]
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <BookSelector books={books} currentBookId={bookId} basePath="/admin/review" />
         <ReviewModeNav bookId={bookId} active={mode} preserveQuery />
       </div>
+      {selectedPersona && (
+        <nav aria-label="面包屑补充" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>审核中心</span>
+          <span>/</span>
+          <span className="font-medium text-foreground">{selectedPersona.displayName}</span>
+          <button
+            type="button"
+            onClick={() => handleSelect(null)}
+            className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent hover:text-foreground"
+            aria-label="清除角色筛选"
+          >
+            ×
+          </button>
+        </nav>
+      )}
       <div className="flex gap-4">
         <PersonaSidebar
           items            ={personaItems}

@@ -126,4 +126,29 @@ describe("ReviewWorkbenchShell", () => {
     expect(callArgs).toHaveProperty("onFocusOnlyChange");
     expect(typeof callArgs.onFocusOnlyChange).toBe("function");
   });
+
+  it("选中角色后显示面包屑，点击清除按钮恢复到 null", async () => {
+    render(
+      <ReviewWorkbenchShell
+        bookId      ="b1"
+        bookTitle   ="儒林外史"
+        books       ={[{ id: "b1", title: "儒林外史" }]}
+        mode        ="matrix"
+        personaItems={items}
+        renderMain  ={({ selectedPersonaId }) => (
+          <div data-testid="main">persona={selectedPersonaId ?? "null"}</div>
+        )}
+      />
+    );
+    expect(screen.queryByLabelText("面包屑补充")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("周进"));
+    const breadcrumb = screen.getByLabelText("面包屑补充");
+    expect(breadcrumb).toBeInTheDocument();
+    expect(breadcrumb).toHaveTextContent("审核中心");
+    expect(breadcrumb).toHaveTextContent("周进");
+    const clearBtn = screen.getByLabelText("清除角色筛选");
+    await userEvent.click(clearBtn);
+    expect(screen.getByTestId("main")).toHaveTextContent("persona=null");
+    expect(screen.queryByLabelText("面包屑补充")).not.toBeInTheDocument();
+  });
 });
