@@ -176,20 +176,10 @@ describe("AdminBookTimeReviewPage", () => {
     const shell = findElementByProp(page, "mode", "time");
     expect(shell?.props.bookId).toBe(BOOK_ID);
 
-    const renderMain = shell?.props.renderMain;
-    expect(typeof renderMain).toBe("function");
-
-    if (typeof renderMain === "function") {
-      const mainContent = renderMain({
-        selectedPersonaId: null,
-        focusOnly        : false,
-        onFocusOnlyChange: () => {}
-      });
-      const matrixEntry = findElementByProp(mainContent, "data-time-matrix-book-id", BOOK_ID);
-      expect(matrixEntry?.props["data-persona-count"]).toBe(1);
-      expect(matrixEntry?.props["data-time-group-count"]).toBe(1);
-      expect(matrixEntry?.props["data-cell-count"]).toBe(0);
-    }
+    const matrixEntry = findElementByProp(shell?.props.children as ReactNode, "data-time-matrix-book-id", BOOK_ID);
+    expect(matrixEntry?.props["data-persona-count"]).toBe(1);
+    expect(matrixEntry?.props["data-time-group-count"]).toBe(1);
+    expect(matrixEntry?.props["data-cell-count"]).toBe(0);
   });
 
   it("calls notFound when book id does not resolve to a book", async () => {

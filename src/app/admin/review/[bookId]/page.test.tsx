@@ -121,23 +121,11 @@ describe("AdminBookReviewPage", () => {
     expect(shell?.props.bookId).toBe(BOOK_ID);
     expect(shell?.props.bookTitle).toBe("儒林外史");
     
-    // renderMain is a function that returns the PersonaChapterReviewPage
-    const renderMain = shell?.props.renderMain;
-    expect(typeof renderMain).toBe("function");
-    
-    if (typeof renderMain === "function") {
-      const mainContent = renderMain({ 
-        selectedPersonaId: null, 
-        focusOnly        : false,
-        onFocusOnlyChange: () => {}
-      });
-      
-      const matrixEntry = findElementByProp(mainContent, "initialMatrix", matrixDto);
-      expect(matrixEntry?.props.bookId).toBe(BOOK_ID);
-      expect(matrixEntry?.props.bookTitle).toBe("儒林外史");
-      expect(matrixEntry?.props.allBooks).toBe(allBooks);
-      expect(matrixEntry?.props.initialMatrix).toBe(matrixDto);
-    }
+    const matrixEntry = findElementByProp(shell?.props.children as ReactNode, "initialMatrix", matrixDto);
+    expect(matrixEntry?.props.bookId).toBe(BOOK_ID);
+    expect(matrixEntry?.props.bookTitle).toBe("儒林外史");
+    expect(matrixEntry?.props.allBooks).toBe(allBooks);
+    expect(matrixEntry?.props.initialMatrix).toBe(matrixDto);
   });
 
   it("forwards chapter deep-link search params as the initial matrix selection", async () => {
@@ -152,21 +140,11 @@ describe("AdminBookReviewPage", () => {
     } as never);
 
     const shell = findElementByProp(page, "mode", "matrix");
-    const renderMain = shell?.props.renderMain;
-    
-    if (typeof renderMain === "function") {
-      const mainContent = renderMain({ 
-        selectedPersonaId: null, 
-        focusOnly        : false,
-        onFocusOnlyChange: () => {}
-      });
-      
-      const matrixEntry = findElementByProp(mainContent, "initialMatrix", matrixDto);
-      expect(matrixEntry?.props.initialSelectedCell).toEqual({
-        personaId: "persona-2",
-        chapterId: "chapter-2"
-      });
-    }
+    const matrixEntry = findElementByProp(shell?.props.children as ReactNode, "initialMatrix", matrixDto);
+    expect(matrixEntry?.props.initialSelectedCell).toEqual({
+      personaId: "persona-2",
+      chapterId: "chapter-2"
+    });
   });
 
   it("calls notFound when book id does not resolve to a book", async () => {

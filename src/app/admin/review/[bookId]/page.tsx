@@ -128,18 +128,14 @@ export default async function AdminBookReviewPage({
       personaItems            ={personaItems}
       initialSelectedPersonaId={initialSelectedPersonaId}
       initialFocusOnly        ={initialFocusOnly}
-      renderMain              ={({ selectedPersonaId, focusOnly, onFocusOnlyChange }) => (
-        <PersonaChapterReviewPage
-          bookId              ={bookId}
-          bookTitle           ={book.title}
-          allBooks            ={allBooks}
-          initialMatrix       ={initialMatrix}
-          selectedPersonaId   ={selectedPersonaId}
-          focusOnly           ={focusOnly}
-          onFocusOnlyChange   ={onFocusOnlyChange}
-          initialSelectedCell ={initialSelectedCell}
-        />
-      )}
-    />
+    >
+      <PersonaChapterReviewPage
+        bookId              ={bookId}
+        bookTitle           ={book.title}
+        allBooks            ={allBooks}
+        initialMatrix       ={initialMatrix}
+        initialSelectedCell ={initialSelectedCell}
+      />
+    </ReviewWorkbenchShell>
   );
 }

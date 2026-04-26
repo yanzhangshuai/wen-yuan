@@ -8,6 +8,7 @@ import {
   fetchPersonaTimeMatrix,
   type PersonaTimeMatrixDto
 } from "@/lib/services/review-time-matrix";
+import { useReviewWorkbenchOptional } from "@/components/review/shared/review-workbench-shell";
 
 import {
   buildExpandedTimeGroupState,
@@ -41,9 +42,9 @@ export interface PersonaTimeReviewPageProps {
   bookTitle           : string;
   allBooks            : PersonaTimeReviewBookOption[];
   initialMatrix       : PersonaTimeMatrixDto;
-  selectedPersonaId   : string | null;
-  focusOnly           : boolean;
-  onFocusOnlyChange  ?: (next: boolean) => void;
+  selectedPersonaId?  : string | null;
+  focusOnly?          : boolean;
+  onFocusOnlyChange?  : (next: boolean) => void;
   initialSelectedCell?: PersonaTimeSelection | null;
 }
 
@@ -58,11 +59,16 @@ export function PersonaTimeReviewPage({
   bookTitle,
   allBooks,
   initialMatrix,
-  selectedPersonaId,
-  focusOnly,
-  onFocusOnlyChange,
+  selectedPersonaId: propsSelectedPersonaId,
+  focusOnly: propsFocusOnly,
+  onFocusOnlyChange: propsOnFocusOnlyChange,
   initialSelectedCell = null
 }: PersonaTimeReviewPageProps) {
+  const ctx = useReviewWorkbenchOptional();
+  const selectedPersonaId = propsSelectedPersonaId ?? ctx?.selectedPersonaId ?? null;
+  const focusOnly = propsFocusOnly ?? ctx?.focusOnly ?? false;
+  const onFocusOnlyChange = propsOnFocusOnlyChange ?? ctx?.setFocusOnly;
+
   const initialViewState = buildInitialViewState(initialMatrix, initialSelectedCell);
   const [matrix, setMatrix] = useState(initialMatrix);
   const [filters, setFilters] = useState(() => initialViewState.filters);

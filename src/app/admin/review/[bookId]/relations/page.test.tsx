@@ -175,20 +175,10 @@ describe("AdminBookRelationReviewPage", () => {
     const shell = findElementByProp(page, "mode", "relations");
     expect(shell?.props.bookId).toBe(BOOK_ID);
 
-    const renderMain = shell?.props.renderMain;
-    expect(typeof renderMain).toBe("function");
-
-    if (typeof renderMain === "function") {
-      const mainContent = renderMain({
-        selectedPersonaId  : null,
-        focusOnly          : false,
-        onFocusOnlyChange  : () => {}
-      });
-      const relationSummary = findElementByProp(mainContent, "data-relation-editor-book-id", BOOK_ID);
-      expect(relationSummary?.props["data-pair-count"]).toBe(1);
-      expect(relationSummary?.props["data-persona-count"]).toBe(2);
-      expect(relationSummary?.props["data-relation-type-count"]).toBe(1);
-    }
+    const relationSummary = findElementByProp(shell?.props.children as ReactNode, "data-relation-editor-book-id", BOOK_ID);
+    expect(relationSummary?.props["data-pair-count"]).toBe(1);
+    expect(relationSummary?.props["data-persona-count"]).toBe(2);
+    expect(relationSummary?.props["data-relation-type-count"]).toBe(1);
   });
 
   it("calls notFound when book id does not resolve to a book", async () => {

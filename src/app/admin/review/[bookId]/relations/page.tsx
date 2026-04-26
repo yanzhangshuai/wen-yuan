@@ -80,25 +80,21 @@ export default async function AdminBookRelationReviewPage({
       personaItems            ={personaItems}
       initialSelectedPersonaId={initialSelectedPersonaId}
       initialFocusOnly        ={initialFocusOnly}
-      renderMain={({ selectedPersonaId, focusOnly, onFocusOnlyChange }) => (
-        <section
-          className="relation-editor-server-page rounded-xl border bg-card p-6 shadow-sm"
-          data-relation-editor-book-id={initialRelationEditor.bookId}
-          data-pair-count={initialRelationEditor.pairSummaries.length}
-          data-persona-count={initialRelationEditor.personaOptions.length}
-          data-relation-type-count={initialRelationEditor.relationTypeOptions.length}
-        >
-          <RelationEditorPage
-            bookId={bookId}
-            bookTitle={book.title}
-            allBooks={allBooks}
-            initialRelationEditor={initialRelationEditor}
-            selectedPersonaId={selectedPersonaId}
-            focusOnly={focusOnly}
-            onFocusOnlyChange={onFocusOnlyChange}
-          />
-        </section>
-      )}
-    />
+    >
+      <section
+        className="relation-editor-server-page rounded-xl border bg-card p-6 shadow-sm"
+        data-relation-editor-book-id={initialRelationEditor.bookId}
+        data-pair-count={initialRelationEditor.pairSummaries.length}
+        data-persona-count={initialRelationEditor.personaOptions.length}
+        data-relation-type-count={initialRelationEditor.relationTypeOptions.length}
+      >
+        <RelationEditorPage
+          bookId={bookId}
+          bookTitle={book.title}
+          allBooks={allBooks}
+          initialRelationEditor={initialRelationEditor}
+        />
+      </section>
+    </ReviewWorkbenchShell>
   );
 }

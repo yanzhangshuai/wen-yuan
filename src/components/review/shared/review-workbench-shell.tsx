@@ -1,23 +1,39 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ReviewModeNav, type ReviewMode } from "./review-mode-nav";
 import { BookSelector, type BookOption } from "./book-selector";
 import { PersonaSidebar } from "./persona-sidebar";
 import { type PersonaListItem } from "./persona-list-summary";
 
+interface ReviewWorkbenchContextValue {
+  selectedPersonaId: string | null;
+  focusOnly        : boolean;
+  setFocusOnly     : (next: boolean) => void;
+}
+
+const ReviewWorkbenchContext = createContext<ReviewWorkbenchContextValue | null>(null);
+
+export function useReviewWorkbench(): ReviewWorkbenchContextValue {
+  const ctx = useContext(ReviewWorkbenchContext);
+  if (ctx === null) {
+    throw new Error("useReviewWorkbench must be used inside ReviewWorkbenchShell");
+  }
+  return ctx;
+}
+
+export function useReviewWorkbenchOptional(): ReviewWorkbenchContextValue | null {
+  return useContext(ReviewWorkbenchContext);
+}
+
 interface ReviewWorkbenchShellProps {
-  bookId      : string;
-  bookTitle   : string;
-  books       : BookOption[];
-  mode        : ReviewMode;
-  personaItems: PersonaListItem[];
-  renderMain  : (state: { 
-    selectedPersonaId: string | null; 
-    focusOnly        : boolean;
-    onFocusOnlyChange: (next: boolean) => void;
-  }) => ReactNode;
+  bookId                  : string;
+  bookTitle               : string;
+  books                   : BookOption[];
+  mode                    : ReviewMode;
+  personaItems            : PersonaListItem[];
+  children                : ReactNode;
   initialSelectedPersonaId?: string | null;
   initialFocusOnly        ?: boolean;
 }
@@ -30,7 +46,7 @@ export function ReviewWorkbenchShell({
   books,
   mode,
   personaItems,
-  renderMain,
+  children,
   initialSelectedPersonaId = null,
   initialFocusOnly         = false
 }: ReviewWorkbenchShellProps) {
@@ -99,8 +115,8 @@ export function ReviewWorkbenchShell({
     return () => window.removeEventListener("keydown", onKey);
   }, [focusOnly, handleSelect, handleToggleFocus, selectedPersonaId]);
 
-  const mainState = useMemo(
-    () => ({ selectedPersonaId, focusOnly, onFocusOnlyChange: handleToggleFocus }),
+  const contextValue = useMemo(
+    () => ({ selectedPersonaId, focusOnly, setFocusOnly: handleToggleFocus }),
     [selectedPersonaId, focusOnly, handleToggleFocus]
   );
 
@@ -137,7 +153,9 @@ export function ReviewWorkbenchShell({
           onSelect         ={handleSelect}
         />
         <main className="min-w-0 flex-1">
-          {renderMain(mainState)}
+          <ReviewWorkbenchContext.Provider value={contextValue}>
+            {children}
+          </ReviewWorkbenchContext.Provider>
           <input type="hidden" data-testid="shell-book-title" value={bookTitle} readOnly />
           {focusOnly && selectedPersonaId && (
             <div className="sr-only" data-testid="focus-banner">已切换到只看当前角色</div>

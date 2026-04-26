@@ -10,6 +10,7 @@ import {
   type FetchPersonaChapterMatrixInput,
   type PersonaChapterMatrixDto
 } from "@/lib/services/review-matrix";
+import { useReviewWorkbenchOptional } from "@/components/review/shared/review-workbench-shell";
 
 import { CellDrilldownSheet } from "./cell-drilldown-sheet";
 import { filterMatrixByPersonaId } from "./filter-by-persona";
@@ -31,9 +32,9 @@ export interface PersonaChapterReviewPageProps {
   bookTitle           : string;
   allBooks            : PersonaChapterReviewBookOption[];
   initialMatrix       : PersonaChapterMatrixDto;
-  selectedPersonaId   : string | null;
-  focusOnly           : boolean;
-  onFocusOnlyChange  ?: (next: boolean) => void;
+  selectedPersonaId?  : string | null;
+  focusOnly?          : boolean;
+  onFocusOnlyChange?  : (next: boolean) => void;
   initialSelectedCell?: MatrixCellSelection | null;
 }
 
@@ -124,11 +125,16 @@ export function PersonaChapterReviewPage({
   bookTitle,
   allBooks,
   initialMatrix,
-  selectedPersonaId,
-  focusOnly,
-  onFocusOnlyChange,
+  selectedPersonaId: propsSelectedPersonaId,
+  focusOnly: propsFocusOnly,
+  onFocusOnlyChange: propsOnFocusOnlyChange,
   initialSelectedCell = null
 }: PersonaChapterReviewPageProps) {
+  const ctx = useReviewWorkbenchOptional();
+  const selectedPersonaId = propsSelectedPersonaId ?? ctx?.selectedPersonaId ?? null;
+  const focusOnly = propsFocusOnly ?? ctx?.focusOnly ?? false;
+  const onFocusOnlyChange = propsOnFocusOnlyChange ?? ctx?.setFocusOnly;
+
   const seededSelection = resolveInitialSelectedCell(initialMatrix, initialSelectedCell);
   const [matrix, setMatrix] = useState(initialMatrix);
   const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilterValue>("");

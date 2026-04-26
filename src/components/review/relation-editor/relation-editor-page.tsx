@@ -9,6 +9,7 @@ import {
   type ReviewRelationEditorDto
 } from "@/lib/services/relation-editor";
 import { FocusOnlySwitch } from "@/components/review/shared/focus-only-switch";
+import { useReviewWorkbenchOptional } from "@/components/review/shared/review-workbench-shell";
 
 import { RelationClaimSheet } from "./relation-claim-sheet";
 import { RelationClaimList } from "./relation-claim-list";
@@ -30,9 +31,9 @@ export interface RelationEditorPageProps {
   bookTitle             : string;
   allBooks              : RelationEditorBookOption[];
   initialRelationEditor : ReviewRelationEditorDto;
-  selectedPersonaId     : string | null;
-  focusOnly             : boolean;
-  onFocusOnlyChange    ?: (next: boolean) => void;
+  selectedPersonaId?    : string | null;
+  focusOnly?            : boolean;
+  onFocusOnlyChange?    : (next: boolean) => void;
 }
 
 interface SelectedPairState {
@@ -132,10 +133,15 @@ export function RelationEditorPage({
   bookTitle,
   allBooks,
   initialRelationEditor,
-  selectedPersonaId,
-  focusOnly,
-  onFocusOnlyChange
+  selectedPersonaId: propsSelectedPersonaId,
+  focusOnly: propsFocusOnly,
+  onFocusOnlyChange: propsOnFocusOnlyChange
 }: RelationEditorPageProps) {
+  const ctx = useReviewWorkbenchOptional();
+  const selectedPersonaId = propsSelectedPersonaId ?? ctx?.selectedPersonaId ?? null;
+  const focusOnly = propsFocusOnly ?? ctx?.focusOnly ?? false;
+  const onFocusOnlyChange = propsOnFocusOnlyChange ?? ctx?.setFocusOnly;
+
   const [filters, setFilters] = useState(EMPTY_RELATION_EDITOR_FILTERS);
   const [relationEditor, setRelationEditor] = useState(initialRelationEditor);
   const [selectedPair, setSelectedPair] = useState<SelectedPairState | null>(

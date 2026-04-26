@@ -142,26 +142,22 @@ export default async function AdminBookTimeReviewPage({
       personaItems            ={personaItems}
       initialSelectedPersonaId={initialSelectedPersonaId}
       initialFocusOnly        ={initialFocusOnly}
-      renderMain={({ selectedPersonaId, focusOnly, onFocusOnlyChange }) => (
-        <section
-          className="persona-time-review-page-server rounded-xl border bg-card p-6 shadow-sm"
-          data-time-matrix-book-id={initialMatrix.bookId}
-          data-persona-count={initialMatrix.personas.length}
-          data-time-group-count={initialMatrix.timeGroups.length}
-          data-cell-count={initialMatrix.cells.length}
-        >
-          <PersonaTimeReviewPage
-            bookId={bookId}
-            bookTitle={book.title}
-            allBooks={allBooks}
-            initialMatrix={initialMatrix}
-            selectedPersonaId={selectedPersonaId}
-            focusOnly={focusOnly}
-            onFocusOnlyChange={onFocusOnlyChange}
-            initialSelectedCell={initialSelectedCell}
-          />
-        </section>
-      )}
-    />
+    >
+      <section
+        className="persona-time-review-page-server rounded-xl border bg-card p-6 shadow-sm"
+        data-time-matrix-book-id={initialMatrix.bookId}
+        data-persona-count={initialMatrix.personas.length}
+        data-time-group-count={initialMatrix.timeGroups.length}
+        data-cell-count={initialMatrix.cells.length}
+      >
+        <PersonaTimeReviewPage
+          bookId={bookId}
+          bookTitle={book.title}
+          allBooks={allBooks}
+          initialMatrix={initialMatrix}
+          initialSelectedCell={initialSelectedCell}
+        />
+      </section>
+    </ReviewWorkbenchShell>
   );
 }
