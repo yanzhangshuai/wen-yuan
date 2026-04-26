@@ -222,8 +222,11 @@ function buildEmptyMatrix(): PersonaTimeMatrixDto {
 }
 
 async function renderPage(options?: {
-  initialMatrix?: PersonaTimeMatrixDto;
-  bookTitle?    : string;
+  initialMatrix?    : PersonaTimeMatrixDto;
+  bookTitle?        : string;
+  selectedPersonaId?: string | null;
+  focusOnly?        : boolean;
+  onFocusOnlyChange?: (next: boolean) => void;
 }) {
   const { PersonaTimeReviewPage } = await import("./persona-time-review-page");
 
@@ -233,6 +236,9 @@ async function renderPage(options?: {
       bookTitle={options?.bookTitle ?? "三国演义"}
       allBooks={allBooks}
       initialMatrix={options?.initialMatrix ?? buildMatrix()}
+      selectedPersonaId={options?.selectedPersonaId ?? null}
+      focusOnly={options?.focusOnly ?? false}
+      onFocusOnlyChange={options?.onFocusOnlyChange}
     />
   );
 }
@@ -272,6 +278,8 @@ describe("PersonaTimeReviewPage", () => {
         bookTitle="三国演义"
         allBooks={allBooks}
         initialMatrix={buildMatrix()}
+        selectedPersonaId={null}
+        focusOnly={false}
         initialSelectedCell={initialSelectedCell}
       />
     );
@@ -288,6 +296,8 @@ describe("PersonaTimeReviewPage", () => {
         initialMatrix={buildMatrix({
           generatedAt: "2026-04-22T12:00:00.000Z"
         })}
+        selectedPersonaId={null}
+        focusOnly={false}
         initialSelectedCell={initialSelectedCell}
       />
     );
@@ -423,5 +433,46 @@ describe("PersonaTimeReviewPage", () => {
       expect(screen.getByText("矩阵加载失败")).toBeInTheDocument();
     });
     expect(screen.getByText("网络错误")).toBeInTheDocument();
+  });
+
+  it("highlights the selected persona column when selectedPersonaId is set and focusOnly is false", async () => {
+    await renderPage({
+      selectedPersonaId: "persona-1",
+      focusOnly        : false
+    });
+
+    const highlightedColumn = screen.getByRole("columnheader", { name: /诸葛亮/ });
+    expect(highlightedColumn).toHaveAttribute("data-highlighted", "true");
+    expect(highlightedColumn).toHaveClass("bg-primary/10");
+
+    const otherColumn = screen.getByRole("columnheader", { name: /周瑜/ });
+    expect(otherColumn).not.toHaveAttribute("data-highlighted");
+  });
+
+  it("filters to single persona when selectedPersonaId is set and focusOnly is true", async () => {
+    await renderPage({
+      selectedPersonaId: "persona-1",
+      focusOnly        : true
+    });
+
+    expect(screen.getByRole("columnheader", { name: /诸葛亮/ })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /周瑜/ })).not.toBeInTheDocument();
+    expect(screen.getByText("1 名人物列")).toBeInTheDocument();
+    expect(screen.getByText("3 个事实单元格")).toBeInTheDocument();
+
+    const highlightedColumn = screen.queryByRole("columnheader", { name: /诸葛亮/ });
+    expect(highlightedColumn).not.toHaveAttribute("data-highlighted");
+  });
+
+  it("shows all personas when focusOnly is false", async () => {
+    await renderPage({
+      selectedPersonaId: "persona-1",
+      focusOnly        : false
+    });
+
+    expect(screen.getByRole("columnheader", { name: /诸葛亮/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /周瑜/ })).toBeInTheDocument();
+    expect(screen.getByText("2 名人物列")).toBeInTheDocument();
+    expect(screen.getByText("5 个事实单元格")).toBeInTheDocument();
   });
 });

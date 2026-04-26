@@ -12,14 +12,15 @@ import { TimeMatrixCell } from "./time-matrix-cell";
 import type { PersonaTimeSelection, ReviewTimeAxisGroupState } from "./types";
 
 export interface TimeMatrixGridProps {
-  personas      : PersonaTimeMatrixPersonaDto[];
-  timeGroups    : PersonaTimeAxisGroupDto[];
-  cells         : PersonaTimeMatrixCellDto[];
-  selectedCell  : PersonaTimeSelection | null;
-  expandedGroups: ReviewTimeAxisGroupState;
-  onSelectCell  : (selection: PersonaTimeSelection) => void;
-  onToggleGroup : (timeType: PersonaTimeAxisGroupDto["timeType"]) => void;
-  className?    : string;
+  personas            : PersonaTimeMatrixPersonaDto[];
+  timeGroups          : PersonaTimeAxisGroupDto[];
+  cells               : PersonaTimeMatrixCellDto[];
+  selectedCell        : PersonaTimeSelection | null;
+  expandedGroups      : ReviewTimeAxisGroupState;
+  highlightedPersonaId?: string | null;
+  onSelectCell        : (selection: PersonaTimeSelection) => void;
+  onToggleGroup       : (timeType: PersonaTimeAxisGroupDto["timeType"]) => void;
+  className?          : string;
 }
 
 function toCellKey(personaId: string, timeKey: string): string {
@@ -42,6 +43,7 @@ export function TimeMatrixGrid({
   cells,
   selectedCell,
   expandedGroups,
+  highlightedPersonaId = null,
   onSelectCell,
   onToggleGroup,
   className
@@ -59,20 +61,28 @@ export function TimeMatrixGrid({
             >
               时间片
             </th>
-            {personas.map((persona) => (
-              <th
-                key={persona.personaId}
-                scope="col"
-                className="min-w-52 rounded-lg bg-muted/40 p-3 text-left align-top"
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">{persona.displayName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    事迹 {persona.totalEventCount} · 关系 {persona.totalRelationCount} · 时间 {persona.totalTimeClaimCount}
-                  </p>
-                </div>
-              </th>
-            ))}
+            {personas.map((persona) => {
+              const isHighlighted = highlightedPersonaId === persona.personaId;
+
+              return (
+                <th
+                  key={persona.personaId}
+                  scope="col"
+                  data-highlighted={isHighlighted ? "true" : undefined}
+                  className={cn(
+                    "min-w-52 rounded-lg bg-muted/40 p-3 text-left align-top",
+                    isHighlighted && "bg-primary/10"
+                  )}
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">{persona.displayName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      事迹 {persona.totalEventCount} · 关系 {persona.totalRelationCount} · 时间 {persona.totalTimeClaimCount}
+                    </p>
+                  </div>
+                </th>
+              );
+            })}
           </tr>
         </thead>
 
@@ -124,9 +134,16 @@ export function TimeMatrixGrid({
                       const cell = cellMap.get(toCellKey(persona.personaId, slice.timeKey)) ?? null;
                       const isSelected = selectedCell?.personaId === persona.personaId
                         && selectedCell.timeKey === slice.timeKey;
+                      const isCellInHighlightedColumn = highlightedPersonaId === persona.personaId;
 
                       return (
-                        <td key={`${persona.personaId}-${slice.timeKey}`} className="align-top">
+                        <td
+                          key={`${persona.personaId}-${slice.timeKey}`}
+                          className={cn(
+                            "align-top",
+                            isCellInHighlightedColumn && "border-x border-primary/30"
+                          )}
+                        >
                           <TimeMatrixCell
                             persona={persona}
                             slice={slice}

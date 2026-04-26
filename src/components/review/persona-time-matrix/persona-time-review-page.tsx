@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState } from "@/components/ui/states";
@@ -13,6 +13,7 @@ import {
   buildExpandedTimeGroupState,
   findNextTimeSliceKey
 } from "./time-axis";
+import { filterTimeMatrixByPersonaId } from "./filter-time-by-persona";
 import { TimeMatrixGrid } from "./time-matrix-grid";
 import { TimeToolbar } from "./time-toolbar";
 import {
@@ -40,6 +41,9 @@ export interface PersonaTimeReviewPageProps {
   bookTitle           : string;
   allBooks            : PersonaTimeReviewBookOption[];
   initialMatrix       : PersonaTimeMatrixDto;
+  selectedPersonaId   : string | null;
+  focusOnly           : boolean;
+  onFocusOnlyChange  ?: (next: boolean) => void;
   initialSelectedCell?: PersonaTimeSelection | null;
 }
 
@@ -54,6 +58,9 @@ export function PersonaTimeReviewPage({
   bookTitle,
   allBooks,
   initialMatrix,
+  selectedPersonaId,
+  focusOnly,
+  onFocusOnlyChange,
   initialSelectedCell = null
 }: PersonaTimeReviewPageProps) {
   const initialViewState = buildInitialViewState(initialMatrix, initialSelectedCell);
@@ -75,15 +82,19 @@ export function PersonaTimeReviewPage({
     setLoadError(null);
   }, [bookId, initialMatrix, initialSelectedCell]);
 
-  const visibleMatrix = applyLocalFilters(matrix, filters);
-  const visibleSliceCount = countVisibleSlices(visibleMatrix.timeGroups);
+  const localFiltered = applyLocalFilters(matrix, filters);
+  const displayedMatrix = useMemo(
+    () => focusOnly ? filterTimeMatrixByPersonaId(localFiltered, selectedPersonaId) : localFiltered,
+    [localFiltered, focusOnly, selectedPersonaId]
+  );
+  const visibleSliceCount = countVisibleSlices(displayedMatrix.timeGroups);
   const canJumpNext = findNextTimeSliceKey({
-    timeGroups     : visibleMatrix.timeGroups,
+    timeGroups     : displayedMatrix.timeGroups,
     selectedTimeKey: selectedCell?.timeKey ?? null
   }) !== null;
-  const hasVisibleMatrix = visibleMatrix.personas.length > 0
+  const hasVisibleMatrix = displayedMatrix.personas.length > 0
     && visibleSliceCount > 0
-    && visibleMatrix.cells.length > 0;
+    && displayedMatrix.cells.length > 0;
 
   async function refreshMatrix() {
     setIsLoading(true);
@@ -92,8 +103,11 @@ export function PersonaTimeReviewPage({
 
     try {
       const nextMatrix = await fetchPersonaTimeMatrix(buildRefreshQuery(bookId, filters));
-      const nextVisibleMatrix = applyLocalFilters(nextMatrix, filters);
-      const nextSelection = selectionExists(nextVisibleMatrix, currentSelection)
+      const nextLocalFiltered = applyLocalFilters(nextMatrix, filters);
+      const nextDisplayedMatrix = focusOnly
+        ? filterTimeMatrixByPersonaId(nextLocalFiltered, selectedPersonaId)
+        : nextLocalFiltered;
+      const nextSelection = selectionExists(nextDisplayedMatrix, currentSelection)
         ? currentSelection
         : null;
 
@@ -121,10 +135,10 @@ export function PersonaTimeReviewPage({
 
   function handleJumpNext() {
     const nextTimeKey = findNextTimeSliceKey({
-      timeGroups     : visibleMatrix.timeGroups,
+      timeGroups     : displayedMatrix.timeGroups,
       selectedTimeKey: selectedCell?.timeKey ?? null
     });
-    const nextPersonaId = resolveJumpPersonaId(visibleMatrix, filters, selectedCell);
+    const nextPersonaId = resolveJumpPersonaId(displayedMatrix, filters, selectedCell);
 
     if (!nextTimeKey || !nextPersonaId) {
       return;
@@ -136,7 +150,7 @@ export function PersonaTimeReviewPage({
     });
     setExpandedGroups((current) => {
       const nextGroups = { ...current };
-      const group = findGroupByTimeKey(visibleMatrix.timeGroups, nextTimeKey);
+      const group = findGroupByTimeKey(displayedMatrix.timeGroups, nextTimeKey);
 
       if (group) {
         nextGroups[group.timeType] = true;
@@ -159,9 +173,9 @@ export function PersonaTimeReviewPage({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>{visibleMatrix.personas.length} 名人物列</span>
+            <span>{displayedMatrix.personas.length} 名人物列</span>
             <span>{visibleSliceCount} 个时间片行</span>
-            <span>{visibleMatrix.cells.length} 个事实单元格</span>
+            <span>{displayedMatrix.cells.length} 个事实单元格</span>
             <Button
               type="button"
               variant="outline"
@@ -196,16 +210,17 @@ export function PersonaTimeReviewPage({
           <ErrorState title="矩阵加载失败" description={loadError} onRetry={() => void refreshMatrix()} />
         ) : hasVisibleMatrix ? (
           <TimeMatrixGrid
-            personas={visibleMatrix.personas}
-            timeGroups={visibleMatrix.timeGroups}
-            cells={visibleMatrix.cells}
-            selectedCell={selectionExists(visibleMatrix, selectedCell) ? selectedCell : null}
+            personas={displayedMatrix.personas}
+            timeGroups={displayedMatrix.timeGroups}
+            cells={displayedMatrix.cells}
+            selectedCell={selectionExists(displayedMatrix, selectedCell) ? selectedCell : null}
+            highlightedPersonaId={!focusOnly ? selectedPersonaId : null}
             expandedGroups={expandedGroups}
             onSelectCell={(selection) => {
               setSelectedCell(selection);
               setExpandedGroups((current) => {
                 const nextGroups = { ...current };
-                const group = findGroupByTimeKey(visibleMatrix.timeGroups, selection.timeKey);
+                const group = findGroupByTimeKey(displayedMatrix.timeGroups, selection.timeKey);
 
                 if (group) {
                   nextGroups[group.timeType] = true;
