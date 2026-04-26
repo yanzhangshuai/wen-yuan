@@ -899,9 +899,12 @@ export function createAnalysisJobRunner(
       // 落地审核中心所需的统一读模型：sequential 架构需先写入 review output，
       // 两种架构随后均重建 projection。任一步骤失败则不推进任务终态。
       if (architecture === "sequential") {
+        if (analysisRunId === null) {
+          throw new Error(`解析任务 ${runningJob.id} 缺少 analysisRunId，无法生成审核输出`);
+        }
         await resolvedWriteSequentialReviewOutput({
           bookId    : runningJob.bookId,
-          runId     : analysisRunId ?? "",
+          runId     : analysisRunId,
           chapterIds: chapters.map(chapter => chapter.id)
         });
       }

@@ -638,6 +638,21 @@ describe("analysis job runner", () => {
       mention     : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
       relationship: { findMany: vi.fn().mockResolvedValue([]) },
       persona     : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      analysisRun: {
+        create   : vi.fn().mockResolvedValue({ id: "run-warning-test" }),
+        update   : vi.fn().mockResolvedValue({}),
+        findFirst: vi.fn().mockResolvedValue(null)
+      },
+      analysisStageRun: {
+        create: vi.fn().mockResolvedValue({ id: "stage-run-warning-test" }),
+        update: vi.fn().mockResolvedValue({})
+      },
+      llmRawOutput: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCostMicros: BigInt(0) }
+        }),
+        create: vi.fn().mockResolvedValue({ id: "raw-warning-test" })
+      },
       $transaction: vi.fn(async (ops: Promise<unknown>[]) => await Promise.all(ops))
     } as never, {
       analyzeChapter          : vi.fn(),
@@ -1899,6 +1914,54 @@ describe("analysis job runner", () => {
 
     expect(writeSequentialReviewOutput).not.toHaveBeenCalled();
     expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
+  });
+
+  it("sequential job rejects and does not mark SUCCEEDED when analysisRunId is null", async () => {
+    const jobId = "job-null-run-id";
+    const bookId = "book-1";
+    const {
+      runner,
+      prismaMock,
+      analysisJobFindUnique,
+      analysisJobUpdate,
+      chapterFindMany,
+      writeSequentialReviewOutput
+    } = createRunnerContext();
+
+    // analysisRun.create が null の id を返すことで createJobRun が { id: null } を返す
+    prismaMock.analysisRun.create.mockResolvedValueOnce({ id: null });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await expect(runner.runAnalysisJobById(jobId)).rejects.toThrow(
+      `解析任务 ${jobId} 缺少 analysisRunId，无法生成审核输出`
+    );
+    expect(writeSequentialReviewOutput).not.toHaveBeenCalled();
+    expect(analysisJobUpdate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED }) })
+    );
   });
 });
 
