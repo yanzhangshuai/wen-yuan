@@ -21,6 +21,7 @@ API Route
 ```
 
 两种架构共享同一接口（`AnalysisPipeline`），通过工厂函数 `createPipeline(architecture)` 选择。
+生产默认与兜底架构是 `sequential`；`threestage` 保留为可选/实验架构，不能作为未知值或缺省值的隐式兜底。
 
 ---
 
@@ -51,7 +52,7 @@ interface PipelineRunParams {
 
 ## Sequential（顺序）架构
 
-**适用**：稳定书籍、短篇文本、调试场景
+**适用**：生产主路径、稳定书籍、短篇文本、调试场景
 
 **流程**：
 ```
@@ -59,20 +60,26 @@ for each chapter (sequential):
   1. 用当前 bookPersonaCache（已知人物列表）作为上下文
   2. ChapterAnalysisService.analyze(chapter, context)
   3. PersonaResolver.resolve(rawPersonas, bookCache)
-  4. 写回 Persona + Relationship + Biography
-  5. 更新 bookPersonaCache（新发现实体追加入库）
+  4. 写回 Persona + Relationship + Biography（legacy 图谱产物）
+  5. 同步写统一审核 claims + identity_resolution_claims
+  6. 更新 bookPersonaCache（新发现实体追加入库）
+
+after all chapters:
+  rebuildProjection(FULL_BOOK)
+  → 写 persona_chapter_facts / persona_time_facts / relationship_edges / timeline_events
 ```
 
 **关键特性**：
 - 每章用前序章节积累的实体上下文，LLM 在有约束的条件下做提取和归并
 - `BookPersonaCache` 是章间状态容器，不跨书共享
 - 顺序执行，并发数 = 1；适合追求准确性优先于速度
+- 虽然 sequential 继续维护 legacy 图谱产物，但审核中心只读取统一 claims/projection 输出
 
 ---
 
 ## ThreeStage（三阶段）架构
 
-**适用**：需要 claim-first 审核、证据归因、全书实体仲裁与投影读模型的场景
+**适用**：实验性 claim-first 审核、证据归因、全书实体仲裁与投影读模型验证场景
 
 **流程**：
 ```
@@ -101,6 +108,7 @@ Projection：
 **关键约束**：
 - 三阶段的下游审核产物是 claim-first 数据与 projection 读模型。
 - `sequential` 与 `threestage` 是可选择且并存的分析架构，但最终审核中心输出契约必须一致。
+- 由于三阶段当前质量问题较大，不能作为生产默认架构；缺省/未知 architecture 必须回退到 `sequential`。
 - 新增或修改任一架构时，必须验证 `/admin/review/:bookId` 仍只消费统一 projection，不因架构分叉。
 
 ---
@@ -124,6 +132,7 @@ Projection：
 - Trigger: 排查 `/admin/review/:bookId` 左侧角色列表或矩阵为空时，必须确认 selected architecture 是否已经生成统一 claim/projection 输出。
 - `sequential` 与 `threestage` 可以并存、可选择，但审核中心（T12/T13 claim-first UI）不直接读取 `profiles`、`mentions`、`biography_records`、`relationships` 来生成角色列表。
 - `sequential` 若继续写 legacy 图谱数据，也必须同步写统一审核 claims 并重建 projection。
+- 生产默认架构与未知值兜底均为 `sequential`，避免三阶段问题影响默认解析质量。
 
 ### 2. Signatures
 
@@ -168,6 +177,7 @@ prisma.personaChapterFact.findMany({ where: { bookId } });
 - 投影构建测试必须覆盖：没有 accepted identity-resolution 时，event/relation claim 不生成 persona chapter facts。
 - 页面集成测试若 mock “有角色”，必须 mock `initialMatrix.personas/cells`，不能只 mock `profiles`。
 - sequential 任务测试必须断言：任务完成后生成 claims 并触发 FULL_BOOK projection，使审核中心可读同一输出契约。
+- architecture 归一化测试必须断言：缺省/未知值回退 `sequential`，只有显式选择 `threestage` 才运行三阶段。
 
 ### 7. Wrong vs Correct
 
@@ -201,6 +211,7 @@ group by review_state;
 | 在 sequential 中跳过 `bookPersonaCache` 更新 | 后续章节失去上下文，导致实体重复提取 |
 | 在 config 以外硬编码阈值数字 | 阈值是业务参数，必须集中管理以便调优 |
 | 两种架构共享有状态 resolver/attributor 实例 | 实例内状态可能跨架构或并发任务污染 |
+| 将缺省/未知 architecture 归一化为 `threestage` | 三阶段当前不是生产主路径，默认兜底必须保护稳定性优先 |
 | 用 `profiles` 数量判断审核中心是否应显示角色 | 审核中心角色来自统一 projection（`persona_chapter_facts`），legacy 人物档案不是该 UI 的数据源 |
 | 让审核中心按 `analysis_jobs.architecture` 分支读取 legacy/projection | 架构差异会泄漏到 UI；正确做法是在写入端统一最终审核输出 |
 
