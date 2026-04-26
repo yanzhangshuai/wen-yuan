@@ -1916,6 +1916,58 @@ describe("analysis job runner", () => {
     expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
   });
 
+  // 用例语义：CHAPTER_RANGE 局部重跑后，只写入被选中章节的 review output，
+  // 但 projection 仍须以 FULL_BOOK 视角重建，合并未触及章节的现有认领。
+  it("CHAPTER_RANGE sequential job writes review output for selected chapters and rebuilds FULL_BOOK projection", async () => {
+    const jobId = "job-range-review";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      writeSequentialReviewOutput,
+      rebuildReviewProjection
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "CHAPTER_RANGE",
+        chapterStart  : 2,
+        chapterEnd    : 3,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "CHAPTER_RANGE",
+        chapterStart  : 2,
+        chapterEnd    : 3,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([
+      { id: "chapter-2", no: 2 },
+      { id: "chapter-3", no: 3 }
+    ]);
+
+    await runner.runAnalysisJobById(jobId);
+
+    // sequential adapter 仅对被选中的章节（第 2、3 章）写入 review output
+    expect(writeSequentialReviewOutput).toHaveBeenCalledWith({
+      bookId,
+      runId     : "run-observable",
+      chapterIds: ["chapter-2", "chapter-3"]
+    });
+    // 局部重跑后仍以 FULL_BOOK 视角重建整书 projection，保证审核中心视图一致
+    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
+  });
+
   it("sequential job rejects and does not mark SUCCEEDED when analysisRunId is null", async () => {
     const jobId = "job-null-run-id";
     const bookId = "book-1";
