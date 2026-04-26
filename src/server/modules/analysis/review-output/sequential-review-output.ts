@@ -127,6 +127,7 @@ interface SequentialReviewTx extends ClaimRepositoryTransactionClient {
     }): Promise<{ id: string }>;
   };
   evidenceSpan: {
+    deleteMany(args: { where: DeleteWhere }): Promise<{ count: number }>;
     create(args: {
       data: {
         bookId             : string;
@@ -157,6 +158,8 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
   async function writeBookReviewOutput(
     input: SequentialReviewOutputInput
   ): Promise<SequentialReviewOutputResult> {
+    // PrismaClient.$transaction 的泛型签名无法直接接受窄化的 SequentialReviewTx，
+    // 故用 as unknown as 绕过类型系统，实际运行时 Prisma 传入的 tx 满足接口约定。
     return (prismaClient as unknown as { $transaction<T>(fn: (tx: SequentialReviewTx) => Promise<T>): Promise<T> })
       .$transaction(async (tx) => {
         const { bookId, runId, chapterIds } = input;
@@ -215,7 +218,8 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
 
         for (const [personaId, name] of personaIdToName.entries()) {
           const nos = personaChapterNos.get(personaId) ?? [];
-          const mentionCount = nos.length > 0 ? nos.length : 1;
+          // bio/relation-only personas 无 mention 记录，mentionCount 使用 0 而非人为补 1
+          const mentionCount = nos.length;
           const firstSeenChapterNo = nos.length > 0 ? Math.min(...nos) : null;
           const lastSeenChapterNo  = nos.length > 0 ? Math.max(...nos) : null;
 
@@ -268,6 +272,11 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
           // 5b. 删除该章节旧 entity mentions
           await tx.entityMention.deleteMany({
             where: { bookId, chapterId: chapter.id, runId, source: ClaimSource.AI }
+          });
+
+          // 5b2. 删除该章节旧 evidence spans，防止重跑产生孤儿重复行
+          await tx.evidenceSpan.deleteMany({
+            where: { bookId, chapterId: chapter.id, createdByRunId: runId }
           });
 
           // 5c. 为每个 mention 创建 evidence span + entity mention

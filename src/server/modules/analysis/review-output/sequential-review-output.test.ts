@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { type PrismaClient } from "@/generated/prisma/client";
 import { BioCategory } from "@/generated/prisma/enums";
 import { createSequentialReviewOutputAdapter } from "@/server/modules/analysis/review-output/sequential-review-output";
 
@@ -76,7 +77,8 @@ function makeTx() {
       create   : vi.fn().mockResolvedValue({ id: SEGMENT_ID_1 })
     },
     evidenceSpan: {
-      create: vi.fn()
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      create    : vi.fn()
         .mockResolvedValueOnce({ id: SPAN_ID_1 })
         .mockResolvedValueOnce({ id: SPAN_ID_2 })
     },
@@ -154,7 +156,7 @@ describe("createSequentialReviewOutputAdapter", () => {
     it("converts legacy rows into accepted review claims with identity mappings", async () => {
       const tx = makeTx();
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       const result = await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -209,6 +211,12 @@ describe("createSequentialReviewOutputAdapter", () => {
       expect(tx.entityMention.deleteMany).toHaveBeenCalledWith({
         where: { bookId: BOOK_ID, chapterId: CHAPTER_ID_1, runId: RUN_ID, source: "AI" }
       });
+
+      // EvidenceSpan: 删旧建新（防止重跑产生孤儿行）
+      expect(tx.evidenceSpan.deleteMany).toHaveBeenCalledWith({
+        where: { bookId: BOOK_ID, chapterId: CHAPTER_ID_1, createdByRunId: RUN_ID }
+      });
+
       expect(tx.entityMention.create).toHaveBeenCalledOnce();
       expect(tx.entityMention.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,7 +283,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       tx.chapterSegment.findFirst.mockResolvedValue({ id: SEGMENT_ID_1 });
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -300,7 +308,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       ]);
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       const result = await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -338,7 +346,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       ]);
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -363,7 +371,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       tx.relationship.findMany.mockResolvedValue([]);
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       const result = await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -389,7 +397,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       tx.eventClaim.createMany.mockRejectedValue(new Error("DB write failed"));
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       await expect(
         adapter.writeBookReviewOutput({
@@ -409,7 +417,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       ]);
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -450,7 +458,7 @@ describe("createSequentialReviewOutputAdapter", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
       const prismaClient = makePrisma(tx);
-      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
 
       const result = await adapter.writeBookReviewOutput({
         bookId    : BOOK_ID,
@@ -476,6 +484,50 @@ describe("createSequentialReviewOutputAdapter", () => {
         })
       );
       warnSpy.mockRestore();
+    });
+
+    it("re-run deletes evidence spans before creating new ones (no orphaned duplicates)", async () => {
+      // 回归测试：相同 { bookId, runId, chapterIds } 重跑时，evidenceSpan.deleteMany
+      // 必须在任何 evidenceSpan.create 之前被调用，且 where 条件正确作用域。
+      const tx = makeTx();
+      const callOrder: string[] = [];
+      tx.evidenceSpan.deleteMany = vi.fn().mockImplementation(() => {
+        callOrder.push("deleteMany");
+        return Promise.resolve({ count: 2 });
+      });
+      tx.evidenceSpan.create = vi.fn()
+        .mockImplementation(() => {
+          callOrder.push("create");
+          return Promise.resolve({ id: SPAN_ID_1 });
+        })
+        // second call for chapter-level span
+        .mockImplementationOnce(() => {
+          callOrder.push("create");
+          return Promise.resolve({ id: SPAN_ID_1 });
+        })
+        .mockImplementationOnce(() => {
+          callOrder.push("create");
+          return Promise.resolve({ id: SPAN_ID_2 });
+        });
+
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1]
+      });
+
+      // deleteMany must have been called with correct scope
+      expect(tx.evidenceSpan.deleteMany).toHaveBeenCalledWith({
+        where: { bookId: BOOK_ID, chapterId: CHAPTER_ID_1, createdByRunId: RUN_ID }
+      });
+
+      // deleteMany must precede all create calls for the same chapter
+      const firstCreate  = callOrder.indexOf("create");
+      const lastDeleteMany = callOrder.lastIndexOf("deleteMany");
+      expect(lastDeleteMany).toBeLessThan(firstCreate);
     });
   });
 });
