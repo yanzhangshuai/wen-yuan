@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  AnalysisJobStatus,
   BioCategory,
   ChapterSegmentType,
   ClaimSource,
@@ -521,7 +522,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
   type OuterClient = {
     analysisJob: {
       findFirst(args: {
-        where  : { bookId: string; architecture: string; status: string };
+        where  : { bookId: string; architecture: string; status: AnalysisJobStatus };
         orderBy: { finishedAt: "desc" };
         select : { id: true; bookId: true };
       }): Promise<{ id: string; bookId: string } | null>;
@@ -548,7 +549,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
     const outerClient = prismaClient as unknown as OuterClient;
 
     const job = await outerClient.analysisJob.findFirst({
-      where  : { bookId, architecture: "sequential", status: "SUCCEEDED" },
+      where  : { bookId, architecture: "sequential", status: AnalysisJobStatus.SUCCEEDED },
       orderBy: { finishedAt: "desc" },
       select : { id: true, bookId: true }
     });

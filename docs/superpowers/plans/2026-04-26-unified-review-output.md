@@ -797,48 +797,73 @@ return {
 
 - [ ] **Step 4: Create the CLI script**
 
+> **Convention note**: CLI scripts in this repo use `import "dotenv/config"`, `PrismaPg`, and
+> `new PrismaClient({ adapter })` (not the global `@/server/db/prisma` singleton). The
+> `isDirectExecution` guard ensures the script only runs when invoked directly (not when imported
+> by tests). Errors from argument parsing and a missing `DATABASE_URL` propagate naturally through
+> `main().catch(...)` so the process exits non-zero.
+
 Create `scripts/backfill-unified-review-output.ts`:
 
 ```ts
+import "dotenv/config";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../src/generated/prisma/client.ts";
+import { createSequentialReviewOutputAdapter } from "../src/server/modules/analysis/review-output/sequential-review-output.ts";
 import {
   createProjectionBuilder,
   createProjectionRepository
-} from "@/server/modules/review/evidence-review/projections/projection-builder";
-import { prisma } from "@/server/db/prisma";
-import { createSequentialReviewOutputAdapter } from "@/server/modules/analysis/review-output/sequential-review-output";
+} from "../src/server/modules/review/evidence-review/projections/projection-builder.ts";
 
-function readBookId(): string {
-  const arg = process.argv.find((value) => value.startsWith("--bookId="));
+function parseBookId(): string {
+  const arg = process.argv.find(a => a.startsWith("--bookId="));
   const bookId = arg?.slice("--bookId=".length).trim();
   if (!bookId) {
-    throw new Error("Usage: pnpm tsx scripts/backfill-unified-review-output.ts --bookId=<book uuid>");
+    throw new Error("Usage: npx tsx scripts/backfill-unified-review-output.ts --bookId=<uuid>");
   }
   return bookId;
 }
 
-async function main(): Promise<void> {
-  const bookId = readBookId();
-  const adapter = createSequentialReviewOutputAdapter(prisma);
-  const result = await adapter.backfillLatestSucceededSequentialJob({ bookId });
+async function main() {
+  const bookId = parseBookId();
 
-  const projectionResult = await createProjectionBuilder({
-    repository: createProjectionRepository(prisma)
-  }).rebuildProjection({
-    kind: "FULL_BOOK",
-    bookId
-  });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("Missing DATABASE_URL in environment");
+  }
 
-  console.info(JSON.stringify({ bookId, result, projectionResult }, null, 2));
-}
+  const adapter = new PrismaPg({ connectionString });
+  const prisma  = new PrismaClient({ adapter });
 
-main()
-  .catch((error) => {
+  try {
+    const reviewAdapter = createSequentialReviewOutputAdapter(prisma);
+    const result = await reviewAdapter.backfillLatestSucceededSequentialJob({ bookId });
+
+    const projectionResult = await createProjectionBuilder({
+      repository: createProjectionRepository(prisma)
+    }).rebuildProjection({ kind: "FULL_BOOK", bookId });
+
+    console.info(JSON.stringify({ bookId, result, projectionResult }, null, 2));
+  } catch (error) {
     console.error(error);
     process.exitCode = 1;
-  })
-  .finally(async () => {
+  } finally {
     await prisma.$disconnect();
+  }
+}
+
+const isDirectExecution = process.argv[1]
+  ? fileURLToPath(import.meta.url) === resolve(process.argv[1])
+  : false;
+
+if (isDirectExecution) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
   });
+}
 ```
 
 - [ ] **Step 5: Run backfill tests**

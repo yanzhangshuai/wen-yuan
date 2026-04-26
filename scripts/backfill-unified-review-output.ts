@@ -10,6 +10,8 @@
  */
 
 import "dotenv/config";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.ts";
 import { createSequentialReviewOutputAdapter } from "../src/server/modules/analysis/review-output/sequential-review-output.ts";
@@ -20,10 +22,11 @@ import {
 
 function parseBookId(): string {
   const arg = process.argv.find(a => a.startsWith("--bookId="));
-  if (!arg) {
+  const bookId = arg?.slice("--bookId=".length).trim();
+  if (!bookId) {
     throw new Error("Usage: npx tsx scripts/backfill-unified-review-output.ts --bookId=<uuid>");
   }
-  return arg.slice("--bookId=".length);
+  return bookId;
 }
 
 async function main() {
@@ -54,4 +57,13 @@ async function main() {
   }
 }
 
-main();
+const isDirectExecution = process.argv[1]
+  ? fileURLToPath(import.meta.url) === resolve(process.argv[1])
+  : false;
+
+if (isDirectExecution) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
