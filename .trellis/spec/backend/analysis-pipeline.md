@@ -111,6 +111,80 @@ Pass 3（写回）：
 
 ---
 
+## 审核中心数据契约（legacy 分析 vs claim-first 审核）
+
+### 1. Scope / Trigger
+
+- Trigger: 排查 `/admin/review/:bookId` 左侧角色列表或矩阵为空时，必须区分“书籍已有 legacy 人物产物”和“审核中心可消费的 claim/projection 产物”。
+- 审核中心（T12/T13 claim-first UI）不直接读取 `profiles`、`mentions`、`biography_records`、`relationships` 来生成角色列表。
+
+### 2. Signatures
+
+```ts
+// Server page 首屏入口
+createReviewQueryService().getPersonaChapterMatrix({ bookId });
+
+// API 刷新入口
+GET /api/admin/review/persona-chapter-matrix?bookId=<uuid>
+
+// 读模型来源
+prisma.personaChapterFact.findMany({ where: { bookId } });
+```
+
+### 3. Contracts
+
+| 层 | 契约 | 说明 |
+|----|------|------|
+| 分析写入层 | `persona_candidates` + `*_claims` + accepted `identity_resolution_claims` | claim-first 审核的源数据 |
+| Projection 层 | `persona_chapter_facts` | 审核矩阵的唯一角色/单元格来源 |
+| 页面层 | `initialMatrix.personas` | `ReviewWorkbenchShell` 左侧角色列表由 `buildPersonaListItems(initialMatrix)` 派生 |
+| Legacy 图谱层 | `profiles`、`mentions`、`biography_records`、`relationships` | 图谱/旧分析产物，不等价于审核中心有角色 |
+
+### 4. Validation & Error Matrix
+
+| 数据状态 | 审核中心表现 | 判定 |
+|----------|--------------|------|
+| `profiles > 0` 但 `persona_chapter_facts = 0` | 左侧角色列表为空 | 不是前端过滤问题；claim-first 投影不存在 |
+| `*_claims > 0` 但 accepted `identity_resolution_claims = 0` | 投影无法映射 candidate 到 persona | 身份归并未确认或未生成 |
+| accepted identity 存在但 `persona_chapter_facts = 0` | 可能 projection 未重建 | 检查 `rebuildProjection({ kind: "FULL_BOOK", bookId })` 调用链 |
+| `persona_chapter_facts > 0` 但 UI 为空 | 再查 API 响应、分页/筛选、客户端状态 | 进入前端/API 调试 |
+
+### 5. Good/Base/Bad Cases
+
+- Good: claim-first 分析写入 candidates/claims，身份归并 claim 被接受，projection 重建后 `persona_chapter_facts` 有行，审核中心出现角色。
+- Base: 旧 sequential 分析仅写 `profiles`/`relationships`/`biography_records`，图谱可见角色，但审核中心为空。
+- Bad: 在审核中心为空时只检查 `profiles` 数量，误判为前端角色列表丢失。
+
+### 6. Tests Required
+
+- `getPersonaChapterMatrix` 测试必须断言：角色列表只来自 `personaChapterFact` 行，而不是 `profiles`。
+- 投影构建测试必须覆盖：没有 accepted identity-resolution 时，event/relation claim 不生成 persona chapter facts。
+- 页面集成测试若 mock “有角色”，必须 mock `initialMatrix.personas/cells`，不能只 mock `profiles`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```sql
+-- 只看 profiles，就断定审核中心应该有角色
+select count(*) from profiles where book_id = $1 and deleted_at is null;
+```
+
+#### Correct
+
+```sql
+-- 先看审核中心真正消费的读模型
+select count(*) from persona_chapter_facts where book_id = $1;
+
+-- 若为空，再向上追溯 claim-first 源数据和身份归并
+select review_state, count(*)
+from identity_resolution_claims
+where book_id = $1
+group by review_state;
+```
+
+---
+
 ## 禁止模式
 
 | 禁止 | 原因 |
@@ -120,6 +194,7 @@ Pass 3（写回）：
 | 在 sequential 中跳过 `bookPersonaCache` 更新 | 后续章节失去上下文，导致实体重复提取 |
 | 在 config 以外硬编码阈值数字 | 阈值是业务参数，必须集中管理以便调优 |
 | 两种架构共享同一 `PersonaResolver` 实例 | 实例内有章间状态，并发 twopass 会导致状态污染 |
+| 用 `profiles` 数量判断审核中心是否应显示角色 | 审核中心角色来自 claim-first projection（`persona_chapter_facts`），legacy 人物档案不是该 UI 的数据源 |
 
 ---
 
