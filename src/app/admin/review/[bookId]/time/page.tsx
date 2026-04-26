@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PersonaTimeReviewPage } from "@/components/review/persona-time-matrix/persona-time-review-page";
-import { ReviewModeNav } from "@/components/review/shared/review-mode-nav";
-import { cn } from "@/lib/utils";
+import { ReviewWorkbenchShell } from "@/components/review/shared/review-workbench-shell";
+import { buildPersonaListItems } from "@/components/review/shared/persona-list-summary";
 import type {
   PersonaTimeMatrixDto
 } from "@/lib/services/review-time-matrix";
@@ -18,6 +17,7 @@ interface AdminBookTimeReviewSearchParams {
   personaId?: SearchParamValue;
   timeKey?  : SearchParamValue;
   timeLabel?: SearchParamValue;
+  focus?    : SearchParamValue;
 }
 
 const EMPTY_SEARCH_PARAMS: AdminBookTimeReviewSearchParams = {};
@@ -111,6 +111,9 @@ export default async function AdminBookTimeReviewPage({
   searchParams
 }: AdminBookTimeReviewPageProps) {
   const { bookId } = await params;
+  const resolvedSearchParams = await (searchParams ?? Promise.resolve(EMPTY_SEARCH_PARAMS));
+  const initialSelectedPersonaId = readSingleSearchParam(resolvedSearchParams.personaId);
+  const initialFocusOnly = resolvedSearchParams.focus === "1";
 
   let book;
   try {
@@ -120,52 +123,45 @@ export default async function AdminBookTimeReviewPage({
   }
 
   const reviewQueryService = createReviewQueryService();
-  const [allBooks, initialMatrix] = await Promise.all([
+  const [allBooks, initialMatrix, matrix] = await Promise.all([
     listBooks(),
-    reviewQueryService.getPersonaTimeMatrix({ bookId })
+    reviewQueryService.getPersonaTimeMatrix({ bookId }),
+    reviewQueryService.getPersonaChapterMatrix({ bookId })
   ]);
-  const resolvedSearchParams = await (searchParams ?? Promise.resolve(EMPTY_SEARCH_PARAMS));
   const initialSelectedCell = resolveInitialSelectedCell(initialMatrix, resolvedSearchParams);
 
-  return (
-    <div className="flex gap-6 items-start">
-      <aside className="w-44 shrink-0">
-        <div className="sticky top-20">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 px-2 uppercase tracking-wider">
-            选择书籍
-          </h2>
-          <nav className="space-y-0.5">
-            {allBooks.map((candidateBook) => (
-              <Link
-                key={candidateBook.id}
-                href={`/admin/review/${candidateBook.id}/time`}
-                className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors",
-                  candidateBook.id === bookId
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-foreground hover:bg-accent"
-                )}
-              >
-                <span className="truncate">{candidateBook.title}</span>
-                <span className="ml-2 text-xs text-muted-foreground/70 shrink-0 tabular-nums">
-                  {candidateBook.personaCount}
-                </span>
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </aside>
+  const personaItems = buildPersonaListItems(matrix);
+  const books = allBooks.map((b) => ({ id: b.id, title: b.title }));
 
-      <div className="flex-1 min-w-0 space-y-4">
-        <ReviewModeNav bookId={bookId} activeMode="time" />
-        <PersonaTimeReviewPage
-          bookId={bookId}
-          bookTitle={book.title}
-          allBooks={allBooks}
-          initialMatrix={initialMatrix}
-          initialSelectedCell={initialSelectedCell}
-        />
-      </div>
-    </div>
+  return (
+    <ReviewWorkbenchShell
+      bookId                  ={bookId}
+      bookTitle               ={book.title}
+      books                   ={books}
+      mode                    ="time"
+      personaItems            ={personaItems}
+      initialSelectedPersonaId={initialSelectedPersonaId}
+      initialFocusOnly        ={initialFocusOnly}
+      renderMain={({ selectedPersonaId, focusOnly, onFocusOnlyChange }) => (
+        <section
+          className="persona-time-review-page-server rounded-xl border bg-card p-6 shadow-sm"
+          data-time-matrix-book-id={initialMatrix.bookId}
+          data-persona-count={initialMatrix.personas.length}
+          data-time-group-count={initialMatrix.timeGroups.length}
+          data-cell-count={initialMatrix.cells.length}
+        >
+          <PersonaTimeReviewPage
+            bookId={bookId}
+            bookTitle={book.title}
+            allBooks={allBooks}
+            initialMatrix={initialMatrix}
+            selectedPersonaId={selectedPersonaId}
+            focusOnly={focusOnly}
+            onFocusOnlyChange={onFocusOnlyChange}
+            initialSelectedCell={initialSelectedCell}
+          />
+        </section>
+      )}
+    />
   );
 }

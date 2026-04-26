@@ -1,13 +1,13 @@
-import { type PersonaTimeMatrixDto } from "@/lib/services/review-time-matrix";
+import { type VisiblePersonaTimeMatrix } from "./view-helpers";
 
 export function filterTimeMatrixByPersonaId(
-  matrix   : PersonaTimeMatrixDto,
+  matrix   : VisiblePersonaTimeMatrix,
   personaId: string | null
-): PersonaTimeMatrixDto {
+): VisiblePersonaTimeMatrix {
   if (personaId === null) return matrix;
   return {
-    ...matrix,
-    personas: matrix.personas.filter((p) => p.personaId === personaId),
-    cells   : matrix.cells.filter((c) => c.personaId === personaId)
+    personas  : matrix.personas.filter((p) => p.personaId === personaId),
+    timeGroups: matrix.timeGroups,
+    cells     : matrix.cells.filter((c) => c.personaId === personaId)
   };
 }

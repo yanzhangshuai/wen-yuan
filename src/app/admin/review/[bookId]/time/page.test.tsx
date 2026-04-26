@@ -117,6 +117,12 @@ describe("AdminBookTimeReviewPage", () => {
     hoisted.getBookByIdMock.mockResolvedValue({ id: BOOK_ID, title: "三国演义" });
     hoisted.listBooksMock.mockResolvedValue(allBooks);
     hoisted.getPersonaTimeMatrixMock.mockResolvedValue(personaTimeMatrixDto);
+    hoisted.getPersonaChapterMatrixMock.mockResolvedValue({
+      bookId  : BOOK_ID,
+      personas: [],
+      chapters: [],
+      cells   : []
+    });
     hoisted.notFoundMock.mockImplementation(() => {
       throw new Error("NEXT_NOT_FOUND");
     });
@@ -134,6 +140,24 @@ describe("AdminBookTimeReviewPage", () => {
   });
 
   it("loads book, book switcher data, and forwards the initial persona-time matrix", async () => {
+    hoisted.getPersonaChapterMatrixMock.mockResolvedValue({
+      bookId  : BOOK_ID,
+      personas: [{
+        personaId              : "persona-1",
+        displayName            : "诸葛亮",
+        aliases                : ["孔明"],
+        firstChapterNo         : 1,
+        totalEventCount        : 5,
+        totalRelationCount     : 2,
+        totalConflictCount     : 0,
+        personaCandidateIds    : ["pc-1"]
+      }],
+      chapters: [
+        { chapterId: "chapter-1", chapterNo: 1, label: "第 1 回", title: "桃园结义" }
+      ],
+      cells: []
+    });
+
     const { default: AdminBookTimeReviewPage } = await import("./page");
 
     const page = await AdminBookTimeReviewPage({
@@ -147,21 +171,26 @@ describe("AdminBookTimeReviewPage", () => {
     expect(hoisted.getBookByIdMock).toHaveBeenCalledWith(BOOK_ID);
     expect(hoisted.listBooksMock).toHaveBeenCalledOnce();
     expect(hoisted.getPersonaTimeMatrixMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
-    expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
+    expect(hoisted.getPersonaChapterMatrixMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
     expect(hoisted.getRelationEditorViewMock).not.toHaveBeenCalled();
 
-    const modeNav = findElementByProp(page, "activeMode", "time");
-    expect(modeNav?.props.bookId).toBe(BOOK_ID);
+    const shell = findElementByProp(page, "mode", "time");
+    expect(shell?.props.bookId).toBe(BOOK_ID);
 
-    const matrixEntry = findElementByProp(page, "initialMatrix", personaTimeMatrixDto);
-    expect(matrixEntry?.props.bookId).toBe(BOOK_ID);
-    expect(matrixEntry?.props.bookTitle).toBe("三国演义");
-    expect(matrixEntry?.props.allBooks).toBe(allBooks);
-    expect(matrixEntry?.props.initialMatrix).toBe(personaTimeMatrixDto);
-    expect(matrixEntry?.props.initialSelectedCell).toEqual({
-      personaId: "persona-1",
-      timeKey  : "NAMED_EVENT::赤壁之战前::10::2::3"
-    });
+    const renderMain = shell?.props.renderMain;
+    expect(typeof renderMain).toBe("function");
+
+    if (typeof renderMain === "function") {
+      const mainContent = renderMain({
+        selectedPersonaId: null,
+        focusOnly        : false,
+        onFocusOnlyChange: () => {}
+      });
+      const matrixEntry = findElementByProp(mainContent, "data-time-matrix-book-id", BOOK_ID);
+      expect(matrixEntry?.props["data-persona-count"]).toBe(1);
+      expect(matrixEntry?.props["data-time-group-count"]).toBe(1);
+      expect(matrixEntry?.props["data-cell-count"]).toBe(0);
+    }
   });
 
   it("calls notFound when book id does not resolve to a book", async () => {
@@ -186,7 +215,6 @@ describe("AdminBookTimeReviewPage", () => {
 
     expect(hoisted.notFoundMock).not.toHaveBeenCalled();
     expect(hoisted.getPersonaTimeMatrixMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
-    expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
     expect(hoisted.getRelationEditorViewMock).not.toHaveBeenCalled();
   });
 });
