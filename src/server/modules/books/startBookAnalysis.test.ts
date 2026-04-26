@@ -193,6 +193,70 @@ describe("startBookAnalysis", () => {
     expect(result.architecture).toBe("threestage");
   });
 
+  it("explicit threestage architecture is preserved and skips prior-job inheritance query", async () => {
+    const { prisma, tx, analysisJobFindFirst } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(5);
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-explicit-threestage",
+      status          : AnalysisJobStatus.QUEUED,
+      architecture    : "threestage",
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      chapterIndices  : [],
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
+    });
+    tx.book.update.mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
+
+    const service = createStartBookAnalysisService(prisma as never);
+    const result = await service.startBookAnalysis("book-1", { architecture: "threestage" });
+
+    // 显式传入架构时不查询历史任务
+    expect(analysisJobFindFirst).not.toHaveBeenCalled();
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ architecture: "threestage" })
+    }));
+    expect(result.architecture).toBe("threestage");
+  });
+
+  it("explicit sequential architecture is preserved and skips prior-job inheritance query", async () => {
+    const { prisma, tx, analysisJobFindFirst } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(5);
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-explicit-sequential",
+      status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      chapterIndices  : [],
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
+    });
+    tx.book.update.mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
+
+    const service = createStartBookAnalysisService(prisma as never);
+    const result = await service.startBookAnalysis("book-1", { architecture: "sequential" });
+
+    // 显式传入架构时不查询历史任务
+    expect(analysisJobFindFirst).not.toHaveBeenCalled();
+    expect(tx.analysisJob.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ architecture: "sequential" })
+    }));
+    expect(result.architecture).toBe("sequential");
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("throws BookNotFoundError when book does not exist", async () => {
     const { prisma } = createMockPrisma();
