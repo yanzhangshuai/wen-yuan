@@ -36,6 +36,11 @@ import type { SequentialPipelineDependencies } from "@/server/modules/analysis/p
 import type { ThreeStagePipelineDependencies } from "@/server/modules/analysis/pipelines/threestage/ThreeStagePipeline";
 import { createAiProviderClient, type AiProviderClient } from "@/server/providers/ai";
 import { PipelineStage } from "@/types/pipeline";
+import { createSequentialReviewOutputAdapter } from "@/server/modules/analysis/review-output/sequential-review-output";
+import {
+  createProjectionBuilder,
+  createProjectionRepository
+} from "@/server/modules/review/evidence-review/projections";
 
 /**
  * 文件定位（Next.js 服务端任务执行层）：
@@ -475,8 +480,18 @@ export function createAnalysisJobRunner(
   pipelineFactory: (
     architecture: AnalysisArchitecture,
     dependencies: AnalysisPipelineFactoryDependencies
-  ) => AnalysisPipeline = createPipeline
+  ) => AnalysisPipeline = createPipeline,
+  options: {
+    writeSequentialReviewOutput?: (input: { bookId: string; runId: string; chapterIds: string[] }) => Promise<unknown>;
+    rebuildReviewProjection?: (input: { kind: "FULL_BOOK"; bookId: string }) => Promise<unknown>;
+  } = {}
 ) {
+  const resolvedWriteSequentialReviewOutput =
+    options.writeSequentialReviewOutput
+    ?? createSequentialReviewOutputAdapter(prismaClient).writeBookReviewOutput;
+  const resolvedRebuildReviewProjection =
+    options.rebuildReviewProjection
+    ?? createProjectionBuilder({ repository: createProjectionRepository(prismaClient) }).rebuildProjection;
   const resolvedAnalyzerFactory = chapterAnalyzerFactory ?? createDefaultChapterAnalyzerFactory(prismaClient);
   const runService: AnalysisRunService = createAnalysisRunService(prismaClient);
   const stageRunService: AnalysisStageRunService = createAnalysisStageRunService(prismaClient);
@@ -880,6 +895,17 @@ export function createAnalysisJobRunner(
         await runService.cancelRun(analysisRunId);
         return;
       }
+
+      // 落地审核中心所需的统一读模型：sequential 架构需先写入 review output，
+      // 两种架构随后均重建 projection。任一步骤失败则不推进任务终态。
+      if (architecture === "sequential") {
+        await resolvedWriteSequentialReviewOutput({
+          bookId    : runningJob.bookId,
+          runId     : analysisRunId ?? "",
+          chapterIds: chapters.map(chapter => chapter.id)
+        });
+      }
+      await resolvedRebuildReviewProjection({ kind: "FULL_BOOK", bookId: runningJob.bookId });
 
       const warningSummary = formatPipelineWarningSummary(pipelineResult);
 
