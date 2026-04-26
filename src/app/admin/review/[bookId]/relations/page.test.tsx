@@ -135,24 +135,55 @@ describe("AdminBookRelationReviewPage", () => {
   });
 
   it("loads book, book switcher data, and the initial relation editor view", async () => {
+    hoisted.getPersonaChapterMatrixMock.mockResolvedValue({
+      bookId  : BOOK_ID,
+      personas: [
+        {
+          personaId              : "persona-1",
+          displayName            : "范进",
+          aliases                : ["范举人"],
+          firstChapterNo         : 1,
+          totalEventCount        : 5,
+          totalRelationCount     : 2,
+          totalConflictCount     : 0,
+          personaCandidateIds    : ["pc-1"]
+        }
+      ],
+      chapters: [
+        { chapterId: "chapter-1", chapterNo: 1, chapterLabel: "第 1 回" }
+      ],
+      cells: []
+    });
+
     const { default: AdminBookRelationReviewPage } = await import("./page");
 
     const page = await AdminBookRelationReviewPage({
-      params: Promise.resolve({ bookId: BOOK_ID })
+      params      : Promise.resolve({ bookId: BOOK_ID }),
+      searchParams: Promise.resolve({})
     });
 
     expect(hoisted.getBookByIdMock).toHaveBeenCalledWith(BOOK_ID);
     expect(hoisted.listBooksMock).toHaveBeenCalledOnce();
     expect(hoisted.getRelationEditorViewMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
-    expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
+    expect(hoisted.getPersonaChapterMatrixMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
 
-    const modeNav = findElementByProp(page, "activeMode", "relations");
-    expect(modeNav?.props.bookId).toBe(BOOK_ID);
+    const shell = findElementByProp(page, "mode", "relations");
+    expect(shell?.props.bookId).toBe(BOOK_ID);
 
-    const relationSummary = findElementByProp(page, "data-relation-editor-book-id", BOOK_ID);
-    expect(relationSummary?.props["data-pair-count"]).toBe(1);
-    expect(relationSummary?.props["data-persona-count"]).toBe(2);
-    expect(relationSummary?.props["data-relation-type-count"]).toBe(1);
+    const renderMain = shell?.props.renderMain;
+    expect(typeof renderMain).toBe("function");
+
+    if (typeof renderMain === "function") {
+      const mainContent = renderMain({
+        selectedPersonaId  : null,
+        focusOnly          : false,
+        onFocusOnlyChange  : () => {}
+      });
+      const relationSummary = findElementByProp(mainContent, "data-relation-editor-book-id", BOOK_ID);
+      expect(relationSummary?.props["data-pair-count"]).toBe(1);
+      expect(relationSummary?.props["data-persona-count"]).toBe(2);
+      expect(relationSummary?.props["data-relation-type-count"]).toBe(1);
+    }
   });
 
   it("calls notFound when book id does not resolve to a book", async () => {
@@ -160,7 +191,8 @@ describe("AdminBookRelationReviewPage", () => {
     const { default: AdminBookRelationReviewPage } = await import("./page");
 
     await expect(AdminBookRelationReviewPage({
-      params: Promise.resolve({ bookId: BOOK_ID })
+      params      : Promise.resolve({ bookId: BOOK_ID }),
+      searchParams: Promise.resolve({})
     })).rejects.toThrow("NEXT_NOT_FOUND");
 
     expect(hoisted.listBooksMock).not.toHaveBeenCalled();
@@ -172,11 +204,11 @@ describe("AdminBookRelationReviewPage", () => {
     const { default: AdminBookRelationReviewPage } = await import("./page");
 
     await expect(AdminBookRelationReviewPage({
-      params: Promise.resolve({ bookId: BOOK_ID })
+      params      : Promise.resolve({ bookId: BOOK_ID }),
+      searchParams: Promise.resolve({})
     })).rejects.toThrow("relation projection unavailable");
 
     expect(hoisted.notFoundMock).not.toHaveBeenCalled();
     expect(hoisted.getRelationEditorViewMock).toHaveBeenCalledWith({ bookId: BOOK_ID });
-    expect(hoisted.getPersonaChapterMatrixMock).not.toHaveBeenCalled();
   });
 });

@@ -1,16 +1,36 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ReviewModeNav } from "@/components/review/shared/review-mode-nav";
 import { RelationEditorPage } from "@/components/review/relation-editor/relation-editor-page";
-import { cn } from "@/lib/utils";
+import { ReviewWorkbenchShell } from "@/components/review/shared/review-workbench-shell";
+import { buildPersonaListItems } from "@/components/review/shared/persona-list-summary";
 import { getBookById } from "@/server/modules/books/getBookById";
 import { listBooks } from "@/server/modules/books/listBooks";
 import { createReviewQueryService } from "@/server/modules/review/evidence-review/review-query-service";
 
+type SearchParamValue = string | string[] | undefined;
+
+interface AdminBookRelationReviewSearchParams {
+  personaId?: SearchParamValue;
+  focus    ?: SearchParamValue;
+}
+
+function readSingleSearchParam(value: SearchParamValue): string | null {
+  if (typeof value === "string") {
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+  }
+
+  if (Array.isArray(value)) {
+    return readSingleSearchParam(value[0]);
+  }
+
+  return null;
+}
+
 interface AdminBookRelationReviewPageProps {
-  params: Promise<{ bookId: string }>;
+  params      : Promise<{ bookId: string }>;
+  searchParams: Promise<AdminBookRelationReviewSearchParams>;
 }
 
 export async function generateMetadata({
@@ -26,9 +46,13 @@ export async function generateMetadata({
 }
 
 export default async function AdminBookRelationReviewPage({
-  params
+  params,
+  searchParams
 }: AdminBookRelationReviewPageProps) {
   const { bookId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const initialSelectedPersonaId = readSingleSearchParam(resolvedSearchParams.personaId);
+  const initialFocusOnly = resolvedSearchParams.focus === "1";
 
   let book;
   try {
@@ -38,42 +62,25 @@ export default async function AdminBookRelationReviewPage({
   }
 
   const reviewQueryService = createReviewQueryService();
-  const [allBooks, initialRelationEditor] = await Promise.all([
+  const [allBooks, initialRelationEditor, matrix] = await Promise.all([
     listBooks(),
-    reviewQueryService.getRelationEditorView({ bookId })
+    reviewQueryService.getRelationEditorView({ bookId }),
+    reviewQueryService.getPersonaChapterMatrix({ bookId })
   ]);
 
-  return (
-    <div className="flex gap-6 items-start">
-      <aside className="w-44 shrink-0">
-        <div className="sticky top-20">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 px-2 uppercase tracking-wider">
-            选择书籍
-          </h2>
-          <nav className="space-y-0.5">
-            {allBooks.map((b) => (
-              <Link
-                key={b.id}
-                href={`/admin/review/${b.id}/relations`}
-                className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors",
-                  b.id === bookId
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-foreground hover:bg-accent"
-                )}
-              >
-                <span className="truncate">{b.title}</span>
-                <span className="ml-2 text-xs text-muted-foreground/70 shrink-0 tabular-nums">
-                  {b.personaCount}
-                </span>
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </aside>
+  const personaItems = buildPersonaListItems(matrix);
+  const books = allBooks.map((b) => ({ id: b.id, title: b.title }));
 
-      <div className="flex-1 min-w-0 space-y-4">
-        <ReviewModeNav bookId={bookId} activeMode="relations" />
+  return (
+    <ReviewWorkbenchShell
+      bookId                  ={bookId}
+      bookTitle               ={book.title}
+      books                   ={books}
+      mode                    ="relations"
+      personaItems            ={personaItems}
+      initialSelectedPersonaId={initialSelectedPersonaId}
+      initialFocusOnly        ={initialFocusOnly}
+      renderMain={({ selectedPersonaId, focusOnly, onFocusOnlyChange }) => (
         <section
           className="relation-editor-server-page rounded-xl border bg-card p-6 shadow-sm"
           data-relation-editor-book-id={initialRelationEditor.bookId}
@@ -86,9 +93,12 @@ export default async function AdminBookRelationReviewPage({
             bookTitle={book.title}
             allBooks={allBooks}
             initialRelationEditor={initialRelationEditor}
+            selectedPersonaId={selectedPersonaId}
+            focusOnly={focusOnly}
+            onFocusOnlyChange={onFocusOnlyChange}
           />
         </section>
-      </div>
-    </div>
+      )}
+    />
   );
 }
