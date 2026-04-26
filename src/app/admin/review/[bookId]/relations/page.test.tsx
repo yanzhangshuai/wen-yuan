@@ -137,7 +137,6 @@ describe("AdminBookRelationReviewPage", () => {
     hoisted.getPersonaChapterMatrixMock.mockReset();
     hoisted.getRelationEditorViewMock.mockReset();
     hoisted.createReviewQueryServiceMock.mockClear();
-    vi.resetModules();
   });
 
   it("loads book, book switcher data, and the initial relation editor view", async () => {

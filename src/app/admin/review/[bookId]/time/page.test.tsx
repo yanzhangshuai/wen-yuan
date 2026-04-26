@@ -136,7 +136,6 @@ describe("AdminBookTimeReviewPage", () => {
     hoisted.getRelationEditorViewMock.mockReset();
     hoisted.getPersonaTimeMatrixMock.mockReset();
     hoisted.createReviewQueryServiceMock.mockClear();
-    vi.resetModules();
   });
 
   it("loads book, book switcher data, and forwards the initial persona-time matrix", async () => {
