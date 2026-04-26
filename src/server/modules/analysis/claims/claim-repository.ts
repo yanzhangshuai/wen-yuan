@@ -395,3 +395,11 @@ export function createClaimRepository(prisma: ClaimRepositoryClient): ClaimRepos
       prisma.$transaction(async (tx) => work(createClaimRepositoryFromTransaction(tx)))
   };
 }
+
+// 供已在事务内部的代码（如 sequential-review-output）直接使用，
+// 避免用 ClaimRepositoryClient 强转（ClaimRepositoryClient 含 $transaction，在嵌套事务中不应调用）。
+export function createClaimRepositoryForTransaction(
+  tx: ClaimRepositoryTransactionClient
+): ClaimRepository {
+  return createClaimRepositoryFromTransaction(tx);
+}

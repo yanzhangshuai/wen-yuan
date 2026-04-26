@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  BioCategory,
   ChapterSegmentType,
   ClaimSource,
   IdentityResolutionKind,
@@ -8,15 +9,19 @@ import {
   PersonaCandidateStatus
 } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
-import type { ClaimRepositoryClient } from "@/server/modules/analysis/claims/claim-repository";
-import { createClaimRepository } from "@/server/modules/analysis/claims/claim-repository";
+import type { ClaimRepositoryTransactionClient } from "@/server/modules/analysis/claims/claim-repository";
+import { createClaimRepositoryForTransaction } from "@/server/modules/analysis/claims/claim-repository";
 import {
   toClaimCreateData,
   validateClaimDraftByFamily,
-  type ClaimCreateDataByFamily
+  type ClaimCreateDataByFamily,
+  type ClaimDraftByFamily
 } from "@/server/modules/analysis/claims/claim-schemas";
 import { createClaimWriteService } from "@/server/modules/analysis/claims/claim-write-service";
 import { normalizeTextForEvidence } from "@/server/modules/analysis/evidence/offset-map";
+
+// evidence score 饱和阈值：引用次数达到此值时得分为 1.0
+const EVIDENCE_SCORE_SATURATION_COUNT = 10;
 
 export interface SequentialReviewOutputInput {
   bookId    : string;
@@ -34,17 +39,10 @@ export interface SequentialReviewOutputResult {
 
 type DeleteWhere = Record<string, unknown>;
 
-interface ReviewClaimDelegate {
-  deleteMany(args: { where: DeleteWhere }): Promise<{ count: number }>;
-  createMany(args: { data: unknown[] }): Promise<{ count: number }>;
-  findUnique: unknown;
-  update    : unknown;
-  create    : unknown;
-}
-
 // 最小化 tx 接口，避免直接依赖 Prisma 生成的 TransactionClient 类型。
-// entityMention 单独扩展以支持 create（取回生成 ID 用于 identity-resolution 关联）。
-interface SequentialReviewTx {
+// 继承 ClaimRepositoryTransactionClient 以确保 claim delegate 类型安全；
+// entityMention 额外扩展 create（取回生成 ID 用于 identity-resolution 关联）。
+interface SequentialReviewTx extends ClaimRepositoryTransactionClient {
   chapter: {
     findMany(args: {
       where : { bookId: string; id: { in: string[] } };
@@ -72,7 +70,7 @@ interface SequentialReviewTx {
       chapterId: string;
       personaId: string;
       chapterNo: number;
-      category : string;
+      category : BioCategory;
       title    : string | null;
       event    : string;
       persona  : { id: string; name: string };
@@ -144,19 +142,15 @@ interface SequentialReviewTx {
       };
     }): Promise<{ id: string }>;
   };
-  entityMention: {
+  // entityMention 在基类中为 CreateManyDelegate（只含 createMany + deleteMany），
+  // 此处额外增加 create 以取回生成 ID
+  entityMention: ClaimRepositoryTransactionClient["entityMention"] & {
     deleteMany(args: { where: DeleteWhere }): Promise<{ count: number }>;
     create(args: {
       data: ClaimCreateDataByFamily["ENTITY_MENTION"];
     }): Promise<{ id: string } & ClaimCreateDataByFamily["ENTITY_MENTION"]>;
   };
-  aliasClaim             : ReviewClaimDelegate;
-  eventClaim             : ReviewClaimDelegate;
-  relationClaim          : ReviewClaimDelegate;
-  timeClaim              : ReviewClaimDelegate;
-  identityResolutionClaim: ReviewClaimDelegate;
-  conflictFlag           : ReviewClaimDelegate;
-  $transaction           : unknown;
+  $transaction: unknown;
 }
 
 export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient = prisma) {
@@ -167,23 +161,26 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
       .$transaction(async (tx) => {
         const { bookId, runId, chapterIds } = input;
 
-        // 1. 加载目标章节
+        // 1. 加载目标章节（bookId + chapterIds 双重约束，防止加载越权章节）
         const chapters = await tx.chapter.findMany({
           where : { bookId, id: { in: chapterIds } },
           select: { id: true, no: true, title: true, content: true }
         });
 
+        // M2: 用数据库实际返回的章节 ID，防止调用方传入不属于本书的孤儿 ID
+        const validatedChapterIds = chapters.map(c => c.id);
+
         // 2. 加载遗留行（mentions / biographyRecords / relationships）
         const mentions = await tx.mention.findMany({
-          where  : { chapterId: { in: chapterIds } },
+          where  : { chapterId: { in: validatedChapterIds } },
           include: { persona: { select: { id: true, name: true } } }
         });
         const biographyRecords = await tx.biographyRecord.findMany({
-          where  : { chapterId: { in: chapterIds } },
+          where  : { chapterId: { in: validatedChapterIds } },
           include: { persona: { select: { id: true, name: true } } }
         });
         const relationships = await tx.relationship.findMany({
-          where  : { chapterId: { in: chapterIds } },
+          where  : { chapterId: { in: validatedChapterIds } },
           include: {
             source: { select: { id: true, name: true } },
             target: { select: { id: true, name: true } }
@@ -231,7 +228,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
               firstSeenChapterNo,
               lastSeenChapterNo,
               mentionCount,
-              evidenceScore  : Math.min(1, Math.max(0.1, mentionCount / 10))
+              evidenceScore  : Math.min(1, Math.max(0.1, mentionCount / EVIDENCE_SCORE_SATURATION_COUNT))
             }
           });
           candidateIdMap.set(personaId, candidate.id);
@@ -239,7 +236,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
 
         // 5. 逐章处理：segment → entity mentions → 章节级 evidence span → event/relation claims
         const claimService = createClaimWriteService(
-          createClaimRepository(tx as unknown as ClaimRepositoryClient)
+          createClaimRepositoryForTransaction(tx)
         );
         // mentionId → { entityMentionId, evidenceSpanId }
         const entityMentionInfoMap = new Map<string, { id: string; evidenceSpanId: string }>();
@@ -353,6 +350,24 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
               }
             });
             chapterEvidenceSpanId = chapterSpan.id;
+          } else {
+            // I4: 章节内容为空时，如果仍有遗留传记或关系行，发出结构化警告。
+            // 不创建零长度 evidence span（现有校验不允许 endOffset === 0）。
+            const bioCnt = biographyRecords.filter(b => b.chapterId === chapter.id).length;
+            const relCnt = relationships.filter(r => r.chapterId === chapter.id).length;
+            if (bioCnt > 0 || relCnt > 0) {
+              console.warn(
+                "[sequential-review-output] chapter has empty content but legacy rows exist; " +
+                "event/relation claims will be skipped for this chapter",
+                {
+                  bookId,
+                  runId,
+                  chapterId     : chapter.id,
+                  biographyCount: bioCnt,
+                  relationCount : relCnt
+                }
+              );
+            }
           }
 
           // 5e. Event claims（来自 biographyRecords）
@@ -381,7 +396,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
                 objectPersonaCandidateId : null,
                 locationText             : null,
                 timeHintId               : null,
-                eventCategory            : bio.category as never,
+                eventCategory            : bio.category,
                 narrativeLens            : NarrativeLens.SELF,
                 evidenceSpanIds          : [chapterEvidenceSpanId],
                 supersedesClaimId        : null,
@@ -437,7 +452,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
         }
 
         // 6. Identity-resolution claims（书级，对应所有 entity mentions）
-        const irDrafts: Array<Record<string, unknown>> = [];
+        const irDrafts: ClaimDraftByFamily["IDENTITY_RESOLUTION"][] = [];
         for (const mention of mentions) {
           const mentionInfo = entityMentionInfoMap.get(mention.id);
           const candidateId = candidateIdMap.get(mention.persona.id);

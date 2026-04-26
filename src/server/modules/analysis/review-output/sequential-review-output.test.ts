@@ -399,5 +399,83 @@ describe("createSequentialReviewOutputAdapter", () => {
         })
       ).rejects.toThrow("DB write failed");
     });
+
+    it("uses validatedChapterIds from DB result for legacy queries, ignoring orphan caller input", async () => {
+      const ORPHAN_ID = "99999999-9999-4999-8999-999999999999";
+      const tx = makeTx();
+      // chapter.findMany returns only CHAPTER_ID_1 even though ORPHAN_ID was in input
+      tx.chapter.findMany.mockResolvedValue([
+        { id: CHAPTER_ID_1, no: 1, title: "第一回", content: CHAPTER_CONTENT }
+      ]);
+
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+
+      await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1, ORPHAN_ID]
+      });
+
+      // Legacy queries must use the validated set (only CHAPTER_ID_1), not the raw input
+      expect(tx.mention.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            chapterId: { in: [CHAPTER_ID_1] }
+          })
+        })
+      );
+      expect(tx.biographyRecord.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            chapterId: { in: [CHAPTER_ID_1] }
+          })
+        })
+      );
+      expect(tx.relationship.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            chapterId: { in: [CHAPTER_ID_1] }
+          })
+        })
+      );
+    });
+
+    it("warns when chapter content is empty but legacy biography or relation rows exist", async () => {
+      const tx = makeTx();
+      tx.chapter.findMany.mockResolvedValue([
+        { id: CHAPTER_ID_1, no: 1, title: "第一回", content: "" }
+      ]);
+      // Keep bio and relation rows pointing to that chapter
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as never);
+
+      const result = await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1]
+      });
+
+      // event and relation claims must NOT be created (no evidence span)
+      expect(result.eventClaims).toBe(0);
+      expect(result.relationClaims).toBe(0);
+      expect(tx.eventClaim.createMany).not.toHaveBeenCalled();
+      expect(tx.relationClaim.createMany).not.toHaveBeenCalled();
+
+      // warn must have fired with structured context
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("empty content"),
+        expect.objectContaining({
+          bookId        : BOOK_ID,
+          runId         : RUN_ID,
+          chapterId     : CHAPTER_ID_1,
+          biographyCount: 1,
+          relationCount : 1
+        })
+      );
+      warnSpy.mockRestore();
+    });
   });
 });
