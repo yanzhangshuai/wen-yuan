@@ -154,6 +154,10 @@ interface SequentialReviewTx extends ClaimRepositoryTransactionClient {
   $transaction: unknown;
 }
 
+export interface BackfillInput {
+  bookId: string;
+}
+
 export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient = prisma) {
   async function writeBookReviewOutput(
     input: SequentialReviewOutputInput
@@ -513,5 +517,65 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
       });
   }
 
-  return { writeBookReviewOutput };
+  // prismaClient 宽类型访问器，用于直接查询（不在 $transaction 内）
+  type OuterClient = {
+    analysisJob: {
+      findFirst(args: {
+        where  : { bookId: string; architecture: string; status: string };
+        orderBy: { finishedAt: "desc" };
+        select : { id: true; bookId: true };
+      }): Promise<{ id: string; bookId: string } | null>;
+    };
+    analysisRun: {
+      findFirst(args: {
+        where  : { jobId: string };
+        orderBy: { startedAt: "desc" };
+        select : { id: true };
+      }): Promise<{ id: string } | null>;
+    };
+    chapter: {
+      findMany(args: {
+        where : { bookId: string };
+        select: { id: true };
+      }): Promise<Array<{ id: string }>>;
+    };
+  };
+
+  async function backfillLatestSucceededSequentialJob(
+    input: BackfillInput
+  ): Promise<SequentialReviewOutputResult> {
+    const { bookId } = input;
+    const outerClient = prismaClient as unknown as OuterClient;
+
+    const job = await outerClient.analysisJob.findFirst({
+      where  : { bookId, architecture: "sequential", status: "SUCCEEDED" },
+      orderBy: { finishedAt: "desc" },
+      select : { id: true, bookId: true }
+    });
+    if (!job) {
+      throw new Error(`No succeeded sequential analysis job found for book ${bookId}`);
+    }
+
+    const run = await outerClient.analysisRun.findFirst({
+      where  : { jobId: job.id },
+      orderBy: { startedAt: "desc" },
+      select : { id: true }
+    });
+    if (!run) {
+      throw new Error(`No analysis run found for job ${job.id}`);
+    }
+
+    const chapters = await outerClient.chapter.findMany({
+      where : { bookId },
+      select: { id: true }
+    });
+
+    return writeBookReviewOutput({
+      bookId,
+      runId     : run.id,
+      chapterIds: chapters.map(c => c.id)
+    });
+  }
+
+  return { writeBookReviewOutput, backfillLatestSucceededSequentialJob };
 }

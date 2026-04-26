@@ -145,9 +145,36 @@ function makeTx() {
   };
 }
 
-function makePrisma(tx: ReturnType<typeof makeTx>) {
+const JOB_ID = "00000000-0000-4000-8000-000000000001";
+
+function makePrisma(tx: ReturnType<typeof makeTx>, opts?: {
+  analysisJobResult?: { id: string; bookId: string } | null;
+  analysisRunResult?: { id: string } | null;
+  outerChapters?   : Array<{ id: string }>;
+}) {
   return {
-    $transaction: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(tx))
+    $transaction   : vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(tx)),
+    analysisJob    : {
+      findFirst: vi.fn().mockResolvedValue(
+        opts?.analysisJobResult !== undefined
+          ? opts.analysisJobResult
+          : { id: JOB_ID, bookId: BOOK_ID }
+      )
+    },
+    analysisRun    : {
+      findFirst: vi.fn().mockResolvedValue(
+        opts?.analysisRunResult !== undefined
+          ? opts.analysisRunResult
+          : { id: RUN_ID }
+      )
+    },
+    chapter        : {
+      findMany: vi.fn().mockResolvedValue(
+        opts?.outerChapters !== undefined
+          ? opts.outerChapters
+          : [{ id: CHAPTER_ID_1 }]
+      )
+    }
   };
 }
 
@@ -528,6 +555,73 @@ describe("createSequentialReviewOutputAdapter", () => {
       const firstCreate  = callOrder.indexOf("create");
       const lastDeleteMany = callOrder.lastIndexOf("deleteMany");
       expect(lastDeleteMany).toBeLessThan(firstCreate);
+    });
+  });
+
+  describe("backfillLatestSucceededSequentialJob", () => {
+    it("happy path: finds job, run, chapters, then delegates to writeBookReviewOutput", async () => {
+      const tx = makeTx();
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      const result = await adapter.backfillLatestSucceededSequentialJob({ bookId: BOOK_ID });
+
+      // job lookup: architecture=sequential, status=SUCCEEDED, ordered by finishedAt desc
+      expect(prismaClient.analysisJob.findFirst).toHaveBeenCalledWith({
+        where  : { bookId: BOOK_ID, architecture: "sequential", status: "SUCCEEDED" },
+        orderBy: { finishedAt: "desc" },
+        select : { id: true, bookId: true }
+      });
+
+      // analysisRun lookup: by job id, latest first
+      expect(prismaClient.analysisRun.findFirst).toHaveBeenCalledWith({
+        where  : { jobId: JOB_ID },
+        orderBy: { startedAt: "desc" },
+        select : { id: true }
+      });
+
+      // outer chapter lookup: all chapters for book
+      expect(prismaClient.chapter.findMany).toHaveBeenCalledWith({
+        where : { bookId: BOOK_ID },
+        select: { id: true }
+      });
+
+      // writeBookReviewOutput was triggered (evidenced by $transaction being called)
+      expect(prismaClient.$transaction).toHaveBeenCalled();
+
+      // result shape is SequentialReviewOutputResult
+      expect(result).toMatchObject({
+        personaCandidates       : expect.any(Number),
+        entityMentions          : expect.any(Number),
+        eventClaims             : expect.any(Number),
+        relationClaims          : expect.any(Number),
+        identityResolutionClaims: expect.any(Number)
+      });
+    });
+
+    it("throws when no succeeded sequential job exists for the book", async () => {
+      const tx = makeTx();
+      const prismaClient = makePrisma(tx, { analysisJobResult: null });
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      await expect(
+        adapter.backfillLatestSucceededSequentialJob({ bookId: BOOK_ID })
+      ).rejects.toThrow(`No succeeded sequential analysis job found for book ${BOOK_ID}`);
+
+      expect(prismaClient.analysisRun.findFirst).not.toHaveBeenCalled();
+      expect(prismaClient.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("throws when no analysis run exists for the found job", async () => {
+      const tx = makeTx();
+      const prismaClient = makePrisma(tx, { analysisRunResult: null });
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      await expect(
+        adapter.backfillLatestSucceededSequentialJob({ bookId: BOOK_ID })
+      ).rejects.toThrow(`No analysis run found for job ${JOB_ID}`);
+
+      expect(prismaClient.$transaction).not.toHaveBeenCalled();
     });
   });
 });
