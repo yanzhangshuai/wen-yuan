@@ -147,6 +147,29 @@ Projection：
 ### 2. Signatures
 
 ```ts
+interface ReviewOutputWriteInput {
+  architecture: AnalysisArchitecture;
+  bookId      : string;
+  runId       : string;
+  chapterIds  : string[];
+  jobId       : string;
+  scope       : string;
+}
+
+interface AnalysisReviewOutputWriter {
+  readonly architecture: AnalysisArchitecture;
+  write(input: ReviewOutputWriteInput): Promise<ReviewOutputWriterResult>;
+}
+
+// jobs 层唯一允许调用的正式输出层入口
+createReviewOutputCoordinator({
+  writers: [
+    createSequentialReviewOutputWriter(prisma),
+    createThreeStageReviewOutputWriter(prisma)
+  ],
+  rebuildProjection
+}).writeReviewOutput(input);
+
 // Server page 首屏入口
 createReviewQueryService().getPersonaChapterMatrix({ bookId });
 
@@ -226,6 +249,7 @@ group by review_state;
 | 用 `profiles` 数量判断审核中心是否应显示角色 | 审核中心角色来自统一 projection（`persona_chapter_facts`），legacy 人物档案不是该 UI 的数据源 |
 | 让审核中心按 `analysis_jobs.architecture` 分支读取 legacy/projection | 架构差异会泄漏到 UI；正确做法是在写入端统一最终审核输出 |
 | 把 sequential adapter 视为可删除的临时补丁 | 当前 adapter 是 sequential 的统一输出 writer；可以重构变薄，但不能移除统一输出层契约 |
+| 在 `runAnalysisJob` 中按 `architecture` 分支决定是否写审核输出 | jobs 层只允许调用 coordinator；每个架构的差异必须封装在 writer 内 |
 
 ---
 

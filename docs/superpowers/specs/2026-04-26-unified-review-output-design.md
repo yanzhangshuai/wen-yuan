@@ -27,9 +27,9 @@ The current failure mode is that a `sequential` job can complete with legacy out
 
 ## Recommended Approach
 
-Update the primary `sequential` path so it writes the unified claim-first output during analysis, then rebuilds projections at the end of the job.
+Promote unified review output into a formal output layer. Every analysis job calls the same output coordinator after pipeline success and before job success.
 
-This keeps the architecture choice at the analysis layer while keeping downstream review behavior architecture-neutral. The implementation must not make the review center branch on architecture; whichever architecture is selected must write the same review-output database shape.
+The formal output layer owns the final review submission contract. Each architecture registers one writer. Sequential currently implements its writer by normalizing legacy sequential rows into claims; threestage implements its writer by validating the claim-first stage output. The job runner calls the output coordinator for all architectures.
 
 ## Architecture
 
@@ -41,19 +41,23 @@ Admin selects architecture
   │    │    ├─ mentions
   │    │    ├─ biography_records
   │    │    └─ relationships
-  │    ├─ new sequential claim adapter
+  │    ├─ sequential review output writer
   │    │    ├─ persona_candidates
   │    │    ├─ alias/event/relation/time claims
   │    │    └─ identity_resolution_claims
-  │    └─ rebuildProjection(FULL_BOOK)
-  │         ├─ persona_chapter_facts
-  │         ├─ persona_time_facts
-  │         ├─ relationship_edges
-  │         └─ timeline_events
   │
    └─ threestage
        ├─ existing claim-first stages
-       └─ rebuildProjection(FULL_BOOK)
+       └─ threestage review output writer
+            └─ validates claim-first output exists
+
+Formal review output coordinator
+  ├─ writer.write({ architecture, bookId, runId, chapterIds, jobId, scope })
+  └─ rebuildProjection(FULL_BOOK)
+       ├─ persona_chapter_facts
+       ├─ persona_time_facts
+       ├─ relationship_edges
+       └─ timeline_events
 
 Review center
   └─ reads only unified projections and claim APIs
