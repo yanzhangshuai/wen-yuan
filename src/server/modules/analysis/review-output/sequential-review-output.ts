@@ -1,13 +1,14 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import type { BioCategory } from "@/generated/prisma/enums";
 import {
   AnalysisJobStatus,
-  BioCategory,
   ChapterSegmentType,
   ClaimSource,
   IdentityResolutionKind,
   MentionKind,
   NarrativeLens,
-  PersonaCandidateStatus
+  PersonaCandidateStatus,
+  TimeType
 } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import type { ClaimRepositoryTransactionClient } from "@/server/modules/analysis/claims/claim-repository";
@@ -36,6 +37,7 @@ export interface SequentialReviewOutputResult {
   eventClaims             : number;
   relationClaims          : number;
   identityResolutionClaims: number;
+  timeClaims              : number;
 }
 
 type DeleteWhere = Record<string, unknown>;
@@ -67,14 +69,15 @@ interface SequentialReviewTx extends ClaimRepositoryTransactionClient {
       where  : { chapterId: { in: string[] } };
       include: { persona: { select: { id: true; name: true } } };
     }): Promise<Array<{
-      id       : string;
-      chapterId: string;
-      personaId: string;
-      chapterNo: number;
-      category : BioCategory;
-      title    : string | null;
-      event    : string;
-      persona  : { id: string; name: string };
+      id         : string;
+      chapterId  : string;
+      personaId  : string;
+      chapterNo  : number;
+      category   : BioCategory;
+      title      : string | null;
+      event      : string;
+      virtualYear: string | null;
+      persona    : { id: string; name: string };
     }>>;
   };
   relationship: {
@@ -251,6 +254,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
         const entityMentionInfoMap = new Map<string, { id: string; evidenceSpanId: string }>();
         let entityMentionCount = 0;
         let eventClaimCount    = 0;
+        let timeClaimCount     = 0;
         let relationClaimCount = 0;
 
         for (const chapter of chapters) {
@@ -384,6 +388,80 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
             }
           }
 
+          // 5e-pre. 时序 claims：章节序 claim 作为默认时间锚，virtualYear 作为显式时间锚。
+          // 先删后建确保同一 run 重跑时不会残留旧 AI 时间事实。
+          let chapterOrderTimeClaimId: string | null = null;
+          // virtualYear label → timeClaimId
+          const explicitTimeClaimIdMap = new Map<string, string>();
+
+          if (chapterEvidenceSpanId !== null) {
+            await tx.timeClaim.deleteMany({
+              where: { bookId, chapterId: chapter.id, runId, source: ClaimSource.AI, derivedFromClaimId: null }
+            });
+
+            const chapterOrderDraft = validateClaimDraftByFamily("TIME", {
+              claimFamily        : "TIME",
+              bookId,
+              chapterId          : chapter.id,
+              runId,
+              source             : "AI",
+              reviewState        : "ACCEPTED",
+              confidence         : 1.0,
+              createdByUserId    : null,
+              reviewedByUserId   : null,
+              reviewNote         : null,
+              evidenceSpanIds    : [chapterEvidenceSpanId],
+              supersedesClaimId  : null,
+              derivedFromClaimId : null,
+              rawTimeText        : `第${chapter.no}章`,
+              timeType           : TimeType.CHAPTER_ORDER,
+              normalizedLabel    : `第${chapter.no}章`,
+              relativeOrderWeight: chapter.no,
+              chapterRangeStart  : chapter.no,
+              chapterRangeEnd    : chapter.no
+            });
+            const chapterOrderClaim = await tx.timeClaim.create({
+              data: toClaimCreateData<"TIME">(chapterOrderDraft)
+            });
+            chapterOrderTimeClaimId = chapterOrderClaim.id;
+            timeClaimCount++;
+
+            const chapterBiosForTime = biographyRecords.filter(b => b.chapterId === chapter.id);
+            for (const bio of chapterBiosForTime) {
+              if (bio.virtualYear && bio.virtualYear.trim().length > 0) {
+                const label = bio.virtualYear.trim();
+                if (!explicitTimeClaimIdMap.has(label)) {
+                  const explicitDraft = validateClaimDraftByFamily("TIME", {
+                    claimFamily        : "TIME",
+                    bookId,
+                    chapterId          : chapter.id,
+                    runId,
+                    source             : "AI",
+                    reviewState        : "ACCEPTED",
+                    confidence         : 0.8,
+                    createdByUserId    : null,
+                    reviewedByUserId   : null,
+                    reviewNote         : null,
+                    evidenceSpanIds    : [chapterEvidenceSpanId],
+                    supersedesClaimId  : null,
+                    derivedFromClaimId : null,
+                    rawTimeText        : label,
+                    timeType           : TimeType.UNCERTAIN,
+                    normalizedLabel    : label,
+                    relativeOrderWeight: chapter.no,
+                    chapterRangeStart  : chapter.no,
+                    chapterRangeEnd    : chapter.no
+                  });
+                  const explicitClaim = await tx.timeClaim.create({
+                    data: toClaimCreateData<"TIME">(explicitDraft)
+                  });
+                  explicitTimeClaimIdMap.set(label, explicitClaim.id);
+                  timeClaimCount++;
+                }
+              }
+            }
+          }
+
           // 5e. Event claims（来自 biographyRecords）
           const chapterBios = biographyRecords.filter(b => b.chapterId === chapter.id);
           if (chapterBios.length > 0 && chapterEvidenceSpanId !== null) {
@@ -409,15 +487,18 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
                 objectText               : bio.event,
                 objectPersonaCandidateId : null,
                 locationText             : null,
-                timeHintId               : null,
-                eventCategory            : bio.category,
-                narrativeLens            : NarrativeLens.SELF,
-                evidenceSpanIds          : [chapterEvidenceSpanId],
-                supersedesClaimId        : null,
-                derivedFromClaimId       : null,
-                createdByUserId          : null,
-                reviewedByUserId         : null,
-                reviewNote               : null
+                timeHintId               : (bio.virtualYear?.trim())
+                  ? (explicitTimeClaimIdMap.get(bio.virtualYear.trim()) ?? chapterOrderTimeClaimId)
+                  : chapterOrderTimeClaimId,
+
+                eventCategory     : bio.category,
+                narrativeLens     : NarrativeLens.SELF,
+                evidenceSpanIds   : [chapterEvidenceSpanId],
+                supersedesClaimId : null,
+                derivedFromClaimId: null,
+                createdByUserId   : null,
+                reviewedByUserId  : null,
+                reviewNote        : null
               }))
             });
             eventClaimCount += evtResult.createdCount;
@@ -452,7 +533,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
                 direction               : "UNDIRECTED",
                 effectiveChapterStart   : null,
                 effectiveChapterEnd     : null,
-                timeHintId              : null,
+                timeHintId              : chapterOrderTimeClaimId,
                 evidenceSpanIds         : [chapterEvidenceSpanId],
                 supersedesClaimId       : null,
                 derivedFromClaimId      : null,
@@ -513,7 +594,8 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
           entityMentions   : entityMentionCount,
           eventClaims      : eventClaimCount,
           relationClaims   : relationClaimCount,
-          identityResolutionClaims
+          identityResolutionClaims,
+          timeClaims       : timeClaimCount
         };
       });
   }

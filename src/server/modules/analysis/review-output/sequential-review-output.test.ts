@@ -18,6 +18,8 @@ const SPAN_ID_2    = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const CAND_ID_1    = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const CAND_ID_2    = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const EM_ID_1      = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const TIME_CLAIM_ID_1 = "f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0";
+const TIME_CLAIM_ID_2 = "f1f1f1f1-f1f1-4f1f-8f1f-f1f1f1f1f1f1";
 
 const CHAPTER_CONTENT = "范进中举了这件大事";
 
@@ -134,6 +136,8 @@ function makeTx() {
       findUnique: vi.fn(),
       update    : vi.fn(),
       create    : vi.fn()
+        .mockResolvedValueOnce({ id: TIME_CLAIM_ID_1 })
+        .mockResolvedValueOnce({ id: TIME_CLAIM_ID_2 })
     },
     conflictFlag: {
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -150,25 +154,25 @@ const JOB_ID = "00000000-0000-4000-8000-000000000001";
 function makePrisma(tx: ReturnType<typeof makeTx>, opts?: {
   analysisJobResult?: { id: string; bookId: string } | null;
   analysisRunResult?: { id: string } | null;
-  outerChapters?   : Array<{ id: string }>;
+  outerChapters?    : Array<{ id: string }>;
 }) {
   return {
-    $transaction   : vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(tx)),
-    analysisJob    : {
+    $transaction: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(tx)),
+    analysisJob : {
       findFirst: vi.fn().mockResolvedValue(
         opts?.analysisJobResult !== undefined
           ? opts.analysisJobResult
           : { id: JOB_ID, bookId: BOOK_ID }
       )
     },
-    analysisRun    : {
+    analysisRun: {
       findFirst: vi.fn().mockResolvedValue(
         opts?.analysisRunResult !== undefined
           ? opts.analysisRunResult
           : { id: RUN_ID }
       )
     },
-    chapter        : {
+    chapter: {
       findMany: vi.fn().mockResolvedValue(
         opts?.outerChapters !== undefined
           ? opts.outerChapters
@@ -196,7 +200,8 @@ describe("createSequentialReviewOutputAdapter", () => {
         entityMentions          : 1,
         eventClaims             : 1,
         relationClaims          : 1,
-        identityResolutionClaims: 1
+        identityResolutionClaims: 1,
+        timeClaims              : 1
       });
 
       // PersonaCandidate: 先删后建
@@ -411,7 +416,8 @@ describe("createSequentialReviewOutputAdapter", () => {
         entityMentions          : 0,
         eventClaims             : 0,
         relationClaims          : 0,
-        identityResolutionClaims: 0
+        identityResolutionClaims: 0,
+        timeClaims              : 0
       });
       expect(tx.personaCandidate.deleteMany).toHaveBeenCalledWith({
         where: { bookId: BOOK_ID, runId: RUN_ID }
@@ -433,6 +439,118 @@ describe("createSequentialReviewOutputAdapter", () => {
           chapterIds: [CHAPTER_ID_1]
         })
       ).rejects.toThrow("DB write failed");
+    });
+
+    it("writes accepted CHAPTER_ORDER time claim and threads timeHintId into event/relation claims", async () => {
+      const tx = makeTx();
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      const result = await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1]
+      });
+
+      // result must count time claims
+      expect(result.timeClaims).toBe(1);
+
+      // timeClaim.deleteMany must be called before timeClaim.create
+      expect(tx.timeClaim.deleteMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          bookId   : BOOK_ID,
+          chapterId: CHAPTER_ID_1,
+          runId    : RUN_ID,
+          source   : "AI"
+        })
+      });
+
+      // timeClaim.create must be called with an accepted CHAPTER_ORDER claim
+      expect(tx.timeClaim.create).toHaveBeenCalledOnce();
+      expect(tx.timeClaim.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            bookId           : BOOK_ID,
+            chapterId        : CHAPTER_ID_1,
+            runId            : RUN_ID,
+            source           : "AI",
+            reviewState      : "ACCEPTED",
+            timeType         : "CHAPTER_ORDER",
+            normalizedLabel  : "第1章",
+            chapterRangeStart: 1,
+            chapterRangeEnd  : 1
+          })
+        })
+      );
+
+      // event claims must carry the time claim id
+      expect(tx.eventClaim.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({ timeHintId: TIME_CLAIM_ID_1 })
+          ])
+        })
+      );
+
+      // relation claims must carry the chapter-order time claim id
+      expect(tx.relationClaim.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({ timeHintId: TIME_CLAIM_ID_1 })
+          ])
+        })
+      );
+    });
+
+    it("creates separate explicit time claim for biography with non-empty virtualYear", async () => {
+      const tx = makeTx();
+      tx.biographyRecord.findMany.mockResolvedValue([
+        {
+          id         : BIO_ID_1,
+          chapterId  : CHAPTER_ID_1,
+          personaId  : PERSONA_ID_1,
+          chapterNo  : 1,
+          category   : BioCategory.EXAM,
+          title      : "山东学道",
+          event      : "范进中了举人",
+          virtualYear: "嘉靖年间",
+          persona    : { id: PERSONA_ID_1, name: "范进" }
+        }
+      ]);
+
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      const result = await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1]
+      });
+
+      // two time claims: CHAPTER_ORDER + virtualYear
+      expect(result.timeClaims).toBe(2);
+      expect(tx.timeClaim.create).toHaveBeenCalledTimes(2);
+
+      // second call should be the explicit time claim for "嘉靖年间"
+      expect(tx.timeClaim.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            rawTimeText    : "嘉靖年间",
+            normalizedLabel: "嘉靖年间",
+            timeType       : "UNCERTAIN"
+          })
+        })
+      );
+
+      // event claim for bio with virtualYear should point to explicit time claim (TIME_CLAIM_ID_2)
+      expect(tx.eventClaim.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({ timeHintId: TIME_CLAIM_ID_2 })
+          ])
+        })
+      );
     });
 
     it("uses validatedChapterIds from DB result for legacy queries, ignoring orphan caller input", async () => {
