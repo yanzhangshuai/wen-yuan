@@ -39,6 +39,7 @@ import { PipelineStage } from "@/types/pipeline";
 import { createReviewOutputCoordinator } from "@/server/modules/analysis/review-output/coordinator";
 import { createSequentialReviewOutputWriter } from "@/server/modules/analysis/review-output/sequential-review-output";
 import { createThreeStageReviewOutputWriter } from "@/server/modules/analysis/review-output/threestage-review-output";
+import type { ReviewOutputWriteInput } from "@/server/modules/analysis/review-output/types";
 import {
   createProjectionBuilder,
   createProjectionRepository
@@ -482,14 +483,7 @@ export interface AnalysisJobRunnerReviewOutputOptions {
   /**
    * Formal review output layer. It must submit architecture-specific output and rebuild FULL_BOOK projection.
    */
-  writeReviewOutput?: (input: {
-    architecture: AnalysisArchitecture;
-    bookId      : string;
-    runId       : string;
-    chapterIds  : string[];
-    jobId       : string;
-    scope       : string;
-  }) => Promise<unknown>;
+  writeReviewOutput?: (input: ReviewOutputWriteInput) => Promise<unknown>;
 }
 
 type WriteReviewOutput = NonNullable<AnalysisJobRunnerReviewOutputOptions["writeReviewOutput"]>;

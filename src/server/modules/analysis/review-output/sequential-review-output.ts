@@ -672,7 +672,7 @@ function toSequentialWriterResult(result: SequentialReviewOutputResult): ReviewO
     relationClaims          : result.relationClaims,
     identityResolutionClaims: result.identityResolutionClaims,
     timeClaims              : result.timeClaims,
-    validatedExistingClaims : 0
+    validatedExistingClaims : 0 // sequential creates claims from scratch.
   };
 }
 

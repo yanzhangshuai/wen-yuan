@@ -7,7 +7,9 @@ export interface ReviewOutputWriteInput {
   bookId      : string;
   runId       : string;
   chapterIds  : string[];
+  /** Job identifier for audit-oriented writers and error context. */
   jobId       : string;
+  /** Original analysis scope; projection remains FULL_BOOK after writer success. */
   scope       : string;
 }
 

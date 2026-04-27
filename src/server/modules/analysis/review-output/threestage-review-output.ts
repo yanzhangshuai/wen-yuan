@@ -20,6 +20,7 @@ interface ThreeStageReviewOutputPrisma {
 export function createThreeStageReviewOutputWriter(
   prismaClient: PrismaClient = prisma
 ): AnalysisReviewOutputWriter {
+  // Prisma generated delegates are wider than this minimal structural seam.
   const db = prismaClient as unknown as ThreeStageReviewOutputPrisma;
 
   return {
