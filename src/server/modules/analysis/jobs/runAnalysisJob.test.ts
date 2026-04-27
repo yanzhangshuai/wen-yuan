@@ -177,8 +177,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     }
   };
 
-  const writeSequentialReviewOutput = vi.fn().mockResolvedValue({});
-  const rebuildReviewProjection = vi.fn().mockResolvedValue({});
+  const writeReviewOutput = vi.fn().mockResolvedValue({});
 
   const runner = createAnalysisJobRunner({
     analysisJob: {
@@ -198,8 +197,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     llmRawOutput    : prismaMock.llmRawOutput,
     $transaction    : transaction
   } as never, resolvedChapterAnalyzer, undefined, undefined, {
-    writeSequentialReviewOutput,
-    rebuildReviewProjection
+    writeReviewOutput
   });
 
   return {
@@ -230,8 +228,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     relationshipFindMany,
     personaFindMany,
     personaUpdateMany,
-    writeSequentialReviewOutput,
-    rebuildReviewProjection
+    writeReviewOutput
   };
 }
 
@@ -664,8 +661,7 @@ describe("analysis job runner", () => {
       architecture,
       run: mockPipelineRun
     }), {
-      writeSequentialReviewOutput: vi.fn().mockResolvedValue({}),
-      rebuildReviewProjection    : vi.fn().mockResolvedValue({})
+      writeReviewOutput: vi.fn().mockResolvedValue({})
     });
 
     analysisJobFindUnique
@@ -1715,7 +1711,7 @@ describe("analysis job runner", () => {
   });
 
   // review output / projection rebuild 测试组
-  it("sequential FULL_BOOK job writes sequential review output and rebuilds projection before job is marked succeeded", async () => {
+  it("sequential FULL_BOOK job routes review output through the formal coordinator before job is marked succeeded", async () => {
     const jobId = "job-review-output";
     const bookId = "book-1";
     const {
@@ -1723,13 +1719,11 @@ describe("analysis job runner", () => {
       analysisJobFindUnique,
       analysisJobUpdate,
       chapterFindMany,
-      writeSequentialReviewOutput,
-      rebuildReviewProjection
+      writeReviewOutput
     } = createRunnerContext();
 
     const calls: string[] = [];
-    writeSequentialReviewOutput.mockImplementation(async () => { calls.push("review-output"); });
-    rebuildReviewProjection.mockImplementation(async () => { calls.push("projection"); });
+    writeReviewOutput.mockImplementation(async () => { calls.push("review-output"); });
     analysisJobUpdate.mockImplementation(async (args: { data?: { status?: unknown } }) => {
       if (args.data?.status === AnalysisJobStatus.SUCCEEDED) {
         calls.push("job-succeeded");
@@ -1763,16 +1757,18 @@ describe("analysis job runner", () => {
 
     await runner.runAnalysisJobById(jobId);
 
-    expect(writeSequentialReviewOutput).toHaveBeenCalledWith({
+    expect(writeReviewOutput).toHaveBeenCalledWith({
+      architecture: "sequential",
       bookId,
       runId     : "run-observable",
-      chapterIds: ["chapter-1"]
+      chapterIds: ["chapter-1"],
+      jobId,
+      scope     : "FULL_BOOK"
     });
-    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
-    expect(calls).toEqual(["review-output", "projection", "job-succeeded"]);
+    expect(calls).toEqual(["review-output", "job-succeeded"]);
   });
 
-  it("projection rebuild failure rejects and does not call analysisJob.update with SUCCEEDED", async () => {
+  it("formal review output failure rejects and does not call analysisJob.update with SUCCEEDED", async () => {
     const jobId = "job-projection-fail";
     const bookId = "book-1";
     const {
@@ -1780,10 +1776,10 @@ describe("analysis job runner", () => {
       analysisJobFindUnique,
       analysisJobUpdate,
       chapterFindMany,
-      rebuildReviewProjection
+      writeReviewOutput
     } = createRunnerContext();
 
-    rebuildReviewProjection.mockRejectedValueOnce(new Error("projection rebuild failed"));
+    writeReviewOutput.mockRejectedValueOnce(new Error("projection rebuild failed"));
 
     analysisJobFindUnique
       .mockResolvedValueOnce({
@@ -1816,15 +1812,14 @@ describe("analysis job runner", () => {
     });
   });
 
-  it("threestage job does NOT invoke sequential adapter but still rebuilds projection", async () => {
+  it("threestage job routes review output through the same formal coordinator", async () => {
     const jobId = "job-threestage-projection";
     const bookId = "book-1";
     const {
       analysisJobFindUnique,
       chapterFindMany,
       analysisJobUpdate,
-      writeSequentialReviewOutput,
-      rebuildReviewProjection
+      writeReviewOutput
     } = createRunnerContext();
 
     const mockPipelineRun = vi.fn().mockResolvedValue({
@@ -1855,6 +1850,27 @@ describe("analysis job runner", () => {
       mention            : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
       relationship       : { findMany: vi.fn().mockResolvedValue([]) },
       persona            : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      analysisRun        : {
+        create   : vi.fn().mockResolvedValue({ id: "run-observable" }),
+        update   : vi.fn().mockResolvedValue({}),
+        findFirst: vi.fn().mockResolvedValue(null)
+      },
+      analysisStageRun: {
+        create: vi.fn().mockResolvedValue({ id: "stage-orchestration" }),
+        update: vi.fn().mockResolvedValue({})
+      },
+      llmRawOutput: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { id: 0 },
+          _sum  : {
+            promptTokens       : 0,
+            completionTokens   : 0,
+            totalTokens        : 0,
+            estimatedCostMicros: BigInt(0)
+          }
+        }),
+        create: vi.fn().mockResolvedValue({ id: "raw-observable" })
+      },
       // threestage 架构触发 resolveThreeStageAiClient，需要提供策略配置相关 mock
       modelStrategyConfig: { findFirst: vi.fn().mockResolvedValue(null) },
       aiModel            : {
@@ -1882,8 +1898,7 @@ describe("analysis job runner", () => {
       architecture: "threestage",
       run         : mockPipelineRun
     }), {
-      writeSequentialReviewOutput,
-      rebuildReviewProjection
+      writeReviewOutput
     });
 
     analysisJobFindUnique
@@ -1912,8 +1927,14 @@ describe("analysis job runner", () => {
 
     await runner.runAnalysisJobById(jobId);
 
-    expect(writeSequentialReviewOutput).not.toHaveBeenCalled();
-    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
+    expect(writeReviewOutput).toHaveBeenCalledWith({
+      architecture: "threestage",
+      bookId,
+      runId     : "run-observable",
+      chapterIds: ["chapter-1"],
+      jobId,
+      scope     : "FULL_BOOK"
+    });
   });
 
   // 用例语义：CHAPTER_RANGE 局部重跑后，只写入被选中章节的 review output，
@@ -1925,8 +1946,7 @@ describe("analysis job runner", () => {
       runner,
       analysisJobFindUnique,
       chapterFindMany,
-      writeSequentialReviewOutput,
-      rebuildReviewProjection
+      writeReviewOutput
     } = createRunnerContext();
 
     analysisJobFindUnique
@@ -1958,14 +1978,15 @@ describe("analysis job runner", () => {
 
     await runner.runAnalysisJobById(jobId);
 
-    // sequential adapter 仅对被选中的章节（第 2、3 章）写入 review output
-    expect(writeSequentialReviewOutput).toHaveBeenCalledWith({
+    // formal output layer receives the selected chapters; it owns writer + FULL_BOOK projection.
+    expect(writeReviewOutput).toHaveBeenCalledWith({
+      architecture: "sequential",
       bookId,
       runId     : "run-observable",
-      chapterIds: ["chapter-2", "chapter-3"]
+      chapterIds: ["chapter-2", "chapter-3"],
+      jobId,
+      scope     : "CHAPTER_RANGE"
     });
-    // 局部重跑后仍以 FULL_BOOK 视角重建整书 projection，保证审核中心视图一致
-    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
   });
 
   it("sequential job rejects and does not mark SUCCEEDED when analysisRunId is null", async () => {
@@ -1977,7 +1998,7 @@ describe("analysis job runner", () => {
       analysisJobFindUnique,
       analysisJobUpdate,
       chapterFindMany,
-      writeSequentialReviewOutput
+      writeReviewOutput
     } = createRunnerContext();
 
     // analysisRun.create が null の id を返すことで createJobRun が { id: null } を返す
@@ -2010,7 +2031,7 @@ describe("analysis job runner", () => {
     await expect(runner.runAnalysisJobById(jobId)).rejects.toThrow(
       `解析任务 ${jobId} 缺少 analysisRunId，无法生成审核输出`
     );
-    expect(writeSequentialReviewOutput).not.toHaveBeenCalled();
+    expect(writeReviewOutput).not.toHaveBeenCalled();
     expect(analysisJobUpdate).not.toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED }) })
     );
