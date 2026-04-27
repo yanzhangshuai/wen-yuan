@@ -542,3 +542,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Migrate Trellis to v0.5.0-beta.14
+
+**Date**: 2026-04-27
+**Task**: Migrate Trellis to v0.5.0-beta.14
+**Branch**: `dev_2`
+
+### Summary
+
+Migrated main repo and both worktrees (kb-refactor, feature/03-23-wen-yuan-prd) from 0.3.6/0.4.0 to 0.5.0-beta.14. Skills renamed to trellis-* prefix, retired deprecated commands/agents, dropped Multi-Agent Pipeline, added inject-workflow-state.py hook, fixed dead check.jsonl reference in threestage task.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4bf23d2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

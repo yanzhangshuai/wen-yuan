@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
-- **Last Active**: 2026-04-16
+- **Total Sessions**: 10
+- **Last Active**: 2026-04-27
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~544 | Active |
+| `journal-1.md` | ~577 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-04-27 | Migrate Trellis to v0.5.0-beta.14 | `4bf23d2` | `dev_2` |
 | 9 | 2026-04-16 | 知识库模型生成、批量操作 UI 与 Prompt 规则链路修复归档 | `45ede02`, `e074d28`, `edc7264`, `ebeddc6` | `dev` |
 | 8 | 2026-04-16 | 技术债清理：移除僵尸脚本与 ExtractionRule 残留 | `c9bff4f` | `dev` |
 | 7 | 2026-04-15 | 前端知识库 UI 对齐与僵尸文件清理 | `c619366` | `dev` |
