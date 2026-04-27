@@ -617,7 +617,7 @@ describe("createReviewQueryService", () => {
       ]
     });
     const service = createReviewQueryService(prismaMock as never, {
-      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+      relationTypeCatalogLoader: relationTypeCatalogLoader
     });
 
     const result = await service.getPersonaChapterMatrix({ bookId: BOOK_ID });
@@ -1401,7 +1401,7 @@ describe("createReviewQueryService", () => {
       ]
     });
     const service = createReviewQueryService(prismaMock as never, {
-      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+      relationTypeCatalogLoader: relationTypeCatalogLoader
     });
 
     const result = await service.getRelationEditorView({
@@ -1571,7 +1571,7 @@ describe("createReviewQueryService", () => {
       ]
     });
     const service = createReviewQueryService(prismaMock as never, {
-      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+      relationTypeCatalogLoader: relationTypeCatalogLoader
     });
 
     const teacherOnly = await service.getRelationEditorView({

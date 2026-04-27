@@ -30,11 +30,11 @@ vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
 // 通过 mock 避免引入数据库查询与 encryption 依赖，不影响既有 sequential 架构测试。
 vi.mock(
   "@/server/modules/analysis/services/ModelStrategyResolver",
-  async (importOriginal) => {
-    const actual = await importOriginal() as Record<string, unknown>;
+  async (importOriginal: () => Promise<Record<string, unknown>>) => {
+    const actual = await importOriginal();
     const mockResolverInstance = {
-      preloadStrategy : vi.fn().mockResolvedValue(new Map()),
-      resolveForStage : vi.fn().mockResolvedValue({
+      preloadStrategy: vi.fn().mockResolvedValue(new Map()),
+      resolveForStage: vi.fn().mockResolvedValue({
         modelId    : "mock-model-id",
         provider   : "deepseek",
         modelName  : "deepseek-chat",
@@ -96,7 +96,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const bookUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
   const transaction = vi.fn(async (operationsOrCallback: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>)) => {
     if (typeof operationsOrCallback === "function") {
-      return await operationsOrCallback({} as never);
+      return await operationsOrCallback({});
     }
     return await Promise.all(operationsOrCallback);
   });
@@ -197,7 +197,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     analysisStageRun: prismaMock.analysisStageRun,
     llmRawOutput    : prismaMock.llmRawOutput,
     $transaction    : transaction
-  } as never, resolvedChapterAnalyzer as never, undefined, undefined, {
+  } as never, resolvedChapterAnalyzer, undefined, undefined, {
     writeSequentialReviewOutput,
     rebuildReviewProjection
   });
@@ -638,7 +638,7 @@ describe("analysis job runner", () => {
       mention     : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
       relationship: { findMany: vi.fn().mockResolvedValue([]) },
       persona     : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
-      analysisRun: {
+      analysisRun : {
         create   : vi.fn().mockResolvedValue({ id: "run-warning-test" }),
         update   : vi.fn().mockResolvedValue({}),
         findFirst: vi.fn().mockResolvedValue(null)
@@ -660,7 +660,7 @@ describe("analysis job runner", () => {
       getTitleOnlyPersonaCount: vi.fn().mockResolvedValue(0),
       validateChapterResult   : vi.fn(),
       runGrayZoneArbitration  : vi.fn().mockResolvedValue(0)
-    } as never, undefined, (architecture) => ({
+    }, undefined, (architecture) => ({
       architecture,
       run: mockPipelineRun
     }), {
@@ -1851,13 +1851,13 @@ describe("analysis job runner", () => {
         update    : vi.fn(),
         updateMany: vi.fn().mockResolvedValue({ count: 1 })
       },
-      profile             : { findMany: vi.fn().mockResolvedValue([]) },
-      mention             : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
-      relationship        : { findMany: vi.fn().mockResolvedValue([]) },
-      persona             : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      profile            : { findMany: vi.fn().mockResolvedValue([]) },
+      mention            : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
+      relationship       : { findMany: vi.fn().mockResolvedValue([]) },
+      persona            : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       // threestage 架构触发 resolveThreeStageAiClient，需要提供策略配置相关 mock
-      modelStrategyConfig : { findFirst: vi.fn().mockResolvedValue(null) },
-      aiModel             : {
+      modelStrategyConfig: { findFirst: vi.fn().mockResolvedValue(null) },
+      aiModel            : {
         findMany : vi.fn().mockResolvedValue([]),
         findFirst: vi.fn().mockResolvedValue({
           id       : "model-mock",
@@ -1878,7 +1878,7 @@ describe("analysis job runner", () => {
       getTitleOnlyPersonaCount: vi.fn().mockResolvedValue(0),
       validateChapterResult   : vi.fn(),
       runGrayZoneArbitration  : vi.fn().mockResolvedValue(0)
-    } as never, undefined, (_architecture: unknown) => ({
+    }, undefined, (_architecture: unknown) => ({
       architecture: "threestage",
       run         : mockPipelineRun
     }), {

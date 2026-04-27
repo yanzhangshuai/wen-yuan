@@ -895,7 +895,131 @@ git commit -m "chore: add sequential review output backfill"
 
 ---
 
-## Task 5: Review Center Verification
+## Task 5: Sequential Time Review Output
+
+**Files:**
+- Modify: `src/server/modules/analysis/review-output/sequential-review-output.ts`
+- Test: `src/server/modules/analysis/review-output/sequential-review-output.test.ts`
+
+- [ ] **Step 1: Write failing time-output test**
+
+Add a test proving sequential review output writes accepted `TIME` claims and links event/relation claims through `timeHintId`:
+
+```ts
+it("writes time claims and links events and relations so personas can be reviewed by time", async () => {
+  const tx = makeTx();
+  tx.timeClaim.createMany.mockResolvedValueOnce({ count: 1 });
+  const prismaClient = makePrisma(tx);
+  const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+  const result = await adapter.writeBookReviewOutput({
+    bookId    : BOOK_ID,
+    runId     : RUN_ID,
+    chapterIds: [CHAPTER_ID_1]
+  });
+
+  expect(result.timeClaims).toBe(1);
+  expect(tx.timeClaim.createMany).toHaveBeenCalledWith({
+    data: [expect.objectContaining({
+      bookId,
+      chapterId          : CHAPTER_ID_1,
+      runId              : RUN_ID,
+      source             : "AI",
+      reviewState        : "ACCEPTED",
+      rawTimeText        : "第1章",
+      normalizedLabel    : "第1章",
+      timeType           : "CHAPTER_ORDER",
+      relativeOrderWeight: 1,
+      chapterRangeStart  : 1,
+      chapterRangeEnd    : 1
+    })]
+  });
+  expect(tx.eventClaim.createMany).toHaveBeenCalledWith({
+    data: [expect.objectContaining({ timeHintId: expect.any(String) })]
+  });
+  expect(tx.relationClaim.createMany).toHaveBeenCalledWith({
+    data: [expect.objectContaining({ timeHintId: expect.any(String) })]
+  });
+});
+```
+
+If the existing mocks need deterministic time claim IDs, adjust the repository mock to return created time claim rows using `create` or capture generated IDs in the adapter before `createMany`.
+
+- [ ] **Step 2: Run the failing time-output test**
+
+Run:
+
+```bash
+pnpm vitest run src/server/modules/analysis/review-output/sequential-review-output.test.ts -t "time claims"
+```
+
+Expected: FAIL because `timeClaims` is not returned and event/relation `timeHintId` is currently `null`.
+
+- [ ] **Step 3: Implement time claim generation**
+
+In `sequential-review-output.ts`:
+
+1. Extend `SequentialReviewOutputResult` with:
+
+```ts
+timeClaims: number;
+```
+
+2. For each analyzed chapter, create accepted time claims before event/relation claims:
+   - Prefer explicit legacy biography `virtualYear` when present:
+     - `rawTimeText`: `virtualYear`
+     - `normalizedLabel`: `virtualYear`
+     - `timeType`: `"UNCERTAIN"` unless a stronger existing enum mapping already exists
+     - `relativeOrderWeight`: `chapter.no`
+     - `chapterRangeStart`: `chapter.no`
+     - `chapterRangeEnd`: `chapter.no`
+   - Always create a chapter-order fallback time claim:
+     - `rawTimeText`: `第${chapter.no}章`
+     - `normalizedLabel`: `第${chapter.no}章`
+     - `timeType`: `"CHAPTER_ORDER"`
+     - `relativeOrderWeight`: `chapter.no`
+     - `chapterRangeStart`: `chapter.no`
+     - `chapterRangeEnd`: `chapter.no`
+
+3. Persist time claims through `claimService.writeClaimBatch({ family: "TIME", scope: { bookId, chapterId, runId, stageKey: "stage_a_extraction" }, drafts })`.
+
+4. Link event claims:
+   - If a biography has `virtualYear`, use the matching explicit time claim ID.
+   - Otherwise use the chapter-order time claim ID.
+
+5. Link relation claims to the chapter-order time claim ID.
+
+6. Keep claims `ACCEPTED` because they are generated from legacy sequential committed output.
+
+- [ ] **Step 4: Add projection-level confidence test**
+
+Add a focused test using projection helpers or builder proving an accepted event with accepted identity and accepted time claim produces both:
+- `persona_chapter_facts`
+- `persona_time_facts` or `timeline_events`
+
+Use existing projection tests if they already have helpers; otherwise keep this as an adapter test asserting `timeHintId` is non-null and time claim writes are accepted.
+
+- [ ] **Step 5: Run adapter tests and type-check**
+
+Run:
+
+```bash
+pnpm vitest run src/server/modules/analysis/review-output/sequential-review-output.test.ts
+pnpm type-check
+```
+
+Expected: PASS.
+
+- [ ] **Step 6: Commit Task 5**
+
+```bash
+git add src/server/modules/analysis/review-output/sequential-review-output.ts src/server/modules/analysis/review-output/sequential-review-output.test.ts docs/superpowers/plans/2026-04-26-unified-review-output.md
+git commit -m "feat: add sequential time review output"
+```
+
+---
+
+## Task 6: Review Center Verification
 
 **Files:**
 - Test: `src/server/modules/review/evidence-review/review-query-service.test.ts`
@@ -956,7 +1080,7 @@ git commit -m "test: cover review center projection source"
 
 ---
 
-## Task 6: Final Validation
+## Task 7: Final Validation
 
 **Files:**
 - Modify: `.trellis/spec/backend/analysis-pipeline.md` only if code diverged from the existing spec.

@@ -44,15 +44,15 @@ function makeTx() {
     biographyRecord: {
       findMany: vi.fn().mockResolvedValue([
         {
-          id       : BIO_ID_1,
-          chapterId: CHAPTER_ID_1,
-          personaId: PERSONA_ID_1,
-          chapterNo: 1,
-          category : BioCategory.EXAM,
-          title    : "山东学道",
-          event    : "范进中了举人",
+          id         : BIO_ID_1,
+          chapterId  : CHAPTER_ID_1,
+          personaId  : PERSONA_ID_1,
+          chapterNo  : 1,
+          category   : BioCategory.EXAM,
+          title      : "山东学道",
+          event      : "范进中了举人",
           virtualYear: null,
-          persona  : { id: PERSONA_ID_1, name: "范进" }
+          persona    : { id: PERSONA_ID_1, name: "范进" }
         }
       ])
     },
