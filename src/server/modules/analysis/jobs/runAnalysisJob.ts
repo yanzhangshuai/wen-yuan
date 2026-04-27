@@ -36,6 +36,11 @@ import type { SequentialPipelineDependencies } from "@/server/modules/analysis/p
 import type { ThreeStagePipelineDependencies } from "@/server/modules/analysis/pipelines/threestage/ThreeStagePipeline";
 import { createAiProviderClient, type AiProviderClient } from "@/server/providers/ai";
 import { PipelineStage } from "@/types/pipeline";
+import { createSequentialReviewOutputAdapter } from "@/server/modules/analysis/review-output/sequential-review-output";
+import {
+  createProjectionBuilder,
+  createProjectionRepository
+} from "@/server/modules/review/evidence-review/projections";
 
 /**
  * 文件定位（Next.js 服务端任务执行层）：
@@ -468,6 +473,25 @@ function createDefaultChapterAnalyzerFactory(prismaClient: PrismaClient): Chapte
   };
 }
 
+/**
+ * 审核输出构建器选项：允许测试或消费者注入轻量 stub，替换真实的 review output / projection 实现。
+ */
+export interface AnalysisJobRunnerReviewOutputOptions {
+  /**
+   * 将顺序架构章节分析结果写入统一 review output 表的适配器。
+   * 仅在 architecture === "sequential" 时调用。
+   */
+  writeSequentialReviewOutput?: (input: { bookId: string; runId: string; chapterIds: string[] }) => Promise<unknown>;
+  /**
+   * 重建整书 projection 读模型。
+   *
+   * 无论任务范围（FULL_BOOK / CHAPTER_RANGE / CHAPTER_LIST）或架构如何，均在每次任务完成后调用：
+   * projection 是基于全书已接受认领构建的读模型；局部重跑后，未触及章节保留现有认领，
+   * 已触及章节替换为新认领，两者须合并投影为一个一致的全书视图供审核中心使用。
+   */
+  rebuildReviewProjection?: (input: { kind: "FULL_BOOK"; bookId: string }) => Promise<unknown>;
+}
+
 export function createAnalysisJobRunner(
   prismaClient: PrismaClient = prisma,
   chapterAnalyzer?: ChapterAnalyzer,
@@ -475,8 +499,15 @@ export function createAnalysisJobRunner(
   pipelineFactory: (
     architecture: AnalysisArchitecture,
     dependencies: AnalysisPipelineFactoryDependencies
-  ) => AnalysisPipeline = createPipeline
+  ) => AnalysisPipeline = createPipeline,
+  options: AnalysisJobRunnerReviewOutputOptions = {}
 ) {
+  const resolvedWriteSequentialReviewOutput =
+    options.writeSequentialReviewOutput
+    ?? createSequentialReviewOutputAdapter(prismaClient).writeBookReviewOutput;
+  const resolvedRebuildReviewProjection =
+    options.rebuildReviewProjection
+    ?? createProjectionBuilder({ repository: createProjectionRepository(prismaClient) }).rebuildProjection;
   const resolvedAnalyzerFactory = chapterAnalyzerFactory ?? createDefaultChapterAnalyzerFactory(prismaClient);
   const runService: AnalysisRunService = createAnalysisRunService(prismaClient);
   const stageRunService: AnalysisStageRunService = createAnalysisStageRunService(prismaClient);
@@ -880,6 +911,34 @@ export function createAnalysisJobRunner(
         await runService.cancelRun(analysisRunId);
         return;
       }
+
+      // 落地审核中心所需的统一读模型：
+      // 1. sequential 架构先将本次章节认领写入 review output 表，threestage 架构跳过此步。
+      // 2. 无论任务范围（FULL_BOOK / CHAPTER_RANGE / CHAPTER_LIST）或架构，均重建 FULL_BOOK projection：
+      //    projection 是基于全书已接受认领构建的只读视图；局部重跑后，未触及章节保留现有认领，
+      //    已触及章节由新认领替换，两者须合并为一个一致的全书视图供审核中心使用。
+      //    任一步骤失败则不推进任务终态，保证审核中心与分析结果保持一致。
+      if (architecture === "sequential") {
+        if (analysisRunId === null) {
+          throw new Error(`解析任务 ${runningJob.id} 缺少 analysisRunId，无法生成审核输出`);
+        }
+        await resolvedWriteSequentialReviewOutput({
+          bookId    : runningJob.bookId,
+          runId     : analysisRunId,
+          chapterIds: chapters.map(chapter => chapter.id)
+        });
+      }
+      await resolvedRebuildReviewProjection({ kind: "FULL_BOOK", bookId: runningJob.bookId });
+      console.info(
+        "[analysis.runner] review.output.projection.completed",
+        JSON.stringify({
+          jobId       : runningJob.id,
+          bookId      : runningJob.bookId,
+          scope       : runningJob.scope,
+          architecture,
+          chapterCount: chapters.length
+        })
+      );
 
       const warningSummary = formatPipelineWarningSummary(pipelineResult);
 

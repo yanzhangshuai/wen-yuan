@@ -26,6 +26,35 @@ vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
   loadFullRuntimeKnowledge: vi.fn()
 }));
 
+// resolveThreeStageAiClient 内部调用 createModelStrategyResolver，
+// 通过 mock 避免引入数据库查询与 encryption 依赖，不影响既有 sequential 架构测试。
+vi.mock(
+  "@/server/modules/analysis/services/ModelStrategyResolver",
+  async (importOriginal: () => Promise<Record<string, unknown>>) => {
+    const actual = await importOriginal();
+    const mockResolverInstance = {
+      preloadStrategy: vi.fn().mockResolvedValue(new Map()),
+      resolveForStage: vi.fn().mockResolvedValue({
+        modelId    : "mock-model-id",
+        provider   : "deepseek",
+        modelName  : "deepseek-chat",
+        displayName: "DeepSeek Chat",
+        baseUrl    : "https://api.deepseek.com",
+        apiKey     : "sk-mock-plain",
+        source     : "SYSTEM_DEFAULT",
+        params     : {}
+      }),
+      resolveFallback : vi.fn(),
+      resolveWithRetry: vi.fn()
+    };
+    return {
+      ...actual,
+      createModelStrategyResolver: vi.fn(() => mockResolverInstance),
+      modelStrategyResolver      : mockResolverInstance
+    };
+  }
+);
+
 function createRuntimeKnowledge(overrides: Partial<FullRuntimeKnowledge> = {}): FullRuntimeKnowledge {
   return {
     bookId              : "book-1",
@@ -67,7 +96,7 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
   const bookUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
   const transaction = vi.fn(async (operationsOrCallback: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>)) => {
     if (typeof operationsOrCallback === "function") {
-      return await operationsOrCallback({} as never);
+      return await operationsOrCallback({});
     }
     return await Promise.all(operationsOrCallback);
   });
@@ -148,6 +177,9 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     }
   };
 
+  const writeSequentialReviewOutput = vi.fn().mockResolvedValue({});
+  const rebuildReviewProjection = vi.fn().mockResolvedValue({});
+
   const runner = createAnalysisJobRunner({
     analysisJob: {
       findUnique: analysisJobFindUnique,
@@ -165,7 +197,10 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     analysisStageRun: prismaMock.analysisStageRun,
     llmRawOutput    : prismaMock.llmRawOutput,
     $transaction    : transaction
-  } as never, resolvedChapterAnalyzer as never);
+  } as never, resolvedChapterAnalyzer, undefined, undefined, {
+    writeSequentialReviewOutput,
+    rebuildReviewProjection
+  });
 
   return {
     runner,
@@ -194,7 +229,9 @@ function createRunnerContext(options: { withValidation?: boolean } = {}) {
     mentionFindMany,
     relationshipFindMany,
     personaFindMany,
-    personaUpdateMany
+    personaUpdateMany,
+    writeSequentialReviewOutput,
+    rebuildReviewProjection
   };
 }
 
@@ -601,6 +638,21 @@ describe("analysis job runner", () => {
       mention     : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
       relationship: { findMany: vi.fn().mockResolvedValue([]) },
       persona     : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      analysisRun : {
+        create   : vi.fn().mockResolvedValue({ id: "run-warning-test" }),
+        update   : vi.fn().mockResolvedValue({}),
+        findFirst: vi.fn().mockResolvedValue(null)
+      },
+      analysisStageRun: {
+        create: vi.fn().mockResolvedValue({ id: "stage-run-warning-test" }),
+        update: vi.fn().mockResolvedValue({})
+      },
+      llmRawOutput: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCostMicros: BigInt(0) }
+        }),
+        create: vi.fn().mockResolvedValue({ id: "raw-warning-test" })
+      },
       $transaction: vi.fn(async (ops: Promise<unknown>[]) => await Promise.all(ops))
     } as never, {
       analyzeChapter          : vi.fn(),
@@ -608,10 +660,13 @@ describe("analysis job runner", () => {
       getTitleOnlyPersonaCount: vi.fn().mockResolvedValue(0),
       validateChapterResult   : vi.fn(),
       runGrayZoneArbitration  : vi.fn().mockResolvedValue(0)
-    } as never, undefined, (architecture) => ({
+    }, undefined, (architecture) => ({
       architecture,
       run: mockPipelineRun
-    }));
+    }), {
+      writeSequentialReviewOutput: vi.fn().mockResolvedValue({}),
+      rebuildReviewProjection    : vi.fn().mockResolvedValue({})
+    });
 
     analysisJobFindUnique
       .mockResolvedValueOnce({
@@ -1657,6 +1712,308 @@ describe("analysis job runner", () => {
 
     await expect(runner.runNextAnalysisJob()).resolves.toBe("queued-job");
     await expect(runner.runNextAnalysisJob()).resolves.toBeNull();
+  });
+
+  // review output / projection rebuild 测试组
+  it("sequential FULL_BOOK job writes sequential review output and rebuilds projection before job is marked succeeded", async () => {
+    const jobId = "job-review-output";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      analysisJobUpdate,
+      chapterFindMany,
+      writeSequentialReviewOutput,
+      rebuildReviewProjection
+    } = createRunnerContext();
+
+    const calls: string[] = [];
+    writeSequentialReviewOutput.mockImplementation(async () => { calls.push("review-output"); });
+    rebuildReviewProjection.mockImplementation(async () => { calls.push("projection"); });
+    analysisJobUpdate.mockImplementation(async (args: { data?: { status?: unknown } }) => {
+      if (args.data?.status === AnalysisJobStatus.SUCCEEDED) {
+        calls.push("job-succeeded");
+      }
+      return {};
+    });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await runner.runAnalysisJobById(jobId);
+
+    expect(writeSequentialReviewOutput).toHaveBeenCalledWith({
+      bookId,
+      runId     : "run-observable",
+      chapterIds: ["chapter-1"]
+    });
+    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
+    expect(calls).toEqual(["review-output", "projection", "job-succeeded"]);
+  });
+
+  it("projection rebuild failure rejects and does not call analysisJob.update with SUCCEEDED", async () => {
+    const jobId = "job-projection-fail";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      analysisJobUpdate,
+      chapterFindMany,
+      rebuildReviewProjection
+    } = createRunnerContext();
+
+    rebuildReviewProjection.mockRejectedValueOnce(new Error("projection rebuild failed"));
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await expect(runner.runAnalysisJobById(jobId)).rejects.toThrow("projection rebuild failed");
+    expect(analysisJobUpdate).not.toHaveBeenCalledWith({
+      where: { id: jobId },
+      data : expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
+    });
+  });
+
+  it("threestage job does NOT invoke sequential adapter but still rebuilds projection", async () => {
+    const jobId = "job-threestage-projection";
+    const bookId = "book-1";
+    const {
+      analysisJobFindUnique,
+      chapterFindMany,
+      analysisJobUpdate,
+      writeSequentialReviewOutput,
+      rebuildReviewProjection
+    } = createRunnerContext();
+
+    const mockPipelineRun = vi.fn().mockResolvedValue({
+      completedChapters: 1,
+      failedChapters   : 0,
+      warnings         : [],
+      stageSummaries   : []
+    });
+    const runner = createAnalysisJobRunner({
+      analysisJob: {
+        findUnique: analysisJobFindUnique,
+        findFirst : vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update    : analysisJobUpdate
+      },
+      chapter: {
+        findMany  : chapterFindMany,
+        findUnique: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update    : vi.fn()
+      },
+      book: {
+        findUnique: vi.fn().mockResolvedValue({ title: "儒林外史" }),
+        update    : vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 })
+      },
+      profile            : { findMany: vi.fn().mockResolvedValue([]) },
+      mention            : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
+      relationship       : { findMany: vi.fn().mockResolvedValue([]) },
+      persona            : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      // threestage 架构触发 resolveThreeStageAiClient，需要提供策略配置相关 mock
+      modelStrategyConfig: { findFirst: vi.fn().mockResolvedValue(null) },
+      aiModel            : {
+        findMany : vi.fn().mockResolvedValue([]),
+        findFirst: vi.fn().mockResolvedValue({
+          id       : "model-mock",
+          provider : "deepseek",
+          name     : "DeepSeek Chat",
+          modelId  : "deepseek-chat",
+          baseUrl  : "https://api.deepseek.com",
+          apiKey   : "sk-mock",
+          isEnabled: true,
+          isDefault: true,
+          updatedAt: new Date()
+        })
+      },
+      $transaction: vi.fn(async (ops: Promise<unknown>[]) => await Promise.all(ops))
+    } as never, {
+      analyzeChapter          : vi.fn(),
+      resolvePersonaTitles    : vi.fn().mockResolvedValue(0),
+      getTitleOnlyPersonaCount: vi.fn().mockResolvedValue(0),
+      validateChapterResult   : vi.fn(),
+      runGrayZoneArbitration  : vi.fn().mockResolvedValue(0)
+    }, undefined, (_architecture: unknown) => ({
+      architecture: "threestage",
+      run         : mockPipelineRun
+    }), {
+      writeSequentialReviewOutput,
+      rebuildReviewProjection
+    });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "threestage",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "threestage",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await runner.runAnalysisJobById(jobId);
+
+    expect(writeSequentialReviewOutput).not.toHaveBeenCalled();
+    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
+  });
+
+  // 用例语义：CHAPTER_RANGE 局部重跑后，只写入被选中章节的 review output，
+  // 但 projection 仍须以 FULL_BOOK 视角重建，合并未触及章节的现有认领。
+  it("CHAPTER_RANGE sequential job writes review output for selected chapters and rebuilds FULL_BOOK projection", async () => {
+    const jobId = "job-range-review";
+    const bookId = "book-1";
+    const {
+      runner,
+      analysisJobFindUnique,
+      chapterFindMany,
+      writeSequentialReviewOutput,
+      rebuildReviewProjection
+    } = createRunnerContext();
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "CHAPTER_RANGE",
+        chapterStart  : 2,
+        chapterEnd    : 3,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "CHAPTER_RANGE",
+        chapterStart  : 2,
+        chapterEnd    : 3,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([
+      { id: "chapter-2", no: 2 },
+      { id: "chapter-3", no: 3 }
+    ]);
+
+    await runner.runAnalysisJobById(jobId);
+
+    // sequential adapter 仅对被选中的章节（第 2、3 章）写入 review output
+    expect(writeSequentialReviewOutput).toHaveBeenCalledWith({
+      bookId,
+      runId     : "run-observable",
+      chapterIds: ["chapter-2", "chapter-3"]
+    });
+    // 局部重跑后仍以 FULL_BOOK 视角重建整书 projection，保证审核中心视图一致
+    expect(rebuildReviewProjection).toHaveBeenCalledWith({ kind: "FULL_BOOK", bookId });
+  });
+
+  it("sequential job rejects and does not mark SUCCEEDED when analysisRunId is null", async () => {
+    const jobId = "job-null-run-id";
+    const bookId = "book-1";
+    const {
+      runner,
+      prismaMock,
+      analysisJobFindUnique,
+      analysisJobUpdate,
+      chapterFindMany,
+      writeSequentialReviewOutput
+    } = createRunnerContext();
+
+    // analysisRun.create が null の id を返すことで createJobRun が { id: null } を返す
+    prismaMock.analysisRun.create.mockResolvedValueOnce({ id: null });
+
+    analysisJobFindUnique
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValueOnce({
+        id            : jobId,
+        bookId,
+        status        : AnalysisJobStatus.RUNNING,
+        architecture  : "sequential",
+        scope         : "FULL_BOOK",
+        chapterStart  : null,
+        chapterEnd    : null,
+        chapterIndices: []
+      })
+      .mockResolvedValue({ status: AnalysisJobStatus.RUNNING });
+    chapterFindMany.mockResolvedValueOnce([{ id: "chapter-1", no: 1 }]);
+
+    await expect(runner.runAnalysisJobById(jobId)).rejects.toThrow(
+      `解析任务 ${jobId} 缺少 analysisRunId，无法生成审核输出`
+    );
+    expect(writeSequentialReviewOutput).not.toHaveBeenCalled();
+    expect(analysisJobUpdate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED }) })
+    );
   });
 });
 

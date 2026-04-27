@@ -14,8 +14,7 @@ The current failure mode is that a `sequential` job can complete with legacy out
 ## Goals
 
 - Keep `sequential` and `threestage` as explicit selectable analysis architectures.
-- Treat `sequential` as the primary and default architecture for production character analysis.
-- Keep `threestage` available only as a secondary/experimental path until its known quality issues are resolved.
+- Keep `sequential` and `threestage` as independent selectable architectures.
 - Make the final review output identical for both architectures.
 - Keep the review center simple: one query path, one DTO shape, one projection contract.
 - Prevent jobs from reporting success when review output generation fails.
@@ -30,13 +29,13 @@ The current failure mode is that a `sequential` job can complete with legacy out
 
 Update the primary `sequential` path so it writes the unified claim-first output during analysis, then rebuilds projections at the end of the job.
 
-This keeps the architecture choice at the analysis layer while keeping downstream review behavior architecture-neutral. The implementation should also make `sequential` the safe default/fallback whenever an architecture is missing or invalid. `threestage` remains selectable, but it must not be the implicit default while its extraction and attribution quality is unstable.
+This keeps the architecture choice at the analysis layer while keeping downstream review behavior architecture-neutral. The implementation must not make the review center branch on architecture; whichever architecture is selected must write the same review-output database shape.
 
 ## Architecture
 
 ```text
 Admin selects architecture
-  ├─ sequential (primary/default)
+  ├─ sequential
   │    ├─ existing legacy writes
   │    │    ├─ personas / profiles
   │    │    ├─ mentions
@@ -52,7 +51,7 @@ Admin selects architecture
   │         ├─ relationship_edges
   │         └─ timeline_events
   │
-  └─ threestage (secondary/experimental)
+   └─ threestage
        ├─ existing claim-first stages
        └─ rebuildProjection(FULL_BOOK)
 
@@ -70,15 +69,13 @@ type AnalysisArchitecture = "sequential" | "threestage";
 
 The selected architecture controls how analysis is performed, not what the review center reads.
 
-Defaulting rule:
+Selection rule:
 
 ```ts
-function normalizeAnalysisArchitecture(value: string | null | undefined): AnalysisArchitecture {
-  return value === "threestage" ? "threestage" : "sequential";
-}
+type AnalysisArchitecture = "sequential" | "threestage";
 ```
 
-Unknown or missing architecture values must resolve to `sequential`, not `threestage`.
+Architecture selection controls which pipeline runs. It must not control the final review-output database shape.
 
 ### Unified Review Output
 
@@ -203,4 +200,4 @@ The architecture remains selectable, while downstream review behavior is consist
 
 - Existing completed sequential jobs may need a one-time backfill command if they should become reviewable without rerunning analysis.
 - The adapter should be small and testable; avoid embedding claim conversion directly into large pipeline loops.
-- Current code should be checked for any implicit `threestage` default and changed to `sequential`.
+- Current code should be checked for architecture-specific review output gaps; do not fix review visibility by adding UI fallbacks or forcing one architecture over the other.

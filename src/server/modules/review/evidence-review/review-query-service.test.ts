@@ -617,7 +617,7 @@ describe("createReviewQueryService", () => {
       ]
     });
     const service = createReviewQueryService(prismaMock as never, {
-      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+      relationTypeCatalogLoader: relationTypeCatalogLoader
     });
 
     const result = await service.getPersonaChapterMatrix({ bookId: BOOK_ID });
@@ -871,6 +871,65 @@ describe("createReviewQueryService", () => {
       }
     ]);
     expect(result.relationTypeOptions).toEqual([]);
+  });
+
+  it("returns personas from persona chapter facts without reading legacy profiles", async () => {
+    // Arrange: three personas are seeded, but only Alpha (PERSONA_ID_1) and
+    // Beta (PERSONA_ID_2) have projection rows in persona_chapter_facts.
+    // Ghost (PERSONA_ID_3) has no projection row — it must be absent from the
+    // result, which is the definitive proof that the service derives its
+    // persona list from projection rows rather than from the personas table.
+    const profileFindMany = vi.fn();
+
+    const prismaMock = {
+      ...createPrismaMock({
+        chapters: [
+          chapter({ id: CHAPTER_ID_1, no: 1, title: "初登场" })
+        ],
+        personas: [
+          persona({ id: PERSONA_ID_1, name: "Alpha", aliases: ["甲"] }),
+          persona({ id: PERSONA_ID_2, name: "Beta",  aliases: ["乙"] }),
+          persona({ id: PERSONA_ID_3, name: "Ghost", aliases: [] })
+        ],
+        personaChapterFacts: [
+          personaChapterFact({
+            id       : "fa000001-0000-4000-8000-000000000001",
+            personaId: PERSONA_ID_1,
+            chapterId: CHAPTER_ID_1,
+            chapterNo: 1
+          }),
+          personaChapterFact({
+            id       : "fa000002-0000-4000-8000-000000000002",
+            personaId: PERSONA_ID_2,
+            chapterId: CHAPTER_ID_1,
+            chapterNo: 1
+          })
+          // PERSONA_ID_3 ("Ghost") intentionally has no projection row.
+        ]
+      }),
+      // Supplemental guard: legacy profile table must never be consulted.
+      profile: { findMany: profileFindMany, findUnique: profileFindMany }
+    };
+
+    const service = createReviewQueryService(prismaMock as never);
+
+    // Act
+    const result = await service.getPersonaChapterMatrix({ bookId: BOOK_ID });
+
+    // Primary assertion: only projection-backed personas appear.
+    const returnedIds = result.personas.map((p) => p.personaId).sort();
+    expect(returnedIds).toEqual([PERSONA_ID_1, PERSONA_ID_2].sort());
+    // Ghost persona must be absent — proves source is persona_chapter_facts.
+    expect(returnedIds).not.toContain(PERSONA_ID_3);
+
+    // DisplayName is resolved from the linked persona row.
+    const alpha = result.personas.find((p) => p.personaId === PERSONA_ID_1);
+    const beta  = result.personas.find((p) => p.personaId === PERSONA_ID_2);
+    expect(alpha?.displayName).toBe("Alpha");
+    expect(beta?.displayName).toBe("Beta");
+
+    // Supplemental: legacy profile table was never touched.
+    expect(profileFindMany).not.toHaveBeenCalled();
   });
 
   it("builds persona-time matrix summaries with stable time groups and linked chapter metadata", async () => {
@@ -1342,7 +1401,7 @@ describe("createReviewQueryService", () => {
       ]
     });
     const service = createReviewQueryService(prismaMock as never, {
-      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+      relationTypeCatalogLoader: relationTypeCatalogLoader
     });
 
     const result = await service.getRelationEditorView({
@@ -1512,7 +1571,7 @@ describe("createReviewQueryService", () => {
       ]
     });
     const service = createReviewQueryService(prismaMock as never, {
-      relationTypeCatalogLoader: relationTypeCatalogLoader as never
+      relationTypeCatalogLoader: relationTypeCatalogLoader
     });
 
     const teacherOnly = await service.getRelationEditorView({
