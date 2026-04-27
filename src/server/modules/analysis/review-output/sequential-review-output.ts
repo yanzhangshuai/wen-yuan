@@ -21,6 +21,10 @@ import {
 } from "@/server/modules/analysis/claims/claim-schemas";
 import { createClaimWriteService } from "@/server/modules/analysis/claims/claim-write-service";
 import { normalizeTextForEvidence } from "@/server/modules/analysis/evidence/offset-map";
+import type {
+  AnalysisReviewOutputWriter,
+  ReviewOutputWriterResult
+} from "@/server/modules/analysis/review-output/types";
 
 // evidence score 饱和阈值：引用次数达到此值时得分为 1.0
 const EVIDENCE_SCORE_SATURATION_COUNT = 10;
@@ -31,14 +35,8 @@ export interface SequentialReviewOutputInput {
   chapterIds: string[];
 }
 
-export interface SequentialReviewOutputResult {
-  personaCandidates       : number;
-  entityMentions          : number;
-  eventClaims             : number;
-  relationClaims          : number;
-  identityResolutionClaims: number;
-  timeClaims              : number;
-}
+export type SequentialReviewOutputResult =
+  Omit<ReviewOutputWriterResult, "architecture" | "validatedExistingClaims">;
 
 type DeleteWhere = Record<string, unknown>;
 
@@ -663,4 +661,40 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
   }
 
   return { writeBookReviewOutput, backfillLatestSucceededSequentialJob };
+}
+
+function toSequentialWriterResult(result: SequentialReviewOutputResult): ReviewOutputWriterResult {
+  return {
+    architecture            : "sequential",
+    personaCandidates       : result.personaCandidates,
+    entityMentions          : result.entityMentions,
+    eventClaims             : result.eventClaims,
+    relationClaims          : result.relationClaims,
+    identityResolutionClaims: result.identityResolutionClaims,
+    timeClaims              : result.timeClaims,
+    validatedExistingClaims : 0
+  };
+}
+
+export function createSequentialReviewOutputWriter(
+  prismaClient: PrismaClient = prisma
+): AnalysisReviewOutputWriter {
+  const adapter = createSequentialReviewOutputAdapter(prismaClient);
+
+  return {
+    architecture: "sequential",
+    async write(input) {
+      if (input.architecture !== "sequential") {
+        throw new Error(`Sequential review output writer received architecture ${input.architecture}`);
+      }
+
+      const result = await adapter.writeBookReviewOutput({
+        bookId    : input.bookId,
+        runId     : input.runId,
+        chapterIds: input.chapterIds
+      });
+
+      return toSequentialWriterResult(result);
+    }
+  };
 }

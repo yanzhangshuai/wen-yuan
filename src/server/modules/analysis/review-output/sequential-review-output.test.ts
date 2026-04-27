@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { type PrismaClient } from "@/generated/prisma/client";
 import { BioCategory } from "@/generated/prisma/enums";
-import { createSequentialReviewOutputAdapter } from "@/server/modules/analysis/review-output/sequential-review-output";
+import {
+  createSequentialReviewOutputAdapter,
+  createSequentialReviewOutputWriter
+} from "@/server/modules/analysis/review-output/sequential-review-output";
 
 const BOOK_ID      = "11111111-1111-4111-8111-111111111111";
 const RUN_ID       = "22222222-2222-4222-8222-222222222222";
@@ -184,6 +187,32 @@ function makePrisma(tx: ReturnType<typeof makeTx>, opts?: {
 }
 
 describe("createSequentialReviewOutputAdapter", () => {
+  it("exposes sequential review output as a formal writer", async () => {
+    const tx = makeTx();
+    const prismaClient = makePrisma(tx);
+    const writer = createSequentialReviewOutputWriter(prismaClient as unknown as PrismaClient);
+
+    expect(writer.architecture).toBe("sequential");
+
+    const result = await writer.write({
+      architecture: "sequential",
+      bookId      : BOOK_ID,
+      runId       : RUN_ID,
+      chapterIds  : [CHAPTER_ID_1],
+      jobId       : JOB_ID,
+      scope       : "FULL_BOOK"
+    });
+
+    expect(result.architecture).toBe("sequential");
+    expect(result.personaCandidates).toBe(2);
+    expect(result.entityMentions).toBe(1);
+    expect(result.eventClaims).toBe(1);
+    expect(result.relationClaims).toBe(1);
+    expect(result.identityResolutionClaims).toBe(1);
+    expect(result.timeClaims).toBe(1);
+    expect(result.validatedExistingClaims).toBe(0);
+  });
+
   describe("writeBookReviewOutput", () => {
     it("converts legacy rows into accepted review claims with identity mappings", async () => {
       const tx = makeTx();
