@@ -51,6 +51,7 @@ function makeTx() {
           category : BioCategory.EXAM,
           title    : "山东学道",
           event    : "范进中了举人",
+          virtualYear: null,
           persona  : { id: PERSONA_ID_1, name: "范进" }
         }
       ])
@@ -458,10 +459,11 @@ describe("createSequentialReviewOutputAdapter", () => {
       // timeClaim.deleteMany must be called before timeClaim.create
       expect(tx.timeClaim.deleteMany).toHaveBeenCalledWith({
         where: expect.objectContaining({
-          bookId   : BOOK_ID,
-          chapterId: CHAPTER_ID_1,
-          runId    : RUN_ID,
-          source   : "AI"
+          bookId            : BOOK_ID,
+          chapterId         : CHAPTER_ID_1,
+          runId             : RUN_ID,
+          source            : "AI",
+          derivedFromClaimId: null
         })
       });
 
@@ -614,8 +616,11 @@ describe("createSequentialReviewOutputAdapter", () => {
       // event and relation claims must NOT be created (no evidence span)
       expect(result.eventClaims).toBe(0);
       expect(result.relationClaims).toBe(0);
+      expect(result.timeClaims).toBe(0);
       expect(tx.eventClaim.createMany).not.toHaveBeenCalled();
       expect(tx.relationClaim.createMany).not.toHaveBeenCalled();
+      expect(tx.timeClaim.create).not.toHaveBeenCalled();
+      expect(tx.timeClaim.deleteMany).not.toHaveBeenCalled();
 
       // warn must have fired with structured context
       expect(warnSpy).toHaveBeenCalledWith(
@@ -673,6 +678,59 @@ describe("createSequentialReviewOutputAdapter", () => {
       const firstCreate  = callOrder.indexOf("create");
       const lastDeleteMany = callOrder.lastIndexOf("deleteMany");
       expect(lastDeleteMany).toBeLessThan(firstCreate);
+    });
+
+    it("does not create time claims for non-empty chapter with no bio or relation rows", async () => {
+      const tx = makeTx();
+      tx.biographyRecord.findMany.mockResolvedValue([]);
+      tx.relationship.findMany.mockResolvedValue([]);
+
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      const result = await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1]
+      });
+
+      expect(result.timeClaims).toBe(0);
+      expect(result.eventClaims).toBe(0);
+      expect(result.relationClaims).toBe(0);
+      expect(tx.timeClaim.create).not.toHaveBeenCalled();
+      expect(tx.timeClaim.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it("timeClaim.deleteMany is called before timeClaim.create on re-run", async () => {
+      const tx = makeTx();
+      const callOrder: string[] = [];
+      tx.timeClaim.deleteMany = vi.fn().mockImplementation(() => {
+        callOrder.push("timeClaim.deleteMany");
+        return Promise.resolve({ count: 1 });
+      });
+      tx.timeClaim.create = vi.fn()
+        .mockImplementationOnce(() => {
+          callOrder.push("timeClaim.create");
+          return Promise.resolve({ id: TIME_CLAIM_ID_1 });
+        })
+        .mockImplementationOnce(() => {
+          callOrder.push("timeClaim.create");
+          return Promise.resolve({ id: TIME_CLAIM_ID_2 });
+        });
+
+      const prismaClient = makePrisma(tx);
+      const adapter = createSequentialReviewOutputAdapter(prismaClient as unknown as PrismaClient);
+
+      await adapter.writeBookReviewOutput({
+        bookId    : BOOK_ID,
+        runId     : RUN_ID,
+        chapterIds: [CHAPTER_ID_1]
+      });
+
+      const firstCreate      = callOrder.indexOf("timeClaim.create");
+      const lastDeleteMany   = callOrder.lastIndexOf("timeClaim.deleteMany");
+      expect(lastDeleteMany).toBeGreaterThanOrEqual(0);
+      expect(firstCreate).toBeGreaterThan(lastDeleteMany);
     });
   });
 

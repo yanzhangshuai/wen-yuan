@@ -388,13 +388,18 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
             }
           }
 
+          // 预计算当前章节的传记和关系行，供 time claim 门控及下方 event/relation 复用
+          const chapterBios = biographyRecords.filter(b => b.chapterId === chapter.id);
+          const chapterRels = relationships.filter(r => r.chapterId === chapter.id);
+
           // 5e-pre. 时序 claims：章节序 claim 作为默认时间锚，virtualYear 作为显式时间锚。
+          // 仅当章节存在 event 或 relation 行时才创建，避免无内容章节残留孤儿 time claim。
           // 先删后建确保同一 run 重跑时不会残留旧 AI 时间事实。
           let chapterOrderTimeClaimId: string | null = null;
           // virtualYear label → timeClaimId
           const explicitTimeClaimIdMap = new Map<string, string>();
 
-          if (chapterEvidenceSpanId !== null) {
+          if (chapterEvidenceSpanId !== null && (chapterBios.length > 0 || chapterRels.length > 0)) {
             await tx.timeClaim.deleteMany({
               where: { bookId, chapterId: chapter.id, runId, source: ClaimSource.AI, derivedFromClaimId: null }
             });
@@ -426,8 +431,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
             chapterOrderTimeClaimId = chapterOrderClaim.id;
             timeClaimCount++;
 
-            const chapterBiosForTime = biographyRecords.filter(b => b.chapterId === chapter.id);
-            for (const bio of chapterBiosForTime) {
+            for (const bio of chapterBios) {
               if (bio.virtualYear && bio.virtualYear.trim().length > 0) {
                 const label = bio.virtualYear.trim();
                 if (!explicitTimeClaimIdMap.has(label)) {
@@ -463,7 +467,6 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
           }
 
           // 5e. Event claims（来自 biographyRecords）
-          const chapterBios = biographyRecords.filter(b => b.chapterId === chapter.id);
           if (chapterBios.length > 0 && chapterEvidenceSpanId !== null) {
             const evtResult = await claimService.writeClaimBatch({
               family: "EVENT",
@@ -505,7 +508,6 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
           }
 
           // 5f. Relation claims（来自 relationships）
-          const chapterRels = relationships.filter(r => r.chapterId === chapter.id);
           if (chapterRels.length > 0 && chapterEvidenceSpanId !== null) {
             const relResult = await claimService.writeClaimBatch({
               family: "RELATION",
