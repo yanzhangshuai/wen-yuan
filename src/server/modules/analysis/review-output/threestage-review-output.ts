@@ -10,10 +10,10 @@ interface CountDelegate {
 }
 
 interface ThreeStageReviewOutputPrisma {
-  personaCandidate      : CountDelegate;
-  eventClaim            : CountDelegate;
-  relationClaim         : CountDelegate;
-  timeClaim             : CountDelegate;
+  personaCandidate       : CountDelegate;
+  eventClaim             : CountDelegate;
+  relationClaim          : CountDelegate;
+  timeClaim              : CountDelegate;
   identityResolutionClaim: CountDelegate;
 }
 
@@ -55,14 +55,14 @@ export function createThreeStageReviewOutputWriter(
       }
 
       return {
-        architecture            : "threestage",
+        architecture           : "threestage",
         personaCandidates,
-        entityMentions          : 0,
+        entityMentions         : 0,
         eventClaims,
         relationClaims,
         identityResolutionClaims,
         timeClaims,
-        validatedExistingClaims : eventClaims + relationClaims + timeClaims + identityResolutionClaims
+        validatedExistingClaims: eventClaims + relationClaims + timeClaims + identityResolutionClaims
       };
     }
   };

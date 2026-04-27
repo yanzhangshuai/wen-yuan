@@ -492,6 +492,8 @@ export interface AnalysisJobRunnerReviewOutputOptions {
   }) => Promise<unknown>;
 }
 
+type WriteReviewOutput = NonNullable<AnalysisJobRunnerReviewOutputOptions["writeReviewOutput"]>;
+
 export function createAnalysisJobRunner(
   prismaClient: PrismaClient = prisma,
   chapterAnalyzer?: ChapterAnalyzer,
@@ -502,17 +504,20 @@ export function createAnalysisJobRunner(
   ) => AnalysisPipeline = createPipeline,
   options: AnalysisJobRunnerReviewOutputOptions = {}
 ) {
-  const resolvedWriteReviewOutput =
-    options.writeReviewOutput
-    ?? createReviewOutputCoordinator({
-      writers: [
-        createSequentialReviewOutputWriter(prismaClient),
-        createThreeStageReviewOutputWriter(prismaClient)
-      ],
-      rebuildProjection: createProjectionBuilder({
-        repository: createProjectionRepository(prismaClient)
-      }).rebuildProjection
-    }).writeReviewOutput;
+  const projectionBuilder = createProjectionBuilder({
+    repository: createProjectionRepository(prismaClient)
+  });
+  const defaultReviewOutputCoordinator = createReviewOutputCoordinator({
+    writers: [
+      createSequentialReviewOutputWriter(prismaClient),
+      createThreeStageReviewOutputWriter(prismaClient)
+    ],
+    rebuildProjection: input => projectionBuilder.rebuildProjection(input)
+  });
+  const injectedWriteReviewOutput = options.writeReviewOutput;
+  const resolvedWriteReviewOutput: WriteReviewOutput = injectedWriteReviewOutput
+    ? input => injectedWriteReviewOutput(input)
+    : input => defaultReviewOutputCoordinator.writeReviewOutput(input);
   const resolvedAnalyzerFactory = chapterAnalyzerFactory ?? createDefaultChapterAnalyzerFactory(prismaClient);
   const runService: AnalysisRunService = createAnalysisRunService(prismaClient);
   const stageRunService: AnalysisStageRunService = createAnalysisStageRunService(prismaClient);

@@ -8,19 +8,27 @@ const RUN_ID = "22222222-2222-4222-8222-222222222222";
 const JOB_ID = "33333333-3333-4333-8333-333333333333";
 const CHAPTER_ID = "44444444-4444-4444-8444-444444444444";
 
-function makeWriter(architecture: "sequential" | "threestage"): AnalysisReviewOutputWriter {
-  return {
+function makeWriter(architecture: "sequential" | "threestage"): {
+  writer: AnalysisReviewOutputWriter;
+  write : ReturnType<typeof vi.fn>;
+} {
+  const write = vi.fn().mockResolvedValue({
     architecture,
-    write: vi.fn().mockResolvedValue({
+    personaCandidates       : 1,
+    entityMentions          : architecture === "sequential" ? 1 : 0,
+    eventClaims             : 1,
+    relationClaims          : 0,
+    identityResolutionClaims: 1,
+    timeClaims              : 1,
+    validatedExistingClaims : architecture === "threestage" ? 3 : 0
+  });
+
+  return {
+    writer: {
       architecture,
-      personaCandidates       : 1,
-      entityMentions          : architecture === "sequential" ? 1 : 0,
-      eventClaims             : 1,
-      relationClaims          : 0,
-      identityResolutionClaims: 1,
-      timeClaims              : 1,
-      validatedExistingClaims : architecture === "threestage" ? 3 : 0
-    })
+      write
+    },
+    write
   };
 }
 
@@ -29,7 +37,7 @@ describe("createReviewOutputCoordinator", () => {
     const sequentialWriter = makeWriter("sequential");
     const projection = vi.fn().mockResolvedValue({ personaChapterFacts: 1 });
     const coordinator = createReviewOutputCoordinator({
-      writers          : [sequentialWriter],
+      writers          : [sequentialWriter.writer],
       rebuildProjection: projection
     });
 
@@ -78,10 +86,10 @@ describe("createReviewOutputCoordinator", () => {
 
   it("does not rebuild projection when the writer fails", async () => {
     const writer = makeWriter("threestage");
-    vi.mocked(writer.write).mockRejectedValueOnce(new Error("missing claims"));
+    writer.write.mockRejectedValueOnce(new Error("missing claims"));
     const projection = vi.fn();
     const coordinator = createReviewOutputCoordinator({
-      writers          : [writer],
+      writers          : [writer.writer],
       rebuildProjection: projection
     });
 

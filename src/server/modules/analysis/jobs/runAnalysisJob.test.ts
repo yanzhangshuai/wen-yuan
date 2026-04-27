@@ -1760,10 +1760,10 @@ describe("analysis job runner", () => {
     expect(writeReviewOutput).toHaveBeenCalledWith({
       architecture: "sequential",
       bookId,
-      runId     : "run-observable",
-      chapterIds: ["chapter-1"],
+      runId       : "run-observable",
+      chapterIds  : ["chapter-1"],
       jobId,
-      scope     : "FULL_BOOK"
+      scope       : "FULL_BOOK"
     });
     expect(calls).toEqual(["review-output", "job-succeeded"]);
   });
@@ -1846,11 +1846,11 @@ describe("analysis job runner", () => {
         update    : vi.fn(),
         updateMany: vi.fn().mockResolvedValue({ count: 1 })
       },
-      profile            : { findMany: vi.fn().mockResolvedValue([]) },
-      mention            : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
-      relationship       : { findMany: vi.fn().mockResolvedValue([]) },
-      persona            : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
-      analysisRun        : {
+      profile     : { findMany: vi.fn().mockResolvedValue([]) },
+      mention     : { groupBy: vi.fn().mockResolvedValue([]), findMany: vi.fn().mockResolvedValue([]) },
+      relationship: { findMany: vi.fn().mockResolvedValue([]) },
+      persona     : { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      analysisRun : {
         create   : vi.fn().mockResolvedValue({ id: "run-observable" }),
         update   : vi.fn().mockResolvedValue({}),
         findFirst: vi.fn().mockResolvedValue(null)
@@ -1930,10 +1930,10 @@ describe("analysis job runner", () => {
     expect(writeReviewOutput).toHaveBeenCalledWith({
       architecture: "threestage",
       bookId,
-      runId     : "run-observable",
-      chapterIds: ["chapter-1"],
+      runId       : "run-observable",
+      chapterIds  : ["chapter-1"],
       jobId,
-      scope     : "FULL_BOOK"
+      scope       : "FULL_BOOK"
     });
   });
 
@@ -1982,10 +1982,10 @@ describe("analysis job runner", () => {
     expect(writeReviewOutput).toHaveBeenCalledWith({
       architecture: "sequential",
       bookId,
-      runId     : "run-observable",
-      chapterIds: ["chapter-2", "chapter-3"],
+      runId       : "run-observable",
+      chapterIds  : ["chapter-2", "chapter-3"],
       jobId,
-      scope     : "CHAPTER_RANGE"
+      scope       : "CHAPTER_RANGE"
     });
   });
 

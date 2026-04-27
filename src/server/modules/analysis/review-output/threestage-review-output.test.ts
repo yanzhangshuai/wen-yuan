@@ -8,17 +8,17 @@ const JOB_ID = "33333333-3333-4333-8333-333333333333";
 const CHAPTER_ID = "44444444-4444-4444-8444-444444444444";
 
 function makePrismaMock(counts: {
-  personaCandidates?        : number;
-  eventClaims?              : number;
-  relationClaims?           : number;
-  timeClaims?               : number;
-  identityResolutionClaims? : number;
+  personaCandidates?       : number;
+  eventClaims?             : number;
+  relationClaims?          : number;
+  timeClaims?              : number;
+  identityResolutionClaims?: number;
 }) {
   return {
-    personaCandidate      : { count: vi.fn().mockResolvedValue(counts.personaCandidates ?? 1) },
-    eventClaim            : { count: vi.fn().mockResolvedValue(counts.eventClaims ?? 1) },
-    relationClaim         : { count: vi.fn().mockResolvedValue(counts.relationClaims ?? 1) },
-    timeClaim             : { count: vi.fn().mockResolvedValue(counts.timeClaims ?? 1) },
+    personaCandidate       : { count: vi.fn().mockResolvedValue(counts.personaCandidates ?? 1) },
+    eventClaim             : { count: vi.fn().mockResolvedValue(counts.eventClaims ?? 1) },
+    relationClaim          : { count: vi.fn().mockResolvedValue(counts.relationClaims ?? 1) },
+    timeClaim              : { count: vi.fn().mockResolvedValue(counts.timeClaims ?? 1) },
     identityResolutionClaim: { count: vi.fn().mockResolvedValue(counts.identityResolutionClaims ?? 1) }
   };
 }
