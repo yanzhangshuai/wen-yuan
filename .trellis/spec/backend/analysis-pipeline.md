@@ -23,6 +23,15 @@ API Route
 两种架构共享同一接口（`AnalysisPipeline`），通过工厂函数 `createPipeline(architecture)` 选择。
 `sequential` 与 `threestage` 必须作为独立架构并存；架构选择只决定执行管线，不决定审核中心最终读取的数据结构。
 
+**设计决策：统一输出层是正式架构边界，不是临时兼容补丁。**
+
+分析架构负责“如何抽取/归并”，统一输出层负责“把结果提交成审核中心唯一认可的 claims/projection 契约”。
+因此每一种分析架构都必须拥有自己的统一输出 writer：
+- `threestage` 的 writer 可以直接来自 claim-first 阶段产物；
+- `sequential` 当前 writer 会读取 legacy sequential 产物并转换为统一 claims，这是实现细节，不改变统一输出层的架构地位。
+
+长期演进方向是让 `sequential` 内部更早地产生 claim-first draft，使 writer 变薄；但禁止把审核中心改成兼容多套读取路径。
+
 ---
 
 ## 管线接口契约
@@ -133,6 +142,7 @@ Projection：
 - `sequential` 与 `threestage` 可以并存、可选择，但审核中心（T12/T13 claim-first UI）不直接读取 `profiles`、`mentions`、`biography_records`、`relationships` 来生成角色列表。
 - `sequential` 若继续写 legacy 图谱数据，也必须同步写统一审核 claims 并重建 projection。
 - 架构选择保持在分析写入层；最终审核输出必须统一到 claims/projection，不允许 UI 按 architecture 分叉。
+- 统一输出层是正统架构层：任何新架构、重构架构或 backfill 都必须接入这个输出层，而不是要求审核中心适配新的来源。
 
 ### 2. Signatures
 
@@ -152,6 +162,7 @@ prisma.personaChapterFact.findMany({ where: { bookId } });
 | 层 | 契约 | 说明 |
 |----|------|------|
 | 分析写入层 | `persona_candidates` + `*_claims` + accepted/PENDING `identity_resolution_claims` | 两套架构最终都必须产出的审核源数据 |
+| 统一输出层 | per-architecture writer → unified claims/projection | 正式架构边界；把不同 pipeline 输出归一到审核中心唯一契约 |
 | Projection 层 | `persona_chapter_facts` | 审核矩阵的唯一角色/单元格来源 |
 | 页面层 | `initialMatrix.personas` | `ReviewWorkbenchShell` 左侧角色列表由 `buildPersonaListItems(initialMatrix)` 派生 |
 | Legacy 图谱层 | `profiles`、`mentions`、`biography_records`、`relationships` | sequential 可继续维护的图谱产物，但不等价于审核中心有角色 |
@@ -214,6 +225,7 @@ group by review_state;
 | 用 architecture 默认值变更替代统一输出修复 | 这只改变入口选择，不能解决审核中心读取同一 projection 的根因 |
 | 用 `profiles` 数量判断审核中心是否应显示角色 | 审核中心角色来自统一 projection（`persona_chapter_facts`），legacy 人物档案不是该 UI 的数据源 |
 | 让审核中心按 `analysis_jobs.architecture` 分支读取 legacy/projection | 架构差异会泄漏到 UI；正确做法是在写入端统一最终审核输出 |
+| 把 sequential adapter 视为可删除的临时补丁 | 当前 adapter 是 sequential 的统一输出 writer；可以重构变薄，但不能移除统一输出层契约 |
 
 ---
 
