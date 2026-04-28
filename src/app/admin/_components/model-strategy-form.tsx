@@ -494,6 +494,7 @@ export function ModelStrategyForm({
               const selectedIsRecommended = selectedModel
                 ? isRecommendedModelMatch(recommendedMeta, selectedModel)
                 : false;
+              const recommendedAlias = recommendedMeta?.alias;
               const isFallback = stage === PipelineStage.FALLBACK;
               const isExpanded = expandedStages.has(stage);
 
@@ -554,17 +555,17 @@ export function ModelStrategyForm({
                     <div className="text-xs">
                       {recommended ? (
                         <span className="text-muted-foreground">
-                          推荐：{recommendedMeta?.label ?? recommended.name}
+                          推荐：{recommended.name}
                         </span>
                       ) : (
                         /*
                          * 推荐不可用分支：
                          * - 说明配置文件里有推荐，但当前启用模型中找不到对应项；
-                         * - 通过警示文案引导管理员检查模型启用状态。
+                         * - 展示 aliasKey，便于管理员在模型管理页补齐对应别名。
                          */
                         <span className="inline-flex items-center gap-1 text-amber-600">
                           <AlertTriangle className="h-3.5 w-3.5" />
-                          推荐模型未启用
+                          {recommendedAlias ? `推荐模型未启用：${recommendedAlias}` : "推荐模型未启用"}
                         </span>
                       )}
                     </div>

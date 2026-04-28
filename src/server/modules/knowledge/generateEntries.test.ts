@@ -147,6 +147,7 @@ describe("generateEntries", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-1",
       provider: "DEEPSEEK",
+      protocol: "openai-compatible",
       modelId : "deepseek-chat",
       apiKey  : "encrypted-key",
       baseUrl : "https://api.example.com"
@@ -176,7 +177,8 @@ describe("generateEntries", () => {
     expect(result.packName).toBe("三国人物包");
     expect(result.model).toEqual({
       id       : "model-1",
-      provider : "deepseek",
+      provider : "DEEPSEEK",
+      protocol : "openai-compatible",
       modelName: "deepseek-chat"
     });
     expect(result.skipped).toBe(2);
@@ -204,7 +206,8 @@ describe("generateEntries", () => {
       rejectionReason  : "置信度低于 0.5，默认不保存"
     });
     expect(hoisted.createAiProviderClient).toHaveBeenCalledWith({
-      provider : "deepseek",
+      provider : "DEEPSEEK",
+      protocol : "openai-compatible",
       apiKey   : "plain:encrypted-key",
       baseUrl  : "https://api.example.com",
       modelName: "deepseek-chat"
@@ -230,6 +233,7 @@ describe("generateEntries", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-1",
       provider: "DEEPSEEK",
+      protocol: "openai-compatible",
       modelId : "deepseek-chat",
       apiKey  : "encrypted-key",
       baseUrl : "https://api.example.com"

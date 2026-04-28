@@ -200,7 +200,7 @@ export type NamePatternRuleGroupByOutputType = {
   _max: NamePatternRuleMaxAggregateOutputType | null
 }
 
-type GetNamePatternRuleGroupByPayload<T extends NamePatternRuleGroupByArgs> = Prisma.PrismaPromise<
+export type GetNamePatternRuleGroupByPayload<T extends NamePatternRuleGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<NamePatternRuleGroupByOutputType, T['by']> &
       {
@@ -1122,6 +1122,11 @@ export type NamePatternRuleFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` NamePatternRules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of NamePatternRules.
+   */
   distinct?: Prisma.NamePatternRuleScalarFieldEnum | Prisma.NamePatternRuleScalarFieldEnum[]
 }
 

@@ -192,7 +192,7 @@ export type KnowledgeAuditLogGroupByOutputType = {
   _max: KnowledgeAuditLogMaxAggregateOutputType | null
 }
 
-type GetKnowledgeAuditLogGroupByPayload<T extends KnowledgeAuditLogGroupByArgs> = Prisma.PrismaPromise<
+export type GetKnowledgeAuditLogGroupByPayload<T extends KnowledgeAuditLogGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<KnowledgeAuditLogGroupByOutputType, T['by']> &
       {
@@ -1125,6 +1125,11 @@ export type KnowledgeAuditLogFindManyArgs<ExtArgs extends runtime.Types.Extensio
    * Skip the first `n` KnowledgeAuditLogs.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of KnowledgeAuditLogs.
+   */
   distinct?: Prisma.KnowledgeAuditLogScalarFieldEnum | Prisma.KnowledgeAuditLogScalarFieldEnum[]
 }
 

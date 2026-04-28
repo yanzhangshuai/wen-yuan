@@ -1,29 +1,15 @@
 {
   "version": "v1",
-  "aliases": {
-    "glm-latest-stable": {
-      "label": "GLM 4.6"
-    },
-    "deepseek-v3-stable": {
-      "label": "DeepSeek V3"
-    },
-    "qwen-plus-stable": {
-      "label": "通义千问 Plus"
-    },
-    "qwen-max-stable": {
-      "label": "通义千问 Max"
-    }
-  },
   "stageAliases": {
-    "ROSTER_DISCOVERY": "qwen-max-stable",
-    "CHUNK_EXTRACTION": "deepseek-v3-stable",
-    "CHAPTER_VALIDATION": "qwen-plus-stable",
-    "TITLE_RESOLUTION": "qwen-max-stable",
-    "GRAY_ZONE_ARBITRATION": "qwen-plus-stable",
-    "BOOK_VALIDATION": "qwen-max-stable",
-    "INDEPENDENT_EXTRACTION": "deepseek-v3-stable",
-    "ENTITY_RESOLUTION": "qwen-max-stable",
-    "FALLBACK": "qwen-plus-stable"
+    "ROSTER_DISCOVERY": "qwen3-max",
+    "CHUNK_EXTRACTION": "deepseek-v4-flash",
+    "CHAPTER_VALIDATION": "qwen3.6-plus",
+    "TITLE_RESOLUTION": "qwen3-max",
+    "GRAY_ZONE_ARBITRATION": "qwen3.6-plus",
+    "BOOK_VALIDATION": "qwen3-max",
+    "INDEPENDENT_EXTRACTION": "deepseek-v4-flash",
+    "ENTITY_RESOLUTION": "qwen3-max",
+    "FALLBACK": "qwen3.6-plus"
   },
-  "notes": "阶段默认模型仅通过 aliasKey 决定；推荐配置不再携带 providerModelId，具体供应商模型由数据库模型表（aliasKey -> UUID/provider/modelId）决定。"
+  "notes": "阶段推荐仅配置 aliasKey；页面展示名称来自已启用模型的 name，匹配关系由数据库模型表 aliasKey 决定。"
 }

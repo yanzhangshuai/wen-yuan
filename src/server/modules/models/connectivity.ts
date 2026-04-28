@@ -1,51 +1,61 @@
-import type { ModelConnectivityErrorType, SupportedProvider } from "./index";
+import { lookup } from "node:dns/promises";
+import net from "node:net";
 
-export const connectivityHostAllowList: Record<SupportedProvider, readonly string[]> = {
-  deepseek: ["api.deepseek.com", "dashscope.aliyuncs.com"],
-  qwen    : ["dashscope.aliyuncs.com"],
-  doubao  : ["ark.cn-beijing.volces.com"],
-  gemini  : ["generativelanguage.googleapis.com"],
-  glm     : ["open.bigmodel.cn"]
-};
+import type { ModelConnectivityErrorType } from "./index";
 
-/**
- * 功能：解析额外连通性测试白名单域名（逗号分隔）。
- * 输入：`MODEL_TEST_ALLOWED_HOSTS` 原始环境变量字符串。
- * 输出：去重前的标准化域名数组（小写、trim 后）。
- * 异常：无。
- * 副作用：无。
- */
-export function parseExtraConnectivityHosts(raw: string | undefined): string[] {
-  if (!raw) {
-    return [];
+function ipv4ToNumber(ipAddress: string): number {
+  return ipAddress
+    .split(".")
+    .reduce((value, part) => (value * 256) + Number(part), 0);
+}
+
+function isIpv4InCidr(ipAddress: string, cidrBase: string, maskBits: number): boolean {
+  const ipValue = ipv4ToNumber(ipAddress);
+  const baseValue = ipv4ToNumber(cidrBase);
+  const mask = maskBits === 0 ? 0 : (0xffffffff << (32 - maskBits)) >>> 0;
+  return (ipValue & mask) === (baseValue & mask);
+}
+
+function normalizeIpv6(ipAddress: string): string {
+  return ipAddress.toLowerCase();
+}
+
+export function isPrivateOrDangerousIp(ipAddress: string): boolean {
+  const ipVersion = net.isIP(ipAddress);
+  if (ipVersion === 4) {
+    return (
+      isIpv4InCidr(ipAddress, "127.0.0.0", 8)
+      || isIpv4InCidr(ipAddress, "10.0.0.0", 8)
+      || isIpv4InCidr(ipAddress, "172.16.0.0", 12)
+      || isIpv4InCidr(ipAddress, "192.168.0.0", 16)
+      || isIpv4InCidr(ipAddress, "169.254.0.0", 16)
+    );
   }
 
-  return raw
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter((item) => item.length > 0);
+  if (ipVersion === 6) {
+    const normalized = normalizeIpv6(ipAddress);
+    return (
+      normalized === "::1"
+      || normalized.startsWith("fc")
+      || normalized.startsWith("fd")
+      || normalized.startsWith("fe8")
+      || normalized.startsWith("fe9")
+      || normalized.startsWith("fea")
+      || normalized.startsWith("feb")
+    );
+  }
+
+  return false;
 }
 
 /**
- * 功能：判断目标域名是否命中允许列表。
- * 输入：hostname 与 allowList。
- * 输出：布尔值，true 表示允许发起连通性请求。
- * 异常：无。
- * 副作用：无。
- */
-export function isAllowedHost(hostname: string, allowList: readonly string[]): boolean {
-  const normalizedHost = hostname.toLowerCase();
-  return allowList.some((allowedHost) => normalizedHost === allowedHost.toLowerCase());
-}
-
-/**
- * 功能：对连通性测试 BaseURL 做安全边界校验（协议 + 域名白名单）。
- * 输入：provider、baseUrl。
+ * 功能：对连通性测试 BaseURL 做安全边界校验（协议 + 私有地址黑名单）。
+ * 输入：baseUrl。
  * 输出：void，校验通过即允许继续请求。
- * 异常：BaseURL 非法、非 HTTPS、域名不在白名单时抛错。
- * 副作用：无。
+ * 异常：BaseURL 非法、协议非法、域名解析到私有/危险地址时抛错。
+ * 副作用：解析 DNS。
  */
-export function assertConnectivityBaseUrlAllowed(provider: SupportedProvider, baseUrl: string): void {
+export async function assertConnectivityBaseUrlAllowed(baseUrl: string): Promise<void> {
   let parsedBaseUrl: URL;
 
   try {
@@ -54,17 +64,30 @@ export function assertConnectivityBaseUrlAllowed(provider: SupportedProvider, ba
     throw new Error("BaseURL 不合法");
   }
 
-  if (parsedBaseUrl.protocol !== "https:") {
-    throw new Error("连通性测试仅支持 HTTPS BaseURL");
+  if (parsedBaseUrl.protocol !== "https:" && parsedBaseUrl.protocol !== "http:") {
+    throw new Error("连通性测试仅支持 HTTP/HTTPS BaseURL");
   }
 
-  const allowList = [
-    ...connectivityHostAllowList[provider],
-    ...parseExtraConnectivityHosts(process.env.MODEL_TEST_ALLOWED_HOSTS)
-  ];
+  const hostname = parsedBaseUrl.hostname.replace(/^\[(.*)\]$/, "$1");
+  if (hostname.toLowerCase() === "localhost") {
+    throw new Error("连通性测试地址指向私有或危险网络");
+  }
 
-  if (!isAllowedHost(parsedBaseUrl.hostname, allowList)) {
-    throw new Error("连通性测试地址不在白名单内");
+  const directIpVersion = net.isIP(hostname);
+  if (directIpVersion !== 0) {
+    if (isPrivateOrDangerousIp(hostname)) {
+      throw new Error("连通性测试地址指向私有或危险网络");
+    }
+    return;
+  }
+
+  const resolvedAddresses = await lookup(hostname, { all: true, verbatim: true });
+  if (resolvedAddresses.length === 0) {
+    throw new Error("BaseURL 域名无法解析");
+  }
+
+  if (resolvedAddresses.some((address) => isPrivateOrDangerousIp(address.address))) {
+    throw new Error("连通性测试地址指向私有或危险网络");
   }
 }
 
@@ -277,4 +300,3 @@ export async function extractResponseDetail(response: Response, fallback: string
     payload: null
   };
 }
-

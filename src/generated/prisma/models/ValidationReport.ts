@@ -185,7 +185,7 @@ export type ValidationReportGroupByOutputType = {
   _max: ValidationReportMaxAggregateOutputType | null
 }
 
-type GetValidationReportGroupByPayload<T extends ValidationReportGroupByArgs> = Prisma.PrismaPromise<
+export type GetValidationReportGroupByPayload<T extends ValidationReportGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ValidationReportGroupByOutputType, T['by']> &
       {
@@ -1435,6 +1435,11 @@ export type ValidationReportFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` ValidationReports.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ValidationReports.
+   */
   distinct?: Prisma.ValidationReportScalarFieldEnum | Prisma.ValidationReportScalarFieldEnum[]
 }
 

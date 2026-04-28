@@ -192,7 +192,7 @@ export type GenericTitleRuleGroupByOutputType = {
   _max: GenericTitleRuleMaxAggregateOutputType | null
 }
 
-type GetGenericTitleRuleGroupByPayload<T extends GenericTitleRuleGroupByArgs> = Prisma.PrismaPromise<
+export type GetGenericTitleRuleGroupByPayload<T extends GenericTitleRuleGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<GenericTitleRuleGroupByOutputType, T['by']> &
       {
@@ -1139,6 +1139,11 @@ export type GenericTitleRuleFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` GenericTitleRules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of GenericTitleRules.
+   */
   distinct?: Prisma.GenericTitleRuleScalarFieldEnum | Prisma.GenericTitleRuleScalarFieldEnum[]
 }
 

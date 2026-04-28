@@ -27,6 +27,7 @@ export type AggregateAiModel = {
 export type AiModelMinAggregateOutputType = {
   id: string | null
   provider: string | null
+  protocol: string | null
   name: string | null
   modelId: string | null
   aliasKey: string | null
@@ -41,6 +42,7 @@ export type AiModelMinAggregateOutputType = {
 export type AiModelMaxAggregateOutputType = {
   id: string | null
   provider: string | null
+  protocol: string | null
   name: string | null
   modelId: string | null
   aliasKey: string | null
@@ -55,6 +57,7 @@ export type AiModelMaxAggregateOutputType = {
 export type AiModelCountAggregateOutputType = {
   id: number
   provider: number
+  protocol: number
   name: number
   modelId: number
   aliasKey: number
@@ -71,6 +74,7 @@ export type AiModelCountAggregateOutputType = {
 export type AiModelMinAggregateInputType = {
   id?: true
   provider?: true
+  protocol?: true
   name?: true
   modelId?: true
   aliasKey?: true
@@ -85,6 +89,7 @@ export type AiModelMinAggregateInputType = {
 export type AiModelMaxAggregateInputType = {
   id?: true
   provider?: true
+  protocol?: true
   name?: true
   modelId?: true
   aliasKey?: true
@@ -99,6 +104,7 @@ export type AiModelMaxAggregateInputType = {
 export type AiModelCountAggregateInputType = {
   id?: true
   provider?: true
+  protocol?: true
   name?: true
   modelId?: true
   aliasKey?: true
@@ -186,6 +192,7 @@ export type AiModelGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type AiModelGroupByOutputType = {
   id: string
   provider: string
+  protocol: string
   name: string
   modelId: string
   aliasKey: string | null
@@ -200,7 +207,7 @@ export type AiModelGroupByOutputType = {
   _max: AiModelMaxAggregateOutputType | null
 }
 
-type GetAiModelGroupByPayload<T extends AiModelGroupByArgs> = Prisma.PrismaPromise<
+export type GetAiModelGroupByPayload<T extends AiModelGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AiModelGroupByOutputType, T['by']> &
       {
@@ -221,6 +228,7 @@ export type AiModelWhereInput = {
   NOT?: Prisma.AiModelWhereInput | Prisma.AiModelWhereInput[]
   id?: Prisma.UuidFilter<"AiModel"> | string
   provider?: Prisma.StringFilter<"AiModel"> | string
+  protocol?: Prisma.StringFilter<"AiModel"> | string
   name?: Prisma.StringFilter<"AiModel"> | string
   modelId?: Prisma.StringFilter<"AiModel"> | string
   aliasKey?: Prisma.StringNullableFilter<"AiModel"> | string | null
@@ -236,6 +244,7 @@ export type AiModelWhereInput = {
 export type AiModelOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   provider?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
   name?: Prisma.SortOrder
   modelId?: Prisma.SortOrder
   aliasKey?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -250,13 +259,15 @@ export type AiModelOrderByWithRelationInput = {
 
 export type AiModelWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  aliasKey?: string
+  provider_modelId_baseUrl?: Prisma.AiModelProviderModelIdBaseUrlCompoundUniqueInput
   AND?: Prisma.AiModelWhereInput | Prisma.AiModelWhereInput[]
   OR?: Prisma.AiModelWhereInput[]
   NOT?: Prisma.AiModelWhereInput | Prisma.AiModelWhereInput[]
   provider?: Prisma.StringFilter<"AiModel"> | string
+  protocol?: Prisma.StringFilter<"AiModel"> | string
   name?: Prisma.StringFilter<"AiModel"> | string
   modelId?: Prisma.StringFilter<"AiModel"> | string
-  aliasKey?: Prisma.StringNullableFilter<"AiModel"> | string | null
   baseUrl?: Prisma.StringFilter<"AiModel"> | string
   apiKey?: Prisma.StringNullableFilter<"AiModel"> | string | null
   isEnabled?: Prisma.BoolFilter<"AiModel"> | boolean
@@ -264,11 +275,12 @@ export type AiModelWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
-}, "id">
+}, "id" | "provider_modelId_baseUrl" | "aliasKey">
 
 export type AiModelOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   provider?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
   name?: Prisma.SortOrder
   modelId?: Prisma.SortOrder
   aliasKey?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -289,6 +301,7 @@ export type AiModelScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AiModelScalarWhereWithAggregatesInput | Prisma.AiModelScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"AiModel"> | string
   provider?: Prisma.StringWithAggregatesFilter<"AiModel"> | string
+  protocol?: Prisma.StringWithAggregatesFilter<"AiModel"> | string
   name?: Prisma.StringWithAggregatesFilter<"AiModel"> | string
   modelId?: Prisma.StringWithAggregatesFilter<"AiModel"> | string
   aliasKey?: Prisma.StringNullableWithAggregatesFilter<"AiModel"> | string | null
@@ -303,6 +316,7 @@ export type AiModelScalarWhereWithAggregatesInput = {
 export type AiModelCreateInput = {
   id?: string
   provider: string
+  protocol?: string
   name: string
   modelId: string
   aliasKey?: string | null
@@ -318,6 +332,7 @@ export type AiModelCreateInput = {
 export type AiModelUncheckedCreateInput = {
   id?: string
   provider: string
+  protocol?: string
   name: string
   modelId: string
   aliasKey?: string | null
@@ -333,6 +348,7 @@ export type AiModelUncheckedCreateInput = {
 export type AiModelUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   modelId?: Prisma.StringFieldUpdateOperationsInput | string
   aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -348,6 +364,7 @@ export type AiModelUpdateInput = {
 export type AiModelUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   modelId?: Prisma.StringFieldUpdateOperationsInput | string
   aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -363,6 +380,7 @@ export type AiModelUncheckedUpdateInput = {
 export type AiModelCreateManyInput = {
   id?: string
   provider: string
+  protocol?: string
   name: string
   modelId: string
   aliasKey?: string | null
@@ -377,6 +395,7 @@ export type AiModelCreateManyInput = {
 export type AiModelUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   modelId?: Prisma.StringFieldUpdateOperationsInput | string
   aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -391,6 +410,7 @@ export type AiModelUpdateManyMutationInput = {
 export type AiModelUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   modelId?: Prisma.StringFieldUpdateOperationsInput | string
   aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -402,9 +422,16 @@ export type AiModelUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type AiModelProviderModelIdBaseUrlCompoundUniqueInput = {
+  provider: string
+  modelId: string
+  baseUrl: string
+}
+
 export type AiModelCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   provider?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
   name?: Prisma.SortOrder
   modelId?: Prisma.SortOrder
   aliasKey?: Prisma.SortOrder
@@ -419,6 +446,7 @@ export type AiModelCountOrderByAggregateInput = {
 export type AiModelMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   provider?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
   name?: Prisma.SortOrder
   modelId?: Prisma.SortOrder
   aliasKey?: Prisma.SortOrder
@@ -433,6 +461,7 @@ export type AiModelMaxOrderByAggregateInput = {
 export type AiModelMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   provider?: Prisma.SortOrder
+  protocol?: Prisma.SortOrder
   name?: Prisma.SortOrder
   modelId?: Prisma.SortOrder
   aliasKey?: Prisma.SortOrder
@@ -472,6 +501,7 @@ export type AiModelUpdateOneWithoutPhaseLogsNestedInput = {
 export type AiModelCreateWithoutPhaseLogsInput = {
   id?: string
   provider: string
+  protocol?: string
   name: string
   modelId: string
   aliasKey?: string | null
@@ -486,6 +516,7 @@ export type AiModelCreateWithoutPhaseLogsInput = {
 export type AiModelUncheckedCreateWithoutPhaseLogsInput = {
   id?: string
   provider: string
+  protocol?: string
   name: string
   modelId: string
   aliasKey?: string | null
@@ -516,6 +547,7 @@ export type AiModelUpdateToOneWithWhereWithoutPhaseLogsInput = {
 export type AiModelUpdateWithoutPhaseLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   modelId?: Prisma.StringFieldUpdateOperationsInput | string
   aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -530,6 +562,7 @@ export type AiModelUpdateWithoutPhaseLogsInput = {
 export type AiModelUncheckedUpdateWithoutPhaseLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   modelId?: Prisma.StringFieldUpdateOperationsInput | string
   aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -575,6 +608,7 @@ export type AiModelCountOutputTypeCountPhaseLogsArgs<ExtArgs extends runtime.Typ
 export type AiModelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   provider?: boolean
+  protocol?: boolean
   name?: boolean
   modelId?: boolean
   aliasKey?: boolean
@@ -591,6 +625,7 @@ export type AiModelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type AiModelSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   provider?: boolean
+  protocol?: boolean
   name?: boolean
   modelId?: boolean
   aliasKey?: boolean
@@ -605,6 +640,7 @@ export type AiModelSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type AiModelSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   provider?: boolean
+  protocol?: boolean
   name?: boolean
   modelId?: boolean
   aliasKey?: boolean
@@ -619,6 +655,7 @@ export type AiModelSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type AiModelSelectScalar = {
   id?: boolean
   provider?: boolean
+  protocol?: boolean
   name?: boolean
   modelId?: boolean
   aliasKey?: boolean
@@ -630,7 +667,7 @@ export type AiModelSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AiModelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "name" | "modelId" | "aliasKey" | "baseUrl" | "apiKey" | "isEnabled" | "isDefault" | "createdAt" | "updatedAt", ExtArgs["result"]["aiModel"]>
+export type AiModelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "protocol" | "name" | "modelId" | "aliasKey" | "baseUrl" | "apiKey" | "isEnabled" | "isDefault" | "createdAt" | "updatedAt", ExtArgs["result"]["aiModel"]>
 export type AiModelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   phaseLogs?: boolean | Prisma.AiModel$phaseLogsArgs<ExtArgs>
   _count?: boolean | Prisma.AiModelCountOutputTypeDefaultArgs<ExtArgs>
@@ -646,6 +683,7 @@ export type $AiModelPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     provider: string
+    protocol: string
     name: string
     modelId: string
     aliasKey: string | null
@@ -1081,6 +1119,7 @@ export interface Prisma__AiModelClient<T, Null = never, ExtArgs extends runtime.
 export interface AiModelFieldRefs {
   readonly id: Prisma.FieldRef<"AiModel", 'String'>
   readonly provider: Prisma.FieldRef<"AiModel", 'String'>
+  readonly protocol: Prisma.FieldRef<"AiModel", 'String'>
   readonly name: Prisma.FieldRef<"AiModel", 'String'>
   readonly modelId: Prisma.FieldRef<"AiModel", 'String'>
   readonly aliasKey: Prisma.FieldRef<"AiModel", 'String'>
@@ -1286,6 +1325,11 @@ export type AiModelFindManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Skip the first `n` AiModels.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of AiModels.
+   */
   distinct?: Prisma.AiModelScalarFieldEnum | Prisma.AiModelScalarFieldEnum[]
 }
 

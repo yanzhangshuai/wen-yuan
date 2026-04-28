@@ -250,6 +250,7 @@ export function createValidationAgentService(
 
     const client = createAiProviderClient({
       provider : model.provider,
+      protocol : model.protocol,
       apiKey   : model.apiKey,
       baseUrl  : model.baseUrl,
       modelName: model.modelName

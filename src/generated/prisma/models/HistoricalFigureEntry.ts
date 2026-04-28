@@ -210,7 +210,7 @@ export type HistoricalFigureEntryGroupByOutputType = {
   _max: HistoricalFigureEntryMaxAggregateOutputType | null
 }
 
-type GetHistoricalFigureEntryGroupByPayload<T extends HistoricalFigureEntryGroupByArgs> = Prisma.PrismaPromise<
+export type GetHistoricalFigureEntryGroupByPayload<T extends HistoricalFigureEntryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<HistoricalFigureEntryGroupByOutputType, T['by']> &
       {
@@ -1181,6 +1181,11 @@ export type HistoricalFigureEntryFindManyArgs<ExtArgs extends runtime.Types.Exte
    * Skip the first `n` HistoricalFigureEntries.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of HistoricalFigureEntries.
+   */
   distinct?: Prisma.HistoricalFigureEntryScalarFieldEnum | Prisma.HistoricalFigureEntryScalarFieldEnum[]
 }
 

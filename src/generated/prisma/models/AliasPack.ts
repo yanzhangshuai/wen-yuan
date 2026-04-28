@@ -220,7 +220,7 @@ export type AliasPackGroupByOutputType = {
   _max: AliasPackMaxAggregateOutputType | null
 }
 
-type GetAliasPackGroupByPayload<T extends AliasPackGroupByArgs> = Prisma.PrismaPromise<
+export type GetAliasPackGroupByPayload<T extends AliasPackGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AliasPackGroupByOutputType, T['by']> &
       {
@@ -1548,6 +1548,11 @@ export type AliasPackFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Skip the first `n` AliasPacks.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of AliasPacks.
+   */
   distinct?: Prisma.AliasPackScalarFieldEnum | Prisma.AliasPackScalarFieldEnum[]
 }
 

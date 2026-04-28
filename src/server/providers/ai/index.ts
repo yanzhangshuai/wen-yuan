@@ -1,8 +1,5 @@
-import { DeepSeekClient } from "@/server/providers/ai/deepseekClient";
-import { DoubaoClient } from "@/server/providers/ai/doubaoClient";
 import { GeminiClient } from "@/server/providers/ai/geminiClient";
-import { GlmClient } from "@/server/providers/ai/glmClient";
-import { QwenClient } from "@/server/providers/ai/qwenClient";
+import { OpenAiCompatibleClient } from "@/server/providers/ai/openaiCompatibleClient";
 import type { AiUsage, PromptMessageInput } from "@/types/pipeline";
 
 /**
@@ -46,13 +43,13 @@ export interface AiProviderClient {
 }
 
 /**
- * 功能：定义内置 AI Provider 名称。
+ * 功能：定义 AI Provider 协议类型。
  * 输入：无。
- * 输出：类型约束 AiProviderName。
+ * 输出：类型约束 AiProviderProtocol。
  * 异常：无。
  * 副作用：无。
  */
-export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao" | "glm";
+export type AiProviderProtocol = "openai-compatible" | "gemini";
 
 /**
  * 功能：定义创建 Provider 客户端所需的运行时配置（来自数据库模型设置）。
@@ -62,8 +59,10 @@ export type AiProviderName = "gemini" | "deepseek" | "qwen" | "doubao" | "glm";
  * 副作用：无。
  */
 export interface CreateAiProviderInput {
-  /** Provider 标识，决定实例化哪个 SDK 适配器。 */
-  provider : AiProviderName;
+  /** Provider 标识，仅用于错误提示和日志可读性。 */
+  provider : string;
+  /** 协议类型，决定实例化哪个 SDK 适配器。 */
+  protocol : AiProviderProtocol;
   /** 访问密钥（敏感字段，需服务端加密存储）。 */
   apiKey   : string;
   /** 可选自定义网关地址，未配置时使用各厂商默认地址。 */
@@ -74,9 +73,9 @@ export interface CreateAiProviderInput {
 
 /**
  * 功能：按数据库中的模型配置创建 AI 客户端实例。
- * 输入：provider/apiKey/baseUrl/modelName。
+ * 输入：protocol/provider/apiKey/baseUrl/modelName。
  * 输出：AiProviderClient 实例。
- * 异常：provider 不受支持或关键参数缺失时抛错。
+ * 异常：protocol 不受支持或关键参数缺失时抛错。
  * 副作用：无（仅创建客户端对象，不发请求）。
  */
 export function createAiProviderClient(input: CreateAiProviderInput): AiProviderClient {
@@ -85,24 +84,24 @@ export function createAiProviderClient(input: CreateAiProviderInput): AiProvider
     throw new Error("模型标识不能为空");
   }
 
-  switch (input.provider) {
+  switch (input.protocol) {
     case "gemini":
       return new GeminiClient(input.apiKey, input.modelName);
-    case "deepseek":
-      return new DeepSeekClient(input.apiKey, input.baseUrl ?? "https://api.deepseek.com", input.modelName);
-    case "qwen":
-      return new QwenClient(
-        input.apiKey,
-        input.baseUrl ?? "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        input.modelName
-      );
-    case "doubao":
-      return new DoubaoClient(input.apiKey, input.baseUrl ?? "https://ark.cn-beijing.volces.com/api/v3", input.modelName);
-    case "glm":
-      return new GlmClient(input.apiKey, input.baseUrl ?? "https://open.bigmodel.cn/api/paas/v4", input.modelName);
+    case "openai-compatible": {
+      if (!input.baseUrl?.trim()) {
+        throw new Error("OpenAI 兼容协议 BaseURL 不能为空");
+      }
+
+      return new OpenAiCompatibleClient({
+        providerName: input.provider,
+        apiKey      : input.apiKey,
+        baseUrl     : input.baseUrl,
+        modelName   : input.modelName
+      });
+    }
     default: {
-      const exhaustiveCheck: never = input.provider;
-      throw new Error(`Unsupported provider: ${String(exhaustiveCheck)}`);
+      const exhaustiveCheck: never = input.protocol;
+      throw new Error(`Unsupported provider protocol: ${String(exhaustiveCheck)}`);
     }
   }
 }

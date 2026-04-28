@@ -13,8 +13,7 @@ import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
  *
  * 核心业务职责：
  * 1. 初始化管理员账号（后台登录入口所依赖的首个账号）。
- * 2. 初始化 AI 模型配置列表（后台“模型管理/模型策略”上游依赖）。
- * 3. 初始化知识库基础种子（书籍类型、种子知识包、姓氏、泛化称谓、NER 规则、提示词模板基线）。
+ * 2. 初始化知识库基础种子（书籍类型、种子知识包、姓氏、泛化称谓、NER 规则、提示词模板基线）。
  *
  * 上下游关系：
  * - 上游输入：`.env` 中的数据库连接与管理员账号配置。
@@ -22,7 +21,7 @@ import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
  *
  * 重要约束（业务规则，不是技术限制）：
  * - 管理员账号必须可幂等重建（重复 seed 不产生重复管理员）。
- * - 模型基础清单以“当前代码定义”为准，每次 seed 会覆盖为最新清单，避免历史脏数据干扰验收/开发。
+ * - AI 模型配置由管理后台维护，seed 不再清空或重建模型表，避免覆盖管理员配置。
  */
 function loadEnvFromDotenv() {
   // Prisma CLI 直跑脚本时通常不会自动加载 dotenv，这里手动兜底，确保本地与 CI 行为一致。
@@ -101,80 +100,13 @@ async function hashPassword(password: string): Promise<string> {
   });
 }
 
-const defaultAiModels = [
-  {
-    provider : "deepseek",
-    aliasKey : "deepseek-v3-stable",
-    name     : "DeepSeek V3",
-    modelId  : "deepseek-chat",
-    baseUrl  : "https://api.deepseek.com",
-    isDefault: false
-  },
-  {
-    provider : "deepseek",
-    aliasKey : "deepseek-r1-stable",
-    name     : "DeepSeek R1",
-    modelId  : "deepseek-reasoner",
-    baseUrl  : "https://api.deepseek.com",
-    isDefault: false
-  },
-  {
-    provider : "qwen",
-    aliasKey : "qwen-max-stable",
-    name     : "通义千问 Max",
-    modelId  : "qwen-max",
-    baseUrl  : "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    isDefault: false
-  },
-  {
-    provider : "qwen",
-    aliasKey : "qwen-plus-stable",
-    name     : "通义千问 Plus",
-    modelId  : "qwen-plus",
-    baseUrl  : "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    isDefault: false
-  },
-  {
-    provider : "doubao",
-    aliasKey : "doubao-pro-stable",
-    name     : "豆包 Pro",
-    modelId  : "ep-your-endpoint-id",
-    baseUrl  : "https://ark.cn-beijing.volces.com/api/v3",
-    isDefault: false
-  },
-  {
-    provider : "glm",
-    aliasKey : "glm-4.6-stable",
-    name     : "GLM 4.6",
-    modelId  : "glm-4.6",
-    baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
-    isDefault: false
-  },
-  {
-    provider : "glm",
-    aliasKey : "glm-5-stable",
-    name     : "GLM 5",
-    modelId  : "glm-5",
-    baseUrl  : "https://open.bigmodel.cn/api/paas/v4",
-    isDefault: false
-  },
-  {
-    provider : "gemini",
-    aliasKey : "gemini-flash-stable",
-    name     : "Gemini Flash",
-    modelId  : "gemini-3.1-flash",
-    baseUrl  : "https://generativelanguage.googleapis.com",
-    isDefault: false
-  }
-] as const;
-
 /**
  * 种子主流程（事务化）：
  * 1. 先生成管理员密码哈希；
- * 2. 在一个事务内写入管理员与模型清单；
+ * 2. 写入管理员账号；
  * 3. 输出可读日志，方便本地和 CI 诊断。
  *
- * 为什么初始化“管理员 + 模型 + 知识库基础种子”：
+ * 为什么初始化“管理员 + 知识库基础种子”：
  * - 后台知识库已成为解析链路的运行时依赖，仅有管理员与模型已不足以支撑完整验收；
  * - 这里仍只写入基础配置与可幂等知识种子，不注入书籍/章节解析结果等业务运行数据。
  */
@@ -182,51 +114,24 @@ async function main() {
   console.log("🌱 开始录入种子数据...");
   const adminPasswordHash = await hashPassword(adminPasswordValue);
 
-  // 多实体写入放进同一事务，确保“管理员与模型清单”要么一起成功，要么一起回滚。
-  // 这是运维一致性要求，避免出现只写入一半的系统初始化状态。
-  const result = await prisma.$transaction(async (tx) => {
-    // upsert 保证幂等：重复执行 seed 时不会新增重复管理员，而是更新同邮箱账号的关键字段。
-    await tx.user.upsert({
-      where : { email: adminEmailValue },
-      update: {
-        username: adminUsernameValue,
-        email   : adminEmailValue,
-        name    : adminName,
-        password: adminPasswordHash,
-        role    : AppRole.ADMIN
-      },
-      create: {
-        username: adminUsernameValue,
-        email   : adminEmailValue,
-        name    : adminName,
-        password: adminPasswordHash,
-        role    : AppRole.ADMIN
-      }
-    });
-
-    // 模型清单采用“先清空再全量写入”策略：
-    // - 这是业务上的“基准配置重建”语义，而不是增量同步语义；
-    // - 可以避免多次 seed 导致重复模型、旧别名残留、默认模型冲突等问题。
-    // 风险提示：如果将 seed 用于生产环境，可能覆盖人工维护的模型配置，需谨慎。
-    await tx.aiModel.deleteMany();
-    await tx.aiModel.createMany({
-      data: defaultAiModels.map((item) => ({
-        provider : item.provider,
-        aliasKey : item.aliasKey,
-        name     : item.name,
-        modelId  : item.modelId,
-        baseUrl  : item.baseUrl,
-        apiKey   : null, // 安全边界：seed 不写入明文密钥，避免把密钥放进代码/镜像层。
-        isEnabled: false, // 运维边界：默认禁用，要求管理员在后台完成显式启用与验证后再参与任务。
-        isDefault: item.isDefault // 默认模型由清单显式定义，避免运行时出现“无默认模型”或“多默认模型”歧义。
-      }))
-    });
-
-    return {
-      // 返回值仅用于日志回显，帮助操作者确认实际写入结果。
-      adminUsername: adminUsernameValue,
-      modelCount   : defaultAiModels.length
-    };
+  // upsert 保证幂等：重复执行 seed 时不会新增重复管理员，而是更新同邮箱账号的关键字段。
+  const result = await prisma.user.upsert({
+    where : { email: adminEmailValue },
+    update: {
+      username: adminUsernameValue,
+      email   : adminEmailValue,
+      name    : adminName,
+      password: adminPasswordHash,
+      role    : AppRole.ADMIN
+    },
+    create: {
+      username: adminUsernameValue,
+      email   : adminEmailValue,
+      name    : adminName,
+      password: adminPasswordHash,
+      role    : AppRole.ADMIN
+    },
+    select: { username: true }
   });
 
   const knowledgeInitPath = resolve(process.cwd(), "data/knowledge-base/book-types.init.json");
@@ -240,8 +145,8 @@ async function main() {
   await seedKnowledgePhase7(prisma);
 
   console.log("✅ 种子数据录入成功！");
-  console.log(`- 已预设模型数: ${result.modelCount}`);
-  console.log(`- 已初始化管理员: ${result.adminUsername}`);
+  console.log(`- 已初始化管理员: ${result.username}`);
+  console.log("- 模型配置由管理后台维护，seed 未修改 ai_models");
   console.log("- 已完成知识库基础种子初始化");
 }
 

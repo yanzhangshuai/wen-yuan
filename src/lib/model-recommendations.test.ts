@@ -21,26 +21,33 @@ describe("model recommendations config", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("maps each stage to an explicit recommendation alias", () => {
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.ROSTER_DISCOVERY]).toMatchObject({
-      alias: "qwen-max-stable"
+      alias: "qwen3-max"
     });
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.CHUNK_EXTRACTION]).toMatchObject({
-      alias: "deepseek-v3-stable"
+      alias: "deepseek-v4-flash"
     });
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.CHAPTER_VALIDATION]).toMatchObject({
-      alias: "qwen-plus-stable"
+      alias: "qwen3.6-plus"
     });
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.TITLE_RESOLUTION]).toMatchObject({
-      alias: "qwen-max-stable"
+      alias: "qwen3-max"
     });
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.GRAY_ZONE_ARBITRATION]).toMatchObject({
-      alias: "qwen-plus-stable"
+      alias: "qwen3.6-plus"
     });
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.BOOK_VALIDATION]).toMatchObject({
-      alias: "qwen-max-stable"
+      alias: "qwen3-max"
+    });
+    expect(STAGE_RECOMMENDED_MODELS[PipelineStage.INDEPENDENT_EXTRACTION]).toMatchObject({
+      alias: "deepseek-v4-flash"
+    });
+    expect(STAGE_RECOMMENDED_MODELS[PipelineStage.ENTITY_RESOLUTION]).toMatchObject({
+      alias: "qwen3-max"
     });
     expect(STAGE_RECOMMENDED_MODELS[PipelineStage.FALLBACK]).toMatchObject({
-      alias: "qwen-plus-stable"
+      alias: "qwen3.6-plus"
     });
+    expect(STAGE_RECOMMENDED_MODELS[PipelineStage.CHUNK_EXTRACTION]).not.toHaveProperty("label");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -50,12 +57,12 @@ describe("model recommendations config", () => {
 
     expect(
       isRecommendedModelMatch(recommendation, {
-        aliasKey: "deepseek-v3-stable"
+        aliasKey: "deepseek-v4-flash"
       })
     ).toBe(true);
     expect(
       isRecommendedModelMatch(recommendation, {
-        aliasKey: "deepseek-v3-stable"
+        aliasKey: "DEEPSEEK-V4-FLASH"
       })
     ).toBe(true);
     expect(
@@ -69,7 +76,7 @@ describe("model recommendations config", () => {
   it("picks recommended model by aliasKey", () => {
     const recommendation = STAGE_RECOMMENDED_MODELS[PipelineStage.CHUNK_EXTRACTION];
     const chosen = pickRecommendedEnabledModel(recommendation, [
-      { id: "m-1", aliasKey: "deepseek-v3-stable" },
+      { id: "m-1", aliasKey: "deepseek-v4-flash" },
       { id: "m-2", aliasKey: "legacy-alias" }
     ]);
 

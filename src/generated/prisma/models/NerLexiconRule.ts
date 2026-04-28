@@ -228,7 +228,7 @@ export type NerLexiconRuleGroupByOutputType = {
   _max: NerLexiconRuleMaxAggregateOutputType | null
 }
 
-type GetNerLexiconRuleGroupByPayload<T extends NerLexiconRuleGroupByArgs> = Prisma.PrismaPromise<
+export type GetNerLexiconRuleGroupByPayload<T extends NerLexiconRuleGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<NerLexiconRuleGroupByOutputType, T['by']> &
       {
@@ -1345,6 +1345,11 @@ export type NerLexiconRuleFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Skip the first `n` NerLexiconRules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of NerLexiconRules.
+   */
   distinct?: Prisma.NerLexiconRuleScalarFieldEnum | Prisma.NerLexiconRuleScalarFieldEnum[]
 }
 

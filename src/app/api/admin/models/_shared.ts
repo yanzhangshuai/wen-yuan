@@ -17,6 +17,14 @@ export const modelRouteParamsSchema = z.object({
 
 /** 更新模型配置请求体 Schema。 */
 export const updateModelBodySchema = z.object({
+  /** Provider 分组名，允许管理员自定义。 */
+  provider       : z.string().trim().min(1, "Provider 不能为空").optional(),
+  /** 调用协议。 */
+  protocol       : z.enum(["openai-compatible", "gemini"]).optional(),
+  /** 展示名称。 */
+  name           : z.string().trim().min(1, "模型名称不能为空").optional(),
+  /** 策略别名；null 表示清空。 */
+  aliasKey       : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
   /** 供应商侧模型标识（接口字段），为空字符串视为无效输入。 */
   providerModelId: z.string().trim().min(1, "模型标识不能为空").optional(),
   /** API Key：可选；允许显式传 `null` 表示“清空已存储密钥”（业务规则）。 */
@@ -28,6 +36,19 @@ export const updateModelBodySchema = z.object({
 }).refine((value) => Object.keys(value).length > 0, {
   // 防御目的：拒绝“空更新”请求，避免看似成功但实际无变更，造成调用方误判。
   message: "至少提供一个可更新字段"
+});
+
+/** 新增模型请求体 Schema。 */
+export const createModelBodySchema = z.object({
+  provider : z.string().trim().min(1, "Provider 不能为空"),
+  protocol : z.enum(["openai-compatible", "gemini"]),
+  name     : z.string().trim().min(1, "模型名称不能为空"),
+  modelId  : z.string().trim().min(1, "模型标识不能为空"),
+  aliasKey : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
+  baseUrl  : z.string().trim().url("BaseURL 格式不合法"),
+  apiKey   : z.string().trim().min(1, "API Key 不能为空").optional(),
+  isEnabled: z.boolean().optional(),
+  isDefault: z.boolean().optional()
 });
 
 /**

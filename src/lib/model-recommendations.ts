@@ -9,7 +9,7 @@ import { z } from "zod";
  *
  * 核心职责：
  * - 读取并校验模型推荐配置（JSON）；
- * - 产出“阶段 -> 推荐模型别名/标签”的标准映射；
+ * - 产出“阶段 -> 推荐模型别名”的标准映射；
  * - 提供推荐匹配与推荐模型挑选工具函数，供 UI 和服务层统一使用。
  *
  * 上下游关系：
@@ -32,16 +32,6 @@ const STAGES_FOR_RECOMMENDATION: PipelineStage[] = [
   ...BUSINESS_PIPELINE_STAGES,
   PipelineStage.FALLBACK
 ];
-
-/**
- * 单个推荐别名配置项 schema。
- *
- * 字段语义：
- * - `label`：给人看的模型名称，用于页面展示，不直接作为程序匹配键。
- */
-const RecommendationAliasSchema = z.object({
-  label: z.string().trim().min(1)
-});
 
 /**
  * 阶段别名映射 schema。
@@ -68,18 +58,12 @@ const StageAliasesSchema = z.object({
 const ModelRecommendationsSchema = z.object({
   /** 配置版本号：用于未来平滑升级配置结构。 */
   version     : z.literal("v1"),
-  /**
-   * alias 字典：
-   * - key：别名键（程序匹配用）；
-   * - value.label：展示文案（人可读）。
-   */
-  aliases     : z.record(z.string().trim().min(1), RecommendationAliasSchema),
   /** 各阶段对应 alias 键。 */
-  stageAliases: StageAliasesSchema
+  stageAliases: StageAliasesSchema,
+  /** 配置说明：仅供维护者阅读，不参与运行时匹配。 */
+  notes       : z.string().optional()
 });
 
-/** 解析后的单个 alias 数据类型。 */
-type RecommendationAlias = z.infer<typeof RecommendationAliasSchema>;
 /** 解析后的完整推荐配置类型。 */
 type ModelRecommendations = z.infer<typeof ModelRecommendationsSchema>;
 
@@ -94,7 +78,7 @@ interface RecommendationModelCandidate {
 /**
  * 暴露给调用方的“阶段推荐模型”结构。
  */
-export interface StageRecommendedModel extends RecommendationAlias {
+export interface StageRecommendedModel {
   /** 机器匹配用 alias。 */
   alias: string;
 }
@@ -126,22 +110,16 @@ function createEmptyStageRecommendationMap(): Record<PipelineStage, StageRecomme
  * @param config 已通过 schema 校验的推荐配置
  * @returns 阶段到推荐模型的完整映射
  *
- * 异常语义：
- * - 当某阶段引用了不存在 alias 时抛错；
- * - 这是配置一致性校验，目的是在启动期暴露问题，而不是运行时默默降级。
+ * 解析语义：
+ * - `StageAliasesSchema` 已保证每个阶段都有非空 alias；
+ * - alias 是否存在于数据库模型表由管理端启用模型状态决定，不再由配置文件二次登记。
  */
 function resolveStageRecommendedModels(config: ModelRecommendations): Record<PipelineStage, StageRecommendedModel | null> {
   const mapping = createEmptyStageRecommendationMap();
 
   for (const stage of STAGES_FOR_RECOMMENDATION) {
     const alias = config.stageAliases[stage];
-    const recommended = config.aliases[alias];
-    if (!recommended) {
-      // 业务规则：阶段推荐必须可回溯到具体 alias，缺失视为配置错误。
-      throw new Error(`[model-recommendations] stage "${stage}" references missing alias "${alias}"`);
-    }
-
-    mapping[stage] = { alias, label: recommended.label };
+    mapping[stage] = { alias };
   }
 
   return mapping;

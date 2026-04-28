@@ -227,7 +227,7 @@ export type SurnameRuleGroupByOutputType = {
   _max: SurnameRuleMaxAggregateOutputType | null
 }
 
-type GetSurnameRuleGroupByPayload<T extends SurnameRuleGroupByArgs> = Prisma.PrismaPromise<
+export type GetSurnameRuleGroupByPayload<T extends SurnameRuleGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<SurnameRuleGroupByOutputType, T['by']> &
       {
@@ -1341,6 +1341,11 @@ export type SurnameRuleFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` SurnameRules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of SurnameRules.
+   */
   distinct?: Prisma.SurnameRuleScalarFieldEnum | Prisma.SurnameRuleScalarFieldEnum[]
 }
 

@@ -1,7 +1,7 @@
 import { type z } from "zod";
 
 import { prisma } from "@/server/db/prisma";
-import { createAiProviderClient } from "@/server/providers/ai";
+import { createAiProviderClient, type AiProviderProtocol } from "@/server/providers/ai";
 import { decryptValue } from "@/server/security/encryption";
 import { repairJson } from "@/types/analysis";
 
@@ -20,7 +20,8 @@ import { repairJson } from "@/types/analysis";
 
 export interface KnowledgeGenerationModelInfo {
   id       : string;
-  provider : "gemini" | "deepseek" | "qwen" | "doubao" | "glm";
+  provider : string;
+  protocol : AiProviderProtocol;
   modelName: string;
 }
 
@@ -42,6 +43,7 @@ export async function getKnowledgeGenerationModel(selectedModelId?: string): Pro
   const select = {
     id      : true,
     provider: true,
+    protocol: true,
     modelId : true,
     apiKey  : true,
     baseUrl : true
@@ -76,7 +78,8 @@ export async function getKnowledgeGenerationModel(selectedModelId?: string): Pro
 
   return {
     id       : model.id,
-    provider : model.provider.toLowerCase() as ResolvedGenerationModel["provider"],
+    provider : model.provider,
+    protocol : model.protocol as AiProviderProtocol,
     modelName: model.modelId,
     apiKey   : decryptValue(model.apiKey),
     baseUrl  : model.baseUrl ?? undefined
@@ -108,6 +111,7 @@ export async function executeKnowledgeJsonGeneration<TSchema extends z.ZodTypeAn
   const model = await getKnowledgeGenerationModel(input.selectedModelId);
   const providerClient = createAiProviderClient({
     provider : model.provider,
+    protocol : model.protocol,
     apiKey   : model.apiKey,
     baseUrl  : model.baseUrl,
     modelName: model.modelName
@@ -135,6 +139,7 @@ export async function executeKnowledgeJsonGeneration<TSchema extends z.ZodTypeAn
     model     : {
       id       : model.id,
       provider : model.provider,
+      protocol : model.protocol,
       modelName: model.modelName
     }
   };

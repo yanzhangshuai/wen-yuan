@@ -119,6 +119,7 @@ describe("knowledge catalog generation", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-1",
       provider: "DEEPSEEK",
+      protocol: "openai-compatible",
       modelId : "deepseek-chat",
       apiKey  : "encrypted-key",
       baseUrl : "https://api.example.com"
@@ -142,7 +143,8 @@ describe("knowledge catalog generation", () => {
 
     expect(result.model).toEqual({
       id       : "model-1",
-      provider : "deepseek",
+      provider : "DEEPSEEK",
+      protocol : "openai-compatible",
       modelName: "deepseek-chat"
     });
     expect(result.skipped).toBe(2);
@@ -179,7 +181,8 @@ describe("knowledge catalog generation", () => {
       })
     ]);
     expect(hoisted.createAiProviderClient).toHaveBeenCalledWith({
-      provider : "deepseek",
+      provider : "DEEPSEEK",
+      protocol : "openai-compatible",
       apiKey   : "plain:encrypted-key",
       baseUrl  : "https://api.example.com",
       modelName: "deepseek-chat"
@@ -270,6 +273,7 @@ describe("knowledge catalog generation", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-3",
       provider: "GLM",
+      protocol: "openai-compatible",
       modelId : "glm-4.5",
       apiKey  : "encrypted-key-3",
       baseUrl : "https://api.glm.example.com"
@@ -298,7 +302,8 @@ describe("knowledge catalog generation", () => {
       skipped: 2,
       model  : {
         id       : "model-3",
-        provider : "glm",
+        provider : "GLM",
+        protocol : "openai-compatible",
         modelName: "glm-4.5"
       }
     });
@@ -336,6 +341,7 @@ describe("knowledge catalog generation", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-5",
       provider: "QWEN",
+      protocol: "openai-compatible",
       modelId : "qwen-plus",
       apiKey  : "encrypted-key-5",
       baseUrl : "https://api.qwen.example.com"
@@ -358,7 +364,8 @@ describe("knowledge catalog generation", () => {
       skipped: 2,
       model  : {
         id       : "model-5",
-        provider : "qwen",
+        provider : "QWEN",
+        protocol : "openai-compatible",
         modelName: "qwen-plus"
       }
     });
@@ -449,6 +456,7 @@ describe("knowledge catalog generation", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-4",
       provider: "DOUBAO",
+      protocol: "openai-compatible",
       modelId : "doubao-pro",
       apiKey  : "encrypted-key-4",
       baseUrl : "https://api.doubao.example.com"
@@ -477,7 +485,8 @@ describe("knowledge catalog generation", () => {
       skipped: 2,
       model  : {
         id       : "model-4",
-        provider : "doubao",
+        provider : "DOUBAO",
+        protocol : "openai-compatible",
         modelName: "doubao-pro"
       }
     });
@@ -515,6 +524,7 @@ describe("knowledge catalog generation", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-6",
       provider: "GLM",
+      protocol: "openai-compatible",
       modelId : "glm-4.5-air",
       apiKey  : "encrypted-key-6",
       baseUrl : "https://api.glm.example.com"
@@ -537,7 +547,8 @@ describe("knowledge catalog generation", () => {
       skipped: 2,
       model  : {
         id       : "model-6",
-        provider : "glm",
+        provider : "GLM",
+        protocol : "openai-compatible",
         modelName: "glm-4.5-air"
       }
     });
@@ -595,6 +606,7 @@ describe("knowledge catalog generation", () => {
     hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
       id      : "model-2",
       provider: "QWEN",
+      protocol: "openai-compatible",
       modelId : "qwen-max",
       apiKey  : "encrypted-key-2",
       baseUrl : "https://api.qwen.example.com"
@@ -616,7 +628,8 @@ describe("knowledge catalog generation", () => {
 
     expect(result.model).toEqual({
       id       : "model-2",
-      provider : "qwen",
+      provider : "QWEN",
+      protocol : "openai-compatible",
       modelName: "qwen-max"
     });
     expect(result.skipped).toBe(1);

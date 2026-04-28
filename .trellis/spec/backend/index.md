@@ -21,6 +21,7 @@
 | [数据库规范](./database-guidelines.md) | Prisma 事务与生成代码规则 | 代码库既有模式 |
 | [Neo4j 使用规范](./neo4j-guidelines.md) | Session 生命周期、参数化查询、与 Prisma 的边界 | 新增 |
 | [AI 输出契约规范](./ai-output-contract.md) | Zod 校验、多模型一致性、幻觉处理、重试策略 | 新增 |
+| [AI 模型配置契约](./ai-model-config.md) | 管理员模型 CRUD、protocol 分发、导入导出、SSRF 与删除保护 | 04-28 自定义模型配置 |
 | [分析运行时知识契约](./analysis-runtime-knowledge.md) | 知识库 DB 到分析 Prompt/Resolver 的 DB-only 运行时契约 | 04-16 PromptExtractionRule 管道修复 |
 | [类型安全](./type-safety.md) | 跨层类型约束与禁用模式 | 代码库既有模式 |
 | [日志规范](./logging-guidelines.md) | 结构化日志规范 | 服务层既有模式 |

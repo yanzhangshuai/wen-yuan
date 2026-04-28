@@ -228,7 +228,7 @@ export type PromptExtractionRuleGroupByOutputType = {
   _max: PromptExtractionRuleMaxAggregateOutputType | null
 }
 
-type GetPromptExtractionRuleGroupByPayload<T extends PromptExtractionRuleGroupByArgs> = Prisma.PrismaPromise<
+export type GetPromptExtractionRuleGroupByPayload<T extends PromptExtractionRuleGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<PromptExtractionRuleGroupByOutputType, T['by']> &
       {
@@ -1345,6 +1345,11 @@ export type PromptExtractionRuleFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` PromptExtractionRules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of PromptExtractionRules.
+   */
   distinct?: Prisma.PromptExtractionRuleScalarFieldEnum | Prisma.PromptExtractionRuleScalarFieldEnum[]
 }
 

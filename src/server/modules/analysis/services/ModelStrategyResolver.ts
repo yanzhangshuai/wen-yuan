@@ -21,7 +21,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
-import type { AiProviderName } from "@/server/providers/ai";
+import type { AiProviderProtocol } from "@/server/providers/ai";
 import { strategyStagesSchema, type StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
 import { decryptValue } from "@/server/security/encryption";
 import {
@@ -32,7 +32,6 @@ import {
   type StageParams
 } from "@/types/pipeline";
 
-const SUPPORTED_AI_PROVIDERS: readonly AiProviderName[] = ["gemini", "deepseek", "qwen", "doubao", "glm"];
 const ALL_PIPELINE_STAGES: PipelineStage[] = [
   ...BUSINESS_PIPELINE_STAGES,
   PipelineStage.FALLBACK
@@ -46,6 +45,8 @@ interface LoadedModel {
   id       : string;
   /** provider 原始值（数据库字段）。 */
   provider : string;
+  /** provider 调用协议。 */
+  protocol : string;
   /** 管理端显示名。 */
   name     : string;
   /** provider 侧模型 ID。 */
@@ -82,7 +83,9 @@ export interface ResolvedStageModel {
   /** 模型记录 ID。 */
   modelId    : string;
   /** 归一化 provider。 */
-  provider   : AiProviderName;
+  provider   : string;
+  /** provider 调用协议。 */
+  protocol   : AiProviderProtocol;
   /** provider 侧模型标识。 */
   modelName  : string;
   /** 展示名（便于日志与管理端展示）。 */
@@ -111,18 +114,17 @@ interface CreateModelStrategyResolverOptions {
 }
 
 /**
- * 功能：把数据库 provider 字段规范化为受支持的 provider 枚举。
- * 输入：数据库中的 provider 原始值（大小写不敏感）。
- * 输出：标准化后的 `AiProviderName`。
- * 异常：provider 不在受支持列表内时抛错。
+ * 功能：把数据库 protocol 字段规范化为受支持的协议枚举。
+ * 输入：数据库中的 protocol 原始值。
+ * 输出：标准化后的 `AiProviderProtocol`。
+ * 异常：protocol 不受支持时抛错。
  * 副作用：无。
  */
-function normalizeProvider(provider: string): AiProviderName {
-  const normalized = provider.trim().toLowerCase();
-  if ((SUPPORTED_AI_PROVIDERS as readonly string[]).includes(normalized)) {
-    return normalized as AiProviderName;
+function normalizeProtocol(protocol: string): AiProviderProtocol {
+  if (protocol === "openai-compatible" || protocol === "gemini") {
+    return protocol;
   }
-  throw new Error(`不支持的模型 provider: ${provider}`);
+  throw new Error(`不支持的模型协议: ${protocol}`);
 }
 
 /**
@@ -212,7 +214,8 @@ function toResolvedModel(
 ): ResolvedStageModel {
   return {
     modelId    : model.id,
-    provider   : normalizeProvider(model.provider),
+    provider   : model.provider,
+    protocol   : normalizeProtocol(model.protocol),
     modelName  : model.modelId,
     displayName: model.name,
     baseUrl    : model.baseUrl,
@@ -311,6 +314,7 @@ async function loadEnabledModels(prismaClient: PrismaClient, modelIds: string[])
     select: {
       id       : true,
       provider : true,
+      protocol : true,
       name     : true,
       modelId  : true,
       baseUrl  : true,
@@ -343,6 +347,7 @@ async function loadSystemDefaultModel(prismaClient: PrismaClient): Promise<Loade
     select : {
       id       : true,
       provider : true,
+      protocol : true,
       name     : true,
       modelId  : true,
       baseUrl  : true,
@@ -363,6 +368,7 @@ async function loadSystemDefaultModel(prismaClient: PrismaClient): Promise<Loade
     select : {
       id       : true,
       provider : true,
+      protocol : true,
       name     : true,
       modelId  : true,
       baseUrl  : true,

@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { updateAdminModel } from "@/server/modules/models";
+import { deleteAdminModel, ModelConfigurationError, updateAdminModel } from "@/server/modules/models";
 import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, modelRouteParamsSchema, updateModelBodySchema } from "../_shared";
@@ -36,6 +36,7 @@ export async function PATCH(
   // 统一埋点元信息：用于响应 meta、日志串联和耗时统计。
   const startedAt = Date.now();
   const requestId = randomUUID();
+  const path = "/api/admin/models/[id]";
 
   try {
     // 管理员鉴权前置：这是业务权限规则，不是技术限制。
@@ -76,6 +77,18 @@ export async function PATCH(
       data
     });
   } catch (error) {
+    if (error instanceof ModelConfigurationError) {
+      return failJson({
+        path,
+        requestId,
+        startedAt,
+        error,
+        fallbackCode   : error.code,
+        fallbackMessage: error.message,
+        status         : error.status
+      });
+    }
+
     // 未命中已知业务错误时统一落到内部错误，避免泄露底层细节。
     return failJson({
       path           : "/api/admin/models/[id]",
@@ -84,6 +97,61 @@ export async function PATCH(
       error,
       fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
       fallbackMessage: "模型配置更新失败"
+    });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+): Promise<Response> {
+  const startedAt = Date.now();
+  const requestId = randomUUID();
+  const path = "/api/admin/models/[id]";
+
+  try {
+    const auth = await getAuthContext(await headers());
+    requireAdmin(auth);
+
+    const parsedParams = modelRouteParamsSchema.safeParse(await context.params);
+    if (!parsedParams.success) {
+      return badRequestJson(
+        "/api/admin/models/[id]",
+        requestId,
+        startedAt,
+        parsedParams.error.issues[0]?.message ?? "请求参数不合法"
+      );
+    }
+
+    const data = await deleteAdminModel(parsedParams.data.id);
+    return okJson({
+      path   : `/api/admin/models/${parsedParams.data.id}`,
+      requestId,
+      startedAt,
+      code   : "ADMIN_MODEL_DELETED",
+      message: "模型删除成功",
+      data
+    });
+  } catch (error) {
+    if (error instanceof ModelConfigurationError) {
+      return failJson({
+        path,
+        requestId,
+        startedAt,
+        error,
+        fallbackCode   : error.code,
+        fallbackMessage: error.message,
+        status         : error.status
+      });
+    }
+
+    return failJson({
+      path,
+      requestId,
+      startedAt,
+      error,
+      fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
+      fallbackMessage: "模型删除失败"
     });
   }
 }

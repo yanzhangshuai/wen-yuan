@@ -15,7 +15,7 @@
  *
  * 关键业务约束：
  * - API Key 必须以密文存储，读取时仅在必要路径解密；
- * - 连通性测试必须走白名单域名校验，防止 SSRF 风险；
+ * - 连通性测试必须拦截私有/危险网络地址，防止 SSRF 风险；
  * - “默认模型唯一”是业务规则，不是技术偶然，涉及全局推理链路稳定性。
  * =============================================================================
  */
@@ -36,18 +36,49 @@ import {
 
 /** 便于测试注入的 fetch 签名类型，避免在单测里强耦合全局 fetch。 */
 type FetchImpl = typeof fetch;
-/** 平台当前支持的 AI 提供商枚举（与数据库 provider 字段取值保持一致）。 */
-export type SupportedProvider = "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
 
-const providerSchema = z.enum(["deepseek", "qwen", "doubao", "gemini", "glm"]);
+export type AiModelProtocol = "openai-compatible" | "gemini";
+
+export class ModelConfigurationError extends Error {
+  readonly code  : string;
+  readonly status: number;
+
+  constructor(code: string, message: string, status = 409) {
+    super(message);
+    this.name = "ModelConfigurationError";
+    this.code = code;
+    this.status = status;
+  }
+}
 
 const idSchema = z.string().trim().min(1, "模型 ID 不能为空");
+const providerSchema = z.string().trim().min(1, "Provider 不能为空");
+const protocolSchema = z.enum(["openai-compatible", "gemini"]);
+const nameSchema = z.string().trim().min(1, "模型名称不能为空");
 const providerModelIdSchema = z.string().trim().min(1, "模型标识不能为空");
+const aliasKeySchema = z.string().trim().min(1, "Alias Key 不能为空").nullable();
+const baseUrlSchema = z.string().trim().url("BaseURL 格式不合法");
+
+const createModelInputSchema = z.object({
+  provider : providerSchema,
+  protocol : protocolSchema,
+  name     : nameSchema,
+  modelId  : providerModelIdSchema,
+  aliasKey : aliasKeySchema.optional(),
+  baseUrl  : baseUrlSchema,
+  apiKey   : z.string().trim().min(1, "API Key 不能为空").optional(),
+  isEnabled: z.boolean().optional(),
+  isDefault: z.boolean().optional()
+});
 
 const updateModelInputSchema = z.object({
   id             : idSchema,
+  provider       : providerSchema.optional(),
+  protocol       : protocolSchema.optional(),
+  name           : nameSchema.optional(),
   providerModelId: providerModelIdSchema.optional(),
-  baseUrl        : z.string().trim().min(1, "BaseURL 不能为空").optional(),
+  aliasKey       : aliasKeySchema.optional(),
+  baseUrl        : baseUrlSchema.optional(),
   isEnabled      : z.boolean().optional(),
   apiKey         : z.discriminatedUnion("action", [
     z.object({
@@ -70,8 +101,10 @@ const updateModelInputSchema = z.object({
 interface AiModelRecord {
   /** 模型记录主键 ID。 */
   id       : string;
-  /** 提供商标识（deepseek/qwen/...）。 */
+  /** 提供商标识/显示分组。 */
   provider : string;
+  /** 调用协议。 */
+  protocol : string;
   /** 管理端展示名称。 */
   name     : string;
   /** 提供商侧模型 ID（真实调用使用）。 */
@@ -118,7 +151,9 @@ export interface ModelListItem {
   /** 模型 ID。 */
   id             : string;
   /** 提供商。 */
-  provider       : "deepseek" | "qwen" | "doubao" | "gemini" | "glm";
+  provider       : string;
+  /** 调用协议。 */
+  protocol       : AiModelProtocol;
   /** 管理台显示名。 */
   name           : string;
   /** 提供商模型标识。 */
@@ -147,6 +182,14 @@ export type ApiKeyChange =
   | { action: "set"; value: string };
 
 export interface UpdateModelInput {
+  /** Provider 分组名。 */
+  provider?       : string;
+  /** 调用协议。 */
+  protocol?       : AiModelProtocol;
+  /** 管理台显示名称。 */
+  name?           : string;
+  /** 推荐/策略别名。 */
+  aliasKey?       : string | null;
   /** 目标模型 ID。 */
   providerModelId?: string;
   /** 被更新的记录 ID。 */
@@ -160,6 +203,14 @@ export interface UpdateModelInput {
 }
 
 export interface UpdateAdminModelPayload {
+  /** 可选覆盖 provider。 */
+  provider?       : string;
+  /** 可选覆盖协议。 */
+  protocol?       : AiModelProtocol;
+  /** 可选覆盖显示名。 */
+  name?           : string;
+  /** 可选覆盖别名。 */
+  aliasKey?       : string | null;
   /** 可选覆盖的 providerModelId。 */
   providerModelId?: string;
   /** 可选覆盖的 baseUrl。 */
@@ -169,6 +220,27 @@ export interface UpdateAdminModelPayload {
   /** 管理端输入的明文密钥；null 表示显式清空。 */
   apiKey?         : string | null;
 }
+
+export type CreateModelInput = z.infer<typeof createModelInputSchema>;
+
+export interface ExportedModelConfig {
+  provider : string;
+  protocol : AiModelProtocol;
+  name     : string;
+  modelId  : string;
+  aliasKey : string | null;
+  baseUrl  : string;
+  isEnabled: boolean;
+  isDefault: boolean;
+}
+
+export interface ImportModelsResult {
+  created: number;
+  updated: number;
+  models : ModelListItem[];
+}
+
+type ImportableModelConfig = z.infer<ReturnType<typeof buildImportModelsSchema>>[number];
 
 export type ModelConnectivityErrorType =
   | "NETWORK_ERROR"
@@ -192,6 +264,7 @@ export interface ModelConnectivityResult {
 const modelSelect = {
   id       : true,
   provider : true,
+  protocol : true,
   name     : true,
   modelId  : true,
   aliasKey : true,
@@ -225,6 +298,39 @@ const EMPTY_PERFORMANCE_SNAPSHOT: ModelPerformanceSnapshot = {
  */
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
+}
+
+function buildImportModelsSchema() {
+  return z.array(createModelInputSchema.omit({ apiKey: true }).extend({
+    aliasKey : aliasKeySchema.optional(),
+    isEnabled: z.boolean().optional(),
+    isDefault: z.boolean().optional()
+  }));
+}
+
+function assertNoDuplicateImportModels(models: ImportableModelConfig[]): void {
+  const aliasKeys = new Set<string>();
+  const endpoints = new Set<string>();
+
+  for (const model of models) {
+    const normalizedAliasKey = normalizeOptionalAliasKey(model.aliasKey);
+    if (normalizedAliasKey) {
+      if (aliasKeys.has(normalizedAliasKey)) {
+        throw new ModelConfigurationError("ADMIN_MODEL_ALIAS_DUPLICATE", `Alias Key 已存在：${normalizedAliasKey}`, 400);
+      }
+      aliasKeys.add(normalizedAliasKey);
+    }
+
+    const endpointKey = [
+      model.provider.trim(),
+      model.modelId.trim(),
+      normalizeBaseUrl(model.baseUrl)
+    ].join("\n");
+    if (endpoints.has(endpointKey)) {
+      throw new ModelConfigurationError("ADMIN_MODEL_ENDPOINT_DUPLICATE", "同一 Provider、模型标识与 BaseURL 的模型已存在", 400);
+    }
+    endpoints.add(endpointKey);
+  }
 }
 
 function clampRating(value: number): number {
@@ -270,7 +376,7 @@ function readStoredApiKey(apiKey: string | null): string | null {
  * 功能：将数据库模型记录映射为管理端安全输出模型。
  * 输入：AiModelRecord。
  * 输出：脱敏后的 ModelListItem（不暴露明文 Key）。
- * 异常：provider 非受支持值时由 zod 抛错。
+ * 异常：protocol 非受支持值时由 zod 抛错。
  * 副作用：无。
  */
 function toModelListItem(
@@ -281,7 +387,8 @@ function toModelListItem(
 
   return {
     id             : model.id,
-    provider       : providerSchema.parse(model.provider.toLowerCase()),
+    provider       : model.provider,
+    protocol       : protocolSchema.parse(model.protocol),
     name           : model.name,
     providerModelId: model.modelId,
     aliasKey       : model.aliasKey,
@@ -293,6 +400,86 @@ function toModelListItem(
     performance,
     updatedAt      : model.updatedAt.toISOString()
   };
+}
+
+function normalizeOptionalAliasKey(aliasKey: string | null | undefined): string | null {
+  if (typeof aliasKey === "undefined" || aliasKey === null) {
+    return null;
+  }
+
+  const trimmed = aliasKey.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function containsStringValue(value: unknown, targets: Set<string>): boolean {
+  if (typeof value === "string") {
+    return targets.has(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((entry) => containsStringValue(entry, targets));
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return Object.values(value).some((entry) => containsStringValue(entry, targets));
+  }
+
+  return false;
+}
+
+function toExportedModelConfig(model: AiModelRecord): ExportedModelConfig {
+  return {
+    provider : model.provider,
+    protocol : protocolSchema.parse(model.protocol),
+    name     : model.name,
+    modelId  : model.modelId,
+    aliasKey : model.aliasKey,
+    baseUrl  : model.baseUrl,
+    isEnabled: model.isEnabled,
+    isDefault: model.isDefault
+  };
+}
+
+async function assertModelUnique(
+  prismaClient: Pick<PrismaClient, "aiModel">,
+  input: {
+    provider       : string;
+    modelId        : string;
+    baseUrl        : string;
+    aliasKey       : string | null;
+    excludeModelId?: string;
+  }
+): Promise<void> {
+  if (input.aliasKey) {
+    const existingAlias = await prismaClient.aiModel.findFirst({
+      where: {
+        aliasKey: input.aliasKey,
+        ...(input.excludeModelId ? { id: { not: input.excludeModelId } } : {})
+      },
+      select: { id: true }
+    });
+
+    if (existingAlias) {
+      throw new ModelConfigurationError("ADMIN_MODEL_ALIAS_DUPLICATE", "Alias Key 已被其他模型使用");
+    }
+  }
+
+  const existingEndpoint = await prismaClient.aiModel.findFirst({
+    where: {
+      provider: input.provider,
+      modelId : input.modelId,
+      baseUrl : input.baseUrl,
+      ...(input.excludeModelId ? { id: { not: input.excludeModelId } } : {})
+    },
+    select: { id: true }
+  });
+
+  if (existingEndpoint) {
+    throw new ModelConfigurationError(
+      "ADMIN_MODEL_ENDPOINT_DUPLICATE",
+      "已存在相同 provider、modelId 与 baseUrl 的模型配置"
+    );
+  }
 }
 
 export function createModelsModule(
@@ -444,12 +631,63 @@ export function createModelsModule(
     return models.map((model) => toModelListItem(model, performanceByModelId.get(model.id) ?? EMPTY_PERFORMANCE_SNAPSHOT));
   }
 
+  async function createModel(input: CreateModelInput): Promise<ModelListItem> {
+    const parsedInput = createModelInputSchema.parse(input);
+    const encryptedApiKey = parsedInput.apiKey ? encryptValue(parsedInput.apiKey.trim()) : null;
+    const isEnabled = parsedInput.isEnabled ?? false;
+    const normalizedAliasKey = normalizeOptionalAliasKey(parsedInput.aliasKey);
+    const normalizedProvider = parsedInput.provider.trim();
+    const normalizedModelId = parsedInput.modelId.trim();
+    const normalizedBaseUrl = normalizeBaseUrl(parsedInput.baseUrl);
+
+    if (isEnabled && !encryptedApiKey) {
+      throw new ModelConfigurationError("ADMIN_MODEL_API_KEY_REQUIRED", "启用模型前请先配置 API Key", 400);
+    }
+
+    const createdModel = await prismaClient.$transaction(async (tx) => {
+      await assertModelUnique(tx, {
+        provider: normalizedProvider,
+        modelId : normalizedModelId,
+        baseUrl : normalizedBaseUrl,
+        aliasKey: normalizedAliasKey
+      });
+
+      if (parsedInput.isDefault) {
+        await tx.aiModel.updateMany({
+          where: { isDefault: true },
+          data : { isDefault: false }
+        });
+      }
+
+      return tx.aiModel.create({
+        data: {
+          provider : normalizedProvider,
+          protocol : parsedInput.protocol,
+          name     : parsedInput.name.trim(),
+          modelId  : normalizedModelId,
+          aliasKey : normalizedAliasKey,
+          baseUrl  : normalizedBaseUrl,
+          apiKey   : encryptedApiKey,
+          isEnabled,
+          isDefault: parsedInput.isDefault ?? false
+        },
+        select: modelSelect
+      });
+    });
+
+    return toModelListItem(createdModel);
+  }
+
   async function updateModel(input: UpdateModelInput): Promise<ModelListItem> {
     const parsedInput = updateModelInputSchema.parse(input);
     const currentModel = await getModelRecord(parsedInput.id);
 
-    const nextProviderModelId = parsedInput.providerModelId ?? currentModel.modelId;
+    const nextProvider = parsedInput.provider?.trim() ?? currentModel.provider;
+    const nextProviderModelId = parsedInput.providerModelId?.trim() ?? currentModel.modelId;
     const nextBaseUrl = parsedInput.baseUrl ? normalizeBaseUrl(parsedInput.baseUrl) : currentModel.baseUrl;
+    const nextAliasKey = typeof parsedInput.aliasKey === "undefined"
+      ? currentModel.aliasKey
+      : normalizeOptionalAliasKey(parsedInput.aliasKey);
 
     let nextEncryptedApiKey = currentModel.apiKey;
     let isConfigured = Boolean(readStoredApiKey(currentModel.apiKey));
@@ -466,13 +704,32 @@ export function createModelsModule(
 
     const nextIsEnabled = parsedInput.isEnabled ?? currentModel.isEnabled;
     if (nextIsEnabled && !isConfigured) {
-      throw new Error("启用模型前请先配置 API Key");
+      throw new ModelConfigurationError("ADMIN_MODEL_API_KEY_REQUIRED", "启用模型前请先配置 API Key", 400);
+    }
+
+    const aliasChanged = nextAliasKey !== currentModel.aliasKey;
+    const endpointChanged = nextProvider !== currentModel.provider
+      || nextProviderModelId !== currentModel.modelId
+      || nextBaseUrl !== currentModel.baseUrl;
+
+    if (aliasChanged || endpointChanged) {
+      await assertModelUnique(prismaClient, {
+        provider      : nextProvider,
+        modelId       : nextProviderModelId,
+        baseUrl       : nextBaseUrl,
+        aliasKey      : nextAliasKey,
+        excludeModelId: currentModel.id
+      });
     }
 
     const updatedModel = await prismaClient.aiModel.update({
       where: { id: parsedInput.id },
       data : {
+        provider : nextProvider,
+        protocol : parsedInput.protocol ?? currentModel.protocol,
+        name     : parsedInput.name?.trim() ?? currentModel.name,
         modelId  : nextProviderModelId,
+        aliasKey : nextAliasKey,
         baseUrl  : nextBaseUrl,
         isEnabled: nextIsEnabled,
         ...(parsedInput.apiKey ? { apiKey: nextEncryptedApiKey } : {})
@@ -481,6 +738,125 @@ export function createModelsModule(
     });
 
     return toModelListItem(updatedModel);
+  }
+
+  async function findModelStrategyReferences(model: AiModelRecord): Promise<string[]> {
+    const targets = new Set([model.id, model.modelId]);
+    if (model.aliasKey) {
+      targets.add(model.aliasKey);
+    }
+
+    const configs = await prismaClient.modelStrategyConfig.findMany({
+      select: {
+        scope : true,
+        stages: true,
+        book  : { select: { title: true } }
+      }
+    });
+
+    return configs
+      .filter((config) => containsStringValue(config.stages, targets))
+      .map((config) => config.book?.title ?? `${config.scope} 策略`);
+  }
+
+  async function deleteModel(id: string): Promise<{ id: string }> {
+    const model = await getModelRecord(idSchema.parse(id));
+    if (model.isDefault) {
+      throw new ModelConfigurationError("ADMIN_MODEL_IS_DEFAULT", "请先切换默认模型后再删除");
+    }
+
+    const references = await findModelStrategyReferences(model);
+    if (references.length > 0) {
+      throw new ModelConfigurationError(
+        "ADMIN_MODEL_IN_USE",
+        `模型正在被策略引用：${Array.from(new Set(references)).join("、")}`
+      );
+    }
+
+    await prismaClient.aiModel.delete({ where: { id: model.id } });
+    return { id: model.id };
+  }
+
+  async function exportModels(): Promise<ExportedModelConfig[]> {
+    const models = await prismaClient.aiModel.findMany({
+      orderBy: [
+        { provider: "asc" },
+        { name: "asc" }
+      ],
+      select: modelSelect
+    });
+
+    return models.map(toExportedModelConfig);
+  }
+
+  async function importModels(input: unknown): Promise<ImportModelsResult> {
+    const parsedModels = buildImportModelsSchema().parse(input);
+    assertNoDuplicateImportModels(parsedModels);
+    let created = 0;
+    let updated = 0;
+
+    await prismaClient.$transaction(async (tx) => {
+      for (const model of parsedModels) {
+        const normalizedAliasKey = normalizeOptionalAliasKey(model.aliasKey);
+        const normalizedBaseUrl = normalizeBaseUrl(model.baseUrl);
+        const existingByAlias = normalizedAliasKey
+          ? await tx.aiModel.findUnique({ where: { aliasKey: normalizedAliasKey }, select: { id: true } })
+          : null;
+        const existingByEndpoint = existingByAlias
+          ? null
+          : await tx.aiModel.findFirst({
+            where: {
+              provider: model.provider.trim(),
+              modelId : model.modelId.trim(),
+              baseUrl : normalizedBaseUrl
+            },
+            select: { id: true }
+          });
+        const existing = existingByAlias ?? existingByEndpoint;
+
+        if (model.isDefault) {
+          await tx.aiModel.updateMany({
+            where: { isDefault: true },
+            data : { isDefault: false }
+          });
+        }
+
+        const data = {
+          provider : model.provider.trim(),
+          protocol : model.protocol,
+          name     : model.name.trim(),
+          modelId  : model.modelId.trim(),
+          aliasKey : normalizedAliasKey,
+          baseUrl  : normalizedBaseUrl,
+          isEnabled: model.isEnabled ?? false,
+          isDefault: model.isDefault ?? false
+        };
+
+        if (existing) {
+          await tx.aiModel.update({
+            where : { id: existing.id },
+            data,
+            select: { id: true }
+          });
+          updated += 1;
+        } else {
+          await tx.aiModel.create({
+            data: {
+              ...data,
+              apiKey: null
+            },
+            select: { id: true }
+          });
+          created += 1;
+        }
+      }
+    });
+
+    return {
+      created,
+      updated,
+      models: await listModels()
+    };
   }
 
   async function setDefaultModel(id: string): Promise<ModelListItem> {
@@ -514,7 +890,7 @@ export function createModelsModule(
   async function testModelConnectivity(id: string): Promise<ModelConnectivityResult> {
     const parsedId = idSchema.parse(id);
     const model = await getModelRecord(parsedId);
-    const provider = providerSchema.parse(model.provider.toLowerCase());
+    const protocol = protocolSchema.parse(model.protocol);
     const apiKey = readStoredApiKey(model.apiKey);
 
     if (!apiKey) {
@@ -522,13 +898,13 @@ export function createModelsModule(
     }
 
     const baseUrl = normalizeBaseUrl(model.baseUrl);
-    assertConnectivityBaseUrlAllowed(provider, baseUrl);
+    await assertConnectivityBaseUrlAllowed(baseUrl);
     const startedAt = Date.now();
 
     try {
       let response: Response;
 
-      if (provider === "gemini") {
+      if (protocol === "gemini") {
         // Gemini 走 generateContent 且使用 query-string key，与 OpenAI 兼容接口不同。
         response = await fetchImpl(
           `${baseUrl}/v1beta/models/${model.modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -577,7 +953,7 @@ export function createModelsModule(
         };
       }
 
-      if (provider !== "gemini") {
+      if (protocol !== "gemini") {
         const semanticResult = validateOpenAiCompatibleProbePayload(payload);
         if (!semanticResult.success) {
           const semanticDetail = semanticResult.detail ?? detail;
@@ -610,6 +986,10 @@ export function createModelsModule(
   }
 
   return {
+    createModel,
+    deleteModel,
+    exportModels,
+    importModels,
     listModels,
     updateModel,
     setDefaultModel,
@@ -620,6 +1000,14 @@ export function createModelsModule(
 
 // ── Admin adapters (re-exported for backward compatibility) ──────────────
 export {
+  createAdminModel,
+  createModel,
+  deleteAdminModel,
+  deleteModel,
+  exportAdminModels,
+  exportModels,
+  importAdminModels,
+  importModels,
   listAdminModels,
   listModels,
   setDefaultAdminModel,

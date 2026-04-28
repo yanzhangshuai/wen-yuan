@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { prisma } from "@/server/db/prisma";
-import { createAiProviderClient } from "@/server/providers/ai";
+import { createAiProviderClient, type AiProviderProtocol } from "@/server/providers/ai";
 import { decryptValue } from "@/server/security/encryption";
 import { repairJson } from "@/types/analysis";
 
@@ -60,6 +60,7 @@ export interface AliasPackGenerationResult extends AliasPackGenerationPreview {
   model: {
     id       : string;
     provider : string;
+    protocol : AiProviderProtocol;
     modelName: string;
   };
 }
@@ -71,6 +72,7 @@ export interface AliasPackGenerationReviewResult extends AliasPackGenerationPrev
   model: {
     id       : string;
     provider : string;
+    protocol : AiProviderProtocol;
     modelName: string;
   };
 }
@@ -134,6 +136,7 @@ async function getGenerationModel(selectedModelId?: string) {
   const select = {
     id      : true,
     provider: true,
+    protocol: true,
     modelId : true,
     apiKey  : true,
     baseUrl : true
@@ -168,7 +171,8 @@ async function getGenerationModel(selectedModelId?: string) {
 
   return {
     id       : model.id,
-    provider : model.provider.toLowerCase() as "gemini" | "deepseek" | "qwen" | "doubao" | "glm",
+    provider : model.provider,
+    protocol : model.protocol as AiProviderProtocol,
     modelName: model.modelId,
     apiKey   : decryptValue(model.apiKey),
     baseUrl  : model.baseUrl ?? undefined
@@ -308,6 +312,7 @@ async function runGenerationModel(input: {
   const model = await getGenerationModel(input.modelId);
   const providerClient = createAiProviderClient({
     provider : model.provider,
+    protocol : model.protocol,
     apiKey   : model.apiKey,
     baseUrl  : model.baseUrl,
     modelName: model.modelName
@@ -346,6 +351,7 @@ async function runGenerationModel(input: {
     model     : {
       id       : model.id,
       provider : model.provider,
+      protocol : model.protocol,
       modelName: model.modelName
     }
   };

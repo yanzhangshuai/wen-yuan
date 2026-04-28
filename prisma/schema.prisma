@@ -139,7 +139,8 @@ model User {
 /// @db.remark: AI 模型配置表。存储各模型的 Key、BaseURL 及启用状态，由设置页管理。
 model AiModel {
   id        String     @id @default(uuid()) @db.Uuid // 模型配置主键
-  provider  String // 推荐值: "deepseek" | "qwen" | "doubao" | "gemini" | "glm"
+  provider  String // 供应商显示/分组名，可由管理员自定义
+  protocol  String     @default("openai-compatible") // 调用协议: openai-compatible | gemini
   name      String // 显示名称，如 "DeepSeek V3"
   modelId   String     @map("model_id") // 供应商 API 调用标识，如 "deepseek-chat"
   aliasKey  String?    @map("alias_key") // 语义别名键（用于阶段推荐与版本平滑升级）
@@ -154,7 +155,8 @@ model AiModel {
   phaseLogs AnalysisPhaseLog[] // 阶段调用日志
 
   @@index([provider, isEnabled], map: "ai_models_provider_enabled_idx")
-  @@index([aliasKey], map: "ai_models_alias_key_idx")
+  @@unique([provider, modelId, baseUrl], map: "ai_models_unique_endpoint")
+  @@unique([aliasKey], map: "ai_models_alias_key_uniq")
   @@map("ai_models")
 }
 

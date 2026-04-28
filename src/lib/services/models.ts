@@ -37,6 +37,8 @@ export interface AdminModelItem {
   id             : string;
   /** 模型供应商标识（如 OpenAI / Anthropic 等）。 */
   provider       : string;
+  /** 调用协议。 */
+  protocol       : "openai-compatible" | "gemini";
   /** 业务展示名称（运营可读）。 */
   name           : string;
   /** 供应商侧模型 ID（实际调用时使用）。 */
@@ -115,6 +117,10 @@ export interface ModelTestResult {
  * - `apiKey` 的三态（undefined/null/string）有明确语义，不能混用。
  */
 export interface PatchModelBody {
+  provider?       : string;
+  protocol?       : "openai-compatible" | "gemini";
+  name?           : string;
+  aliasKey?       : string | null;
   /** 供应商模型 ID。 */
   providerModelId?: string;
   /** API 基础地址。 */
@@ -123,6 +129,35 @@ export interface PatchModelBody {
   apiKey?         : string | null;
   /** 启停状态。 */
   isEnabled?      : boolean;
+}
+
+export interface CreateModelBody {
+  provider  : string;
+  protocol  : "openai-compatible" | "gemini";
+  name      : string;
+  modelId   : string;
+  aliasKey? : string | null;
+  baseUrl   : string;
+  apiKey?   : string;
+  isEnabled?: boolean;
+  isDefault?: boolean;
+}
+
+export interface ExportedModelConfig {
+  provider : string;
+  protocol : "openai-compatible" | "gemini";
+  name     : string;
+  modelId  : string;
+  aliasKey : string | null;
+  baseUrl  : string;
+  isEnabled: boolean;
+  isDefault: boolean;
+}
+
+export interface ImportModelsResult {
+  created: number;
+  updated: number;
+  models : AdminModelItem[];
 }
 
 /* ------------------------------------------------
@@ -144,6 +179,14 @@ export async function fetchModels(): Promise<AdminModelItem[]> {
   });
 }
 
+export async function createModel(body: CreateModelBody): Promise<AdminModelItem> {
+  return clientFetch<AdminModelItem>("/api/admin/models", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
 /**
  * 更新指定模型的配置（差量 PATCH）。
  * 对应接口：PATCH /api/admin/models/:id
@@ -160,6 +203,26 @@ export async function patchModel(id: string, body: PatchModelBody): Promise<Admi
     method : "PATCH",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(body)
+  });
+}
+
+export async function deleteModel(id: string): Promise<{ id: string }> {
+  return clientFetch<{ id: string }>(`/api/admin/models/${id}`, {
+    method: "DELETE"
+  });
+}
+
+export async function exportModels(): Promise<ExportedModelConfig[]> {
+  return clientFetch<ExportedModelConfig[]>("/api/admin/models/export", {
+    cache: "no-store"
+  });
+}
+
+export async function importModels(models: ExportedModelConfig[]): Promise<ImportModelsResult> {
+  return clientFetch<ImportModelsResult>("/api/admin/models/import", {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(models)
   });
 }
 

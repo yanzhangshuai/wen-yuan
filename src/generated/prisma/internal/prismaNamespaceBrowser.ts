@@ -116,6 +116,7 @@ export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof User
 export const AiModelScalarFieldEnum = {
   id: 'id',
   provider: 'provider',
+  protocol: 'protocol',
   name: 'name',
   modelId: 'modelId',
   aliasKey: 'aliasKey',

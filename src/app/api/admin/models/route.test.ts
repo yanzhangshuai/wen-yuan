@@ -2,16 +2,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppRole } from "@/generated/prisma/enums";
 
 const headersMock = vi.fn();
+const createAdminModelMock = vi.fn();
 const listAdminModelsMock = vi.fn();
 const updateAdminModelMock = vi.fn();
 const setDefaultAdminModelMock = vi.fn();
 const testAdminModelConnectionMock = vi.fn();
+
+class MockModelConfigurationError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly status = 400
+  ) {
+    super(message);
+    this.name = "ModelConfigurationError";
+  }
+}
 
 vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
 vi.mock("@/server/modules/models", () => ({
+  ModelConfigurationError : MockModelConfigurationError,
+  createAdminModel        : createAdminModelMock,
   listAdminModels         : listAdminModelsMock,
   updateAdminModel        : updateAdminModelMock,
   setDefaultAdminModel    : setDefaultAdminModelMock,
@@ -35,6 +49,7 @@ describe("GET /api/admin/models", () => {
 
   afterEach(() => {
     headersMock.mockReset();
+    createAdminModelMock.mockReset();
     listAdminModelsMock.mockReset();
     updateAdminModelMock.mockReset();
     setDefaultAdminModelMock.mockReset();
@@ -93,5 +108,133 @@ describe("GET /api/admin/models", () => {
     expect(payload.success).toBe(false);
     expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
     expect(payload.message).toBe("模型列表获取失败");
+  });
+});
+
+describe("POST /api/admin/models", () => {
+  beforeEach(() => {
+    headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.ADMIN }));
+  });
+
+  afterEach(() => {
+    headersMock.mockReset();
+    createAdminModelMock.mockReset();
+    listAdminModelsMock.mockReset();
+    updateAdminModelMock.mockReset();
+    setDefaultAdminModelMock.mockReset();
+    testAdminModelConnectionMock.mockReset();
+    vi.resetModules();
+  });
+
+  it("creates model config with 201", async () => {
+    createAdminModelMock.mockResolvedValue({
+      id             : "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39",
+      provider       : "DeepSeek",
+      protocol       : "openai-compatible",
+      name           : "DeepSeek V4",
+      providerModelId: "deepseek-chat-v4",
+      baseUrl        : "https://api.deepseek.com"
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/admin/models", {
+      method : "POST",
+      headers: { "content-type": "application/json" },
+      body   : JSON.stringify({
+        provider : "DeepSeek",
+        protocol : "openai-compatible",
+        name     : "DeepSeek V4",
+        modelId  : "deepseek-chat-v4",
+        baseUrl  : "https://api.deepseek.com",
+        apiKey   : "secret-key",
+        isEnabled: true
+      })
+    }));
+
+    expect(response.status).toBe(201);
+    const payload = await response.json();
+    expect(payload.success).toBe(true);
+    expect(payload.code).toBe("ADMIN_MODEL_CREATED");
+    expect(createAdminModelMock).toHaveBeenCalledWith({
+      provider : "DeepSeek",
+      protocol : "openai-compatible",
+      name     : "DeepSeek V4",
+      modelId  : "deepseek-chat-v4",
+      baseUrl  : "https://api.deepseek.com",
+      apiKey   : "secret-key",
+      isEnabled: true
+    });
+  });
+
+  it("returns 400 when create body is invalid", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/admin/models", {
+      method : "POST",
+      headers: { "content-type": "application/json" },
+      body   : JSON.stringify({
+        provider: "DeepSeek",
+        protocol: "openai-compatible",
+        name    : "DeepSeek V4",
+        modelId : "deepseek-chat-v4",
+        baseUrl : "not-a-url"
+      })
+    }));
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(payload.error?.detail).toBe("BaseURL 格式不合法");
+    expect(createAdminModelMock).not.toHaveBeenCalled();
+  });
+
+  it("maps model configuration errors", async () => {
+    createAdminModelMock.mockRejectedValue(new MockModelConfigurationError(
+      "ADMIN_MODEL_ENDPOINT_DUPLICATE",
+      "模型 endpoint 已存在",
+      409
+    ));
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/admin/models", {
+      method : "POST",
+      headers: { "content-type": "application/json" },
+      body   : JSON.stringify({
+        provider: "DeepSeek",
+        protocol: "openai-compatible",
+        name    : "DeepSeek V4",
+        modelId : "deepseek-chat-v4",
+        baseUrl : "https://api.deepseek.com"
+      })
+    }));
+
+    expect(response.status).toBe(409);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("ADMIN_MODEL_ENDPOINT_DUPLICATE");
+  });
+
+  it("returns 500 when create service throws unexpectedly", async () => {
+    createAdminModelMock.mockRejectedValue(new Error("write failed"));
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost/api/admin/models", {
+      method : "POST",
+      headers: { "content-type": "application/json" },
+      body   : JSON.stringify({
+        provider: "DeepSeek",
+        protocol: "openai-compatible",
+        name    : "DeepSeek V4",
+        modelId : "deepseek-chat-v4",
+        baseUrl : "https://api.deepseek.com"
+      })
+    }));
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+    expect(payload.message).toBe("模型创建失败");
   });
 });

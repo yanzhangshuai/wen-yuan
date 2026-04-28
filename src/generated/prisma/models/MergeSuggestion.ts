@@ -223,7 +223,7 @@ export type MergeSuggestionGroupByOutputType = {
   _max: MergeSuggestionMaxAggregateOutputType | null
 }
 
-type GetMergeSuggestionGroupByPayload<T extends MergeSuggestionGroupByArgs> = Prisma.PrismaPromise<
+export type GetMergeSuggestionGroupByPayload<T extends MergeSuggestionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<MergeSuggestionGroupByOutputType, T['by']> &
       {
@@ -1635,6 +1635,11 @@ export type MergeSuggestionFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` MergeSuggestions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of MergeSuggestions.
+   */
   distinct?: Prisma.MergeSuggestionScalarFieldEnum | Prisma.MergeSuggestionScalarFieldEnum[]
 }
 

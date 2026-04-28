@@ -67,6 +67,7 @@ export async function discoverRosterByStage(
     callFn    : async ({ model }) => {
       const providerClient = createAiProviderClient({
         provider : model.provider,
+        protocol : model.protocol,
         apiKey   : model.apiKey,
         baseUrl  : model.baseUrl,
         modelName: model.modelName
@@ -121,6 +122,7 @@ export async function analyzeChunkByStage(
     callFn    : async ({ model }) => {
       const providerClient = createAiProviderClient({
         provider : model.provider,
+        protocol : model.protocol,
         apiKey   : model.apiKey,
         baseUrl  : model.baseUrl,
         modelName: model.modelName
@@ -160,6 +162,7 @@ export async function resolveTitlesByStage(
     callFn : async ({ model }) => {
       const providerClient = createAiProviderClient({
         provider : model.provider,
+        protocol : model.protocol,
         apiKey   : model.apiKey,
         baseUrl  : model.baseUrl,
         modelName: model.modelName
@@ -202,6 +205,7 @@ export async function arbitrateGrayZoneByStage(
     callFn : async ({ model }) => {
       const providerClient = createAiProviderClient({
         provider : model.provider,
+        protocol : model.protocol,
         apiKey   : model.apiKey,
         baseUrl  : model.baseUrl,
         modelName: model.modelName
@@ -247,6 +251,7 @@ export async function extractChapterEntitiesByStage(
     callFn   : async ({ model }) => {
       const providerClient = createAiProviderClient({
         provider : model.provider,
+        protocol : model.protocol,
         apiKey   : model.apiKey,
         baseUrl  : model.baseUrl,
         modelName: model.modelName

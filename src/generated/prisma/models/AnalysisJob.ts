@@ -284,7 +284,7 @@ export type AnalysisJobGroupByOutputType = {
   _max: AnalysisJobMaxAggregateOutputType | null
 }
 
-type GetAnalysisJobGroupByPayload<T extends AnalysisJobGroupByArgs> = Prisma.PrismaPromise<
+export type GetAnalysisJobGroupByPayload<T extends AnalysisJobGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AnalysisJobGroupByOutputType, T['by']> &
       {
@@ -2081,6 +2081,11 @@ export type AnalysisJobFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` AnalysisJobs.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of AnalysisJobs.
+   */
   distinct?: Prisma.AnalysisJobScalarFieldEnum | Prisma.AnalysisJobScalarFieldEnum[]
 }
 

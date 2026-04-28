@@ -30,6 +30,7 @@ const MODEL_IDS = {
 function buildModel(input: {
   id       : string;
   provider?: string;
+  protocol?: string;
   name?    : string;
   modelId? : string;
   apiKey?  : string | null;
@@ -37,6 +38,7 @@ function buildModel(input: {
   return {
     id       : input.id,
     provider : input.provider ?? "deepseek",
+    protocol : input.protocol ?? "openai-compatible",
     name     : input.name ?? "DeepSeek V3",
     modelId  : input.modelId ?? "deepseek-chat",
     baseUrl  : "https://api.deepseek.com",

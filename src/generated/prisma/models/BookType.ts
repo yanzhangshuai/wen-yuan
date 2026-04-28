@@ -213,7 +213,7 @@ export type BookTypeGroupByOutputType = {
   _max: BookTypeMaxAggregateOutputType | null
 }
 
-type GetBookTypeGroupByPayload<T extends BookTypeGroupByArgs> = Prisma.PrismaPromise<
+export type GetBookTypeGroupByPayload<T extends BookTypeGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<BookTypeGroupByOutputType, T['by']> &
       {
@@ -1830,6 +1830,11 @@ export type BookTypeFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Skip the first `n` BookTypes.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of BookTypes.
+   */
   distinct?: Prisma.BookTypeScalarFieldEnum | Prisma.BookTypeScalarFieldEnum[]
 }
 

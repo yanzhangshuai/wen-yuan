@@ -24,15 +24,26 @@
  * =============================================================================
  */
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -46,19 +57,30 @@ import { PageSection } from "@/components/layout/page-header";
 import { useHydratedTheme } from "@/hooks/use-hydrated-theme";
 import { THEME_OPTIONS } from "@/theme";
 import {
-  Cpu,
   Check,
-  Loader2,
+  ChevronDown,
+  Cpu,
+  DollarSign,
+  Download,
   Eye,
   EyeOff,
-  Zap,
-  DollarSign
+  Loader2,
+  Plus,
+  Trash2,
+  Upload,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  createModel,
+  deleteModel,
+  exportModels,
+  importModels,
   patchModel,
   setDefaultModel,
   testModel,
+  type CreateModelBody,
+  type ExportedModelConfig,
   type AdminModelItem
 } from "@/lib/services/models";
 import {
@@ -84,6 +106,7 @@ import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_component
  * - 使用离散联合类型而不是布尔值，可以避免“同一时刻多个按钮 loading 冲突”的歧义。
  */
 type LoadingAction = "save" | "default" | "test" | null;
+type AiModelProtocol = AdminModelItem["protocol"];
 
 /**
  * 模型草稿态（仅存在前端，用于编辑未提交的数据）。
@@ -93,6 +116,14 @@ type LoadingAction = "save" | "default" | "test" | null;
  * - `ModelDraftState` 是用户在当前页面会话中的临时编辑态。
  */
 interface ModelDraftState {
+  /** Provider 分组名，由管理员自由输入。 */
+  provider       : string;
+  /** 调用协议，决定后端使用 OpenAI-compatible 还是 Gemini 客户端。 */
+  protocol       : AiModelProtocol;
+  /** 管理端展示名称。 */
+  name           : string;
+  /** 全局策略/推荐可引用的别名键。 */
+  aliasKey       : string;
   /** 模型标识（例如 deepseek-chat / qwen-plus），由管理员输入并提交给后端。 */
   providerModelId: string;
   /** 自定义 API 网关地址；为空表示使用后端默认地址。 */
@@ -103,6 +134,18 @@ interface ModelDraftState {
   clearApiKey    : boolean;
   /** 是否启用该模型；会受“是否已配置密钥”业务规则约束。 */
   isEnabled      : boolean;
+}
+
+interface CreateModelDraftState {
+  provider : string;
+  protocol : AiModelProtocol;
+  name     : string;
+  modelId  : string;
+  aliasKey : string;
+  baseUrl  : string;
+  apiKey   : string;
+  isEnabled: boolean;
+  isDefault: boolean;
 }
 
 /* ------------------------------------------------
@@ -117,11 +160,29 @@ function buildInitialDraft(model: AdminModelItem): ModelDraftState {
    * - `apiKey` 初始置空，而不是回显后端值，这是安全边界（避免密钥泄露到前端）。
    */
   return {
+    provider       : model.provider,
+    protocol       : model.protocol,
+    name           : model.name,
+    aliasKey       : model.aliasKey ?? "",
     providerModelId: model.providerModelId,
     baseUrl        : model.baseUrl,
     apiKey         : "",
     clearApiKey    : false,
     isEnabled      : model.isEnabled
+  };
+}
+
+function buildInitialCreateDraft(): CreateModelDraftState {
+  return {
+    provider : "DeepSeek",
+    protocol : "openai-compatible",
+    name     : "DeepSeek V4",
+    modelId  : "deepseek-chat-v4",
+    aliasKey : "deepseek-v4",
+    baseUrl  : "https://api.deepseek.com",
+    apiKey   : "",
+    isEnabled: false,
+    isDefault: false
   };
 }
 
@@ -286,6 +347,7 @@ export function ModelManager({
   initialModels: AdminModelItem[]
 }) {
   const { setTheme, selectedTheme, isHydrated } = useHydratedTheme();
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   /** 当前模型真实快照（以“保存成功后的后端返回”作为最终真值）。 */
   const [models, setModels] = useState<AdminModelItem[]>(initialModels);
@@ -303,6 +365,13 @@ export function ModelManager({
   const [globalStrategy, setGlobalStrategy] = useState<ModelStrategyInput | null>(null);
   /** 全局策略加载状态；用于展示加载态与避免提前渲染表单。 */
   const [globalStrategyLoading, setGlobalStrategyLoading] = useState(true);
+  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDraft, setCreateDraft] = useState<CreateModelDraftState>(() => buildInitialCreateDraft());
+  const [isCreating, setCreating] = useState(false);
+  const [isImporting, setImporting] = useState(false);
+  const [isExporting, setExporting] = useState(false);
+  const [deletingModelId, setDeletingModelId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminModelItem | null>(null);
 
   useEffect(() => {
     /**
@@ -349,6 +418,16 @@ export function ModelManager({
     }
     return left.name.localeCompare(right.name, "zh-CN");
   });
+  const groupedModels = sortedModels.reduce<Array<{ provider: string; models: AdminModelItem[] }>>((groups, model) => {
+    const existingGroup = groups.find((group) => group.provider === model.provider);
+    if (existingGroup) {
+      existingGroup.models.push(model);
+      return groups;
+    }
+
+    groups.push({ provider: model.provider, models: [model] });
+    return groups;
+  }, []);
 
   function updateDraft(modelId: string, updater: (draft: ModelDraftState) => ModelDraftState) {
     /**
@@ -384,6 +463,18 @@ export function ModelManager({
     }));
   }
 
+  function appendModel(nextModel: AdminModelItem) {
+    setModels(currentModels => [...currentModels, nextModel]);
+    setDrafts(currentDrafts => ({
+      ...currentDrafts,
+      [nextModel.id]: buildInitialDraft(nextModel)
+    }));
+    setLoadingActions(currentActions => ({
+      ...currentActions,
+      [nextModel.id]: null
+    }));
+  }
+
   function toggleApiKeyVisibility(modelId: string) {
     /** 切换密钥可见性仅影响 UI，不触发任何网络请求。 */
     setShowApiKeys(prev => ({ ...prev, [modelId]: !prev[modelId] }));
@@ -409,6 +500,10 @@ export function ModelManager({
     setLoading(model.id, "save");
 
     const body: Record<string, unknown> = {
+      provider       : draft.provider.trim(),
+      protocol       : draft.protocol,
+      name           : draft.name.trim(),
+      aliasKey       : draft.aliasKey.trim() ? draft.aliasKey.trim() : null,
       providerModelId: draft.providerModelId.trim(),
       baseUrl        : draft.baseUrl.trim(),
       isEnabled      : draft.isEnabled
@@ -430,6 +525,106 @@ export function ModelManager({
       toast.error(error instanceof Error ? error.message : "保存失败");
     } finally {
       setLoading(model.id, null);
+    }
+  }
+
+  async function handleCreateModel() {
+    if (!createDraft.provider.trim() || !createDraft.name.trim() || !createDraft.modelId.trim() || !createDraft.baseUrl.trim()) {
+      toast.error("Provider、名称、模型标识与 Base URL 不能为空");
+      return;
+    }
+
+    if (createDraft.isEnabled && !createDraft.apiKey.trim()) {
+      toast.error("启用模型前请先配置 API Key");
+      return;
+    }
+
+    const body: CreateModelBody = {
+      provider : createDraft.provider.trim(),
+      protocol : createDraft.protocol,
+      name     : createDraft.name.trim(),
+      modelId  : createDraft.modelId.trim(),
+      aliasKey : createDraft.aliasKey.trim() ? createDraft.aliasKey.trim() : null,
+      baseUrl  : createDraft.baseUrl.trim(),
+      isEnabled: createDraft.isEnabled,
+      isDefault: createDraft.isDefault
+    };
+    if (createDraft.apiKey.trim()) {
+      body.apiKey = createDraft.apiKey.trim();
+    }
+
+    setCreating(true);
+    try {
+      const createdModel = await createModel(body);
+      appendModel(createdModel);
+      setCreateDraft(buildInitialCreateDraft());
+      setCreateDialogOpen(false);
+      toast.success("模型已添加");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "新增模型失败");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleDeleteModel(model: AdminModelItem) {
+    setDeletingModelId(model.id);
+    try {
+      await deleteModel(model.id);
+      setModels(currentModels => currentModels.filter((currentModel) => currentModel.id !== model.id));
+      setDrafts(currentDrafts => {
+        const nextDrafts = { ...currentDrafts };
+        delete nextDrafts[model.id];
+        return nextDrafts;
+      });
+      setDeleteTarget(null);
+      toast.success("模型已删除");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "删除模型失败");
+    } finally {
+      setDeletingModelId(null);
+    }
+  }
+
+  async function handleExportModels() {
+    setExporting(true);
+    try {
+      const exportedModels = await exportModels();
+      const blob = new Blob([JSON.stringify(exportedModels, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ai-models-export.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("模型配置已导出");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "导出模型配置失败");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed: unknown = JSON.parse(text);
+      if (!Array.isArray(parsed)) {
+        throw new Error("导入文件必须是模型配置数组");
+      }
+      const result = await importModels(parsed as ExportedModelConfig[]);
+      setModels(result.models);
+      setDrafts(Object.fromEntries(result.models.map(model => [model.id, buildInitialDraft(model)])));
+      setLoadingActions(Object.fromEntries(result.models.map(model => [model.id, null])));
+      toast.success(`导入完成：新增 ${result.created} 个，更新 ${result.updated} 个`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "导入模型配置失败");
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) {
+        importInputRef.current.value = "";
+      }
     }
   }
 
@@ -475,20 +670,6 @@ export function ModelManager({
     } finally {
       setLoading(modelId, null);
     }
-  }
-
-  if (sortedModels.length === 0) {
-    /**
-     * 空态分支：
-     * - 当后端未配置任何可管理模型时，提供明确说明而不是空白页面。
-     */
-    return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground text-center">
-          当前没有可配置的模型。
-        </CardContent>
-      </Card>
-    );
   }
 
   const enabledModels = sortedModels.filter(m => {
@@ -542,51 +723,209 @@ export function ModelManager({
           title="模型配置"
           description="配置可用的 AI 模型及其 API 密钥"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {sortedModels.map(model => {
-              const draft = drafts[model.id] ?? buildInitialDraft(model);
-              const loadingAction = loadingActions[model.id] ?? null;
-              const ratings = model.performance.ratings;
-
-              return (
-                /**
-                 * 视觉降权策略：
-                 * - 未启用模型并非不可用，只是当前不参与业务流程；
-                 * - 使用透明度区分状态，帮助管理员快速识别“生效集合”。
-                 */
-                <Card
-                  key={model.id}
-                  className={cn("relative", !draft.isEnabled && "opacity-60")}
-                >
-                  {model.isDefault && (
-                    <Badge className="absolute -top-2 -right-2 z-10">默认</Badge>
-                  )}
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Cpu className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-base">{model.name}</CardTitle>
-                          <CardDescription>{model.provider}</CardDescription>
-                        </div>
-                      </div>
-                      {/**
-                        * 禁用原因：
-                        * - 当模型不可启用（未配置密钥）且当前又是关闭状态时，禁止直接打开开关；
-                        * - 这是业务规则，避免用户误以为模型已可用。
-                        */}
-                      <Switch
-                        checked={draft.isEnabled}
-                        disabled={!resolveCanEnable(model, draft) && !draft.isEnabled}
-                        onCheckedChange={(checked) =>
-                          updateDraft(model.id, d => ({ ...d, isEnabled: checked }))
-                        }
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    新增模型
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>新增模型</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Provider</Label>
+                      <Input
+                        value={createDraft.provider}
+                        onChange={event => setCreateDraft(current => ({ ...current, provider: event.target.value }))}
                       />
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Protocol</Label>
+                      <Select
+                        value={createDraft.protocol}
+                        onValueChange={(value: AiModelProtocol) => setCreateDraft(current => ({ ...current, protocol: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="openai-compatible">openai-compatible</SelectItem>
+                          <SelectItem value="gemini">gemini</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>名称</Label>
+                      <Input
+                        value={createDraft.name}
+                        onChange={event => setCreateDraft(current => ({ ...current, name: event.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>模型标识</Label>
+                      <Input
+                        value={createDraft.modelId}
+                        onChange={event => setCreateDraft(current => ({ ...current, modelId: event.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Alias Key</Label>
+                      <Input
+                        value={createDraft.aliasKey}
+                        onChange={event => setCreateDraft(current => ({ ...current, aliasKey: event.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Base URL</Label>
+                      <Input
+                        value={createDraft.baseUrl}
+                        onChange={event => setCreateDraft(current => ({ ...current, baseUrl: event.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>API Key</Label>
+                      <Input
+                        type="password"
+                        value={createDraft.apiKey}
+                        onChange={event => setCreateDraft(current => ({ ...current, apiKey: event.target.value }))}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <Label>启用</Label>
+                      <Switch
+                        checked={createDraft.isEnabled}
+                        onCheckedChange={(checked) => setCreateDraft(current => ({ ...current, isEnabled: checked }))}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <Label>设为默认</Label>
+                      <Switch
+                        checked={createDraft.isDefault}
+                        onCheckedChange={(checked) => setCreateDraft(current => ({ ...current, isDefault: checked }))}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      onClick={() => void handleCreateModel()}
+                      disabled={isCreating}
+                    >
+                      {isCreating ? "添加中..." : "添加模型"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleExportModels()}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                导出
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => importInputRef.current?.click()}
+                disabled={isImporting}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                导入
+              </Button>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={event => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    void handleImportFile(file);
+                  }
+                }}
+              />
+            </div>
+
+            {groupedModels.length === 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>添加第一个模型</CardTitle>
+                  <CardDescription>默认已预填 DeepSeek 官方 OpenAI-compatible endpoint，可直接填写 API Key 后添加。</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    添加第一个模型
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {groupedModels.map((group) => (
+                  <Collapsible key={group.provider} defaultOpen className="rounded-lg border bg-card/40">
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="group h-auto w-full justify-start gap-2 rounded-lg px-4 py-3 hover:bg-accent/40"
+                      >
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+                        <span className="text-sm font-semibold">{group.provider}</span>
+                        <Badge variant="secondary">{group.models.length}</Badge>
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-4 pt-1">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {group.models.map(model => {
+                          const draft = drafts[model.id] ?? buildInitialDraft(model);
+                          const loadingAction = loadingActions[model.id] ?? null;
+                          const ratings = model.performance.ratings;
+
+                          return (
+                            /**
+                             * 视觉降权策略：
+                             * - 未启用模型并非不可用，只是当前不参与业务流程；
+                             * - 使用透明度区分状态，帮助管理员快速识别“生效集合”。
+                             */
+                            <Card
+                              key={model.id}
+                              className={cn("relative", !draft.isEnabled && "opacity-60")}
+                            >
+                    {model.isDefault && (
+                      <Badge className="absolute -top-2 -right-2 z-10">默认</Badge>
+                    )}
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <Cpu className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">{draft.name || model.name}</CardTitle>
+                            <CardDescription>{draft.protocol}</CardDescription>
+                          </div>
+                        </div>
+                        {/**
+                          * 禁用原因：
+                          * - 当模型不可启用（未配置密钥）且当前又是关闭状态时，禁止直接打开开关；
+                          * - 这是业务规则，避免用户误以为模型已可用。
+                          */}
+                        <Switch
+                          checked={draft.isEnabled}
+                          disabled={!resolveCanEnable(model, draft) && !draft.isEnabled}
+                          onCheckedChange={(checked) =>
+                            updateDraft(model.id, d => ({ ...d, isEnabled: checked }))
+                          }
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                     {/* 评分条 — 速度 / 稳定 / 费用 */}
                     <div className="grid grid-cols-3 gap-4 text-xs">
                       <RatingBar value={ratings.speed} icon={Zap} label="速度" />
@@ -598,6 +937,57 @@ export function ModelManager({
                     </p>
 
                     <Separator />
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Provider</Label>
+                        <Input
+                          value={draft.provider}
+                          onChange={event => {
+                            const nextValue = event.target.value;
+                            updateDraft(model.id, d => ({ ...d, provider: nextValue }));
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Protocol</Label>
+                        <Select
+                          value={draft.protocol}
+                          onValueChange={(value: AiModelProtocol) => updateDraft(model.id, d => ({ ...d, protocol: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="openai-compatible">openai-compatible</SelectItem>
+                            <SelectItem value="gemini">gemini</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>名称</Label>
+                        <Input
+                          value={draft.name}
+                          onChange={event => {
+                            const nextValue = event.target.value;
+                            updateDraft(model.id, d => ({ ...d, name: nextValue }));
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Alias Key</Label>
+                        <Input
+                          value={draft.aliasKey}
+                          onChange={event => {
+                            const nextValue = event.target.value;
+                            updateDraft(model.id, d => ({ ...d, aliasKey: nextValue }));
+                          }}
+                        />
+                      </div>
+                    </div>
 
                     {/* 模型标识 */}
                     <div className="space-y-2">
@@ -669,6 +1059,16 @@ export function ModelManager({
                     <div className="flex items-center justify-between pt-2">
                       <div className="flex items-center gap-2">
                         <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteTarget(model)}
+                          disabled={deletingModelId === model.id || model.isDefault}
+                          aria-label={`删除模型 ${draft.name || model.name}`}
+                          title="删除模型"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button
                           variant="outline"
                           size="sm"
                           onClick={() => void handleTest(model.id)}
@@ -701,7 +1101,13 @@ export function ModelManager({
                   </CardContent>
                 </Card>
               );
-            })}
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
+            </div>
+            )}
           </div>
         </PageSection>
 
@@ -809,6 +1215,44 @@ export function ModelManager({
           )}
         </PageSection>
       </TabsContent>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && deletingModelId === null) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除模型</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认删除模型「{deleteTarget?.name ?? ""}」？此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deletingModelId !== null}
+              onClick={() => setDeleteTarget(null)}
+            >
+              取消
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletingModelId !== null || !deleteTarget}
+              onClick={() => {
+                if (deleteTarget) {
+                  void handleDeleteModel(deleteTarget);
+                }
+              }}
+            >
+              {deletingModelId !== null ? "删除中..." : "删除"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   );
 }

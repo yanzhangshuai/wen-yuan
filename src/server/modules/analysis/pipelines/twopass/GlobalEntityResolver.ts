@@ -309,6 +309,7 @@ export function createGlobalEntityResolver(
         callFn : async ({ model }) => {
           const providerClient = createAiProviderClient({
             provider : model.provider,
+            protocol : model.protocol,
             apiKey   : model.apiKey,
             baseUrl  : model.baseUrl,
             modelName: model.modelName

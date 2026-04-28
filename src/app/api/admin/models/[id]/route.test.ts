@@ -20,12 +20,26 @@ const listAdminModelsMock = vi.fn();
 const updateAdminModelMock = vi.fn();
 const setDefaultAdminModelMock = vi.fn();
 const testAdminModelConnectionMock = vi.fn();
+const deleteAdminModelMock = vi.fn();
+
+class MockModelConfigurationError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly status = 400
+  ) {
+    super(message);
+    this.name = "ModelConfigurationError";
+  }
+}
 
 vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
 vi.mock("@/server/modules/models", () => ({
+  ModelConfigurationError : MockModelConfigurationError,
+  deleteAdminModel        : deleteAdminModelMock,
   listAdminModels         : listAdminModelsMock,
   updateAdminModel        : updateAdminModelMock,
   setDefaultAdminModel    : setDefaultAdminModelMock,
@@ -46,6 +60,7 @@ describe("PATCH /api/admin/models/:id", () => {
     updateAdminModelMock.mockReset();
     setDefaultAdminModelMock.mockReset();
     testAdminModelConnectionMock.mockReset();
+    deleteAdminModelMock.mockReset();
     vi.resetModules();
   });
 
@@ -188,5 +203,113 @@ describe("PATCH /api/admin/models/:id", () => {
     expect(payload.success).toBe(false);
     expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
     expect(payload.message).toBe("模型配置更新失败");
+  });
+
+  it("maps model configuration errors", async () => {
+    updateAdminModelMock.mockRejectedValue(new MockModelConfigurationError(
+      "ADMIN_MODEL_ENDPOINT_DUPLICATE",
+      "模型 endpoint 已存在",
+      409
+    ));
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/admin/models/${validId}`, {
+        method : "PATCH",
+        headers: { "content-type": "application/json" },
+        body   : JSON.stringify({ baseUrl: "https://api.deepseek.com" })
+      }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(409);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("ADMIN_MODEL_ENDPOINT_DUPLICATE");
+  });
+});
+
+describe("DELETE /api/admin/models/:id", () => {
+  const validId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+
+  beforeEach(() => {
+    headersMock.mockResolvedValue(new Headers({ "x-auth-role": AppRole.ADMIN }));
+  });
+
+  afterEach(() => {
+    headersMock.mockReset();
+    listAdminModelsMock.mockReset();
+    updateAdminModelMock.mockReset();
+    setDefaultAdminModelMock.mockReset();
+    testAdminModelConnectionMock.mockReset();
+    deleteAdminModelMock.mockReset();
+    vi.resetModules();
+  });
+
+  it("deletes model config with 200", async () => {
+    deleteAdminModelMock.mockResolvedValue({ id: validId });
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(
+      new Request(`http://localhost/api/admin/models/${validId}`, { method: "DELETE" }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.success).toBe(true);
+    expect(payload.code).toBe("ADMIN_MODEL_DELETED");
+    expect(deleteAdminModelMock).toHaveBeenCalledWith(validId);
+  });
+
+  it("returns 400 when delete params are invalid", async () => {
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(
+      new Request("http://localhost/api/admin/models/invalid", { method: "DELETE" }),
+      { params: Promise.resolve({ id: "invalid" }) }
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+    expect(payload.error?.detail).toBe("模型 ID 不合法");
+    expect(deleteAdminModelMock).not.toHaveBeenCalled();
+  });
+
+  it("maps delete protection errors", async () => {
+    deleteAdminModelMock.mockRejectedValue(new MockModelConfigurationError(
+      "ADMIN_MODEL_DELETE_DEFAULT",
+      "请先切换默认模型",
+      409
+    ));
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(
+      new Request(`http://localhost/api/admin/models/${validId}`, { method: "DELETE" }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(409);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("ADMIN_MODEL_DELETE_DEFAULT");
+  });
+
+  it("returns 500 when delete service throws unexpectedly", async () => {
+    deleteAdminModelMock.mockRejectedValue(new Error("delete failed"));
+    const { DELETE } = await import("./route");
+
+    const response = await DELETE(
+      new Request(`http://localhost/api/admin/models/${validId}`, { method: "DELETE" }),
+      { params: Promise.resolve({ id: validId }) }
+    );
+
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.code).toBe("COMMON_INTERNAL_ERROR");
+    expect(payload.message).toBe("模型删除失败");
   });
 });

@@ -1,5 +1,8 @@
 import type {
   ApiKeyChange,
+  CreateModelInput,
+  ExportedModelConfig,
+  ImportModelsResult,
   ModelConnectivityResult,
   ModelListItem,
   UpdateAdminModelPayload,
@@ -16,8 +19,24 @@ export async function listModels(): Promise<ModelListItem[]> {
   return (await getDefaultModelsModule()).listModels();
 }
 
+export async function createModel(input: CreateModelInput): Promise<ModelListItem> {
+  return (await getDefaultModelsModule()).createModel(input);
+}
+
 export async function updateModel(input: UpdateModelInput): Promise<ModelListItem> {
   return (await getDefaultModelsModule()).updateModel(input);
+}
+
+export async function deleteModel(id: string): Promise<{ id: string }> {
+  return (await getDefaultModelsModule()).deleteModel(id);
+}
+
+export async function exportModels(): Promise<ExportedModelConfig[]> {
+  return (await getDefaultModelsModule()).exportModels();
+}
+
+export async function importModels(input: unknown): Promise<ImportModelsResult> {
+  return (await getDefaultModelsModule()).importModels(input);
 }
 
 export async function setDefaultModel(id: string): Promise<ModelListItem> {
@@ -55,6 +74,9 @@ export async function listAdminModels(): Promise<ModelListItem[]> {
   return listModels();
 }
 
+export async function createAdminModel(payload: CreateModelInput): Promise<ModelListItem> {
+  return createModel(payload);
+}
 
 export async function updateAdminModel(
   id: string,
@@ -62,6 +84,10 @@ export async function updateAdminModel(
 ): Promise<ModelListItem> {
   return updateModel({
     id,
+    provider       : payload.provider,
+    protocol       : payload.protocol,
+    name           : payload.name,
+    aliasKey       : payload.aliasKey,
     providerModelId: payload.providerModelId,
     baseUrl        : payload.baseUrl,
     isEnabled      : payload.isEnabled,
@@ -78,3 +104,14 @@ export async function testAdminModelConnection(id: string): Promise<ModelConnect
   return testModelConnectivity(id);
 }
 
+export async function deleteAdminModel(id: string): Promise<{ id: string }> {
+  return deleteModel(id);
+}
+
+export async function exportAdminModels(): Promise<ExportedModelConfig[]> {
+  return exportModels();
+}
+
+export async function importAdminModels(input: unknown): Promise<ImportModelsResult> {
+  return importModels(input);
+}

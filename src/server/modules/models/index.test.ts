@@ -8,15 +8,22 @@
  * - 降低重构时误改核心规则的风险。
  */
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { decryptValue, encryptValue } from "@/server/security/encryption";
 
 import { createModelsModule } from "./index";
 
+const dnsLookupMock = vi.hoisted(() => vi.fn());
+
+vi.mock("node:dns/promises", () => ({
+  lookup: dnsLookupMock
+}));
+
 function createAiModelRecord(overrides: Partial<{
   id       : string;
   provider : string;
+  protocol : string;
   name     : string;
   modelId  : string;
   aliasKey : string | null;
@@ -29,6 +36,7 @@ function createAiModelRecord(overrides: Partial<{
   return {
     id       : "model-1",
     provider : "deepseek",
+    protocol : "openai-compatible",
     name     : "DeepSeek V3",
     modelId  : "deepseek-chat",
     aliasKey : "deepseek-v3-stable",
@@ -58,11 +66,13 @@ async function importModelsModuleWithDefaults(prismaMock: unknown, fetchMock?: t
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("models module", () => {
   const originalEncryptionKey = process.env.APP_ENCRYPTION_KEY;
-  const originalModelTestAllowedHosts = process.env.MODEL_TEST_ALLOWED_HOSTS;
+
+  beforeEach(() => {
+    dnsLookupMock.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+  });
 
   afterEach(() => {
     process.env.APP_ENCRYPTION_KEY = originalEncryptionKey;
-    process.env.MODEL_TEST_ALLOWED_HOSTS = originalModelTestAllowedHosts;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     vi.resetModules();
@@ -215,6 +225,7 @@ describe("models module", () => {
     const prismaClient = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord()),
+        findFirst : vi.fn().mockResolvedValue(null),
         update    : updateMock
       }
     } as never;
@@ -457,6 +468,7 @@ describe("models module", () => {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
           provider: "gemini",
+          protocol: "gemini",
           modelId : "gemini-2.0-flash",
           baseUrl : "https://generativelanguage.googleapis.com/",
           apiKey  : encryptValue("gemini-secret")
@@ -542,14 +554,14 @@ describe("models module", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("rejects connectivity test when base url host is not in allowlist", async () => {
+  it("rejects connectivity test when base url points to private network", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const fetchMock = vi.fn();
     const prismaClient = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
-          baseUrl: "https://internal.example.com",
+          baseUrl: "http://127.0.0.1:11434",
           apiKey : encryptValue("secret-api-key")
         }))
       }
@@ -557,7 +569,7 @@ describe("models module", () => {
 
     const modelsModule = createModelsModule(prismaClient, fetchMock);
 
-    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试地址不在白名单内");
+    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试地址指向私有或危险网络");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -592,14 +604,14 @@ describe("models module", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws when list API detects unsupported provider", async () => {
+  it("throws when list API detects unsupported protocol", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
 
     const prismaClient = {
       aiModel: {
         findMany: vi.fn().mockResolvedValue([
           createAiModelRecord({
-            provider: "openai"
+            protocol: "anthropic"
           })
         ])
       },
@@ -670,6 +682,7 @@ describe("models module", () => {
     const prismaClient = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord()),
+        findFirst : vi.fn().mockResolvedValue(null),
         update    : updateMock
       }
     } as never;
@@ -767,26 +780,48 @@ describe("models module", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("rejects connectivity test when base url is not https", async () => {
+  it("allows public HTTP base url to reach fetch", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+    dnsLookupMock.mockResolvedValueOnce([{ address: "8.8.8.8", family: 4 }]);
 
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: "pong"
+          }
+        }
+      ]
+    }), {
+      status : 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    }));
     const prismaClient = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
-          baseUrl: "http://api.deepseek.com",
+          baseUrl: "http://8.8.8.8",
           apiKey : encryptValue("secret-api-key")
         }))
       }
     } as never;
 
-    const modelsModule = createModelsModule(prismaClient);
-    await expect(modelsModule.testModelConnectivity("model-1")).rejects.toThrow("连通性测试仅支持 HTTPS BaseURL");
+    const modelsModule = createModelsModule(prismaClient, fetchMock);
+    const result = await modelsModule.testModelConnectivity("model-1");
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://8.8.8.8/chat/completions",
+      expect.objectContaining({ method: "POST" })
+    );
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("allows hosts from MODEL_TEST_ALLOWED_HOSTS env", async () => {
+  it("allows public DNS host regardless of provider allowlist env", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
     process.env.MODEL_TEST_ALLOWED_HOSTS = " INTERNAL.EXAMPLE.com ";
+    dnsLookupMock.mockResolvedValueOnce([{ address: "93.184.216.34", family: 4 }]);
 
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       choices: [
@@ -1225,6 +1260,7 @@ describe("models module", () => {
   it("treats empty MODEL_TEST_ALLOWED_HOSTS as no extra allowlist hosts", async () => {
     process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
     process.env.MODEL_TEST_ALLOWED_HOSTS = "";
+    dnsLookupMock.mockResolvedValueOnce([{ address: "8.8.8.8", family: 4 }]);
 
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       choices: [
@@ -1252,6 +1288,41 @@ describe("models module", () => {
     const result = await modelsModule.testModelConnectivity("model-1");
 
     expect(result.success).toBe(true);
+  });
+
+  // 用例语义：导入文件内部的重复 endpoint 必须在写库前阻断，避免同一 payload 自相覆盖。
+  it("rejects duplicate endpoints inside one import payload", async () => {
+    const transactionMock = vi.fn();
+    const prismaClient = {
+      $transaction: transactionMock
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    await expect(modelsModule.importModels([
+      {
+        provider : "DeepSeek",
+        protocol : "openai-compatible",
+        name     : "DeepSeek A",
+        modelId  : "deepseek-chat",
+        aliasKey : "deepseek-a",
+        baseUrl  : "https://api.deepseek.com",
+        isEnabled: false,
+        isDefault: false
+      },
+      {
+        provider : "DeepSeek",
+        protocol : "openai-compatible",
+        name     : "DeepSeek B",
+        modelId  : "deepseek-chat",
+        aliasKey : "deepseek-b",
+        baseUrl  : "https://api.deepseek.com/",
+        isEnabled: false,
+        isDefault: false
+      }
+    ])).rejects.toMatchObject({
+      code: "ADMIN_MODEL_ENDPOINT_DUPLICATE"
+    });
+    expect(transactionMock).not.toHaveBeenCalled();
   });
 
   // 用例语义：空模型列表不应再继续查询运行日志，避免无意义 groupBy。
@@ -1380,6 +1451,7 @@ describe("models module", () => {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
           provider: "gemini",
+          protocol: "gemini",
           modelId : "gemini-2.0-flash",
           baseUrl : "https://generativelanguage.googleapis.com/",
           apiKey  : encryptValue("gemini-secret")
@@ -1571,5 +1643,276 @@ describe("models module", () => {
     expect(directResult.success).toBe(true);
     expect(adminResult.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates a custom model with normalized fields and default handoff", async () => {
+    process.env.APP_ENCRYPTION_KEY = "test-encryption-key";
+
+    const updateManyMock = vi.fn().mockResolvedValue({ count: 1 });
+    const createMock = vi.fn().mockImplementation(async ({ data }: { data: Record<string, unknown> }) => createAiModelRecord({
+      provider : data.provider as string,
+      protocol : data.protocol as string,
+      name     : data.name as string,
+      modelId  : data.modelId as string,
+      aliasKey : data.aliasKey as string | null,
+      baseUrl  : data.baseUrl as string,
+      apiKey   : data.apiKey as string | null,
+      isEnabled: data.isEnabled as boolean,
+      isDefault: data.isDefault as boolean
+    }));
+    const transactionClient = {
+      aiModel: {
+        findFirst : vi.fn().mockResolvedValue(null),
+        updateMany: updateManyMock,
+        create    : createMock
+      }
+    };
+    const prismaClient = {
+      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof transactionClient) => Promise<unknown>) => {
+        return callback(transactionClient);
+      })
+    } as never;
+
+    const modelsModule = createModelsModule(prismaClient);
+    const result = await modelsModule.createModel({
+      provider : "  DeepSeek  ",
+      protocol : "openai-compatible",
+      name     : "  DeepSeek V4  ",
+      modelId  : "  deepseek-chat-v4  ",
+      baseUrl  : " https://api.deepseek.com/// ",
+      apiKey   : " secret-api-key ",
+      isEnabled: true,
+      isDefault: true
+    });
+
+    expect(updateManyMock).toHaveBeenCalledWith({
+      where: { isDefault: true },
+      data : { isDefault: false }
+    });
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        provider : "DeepSeek",
+        name     : "DeepSeek V4",
+        modelId  : "deepseek-chat-v4",
+        aliasKey : null,
+        baseUrl  : "https://api.deepseek.com",
+        isEnabled: true,
+        isDefault: true,
+        apiKey   : expect.any(String)
+      })
+    }));
+    expect(result.provider).toBe("DeepSeek");
+    expect(result.apiKeyMasked).toBe("secr******-key");
+  });
+
+  it("rejects duplicate alias and endpoint when creating models", async () => {
+    const aliasClient = {
+      aiModel: {
+        findFirst: vi.fn().mockResolvedValueOnce({ id: "existing-model" }),
+        create   : vi.fn()
+      }
+    };
+    const aliasPrisma = {
+      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof aliasClient) => Promise<unknown>) => {
+        return callback(aliasClient);
+      })
+    } as never;
+
+    await expect(createModelsModule(aliasPrisma).createModel({
+      provider: "DeepSeek",
+      protocol: "openai-compatible",
+      name    : "DeepSeek",
+      modelId : "deepseek-chat",
+      aliasKey: "deepseek",
+      baseUrl : "https://api.deepseek.com"
+    })).rejects.toThrow("Alias Key 已被其他模型使用");
+
+    const endpointClient = {
+      aiModel: {
+        findFirst: vi.fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({ id: "existing-model" }),
+        create: vi.fn()
+      }
+    };
+    const endpointPrisma = {
+      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof endpointClient) => Promise<unknown>) => {
+        return callback(endpointClient);
+      })
+    } as never;
+
+    await expect(createModelsModule(endpointPrisma).createModel({
+      provider: "DeepSeek",
+      protocol: "openai-compatible",
+      name    : "DeepSeek",
+      modelId : "deepseek-chat",
+      aliasKey: "deepseek-v3",
+      baseUrl : "https://api.deepseek.com"
+    })).rejects.toThrow("已存在相同 provider、modelId 与 baseUrl 的模型配置");
+  });
+
+  it("deletes non-default models only when no strategy references exist", async () => {
+    const deleteMock = vi.fn().mockResolvedValue(createAiModelRecord());
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          aliasKey : "deepseek-v3",
+          isDefault: false
+        })),
+        delete: deleteMock
+      },
+      modelStrategyConfig: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            scope : "BOOK",
+            stages: { CHUNK_EXTRACTION: { modelId: "other-model" } },
+            book  : { title: "Book A" }
+          }
+        ])
+      }
+    } as never;
+
+    const result = await createModelsModule(prismaClient).deleteModel("model-1");
+
+    expect(result).toEqual({ id: "model-1" });
+    expect(deleteMock).toHaveBeenCalledWith({ where: { id: "model-1" } });
+  });
+
+  it("blocks deleting default or strategy-referenced models", async () => {
+    const defaultPrisma = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({ isDefault: true })),
+        delete    : vi.fn()
+      }
+    } as never;
+
+    await expect(createModelsModule(defaultPrisma).deleteModel("model-1"))
+      .rejects.toThrow("请先切换默认模型后再删除");
+
+    const referencedPrisma = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          aliasKey : "deepseek-v3",
+          isDefault: false
+        })),
+        delete: vi.fn()
+      },
+      modelStrategyConfig: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            scope : "BOOK",
+            stages: { CHUNK_EXTRACTION: { modelId: "deepseek-v3" } },
+            book  : { title: "三国演义" }
+          },
+          {
+            scope : "GLOBAL",
+            stages: ["deepseek-chat"],
+            book  : null
+          }
+        ])
+      }
+    } as never;
+
+    await expect(createModelsModule(referencedPrisma).deleteModel("model-1"))
+      .rejects.toThrow("模型正在被策略引用：三国演义、GLOBAL 策略");
+  });
+
+  it("exports model configs without api keys", async () => {
+    const prismaClient = {
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({
+            apiKey: encryptValue("secret-api-key")
+          })
+        ])
+      }
+    } as never;
+
+    const result = await createModelsModule(prismaClient).exportModels();
+
+    expect(result).toEqual([
+      {
+        provider : "deepseek",
+        protocol : "openai-compatible",
+        name     : "DeepSeek V3",
+        modelId  : "deepseek-chat",
+        aliasKey : "deepseek-v3-stable",
+        baseUrl  : "https://api.deepseek.com",
+        isEnabled: false,
+        isDefault: false
+      }
+    ]);
+  });
+
+  it("imports models by alias or endpoint without overwriting api keys", async () => {
+    const updateManyMock = vi.fn().mockResolvedValue({ count: 1 });
+    const updateMock = vi.fn().mockResolvedValue({ id: "existing-alias" });
+    const createMock = vi.fn().mockResolvedValue({ id: "created-model" });
+    const transactionClient = {
+      aiModel: {
+        findUnique: vi.fn()
+          .mockResolvedValueOnce({ id: "existing-alias" })
+          .mockResolvedValueOnce(null),
+        findFirst : vi.fn().mockResolvedValueOnce(null),
+        updateMany: updateManyMock,
+        update    : updateMock,
+        create    : createMock
+      }
+    };
+    const prismaClient = {
+      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof transactionClient) => Promise<unknown>) => {
+        return callback(transactionClient);
+      }),
+      aiModel: {
+        findMany: vi.fn().mockResolvedValue([
+          createAiModelRecord({ id: "existing-alias" }),
+          createAiModelRecord({ id: "created-model", aliasKey: "qwen-plus" })
+        ])
+      },
+      analysisPhaseLog: {
+        groupBy: vi.fn().mockResolvedValue([])
+      }
+    } as never;
+
+    const result = await createModelsModule(prismaClient).importModels([
+      {
+        provider : " DeepSeek ",
+        protocol : "openai-compatible",
+        name     : " DeepSeek V4 ",
+        modelId  : " deepseek-chat-v4 ",
+        aliasKey : " deepseek-v3-stable ",
+        baseUrl  : " https://api.deepseek.com/// ",
+        apiKey   : "must-not-import",
+        isEnabled: true,
+        isDefault: true
+      },
+      {
+        provider : "Qwen",
+        protocol : "openai-compatible",
+        name     : "Qwen Plus",
+        modelId  : "qwen-plus",
+        aliasKey : "qwen-plus",
+        baseUrl  : "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        isEnabled: false
+      }
+    ]);
+
+    expect(updateManyMock).toHaveBeenCalledOnce();
+    expect(updateMock.mock.calls[0][0].data).not.toHaveProperty("apiKey");
+    expect(updateMock.mock.calls[0][0].data).toMatchObject({
+      provider : "DeepSeek",
+      name     : "DeepSeek V4",
+      modelId  : "deepseek-chat-v4",
+      aliasKey : "deepseek-v3-stable",
+      baseUrl  : "https://api.deepseek.com",
+      isDefault: true
+    });
+    expect(createMock.mock.calls[0][0].data).toMatchObject({
+      provider: "Qwen",
+      apiKey  : null
+    });
+    expect(result.created).toBe(1);
+    expect(result.updated).toBe(1);
+    expect(result.models).toHaveLength(2);
   });
 });

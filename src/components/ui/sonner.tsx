@@ -2,7 +2,7 @@
 
 import { useHydratedTheme } from "@/hooks/use-hydrated-theme";
 import type { ThemeId } from "@/theme";
-import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { toast, Toaster as Sonner, type ToasterProps } from "sonner";
 
 /**
  * 文件定位（Next.js）：
@@ -66,4 +66,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export { Toaster };
+export { toast, Toaster };

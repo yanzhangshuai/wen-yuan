@@ -262,7 +262,7 @@ export type BiographyRecordGroupByOutputType = {
   _max: BiographyRecordMaxAggregateOutputType | null
 }
 
-type GetBiographyRecordGroupByPayload<T extends BiographyRecordGroupByArgs> = Prisma.PrismaPromise<
+export type GetBiographyRecordGroupByPayload<T extends BiographyRecordGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<BiographyRecordGroupByOutputType, T['by']> &
       {
@@ -1704,6 +1704,11 @@ export type BiographyRecordFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` BiographyRecords.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of BiographyRecords.
+   */
   distinct?: Prisma.BiographyRecordScalarFieldEnum | Prisma.BiographyRecordScalarFieldEnum[]
 }
 

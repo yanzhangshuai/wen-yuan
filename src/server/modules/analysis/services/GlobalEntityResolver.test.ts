@@ -42,6 +42,7 @@ function buildResolvedStageModel(
   return {
     modelId    : "model-1",
     provider   : "deepseek",
+    protocol   : "openai-compatible",
     modelName  : "deepseek-chat",
     displayName: "DeepSeek Chat",
     baseUrl    : "https://api.deepseek.com",

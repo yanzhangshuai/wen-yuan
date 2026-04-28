@@ -234,7 +234,7 @@ export type PromptTemplateVersionGroupByOutputType = {
   _max: PromptTemplateVersionMaxAggregateOutputType | null
 }
 
-type GetPromptTemplateVersionGroupByPayload<T extends PromptTemplateVersionGroupByArgs> = Prisma.PrismaPromise<
+export type GetPromptTemplateVersionGroupByPayload<T extends PromptTemplateVersionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<PromptTemplateVersionGroupByOutputType, T['by']> &
       {
@@ -1541,6 +1541,11 @@ export type PromptTemplateVersionFindManyArgs<ExtArgs extends runtime.Types.Exte
    * Skip the first `n` PromptTemplateVersions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of PromptTemplateVersions.
+   */
   distinct?: Prisma.PromptTemplateVersionScalarFieldEnum | Prisma.PromptTemplateVersionScalarFieldEnum[]
 }
 

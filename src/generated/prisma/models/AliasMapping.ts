@@ -263,7 +263,7 @@ export type AliasMappingGroupByOutputType = {
   _max: AliasMappingMaxAggregateOutputType | null
 }
 
-type GetAliasMappingGroupByPayload<T extends AliasMappingGroupByArgs> = Prisma.PrismaPromise<
+export type GetAliasMappingGroupByPayload<T extends AliasMappingGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AliasMappingGroupByOutputType, T['by']> &
       {
@@ -1675,6 +1675,11 @@ export type AliasMappingFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Skip the first `n` AliasMappings.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of AliasMappings.
+   */
   distinct?: Prisma.AliasMappingScalarFieldEnum | Prisma.AliasMappingScalarFieldEnum[]
 }
 
