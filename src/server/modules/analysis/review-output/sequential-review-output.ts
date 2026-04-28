@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { BioCategory } from "@/generated/prisma/enums";
 import {
@@ -130,6 +132,21 @@ interface SequentialReviewTx extends ClaimRepositoryTransactionClient {
   };
   evidenceSpan: {
     deleteMany(args: { where: DeleteWhere }): Promise<{ count: number }>;
+    createMany(args: {
+      data: Array<{
+        id                 : string;
+        bookId             : string;
+        chapterId          : string;
+        segmentId          : string;
+        startOffset        : number;
+        endOffset          : number;
+        quotedText         : string;
+        normalizedText     : string;
+        speakerHint        : null;
+        narrativeRegionType: string;
+        createdByRunId     : string;
+      }>;
+    }): Promise<{ count: number }>;
     create(args: {
       data: {
         bookId             : string;
@@ -146,9 +163,12 @@ interface SequentialReviewTx extends ClaimRepositoryTransactionClient {
     }): Promise<{ id: string }>;
   };
   // entityMention 在基类中为 CreateManyDelegate（只含 createMany + deleteMany），
-  // 此处额外增加 create 以取回生成 ID
+  // 此处额外保留 create 以兼容旧测试与手动写入场景。
   entityMention: ClaimRepositoryTransactionClient["entityMention"] & {
     deleteMany(args: { where: DeleteWhere }): Promise<{ count: number }>;
+    createMany(args: {
+      data: Array<ClaimCreateDataByFamily["ENTITY_MENTION"] & { id: string }>;
+    }): Promise<{ count: number }>;
     create(args: {
       data: ClaimCreateDataByFamily["ENTITY_MENTION"];
     }): Promise<{ id: string } & ClaimCreateDataByFamily["ENTITY_MENTION"]>;
@@ -166,7 +186,12 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
   ): Promise<SequentialReviewOutputResult> {
     // PrismaClient.$transaction 的泛型签名无法直接接受窄化的 SequentialReviewTx，
     // 故用 as unknown as 绕过类型系统，实际运行时 Prisma 传入的 tx 满足接口约定。
-    return (prismaClient as unknown as { $transaction<T>(fn: (tx: SequentialReviewTx) => Promise<T>): Promise<T> })
+    return (prismaClient as unknown as {
+      $transaction<T>(
+        fn: (tx: SequentialReviewTx) => Promise<T>,
+        options?: { timeout?: number }
+      ): Promise<T>;
+    })
       .$transaction(async (tx) => {
         const { bookId, runId, chapterIds } = input;
 
@@ -286,8 +311,23 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
             where: { bookId, chapterId: chapter.id, createdByRunId: runId }
           });
 
-          // 5c. 为每个 mention 创建 evidence span + entity mention
+          // 5c. 批量创建 evidence span + entity mention，避免整本书逐条写入拖垮事务
           const chapterMentions = mentions.filter(m => m.chapterId === chapter.id);
+          const evidenceSpanRows: Array<{
+            id                 : string;
+            bookId             : string;
+            chapterId          : string;
+            segmentId          : string;
+            startOffset        : number;
+            endOffset          : number;
+            quotedText         : string;
+            normalizedText     : string;
+            speakerHint        : null;
+            narrativeRegionType: string;
+            createdByRunId     : string;
+          }> = [];
+          const entityMentionRows: Array<ClaimCreateDataByFamily["ENTITY_MENTION"] & { id: string }> = [];
+
           for (const mention of chapterMentions) {
             const rawText = mention.rawText;
             const idx     = chapter.content.indexOf(rawText);
@@ -303,20 +343,20 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
               endOffset   = 1;
             }
 
-            const spanText   = chapter.content.slice(startOffset, endOffset);
-            const evidenceSpan = await tx.evidenceSpan.create({
-              data: {
-                bookId,
-                chapterId          : chapter.id,
-                segmentId          : segment.id,
-                startOffset,
-                endOffset,
-                quotedText         : spanText,
-                normalizedText     : normalizeTextForEvidence(spanText),
-                speakerHint        : null,
-                narrativeRegionType: "NARRATIVE",
-                createdByRunId     : runId
-              }
+            const spanText       = chapter.content.slice(startOffset, endOffset);
+            const evidenceSpanId = randomUUID();
+            evidenceSpanRows.push({
+              id                 : evidenceSpanId,
+              bookId,
+              chapterId          : chapter.id,
+              segmentId          : segment.id,
+              startOffset,
+              endOffset,
+              quotedText         : spanText,
+              normalizedText     : normalizeTextForEvidence(spanText),
+              speakerHint        : null,
+              narrativeRegionType: "NARRATIVE",
+              createdByRunId     : runId
             });
 
             // rawText 不在章节原文中时，使用 persona name 作为 surfaceText
@@ -336,36 +376,35 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
               aliasTypeHint            : null,
               speakerPersonaCandidateId: null,
               suspectedResolvesTo      : null,
-              evidenceSpanId           : evidenceSpan.id
+              evidenceSpanId
             });
 
             const mentionData = toClaimCreateData(draft) as ClaimCreateDataByFamily["ENTITY_MENTION"];
-            const entityMention = await tx.entityMention.create({ data: mentionData });
+            const entityMentionId = randomUUID();
+            entityMentionRows.push({ id: entityMentionId, ...mentionData });
             entityMentionInfoMap.set(mention.id, {
-              id            : entityMention.id,
-              evidenceSpanId: evidenceSpan.id
+              id            : entityMentionId,
+              evidenceSpanId: evidenceSpanId
             });
-            entityMentionCount++;
           }
 
           // 5d. 章节级 evidence span（供 event / relation claims 使用）
           let chapterEvidenceSpanId: string | null = null;
           if (chapter.content.length > 0) {
-            const chapterSpan = await tx.evidenceSpan.create({
-              data: {
-                bookId,
-                chapterId          : chapter.id,
-                segmentId          : segment.id,
-                startOffset        : 0,
-                endOffset          : chapter.content.length,
-                quotedText         : chapter.content,
-                normalizedText     : normalizeTextForEvidence(chapter.content),
-                speakerHint        : null,
-                narrativeRegionType: "NARRATIVE",
-                createdByRunId     : runId
-              }
+            chapterEvidenceSpanId = randomUUID();
+            evidenceSpanRows.push({
+              id                 : chapterEvidenceSpanId,
+              bookId,
+              chapterId          : chapter.id,
+              segmentId          : segment.id,
+              startOffset        : 0,
+              endOffset          : chapter.content.length,
+              quotedText         : chapter.content,
+              normalizedText     : normalizeTextForEvidence(chapter.content),
+              speakerHint        : null,
+              narrativeRegionType: "NARRATIVE",
+              createdByRunId     : runId
             });
-            chapterEvidenceSpanId = chapterSpan.id;
           } else {
             // I4: 章节内容为空时，如果仍有遗留传记或关系行，发出结构化警告。
             // 不创建零长度 evidence span（现有校验不允许 endOffset === 0）。
@@ -384,6 +423,14 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
                 }
               );
             }
+          }
+
+          if (evidenceSpanRows.length > 0) {
+            await tx.evidenceSpan.createMany({ data: evidenceSpanRows });
+          }
+          if (entityMentionRows.length > 0) {
+            await tx.entityMention.createMany({ data: entityMentionRows });
+            entityMentionCount += entityMentionRows.length;
           }
 
           // 预计算当前章节的传记和关系行，供 time claim 门控及下方 event/relation 复用
@@ -484,7 +531,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
                 reviewState              : "ACCEPTED",
                 subjectMentionId         : null,
                 subjectPersonaCandidateId: candidateIdMap.get(bio.personaId) ?? null,
-                predicate                : String(bio.title ?? bio.category),
+                predicate                : bio.title?.trim() || bio.category,
                 objectText               : bio.event,
                 objectPersonaCandidateId : null,
                 locationText             : null,
@@ -597,7 +644,7 @@ export function createSequentialReviewOutputAdapter(prismaClient: PrismaClient =
           identityResolutionClaims,
           timeClaims       : timeClaimCount
         };
-      });
+      }, { timeout: 60000 });
   }
 
   // prismaClient 宽类型访问器，用于直接查询（不在 $transaction 内）
