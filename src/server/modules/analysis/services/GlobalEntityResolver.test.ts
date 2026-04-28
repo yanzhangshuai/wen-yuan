@@ -206,7 +206,7 @@ describe("GlobalEntityResolver", () => {
       enableThinking : true,
       reasoningEffort: "medium"
     }));
-    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor as never);
+    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor);
 
     const result = await resolver.resolveGlobalEntities(
       "book-1",
@@ -282,7 +282,7 @@ describe("GlobalEntityResolver", () => {
       enableThinking : true,
       reasoningEffort: "medium"
     }));
-    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor as never);
+    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor);
 
     // 范进/范举人 share alias 范老爷 → allNames overlap → candidate group → sendToLlm (no aliasLookup)
     const result = await resolver.resolveGlobalEntities(
@@ -338,7 +338,7 @@ describe("GlobalEntityResolver", () => {
       maxOutputTokens: 256,
       topP           : 1
     }));
-    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor as never);
+    const resolver = createGlobalEntityResolver(prismaClient as never, aiCallExecutor);
 
     const result = await resolver.resolveGlobalEntities(
       "book-1",

@@ -34,7 +34,7 @@ class MockResizeObserver {
         width : GRAPH_WIDTH,
         height: GRAPH_HEIGHT
       }
-    } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+    } as unknown as ResizeObserverEntry], this);
   }
 
   disconnect() {}

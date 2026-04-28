@@ -103,6 +103,8 @@ const config = [
           ]
         }
       ],
+      // TODO:临时关闭，
+      "react-hooks/set-state-in-effect": "off",
       "no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": [

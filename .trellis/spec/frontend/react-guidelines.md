@@ -122,6 +122,61 @@ export default function DashboardPage() {
 
 ---
 
+## Convention: `react-hooks/set-state-in-effect` 规则边界
+
+**What**: ESLint 中 `react-hooks/set-state-in-effect` 当前保持关闭，但这不是允许任意在 `useEffect` 中同步派生 state。
+
+**Why**: 本项目存在多类合理的客户端挂载后状态同步：浏览器 API、`matchMedia`、`localStorage`、第三方实例、hydration 门控。迁移阶段强行开启该规则会把这些场景与真正的派生 state 问题混在一起，导致大规模噪声重构。
+
+允许：
+- 挂载后读取浏览器环境，避免 SSR/CSR 首帧属性漂移。
+- 订阅外部事件或第三方实例回调后更新 React state。
+- 异步用户操作或客户端轮询完成后写入状态。
+
+禁止：
+- 仅根据 props/state 计算出的值，再通过 `useEffect` 同步回另一个 state。
+- 首屏数据拉取使用 `useEffect + setState`，而不是 `use()` + Suspense。
+
+反例：
+```tsx
+function PriceLabel({ cents }: { cents: number }) {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    setLabel(`CNY ${(cents / 100).toFixed(2)}`);
+  }, [cents]);
+
+  return <span>{label}</span>;
+}
+```
+
+正例：
+```tsx
+function PriceLabel({ cents }: { cents: number }) {
+  const label = `CNY ${(cents / 100).toFixed(2)}`;
+
+  return <span>{label}</span>;
+}
+```
+
+允许的 hydration 门控例外：
+```tsx
+function ThemeAwareControl() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  return <button aria-pressed={mounted ? true : false}>...</button>;
+}
+```
+
+评审检查项：
+- 如果 effect 里的 `setState` 只依赖 React props/state，优先改为 render 阶段派生值。
+- 如果 effect 读取浏览器/外部系统状态，确认首帧结构与关键属性稳定。
+- 如果 effect 做首屏异步数据加载，改为 `use()` + Suspense；轮询/事件驱动状态见下方 SWR 规则。
+
+---
+
 ## Hydration 安全：浏览器本地状态
 
 当 UI 状态依赖浏览器环境（`next-themes`、`localStorage`、媒体查询）时，服务端与客户端首帧值天然可能不同。

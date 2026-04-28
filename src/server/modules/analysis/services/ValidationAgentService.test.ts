@@ -142,7 +142,7 @@ describe("ValidationAgentService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedCreateMergePersonasService.mockReturnValue({ mergePersonas: hoisted.mergePersonas } as never);
+    mockedCreateMergePersonasService.mockReturnValue({ mergePersonas: hoisted.mergePersonas });
     mockedCreateAiProviderClient.mockReset();
   });
 
@@ -213,7 +213,7 @@ describe("ValidationAgentService", () => {
     validationReportCreate.mockResolvedValueOnce({ id: "report-1" });
 
     const stageExecutor = createStageExecutorMock();
-    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson });
     const service = createValidationAgentService(prisma, stageExecutor as never);
     const report = await service.validateChapterResult({
       bookId          : "book-1",
@@ -336,7 +336,7 @@ describe("ValidationAgentService", () => {
     validationReportCreate
       .mockResolvedValueOnce({ id: "report-direct-1" })
       .mockResolvedValueOnce({ id: "report-direct-2" });
-    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson });
 
     const service = createValidationAgentService(prisma, createStageExecutorMock() as never, strategyResolver as never);
 
@@ -423,7 +423,7 @@ describe("ValidationAgentService", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: "persona-new" }]);
     validationReportCreate.mockResolvedValueOnce({ id: "report-direct-fallback" });
-    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson });
 
     const service = createValidationAgentService(prisma, createStageExecutorMock() as never, strategyResolver as never);
     const report = await service.validateChapterResult({
@@ -538,7 +538,7 @@ describe("ValidationAgentService", () => {
     validationReportCreate.mockResolvedValueOnce({ id: "report-book-1" });
 
     const stageExecutor = createStageExecutorMock();
-    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson });
     const service = createValidationAgentService(prisma, stageExecutor as never);
     const report = await service.validateBookResult("book-1", "job-1");
 
@@ -612,7 +612,7 @@ describe("ValidationAgentService", () => {
       { no: 7, title: "第七回", content: "周学道再度出场，众人议论纷纷。" }
     ]);
     validationReportCreate.mockResolvedValueOnce({ id: "report-book-fallback" });
-    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson });
 
     const service = createValidationAgentService(prisma, createStageExecutorMock() as never);
     const report = await service.validateBookResult("book-1", "job-book-fallback");

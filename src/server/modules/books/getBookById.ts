@@ -212,7 +212,7 @@ export function createGetBookByIdService(
     }
 
     // 查询结果映射成统一 DTO，供上游直接返回给前端。
-    return mapBookDetail(book as BookDetailRow);
+    return mapBookDetail(book);
   }
 
   return { getBookById };

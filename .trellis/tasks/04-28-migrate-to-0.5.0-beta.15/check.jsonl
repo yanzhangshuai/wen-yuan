@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/shared/index.md", "reason": "General project quality and shared conventions for post-migration verification"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Quality checklist for verifying migration fallout"}

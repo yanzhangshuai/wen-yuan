@@ -73,7 +73,7 @@ function mergeVisualConfig(
     ...baseConfig,
     x: position.x,
     y: position.y
-  } as Prisma.InputJsonValue;
+  };
 }
 
 export function createUpdateGraphLayoutService(

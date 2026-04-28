@@ -67,7 +67,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
   const bookUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
   const transaction = vi.fn(async (operationsOrCallback: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>)) => {
     if (typeof operationsOrCallback === "function") {
-      return await operationsOrCallback({} as never);
+      return await operationsOrCallback({});
     }
     return await Promise.all(operationsOrCallback);
   });
@@ -143,7 +143,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
     relationship: { findMany: relationshipFindMany },
     persona     : { findMany: personaFindMany, updateMany: personaUpdateMany },
     $transaction: transaction
-  } as never, resolvedChapterAnalyzer as never);
+  } as never, resolvedChapterAnalyzer);
 
   return {
     runner,

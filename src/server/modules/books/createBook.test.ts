@@ -41,7 +41,7 @@ describe("createBook", () => {
 
     const service = createCreateBookService(
       { book: { create: bookCreate } } as never,
-      { putObject, deleteObject, getObjectUrl: vi.fn(), getObject: vi.fn() } as never
+      { putObject, deleteObject, getObjectUrl: vi.fn(), getObject: vi.fn() }
     );
 
     // Act
@@ -133,7 +133,7 @@ describe("createBook", () => {
         deleteObject: vi.fn().mockResolvedValue(undefined),
         getObjectUrl: vi.fn(),
         getObject   : vi.fn()
-      } as never
+      }
     );
 
     // Act
@@ -160,7 +160,7 @@ describe("createBook", () => {
       {
         book: { create: vi.fn().mockRejectedValue(new Error("db boom")) }
       } as never,
-      { putObject, deleteObject, getObjectUrl: vi.fn(), getObject: vi.fn() } as never
+      { putObject, deleteObject, getObjectUrl: vi.fn(), getObject: vi.fn() }
     );
 
     // Act / Assert

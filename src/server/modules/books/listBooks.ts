@@ -246,7 +246,7 @@ export function createListBooksService(
       select : BOOK_LIST_SELECT
     });
 
-    return books.map((book) => mapBook(book as BookListRow));
+    return books.map((book) => mapBook(book));
   }
 
   return { listBooks };

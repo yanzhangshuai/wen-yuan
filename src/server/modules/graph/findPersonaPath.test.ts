@@ -272,7 +272,7 @@ describe("findPersonaPath service", () => {
       })
     };
 
-    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver);
     const result = await service.findPersonaPath({
       bookId         : "book-1",
       sourcePersonaId: "p1",
@@ -313,7 +313,7 @@ describe("findPersonaPath service", () => {
       })
     };
 
-    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver);
     const result = await service.findPersonaPath({
       bookId         : "book-1",
       sourcePersonaId: "p1",
@@ -353,7 +353,7 @@ describe("findPersonaPath service", () => {
       })
     };
 
-    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver);
     const result = await service.findPersonaPath({
       bookId         : "book-1",
       sourcePersonaId: "p1",
@@ -389,7 +389,7 @@ describe("findPersonaPath service", () => {
       })
     };
 
-    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver);
     const result = await service.findPersonaPath({
       bookId         : "book-1",
       sourcePersonaId: "p1",
@@ -429,7 +429,7 @@ describe("findPersonaPath service", () => {
       })
     };
 
-    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver);
     const result = await service.findPersonaPath({
       bookId         : "book-1",
       sourcePersonaId: "p1",
@@ -454,7 +454,7 @@ describe("findPersonaPath service", () => {
       })
     };
 
-    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver as never);
+    const service = createFindPersonaPathService(createPrismaStub() as never, neo4jDriver);
     const result = await service.findPersonaPath({
       bookId         : "book-1",
       sourcePersonaId: "p1",

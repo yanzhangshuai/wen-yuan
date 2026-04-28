@@ -875,7 +875,7 @@ function EntryList({ pack, onRefresh }: { pack: KnowledgePackItem; onRefresh: ()
     try {
       const result = await importKnowledgeEntries(pack.id, {
         entries     : data.entries,
-        reviewStatus: data.reviewStatus as "PENDING" | "VERIFIED",
+        reviewStatus: data.reviewStatus,
         source      : "IMPORTED",
         auditAction : "IMPORT"
       });

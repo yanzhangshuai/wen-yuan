@@ -82,7 +82,7 @@ function normalizeAlias(value: string): string {
 
 /** 应用层别名类型 -> Prisma 枚举类型（保持边界清晰，避免业务层直接耦合 DB 枚举实现细节）。 */
 function toAliasType(value: RegisterAliasInput["aliasType"]): AliasType {
-  return value as AliasType;
+  return value;
 }
 
 /** 应用层状态 -> Prisma 枚举状态；未知值保守回落为 PENDING，避免误写入非法状态。 */
@@ -95,12 +95,12 @@ function toAliasStatus(value: RegisterAliasInput["status"]): AliasMappingStatus 
 
 /** Prisma 枚举 -> 应用层状态（对外返回统一 AliasMappingResult 语义）。 */
 function fromAliasType(value: AliasType): AliasMappingResult["aliasType"] {
-  return value as AliasMappingResult["aliasType"];
+  return value;
 }
 
 /** Prisma 枚举 -> 应用层状态。 */
 function fromAliasStatus(value: AliasMappingStatus): AliasMappingResult["status"] {
-  return value as AliasMappingResult["status"];
+  return value;
 }
 
 /**

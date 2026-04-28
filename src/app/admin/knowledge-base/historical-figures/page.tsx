@@ -237,11 +237,12 @@ export default function HistoricalFiguresPage() {
     const lines = importText.trim().split("\n").filter(Boolean);
     if (lines.length === 0) return;
 
-    const entries = lines.map((line) => {
+    const defaultCategory: HistoricalFigureCategory = "SAGE";
+    const entries: Array<{ name: string; category: HistoricalFigureCategory; aliases: string[] }> = lines.map((line) => {
       const parts = line.split(/\t|,|，/);
       return {
         name    : (parts[0] ?? "").trim(),
-        category: "SAGE" as HistoricalFigureCategory,
+        category: defaultCategory,
         aliases : parts.slice(1).map((s) => s.trim()).filter(Boolean)
       };
     }).filter((e) => e.name);

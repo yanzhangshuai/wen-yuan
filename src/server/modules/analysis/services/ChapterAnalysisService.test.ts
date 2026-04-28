@@ -237,7 +237,7 @@ describe("chapter analysis service", () => {
         personaId : "persona-existing",
         confidence: 1
       })
-    } as never);
+    });
     mockedDecryptValue.mockImplementation((value) => `plain:${value}`);
     mockedCreateAiProviderClient.mockReturnValue({ provider: "mocked" } as never);
   });
@@ -435,7 +435,7 @@ describe("chapter analysis service", () => {
       personaId : "persona-existing",
       confidence: 1
     });
-    mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock } as never);
+    mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock });
 
     const registerAlias = vi.fn().mockResolvedValue(undefined);
     const aliasRegistry: AliasRegistryService = {
@@ -603,7 +603,7 @@ describe("chapter analysis service", () => {
         content: JSON.stringify({ mentions: [], biographies: [], relationships: [] }),
         usage  : null
       });
-    mockedCreateAiProviderClient.mockReturnValue({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValue({ generateJson });
 
     const execute = vi.fn(async ({ callFn }: {
       stage : PipelineStage;
@@ -880,7 +880,7 @@ describe("chapter analysis service", () => {
       }]),
       usage: null
     });
-    mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson });
 
     const execute = vi.fn(async ({ callFn }: { callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown> }) => {
       return await callFn({ model: buildStageModel() });
@@ -927,7 +927,7 @@ describe("chapter analysis service", () => {
           genericRatio            : 0.4
         }
       });
-      mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock } as never);
+      mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock });
 
       const registerAlias = vi.fn().mockResolvedValue(undefined);
       const aliasRegistry: AliasRegistryService = {
@@ -999,7 +999,7 @@ describe("chapter analysis service", () => {
           genericRatio            : 0.45
         }
       });
-      mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock } as never);
+      mockedCreatePersonaResolver.mockReturnValueOnce({ resolve: resolveMock });
 
       const registerAlias = vi.fn().mockResolvedValue(undefined);
       const aliasRegistry: AliasRegistryService = {
@@ -1015,7 +1015,7 @@ describe("chapter analysis service", () => {
         content: JSON.stringify([]),
         usage  : null
       });
-      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: rosterGenerateJson } as never);
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: rosterGenerateJson });
 
       const chunkGenerateJson = vi.fn().mockResolvedValue({
         content: JSON.stringify({
@@ -1025,7 +1025,7 @@ describe("chapter analysis service", () => {
         }),
         usage: null
       });
-      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: chunkGenerateJson } as never);
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson: chunkGenerateJson });
 
       const generateJson = vi.fn().mockResolvedValue({
         content: JSON.stringify([
@@ -1036,7 +1036,7 @@ describe("chapter analysis service", () => {
         ]),
         usage: null
       });
-      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
+      mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson });
 
       const execute = vi.fn(async ({ callFn }: {
         stage : PipelineStage;
@@ -1086,7 +1086,7 @@ describe("chapter analysis service", () => {
     const service = createChapterAnalysisService(
       prismaMock as never,
       undefined,
-      { execute } as never
+      { execute }
     );
 
     const result = await service.extractChapterEntities("chapter-1", {
@@ -1133,7 +1133,7 @@ describe("chapter analysis service", () => {
         totalTokens     : 32
       }
     });
-    mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson } as never);
+    mockedCreateAiProviderClient.mockReturnValueOnce({ generateJson });
     const execute = vi.fn(async ({ callFn }: { callFn: (input: { model: ReturnType<typeof buildStageModel> }) => Promise<unknown> }) => {
       return await callFn({ model: buildStageModel() });
     });
