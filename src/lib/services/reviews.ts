@@ -197,6 +197,57 @@ export interface DraftsData {
   biographyRecords: BiographyDraftItem[];
 }
 
+export interface ChapterEventChapter {
+  id          : string;
+  no          : number;
+  noText      : string | null;
+  title       : string;
+  eventCount  : number;
+  pendingCount: number;
+  isVerified  : boolean;
+  verifiedAt  : string | null;
+}
+
+export interface ChapterEventChapterData {
+  summary: {
+    totalChapters   : number;
+    verifiedChapters: number;
+    pendingEvents   : number;
+  };
+  chapters: ChapterEventChapter[];
+}
+
+export interface ChapterEventItem {
+  id          : string;
+  personaId   : string;
+  personaName : string;
+  chapterId   : string;
+  chapterNo   : number;
+  category    : string;
+  title       : string | null;
+  location    : string | null;
+  event       : string;
+  virtualYear : string | null;
+  tags        : string[];
+  ironyNote   : string | null;
+  recordSource: string;
+  status      : string;
+  updatedAt   : string | null;
+}
+
+export interface ChapterEventMutationBody {
+  personaId?  : string;
+  chapterId?  : string;
+  category?   : string;
+  title?      : string | null;
+  location?   : string | null;
+  event?      : string;
+  virtualYear?: string | null;
+  tags?       : string[];
+  ironyNote?  : string | null;
+  status?     : string;
+}
+
 /* ------------------------------------------------
    Service functions
    ------------------------------------------------ */
@@ -221,6 +272,58 @@ export async function fetchDrafts(
   // 仅在用户选择来源筛选时附加 query，避免把空值传给后端造成语义歧义。
   if (source) params.set("source", source);
   return clientFetch<DraftsData>(`/api/admin/drafts?${params}`);
+}
+
+export async function fetchChapterEventChapters(bookId: string): Promise<ChapterEventChapterData> {
+  return clientFetch<ChapterEventChapterData>(`/api/admin/review/books/${bookId}/chapter-events`);
+}
+
+export async function fetchChapterEvents(
+  bookId: string,
+  chapterId: string,
+  filters: { status?: string | null; source?: string | null } = {}
+): Promise<ChapterEventItem[]> {
+  const params = new URLSearchParams({ chapterId });
+  if (filters.status) params.set("status", filters.status);
+  if (filters.source) params.set("source", filters.source);
+  return clientFetch<ChapterEventItem[]>(`/api/admin/review/books/${bookId}/chapter-events?${params}`);
+}
+
+export async function createChapterEvent(
+  bookId: string,
+  body: Required<Pick<ChapterEventMutationBody, "personaId" | "chapterId" | "event">> & ChapterEventMutationBody
+): Promise<ChapterEventItem> {
+  return clientFetch<ChapterEventItem>(`/api/admin/review/books/${bookId}/chapter-events`, {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
+export async function updateChapterEvent(
+  bookId: string,
+  eventId: string,
+  body: ChapterEventMutationBody
+): Promise<ChapterEventItem> {
+  return clientFetch<ChapterEventItem>(`/api/admin/review/books/${bookId}/chapter-events/${eventId}`, {
+    method : "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
+export async function deleteChapterEvent(bookId: string, eventId: string): Promise<void> {
+  await clientMutate(`/api/admin/review/books/${bookId}/chapter-events/${eventId}`, {
+    method: "DELETE"
+  });
+}
+
+export async function markChapterEventsVerified(bookId: string, chapterId: string): Promise<void> {
+  await clientMutate(`/api/admin/review/books/${bookId}/chapter-events/verify`, {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify({ chapterId })
+  });
 }
 
 /**

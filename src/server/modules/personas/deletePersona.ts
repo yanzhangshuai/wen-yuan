@@ -42,6 +42,83 @@ export interface DeletePersonaResult {
   };
 }
 
+export interface DeletePersonaPreview {
+  persona: {
+    id  : string;
+    name: string;
+  };
+  counts: {
+    relationshipCount: number;
+    biographyCount   : number;
+    mentionCount     : number;
+    profileCount     : number;
+  };
+  biographies: Array<{
+    id     : string;
+    title  : string | null;
+    event  : string;
+    chapter: string;
+  }>;
+  relationships: Array<{
+    id         : string;
+    type       : string;
+    sourceName : string;
+    targetName : string;
+    description: string | null;
+    chapter    : string;
+  }>;
+  mentions: Array<{
+    id     : string;
+    rawText: string;
+    summary: string | null;
+    chapter: string;
+  }>;
+  profiles: Array<{
+    id       : string;
+    bookId   : string;
+    localName: string;
+  }>;
+}
+
+interface PreviewOptions {
+  bookId?: string;
+}
+
+function chapterLabel(chapter: { no?: number | null; title?: string | null } | null | undefined): string {
+  if (!chapter) return "未知章节";
+  const no = typeof chapter.no === "number" ? `第${chapter.no}回` : "";
+  return [no, chapter.title ?? ""].filter(Boolean).join(" ") || "未知章节";
+}
+
+function scopedCascadeWhere(personaId: string, options: PreviewOptions = {}) {
+  const bookScope = options.bookId ? { chapter: { bookId: options.bookId } } : {};
+  return {
+    relationships: {
+      deletedAt: null,
+      OR       : [
+        { sourceId: personaId },
+        { targetId: personaId }
+      ],
+      ...bookScope
+    },
+    biographies: {
+      personaId,
+      deletedAt: null,
+      ...bookScope
+    },
+    mentions: {
+      personaId,
+      deletedAt: null,
+      ...bookScope
+    },
+    profiles: {
+      personaId,
+      deletedAt: null,
+      ...(options.bookId ? { bookId: options.bookId } : {})
+    }
+  };
+}
+
 export function createDeletePersonaService(
   prismaClient: PrismaClient = prisma
 ) {
@@ -55,7 +132,110 @@ export function createDeletePersonaService(
    * - 关联关系/传记置 `REJECTED` 并软删除；
    * - mention/profile 软删除。
    */
-  async function deletePersona(personaId: string): Promise<DeletePersonaResult> {
+  async function previewDeletePersona(
+    personaId: string,
+    options: PreviewOptions = {}
+  ): Promise<DeletePersonaPreview> {
+    const existing = await prismaClient.persona.findFirst({
+      where: {
+        id       : personaId,
+        deletedAt: null
+      },
+      select: {
+        id  : true,
+        name: true
+      }
+    });
+    if (!existing) {
+      throw new PersonaNotFoundError(personaId);
+    }
+
+    const where = scopedCascadeWhere(personaId, options);
+    const [relationships, biographies, mentions, profiles] = await Promise.all([
+      prismaClient.relationship.findMany({
+        where  : where.relationships,
+        orderBy: [{ updatedAt: "desc" }],
+        select : {
+          id         : true,
+          type       : true,
+          description: true,
+          chapter    : { select: { no: true, title: true } },
+          source     : { select: { name: true } },
+          target     : { select: { name: true } }
+        }
+      }),
+      prismaClient.biographyRecord.findMany({
+        where  : where.biographies,
+        orderBy: [{ chapterNo: "asc" }, { updatedAt: "desc" }],
+        select : {
+          id       : true,
+          title    : true,
+          event    : true,
+          chapterNo: true,
+          chapter  : { select: { title: true } }
+        }
+      }),
+      prismaClient.mention.findMany({
+        where  : where.mentions,
+        orderBy: [{ updatedAt: "desc" }],
+        select : {
+          id     : true,
+          rawText: true,
+          summary: true,
+          chapter: { select: { no: true, title: true } }
+        }
+      }),
+      prismaClient.profile.findMany({
+        where  : where.profiles,
+        orderBy: [{ updatedAt: "desc" }],
+        select : {
+          id       : true,
+          bookId   : true,
+          localName: true
+        }
+      })
+    ]);
+
+    return {
+      persona: existing,
+      counts : {
+        relationshipCount: relationships.length,
+        biographyCount   : biographies.length,
+        mentionCount     : mentions.length,
+        profileCount     : profiles.length
+      },
+      biographies: biographies.map(item => ({
+        id     : item.id,
+        title  : item.title,
+        event  : item.event,
+        chapter: chapterLabel({ no: item.chapterNo, title: item.chapter?.title })
+      })),
+      relationships: relationships.map(item => ({
+        id         : item.id,
+        type       : item.type,
+        sourceName : item.source.name,
+        targetName : item.target.name,
+        description: item.description,
+        chapter    : chapterLabel(item.chapter)
+      })),
+      mentions: mentions.map(item => ({
+        id     : item.id,
+        rawText: item.rawText,
+        summary: item.summary,
+        chapter: chapterLabel(item.chapter)
+      })),
+      profiles: profiles.map(item => ({
+        id       : item.id,
+        bookId   : item.bookId,
+        localName: item.localName
+      }))
+    };
+  }
+
+  async function deletePersona(
+    personaId: string,
+    options: PreviewOptions = {}
+  ): Promise<DeletePersonaResult> {
     return prismaClient.$transaction(async (tx) => {
       const existing = await tx.persona.findFirst({
         where: {
@@ -69,45 +249,31 @@ export function createDeletePersonaService(
       }
 
       const now = new Date();
+      const where = scopedCascadeWhere(personaId, options);
       const [relationshipResult, biographyResult, mentionResult, profileResult] = await Promise.all([
         tx.relationship.updateMany({
-          where: {
-            deletedAt: null,
-            OR       : [
-              { sourceId: personaId },
-              { targetId: personaId }
-            ]
-          },
-          data: {
+          where: where.relationships,
+          data : {
             status   : ProcessingStatus.REJECTED,
             deletedAt: now
           }
         }),
         tx.biographyRecord.updateMany({
-          where: {
-            personaId,
-            deletedAt: null
-          },
-          data: {
+          where: where.biographies,
+          data : {
             status   : ProcessingStatus.REJECTED,
             deletedAt: now
           }
         }),
         tx.mention.updateMany({
-          where: {
-            personaId,
-            deletedAt: null
-          },
-          data: {
+          where: where.mentions,
+          data : {
             deletedAt: now
           }
         }),
         tx.profile.updateMany({
-          where: {
-            personaId,
-            deletedAt: null
-          },
-          data: {
+          where: where.profiles,
+          data : {
             deletedAt: now
           }
         })
@@ -134,7 +300,7 @@ export function createDeletePersonaService(
     });
   }
 
-  return { deletePersona };
+  return { deletePersona, previewDeletePersona };
 }
 
-export const { deletePersona } = createDeletePersonaService();
+export const { deletePersona, previewDeletePersona } = createDeletePersonaService();

@@ -55,6 +55,7 @@ export const ModelName = {
   AiModel: 'AiModel',
   Book: 'Book',
   Chapter: 'Chapter',
+  ChapterBiographyVerification: 'ChapterBiographyVerification',
   Persona: 'Persona',
   Profile: 'Profile',
   BiographyRecord: 'BiographyRecord',
@@ -174,6 +175,19 @@ export const ChapterScalarFieldEnum = {
 export type ChapterScalarFieldEnum = (typeof ChapterScalarFieldEnum)[keyof typeof ChapterScalarFieldEnum]
 
 
+export const ChapterBiographyVerificationScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  verifiedAt: 'verifiedAt',
+  verifiedBy: 'verifiedBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ChapterBiographyVerificationScalarFieldEnum = (typeof ChapterBiographyVerificationScalarFieldEnum)[keyof typeof ChapterBiographyVerificationScalarFieldEnum]
+
+
 export const PersonaScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -224,6 +238,7 @@ export const BiographyRecordScalarFieldEnum = {
   location: 'location',
   event: 'event',
   virtualYear: 'virtualYear',
+  tags: 'tags',
   ironyNote: 'ironyNote',
   recordSource: 'recordSource',
   status: 'status',

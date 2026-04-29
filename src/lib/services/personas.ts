@@ -73,13 +73,39 @@ export interface PersonaSummary {
  */
 export interface PatchPersonaBody {
   /** 新人物名。 */
-  name?      : string;
+  name?         : string;
   /** 新别名数组。 */
-  aliases?   : string[];
+  aliases?      : string[];
+  gender?       : string | null;
   /** 新籍贯；传 `null` 表示显式清空。 */
-  hometown?  : string | null;
+  hometown?     : string | null;
+  nameType?     : string;
+  globalTags?   : string[];
   /** 置信度原始值，范围通常为 0~1（不是百分比）。 */
-  confidence?: number;
+  confidence?   : number;
+  /** 审核确认状态；当前用于把 AI 人物确认为有效人物。 */
+  status?       : "VERIFIED";
+  /** 当前书籍 ID；提供后可同步更新书内档案字段。 */
+  bookId?       : string;
+  localName?    : string;
+  localSummary? : string | null;
+  officialTitle?: string | null;
+  localTags?    : string[];
+  ironyIndex?   : number;
+}
+
+export interface PersonaDeletePreview {
+  persona: { id: string; name: string };
+  counts: {
+    relationshipCount: number;
+    biographyCount   : number;
+    mentionCount     : number;
+    profileCount     : number;
+  };
+  biographies  : Array<{ id: string; title: string | null; event: string; chapter: string }>;
+  relationships: Array<{ id: string; type: string; sourceName: string; targetName: string; description: string | null; chapter: string }>;
+  mentions     : Array<{ id: string; rawText: string; summary: string | null; chapter: string }>;
+  profiles     : Array<{ id: string; bookId: string; localName: string }>;
 }
 
 /**
@@ -282,15 +308,25 @@ export async function splitPersona(body: SplitPersonaBody): Promise<void> {
  * 对应接口：`DELETE /api/personas/:id`。
  * 需要管理员权限，非管理员调用会得到 403 错误。
  */
-export async function deletePersona(id: string): Promise<void> {
-  await clientMutate(`/api/personas/${id}`, { method: "DELETE" });
+export async function fetchPersonaDeletePreview(id: string, bookId?: string): Promise<PersonaDeletePreview> {
+  const params = new URLSearchParams();
+  if (bookId) params.set("bookId", bookId);
+  const query = params.toString();
+  return clientFetch<PersonaDeletePreview>(`/api/personas/${id}/delete-preview${query ? `?${query}` : ""}`);
+}
+
+export async function deletePersona(id: string, bookId?: string): Promise<void> {
+  const params = new URLSearchParams();
+  if (bookId) params.set("bookId", bookId);
+  const query = params.toString();
+  await clientMutate(`/api/personas/${id}${query ? `?${query}` : ""}`, { method: "DELETE" });
 }
 
 /**
  * 更新人物审核状态（FG-05 状态流转）。
  * 对应接口：`PATCH /api/personas/:id`，传入 status 字段。
  */
-export async function updatePersonaStatus(id: string, status: "VERIFIED" | "REJECTED"): Promise<void> {
+export async function updatePersonaStatus(id: string, status: "VERIFIED"): Promise<void> {
   await clientMutate(`/api/personas/${id}`, {
     method : "PATCH",
     headers: { "Content-Type": "application/json" },

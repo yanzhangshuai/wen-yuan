@@ -341,6 +341,21 @@ export interface BookPersonaListItem {
   status       : string;
 }
 
+export interface CreateBookPersonaBody {
+  name          : string;
+  aliases?      : string[];
+  gender?       : string | null;
+  hometown?     : string | null;
+  nameType?     : string;
+  globalTags?   : string[];
+  localName?    : string;
+  localSummary? : string | null;
+  officialTitle?: string | null;
+  localTags?    : string[];
+  ironyIndex?   : number;
+  confidence?   : number;
+}
+
 /**
  * 获取书籍解析任务记录列表（通常按时间倒序）。
  * 对应接口：`GET /api/books/:bookId/jobs`。
@@ -358,6 +373,20 @@ export async function fetchBookJobs(bookId: string): Promise<AnalysisJobListItem
 export async function fetchBookPersonas(bookId: string): Promise<BookPersonaListItem[]> {
   return clientFetch<BookPersonaListItem[]>(
     `/api/books/${encodeURIComponent(bookId)}/personas`
+  );
+}
+
+export async function createBookPersona(
+  bookId: string,
+  body: CreateBookPersonaBody
+): Promise<BookPersonaListItem> {
+  return clientFetch<BookPersonaListItem>(
+    `/api/books/${encodeURIComponent(bookId)}/personas`,
+    {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify(body)
+    }
   );
 }
 

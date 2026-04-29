@@ -18,7 +18,7 @@
  * =============================================================================
  */
 import type { PrismaClient } from "@/generated/prisma/client";
-import { type NameType } from "@/generated/prisma/enums";
+import { type NameType, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 
@@ -26,20 +26,34 @@ import { PersonaNotFoundError } from "@/server/modules/personas/errors";
  * 人物更新输入。
  */
 export interface UpdatePersonaInput {
+  /** 当前书籍 ID；提供时允许同步更新书内档案字段。 */
+  bookId?       : string;
   /** 新标准名。 */
-  name?      : string;
+  name?         : string;
   /** 新别名集合。 */
-  aliases?   : string[];
+  aliases?      : string[];
   /** 新性别。 */
-  gender?    : string | null;
+  gender?       : string | null;
   /** 新籍贯。 */
-  hometown?  : string | null;
+  hometown?     : string | null;
   /** 新姓名类型。 */
-  nameType?  : NameType;
+  nameType?     : NameType;
   /** 新全局标签集合。 */
-  globalTags?: string[];
+  globalTags?   : string[];
   /** 新置信度。 */
-  confidence?: number;
+  confidence?   : number;
+  /** 审核状态。当前仅支持把 AI 人物确认为有效人工审核人物。 */
+  status?       : "VERIFIED";
+  /** 书内展示名。 */
+  localName?    : string;
+  /** 书内小传。 */
+  localSummary? : string | null;
+  /** 官职/头衔。 */
+  officialTitle?: string | null;
+  /** 书内标签。 */
+  localTags?    : string[];
+  /** 讽刺指数。 */
+  ironyIndex?   : number;
 }
 
 /**
@@ -64,6 +78,17 @@ export interface UpdatePersonaResult {
   confidence: number;
   /** 更新时间（ISO 字符串）。 */
   updatedAt : string;
+  /** 可选：同步更新的书内档案。 */
+  profile?  : {
+    id           : string;
+    bookId       : string;
+    localName    : string;
+    localSummary : string | null;
+    officialTitle: string | null;
+    localTags    : string[];
+    ironyIndex   : number;
+    updatedAt    : string;
+  };
 }
 
 /**
@@ -125,13 +150,14 @@ export function createUpdatePersonaService(
       }
 
       const data: {
-        name?      : string;
-        aliases?   : string[];
-        gender?    : string | null;
-        hometown?  : string | null;
-        nameType?  : NameType;
-        globalTags?: string[];
-        confidence?: number;
+        name?        : string;
+        aliases?     : string[];
+        gender?      : string | null;
+        hometown?    : string | null;
+        nameType?    : NameType;
+        globalTags?  : string[];
+        confidence?  : number;
+        recordSource?: RecordSource;
       } = {};
       if (input.name !== undefined) {
         data.name = input.name.trim();
@@ -154,6 +180,9 @@ export function createUpdatePersonaService(
       if (input.confidence !== undefined) {
         data.confidence = input.confidence;
       }
+      if (input.status === ProcessingStatus.VERIFIED) {
+        data.recordSource = RecordSource.MANUAL;
+      }
 
       const updated = await tx.persona.update({
         where : { id: personaId },
@@ -171,6 +200,71 @@ export function createUpdatePersonaService(
         }
       });
 
+      let profile:
+        | {
+          id           : string;
+          bookId       : string;
+          localName    : string;
+          localSummary : string | null;
+          officialTitle: string | null;
+          localTags    : string[];
+          ironyIndex   : number;
+          updatedAt    : Date;
+        }
+        | null = null;
+
+      const profileData: {
+        localName?    : string;
+        localSummary? : string | null;
+        officialTitle?: string | null;
+        localTags?    : string[];
+        ironyIndex?   : number;
+      } = {};
+      if (input.localName !== undefined) {
+        profileData.localName = input.localName.trim();
+      }
+      if (input.localSummary !== undefined) {
+        profileData.localSummary = normalizeNullableText(input.localSummary);
+      }
+      if (input.officialTitle !== undefined) {
+        profileData.officialTitle = normalizeNullableText(input.officialTitle);
+      }
+      if (input.localTags !== undefined) {
+        profileData.localTags = normalizeDistinctItems(input.localTags);
+      }
+      if (input.ironyIndex !== undefined) {
+        profileData.ironyIndex = input.ironyIndex;
+      }
+
+      if (input.bookId !== undefined && Object.keys(profileData).length > 0) {
+        const existingProfile = await tx.profile.findFirst({
+          where: {
+            personaId: personaId,
+            bookId   : input.bookId,
+            deletedAt: null
+          },
+          select: { id: true }
+        });
+        if (!existingProfile) {
+          throw new PersonaNotFoundError(personaId);
+        }
+
+        profile = await tx.profile.update({
+          where : { id: existingProfile.id },
+          data  : profileData,
+          select: {
+            id           : true,
+            bookId       : true,
+            localName    : true,
+            localSummary : true,
+            officialTitle: true,
+            localTags    : true,
+            ironyIndex   : true,
+            updatedAt    : true
+          }
+        });
+      }
+
       return {
         id        : updated.id,
         name      : updated.name,
@@ -180,7 +274,21 @@ export function createUpdatePersonaService(
         nameType  : updated.nameType,
         globalTags: updated.globalTags,
         confidence: updated.confidence,
-        updatedAt : updated.updatedAt.toISOString()
+        updatedAt : updated.updatedAt.toISOString(),
+        ...(profile
+          ? {
+            profile: {
+              id           : profile.id,
+              bookId       : profile.bookId,
+              localName    : profile.localName,
+              localSummary : profile.localSummary,
+              officialTitle: profile.officialTitle,
+              localTags    : profile.localTags,
+              ironyIndex   : profile.ironyIndex,
+              updatedAt    : profile.updatedAt.toISOString()
+            }
+          }
+          : {})
       };
     });
   }

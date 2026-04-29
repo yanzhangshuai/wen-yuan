@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 /**
  * 文件定位（数据库访问基础设施）：
@@ -42,9 +42,24 @@ if (!connectionString) {
 // PG Adapter：将 PrismaClient 绑定到 PostgreSQL 连接适配器。
 const adapter = new PrismaPg({ connectionString });
 
-export const prisma =
-  globalThis.prisma ??
-  new PrismaClient({
+function toDelegateName(modelName: string): string {
+  return modelName.charAt(0).toLowerCase() + modelName.slice(1);
+}
+
+function hasCurrentPrismaDelegates(client: PrismaClient | undefined): client is PrismaClient {
+  if (!client) return false;
+
+  return Object.values(Prisma.ModelName).every(modelName => {
+    const delegate = (client as unknown as Record<string, unknown>)[toDelegateName(modelName)];
+    return typeof delegate === "object" && delegate !== null;
+  });
+}
+
+const cachedPrisma = globalThis.prisma;
+
+export const prisma = hasCurrentPrismaDelegates(cachedPrisma)
+  ? cachedPrisma
+  : new PrismaClient({
     adapter,
     // 开发环境输出 query 日志便于排查；生产只保留 error 降低噪声与性能开销。
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"]

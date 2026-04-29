@@ -67,13 +67,14 @@ import {
   SelectValue,
   isSelectEmptyValue
 } from "@/components/ui/select";
-import { PersonaEditForm } from "@/components/review/persona-edit-form";
 import { RelationshipEditForm } from "@/components/review/relationship-edit-form";
 import { BiographyEditForm } from "@/components/review/biography-edit-form";
 import { EntityMergeTool } from "@/components/review/entity-merge-tool";
 import { ManualEntityTool } from "@/components/review/manual-entity-tool";
 import { AliasReviewTab } from "@/components/review/alias-review-tab";
 import { ValidationReportTab } from "@/components/review/validation-report-tab";
+import { ChapterEventsWorkbench } from "@/components/review/chapter-events-workbench";
+import { RoleManagementTab } from "@/components/review/role-management-tab";
 import { TextReaderPanel } from "@/components/graph";
 import { fetchChapterContent } from "@/lib/services/books";
 import type { ChapterContent } from "@/lib/services/books";
@@ -120,7 +121,7 @@ export interface ReviewPanelProps {
 /* ------------------------------------------------
    Tab types
    ------------------------------------------------ */
-type ReviewTab = "personas" | "relationships" | "biography" | "merge" | "aliases" | "validation";
+type ReviewTab = "relationships" | "biography" | "chapterEvents" | "roles" | "merge" | "aliases" | "validation";
 
 /**
  * Tab 展示配置。
@@ -130,13 +131,39 @@ type ReviewTab = "personas" | "relationships" | "biography" | "merge" | "aliases
  * - `icon` 是视觉辅助，帮助审核员快速定位功能区。
  */
 const TAB_CONFIG: { id: ReviewTab; label: string; icon: ReactNode }[] = [
-  { id: "personas", label: "人物草稿", icon: <Users size={14} /> },
+  { id: "roles", label: "角色管理", icon: <Users size={14} /> },
   { id: "relationships", label: "关系草稿", icon: <Link2 size={14} /> },
   { id: "biography", label: "传记事件", icon: <Calendar size={14} /> },
+  { id: "chapterEvents", label: "章节事迹", icon: <BookOpen size={14} /> },
   { id: "merge", label: "合并建议", icon: <GitMerge size={14} /> },
   { id: "aliases", label: "别名映射", icon: <Tags size={14} /> },
   { id: "validation", label: "自检报告", icon: <ShieldCheck size={14} /> }
 ];
+
+function getTabBadgeCount(args: {
+  tabId            : ReviewTab;
+  drafts           : DraftsData | null;
+  mergeCount       : number;
+  pendingAliasCount: number;
+  validationCount  : number;
+}): number | null {
+  switch (args.tabId) {
+    case "roles":
+      return null;
+    case "relationships":
+      return args.drafts?.summary.relationship ?? 0;
+    case "biography":
+      return args.drafts?.summary.biography ?? 0;
+    case "merge":
+      return args.mergeCount;
+    case "aliases":
+      return args.pendingAliasCount;
+    case "validation":
+      return args.validationCount;
+    case "chapterEvents":
+      return null;
+  }
+}
 
 const BIO_CATEGORY_LABELS: Record<string, string> = {
   BIRTH : "出生",
@@ -159,8 +186,8 @@ export function ReviewPanel({
   initialAliasMappings,
   initialValidationReports
 }: ReviewPanelProps) {
-  // 当前激活页签。默认落在“人物草稿”，因为人物是审核流程最常见入口。
-  const [activeTab, setActiveTab] = useState<ReviewTab>("personas");
+  // 当前激活页签。默认落在统一角色管理入口，承接 AI 生成与手动创建角色维护。
+  const [activeTab, setActiveTab] = useState<ReviewTab>("roles");
   // 来源筛选（AI / MANUAL / 全部）。null 表示“不筛选来源”。
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   // 草稿主数据集。初始化采用服务端预取值，保证首屏直出。
@@ -180,7 +207,7 @@ export function ReviewPanel({
   // 当前正在编辑的记录 ID。
   const [editingId, setEditingId] = useState<string | null>(null);
   // 当前编辑类型（人物/关系/传记）。与 editingId 组合决定渲染哪个编辑表单。
-  const [editingType, setEditingType] = useState<"persona" | "relationship" | "biography" | null>(null);
+  const [editingType, setEditingType] = useState<"relationship" | "biography" | null>(null);
   // 通用加载错误提示文案，展示在面板顶部。
   const [loadError, setLoadError] = useState<string | null>(null);
   // 合并预览上下文：点击“接受合并”后，切换到合并工具并传入 source/target 详情 Promise。
@@ -204,7 +231,7 @@ export function ReviewPanel({
     setMergeSuggestions(initialMergeSuggestions);
     setAliasMappings(initialAliasMappings ?? []);
     setValidationReports(initialValidationReports ?? []);
-    setActiveTab("personas");
+    setActiveTab("roles");
     setSourceFilter(null);
     setSelectedIds(new Set());
     setBulkLoading(false);
@@ -233,7 +260,7 @@ export function ReviewPanel({
   }, [bookId]);
 
   /** 进入编辑态：记录目标 ID 与类型，切换对应行为内联编辑表单。 */
-  function startEdit(id: string, type: "persona" | "relationship" | "biography") {
+  function startEdit(id: string, type: "relationship" | "biography") {
     setEditingId(id);
     setEditingType(type);
   }
@@ -378,7 +405,7 @@ export function ReviewPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="review-panel flex min-h-0 flex-col gap-4">
       {/* 头部区域：展示当前书名与汇总统计，帮助审核员快速判断待审规模。 */}
       <div className="flex items-center justify-between">
         <div>
@@ -422,39 +449,35 @@ export function ReviewPanel({
           - activeTab 决定下方渲染哪个业务区；
           - 切换 tab 时清空 selectedIds，避免跨类型草稿误批量操作。 */}
       <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
-        {TAB_CONFIG.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); }}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-              activeTab === tab.id
-                ? "bg-card font-medium text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-            <span className="ml-1 rounded-full bg-primary-subtle px-1.5 py-0.5 text-xs">
-              {/* 角标统计按页签类型分别计算：
-                  - 草稿三页签使用 drafts.summary；
-                  - 合并建议使用建议列表长度；
-                  - 别名映射只统计待处理（PENDING）；
-                  - 自检报告聚合每份报告中的 needsReview。 */}
-              {tab.id === "personas"
-                ? (drafts?.summary.persona ?? 0)
-                : tab.id === "relationships"
-                  ? (drafts?.summary.relationship ?? 0)
-                  : tab.id === "biography"
-                    ? (drafts?.summary.biography ?? 0)
-                    : tab.id === "merge"
-                      ? mergeSuggestions.length
-                      : tab.id === "aliases"
-                        ? aliasMappings.filter(m => m.status === "PENDING").length
-                        : validationReports.reduce((sum, r) => sum + r.summary.needsReview, 0)}
-            </span>
-          </button>
-        ))}
+        {TAB_CONFIG.map(tab => {
+          const badgeCount = getTabBadgeCount({
+            tabId            : tab.id,
+            drafts,
+            mergeCount       : mergeSuggestions.length,
+            pendingAliasCount: aliasMappings.filter(m => m.status === "PENDING").length,
+            validationCount  : validationReports.reduce((sum, r) => sum + r.summary.needsReview, 0)
+          });
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); }}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                activeTab === tab.id
+                  ? "bg-card font-medium text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+              {badgeCount !== null && (
+                <span className="ml-1 rounded-full bg-primary-subtle px-1.5 py-0.5 text-xs">
+                  {badgeCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* 批量操作条：
@@ -491,108 +514,9 @@ export function ReviewPanel({
         </div>
       )}
 
-      {/* 人物草稿页签：负责人物资料审核（支持单条编辑 + 单条/批量确认拒绝）。 */}
-      {!loading && activeTab === "personas" && drafts && (
-        <div className="flex flex-col gap-2">
-          {drafts.personas.length === 0 && (
-            <EmptyState text="暂无人物草稿" />
-          )}
-          {drafts.personas.length > 0 && (
-            <div className="mb-1 flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={drafts.personas.every(p => selectedIds.has(p.id))}
-                onChange={() => selectAll(drafts.personas.map(p => p.id))}
-                className="accent-primary"
-                aria-label="全选"
-              />
-              <span className="text-xs text-muted-foreground">全选</span>
-            </div>
-          )}
-          {drafts.personas.map(persona => (
-            // 编辑分支：
-            // editingId + editingType 双条件命中时切换成表单，避免不同类型记录误命中同一 ID。
-            editingId === persona.personaId && editingType === "persona" ? (
-              <PersonaEditForm
-                key={persona.id}
-                personaId={persona.personaId}
-                initialData={{
-                  name      : persona.name,
-                  aliases   : persona.aliases,
-                  hometown  : persona.hometown,
-                  confidence: persona.confidence
-                }}
-                onSaved={handleEditSaved}
-                onCancel={cancelEdit}
-              />
-            ) : (
-            <div
-              key={persona.id}
-              className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary-subtle"
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(persona.id)}
-                onChange={() => toggleSelect(persona.id)}
-                className="mt-1 accent-primary"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{persona.name}</span>
-                  <Badge variant="outline" className="text-xs">{persona.nameType}</Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {persona.recordSource === "AI" ? "AI" : "手动"}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    置信度 {(persona.confidence * 100).toFixed(0)}%
-                  </span>
-                </div>
-                {persona.aliases.length > 0 && (
-                  // 仅在有别名时展示，避免空标签占用视觉层级。
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    别名：{persona.aliases.join("、")}
-                  </p>
-                )}
-                {persona.hometown && (
-                  // 籍贯为空常见于抽取缺失，隐藏该行可减少“空字段噪音”。
-                  <p className="text-xs text-muted-foreground">
-                    籍贯：{persona.hometown}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkAction([persona.id], "verify"); }}
-                  className="rounded p-1.5 text-success hover:bg-success/10"
-                  aria-label="确认"
-                  title="确认"
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkAction([persona.id], "reject"); }}
-                  className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                  aria-label="拒绝"
-                  title="拒绝"
-                >
-                  <XIcon size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startEdit(persona.personaId, "persona")}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-                  aria-label="编辑"
-                  title="编辑"
-                >
-                  <Edit3 size={16} />
-                </button>
-              </div>
-            </div>
-            )
-          ))}
-        </div>
+      {/* 角色管理页签：统一展示书籍角色数据，AI 生成与手动创建使用同一套编辑/删除流程。 */}
+      {!loading && activeTab === "roles" && drafts && (
+        <RoleManagementTab bookId={bookId} />
       )}
 
       {/* 关系草稿页签：审核人物关系边，重点信息包括关系类型、章节位置、证据片段。 */}
@@ -804,6 +728,19 @@ export function ReviewPanel({
             </div>
             )
           ))}
+        </div>
+      )}
+
+      {!loading && activeTab === "chapterEvents" && (
+        <div className="min-h-0">
+          <ChapterEventsWorkbench
+            bookId={bookId}
+            onOpenRoles={() => {
+              setActiveTab("roles");
+              setSelectedIds(new Set());
+              cancelEdit();
+            }}
+          />
         </div>
       )}
 

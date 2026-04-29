@@ -187,6 +187,7 @@ model Book {
 
   chapters          Chapter[] // 章节列表
   profiles          Profile[] // 本书角色档案
+  chapterBiographyVerifications ChapterBiographyVerification[] // 章节角色事迹校验状态
   analysisJobs      AnalysisJob[] // 解析任务记录
   aliasMappings     AliasMapping[] // 别名映射记录
   modelStrategies   ModelStrategyConfig[] @relation("BookStrategies")
@@ -221,9 +222,28 @@ model Chapter {
   biographies BiographyRecord[] // 本章履历事件
   relations   Relationship[] // 本章关系边
   phaseLogs   AnalysisPhaseLog[] // 阶段调用日志
+  biographyVerifications ChapterBiographyVerification[] // 本章角色事迹校验状态
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
+}
+
+/// @db.remark: 章节角色事迹校验状态。只表示本章 BiographyRecord 已被人工核过。
+model ChapterBiographyVerification {
+  id         String   @id @default(uuid()) @db.Uuid
+  bookId     String   @map("book_id") @db.Uuid
+  chapterId  String   @map("chapter_id") @db.Uuid
+  verifiedAt DateTime @default(now()) @map("verified_at") @db.Timestamptz(6)
+  verifiedBy String?  @map("verified_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book    Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, chapterId], map: "chapter_bio_verifications_book_chapter_key")
+  @@index([bookId], map: "chapter_bio_verifications_book_idx")
+  @@map("chapter_biography_verifications")
 }
 
 /// @db.remark: 全局角色本体。代表"这个人本身"，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
@@ -303,6 +323,7 @@ model BiographyRecord {
   location    String? // 所在的地理位置
   event       String      @db.Text // 事件具体描述
   virtualYear String?     @map("virtual_year") // 书中提到的时间点
+  tags        String[]    @default([]) @map("event_tags") // 人工可编辑的具体事迹标签
 
   ironyNote    String?          @map("irony_note") @db.Text // AI 的解析点评
   recordSource RecordSource     @default(AI) @map("record_source") // 数据来源

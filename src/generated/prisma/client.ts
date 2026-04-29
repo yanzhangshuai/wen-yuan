@@ -62,6 +62,11 @@ export type Book = Prisma.BookModel
  */
 export type Chapter = Prisma.ChapterModel
 /**
+ * Model ChapterBiographyVerification
+ * @db.remark: 章节角色事迹校验状态。只表示本章 BiographyRecord 已被人工核过。
+ */
+export type ChapterBiographyVerification = Prisma.ChapterBiographyVerificationModel
+/**
  * Model Persona
  * @db.remark: 全局角色本体。代表"这个人本身"，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
  */

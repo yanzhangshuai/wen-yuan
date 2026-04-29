@@ -119,4 +119,65 @@ describe("deletePersona service", () => {
     await expect(service.deletePersona("missing"))
       .rejects.toBeInstanceOf(PersonaNotFoundError);
   });
+
+  it("previews cascade details using the same current-book filters as deletion", async () => {
+    const service = createDeletePersonaService({
+      persona: {
+        findFirst: vi.fn().mockResolvedValue({ id: "persona-1", name: "范进" })
+      },
+      relationship: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id         : "rel-1",
+            type       : "师生",
+            description: "周进提携范进",
+            chapter    : { no: 3, title: "范进中举" },
+            source     : { name: "周进" },
+            target     : { name: "范进" }
+          }
+        ])
+      },
+      biographyRecord: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id       : "bio-1",
+            title    : "中举",
+            event    : "范进中举",
+            chapterNo: 3,
+            chapter  : { title: "范进中举" }
+          }
+        ])
+      },
+      mention: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id     : "mention-1",
+            rawText: "范进",
+            summary: "出场",
+            chapter: { no: 3, title: "范进中举" }
+          }
+        ])
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([{ id: "profile-1", localName: "范进", bookId: "book-1" }])
+      }
+    } as never);
+
+    const preview = await service.previewDeletePersona("persona-1", { bookId: "book-1" });
+
+    expect(preview.counts).toEqual({
+      relationshipCount: 1,
+      biographyCount   : 1,
+      mentionCount     : 1,
+      profileCount     : 1
+    });
+    expect(preview.biographies[0]).toEqual(expect.objectContaining({
+      id     : "bio-1",
+      chapter: "第3回 范进中举"
+    }));
+    expect(preview.relationships[0]).toEqual(expect.objectContaining({
+      sourceName: "周进",
+      targetName: "范进"
+    }));
+  });
 });

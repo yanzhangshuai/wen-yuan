@@ -388,6 +388,7 @@ export const ModelName = {
   AiModel: 'AiModel',
   Book: 'Book',
   Chapter: 'Chapter',
+  ChapterBiographyVerification: 'ChapterBiographyVerification',
   Persona: 'Persona',
   Profile: 'Profile',
   BiographyRecord: 'BiographyRecord',
@@ -427,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -724,6 +725,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ChapterCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ChapterCountAggregateOutputType> | number
+        }
+      }
+    }
+    ChapterBiographyVerification: {
+      payload: Prisma.$ChapterBiographyVerificationPayload<ExtArgs>
+      fields: Prisma.ChapterBiographyVerificationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ChapterBiographyVerificationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ChapterBiographyVerificationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>
+        }
+        findFirst: {
+          args: Prisma.ChapterBiographyVerificationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ChapterBiographyVerificationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>
+        }
+        findMany: {
+          args: Prisma.ChapterBiographyVerificationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>[]
+        }
+        create: {
+          args: Prisma.ChapterBiographyVerificationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>
+        }
+        createMany: {
+          args: Prisma.ChapterBiographyVerificationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ChapterBiographyVerificationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>[]
+        }
+        delete: {
+          args: Prisma.ChapterBiographyVerificationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>
+        }
+        update: {
+          args: Prisma.ChapterBiographyVerificationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>
+        }
+        deleteMany: {
+          args: Prisma.ChapterBiographyVerificationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ChapterBiographyVerificationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ChapterBiographyVerificationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>[]
+        }
+        upsert: {
+          args: Prisma.ChapterBiographyVerificationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChapterBiographyVerificationPayload>
+        }
+        aggregate: {
+          args: Prisma.ChapterBiographyVerificationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChapterBiographyVerification>
+        }
+        groupBy: {
+          args: Prisma.ChapterBiographyVerificationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChapterBiographyVerificationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ChapterBiographyVerificationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChapterBiographyVerificationCountAggregateOutputType> | number
         }
       }
     }
@@ -2619,6 +2694,19 @@ export const ChapterScalarFieldEnum = {
 export type ChapterScalarFieldEnum = (typeof ChapterScalarFieldEnum)[keyof typeof ChapterScalarFieldEnum]
 
 
+export const ChapterBiographyVerificationScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  verifiedAt: 'verifiedAt',
+  verifiedBy: 'verifiedBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ChapterBiographyVerificationScalarFieldEnum = (typeof ChapterBiographyVerificationScalarFieldEnum)[keyof typeof ChapterBiographyVerificationScalarFieldEnum]
+
+
 export const PersonaScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -2669,6 +2757,7 @@ export const BiographyRecordScalarFieldEnum = {
   location: 'location',
   event: 'event',
   virtualYear: 'virtualYear',
+  tags: 'tags',
   ironyNote: 'ironyNote',
   recordSource: 'recordSource',
   status: 'status',
@@ -3429,6 +3518,7 @@ export type GlobalOmitConfig = {
   aiModel?: Prisma.AiModelOmit
   book?: Prisma.BookOmit
   chapter?: Prisma.ChapterOmit
+  chapterBiographyVerification?: Prisma.ChapterBiographyVerificationOmit
   persona?: Prisma.PersonaOmit
   profile?: Prisma.ProfileOmit
   biographyRecord?: Prisma.BiographyRecordOmit

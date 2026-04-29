@@ -1,0 +1,18 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend API, services, Prisma schema, migrations, and tests are required for review-center data management."}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "New and changed route handlers must follow the project API envelope and error conventions."}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "The feature adds review/persona/biography endpoints and must follow App Router route handler patterns."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Queries span Persona, Profile, BiographyRecord, Mention, Relationship, and Chapter data."}
+{"file": ".trellis/spec/backend/migration-guidelines.md", "reason": "The PRD allows a new persisted chapter-review status table, requiring a Prisma migration."}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Service and route tests are required for CRUD, deletion preview, and chapter verification state."}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "Cross-layer contracts need strict TypeScript and Prisma type safety."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "The review center UI adds new tabs, workbench components, and forms."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Chapter workbench and role-management UI should be decomposed into maintainable components."}
+{"file": ".trellis/spec/frontend/design-system.md", "reason": "The UI must clearly display and edit character events using existing design-system patterns."}
+{"file": ".trellis/spec/frontend/react-guidelines.md", "reason": "Client state, forms, effects, and data refresh flows must follow React conventions."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend service contracts and component props must stay typed across API boundaries."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "The new review UI needs focused tests and quality checks."}
+{"file": ".trellis/spec/shared/index.md", "reason": "Shared cross-layer standards apply to API contracts and validation types."}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "New route payloads should use Zod validation with inferred TypeScript contracts where appropriate."}
+{"file": ".trellis/spec/guides/index.md", "reason": "General cross-cutting project guidance for implementation."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "This feature spans UI, API routes, services, database, and tests."}
+{"file": ".trellis/spec/guides/module-boundary-guidelines.md", "reason": "Keep review UI, service modules, route handlers, and data access responsibilities separated."}

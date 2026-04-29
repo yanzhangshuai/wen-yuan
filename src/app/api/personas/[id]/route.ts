@@ -20,7 +20,7 @@ import {
   type UpdatePersonaResult
 } from "@/server/modules/personas/updatePersona";
 import { ERROR_CODES } from "@/types/api";
-import { NameType } from "@/generated/prisma/enums";
+import { NameType, ProcessingStatus } from "@/generated/prisma/enums";
 
 /**
  * ============================================================================
@@ -63,15 +63,35 @@ const personaRouteParamsSchema = z.object({
  * 副作用：无。
  */
 const updatePersonaBodySchema = z.object({
-  name      : z.string().trim().min(1, "人物姓名不能为空").optional(),
-  aliases   : z.array(z.string().trim().min(1, "人物别名不能为空")).optional(),
-  gender    : z.string().trim().min(1, "人物性别不能为空").nullable().optional(),
-  hometown  : z.string().trim().min(1, "人物籍贯不能为空").nullable().optional(),
-  nameType  : z.nativeEnum(NameType).optional(),
-  globalTags: z.array(z.string().trim().min(1, "人物标签不能为空")).optional(),
-  confidence: z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional()
+  name         : z.string().trim().min(1, "人物姓名不能为空").optional(),
+  aliases      : z.array(z.string().trim().min(1, "人物别名不能为空")).optional(),
+  gender       : z.string().trim().min(1, "人物性别不能为空").nullable().optional(),
+  hometown     : z.string().trim().min(1, "人物籍贯不能为空").nullable().optional(),
+  nameType     : z.nativeEnum(NameType).optional(),
+  globalTags   : z.array(z.string().trim().min(1, "人物标签不能为空")).optional(),
+  confidence   : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional(),
+  status       : z.enum([ProcessingStatus.VERIFIED]).optional(),
+  bookId       : z.string().uuid("书籍 ID 不合法").optional(),
+  localName    : z.string().trim().min(1, "书中称谓不能为空").optional(),
+  localSummary : z.string().trim().nullable().optional(),
+  officialTitle: z.string().trim().nullable().optional(),
+  localTags    : z.array(z.string().trim().min(1, "本书标签不能为空")).optional(),
+  ironyIndex   : z.number().min(0, "讽刺指数不能小于 0").max(10, "讽刺指数不能大于 10").optional()
 }).refine((data) => Object.keys(data).length > 0, {
   message: "至少需要一个可更新字段"
+}).refine((data) => {
+  const hasProfileField = data.localName !== undefined
+    || data.localSummary !== undefined
+    || data.officialTitle !== undefined
+    || data.localTags !== undefined
+    || data.ironyIndex !== undefined;
+  return !hasProfileField || data.bookId !== undefined;
+}, {
+  message: "更新书内档案字段时必须提供 bookId"
+});
+
+const deletePersonaQuerySchema = z.object({
+  bookId: z.string().uuid("书籍 ID 不合法").optional()
 });
 
 interface PersonaRouteContext {
@@ -286,7 +306,25 @@ export async function DELETE(
     }
 
     // Step 3) 执行软删除及关联数据处理。
-    const data = await deletePersona(parsedParams.data.id);
+    const url = new URL(request.url);
+    const parsedQuery = deletePersonaQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+    if (!parsedQuery.success) {
+      const meta = createApiMeta(path, requestId, startedAt);
+      return toNextJson(
+        errorResponse(
+          ERROR_CODES.COMMON_BAD_REQUEST,
+          "请求参数不合法",
+          {
+            type  : "ValidationError",
+            detail: parsedQuery.error.issues[0]?.message ?? "请求参数不合法"
+          },
+          meta
+        ),
+        400
+      );
+    }
+
+    const data = await deletePersona(parsedParams.data.id, { bookId: parsedQuery.data.bookId });
     return okJson<DeletePersonaResult>({
       path   : `/api/personas/${parsedParams.data.id}`,
       requestId,

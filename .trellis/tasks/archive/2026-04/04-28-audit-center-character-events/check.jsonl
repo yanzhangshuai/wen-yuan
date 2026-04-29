@@ -1,0 +1,18 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Verify backend implementation against service, route, database, and testing standards."}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "Check all API responses and errors follow project conventions."}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "Review new route handlers for correct App Router structure and validation."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Review query correctness, soft-delete semantics, and cross-table consistency."}
+{"file": ".trellis/spec/backend/migration-guidelines.md", "reason": "Verify new migration/model follows project migration rules."}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Check backend tests cover core CRUD, deletion preview, and verification-state paths."}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "Verify TypeScript and Prisma types are strict and no unsafe shortcuts were introduced."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Verify review-center UI changes meet project frontend expectations."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check component boundaries and maintainability of the new workbench."}
+{"file": ".trellis/spec/frontend/design-system.md", "reason": "Check UI clarity, status labels, card layout, and edit affordances."}
+{"file": ".trellis/spec/frontend/react-guidelines.md", "reason": "Review React state, effects, refresh flows, and form behavior."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify frontend service and prop types align with backend contracts."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check frontend tests and quality coverage for the new UI."}
+{"file": ".trellis/spec/shared/index.md", "reason": "Verify cross-layer consistency."}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "Review schema/type alignment for new payloads."}
+{"file": ".trellis/spec/guides/index.md", "reason": "General quality review guidance."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check end-to-end consistency from database to UI."}
+{"file": ".trellis/spec/guides/module-boundary-guidelines.md", "reason": "Verify responsibilities stay within module boundaries."}

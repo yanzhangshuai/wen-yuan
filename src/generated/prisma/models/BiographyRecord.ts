@@ -80,6 +80,7 @@ export type BiographyRecordCountAggregateOutputType = {
   location: number
   event: number
   virtualYear: number
+  tags: number
   ironyNote: number
   recordSource: number
   status: number
@@ -144,6 +145,7 @@ export type BiographyRecordCountAggregateInputType = {
   location?: true
   event?: true
   virtualYear?: true
+  tags?: true
   ironyNote?: true
   recordSource?: true
   status?: true
@@ -249,6 +251,7 @@ export type BiographyRecordGroupByOutputType = {
   location: string | null
   event: string
   virtualYear: string | null
+  tags: string[]
   ironyNote: string | null
   recordSource: $Enums.RecordSource
   status: $Enums.ProcessingStatus
@@ -290,6 +293,7 @@ export type BiographyRecordWhereInput = {
   location?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   event?: Prisma.StringFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  tags?: Prisma.StringNullableListFilter<"BiographyRecord">
   ironyNote?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   recordSource?: Prisma.EnumRecordSourceFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"BiographyRecord"> | $Enums.ProcessingStatus
@@ -310,6 +314,7 @@ export type BiographyRecordOrderByWithRelationInput = {
   location?: Prisma.SortOrderInput | Prisma.SortOrder
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrderInput | Prisma.SortOrder
+  tags?: Prisma.SortOrder
   ironyNote?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -333,6 +338,7 @@ export type BiographyRecordWhereUniqueInput = Prisma.AtLeast<{
   location?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   event?: Prisma.StringFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  tags?: Prisma.StringNullableListFilter<"BiographyRecord">
   ironyNote?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   recordSource?: Prisma.EnumRecordSourceFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"BiographyRecord"> | $Enums.ProcessingStatus
@@ -353,6 +359,7 @@ export type BiographyRecordOrderByWithAggregationInput = {
   location?: Prisma.SortOrderInput | Prisma.SortOrder
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrderInput | Prisma.SortOrder
+  tags?: Prisma.SortOrder
   ironyNote?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -379,6 +386,7 @@ export type BiographyRecordScalarWhereWithAggregatesInput = {
   location?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
   event?: Prisma.StringWithAggregatesFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
+  tags?: Prisma.StringNullableListFilter<"BiographyRecord">
   ironyNote?: Prisma.StringNullableWithAggregatesFilter<"BiographyRecord"> | string | null
   recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusWithAggregatesFilter<"BiographyRecord"> | $Enums.ProcessingStatus
@@ -395,6 +403,7 @@ export type BiographyRecordCreateInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -415,6 +424,7 @@ export type BiographyRecordUncheckedCreateInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -431,6 +441,7 @@ export type BiographyRecordUpdateInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -451,6 +462,7 @@ export type BiographyRecordUncheckedUpdateInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -469,6 +481,7 @@ export type BiographyRecordCreateManyInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -485,6 +498,7 @@ export type BiographyRecordUpdateManyMutationInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -503,6 +517,7 @@ export type BiographyRecordUncheckedUpdateManyInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -531,6 +546,7 @@ export type BiographyRecordCountOrderByAggregateInput = {
   location?: Prisma.SortOrder
   event?: Prisma.SortOrder
   virtualYear?: Prisma.SortOrder
+  tags?: Prisma.SortOrder
   ironyNote?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -667,8 +683,17 @@ export type BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput = {
   deleteMany?: Prisma.BiographyRecordScalarWhereInput | Prisma.BiographyRecordScalarWhereInput[]
 }
 
+export type BiographyRecordCreatetagsInput = {
+  set: string[]
+}
+
 export type EnumBioCategoryFieldUpdateOperationsInput = {
   set?: $Enums.BioCategory
+}
+
+export type BiographyRecordUpdatetagsInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 export type EnumProcessingStatusFieldUpdateOperationsInput = {
@@ -683,6 +708,7 @@ export type BiographyRecordCreateWithoutChapterInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -701,6 +727,7 @@ export type BiographyRecordUncheckedCreateWithoutChapterInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -748,6 +775,7 @@ export type BiographyRecordScalarWhereInput = {
   location?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   event?: Prisma.StringFilter<"BiographyRecord"> | string
   virtualYear?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
+  tags?: Prisma.StringNullableListFilter<"BiographyRecord">
   ironyNote?: Prisma.StringNullableFilter<"BiographyRecord"> | string | null
   recordSource?: Prisma.EnumRecordSourceFilter<"BiographyRecord"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"BiographyRecord"> | $Enums.ProcessingStatus
@@ -764,6 +792,7 @@ export type BiographyRecordCreateWithoutPersonaInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -782,6 +811,7 @@ export type BiographyRecordUncheckedCreateWithoutPersonaInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -825,6 +855,7 @@ export type BiographyRecordCreateManyChapterInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -841,6 +872,7 @@ export type BiographyRecordUpdateWithoutChapterInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -859,6 +891,7 @@ export type BiographyRecordUncheckedUpdateWithoutChapterInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -876,6 +909,7 @@ export type BiographyRecordUncheckedUpdateManyWithoutChapterInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -893,6 +927,7 @@ export type BiographyRecordCreateManyPersonaInput = {
   location?: string | null
   event: string
   virtualYear?: string | null
+  tags?: Prisma.BiographyRecordCreatetagsInput | string[]
   ironyNote?: string | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -909,6 +944,7 @@ export type BiographyRecordUpdateWithoutPersonaInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -927,6 +963,7 @@ export type BiographyRecordUncheckedUpdateWithoutPersonaInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -944,6 +981,7 @@ export type BiographyRecordUncheckedUpdateManyWithoutPersonaInput = {
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   event?: Prisma.StringFieldUpdateOperationsInput | string
   virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.BiographyRecordUpdatetagsInput | string[]
   ironyNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -964,6 +1002,7 @@ export type BiographyRecordSelect<ExtArgs extends runtime.Types.Extensions.Inter
   location?: boolean
   event?: boolean
   virtualYear?: boolean
+  tags?: boolean
   ironyNote?: boolean
   recordSource?: boolean
   status?: boolean
@@ -984,6 +1023,7 @@ export type BiographyRecordSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   location?: boolean
   event?: boolean
   virtualYear?: boolean
+  tags?: boolean
   ironyNote?: boolean
   recordSource?: boolean
   status?: boolean
@@ -1004,6 +1044,7 @@ export type BiographyRecordSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   location?: boolean
   event?: boolean
   virtualYear?: boolean
+  tags?: boolean
   ironyNote?: boolean
   recordSource?: boolean
   status?: boolean
@@ -1024,6 +1065,7 @@ export type BiographyRecordSelectScalar = {
   location?: boolean
   event?: boolean
   virtualYear?: boolean
+  tags?: boolean
   ironyNote?: boolean
   recordSource?: boolean
   status?: boolean
@@ -1032,7 +1074,7 @@ export type BiographyRecordSelectScalar = {
   updatedAt?: boolean
 }
 
-export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["biographyRecord"]>
+export type BiographyRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "chapterNo" | "category" | "title" | "location" | "event" | "virtualYear" | "tags" | "ironyNote" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["biographyRecord"]>
 export type BiographyRecordInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -1062,6 +1104,7 @@ export type $BiographyRecordPayload<ExtArgs extends runtime.Types.Extensions.Int
     location: string | null
     event: string
     virtualYear: string | null
+    tags: string[]
     ironyNote: string | null
     recordSource: $Enums.RecordSource
     status: $Enums.ProcessingStatus
@@ -1502,6 +1545,7 @@ export interface BiographyRecordFieldRefs {
   readonly location: Prisma.FieldRef<"BiographyRecord", 'String'>
   readonly event: Prisma.FieldRef<"BiographyRecord", 'String'>
   readonly virtualYear: Prisma.FieldRef<"BiographyRecord", 'String'>
+  readonly tags: Prisma.FieldRef<"BiographyRecord", 'String[]'>
   readonly ironyNote: Prisma.FieldRef<"BiographyRecord", 'String'>
   readonly recordSource: Prisma.FieldRef<"BiographyRecord", 'RecordSource'>
   readonly status: Prisma.FieldRef<"BiographyRecord", 'ProcessingStatus'>

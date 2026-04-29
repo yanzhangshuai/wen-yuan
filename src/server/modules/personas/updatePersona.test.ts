@@ -170,4 +170,75 @@ describe("updatePersona service", () => {
       name: "严监生"
     }));
   });
+
+  it("updates current-book profile fields with persona fields in one transaction", async () => {
+    const personaUpdate = vi.fn().mockResolvedValue({
+      id        : "persona-4",
+      name      : "王冕",
+      aliases   : ["王参军"],
+      gender    : "男",
+      hometown  : "诸暨",
+      nameType  : NameType.NAMED,
+      globalTags: ["名士"],
+      confidence: 0.9,
+      updatedAt : new Date("2026-04-28T10:00:00.000Z")
+    });
+    const profileFindFirst = vi.fn().mockResolvedValue({ id: "profile-4" });
+    const profileUpdate = vi.fn().mockResolvedValue({
+      id           : "profile-4",
+      bookId       : "book-1",
+      localName    : "王冕",
+      localSummary : "画荷名士",
+      officialTitle: "参军",
+      localTags    : ["名士"],
+      ironyIndex   : 2,
+      updatedAt    : new Date("2026-04-28T10:00:00.000Z")
+    });
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      persona: {
+        findFirst: vi.fn().mockResolvedValue({ id: "persona-4" }),
+        update   : personaUpdate
+      },
+      profile: {
+        findFirst: profileFindFirst,
+        update   : profileUpdate
+      }
+    }));
+    const service = createUpdatePersonaService({
+      $transaction: transaction
+    } as never);
+
+    const result = await service.updatePersona("persona-4", {
+      bookId       : "book-1",
+      name         : " 王冕 ",
+      localName    : " 王冕 ",
+      localSummary : " 画荷名士 ",
+      officialTitle: " 参军 ",
+      localTags    : ["名士", " 名士 "],
+      ironyIndex   : 2
+    });
+
+    expect(profileFindFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        personaId: "persona-4",
+        bookId   : "book-1",
+        deletedAt: null
+      }
+    }));
+    expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "profile-4" },
+      data : {
+        localName    : "王冕",
+        localSummary : "画荷名士",
+        officialTitle: "参军",
+        localTags    : ["名士"],
+        ironyIndex   : 2
+      }
+    }));
+    expect(result.profile).toEqual(expect.objectContaining({
+      id           : "profile-4",
+      localSummary : "画荷名士",
+      officialTitle: "参军"
+    }));
+  });
 });

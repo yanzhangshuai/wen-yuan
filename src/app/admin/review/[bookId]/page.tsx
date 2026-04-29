@@ -1,15 +1,14 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 
 import { getBookById } from "@/server/modules/books/getBookById";
 import { listBooks } from "@/server/modules/books/listBooks";
 import { listAdminDrafts } from "@/server/modules/review/listDrafts";
 import { listMergeSuggestions } from "@/server/modules/review/mergeSuggestions";
+import { BookReviewSidebar } from "@/components/review/book-review-sidebar";
 import { ReviewPanel } from "@/components/review/review-panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
 /**
  * =============================================================================
@@ -76,38 +75,11 @@ export default async function AdminBookReviewPage({
   ]);
 
   return (
-    <div className="flex gap-6 items-start">
-      {/* 左侧书籍导航：支持在审核页内部快速切换书籍，减少来回跳转。 */}
-      <aside className="w-44 shrink-0">
-        <div className="sticky top-20">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 px-2 uppercase tracking-wider">
-            选择书籍
-          </h2>
-          <nav className="space-y-0.5">
-            {allBooks.map((b) => (
-              <Link
-                key={b.id}
-                href={`/admin/review/${b.id}`}
-                className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors",
-                  b.id === bookId
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-foreground hover:bg-accent"
-                )}
-              >
-                {/* 标题可能较长，使用 truncate 防止挤压右侧数字。 */}
-                <span className="truncate">{b.title}</span>
-                <span className="ml-2 text-xs text-muted-foreground/70 shrink-0 tabular-nums">
-                  {b.personaCount}
-                </span>
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </aside>
+    <div className="admin-review-page flex min-h-[calc(100vh-96px)] items-start gap-4">
+      <BookReviewSidebar books={allBooks} currentBookId={bookId} />
 
       {/* 右侧审核主体：由客户端组件承载复杂交互（筛选、批量操作、编辑等）。 */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <Suspense
           fallback={
             <div className="flex flex-col gap-3">
