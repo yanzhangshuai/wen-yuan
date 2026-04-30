@@ -4,7 +4,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 
 import { RoleReviewWorkbench } from "./role-review-workbench";
 import type { BookPersonaListItem } from "@/lib/services/books";
-import type { DraftsData } from "@/lib/services/reviews";
+import type { DraftsData } from "@/lib/services/role-workbench";
 import type { AliasMappingItem } from "@/lib/services/alias-mappings";
 import type { PersonaDetail } from "@/types/graph";
 
@@ -79,7 +79,7 @@ vi.mock("@/lib/services/alias-mappings", () => ({
   createAliasMapping : createAliasMappingMock
 }));
 
-vi.mock("@/lib/services/reviews", () => ({
+vi.mock("@/lib/services/role-workbench", () => ({
   fetchChapterEventChapters: fetchChapterEventChaptersMock
 }));
 
@@ -623,7 +623,7 @@ describe("RoleReviewWorkbench", { timeout: ROLE_REVIEW_WORKBENCH_TEST_TIMEOUT },
     if (!firstConfirmButton) throw new Error("missing relationship confirm button");
     fireEvent.click(firstConfirmButton);
 
-    expect(await screen.findByText("关系审核失败，请稍后重试。")).toBeInTheDocument();
+    expect(await screen.findByText("关系确认失败，请稍后重试。")).toBeInTheDocument();
   });
 
   it("guards dirty sheet changes before switching roles", async () => {

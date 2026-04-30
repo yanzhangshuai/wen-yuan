@@ -443,7 +443,7 @@ describe("chapter analysis service", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
 
@@ -683,7 +683,7 @@ describe("chapter analysis service", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
 
@@ -935,7 +935,7 @@ describe("chapter analysis service", () => {
         registerAlias,
         loadBookAliasCache : vi.fn(),
         listPendingMappings: vi.fn(),
-        listReviewMappings : vi.fn(),
+        listAliasMappings  : vi.fn(),
         updateMappingStatus: vi.fn()
       };
       const mockExecutor = createMockExecutor({
@@ -1007,7 +1007,7 @@ describe("chapter analysis service", () => {
         registerAlias,
         loadBookAliasCache : vi.fn(),
         listPendingMappings: vi.fn(),
-        listReviewMappings : vi.fn(),
+        listAliasMappings  : vi.fn(),
         updateMappingStatus: vi.fn()
       };
       // Mock order: 1) roster discovery, 2) chunk extraction, 3) gray-zone arbitration
@@ -1220,7 +1220,7 @@ describe("chapter analysis service", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
 

@@ -3,7 +3,7 @@ import type {
   CreateBookPersonaBody
 } from "@/lib/services/books";
 import type { AliasMappingItem } from "@/lib/services/alias-mappings";
-import type { DraftsData } from "@/lib/services/reviews";
+import type { DraftsData } from "@/lib/services/role-workbench";
 import type { PersonaRelation, TimelineEvent } from "@/types/graph";
 
 export type RoleListFilter = "all" | "ai" | "manual";
@@ -98,8 +98,8 @@ export interface RoleBiographyItem {
 
 export const ROLE_FILTERS: { value: RoleListFilter; label: string }[] = [
   { value: "all", label: "全部" },
-  { value: "ai", label: "AI生成" },
-  { value: "manual", label: "手动创建" }
+  { value: "ai", label: "AI 预填" },
+  { value: "manual", label: "人工补全" }
 ];
 
 export const ROLE_SORT_MODES: { value: RoleSortMode; label: string }[] = [
@@ -156,7 +156,7 @@ export const BIO_CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function sourceLabel(source: string): string {
-  return source === "AI" ? "AI生成" : "手动创建";
+  return source === "AI" ? "AI 预填" : "人工补全";
 }
 
 function joinItems(items: string[]): string {

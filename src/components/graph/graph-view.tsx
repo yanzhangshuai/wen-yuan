@@ -744,14 +744,14 @@ export function GraphView({
           onClose={() => setContextMenu(null)}
           onViewDetail={() => openPersonaDetail(contextMenu.node.id)}
           onEdit={() => {
-            // FG-05: 跳转人物审核页，admin 可在 review 面板内直接编辑。
+            // FG-05: 跳转角色资料工作台，admin 可在工作台内直接编辑人物资料。
             setContextMenu(null);
-            router.push(`/admin/review/${bookId}`);
+            router.push(`/admin/role-workbench/${bookId}`);
           }}
           onMerge={() => {
-            // FG-05: 跳转审核合并视图。
+            // FG-05: 跳转角色资料工作台的合并建议视图。
             setContextMenu(null);
-            router.push(`/admin/review/${bookId}`);
+            router.push(`/admin/role-workbench/${bookId}`);
           }}
           onDelete={() => {
             // FG-05: 删除人物节点后刷新图谱。

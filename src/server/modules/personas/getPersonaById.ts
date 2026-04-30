@@ -15,7 +15,7 @@ import { PersonaNotFoundError } from "@/server/modules/personas/errors";
  * - 聚合 persona 主档、profiles、biographyRecords、relationships 四类数据。
  *
  * 业务目标：
- * - 输出图谱侧栏/审核页可直接渲染的“人物详情快照”；
+ * - 输出图谱侧栏/角色资料工作台可直接渲染的“人物详情快照”；
  * - 避免前端二次拼接，减少接口数量与并发请求复杂度。
  *
  * 关键规则：
@@ -43,9 +43,9 @@ export interface PersonaTimelineItem {
   location    : string | null;
   /** 事件正文描述。 */
   event       : string;
-  /** 数据来源：AI 解析或 MANUAL 手动录入。 */
+  /** 数据来源：AI 解析或 MANUAL 人工补全。 */
   recordSource: RecordSource;
-  /** 审核状态：DRAFT/VERIFIED/REJECTED。 */
+  /** 资料确认状态：DRAFT/VERIFIED/REJECTED。 */
   status      : ProcessingStatus;
 }
 
@@ -74,7 +74,7 @@ export interface PersonaRelationshipItem {
   evidence       : string | null;
   /** 数据来源：AI 或 MANUAL。 */
   recordSource   : RecordSource;
-  /** 审核状态。 */
+  /** 资料确认状态。 */
   status         : ProcessingStatus;
 }
 
@@ -114,7 +114,7 @@ export interface PersonaDetailSnapshot {
   recordSource : RecordSource;
   /** AI 置信度（0~1）。 */
   confidence   : number;
-  /** 人物审核状态。 */
+  /** 人物资料确认状态。 */
   status       : ProcessingStatus;
   /** 按书维度展开的档案数据。 */
   profiles     : PersonaBookProfile[];
@@ -145,7 +145,7 @@ export function createGetPersonaByIdService(
   /**
    * 功能：聚合查询人物详情快照（主档 + 书内档案 + 时间轴 + 关系）。
    * 输入：`personaId` 人物主键（UUID）。
-   * 输出：`PersonaDetailSnapshot`，可直接用于图谱侧栏与审核面板。
+   * 输出：`PersonaDetailSnapshot`，可直接用于图谱侧栏与角色资料工作台。
    * 异常：人物不存在时抛出 `PersonaNotFoundError`。
    * 副作用：无（只读查询）。
    */

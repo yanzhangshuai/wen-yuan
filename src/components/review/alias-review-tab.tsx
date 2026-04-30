@@ -2,17 +2,17 @@
 
 /**
  * =============================================================================
- * 文件定位（审核中心子组件：别名映射审核 Tab）
+ * 文件定位（角色资料工作台子组件：别名映射确认 Tab）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/components/review/alias-review-tab.tsx`
  *
  * 在 Next.js 项目中的角色：
- * - 该文件是审核中心页面中的一个“客户端交互 Tab”；
+ * - 该文件是角色资料工作台页面中的一个“客户端交互 Tab”；
  * - 使用 `'use client'`，因此是 Client Component，会在浏览器侧响应用户筛选与点击操作。
  *
  * 所属业务场景：
  * - 模型抽取后会产出“别名 -> 真名”的映射建议；
- * - 审核员在本 Tab 中按状态/类型筛选建议，并对 `PENDING` 项执行“确认/拒绝”。
+ * - 录入/校对人员在本 Tab 中按状态/类型筛选建议，并对 `PENDING` 项执行“确认/拒绝”。
  *
  * 上下游协作关系：
  * - 上游：父组件传入 `aliasMappings`（通常由服务层 `fetchAliasMappings` 拉取）；
@@ -67,13 +67,13 @@ const ALIAS_TYPE_LABELS: Record<string, string> = {
 };
 
 /**
- * 审核状态到 UI 展示元信息的映射表。
+ * 确认状态到 UI 展示元信息的映射表。
  * 设计原因：
  * - 状态文案和视觉变体集中定义，避免在渲染过程中散落硬编码；
  * - 当状态文案策略变更时，只需改一处。
  */
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  PENDING  : { label: "待审核", variant: "outline" },
+  PENDING  : { label: "待确认", variant: "outline" },
   CONFIRMED: { label: "已确认", variant: "default" },
   REJECTED : { label: "已拒绝", variant: "destructive" }
 };
@@ -83,7 +83,7 @@ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secon
    ------------------------------------------------ */
 
 export interface AliasReviewTabProps {
-  /** 当前书籍 ID：作为所有别名审核接口的路径参数。 */
+  /** 当前书籍 ID：作为所有别名确认接口的路径参数。 */
   bookId       : string;
   /** 待展示的别名映射列表：由父层预先拉取并传入。 */
   aliasMappings: AliasMappingItem[];
@@ -109,7 +109,7 @@ export function AliasReviewTab({ bookId, aliasMappings, onRefresh }: AliasReview
    * - 两个筛选器均为空时返回全量列表。
    *
    * 这样写的业务意图：
-   * - 让审核员在本地快速缩小待处理范围，避免频繁回源请求；
+   * - 让录入/校对人员在本地快速缩小待处理范围，避免频繁回源请求；
    * - 保持筛选行为可预期（AND 关系）。
    */
   const filtered = aliasMappings.filter(m => {
@@ -121,7 +121,7 @@ export function AliasReviewTab({ bookId, aliasMappings, onRefresh }: AliasReview
   });
 
   /**
-   * 处理单条映射的审核动作（确认 / 拒绝）。
+   * 处理单条映射的确认动作（确认 / 拒绝）。
    * 业务步骤：
    * 1) 标记当前行进入 loading，防止重复提交；
    * 2) 根据 action 调用对应接口；
@@ -163,7 +163,7 @@ export function AliasReviewTab({ bookId, aliasMappings, onRefresh }: AliasReview
             </SelectTrigger>
             <SelectContent>
               <SelectEmptyItem>全部状态</SelectEmptyItem>
-              <SelectItem value="PENDING">待审核</SelectItem>
+              <SelectItem value="PENDING">待确认</SelectItem>
               <SelectItem value="CONFIRMED">已确认</SelectItem>
               <SelectItem value="REJECTED">已拒绝</SelectItem>
             </SelectContent>

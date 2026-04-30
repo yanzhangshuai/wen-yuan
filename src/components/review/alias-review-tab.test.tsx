@@ -61,7 +61,7 @@ describe("AliasReviewTab", () => {
     expect(screen.getByText(/太祖皇帝/)).toBeInTheDocument();
     expect(screen.getByText(/朱元璋/)).toBeInTheDocument();
     expect(screen.getAllByText("称号/封号").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("待审核").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("待确认").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/95%/)).toBeInTheDocument();
   });
 

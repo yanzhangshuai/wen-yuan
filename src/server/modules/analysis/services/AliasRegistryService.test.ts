@@ -243,7 +243,7 @@ describe("AliasRegistryService", () => {
     });
   });
 
-  // 用例语义：PENDING 映射只能进入审核列表，不能提前污染运行时 alias 命中缓存。
+  // 用例语义：PENDING 映射只能进入待确认列表，不能提前污染运行时 alias 命中缓存。
   it("registerAlias keeps pending mappings out of the warmed cache", async () => {
     const {
       prisma,
@@ -348,8 +348,8 @@ describe("AliasRegistryService", () => {
     expect(lateChapter?.id).toBe("other-scope");
   });
 
-  // 用例语义：审核列表既要支持 PENDING 快捷入口，也要支持不传 status 的全量浏览。
-  it("lists pending mappings and review mappings with optional status filters", async () => {
+  // 用例语义：别名映射列表既要支持 PENDING 快捷入口，也要支持不传 status 的全量浏览。
+  it("lists pending mappings and alias mappings with optional status filters", async () => {
     const { prisma, aliasMappingFindMany } = createPrismaMock();
     aliasMappingFindMany
       .mockResolvedValueOnce([
@@ -362,10 +362,10 @@ describe("AliasRegistryService", () => {
 
     const service = createAliasRegistryService(prisma);
     const pending = await service.listPendingMappings("book-1");
-    const review = await service.listReviewMappings("book-1");
+    const mappings = await service.listAliasMappings("book-1");
 
     expect(pending.map((item) => item.id)).toEqual(["pending"]);
-    expect(review.map((item) => item.id)).toEqual(["confirmed", "pending"]);
+    expect(mappings.map((item) => item.id)).toEqual(["confirmed", "pending"]);
     expect(aliasMappingFindMany).toHaveBeenNthCalledWith(1, {
       where  : { bookId: "book-1", status: AliasMappingStatus.PENDING },
       orderBy: { confidence: "desc" }
@@ -413,7 +413,7 @@ describe("AliasRegistryService", () => {
     await expect(service.lookupAlias("book-1", "吴王", 1)).resolves.toBeNull();
   });
 
-  // 用例语义：人工确认或模型复核后的有效映射应回写缓存，避免审核结果要等下次预热才生效。
+  // 用例语义：人工确认或模型复核后的有效映射应回写缓存，避免确认结果要等下次预热才生效。
   it("updateMappingStatus writes inferred mappings back into the warmed cache", async () => {
     const {
       prisma,

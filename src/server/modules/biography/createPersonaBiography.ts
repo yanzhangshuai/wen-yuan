@@ -6,7 +6,7 @@
  *
  * 模块职责：
  * - 为指定人物在指定章节下新增一条传记事件；
- * - 统一处理字段标准化、默认分类、来源与审核状态初始化。
+ * - 统一处理字段标准化、默认分类、来源与资料确认状态初始化。
  *
  * 业务语义：
  * - 传记事件是“人物在书中经历”的结构化表达，后续用于时间线与人物详情展示；
@@ -69,7 +69,7 @@ export interface CreatePersonaBiographyResult {
   virtualYear : string | null;
   /** 数据来源（MANUAL）。 */
   recordSource: RecordSource;
-  /** 审核状态（VERIFIED）。 */
+  /** 资料确认状态（VERIFIED）。 */
   status      : ProcessingStatus;
   /** 创建时间（ISO 字符串）。 */
   createdAt   : string;

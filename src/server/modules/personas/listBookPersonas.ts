@@ -64,7 +64,7 @@ export interface BookPersonaListItem {
   confidence                 : number;
   /** 数据来源。 */
   recordSource               : RecordSource;
-  /** 审核状态。 */
+  /** 资料确认状态。 */
   status                     : ProcessingStatus;
 }
 

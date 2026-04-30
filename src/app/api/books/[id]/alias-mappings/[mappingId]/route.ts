@@ -16,7 +16,7 @@ import { ERROR_CODES } from "@/types/api";
  * 文件定位（Next.js Route Handler / 别名映射审核）：
  * - 路由 `app/api/books/[id]/alias-mappings/[mappingId]/route.ts`
  *   映射为 `/api/books/:id/alias-mappings/:mappingId`。
- * - 该文件仅开放 PATCH：用于审核员更新单条别名映射状态。
+ * - 该文件仅开放 PATCH：用于录入/校对人员更新单条别名映射状态。
  *
  * 业务规则：
  * - 只允许 `CONFIRMED` 与 `REJECTED`，不允许任意状态写入；

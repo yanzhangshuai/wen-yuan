@@ -9,14 +9,14 @@ vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
-vi.mock("@/server/modules/review/listDrafts", () => ({
-  REVIEW_DRAFT_TAB_VALUES: ["PERSONA", "RELATIONSHIP", "BIOGRAPHY"] as const,
-  listAdminDrafts        : listAdminDraftsMock
+vi.mock("@/server/modules/roleWorkbench/listDrafts", () => ({
+  WORKBENCH_DRAFT_TAB_VALUES: ["PERSONA", "RELATIONSHIP", "BIOGRAPHY"] as const,
+  listAdminDrafts           : listAdminDraftsMock
 }));
 
 /**
  * 文件定位（Next.js 管理端草稿列表接口单测）：
- * - 对应 `app/api/admin/drafts/route.ts`，用于聚合待审人物/关系/生平草稿。
+ * - 对应 `app/api/admin/drafts/route.ts`，用于聚合待确认人物/关系/生平草稿。
  * - 属于接口层测试，重点覆盖：鉴权、查询参数校验、成功载荷契约。
  *
  * 框架语义：

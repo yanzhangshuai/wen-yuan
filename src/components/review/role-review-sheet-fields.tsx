@@ -311,13 +311,13 @@ export function getSheetTitle(mode: SheetMode | null): string {
   if (mode === "biography-create") return "新增传记事件";
   if (mode === "biography-edit") return "编辑传记事件";
   if (mode === "alias-create") return "新增别名映射";
-  return "角色审核";
+  return "角色资料";
 }
 
 export function getSheetDescription(mode: SheetMode | null): string {
   if (mode === "relationship-create") return "MVP 仅创建当前角色指向对方角色的出向边。";
   if (mode === "relationship-edit") return "请按原始边方向编辑关系字段。";
   if (mode === "persona-create" || mode === "persona-edit") return "角色主档与当前书内档案会一起保存。";
-  if (mode === "alias-create") return "手动创建的别名会绑定到当前角色。";
+  if (mode === "alias-create") return "人工补全的别名会绑定到当前角色。";
   return "修改后请保存，关闭前会检查未保存输入。";
 }

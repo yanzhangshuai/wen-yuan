@@ -9,9 +9,9 @@ import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import {
   listAdminDrafts,
-  REVIEW_DRAFT_TAB_VALUES,
+  WORKBENCH_DRAFT_TAB_VALUES,
   type AdminDraftsResult
-} from "@/server/modules/review/listDrafts";
+} from "@/server/modules/roleWorkbench/listDrafts";
 import { ERROR_CODES } from "@/types/api";
 
 /**
@@ -26,17 +26,17 @@ import { ERROR_CODES } from "@/types/api";
  * - 运行在服务端（Node.js Runtime），可直接访问鉴权上下文与数据库服务模块。
  *
  * 业务职责：
- * 1) 接收管理端审核页面的查询参数（书籍、Tab、来源）；
+ * 1) 接收角色资料工作台的查询参数（书籍、Tab、来源）；
  * 2) 校验参数合法性，防止非法参数穿透到数据层；
- * 3) 调用 `listAdminDrafts` 组装审核看板数据；
+ * 3) 调用 `listAdminDrafts` 组装待确认资料数据；
  * 4) 按项目统一响应协议返回成功/失败结构。
  *
  * 上游输入：
- * - 来自 `ReviewPanel` 客户端调用的 `/api/admin/drafts` 请求；
+ * - 来自 `RoleWorkbenchPanel` 客户端调用的 `/api/admin/drafts` 请求；
  * - 鉴权中间件注入的请求头与 Cookie（`getAuthContext` 读取）。
  *
  * 下游输出：
- * - 返回 `AdminDraftsResult` 给前端服务层 `src/lib/services/reviews.ts`；
+ * - 返回 `AdminDraftsResult` 给前端服务层 `src/lib/services/role-workbench.ts`；
  * - 错误时返回统一错误码，供前端统一提示。
  *
  * 注意：
@@ -44,19 +44,19 @@ import { ERROR_CODES } from "@/types/api";
  * - 不应在此层调整字段命名，否则会破坏前端既有解析逻辑。
  * =============================================================================
  */
-/** 管理端草稿看板查询参数 Schema。 */
+/** 角色资料工作台草稿查询参数 Schema。 */
 const draftsQuerySchema = z.object({
   /** 书籍 ID（可选）。 */
   bookId: z.string().uuid("书籍 ID 不合法").optional(),
   /** 草稿类型 Tab（可选）。 */
-  tab   : z.enum(REVIEW_DRAFT_TAB_VALUES).optional(),
+  tab   : z.enum(WORKBENCH_DRAFT_TAB_VALUES).optional(),
   /** 来源过滤（AI/MANUAL，可选）。 */
   source: z.nativeEnum(RecordSource).optional()
 });
 
 /**
  * GET `/api/admin/drafts`
- * 功能：查询审核草稿列表（支持书籍/Tab/来源筛选）。
+ * 功能：查询待确认草稿列表（支持书籍/Tab/来源筛选）。
  * 入参：query `bookId/tab/source`（均可选）。
  * 返回：`AdminDraftsResult`。
  */
@@ -66,7 +66,7 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     // 第一步：鉴权与角色校验。
-    // 业务意图：审核数据只允许管理员访问，避免普通用户越权读取待审核内容。
+    // 业务意图：待确认资料只允许管理员访问，避免普通用户越权读取录入草稿。
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
@@ -95,7 +95,7 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
 
-    // 第三步：调用服务层获取审核看板数据。
+    // 第三步：调用服务层获取角色资料工作台数据。
     // 注意：服务层会进一步约束查询条件与软删除过滤，这里不重复实现数据规则。
     const data = await listAdminDrafts(parsedQuery.data);
     return okJson<AdminDraftsResult>({

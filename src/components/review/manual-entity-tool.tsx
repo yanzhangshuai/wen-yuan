@@ -23,7 +23,7 @@ import { mergePersonas, splitPersona } from "@/lib/services/personas";
 import { cn } from "@/lib/utils";
 
 export interface ManualEntityToolProps {
-  /** 当前审核上下文的书籍 ID。 */
+  /** 当前角色资料上下文的书籍 ID。 */
   bookId: string;
   /** 人工合并/拆分成功后通知父层刷新。 */
   onDone: () => void;

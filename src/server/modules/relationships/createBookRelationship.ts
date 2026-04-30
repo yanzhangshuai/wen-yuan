@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * 文件定位（服务层：书内关系手动创建）
+ * 文件定位（服务层：书内关系人工补全）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/server/modules/relationships/createBookRelationship.ts`
  *
@@ -9,7 +9,7 @@
  * - 校验起终点人物与章节归属，防止跨书误关联。
  *
  * 业务语义：
- * - 手动创建关系默认来源为人工（MANUAL）且高置信，体现“人工审核优先”规则；
+ * - 人工补全关系默认来源为人工（MANUAL）且高置信，体现“人工确认优先”规则；
  * - 章节绑定用于追溯关系证据来源，支撑审核与回放。
  *
  * 上下游：
@@ -28,7 +28,7 @@ import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
 
 /**
- * 手动创建关系的输入参数。
+ * 人工补全关系的输入参数。
  * 由 API 层完成字段格式校验后传入 service。
  */
 export interface CreateBookRelationshipInput {
@@ -46,12 +46,12 @@ export interface CreateBookRelationshipInput {
   description?: string | null;
   /** 原文证据片段，可选。 */
   evidence?   : string | null;
-  /** 置信度，默认 1（手动录入视为高置信）。 */
+  /** 置信度，默认 1（人工补全视为高置信）。 */
   confidence? : number;
 }
 
 /**
- * 手动创建关系后的返回快照。
+ * 人工补全关系后的返回快照。
  * 用于 API 响应与前端列表即时刷新。
  */
 export interface CreateBookRelationshipResult {
@@ -79,7 +79,7 @@ export interface CreateBookRelationshipResult {
   confidence  : number;
   /** 数据来源（MANUAL）。 */
   recordSource: RecordSource;
-  /** 审核状态（手动录入默认 VERIFIED）。 */
+  /** 资料确认状态（人工补全默认 VERIFIED）。 */
   status      : ProcessingStatus;
 }
 

@@ -6,14 +6,14 @@
  *
  * 模块职责：
  * - 查询指定书籍的关系数据；
- * - 支持按类型、审核状态、来源进行筛选，服务审核工作台。
+ * - 支持按类型、资料确认状态、来源进行筛选，服务角色资料工作台。
  *
  * 设计意图：
  * - 在服务层统一做查询拼装与结果映射，避免路由层重复写查询逻辑；
  * - 输出稳定 DTO，减少前端对数据库字段的直接耦合。
  *
  * 业务规则提示：
- * - `status/source` 筛选语义由审核流程定义，不是纯技术过滤条件；
+ * - `status/source` 筛选语义由资料确认流程定义，不是纯技术过滤条件；
  * - 关系必须落在书籍范围内，bookId 是核心数据边界。
  * =============================================================================
  */
@@ -28,7 +28,7 @@ import { BookNotFoundError } from "@/server/modules/books/errors";
 export interface ListBookRelationshipsFilter {
   /** 按关系类型过滤。 */
   type?  : string;
-  /** 按审核状态过滤。 */
+  /** 按资料确认状态过滤。 */
   status?: ProcessingStatus;
   /** 按数据来源过滤（AI / MANUAL）。 */
   source?: RecordSource;
@@ -66,7 +66,7 @@ export interface BookRelationshipListItem {
   confidence  : number;
   /** 数据来源。 */
   recordSource: RecordSource;
-  /** 审核状态。 */
+  /** 资料确认状态。 */
   status      : ProcessingStatus;
 }
 

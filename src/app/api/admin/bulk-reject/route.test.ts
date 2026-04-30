@@ -4,15 +4,15 @@ import { AppRole, ProcessingStatus } from "@/generated/prisma/enums";
 
 const headersMock = vi.fn();
 const bulkRejectDraftsMock = vi.fn();
-class BulkReviewInputError extends Error {}
+class BulkDraftStatusInputError extends Error {}
 
 vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
-vi.mock("@/server/modules/review/bulkReview", () => ({
+vi.mock("@/server/modules/roleWorkbench/bulkReview", () => ({
   bulkRejectDrafts: bulkRejectDraftsMock,
-  BulkReviewInputError
+  BulkDraftStatusInputError
 }));
 
 /**
@@ -103,7 +103,7 @@ describe("POST /api/admin/bulk-reject", () => {
 
   it("maps service input error to 400", async () => {
     // 错误映射：服务层输入异常统一转为 400，便于前端提示“请求参数问题”而非系统故障。
-    bulkRejectDraftsMock.mockRejectedValue(new BulkReviewInputError("至少需要传入一个草稿 ID"));
+    bulkRejectDraftsMock.mockRejectedValue(new BulkDraftStatusInputError("至少需要传入一个草稿 ID"));
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost/api/admin/bulk-reject", {

@@ -9,7 +9,7 @@
  * - 统一处理输入校验、空值语义、业务错误抛出。
  *
  * 业务场景：
- * - 审核人员在复核时修正关系类型、权重、证据与状态；
+ * - 录入人员在校对时修正关系类型、权重、证据与状态；
  * - PATCH 设计可降低全量提交带来的误覆盖风险。
  *
  * 维护约束：
@@ -40,7 +40,7 @@ export interface UpdateRelationshipInput {
   evidence?   : string | null;
   /** 新置信度（0~1）。 */
   confidence? : number;
-  /** 新审核状态。 */
+  /** 新资料确认状态。 */
   status?     : ProcessingStatus;
 }
 
@@ -66,7 +66,7 @@ export interface UpdateRelationshipResult {
   evidence   : string | null;
   /** 置信度。 */
   confidence : number;
-  /** 审核状态。 */
+  /** 资料确认状态。 */
   status     : ProcessingStatus;
   /** 更新时间（ISO 字符串）。 */
   updatedAt  : string;

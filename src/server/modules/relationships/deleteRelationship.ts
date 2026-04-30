@@ -10,7 +10,7 @@ import { RelationshipNotFoundError } from "@/server/modules/relationships/errors
  *
  * 业务规则（重要）：
  * - 删除语义并非物理清除，而是状态流转到 `REJECTED` 并记录删除时间；
- * - 这是审核域规则，不建议改成硬删除。
+ * - 这是角色资料工作台域规则，不建议改成硬删除。
  */
 export interface DeleteRelationshipResult {
   /** 关系主键 ID。 */

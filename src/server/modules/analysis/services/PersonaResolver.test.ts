@@ -123,7 +123,7 @@ describe("persona resolver", () => {
       registerAlias      : vi.fn(),
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
     const resolver = createPersonaResolver(prisma, aliasRegistry);
@@ -757,7 +757,7 @@ describe("persona resolver", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
 
@@ -811,7 +811,7 @@ describe("persona resolver", () => {
       registerAlias      : vi.fn(),
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
     personaFindMany
@@ -855,7 +855,7 @@ describe("persona resolver", () => {
       registerAlias      : vi.fn(),
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
     personaFindMany
@@ -890,7 +890,7 @@ describe("persona resolver", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
     personaFindMany
@@ -939,7 +939,7 @@ describe("persona resolver", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
     personaFindMany
@@ -1157,7 +1157,7 @@ describe("persona resolver", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
 
@@ -1209,7 +1209,7 @@ describe("persona resolver", () => {
       registerAlias,
       loadBookAliasCache : vi.fn(),
       listPendingMappings: vi.fn(),
-      listReviewMappings : vi.fn(),
+      listAliasMappings  : vi.fn(),
       updateMappingStatus: vi.fn()
     };
 

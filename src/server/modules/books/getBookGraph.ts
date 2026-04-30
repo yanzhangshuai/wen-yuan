@@ -76,7 +76,7 @@ export interface BookGraphNode {
   nameType    : string;
   /** 实体类型（PERSON/LOCATION/ORGANIZATION），用于前端节点形状区分。 */
   entityType  : string;
-  /** 节点审核状态。 */
+  /** 节点资料确认状态。 */
   status      : ProcessingStatus;
   /** 派系颜色索引（前端着色用）。 */
   factionIndex: number;
@@ -104,7 +104,7 @@ export interface BookGraphEdge {
   weight   : number;
   /** 情感极性（正/负/中性）。 */
   sentiment: RelationSentiment;
-  /** 关系审核状态。 */
+  /** 关系资料确认状态。 */
   status   : ProcessingStatus;
 }
 
@@ -128,7 +128,7 @@ function resolveSentiment(type: string): BookGraphEdge["sentiment"] {
 
 /**
  * 由数据来源推导默认节点状态。
- * 业务意图：人工录入默认可信（VERIFIED），AI 产出默认待审核（DRAFT）。
+ * 业务意图：人工录入默认可信（VERIFIED），AI 产出默认待确认（DRAFT）。
  */
 function resolveNodeStatus(recordSource: RecordSource): ProcessingStatus {
   if (recordSource === RecordSource.MANUAL) {

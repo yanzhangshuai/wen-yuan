@@ -97,7 +97,7 @@ export async function rejectAliasMapping(bookId: string, mappingId: string): Pro
   });
 }
 
-/** 手动创建一条别名映射。 */
+/** 人工补全一条别名映射。 */
 export async function createAliasMapping(bookId: string, body: {
   /** 别名原文。 */
   alias       : string;

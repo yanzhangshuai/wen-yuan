@@ -7,7 +7,7 @@ import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-resp
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { bulkRejectDrafts, BulkReviewInputError, type BulkReviewResult } from "@/server/modules/review/bulkReview";
+import { bulkRejectDrafts, BulkDraftStatusInputError, type BulkDraftStatusResult } from "@/server/modules/roleWorkbench/bulkReview";
 import { ERROR_CODES } from "@/types/api";
 
 /**
@@ -24,7 +24,7 @@ import { ERROR_CODES } from "@/types/api";
  * - 将一组草稿从 `DRAFT` 批量置为 `REJECTED`，用于管理员批量驳回低质量识别结果。
  *
  * 上游输入：
- * - 客户端审核面板提交的 `{ ids: string[] }` 请求体；
+ * - 客户端角色资料工作台提交的 `{ ids: string[] }` 请求体；
  * - 登录态上下文（Header/Cookie），由 `getAuthContext` 解析。
  *
  * 下游输出：
@@ -39,7 +39,7 @@ import { ERROR_CODES } from "@/types/api";
  */
 
 /**
- * 功能：批量拒绝审核草稿请求体校验。
+ * 功能：批量拒绝待确认草稿请求体校验。
  * 输入：`ids` 为待拒绝草稿 ID 数组（UUID），至少 1 个。
  * 输出：通过 `safeParse` 返回可安全传入 service 的强类型数据。
  * 异常：无（校验失败由调用方转换为 400 响应）。
@@ -74,7 +74,7 @@ function badRequestJson(
 }
 
 /**
- * 功能：拒绝一批 DRAFT 审核记录（关系/传记事件）。
+ * 功能：拒绝一批 DRAFT 待确认记录（关系/传记事件）。
  * 输入：管理员身份 + JSON `{ ids: string[] }`。
  * 输出：统一 API 响应，`data` 为批量拒绝统计结果。
  * 异常：参数不合法返回 400；权限不足返回 403；其余错误返回 500。
@@ -86,7 +86,7 @@ export async function POST(request: Request): Promise<Response> {
   const path = "/api/admin/bulk-reject";
 
   try {
-    // 1) 校验管理员身份：拒绝非管理员对审核状态的写操作。
+    // 1) 校验管理员身份：拒绝非管理员对草稿确认状态的写操作。
     const auth = await getAuthContext(await headers());
     requireAdmin(auth);
 
@@ -102,7 +102,7 @@ export async function POST(request: Request): Promise<Response> {
 
     // 3) 调用领域服务执行批量拒绝。
     const data = await bulkRejectDrafts(parsedBody.data.ids);
-    return okJson<BulkReviewResult>({
+    return okJson<BulkDraftStatusResult>({
       path,
       requestId,
       startedAt,
@@ -112,7 +112,7 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (error) {
     // 输入非法（如归一化后 ID 为空）属于 400 范畴，单独映射给前端。
-    if (error instanceof BulkReviewInputError) {
+    if (error instanceof BulkDraftStatusInputError) {
       return badRequestJson(requestId, startedAt, error.message);
     }
 

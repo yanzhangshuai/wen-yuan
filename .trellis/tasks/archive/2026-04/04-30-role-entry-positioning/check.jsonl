@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Verify user-facing route and component changes against frontend conventions."}
+{"file": ".trellis/spec/frontend/nextjs-best-practices.md", "reason": "Check App Router route migration and metadata/error/loading behavior."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check renamed components still follow local composition patterns."}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "Verify renamed API handlers keep auth, validation, and error handling."}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "Verify API response contracts did not regress during route rename."}
+{"file": ".trellis/spec/backend/role-workbench-character-events.md", "reason": "Check behavior remains compatible with the existing role/chapter-event contract while naming changes."}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Verify tests were updated according to project test conventions."}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Check rename scope stays focused and readable."}

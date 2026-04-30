@@ -10,12 +10,12 @@
  * - 本文件导出 `GET` 与 `POST`，分别承担列表查询与新建映射。
  *
  * 业务职责：
- * 1) 给审核端提供“人物称谓别名映射”的查询与创建能力；
+ * 1) 给角色资料工作台提供“人物称谓别名映射”的查询与创建能力；
  * 2) 在接口层完成参数收敛（query/body）与错误返回标准化；
  * 3) 保护下游 `aliasRegistryService`，避免非法参数直接进入领域逻辑。
  *
  * 上下游关系：
- * - 上游：管理端审核 UI；
+ * - 上游：角色资料工作台与管理端别名 UI；
  * - 下游：`AliasRegistryService`（别名注册表领域服务）与统一 API 响应工具。
  *
  * 注意事项：
@@ -100,7 +100,7 @@ export async function GET(
       return badRequestJson(routePath, requestId, startedAt, parsedQuery.error.issues[0]?.message ?? "查询参数不合法");
     }
 
-    const data = await aliasRegistryService.listReviewMappings(parsedParams.data.id, parsedQuery.data.status);
+    const data = await aliasRegistryService.listAliasMappings(parsedParams.data.id, parsedQuery.data.status);
     return okJson({
       path   : routePath,
       requestId,
@@ -157,7 +157,7 @@ export async function POST(
     });
 
     // 查询刚创建/更新的记录（按 alias + bookId 精确匹配，取最高置信度）
-    const data = await aliasRegistryService.listReviewMappings(parsedParams.data.id);
+    const data = await aliasRegistryService.listAliasMappings(parsedParams.data.id);
     const created = data.find(
       (m) => m.alias === parsedBody.data.alias.trim().toLowerCase()
     ) ?? data[0] ?? null;

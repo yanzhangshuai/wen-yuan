@@ -10,7 +10,7 @@
  *
  * 业务背景：
  * - 质检流程会产出 validation report（摘要 + issues）；
- * - 审核员可查看详情并对支持自动修复的问题执行批量修正。
+ * - 录入/校对人员可查看详情并对支持自动修复的问题执行批量修正。
  *
  * 与 Next.js 的关系：
  * - 该文件不直接参与 App Router 路由定义；
@@ -55,7 +55,7 @@ export interface ValidationReportDetail extends ValidationReportItem {
 export async function fetchValidationReports(
   bookId: string
 ): Promise<ValidationReportItem[]> {
-  // 读取摘要列表：用于审核页首屏展示与状态总览。
+  // 读取摘要列表：用于角色资料工作台首屏展示与状态总览。
   return clientFetch<ValidationReportItem[]>(
     `/api/books/${bookId}/validation-reports`
   );

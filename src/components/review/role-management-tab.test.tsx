@@ -91,11 +91,11 @@ describe("RoleManagementTab role data management", () => {
     await screen.findByText("Alpha 手动");
 
     expect(screen.getByRole("button", { name: "全部" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "AI生成" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "手动创建" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "AI 预填" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "人工补全" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "待确认" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "已入库" })).not.toBeInTheDocument();
-    expect(within(row("Beta AI")).getByText("AI生成")).toBeInTheDocument();
+    expect(within(row("Beta AI")).getByText("AI 预填")).toBeInTheDocument();
     expect(within(row("Beta AI")).getByRole("button", { name: "编辑角色" })).toBeInTheDocument();
     expect(within(row("Beta AI")).getByRole("button", { name: "删除角色" })).toBeInTheDocument();
     expect(within(row("Beta AI")).queryByRole("button", { name: "确认角色" })).not.toBeInTheDocument();
@@ -107,11 +107,11 @@ describe("RoleManagementTab role data management", () => {
 
     await screen.findByText("Beta AI");
 
-    fireEvent.click(screen.getByRole("button", { name: "AI生成" }));
+    fireEvent.click(screen.getByRole("button", { name: "AI 预填" }));
     expect(screen.getByText("Beta AI")).toBeInTheDocument();
     expect(screen.queryByText("Alpha 手动")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "手动创建" }));
+    fireEvent.click(screen.getByRole("button", { name: "人工补全" }));
     expect(screen.queryByText("Beta AI")).not.toBeInTheDocument();
     expect(screen.getByText("Alpha 手动")).toBeInTheDocument();
   });

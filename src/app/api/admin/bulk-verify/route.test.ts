@@ -18,15 +18,15 @@ import { AppRole, ProcessingStatus } from "@/generated/prisma/enums";
 
 const headersMock = vi.fn();
 const bulkVerifyDraftsMock = vi.fn();
-class BulkReviewInputError extends Error {}
+class BulkDraftStatusInputError extends Error {}
 
 vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
-vi.mock("@/server/modules/review/bulkReview", () => ({
+vi.mock("@/server/modules/roleWorkbench/bulkReview", () => ({
   bulkVerifyDrafts: bulkVerifyDraftsMock,
-  BulkReviewInputError
+  BulkDraftStatusInputError
 }));
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
@@ -130,7 +130,7 @@ describe("POST /api/admin/bulk-verify", () => {
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("maps service input error to 400", async () => {
-    bulkVerifyDraftsMock.mockRejectedValue(new BulkReviewInputError("至少需要传入一个草稿 ID"));
+    bulkVerifyDraftsMock.mockRejectedValue(new BulkDraftStatusInputError("至少需要传入一个草稿 ID"));
     const { POST } = await import("./route");
 
     const response = await POST(new Request("http://localhost/api/admin/bulk-verify", {

@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { listMergeSuggestions } from "@/server/modules/review/mergeSuggestions";
+import { listMergeSuggestions } from "@/server/modules/roleWorkbench/mergeSuggestions";
 import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, mergeSuggestionQuerySchema } from "./_shared";
@@ -30,7 +30,7 @@ import { badRequestJson, mergeSuggestionQuerySchema } from "./_shared";
  *
  * 维护边界：
  * - 本层负责“协议转换（HTTP <-> 领域服务）”，不承载具体合并业务规则；
- * - 业务规则在 `src/server/modules/review/mergeSuggestions.ts`。
+ * - 业务规则在 `src/server/modules/roleWorkbench/mergeSuggestions.ts`。
  * =============================================================================
  */
 

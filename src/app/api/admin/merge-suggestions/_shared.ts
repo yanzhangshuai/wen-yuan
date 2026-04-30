@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
-import { MERGE_SUGGESTION_STATUS_VALUES } from "@/server/modules/review/mergeSuggestions";
+import { MERGE_SUGGESTION_STATUS_VALUES } from "@/server/modules/roleWorkbench/mergeSuggestions";
 import { ERROR_CODES } from "@/types/api";
 
 /**

@@ -6,21 +6,21 @@ import type { AliasMappingResult, RegisterAliasInput } from "@/types/analysis";
 /**
  * 文件定位（Next.js 服务端逻辑层）：
  * - 本文件位于 `src/server/modules/analysis/services`，属于“章节解析流水线”的服务层组件。
- * - 它不是 route handler/page，而是被服务端模块（如 ChapterAnalysisService、PersonaResolver、后台审核接口）调用的领域服务。
+ * - 它不是 route handler/page，而是被服务端模块（如 ChapterAnalysisService、PersonaResolver、角色资料工作台接口）调用的领域服务。
  *
  * 核心职责：
  * - 维护“称谓/别名 -> 人物”的映射（alias mapping）读写能力。
  * - 提供按书籍维度的内存缓存，降低章节解析过程中的重复数据库查询。
- * - 提供审核后台所需的待审列表、按状态筛选、状态更新等能力。
+ * - 提供角色资料工作台所需的待确认列表、按状态筛选、状态更新等能力。
  *
  * 上下游关系：
- * - 上游输入：章节解析自动注册（RegisterAliasInput）、后台审核动作（mappingId + status）、书籍/章节上下文。
- * - 下游输出：PersonaResolver 的别名命中结果、审核页展示 DTO、数据库 `alias_mapping` 持久化记录。
+ * - 上游输入：章节解析自动注册（RegisterAliasInput）、工作台确认动作（mappingId + status）、书籍/章节上下文。
+ * - 下游输出：PersonaResolver 的别名命中结果、工作台展示 DTO、数据库 `alias_mapping` 持久化记录。
  *
  * 运行时与约束：
  * - 仅在 Node.js 服务端运行；缓存是“进程内缓存”，不是跨实例共享缓存。
  * - 缓存命中只用于性能优化，最终真实状态仍以数据库为准。
- * - 这里的状态与置信度规则属于业务规则，不是技术限制，修改会直接影响实体解析准确率与审核工作量。
+ * - 这里的状态与置信度规则属于业务规则，不是技术限制，修改会直接影响实体解析准确率与人工确认工作量。
  */
 export const ALIAS_MAPPING_STATUS_VALUES = [
   "PENDING",
@@ -30,25 +30,25 @@ export const ALIAS_MAPPING_STATUS_VALUES = [
 ] as const;
 
 /**
- * 数据库审查记录的最小读取形态。
+ * 数据库别名映射记录的最小读取形态。
  * 这里显式列出字段，是为了把 DB schema 与对外 DTO（AliasMappingResult）之间做一层防腐映射，避免调用方依赖 Prisma 原始结构。
  */
-type ReviewAliasMappingRow = {
+type AliasMappingRow = {
   /** 映射记录主键。 */
   id          : string;
   /** 原文中出现的称谓/别名。 */
   alias       : string;
   /** 该称谓被解析出的标准人名（可能为空，表示仅挂 personaId 或待定）。 */
   resolvedName: string | null;
-  /** 对应 persona 主键；待审或拒绝状态可为空。 */
+  /** 对应 persona 主键；待确认或拒绝状态可为空。 */
   personaId   : string | null;
   /** 别名类型（称号/官职/昵称等）。 */
   aliasType   : AliasType;
-  /** 当前映射置信度，供匹配排序与审核优先级使用。 */
+  /** 当前映射置信度，供匹配排序与人工确认优先级使用。 */
   confidence  : number;
   /** 证据文本（模型推理依据或人工备注）。 */
   evidence    : string | null;
-  /** 当前审核状态（PENDING/CONFIRMED/REJECTED/LLM_INFERRED）。 */
+  /** 当前确认状态（PENDING/CONFIRMED/REJECTED/LLM_INFERRED）。 */
   status      : AliasMappingStatus;
   /** 生效章节起点，null 表示全书生效。 */
   chapterStart: number | null;
@@ -58,7 +58,7 @@ type ReviewAliasMappingRow = {
 
 /**
  * 别名注册表对外服务契约。
- * 该接口是解析管线与审核接口之间的稳定边界，便于后续替换缓存策略或存储实现而不影响调用方。
+ * 该接口是解析管线与工作台接口之间的稳定边界，便于后续替换缓存策略或存储实现而不影响调用方。
  */
 export interface AliasRegistryService {
   /** 按“书籍 + 称谓 + 章节号”查询最优映射，用于章节解析时的人物消歧。 */
@@ -67,10 +67,10 @@ export interface AliasRegistryService {
   registerAlias(input: RegisterAliasInput, tx?: Pick<PrismaClient, "aliasMapping">): Promise<void>;
   /** 预热某本书的别名缓存，减少后续逐章解析时的重复查询成本。 */
   loadBookAliasCache(bookId: string): Promise<Map<string, AliasMappingResult[]>>;
-  /** 读取该书待审映射，供审核工作台展示。 */
+  /** 读取该书待确认映射，供角色资料工作台展示。 */
   listPendingMappings(bookId: string): Promise<AliasMappingResult[]>;
-  /** 读取该书审核映射，可按状态筛选。 */
-  listReviewMappings(bookId: string, status?: AliasMappingResult["status"]): Promise<AliasMappingResult[]>;
+  /** 读取该书别名映射，可按确认状态筛选。 */
+  listAliasMappings(bookId: string, status?: AliasMappingResult["status"]): Promise<AliasMappingResult[]>;
   /** 更新单条映射状态，并同步维护内存缓存的一致性。 */
   updateMappingStatus(mappingId: string, bookId: string, status: AliasMappingResult["status"]): Promise<AliasMappingResult | null>;
 }
@@ -107,7 +107,7 @@ function fromAliasStatus(value: AliasMappingStatus): AliasMappingResult["status"
  * 数据库行转业务 DTO。
  * 重点：chapterStart/chapterEnd 会被折叠为 `chapterScope`，确保前端和调用方只面对一个统一结构。
  */
-function toAliasMappingResult(row: ReviewAliasMappingRow): AliasMappingResult {
+function toAliasMappingResult(row: AliasMappingRow): AliasMappingResult {
   return {
     id          : row.id,
     alias       : row.alias,
@@ -156,7 +156,7 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
 
   /**
    * 将单条映射写入内存缓存（存在则更新，不存在则追加）。
-   * 设计目的：审核动作后无需整本书清缓存，降低缓存重建成本。
+   * 设计目的：确认动作后无需整本书清缓存，降低缓存重建成本。
    */
   function upsertInMemoryCache(bookId: string, mapping: AliasMappingResult): void {
     const existingBookCache = cacheByBook.get(bookId);
@@ -314,12 +314,12 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
     }
   }
 
-  /** 待审列表是审核台高频入口，这里复用 `listReviewMappings` 避免重复查询逻辑。 */
+  /** 待确认列表是工作台高频入口，这里复用 `listAliasMappings` 避免重复查询逻辑。 */
   async function listPendingMappings(bookId: string): Promise<AliasMappingResult[]> {
-    return await listReviewMappings(bookId, "PENDING");
+    return await listAliasMappings(bookId, "PENDING");
   }
 
-  async function listReviewMappings(
+  async function listAliasMappings(
     bookId: string,
     status?: AliasMappingResult["status"]
   ): Promise<AliasMappingResult[]> {
@@ -335,7 +335,7 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
   }
 
   /**
-   * 审核状态更新：
+   * 确认状态更新：
    * - 先校验记录是否属于当前书籍，防止跨书误改；
    * - 更新后做缓存同步（确认/推断入缓存，拒绝移除）。
    */
@@ -396,7 +396,7 @@ export function createAliasRegistryService(prismaClient: PrismaClient = prisma):
     registerAlias,
     loadBookAliasCache,
     listPendingMappings,
-    listReviewMappings,
+    listAliasMappings,
     updateMappingStatus
   };
 }

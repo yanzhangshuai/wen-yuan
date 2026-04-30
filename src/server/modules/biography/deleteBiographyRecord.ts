@@ -6,7 +6,7 @@ import { BiographyRecordNotFoundError } from "@/server/modules/biography/errors"
 /**
  * 文件定位（服务端业务模块 / biography）：
  * - 该文件提供“传记记录软删除”用例服务，通常由 Route Handler 或 Server Action 调用。
- * - 运行在 Node.js 服务端，属于数据写入链路，会影响后续审核列表可见性。
+ * - 运行在 Node.js 服务端，属于数据写入链路，会影响后续待确认列表可见性。
  *
  * 业务规则（重要）：
  * - 删除采用“软删除”而非物理删除：通过 `status=REJECTED` + `deletedAt` 标记失效；

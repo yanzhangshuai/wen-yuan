@@ -12,7 +12,7 @@ vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
-vi.mock("@/server/modules/review/mergeSuggestions", () => ({
+vi.mock("@/server/modules/roleWorkbench/mergeSuggestions", () => ({
   acceptMergeSuggestion         : acceptMergeSuggestionMock,
   MERGE_SUGGESTION_STATUS_VALUES: ["PENDING", "ACCEPTED", "REJECTED", "DEFERRED"] as const,
   MergeSuggestionNotFoundError,

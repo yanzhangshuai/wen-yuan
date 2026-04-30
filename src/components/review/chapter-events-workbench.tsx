@@ -49,7 +49,7 @@ import {
   type ChapterEventChapterData,
   type ChapterEventItem,
   type ChapterEventMutationBody
-} from "@/lib/services/reviews";
+} from "@/lib/services/role-workbench";
 
 interface ChapterEventsWorkbenchProps {
   bookId     : string;
@@ -122,8 +122,8 @@ const TAG_PRESETS = [
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  DRAFT   : "待审核",
-  VERIFIED: "已确认",
+  DRAFT   : "待确认",
+  VERIFIED: "已入库",
   REJECTED: "已拒绝"
 };
 
@@ -156,7 +156,7 @@ function getMainCategoryLabel(event: ChapterEventItem): string {
 }
 
 function getEventStateLabel(event: ChapterEventItem): string {
-  if (event.recordSource === "MANUAL") return "手动创建";
+  if (event.recordSource === "MANUAL") return "人工补全";
   return STATUS_LABELS[event.status] ?? event.status;
 }
 
@@ -403,7 +403,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
       await markChapterEventsVerified(bookId, activeChapterId);
       await refreshAfterMutation(activeChapterId);
     } catch (err) {
-      setVerifyError(err instanceof Error ? err.message : "当前章节仍有待审核角色事迹。");
+      setVerifyError(err instanceof Error ? err.message : "当前章节仍有待确认角色事迹。");
     }
   }
 
@@ -488,7 +488,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                     <div className="line-clamp-2 text-sm font-medium">{chapter.noText ?? `第${chapter.no}回`} {chapter.title}</div>
                     <div className="mt-1 flex flex-wrap gap-1 text-xs">
                       <Badge variant="outline">{chapter.eventCount} 条</Badge>
-                      <Badge variant={chapter.pendingCount > 0 ? "destructive" : "outline"}>{chapter.pendingCount} 待审</Badge>
+                      <Badge variant={chapter.pendingCount > 0 ? "destructive" : "outline"}>{chapter.pendingCount} 待确认</Badge>
                       {chapter.isVerified && <Badge variant="outline">已校验</Badge>}
                     </div>
                   </>
@@ -568,8 +568,8 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                   </SelectTrigger>
                   <SelectContent>
                     <SelectEmptyItem>全部状态</SelectEmptyItem>
-                    <SelectItem value="DRAFT">待审核</SelectItem>
-                    <SelectItem value="VERIFIED">已确认</SelectItem>
+                    <SelectItem value="DRAFT">待确认</SelectItem>
+                    <SelectItem value="VERIFIED">已入库</SelectItem>
                     <SelectItem value="REJECTED">已拒绝</SelectItem>
                   </SelectContent>
                 </Select>
@@ -582,8 +582,8 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                   </SelectTrigger>
                   <SelectContent>
                     <SelectEmptyItem>全部来源</SelectEmptyItem>
-                    <SelectItem value="AI">AI 生成</SelectItem>
-                    <SelectItem value="MANUAL">手动创建</SelectItem>
+                    <SelectItem value="AI">AI 预填</SelectItem>
+                    <SelectItem value="MANUAL">人工补全</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -688,7 +688,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                     setSheetOpen(false);
                     onOpenRoles();
                   }}>
-                    去角色审核新建
+                    去角色资料新建
                   </Button>
                 </div>
               )}
@@ -781,7 +781,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                   添加
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">最多 12 个标签，标签只用于人工审核与编辑。</p>
+              <p className="text-xs text-muted-foreground">最多 12 个标签，标签只用于人工校对与编辑。</p>
             </div>
             <TextInput label="标题/身份" value={form.title} onChange={(value) => setForm(prev => ({ ...prev, title: value }))} />
             <TextInput label="地点" value={form.location} onChange={(value) => setForm(prev => ({ ...prev, location: value }))} />
@@ -892,7 +892,7 @@ function EventCard({
         {event.location && <span>地点：{event.location}</span>}
         {event.virtualYear && <span>时间：{event.virtualYear}</span>}
         {event.ironyNote && <span>备注：{event.ironyNote}</span>}
-        <span>来源：{event.recordSource === "MANUAL" ? "手动" : "AI"}</span>
+        <span>来源：{event.recordSource === "MANUAL" ? "人工补全" : "AI 预填"}</span>
         <span>兼容分类：{BIO_CATEGORY_LEGACY_LABELS[event.category] ?? event.category}</span>
       </div>
     </article>

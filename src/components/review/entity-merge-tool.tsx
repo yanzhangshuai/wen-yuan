@@ -2,12 +2,12 @@
 
 /**
  * =============================================================================
- * 文件定位（审核中心子组件：人物合并执行面板）
+ * 文件定位（角色资料工作台子组件：人物合并执行面板）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/components/review/entity-merge-tool.tsx`
  *
  * 在 Next.js 项目中的角色：
- * - 这是 `ReviewPanel`（审核主面板）下的子组件，负责“接受合并建议”这条高风险操作链路；
+ * - 这是 `RoleWorkbenchPanel`（角色资料工作台主面板）下的子组件，负责“接受合并建议”这条高风险操作链路；
  * - 文件声明 `'use client'`，属于 Client Component。
  *
  * 为什么必须是 Client Component：
@@ -16,7 +16,7 @@
  * - 这些交互依赖浏览器事件循环，不能仅靠 Server Component 完成。
  *
  * 核心业务职责：
- * 1) 将上游传入的 source/target 人物摘要并排展示，帮助审核员做人审比对；
+ * 1) 将上游传入的 source/target 人物摘要并排展示，帮助录入人员做人审比对；
  * 2) 在点击确认后调用 `/api/admin/merge-suggestions/:id/accept`；
  * 3) 告知父组件合并完成（`onDone`）或取消（`onCancel`）。
  *
@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 
 import { readClientApiErrorMessage } from "@/lib/client-api";
-import { acceptMergeSuggestion } from "@/lib/services/reviews";
+import { acceptMergeSuggestion } from "@/lib/services/role-workbench";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -73,7 +73,7 @@ export interface EntityMergeToolProps {
   /** 目标人物摘要 Promise（通常是“将被保留”的一方）。 */
   targetPromise: Promise<PersonaSummary | null>;
   /** 合并建议 ID，用于调用接受接口。 */
-  suggestionId : string;  /** FG-08: 建议合并理由（来自 AI 判断），用于审核员参考。 */
+  suggestionId : string;  /** FG-08: 建议合并理由（来自 AI 判断），用于录入/校对人员参考。 */
   reason?      : string;
   /** FG-08: 建议置信度（0~1）。 */
   confidence?  : number;  /** 合并成功回调：通知父组件刷新数据并退出本面板。 */
@@ -164,7 +164,7 @@ export function EntityMergeTool({
         </button>
       </div>
 
-      {/* 并排比对区：让审核员先看 source/target 差异，再决定是否执行。 */}
+      {/* 并排比对区：让录入/校对人员先看 source/target 差异，再决定是否执行。 */}
       <div className="grid gap-4 sm:grid-cols-2">
         <PersonaCard persona={source} label="来源（将被合并）" variant="source" />
         <PersonaCard persona={target} label="目标（保留）" variant="target" />

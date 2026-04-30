@@ -42,7 +42,7 @@ export interface UpdatePersonaInput {
   globalTags?              : string[];
   /** 新置信度。 */
   confidence?              : number;
-  /** 审核状态。当前仅支持把 AI 人物确认为有效人工审核人物。 */
+  /** 资料确认状态。当前仅支持把 AI 人物确认为有效角色资料。 */
   status?                  : "VERIFIED";
   /** 书内展示名。 */
   localName?               : string;

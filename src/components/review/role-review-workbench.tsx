@@ -60,7 +60,7 @@ import {
   fetchChapterEventChapters,
   type ChapterEventChapter,
   type DraftsData
-} from "@/lib/services/reviews";
+} from "@/lib/services/role-workbench";
 import type { PersonaDetail } from "@/types/graph";
 
 import { RoleReviewSidebar } from "./role-review-sidebar";
@@ -268,7 +268,7 @@ export function RoleReviewWorkbench({
       setPersonaDetail(detail);
     } catch {
       setPersonaDetail(null);
-      setError("角色详情加载失败，暂时仅显示待审草稿。");
+      setError("角色详情加载失败，暂时仅显示待确认草稿。");
     }
   }, []);
 
@@ -294,7 +294,7 @@ export function RoleReviewWorkbench({
       .catch(() => {
         if (!cancelled) {
           setPersonaDetail(null);
-          setError("角色详情加载失败，暂时仅显示待审草稿。");
+          setError("角色详情加载失败，暂时仅显示待确认草稿。");
         }
       });
     return () => {
@@ -564,7 +564,7 @@ export function RoleReviewWorkbench({
       onRefreshDrafts();
       if (selectedPersona) await loadPersonaDetail(selectedPersona.id);
     } catch {
-      setError("关系审核失败，请稍后重试。");
+      setError("关系确认失败，请稍后重试。");
     }
   }
 
@@ -575,7 +575,7 @@ export function RoleReviewWorkbench({
       onRefreshDrafts();
       if (selectedPersona) await loadPersonaDetail(selectedPersona.id);
     } catch {
-      setError("传记事件审核失败，请稍后重试。");
+      setError("传记事件确认失败，请稍后重试。");
     }
   }
 
@@ -586,7 +586,7 @@ export function RoleReviewWorkbench({
       else                     await rejectAliasMapping(bookId, mappingId);
       onRefreshAliases();
     } catch {
-      setError("别名审核失败，请稍后重试。");
+      setError("别名确认失败，请稍后重试。");
     }
   }
 
@@ -653,7 +653,7 @@ export function RoleReviewWorkbench({
           </div>
         )}
         {!selectedPersona && !loading && (
-          <div className="p-8 text-center text-sm text-muted-foreground">请选择一个角色开始审核。</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">请选择一个角色开始补全/校对。</div>
         )}
         {selectedPersona && (
           <div className="flex min-h-0 flex-1 flex-col">

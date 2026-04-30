@@ -70,6 +70,15 @@ describe("AdminHeader", () => {
     expect(screen.queryByRole("button", { name: "退出管理" })).toBeNull();
   });
 
+  it("renders the role profile navigation with the short visible label", () => {
+    // Arrange: 渲染后台头部导航。
+    render(<AdminHeader userName="运营同学" />);
+
+    // Assert: 用户可见导航短名统一为“角色资料”，路由仍保持 role-workbench。
+    const roleProfileLink = screen.getByRole("link", { name: "角色资料" });
+    expect(roleProfileLink).toHaveAttribute("href", "/admin/role-workbench");
+  });
+
   it("navigates to login after logout succeeds", async () => {
     // Arrange: 模拟退出接口成功。
     logoutMock.mockResolvedValueOnce(undefined);

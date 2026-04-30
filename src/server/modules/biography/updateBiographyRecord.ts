@@ -42,7 +42,7 @@ export interface UpdateBiographyRecordInput {
   event?      : string;
   /** 新虚拟年号/时间标注，可置空。 */
   virtualYear?: string | null;
-  /** 新审核状态。 */
+  /** 新资料确认状态。 */
   status?     : ProcessingStatus;
 }
 
@@ -68,7 +68,7 @@ export interface UpdateBiographyRecordResult {
   event      : string;
   /** 虚拟年号/时间标注。 */
   virtualYear: string | null;
-  /** 审核状态。 */
+  /** 资料确认状态。 */
   status     : ProcessingStatus;
   /** 更新时间（ISO 字符串）。 */
   updatedAt  : string;

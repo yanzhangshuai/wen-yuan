@@ -62,7 +62,7 @@ export function RoleReviewSidebar({
     <aside className="role-review-sidebar flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card">
       <div className="border-b border-border p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <h3 className="text-sm font-medium text-foreground">角色审核</h3>
+          <h3 className="text-sm font-medium text-foreground">角色资料</h3>
           <Button type="button" size="icon" variant="ghost" aria-label="折叠角色列表" onClick={onCollapse}>
             <ChevronLeft className="size-4" />
           </Button>

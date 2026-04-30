@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * 文件定位（服务层：书籍内手动创建人物）
+ * 文件定位（服务层：书籍内人工补全人物）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/server/modules/personas/createBookPersona.ts`
  *
@@ -102,7 +102,7 @@ export interface CreateBookPersonaResult {
   confidence                 : number;
   /** 数据来源（MANUAL）。 */
   recordSource               : RecordSource;
-  /** 审核状态（VERIFIED）。 */
+  /** 资料确认状态（VERIFIED）。 */
   status                     : ProcessingStatus;
 }
 
@@ -146,7 +146,7 @@ export function createCreateBookPersonaService(
   prismaClient: PrismaClient = prisma
 ) {
   /**
-   * 功能：在指定书籍中手动创建人物及其书内档案。
+   * 功能：在指定书籍中人工补全人物及其书内档案。
    * 输入：`bookId` + 人物与档案字段。
    * 输出：人物创建结果快照。
    * 异常：书籍不存在时抛出 `BookNotFoundError`。

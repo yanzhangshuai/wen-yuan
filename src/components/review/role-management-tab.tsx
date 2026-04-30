@@ -53,8 +53,8 @@ type RoleSortMode = "name" | "source";
 
 const ROLE_FILTERS: { value: RoleListFilter; label: string }[] = [
   { value: "all", label: "全部" },
-  { value: "ai", label: "AI生成" },
-  { value: "manual", label: "手动创建" }
+  { value: "ai", label: "AI 预填" },
+  { value: "manual", label: "人工补全" }
 ];
 
 const ROLE_SORT_MODES: { value: RoleSortMode; label: string }[] = [
@@ -126,7 +126,7 @@ function formFromPersona(persona: BookPersonaListItem): PersonaFormState {
 }
 
 function sourceLabel(source: string): string {
-  return source === "AI" ? "AI生成" : "手动创建";
+  return source === "AI" ? "AI 预填" : "人工补全";
 }
 
 function rowMatchesFilter(row: BookPersonaListItem, filter: RoleListFilter): boolean {

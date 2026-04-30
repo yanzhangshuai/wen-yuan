@@ -124,7 +124,7 @@ function notFoundJson(requestId: string, startedAt: number, personaId: string) {
 /**
  * 功能：查询人物详情快照（主档 + 关系 + 时间轴）。
  * 输入：路由参数 `id`。
- * 输出：`PersonaDetailSnapshot` 结构，供图谱侧边栏与审核页复用。
+ * 输出：`PersonaDetailSnapshot` 结构，供图谱侧边栏与角色资料工作台复用。
  * 异常：参数错误 400；人物不存在 404；其余失败 500。
  * 副作用：无（只读查询）。
  */

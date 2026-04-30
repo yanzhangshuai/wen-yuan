@@ -2,12 +2,12 @@
 
 /**
  * =============================================================================
- * 文件定位（审核中心子组件：自检报告 Tab）
+ * 文件定位（角色资料工作台子组件：自检报告 Tab）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/components/review/validation-report-tab.tsx`
  *
  * 在 Next.js 项目中的定位：
- * - 该文件是审核页面中的 Client Component；
+ * - 该文件是角色资料工作台中的 Client Component；
  * - 用于承载“模型自检报告”的浏览、展开详情、应用自动修正等交互。
  *
  * 业务职责：
@@ -66,7 +66,7 @@ const SEVERITY_CONFIG: Record<ValidationSeverity, { icon: typeof AlertCircle; co
 
 /**
  * 问题类型文案映射：
- * - 将后端枚举转换为审核员可读中文；
+ * - 将后端枚举转换为录入/校对人员可读中文；
  * - 不改变后端协议，仅做展示层语义翻译。
  */
 const ISSUE_TYPE_LABELS: Record<string, string> = {
@@ -87,7 +87,7 @@ const ACTION_LABELS: Record<string, string> = {
   ADD_ALIAS    : "添加别名",
   DELETE       : "删除",
   ADD_MAPPING  : "添加映射",
-  MANUAL_REVIEW: "人工审核"
+  MANUAL_REVIEW: "人工校对"
 };
 
 /* ------------------------------------------------
@@ -176,7 +176,7 @@ export function ValidationReportTab({ bookId, reports, onRefresh }: ValidationRe
   /**
    * 空态分支：
    * - 当没有任何报告时直接展示空态，不渲染列表容器；
-   * - 减少视觉噪音并明确“当前无需审核”。
+   * - 减少视觉噪音并明确“当前无需校对”。
    */
   if (reports.length === 0) {
     return (
@@ -199,8 +199,8 @@ export function ValidationReportTab({ bookId, reports, onRefresh }: ValidationRe
         // 报告作用域转换为中文文案。
         const scopeLabel = report.scope === "CHAPTER" ? "章节级" : "全书级";
         // 报告状态文案转换：用于 Badge 与业务语义提示。
-        const statusLabel = report.status === "APPLIED" ? "已应用" : report.status === "REVIEWED" ? "已审核" : "待处理";
-        // 报告状态视觉样式：已应用 > 已审核 > 待处理。
+        const statusLabel = report.status === "APPLIED" ? "已应用" : report.status === "REVIEWED" ? "已确认" : "待处理";
+        // 报告状态视觉样式：已应用 > 已确认 > 待处理。
         const statusVariant = report.status === "APPLIED" ? "default" as const : report.status === "REVIEWED" ? "secondary" as const : "outline" as const;
 
         return (

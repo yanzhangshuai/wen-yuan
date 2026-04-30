@@ -28,7 +28,7 @@ import type {
  *
  * 核心职责：
  * - 组织 Prompt，调用 AI 校验结果，产出结构化 `ValidationIssue`；
- * - 将校验结果持久化为 `validationReport`，供后台审核页与自动修复流程复用；
+ * - 将校验结果持久化为 `validationReport`，供角色资料工作台与自动修复流程复用；
  * - 在业务允许范围内执行自动修复（合并人物、补别名、更新名称）。
  *
  * 业务边界：

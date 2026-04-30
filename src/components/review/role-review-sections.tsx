@@ -64,7 +64,7 @@ export function RoleRelationshipsSection({
           新增关系
         </Button>
       </div>
-      {relationships.length === 0 && <EmptyState text="当前角色暂无待审关系" />}
+      {relationships.length === 0 && <EmptyState text="当前角色暂无待确认关系" />}
       {relationships.map(relationship => {
         const isOutgoing = relationship.sourcePersonaId === persona.id;
         return (
@@ -127,7 +127,7 @@ export function RoleBiographiesSection({
           新增传记
         </Button>
       </div>
-      {biographies.length === 0 && <EmptyState text="当前角色暂无待审传记事件" />}
+      {biographies.length === 0 && <EmptyState text="当前角色暂无待确认传记事件" />}
       {biographies.map(biography => (
         <article key={biography.id} className="rounded-md border border-border bg-card p-3">
           <div className="flex flex-wrap items-start justify-between gap-3">

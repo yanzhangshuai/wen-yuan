@@ -8,7 +8,7 @@ import {
   MergeSuggestionNotFoundError,
   MergeSuggestionStateError,
   rejectMergeSuggestion
-} from "@/server/modules/review/mergeSuggestions";
+} from "@/server/modules/roleWorkbench/mergeSuggestions";
 import { ERROR_CODES } from "@/types/api";
 
 import { badRequestJson, mergeSuggestionRouteParamsSchema } from "../../_shared";

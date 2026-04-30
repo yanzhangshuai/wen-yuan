@@ -1,0 +1,11 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Front-end route/component changes must follow project frontend conventions."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Renaming route/component surfaces needs directory and module organization guidance."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Role workbench component renames and copy updates should preserve component patterns."}
+{"file": ".trellis/spec/frontend/nextjs-best-practices.md", "reason": "App Router page/API route migration must follow Next.js conventions."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Service and component imports should remain type-safe during renames."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Back-end module/API route rename must follow backend conventions."}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "API route handlers under the new role-workbench path must keep auth, validation, and error mapping patterns."}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "Renamed API routes must keep existing response contracts."}
+{"file": ".trellis/spec/backend/role-workbench-character-events.md", "reason": "Existing chapter-event and role-management contract is the behavior baseline being renamed."}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Affected route/service tests should follow project test patterns."}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Cross-cutting rename should stay minimal, readable, and avoid unrelated refactors."}

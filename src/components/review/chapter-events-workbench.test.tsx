@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ChapterEventsWorkbench } from "./chapter-events-workbench";
 import type { BookPersonaListItem, ChapterContent } from "@/lib/services/books";
-import type { ChapterEventChapterData, ChapterEventItem } from "@/lib/services/reviews";
+import type { ChapterEventChapterData, ChapterEventItem } from "@/lib/services/role-workbench";
 
 const {
   fetchBookPersonasMock,
@@ -31,7 +31,7 @@ vi.mock("@/lib/services/books", () => ({
   fetchChapterContent: fetchChapterContentMock
 }));
 
-vi.mock("@/lib/services/reviews", () => ({
+vi.mock("@/lib/services/role-workbench", () => ({
   fetchChapterEventChapters: fetchChapterEventChaptersMock,
   fetchChapterEvents       : fetchChapterEventsMock,
   createChapterEvent       : createChapterEventMock,

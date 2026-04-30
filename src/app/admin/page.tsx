@@ -3,7 +3,6 @@ import {
   type LucideIcon,
   BookOpen,
   Upload,
-  CheckCircle,
   Cog,
   Users,
   GitBranch,
@@ -30,7 +29,7 @@ import { listBooks } from "@/server/modules/books/listBooks";
  *
  * 核心业务职责：
  * 1) 聚合后台首页运营概览数据（书籍总数、人物总数、待处理数量）；
- * 2) 提供高频入口（导入、审核、模型设置）；
+ * 2) 提供高频入口（导入、角色资料补全、模型设置）；
  * 3) 展示最近书籍摘要，帮助管理员快速进入具体书籍管理页。
  *
  * 渲染与运行语义：
@@ -40,7 +39,7 @@ import { listBooks } from "@/server/modules/books/listBooks";
  *
  * 上下游关系：
  * - 上游：`admin/layout.tsx` 已完成权限门禁，本页可默认运行在管理员上下文；
- * - 下游：通过链接分发到 `/admin/books/import`、`/admin/review`、`/admin/model`、`/admin/books/[id]`。
+ * - 下游：通过链接分发到 `/admin/books/import`、`/admin/role-workbench`、`/admin/model`、`/admin/books/[id]`。
  *
  * 维护注意：
  * - 首页统计口径属于运营看板规则，不建议随意改动计算逻辑；
@@ -85,7 +84,7 @@ interface StatItem {
  * 后台首页快捷入口。
  *
  * 这是业务流程主干入口清单，不建议轻易改顺序或删除：
- * - 导入 -> 审核 -> 模型配置，代表后台日常运营的核心闭环。
+ * - 导入 -> 角色资料补全 -> 模型配置，代表后台日常运营的核心闭环。
  */
 const QUICK_ACTIONS = [
   {
@@ -95,10 +94,10 @@ const QUICK_ACTIONS = [
     href       : "/admin/books/import"
   },
   {
-    title      : "审核数据",
-    description: "审核 AI 解析的人物与关系",
-    icon       : CheckCircle,
-    href       : "/admin/review"
+    title      : "角色资料",
+    description: "AI 预填后人工补全并确认入库",
+    icon       : Users,
+    href       : "/admin/role-workbench"
   },
   {
     title      : "模型设置",
@@ -140,7 +139,7 @@ export default async function AdminHomePage() {
     <PageContainer>
       <PageHeader
         title="管理后台"
-        description="文淵数据管理与审核中心"
+        description="文淵数据管理与角色资料"
       />
 
       {/*
@@ -255,10 +254,10 @@ export default async function AdminHomePage() {
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
-              <Link href="/admin/review" className="flex items-center justify-between rounded-md p-2 hover:bg-accent transition-colors">
+              <Link href="/admin/role-workbench" className="flex items-center justify-between rounded-md p-2 hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">审核中心</span>
+                  <span className="text-sm font-medium">角色资料</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>

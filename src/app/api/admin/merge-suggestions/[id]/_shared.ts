@@ -3,7 +3,7 @@ import {
   type MergeSuggestionNotFoundError,
   type MergeSuggestionStateError,
   type PersonaMergeConflictError
-} from "@/server/modules/review/mergeSuggestions";
+} from "@/server/modules/roleWorkbench/mergeSuggestions";
 import { ERROR_CODES } from "@/types/api";
 
 /**
