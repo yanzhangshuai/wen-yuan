@@ -152,6 +152,11 @@ export type SurnameRule = Prisma.SurnameRuleModel
  */
 export type GenericTitleRule = Prisma.GenericTitleRuleModel
 /**
+ * Model RelationshipTypeDefinition
+ * 
+ */
+export type RelationshipTypeDefinition = Prisma.RelationshipTypeDefinitionModel
+/**
  * Model NerLexiconRule
  * NER 算法配置：后缀惩罚规则与称号/职位词干
  * 与 prompt_extraction_rules 的区别：本表配置评分算法，不注入 AI Prompt

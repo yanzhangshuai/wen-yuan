@@ -54,10 +54,11 @@ export interface GeneratedSurnameCandidate {
 }
 
 export interface SurnameGenerationReviewResult extends SurnameGenerationPreview {
-  candidates: GeneratedSurnameCandidate[];
-  skipped   : number;
-  rawContent: string;
-  model     : KnowledgeGenerationModelInfo;
+  candidates     : GeneratedSurnameCandidate[];
+  skipped        : number;
+  skippedExisting: number;
+  rawContent     : string;
+  model          : KnowledgeGenerationModelInfo;
 }
 
 interface NormalizedGeneratedSurname {
@@ -119,13 +120,14 @@ function buildSurnamePrompts(input: {
 function buildSurnameReviewCandidates(input: {
   parsed         : z.infer<typeof generatedSurnamesSchema>;
   existingEntries: Array<{ surname: string }>;
-}): { candidates: GeneratedSurnameCandidate[]; skipped: number } {
+}): { candidates: GeneratedSurnameCandidate[]; skipped: number; skippedExisting: number } {
   const existingMap = new Map(
     input.existingEntries.map((entry) => [normalizeLookupValue(entry.surname), entry.surname])
   );
 
   const mergedBySurname = new Map<string, NormalizedGeneratedSurname>();
   let skipped = 0;
+  let skippedExisting = 0;
 
   for (const entry of input.parsed) {
     const surname = entry.surname.trim();
@@ -139,6 +141,12 @@ function buildSurnameReviewCandidates(input: {
     const description = entry.description?.trim() ? entry.description.trim() : null;
     const confidence = Math.max(0, Math.min(1, entry.confidence));
     const key = normalizeLookupValue(surname);
+    if (existingMap.has(key)) {
+      skipped += 1;
+      skippedExisting += 1;
+      continue;
+    }
+
     const existing = mergedBySurname.get(key);
 
     if (existing) {
@@ -161,9 +169,8 @@ function buildSurnameReviewCandidates(input: {
 
   const candidates = Array.from(mergedBySurname.values())
     .map((entry) => {
-      const overlapSurname = existingMap.get(normalizeLookupValue(entry.surname)) ?? null;
       const confidenceTooLow = entry.confidence < 0.5;
-      const defaultSelected = !overlapSurname && !confidenceTooLow;
+      const defaultSelected = !confidenceTooLow;
 
       return {
         surname          : entry.surname,
@@ -171,12 +178,10 @@ function buildSurnameReviewCandidates(input: {
         priority         : entry.priority,
         description      : entry.description,
         confidence       : entry.confidence,
-        overlapSurname,
+        overlapSurname   : null,
         defaultSelected,
         recommendedAction: defaultSelected ? "SELECT" : "REJECT",
-        rejectionReason  : overlapSurname
-          ? "姓氏已存在于当前词库中，默认不重复保存"
-          : confidenceTooLow
+        rejectionReason  : confidenceTooLow
             ? "置信度低于 0.5，默认不保存"
             : undefined
       } satisfies GeneratedSurnameCandidate;
@@ -194,7 +199,7 @@ function buildSurnameReviewCandidates(input: {
       return left.surname.localeCompare(right.surname, "zh-Hans-CN");
     });
 
-  return { candidates, skipped };
+  return { candidates, skipped, skippedExisting };
 }
 
 /**
@@ -275,9 +280,10 @@ export async function reviewGeneratedSurnames(input: {
 
   return {
     ...preview,
-    candidates: reviewed.candidates,
-    skipped   : reviewed.skipped,
-    rawContent: generated.rawContent,
-    model     : generated.model
+    candidates     : reviewed.candidates,
+    skipped        : reviewed.skipped,
+    skippedExisting: reviewed.skippedExisting,
+    rawContent     : generated.rawContent,
+    model          : generated.model
   };
 }

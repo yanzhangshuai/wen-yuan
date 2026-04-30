@@ -200,6 +200,85 @@ resolverStatus = confidence >= 0.85 && hasPersonaId && hasEvidence ? "ACTIVE" : 
 
 ---
 
+## 8. 知识库 AI 生成预审的去重契约
+
+### 1. Scope / Trigger
+
+- Trigger: 知识库“使用模型生成”返回候选给前端审核时，AI 可能重复生成当前词库已有条目。
+- 适用范围：返回 `*GenerationReviewResult` 的候选预审链路，例如别名包、姓氏、通用称谓、关系类型。
+- 不适用范围：直接 `createMany` 的批量生成链路；这类链路仍需在入库前过滤并返回 `skipped` 计数。
+
+### 2. Signatures
+
+预审结果必须显式区分无效输出和“已有项过滤”：
+
+```typescript
+export interface KnowledgeGenerationReviewResult {
+  candidates: GeneratedCandidate[];
+  skipped: number;
+  skippedExisting: number;
+  rawContent: string;
+  model: KnowledgeGenerationModelInfo;
+}
+```
+
+### 3. Contracts
+
+- Prompt 可以包含已有条目，让模型减少重复生成。
+- 后端 review builder 必须再次读取当前有效知识库条目，不能相信 prompt 约束。
+- 与当前有效条目“精确重复”的模型候选必须从 `candidates` 中移除，并计入 `skippedExisting`。
+- `skipped` 表示所有未进入候选列表的条目总数，必须包含 `skippedExisting`。
+- 前端审核弹窗/结果区必须展示 `skippedExisting`，避免用户误以为模型没有返回内容。
+- 保存层仍必须保留唯一性/冲突校验，不能因为预审已过滤就移除最终保护。
+
+### 4. Validation & Error Matrix
+
+| 条件 | 处理 |
+|---|---|
+| AI 返回空名称、空数组或 schema 不合法 | 计入 `skipped`，不进入候选 |
+| AI 返回当前知识库已有标准名 | 计入 `skipped` 与 `skippedExisting`，不进入候选 |
+| AI 返回当前知识库已有别名且该知识库定义别名为唯一冲突面 | 计入 `skipped` 与 `skippedExisting`，不进入候选 |
+| AI 返回低置信度但不是已有项 | 保留候选，`defaultSelected=false`，给出 `rejectionReason` |
+| 别名包候选仅 alias 与已有条目重叠，标准名不重复 | 保留候选，展示 `overlapEntries/overlapTerms` 供人工判断 |
+
+### 5. Good/Base/Bad Cases
+
+- Good: 关系类型候选 `岳婿` 已存在，返回结果中没有 `岳婿`，`skippedExisting=1`。
+- Base: 姓氏候选 `赵` 不存在但置信度低，保留为未选中候选。
+- Bad: 已存在的 `欧阳` 作为 `REJECT` 候选出现在审核列表，迫使用户反复看到无效项。
+
+### 6. Tests Required
+
+- 单测断言已有标准名/唯一别名不会出现在 `candidates`。
+- 单测断言混合结果中“已有项被过滤，新项仍保留”。
+- 单测断言 `skipped` 与 `skippedExisting` 同步递增。
+- 前端类型检查覆盖 review result 新字段，防止弹窗遗漏统计展示。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+return {
+  ...candidate,
+  defaultSelected: false,
+  recommendedAction: "REJECT",
+  rejectionReason: "已存在，默认不保存"
+};
+```
+
+#### Correct
+
+```typescript
+if (existingMap.has(candidateKey)) {
+  skipped += 1;
+  skippedExisting += 1;
+  continue;
+}
+```
+
+---
+
 ## 禁用模式
 
 - `chapterAnalysisResponseSchema.parse()`（校验失败时直接抛错，中断整章分析）。
@@ -208,3 +287,4 @@ resolverStatus = confidence >= 0.85 && hasPersonaId && hasEvidence ? "ACTIVE" : 
 - 幻觉错误上抛导致事务回滚。
 - 改 schema 但不同步更新 prompt。
 - 把 `PENDING` 视为“解析一律不可用”，导致跨章节重复创建 persona。
+- 知识库生成预审把当前已有项作为 `REJECT` 候选返回给前端。

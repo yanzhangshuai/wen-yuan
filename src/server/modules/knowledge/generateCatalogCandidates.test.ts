@@ -147,7 +147,8 @@ describe("knowledge catalog generation", () => {
       protocol : "openai-compatible",
       modelName: "deepseek-chat"
     });
-    expect(result.skipped).toBe(2);
+    expect(result.skipped).toBe(3);
+    expect(result.skippedExisting).toBe(1);
     expect(result.candidates).toEqual([
       expect.objectContaining({
         surname          : "赵",
@@ -166,13 +167,6 @@ describe("knowledge catalog generation", () => {
         recommendedAction: "SELECT"
       }),
       expect.objectContaining({
-        surname          : "欧阳",
-        overlapSurname   : "欧阳",
-        defaultSelected  : false,
-        recommendedAction: "REJECT",
-        rejectionReason  : "姓氏已存在于当前词库中，默认不重复保存"
-      }),
-      expect.objectContaining({
         surname          : "阿甲",
         confidence       : 0.4,
         defaultSelected  : false,
@@ -180,6 +174,7 @@ describe("knowledge catalog generation", () => {
         rejectionReason  : "置信度低于 0.5，默认不保存"
       })
     ]);
+    expect(result.candidates.map((candidate) => candidate.surname)).not.toContain("欧阳");
     expect(hoisted.createAiProviderClient).toHaveBeenCalledWith({
       provider : "DEEPSEEK",
       protocol : "openai-compatible",
@@ -632,7 +627,8 @@ describe("knowledge catalog generation", () => {
       protocol : "openai-compatible",
       modelName: "qwen-max"
     });
-    expect(result.skipped).toBe(1);
+    expect(result.skipped).toBe(2);
+    expect(result.skippedExisting).toBe(1);
     expect(result.candidates).toEqual([
       expect.objectContaining({
         title              : "先生",
@@ -643,13 +639,6 @@ describe("knowledge catalog generation", () => {
         recommendedAction  : "SELECT"
       }),
       expect.objectContaining({
-        title            : "老爷",
-        overlapTitle     : "老爷",
-        defaultSelected  : false,
-        recommendedAction: "REJECT",
-        rejectionReason  : "称谓已存在于当前词库中，默认不重复保存"
-      }),
-      expect.objectContaining({
         title            : "掌门",
         confidence       : 0.4,
         defaultSelected  : false,
@@ -657,5 +646,6 @@ describe("knowledge catalog generation", () => {
         rejectionReason  : "置信度低于 0.5，默认不保存"
       })
     ]);
+    expect(result.candidates.map((candidate) => candidate.title)).not.toContain("老爷");
   });
 });

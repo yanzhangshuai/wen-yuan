@@ -36,6 +36,11 @@ const knowledgeBaseLinks = [
     iconKey: "title-filter"
   },
   {
+    href   : "/admin/knowledge-base/relationship-types",
+    label  : "关系类型",
+    iconKey: "relationship-type"
+  },
+  {
     href   : "/admin/knowledge-base/prompt-templates",
     label  : "提示词模板",
     iconKey: "prompt-template"

@@ -196,6 +196,64 @@ export const generateCatalogCandidatesSchema = z.object({
   referenceBookTypeId   : z.string().uuid().optional()
 });
 
+// ─── 关系类型知识库 ────────────────────────────────────
+export const relationshipTypeDirectionModeSchema = z.enum(["SYMMETRIC", "INVERSE", "DIRECTED"]);
+export const relationshipTypeStatusSchema = z.enum(["ACTIVE", "INACTIVE", "PENDING_REVIEW"]);
+export const relationshipTypeGroupSchema = z.enum(["血缘", "姻亲", "师承", "社会身份", "权力关系", "利益关系", "情感关系", "对立关系", "其他"]);
+
+export const createRelationshipTypeSchema = z.object({
+  name            : z.string().trim().min(1, "关系名称不能为空"),
+  group           : relationshipTypeGroupSchema,
+  directionMode   : relationshipTypeDirectionModeSchema,
+  sourceRoleLabel : z.string().trim().nullable().optional(),
+  targetRoleLabel : z.string().trim().nullable().optional(),
+  edgeLabel       : z.string().trim().nullable().optional(),
+  reverseEdgeLabel: z.string().trim().nullable().optional(),
+  aliases         : z.array(z.string().trim()).default([]),
+  description     : z.string().trim().nullable().optional(),
+  usageNotes      : z.string().trim().nullable().optional(),
+  examples        : z.array(z.string().trim()).default([]),
+  color           : z.string().trim().nullable().optional(),
+  sortOrder       : z.number().int().optional(),
+  status          : relationshipTypeStatusSchema.default("ACTIVE")
+});
+
+export const updateRelationshipTypeSchema = createRelationshipTypeSchema.partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
+
+export const relationshipTypeBatchActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("delete"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action: z.literal("enable"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action: z.literal("disable"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action: z.literal("markPendingReview"),
+    ids   : knowledgeBatchIdsSchema
+  }),
+  z.object({
+    action: z.literal("changeGroup"),
+    ids   : knowledgeBatchIdsSchema,
+    group : relationshipTypeGroupSchema
+  })
+]);
+
+export const generateRelationshipTypeCandidatesSchema = z.object({
+  targetCount           : z.number().int().min(1).max(100).default(30),
+  targetGroup           : relationshipTypeGroupSchema.optional(),
+  additionalInstructions: z.string().trim().max(2000).optional(),
+  modelId               : z.string().uuid().optional()
+});
+
+export const initializeCommonRelationshipTypesSchema = z.object({}).strict();
+
 // ─── NER 词典规则 ───────────────────────────────────────
 export const createNerLexiconRuleSchema = z.object({
   ruleType  : z.enum(["HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM"]),

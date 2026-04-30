@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "关系类型知识库页面交互属于前端管理台实现，需遵守前端规范索引"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "替换原生确认框为项目组件时需遵守组件组合与 UI 契约"}
+{"file": ".trellis/spec/frontend/design-system.md", "reason": "管理台弹框、按钮、文案和视觉应匹配项目设计系统"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "小改动需保持最小必要修改和代码质量约束"}

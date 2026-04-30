@@ -634,7 +634,7 @@ function GenericTitleGenerationDialog({
             if (job.status === "done" && job.result) {
               stopPolling();
               setGenerating(false);
-              toast({ title: "预审完成", description: `共生成 ${job.result.candidates.length} 条候选，跳过 ${job.result.skipped} 条。` });
+              toast({ title: "预审完成", description: `共生成 ${job.result.candidates.length} 条候选，跳过 ${job.result.skipped} 条，已过滤已有 ${job.result.skippedExisting} 条。` });
               onReviewed(job.result);
             } else if (job.status === "error") {
               stopPolling();
@@ -870,7 +870,7 @@ function GenericTitleGenerationReviewDialog({
         {review ? (
           <div className="grid gap-4">
             <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-              模型：{review.model.provider} / {review.model.modelName} · 候选 {review.candidates.length} 条 · 默认选中 {selected.size} 条 · 跳过 {review.skipped} 条
+              模型：{review.model.provider} / {review.model.modelName} · 候选 {review.candidates.length} 条 · 默认选中 {selected.size} 条 · 跳过 {review.skipped} 条 · 已过滤已有 {review.skippedExisting} 条
             </div>
 
             <div className="flex flex-wrap gap-2">

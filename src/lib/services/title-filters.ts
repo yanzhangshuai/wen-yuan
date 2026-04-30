@@ -36,9 +36,10 @@ export interface GeneratedGenericTitleCandidate {
 }
 
 export interface GenericTitleGenerationReviewResult extends GenericTitleGenerationPreview {
-  candidates: GeneratedGenericTitleCandidate[];
-  skipped   : number;
-  rawContent: string;
+  candidates     : GeneratedGenericTitleCandidate[];
+  skipped        : number;
+  skippedExisting: number;
+  rawContent     : string;
   model: {
     id       : string;
     provider : string;

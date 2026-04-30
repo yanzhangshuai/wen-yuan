@@ -6,6 +6,7 @@ import {
   FileClock,
   Filter,
   History,
+  Network,
   Regex,
   ScrollText,
   Sparkles,
@@ -28,6 +29,7 @@ export type KnowledgeBaseNavIconKey =
   | "prompt-extraction-rule"
   | "change-log"
   | "historical-figure"
+  | "relationship-type"
   | "name-pattern";
 
 export interface KnowledgeBaseNavLink {
@@ -50,6 +52,7 @@ const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
   "ner-rule"              : BookMarked,
   "prompt-extraction-rule": ScrollText,
   "historical-figure"     : History,
+  "relationship-type"     : Network,
   "name-pattern"          : Regex,
   "change-log"            : FileClock
 };

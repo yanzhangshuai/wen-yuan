@@ -138,63 +138,63 @@ model User {
 
 /// @db.remark: AI 模型配置表。存储各模型的 Key、BaseURL 及启用状态，由设置页管理。
 model AiModel {
-  id        String     @id @default(uuid()) @db.Uuid // 模型配置主键
+  id        String  @id @default(uuid()) @db.Uuid // 模型配置主键
   provider  String // 供应商显示/分组名，可由管理员自定义
-  protocol  String     @default("openai-compatible") // 调用协议: openai-compatible | gemini
+  protocol  String  @default("openai-compatible") // 调用协议: openai-compatible | gemini
   name      String // 显示名称，如 "DeepSeek V3"
-  modelId   String     @map("model_id") // 供应商 API 调用标识，如 "deepseek-chat"
-  aliasKey  String?    @map("alias_key") // 语义别名键（用于阶段推荐与版本平滑升级）
-  baseUrl   String     @map("base_url") // 可自定义，支持私有部署
-  apiKey    String?    @map("api_key") // 前端只展示脱敏版
-  isEnabled Boolean    @default(false) @map("is_enabled") // Key 配置后才可启用
-  isDefault Boolean    @default(false) @map("is_default") // 导入向导默认选中
+  modelId   String  @map("model_id") // 供应商 API 调用标识，如 "deepseek-chat"
+  aliasKey  String? @map("alias_key") // 语义别名键（用于阶段推荐与版本平滑升级）
+  baseUrl   String  @map("base_url") // 可自定义，支持私有部署
+  apiKey    String? @map("api_key") // 前端只展示脱敏版
+  isEnabled Boolean @default(false) @map("is_enabled") // Key 配置后才可启用
+  isDefault Boolean @default(false) @map("is_default") // 导入向导默认选中
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
   phaseLogs AnalysisPhaseLog[] // 阶段调用日志
 
-  @@index([provider, isEnabled], map: "ai_models_provider_enabled_idx")
   @@unique([provider, modelId, baseUrl], map: "ai_models_unique_endpoint")
   @@unique([aliasKey], map: "ai_models_alias_key_uniq")
+  @@index([provider, isEnabled], map: "ai_models_provider_enabled_idx")
   @@map("ai_models")
 }
 
 /// @db.remark: 书籍/作品库。系统的顶层容器，支持跨作品的人物对比。
 model Book {
-  id             String  @id @default(uuid()) @db.Uuid // 书籍主键
+  id             String    @id @default(uuid()) @db.Uuid // 书籍主键
   title          String // 书名，如《儒林外史》
   author         String? // 作者，如"吴敬梓"
   dynasty        String? // 背景朝代
-  description    String? @db.Text // 作品简介
-  coverUrl       String? @map("cover_url") // 3D 看板所需的封面图
-  sourceFileKey  String? @map("source_file_key") // 原始导入文件的对象存储 key
-  sourceFileUrl  String? @map("source_file_url") // 原始导入文件的可访问链接
-  sourceFileName String? @map("source_file_name") // 用户上传时的原始文件名
-  sourceFileMime String? @map("source_file_mime") // 原始文件 MIME 类型
-  sourceFileSize Int?    @map("source_file_size") // 原始文件字节数
+  description    String?   @db.Text // 作品简介
+  coverUrl       String?   @map("cover_url") // 3D 看板所需的封面图
+  sourceFileKey  String?   @map("source_file_key") // 原始导入文件的对象存储 key
+  sourceFileUrl  String?   @map("source_file_url") // 原始导入文件的可访问链接
+  sourceFileName String?   @map("source_file_name") // 用户上传时的原始文件名
+  sourceFileMime String?   @map("source_file_mime") // 原始文件 MIME 类型
+  sourceFileSize Int?      @map("source_file_size") // 原始文件字节数
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6) // 软删除时间
   // PENDING (初始), PROCESSING (解析中), COMPLETED (完成), ERROR (失败)
-  status        String  @default("PENDING") // 当前处理状态
-  errorLog      String? @map("error_log") @db.Text // 最近失败日志
-  parseProgress Int     @default(0) @map("parse_progress") // 解析进度 0-100
-  parseStage    String? @map("parse_stage") // 当前阶段文本，如"实体提取"
+  status         String    @default("PENDING") // 当前处理状态
+  errorLog       String?   @map("error_log") @db.Text // 最近失败日志
+  parseProgress  Int       @default(0) @map("parse_progress") // 解析进度 0-100
+  parseStage     String?   @map("parse_stage") // 当前阶段文本，如"实体提取"
 
   // 知识库关联：bookTypeId 为书籍类型结构化标识
-  bookTypeId     String? @map("book_type_id") @db.Uuid
-  bookType       BookType? @relation(fields: [bookTypeId], references: [id])
+  bookTypeId     String?         @map("book_type_id") @db.Uuid
+  bookType       BookType?       @relation(fields: [bookTypeId], references: [id])
   bookAliasPacks BookAliasPack[]
 
-  chapters          Chapter[] // 章节列表
-  profiles          Profile[] // 本书角色档案
+  chapters                      Chapter[] // 章节列表
+  profiles                      Profile[] // 本书角色档案
   chapterBiographyVerifications ChapterBiographyVerification[] // 章节角色事迹校验状态
-  analysisJobs      AnalysisJob[] // 解析任务记录
-  aliasMappings     AliasMapping[] // 别名映射记录
-  modelStrategies   ModelStrategyConfig[] @relation("BookStrategies")
-  validationReports ValidationReport[] // 自检报告
-  mergeSuggestions MergeSuggestion[] // 人物合并建议队列
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
-  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+  analysisJobs                  AnalysisJob[] // 解析任务记录
+  aliasMappings                 AliasMapping[] // 别名映射记录
+  modelStrategies               ModelStrategyConfig[]          @relation("BookStrategies")
+  validationReports             ValidationReport[] // 自检报告
+  mergeSuggestions              MergeSuggestion[] // 人物合并建议队列
+  createdAt                     DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt                     DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
   @@index([deletedAt], map: "books_deleted_at_idx")
   @@map("books")
@@ -217,13 +217,13 @@ model Chapter {
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  book        Book              @relation(fields: [bookId], references: [id]) // 所属书籍
-  mentions    Mention[] // 本章提及记录
-  biographies BiographyRecord[] // 本章履历事件
-  relations   Relationship[] // 本章关系边
-  phaseLogs   AnalysisPhaseLog[] // 阶段调用日志
-  biographyVerifications ChapterBiographyVerification[] // 本章角色事迹校验状态
-  firstAppearanceProfiles Profile[] @relation("ProfileFirstAppearanceChapter") // 以本章作为首次出场章节的角色档案
+  book                    Book                           @relation(fields: [bookId], references: [id]) // 所属书籍
+  mentions                Mention[] // 本章提及记录
+  biographies             BiographyRecord[] // 本章履历事件
+  relations               Relationship[] // 本章关系边
+  phaseLogs               AnalysisPhaseLog[] // 阶段调用日志
+  biographyVerifications  ChapterBiographyVerification[] // 本章角色事迹校验状态
+  firstAppearanceProfiles Profile[]                      @relation("ProfileFirstAppearanceChapter") // 以本章作为首次出场章节的角色档案
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
@@ -269,10 +269,10 @@ model Persona {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  profiles    Profile[] // 各书籍维度档案
-  mentions    Mention[] // 角色提及集合
-  biographies BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
-  aliasMappings AliasMapping[] // 别名映射记录
+  profiles               Profile[] // 各书籍维度档案
+  mentions               Mention[] // 角色提及集合
+  biographies            BiographyRecord[] // 角色的生平/职位变迁轨迹轨迹
+  aliasMappings          AliasMapping[] // 别名映射记录
   sourceMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionSourcePersona")
   targetMergeSuggestions MergeSuggestion[] @relation("MergeSuggestionTargetPersona")
 
@@ -291,13 +291,13 @@ model Profile {
   personaId String @map("persona_id") @db.Uuid // 关联角色 ID
   bookId    String @map("book_id") @db.Uuid // 关联书籍 ID
 
-  localName     String   @map("local_name") // 书中称呼：如"范老爷"
-  localSummary  String?  @map("local_summary") @db.Text // AI 汇总的本书人物小传
-  officialTitle String?  @map("official_title") // 书中官职（最终职位）
-  localTags     String[] @default([]) @map("local_tags") // 性格/社会角色标签，如 ["伪君子","官僚"]
-  ironyIndex    Float    @default(0) @map("irony_index") // 讽刺指数 (0-10)
-  moralTier     String?  @map("moral_tier") // 人格档次，如"伪君子"
-  firstAppearanceChapterId String? @map("first_appearance_chapter_id") @db.Uuid // 手动维护的首次出场章节
+  localName                String   @map("local_name") // 书中称呼：如"范老爷"
+  localSummary             String?  @map("local_summary") @db.Text // AI 汇总的本书人物小传
+  officialTitle            String?  @map("official_title") // 书中官职（最终职位）
+  localTags                String[] @default([]) @map("local_tags") // 性格/社会角色标签，如 ["伪君子","官僚"]
+  ironyIndex               Float    @default(0) @map("irony_index") // 讽刺指数 (0-10)
+  moralTier                String?  @map("moral_tier") // 人格档次，如"伪君子"
+  firstAppearanceChapterId String?  @map("first_appearance_chapter_id") @db.Uuid // 手动维护的首次出场章节
 
   // 3D 视觉配置缓存：存储节点颜色、发光度、初始坐标建议等
   visualConfig Json?     @map("visual_config") // 前端可视化配置缓存
@@ -305,8 +305,8 @@ model Profile {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
-  book    Book    @relation(fields: [bookId], references: [id]) // 关联书籍
+  persona                Persona  @relation(fields: [personaId], references: [id]) // 关联角色
+  book                   Book     @relation(fields: [bookId], references: [id]) // 关联书籍
   firstAppearanceChapter Chapter? @relation("ProfileFirstAppearanceChapter", fields: [firstAppearanceChapterId], references: [id]) // 首次出场章节
 
   @@unique([personaId, bookId], map: "profile_persona_id_book_id_key") // 一角色在同一本书仅一条档案
@@ -375,50 +375,53 @@ model Relationship {
   sourceId  String @map("source_id") @db.Uuid // 发起者 ID
   targetId  String @map("target_id") @db.Uuid // 接收者 ID
 
-  type         String // 关系类型，如"同年"、"师生"
-  weight       Float            @default(1.0) // 亲密度
-  description  String?          @db.Text // 关系背景描述
-  evidence     String?          @db.Text // 原文证据片段
-  recordSource RecordSource     @default(AI) @map("record_source") // 数据来源
-  confidence   Float            @default(1.0) // AI 置信度 0.0-1.0
-  status       ProcessingStatus @default(DRAFT) // 审核状态
-  deletedAt    DateTime?        @map("deleted_at") @db.Timestamptz(6) // 软删除时间
-  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
-  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+  type                 String // 关系类型，如"同年"、"师生"
+  relationshipTypeCode String?          @map("relationship_type_code") // 标准关系类型知识库 code；保留 type 兼容历史数据
+  weight               Float            @default(1.0) // 亲密度
+  description          String?          @db.Text // 关系背景描述
+  evidence             String?          @db.Text // 原文证据片段
+  recordSource         RecordSource     @default(AI) @map("record_source") // 数据来源
+  confidence           Float            @default(1.0) // AI 置信度 0.0-1.0
+  status               ProcessingStatus @default(DRAFT) // 审核状态
+  deletedAt            DateTime?        @map("deleted_at") @db.Timestamptz(6) // 软删除时间
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  chapter Chapter @relation(fields: [chapterId], references: [id]) // 关系确认章节
-  source  Persona @relation("SourcePersona", fields: [sourceId], references: [id]) // 关系发起方
-  target  Persona @relation("TargetPersona", fields: [targetId], references: [id]) // 关系接收方
+  chapter          Chapter                     @relation(fields: [chapterId], references: [id]) // 关系确认章节
+  source           Persona                     @relation("SourcePersona", fields: [sourceId], references: [id]) // 关系发起方
+  target           Persona                     @relation("TargetPersona", fields: [targetId], references: [id]) // 关系接收方
+  relationshipType RelationshipTypeDefinition? @relation(fields: [relationshipTypeCode], references: [code]) // 标准关系类型定义
 
   @@unique([chapterId, sourceId, targetId, type, recordSource], map: "relationships_dedup_key") // 防止重复关系边
   @@index([sourceId, targetId], map: "relationships_source_id_target_id_idx") // 双点关系查询索引
+  @@index([relationshipTypeCode], map: "relationships_relationship_type_code_idx") // 按标准关系类型查询
   @@index([status, recordSource, chapterId], map: "relationships_review_query_idx") // 审核列表查询索引
   @@map("relationships")
 }
 
 /// @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。
 model AnalysisJob {
-  id           String            @id @default(uuid()) @db.Uuid // 任务主键
-  bookId       String            @map("book_id") @db.Uuid // 目标书籍 ID
-  status         AnalysisJobStatus @default(QUEUED) // 任务状态
-  architecture   String            @default("sequential") // sequential | twopass
-  scope          String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE | CHAPTER_LIST
-  chapterStart   Int?              @map("chapter_start") // 章节起点（范围任务）
-  chapterEnd     Int?              @map("chapter_end") // 章节终点（范围任务）
-  chapterIndices Int[]             @default([]) @map("chapter_indices") // 指定章节编号列表（CHAPTER_LIST 任务）
-  attempt      Int               @default(1) // 当前重试次数
-  errorLog     String?           @map("error_log") @db.Text // 失败摘要
-  experimentTag String?          @map("experiment_tag")
-  overrideStrategy String?       @map("override_strategy") // DRAFT_ONLY | ALL_DRAFTS
-  keepHistory      Boolean       @default(false) @map("keep_history") // 是否保留历史草稿版本
-  startedAt    DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
-  finishedAt   DateTime?         @map("finished_at") @db.Timestamptz(6) // 完成时间
-  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
-  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
+  id               String            @id @default(uuid()) @db.Uuid // 任务主键
+  bookId           String            @map("book_id") @db.Uuid // 目标书籍 ID
+  status           AnalysisJobStatus @default(QUEUED) // 任务状态
+  architecture     String            @default("sequential") // sequential | twopass
+  scope            String            @default("FULL_BOOK") // FULL_BOOK | CHAPTER_RANGE | CHAPTER_LIST
+  chapterStart     Int?              @map("chapter_start") // 章节起点（范围任务）
+  chapterEnd       Int?              @map("chapter_end") // 章节终点（范围任务）
+  chapterIndices   Int[]             @default([]) @map("chapter_indices") // 指定章节编号列表（CHAPTER_LIST 任务）
+  attempt          Int               @default(1) // 当前重试次数
+  errorLog         String?           @map("error_log") @db.Text // 失败摘要
+  experimentTag    String?           @map("experiment_tag")
+  overrideStrategy String?           @map("override_strategy") // DRAFT_ONLY | ALL_DRAFTS
+  keepHistory      Boolean           @default(false) @map("keep_history") // 是否保留历史草稿版本
+  startedAt        DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
+  finishedAt       DateTime?         @map("finished_at") @db.Timestamptz(6) // 完成时间
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  book            Book                 @relation(fields: [bookId], references: [id]) // 关联书籍
-  modelStrategies ModelStrategyConfig[] @relation("JobStrategies")
-  phaseLogs       AnalysisPhaseLog[]
+  book              Book                  @relation(fields: [bookId], references: [id]) // 关联书籍
+  modelStrategies   ModelStrategyConfig[] @relation("JobStrategies")
+  phaseLogs         AnalysisPhaseLog[]
   validationReports ValidationReport[] // 该任务生成的自检报告
 
   @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
@@ -510,7 +513,7 @@ model ValidationReport {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
   job  AnalysisJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
   @@index([bookId], map: "validation_book_idx")
@@ -551,8 +554,8 @@ model BookType {
   key         String  @unique
   name        String
   description String? @db.Text
-  isActive    Boolean @default(true)  @map("is_active")
-  sortOrder   Int     @default(0)     @map("sort_order")
+  isActive    Boolean @default(true) @map("is_active")
+  sortOrder   Int     @default(0) @map("sort_order")
 
   // presetConfig 废弃 — 配置已迁入 ner_lexicon_rules / prompt_extraction_rules
   books                 Book[]
@@ -563,7 +566,7 @@ model BookType {
   promptVersions        PromptTemplateVersion[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([key])
   @@index([isActive, sortOrder])
@@ -575,17 +578,17 @@ model AliasPack {
   name        String
   description String? @db.Text
   /// GLOBAL: 所有书籍通用 | BOOK_TYPE: 特定书籍类型自动继承 | BOOK: 需手动挂载
-  scope      String  @default("GLOBAL")
-  bookTypeId String? @map("book_type_id") @db.Uuid
-  version    Int     @default(1)
-  isActive   Boolean @default(true) @map("is_active")
+  scope       String  @default("GLOBAL")
+  bookTypeId  String? @map("book_type_id") @db.Uuid
+  version     Int     @default(1)
+  isActive    Boolean @default(true) @map("is_active")
 
-  bookType  BookType?      @relation(fields: [bookTypeId], references: [id])
+  bookType  BookType?       @relation(fields: [bookTypeId], references: [id])
   entries   AliasEntry[]
   bookPacks BookAliasPack[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([scope, isActive])
   @@index([bookTypeId, isActive])
@@ -602,14 +605,14 @@ model AliasEntry {
 
   source       String    @default("MANUAL")
   reviewStatus String    @default("PENDING") @map("review_status")
-  reviewNote   String?   @map("review_note")  @db.Text
-  reviewedAt   DateTime? @map("reviewed_at")  @db.Timestamptz(6)
+  reviewNote   String?   @map("review_note") @db.Text
+  reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
   notes        String?   @db.Text
 
   pack AliasPack @relation(fields: [packId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([packId, reviewStatus])
   @@map("alias_entries")
@@ -641,13 +644,13 @@ model SurnameRule {
   priority    Int     @default(0)
   bookTypeId  String? @map("book_type_id") @db.Uuid
   description String? @db.Text
-  isActive    Boolean @default(true)  @map("is_active")
+  isActive    Boolean @default(true) @map("is_active")
   source      String  @default("MANUAL")
 
   bookType BookType? @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([isCompound, priority])
   @@index([isActive])
@@ -672,33 +675,65 @@ model GenericTitleRule {
   exemptInBooks       String[] @default([]) @map("exempt_in_books")
 
   description String? @db.Text
-  isActive    Boolean @default(true)  @map("is_active")
+  isActive    Boolean @default(true) @map("is_active")
   source      String  @default("MANUAL")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([tier, isActive])
   @@map("generic_title_rules")
 }
 
+// ============================================================
+// 角色关系类型知识库
+// ============================================================
+model RelationshipTypeDefinition {
+  id               String   @id @default(uuid()) @db.Uuid
+  code             String   @unique @db.VarChar(120)
+  name             String   @db.VarChar(80)
+  group            String   @db.VarChar(40)
+  directionMode    String   @default("INVERSE") @map("direction_mode") @db.VarChar(20)
+  sourceRoleLabel  String?  @map("source_role_label") @db.VarChar(80)
+  targetRoleLabel  String?  @map("target_role_label") @db.VarChar(80)
+  edgeLabel        String   @map("edge_label") @db.VarChar(80)
+  reverseEdgeLabel String?  @map("reverse_edge_label") @db.VarChar(80)
+  aliases          String[] @default([])
+  description      String?  @db.Text
+  usageNotes       String?  @map("usage_notes") @db.Text
+  examples         String[] @default([])
+  color            String?  @db.VarChar(40)
+  sortOrder        Int      @default(0) @map("sort_order")
+  status           String   @default("ACTIVE") @db.VarChar(20)
+  source           String   @default("MANUAL") @db.VarChar(30)
+
+  relationships Relationship[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([group, status, sortOrder], map: "relationship_type_definitions_group_status_sort_idx")
+  @@index([directionMode, status], map: "relationship_type_definitions_direction_status_idx")
+  @@map("relationship_type_definitions")
+}
+
 /// NER 算法配置：后缀惩罚规则与称号/职位词干
 /// 与 prompt_extraction_rules 的区别：本表配置评分算法，不注入 AI Prompt
 model NerLexiconRule {
-  id        String  @id @default(uuid()) @db.Uuid
+  id         String  @id @default(uuid()) @db.Uuid
   /// HARD_BLOCK_SUFFIX | SOFT_BLOCK_SUFFIX | TITLE_STEM | POSITION_STEM
   ruleType   String  @map("rule_type")
   content    String  @db.Text
   bookTypeId String? @map("book_type_id") @db.Uuid
-  sortOrder  Int     @default(0)  @map("sort_order")
+  sortOrder  Int     @default(0) @map("sort_order")
   isActive   Boolean @default(true) @map("is_active")
   source     String  @default("MANUAL")
-  changeNote String? @db.Text @map("change_note")
+  changeNote String? @map("change_note") @db.Text
 
   bookType BookType? @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([ruleType, isActive, sortOrder])
   @@index([bookTypeId])
@@ -720,10 +755,10 @@ model HistoricalFigureEntry {
   reviewStatus String    @default("PENDING") @map("review_status")
   reviewNote   String?   @map("review_note") @db.Text
   reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
-  isActive     Boolean   @default(true)      @map("is_active")
+  isActive     Boolean   @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([name])
   @@index([category, reviewStatus])
@@ -737,7 +772,7 @@ model HistoricalFigureEntry {
 // ============================================================
 model NamePatternRule {
   id          String  @id @default(uuid()) @db.Uuid
-  ruleType    String  @db.VarChar(30) @map("rule_type")
+  ruleType    String  @map("rule_type") @db.VarChar(30)
   pattern     String  @db.VarChar(200)
   action      String  @db.VarChar(20)
   description String? @db.Text
@@ -745,10 +780,10 @@ model NamePatternRule {
   source       String  @default("MANUAL")
   reviewStatus String  @default("PENDING") @map("review_status")
   reviewNote   String? @map("review_note") @db.Text
-  isActive     Boolean @default(true)      @map("is_active")
+  isActive     Boolean @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([ruleType, reviewStatus])
   @@map("name_pattern_rules")
@@ -769,7 +804,7 @@ model PromptTemplate {
   versions PromptTemplateVersion[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("prompt_templates")
 }
@@ -778,21 +813,21 @@ model PromptTemplate {
 // 提示词版本：每次修改保存为一个新版本
 // ============================================================
 model PromptTemplateVersion {
-  id           String  @id @default(uuid()) @db.Uuid
-  templateId   String  @map("template_id") @db.Uuid
-  versionNo    Int     @map("version_no")
-  systemPrompt String  @db.Text @map("system_prompt")
-  userPrompt   String  @db.Text @map("user_prompt")
+  id           String @id @default(uuid()) @db.Uuid
+  templateId   String @map("template_id") @db.Uuid
+  versionNo    Int    @map("version_no")
+  systemPrompt String @map("system_prompt") @db.Text
+  userPrompt   String @map("user_prompt") @db.Text
 
   bookTypeId String? @map("book_type_id") @db.Uuid
   /// 当前是否为该 template（+ bookType 组合）的生效版本，替代 activeVersionId
   isActive   Boolean @default(false) @map("is_active")
   isBaseline Boolean @default(false) @map("is_baseline")
-  changeNote String? @db.Text @map("change_note")
+  changeNote String? @map("change_note") @db.Text
   createdBy  String? @map("created_by")
 
   template PromptTemplate @relation(fields: [templateId], references: [id])
-  bookType BookType?       @relation(fields: [bookTypeId], references: [id])
+  bookType BookType?      @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -810,15 +845,15 @@ model PromptExtractionRule {
   ruleType   String  @map("rule_type")
   content    String  @db.Text
   bookTypeId String? @map("book_type_id") @db.Uuid
-  sortOrder  Int     @default(0)  @map("sort_order")
+  sortOrder  Int     @default(0) @map("sort_order")
   isActive   Boolean @default(true) @map("is_active")
   source     String  @default("MANUAL")
-  changeNote String? @db.Text @map("change_note")
+  changeNote String? @map("change_note") @db.Text
 
   bookType BookType? @relation(fields: [bookTypeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([ruleType, isActive, sortOrder])
   @@index([bookTypeId])
@@ -846,7 +881,7 @@ model KnowledgeAuditLog {
 
   /// 操作人
   operatorId   String? @map("operator_id")
-  operatorNote String? @db.Text @map("operator_note")
+  operatorNote String? @map("operator_note") @db.Text
 
   /// 关联书籍
   relatedBookId String? @map("related_book_id") @db.Uuid

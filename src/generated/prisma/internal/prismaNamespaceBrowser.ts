@@ -73,6 +73,7 @@ export const ModelName = {
   BookAliasPack: 'BookAliasPack',
   SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
+  RelationshipTypeDefinition: 'RelationshipTypeDefinition',
   NerLexiconRule: 'NerLexiconRule',
   HistoricalFigureEntry: 'HistoricalFigureEntry',
   NamePatternRule: 'NamePatternRule',
@@ -273,6 +274,7 @@ export const RelationshipScalarFieldEnum = {
   sourceId: 'sourceId',
   targetId: 'targetId',
   type: 'type',
+  relationshipTypeCode: 'relationshipTypeCode',
   weight: 'weight',
   description: 'description',
   evidence: 'evidence',
@@ -484,6 +486,31 @@ export const GenericTitleRuleScalarFieldEnum = {
 } as const
 
 export type GenericTitleRuleScalarFieldEnum = (typeof GenericTitleRuleScalarFieldEnum)[keyof typeof GenericTitleRuleScalarFieldEnum]
+
+
+export const RelationshipTypeDefinitionScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  group: 'group',
+  directionMode: 'directionMode',
+  sourceRoleLabel: 'sourceRoleLabel',
+  targetRoleLabel: 'targetRoleLabel',
+  edgeLabel: 'edgeLabel',
+  reverseEdgeLabel: 'reverseEdgeLabel',
+  aliases: 'aliases',
+  description: 'description',
+  usageNotes: 'usageNotes',
+  examples: 'examples',
+  color: 'color',
+  sortOrder: 'sortOrder',
+  status: 'status',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipTypeDefinitionScalarFieldEnum = (typeof RelationshipTypeDefinitionScalarFieldEnum)[keyof typeof RelationshipTypeDefinitionScalarFieldEnum]
 
 
 export const NerLexiconRuleScalarFieldEnum = {

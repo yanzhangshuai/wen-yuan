@@ -64,9 +64,10 @@ export interface AliasPackGeneratedCandidate {
 }
 
 export interface AliasPackGenerationReviewResult extends AliasPackGenerationPreview {
-  candidates: AliasPackGeneratedCandidate[];
-  skipped   : number;
-  rawContent: string;
+  candidates     : AliasPackGeneratedCandidate[];
+  skipped        : number;
+  skippedExisting: number;
+  rawContent     : string;
   model: {
     id       : string;
     provider : string;

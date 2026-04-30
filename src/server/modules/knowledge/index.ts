@@ -37,6 +37,11 @@ export {
 } from "./generateGenericTitles";
 
 export {
+  previewRelationshipTypeGenerationPrompt,
+  reviewGeneratedRelationshipTypes
+} from "./generateRelationshipTypes";
+
+export {
   previewNerLexiconGenerationPrompt,
   generateNerLexiconRules
 } from "./generateNerLexiconRules";
@@ -98,6 +103,22 @@ export {
   batchChangeBookTypeGenericTitles,
   testGenericTitle
 } from "./generic-titles";
+
+export {
+  RELATIONSHIP_DIRECTION_MODES,
+  RELATIONSHIP_TYPE_GROUPS,
+  RELATIONSHIP_TYPE_STATUSES,
+  COMMON_RELATIONSHIP_TYPES,
+  listRelationshipTypes,
+  createRelationshipType,
+  updateRelationshipType,
+  deleteRelationshipType,
+  batchDeleteRelationshipTypes,
+  batchUpdateRelationshipTypeStatus,
+  batchChangeRelationshipTypeGroup,
+  initializeCommonRelationshipTypes,
+  inferRelationshipTypeLabels
+} from "./relationship-types";
 
 export {
   listPromptTemplates,

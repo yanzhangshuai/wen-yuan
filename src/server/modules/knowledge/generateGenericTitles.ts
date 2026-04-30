@@ -53,10 +53,11 @@ export interface GeneratedGenericTitleCandidate {
 }
 
 export interface GenericTitleGenerationReviewResult extends GenericTitleGenerationPreview {
-  candidates: GeneratedGenericTitleCandidate[];
-  skipped   : number;
-  rawContent: string;
-  model     : KnowledgeGenerationModelInfo;
+  candidates     : GeneratedGenericTitleCandidate[];
+  skipped        : number;
+  skippedExisting: number;
+  rawContent     : string;
+  model          : KnowledgeGenerationModelInfo;
 }
 
 interface NormalizedGeneratedGenericTitle {
@@ -124,13 +125,14 @@ function buildGenericTitlePrompts(input: {
 function buildGenericTitleReviewCandidates(input: {
   parsed         : z.infer<typeof generatedGenericTitlesSchema>;
   existingEntries: Array<{ title: string }>;
-}): { candidates: GeneratedGenericTitleCandidate[]; skipped: number } {
+}): { candidates: GeneratedGenericTitleCandidate[]; skipped: number; skippedExisting: number } {
   const existingMap = new Map(
     input.existingEntries.map((entry) => [normalizeLookupValue(entry.title), entry.title])
   );
 
   const mergedByTitle = new Map<string, NormalizedGeneratedGenericTitle>();
   let skipped = 0;
+  let skippedExisting = 0;
 
   for (const entry of input.parsed) {
     const title = entry.title.trim();
@@ -140,6 +142,12 @@ function buildGenericTitleReviewCandidates(input: {
     }
 
     const key = normalizeLookupValue(title);
+    if (existingMap.has(key)) {
+      skipped += 1;
+      skippedExisting += 1;
+      continue;
+    }
+
     const exemptInBookTypeIds = Array.from(new Set(
       entry.exemptInBookTypeIds
         .map((item) => item.trim())
@@ -170,9 +178,8 @@ function buildGenericTitleReviewCandidates(input: {
 
   const candidates = Array.from(mergedByTitle.values())
     .map((entry) => {
-      const overlapTitle = existingMap.get(normalizeLookupValue(entry.title)) ?? null;
       const confidenceTooLow = entry.confidence < 0.5;
-      const defaultSelected = !overlapTitle && !confidenceTooLow;
+      const defaultSelected = !confidenceTooLow;
 
       return {
         title              : entry.title,
@@ -180,12 +187,10 @@ function buildGenericTitleReviewCandidates(input: {
         exemptInBookTypeIds: entry.tier === "SAFETY" ? [] : entry.exemptInBookTypeIds,
         description        : entry.description,
         confidence         : entry.confidence,
-        overlapTitle,
+        overlapTitle       : null,
         defaultSelected,
         recommendedAction  : defaultSelected ? "SELECT" : "REJECT",
-        rejectionReason    : overlapTitle
-          ? "称谓已存在于当前词库中，默认不重复保存"
-          : confidenceTooLow
+        rejectionReason    : confidenceTooLow
             ? "置信度低于 0.5，默认不保存"
             : undefined
       } satisfies GeneratedGenericTitleCandidate;
@@ -200,7 +205,7 @@ function buildGenericTitleReviewCandidates(input: {
       return left.title.localeCompare(right.title, "zh-Hans-CN");
     });
 
-  return { candidates, skipped };
+  return { candidates, skipped, skippedExisting };
 }
 
 /**
@@ -280,9 +285,10 @@ export async function reviewGeneratedGenericTitles(input: {
 
   return {
     ...preview,
-    candidates: reviewed.candidates,
-    skipped   : reviewed.skipped,
-    rawContent: generated.rawContent,
-    model     : generated.model
+    candidates     : reviewed.candidates,
+    skipped        : reviewed.skipped,
+    skippedExisting: reviewed.skippedExisting,
+    rawContent     : generated.rawContent,
+    model          : generated.model
   };
 }

@@ -263,6 +263,72 @@ const isImmersiveRoute = /^\/books\/[^/]+\/graph\/?$/.test(currentPath);
 
 ---
 
+## 确认弹框
+
+场景：删除、覆盖配置、批量初始化等需要用户确认的操作。
+
+强制规则：
+- 禁止使用 `window.confirm` / `window.alert` 承载业务确认交互。
+- 确认类弹框必须使用 `@/components/ui/alert-dialog`。
+- 如果确认按钮会触发异步业务动作，`AlertDialogAction` 的 `onClick` 必须调用 `event.preventDefault()`，避免 Radix 在请求完成前自动关闭弹框。
+- 异步成功后由业务代码显式关闭弹框；异步失败时保留弹框，便于用户重试或取消。
+- pending 期间必须禁用取消与确认按钮，并在确认按钮上展示进行中文案。
+
+反例（禁止）：
+```tsx
+async function handleDelete(item: Item) {
+  if (!window.confirm(`确认删除 ${item.name}？`)) return;
+  await deleteItem(item.id);
+}
+```
+
+正例（必须）：
+```tsx
+function handleConfirmDelete(event: MouseEvent<HTMLButtonElement>) {
+  event.preventDefault();
+  if (deleteTarget && !deleting) {
+    void handleDelete(deleteTarget);
+  }
+}
+
+async function handleDelete(item: Item) {
+  setDeleting(true);
+  try {
+    await deleteItem(item.id);
+    setDeleteTarget(null);
+  } finally {
+    setDeleting(false);
+  }
+}
+
+<AlertDialog open={deleteTarget !== null} onOpenChange={(open) => {
+  if (!open && !deleting) setDeleteTarget(null);
+}}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>确认删除“{deleteTarget?.name}”？</AlertDialogTitle>
+      <AlertDialogDescription>删除后无法直接恢复。</AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+      <AlertDialogAction disabled={deleting} onClick={handleConfirmDelete}>
+        {deleting ? "删除中…" : "确认删除"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+原因：
+- 原生浏览器弹框无法适配项目主题、文案层级和组件行为。
+- 异步确认动作如果默认立即关闭，失败时用户会失去上下文，只能重新定位操作入口。
+- 受控弹框能把 pending、成功关闭、失败保留三个状态表达清楚。
+
+真实示例：
+- 关系类型知识库初始化与删除确认：`src/app/admin/knowledge-base/relationship-types/page.tsx`
+
+---
+
 ## 常见错误（避免）
 
 - 路由文件没有真实 hooks/事件需求却添加 `"use client"`。

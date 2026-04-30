@@ -66,9 +66,10 @@ export interface AliasPackGenerationResult extends AliasPackGenerationPreview {
 }
 
 export interface AliasPackGenerationReviewResult extends AliasPackGenerationPreview {
-  candidates: AliasPackGeneratedCandidate[];
-  skipped   : number;
-  rawContent: string;
+  candidates     : AliasPackGeneratedCandidate[];
+  skipped        : number;
+  skippedExisting: number;
+  rawContent     : string;
   model: {
     id       : string;
     provider : string;
@@ -186,7 +187,7 @@ function normalizeForLookup(value: string): string {
 function buildReviewCandidates(input: {
   parsed         : z.infer<typeof generatedEntriesSchema>;
   existingEntries: Array<{ canonicalName: string; aliases: string[] }>;
-}): { candidates: AliasPackGeneratedCandidate[]; skipped: number } {
+}): { candidates: AliasPackGeneratedCandidate[]; skipped: number; skippedExisting: number } {
   const canonicalNameMap = new Map<string, string>();
   const aliasToEntryNames = new Map<string, Set<string>>();
 
@@ -208,6 +209,7 @@ function buildReviewCandidates(input: {
 
   const mergedByCanonical = new Map<string, NormalizedGeneratedEntry>();
   let skipped = 0;
+  let skippedExisting = 0;
 
   for (const entry of input.parsed) {
     const canonicalName = entry.canonicalName.trim();
@@ -223,6 +225,12 @@ function buildReviewCandidates(input: {
     }
 
     const key = normalizeForLookup(canonicalName);
+    if (canonicalNameMap.has(key)) {
+      skipped += 1;
+      skippedExisting += 1;
+      continue;
+    }
+
     const existing = mergedByCanonical.get(key);
     if (existing) {
       existing.aliases = Array.from(new Set([...existing.aliases, ...aliases]));
@@ -242,12 +250,6 @@ function buildReviewCandidates(input: {
     const overlapEntries = new Set<string>();
     const overlapTerms = new Set<string>();
     const canonicalKey = normalizeForLookup(entry.canonicalName);
-
-    const canonicalMatch = canonicalNameMap.get(canonicalKey);
-    if (canonicalMatch) {
-      overlapEntries.add(canonicalMatch);
-      overlapTerms.add(entry.canonicalName);
-    }
 
     const canonicalAliasMatches = aliasToEntryNames.get(canonicalKey);
     if (canonicalAliasMatches) {
@@ -270,15 +272,12 @@ function buildReviewCandidates(input: {
       overlapTerms.add(alias);
     }
 
-    const hasExactCanonicalOverlap = canonicalNameMap.has(canonicalKey);
     const confidenceTooLow = entry.confidence < 0.5;
-    const defaultSelected = !confidenceTooLow && !hasExactCanonicalOverlap;
+    const defaultSelected = !confidenceTooLow;
 
     let rejectionReason: string | undefined;
     if (confidenceTooLow) {
       rejectionReason = "置信度低于 0.5，默认不保存";
-    } else if (hasExactCanonicalOverlap) {
-      rejectionReason = "标准名与现有条目重复，默认不保存";
     }
 
     return {
@@ -298,7 +297,7 @@ function buildReviewCandidates(input: {
     return right.confidence - left.confidence;
   });
 
-  return { candidates, skipped };
+  return { candidates, skipped, skippedExisting };
 }
 
 async function runGenerationModel(input: {
@@ -345,10 +344,11 @@ async function runGenerationModel(input: {
 
   return {
     ...preview,
-    candidates: reviewed.candidates,
-    skipped   : reviewed.skipped,
-    rawContent: aiResult.content,
-    model     : {
+    candidates     : reviewed.candidates,
+    skipped        : reviewed.skipped,
+    skippedExisting: reviewed.skippedExisting,
+    rawContent     : aiResult.content,
+    model          : {
       id       : model.id,
       provider : model.provider,
       protocol : model.protocol,

@@ -406,6 +406,7 @@ export const ModelName = {
   BookAliasPack: 'BookAliasPack',
   SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
+  RelationshipTypeDefinition: 'RelationshipTypeDefinition',
   NerLexiconRule: 'NerLexiconRule',
   HistoricalFigureEntry: 'HistoricalFigureEntry',
   NamePatternRule: 'NamePatternRule',
@@ -428,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "relationshipTypeDefinition" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2060,6 +2061,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RelationshipTypeDefinition: {
+      payload: Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>
+      fields: Prisma.RelationshipTypeDefinitionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RelationshipTypeDefinitionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RelationshipTypeDefinitionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>
+        }
+        findFirst: {
+          args: Prisma.RelationshipTypeDefinitionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RelationshipTypeDefinitionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>
+        }
+        findMany: {
+          args: Prisma.RelationshipTypeDefinitionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>[]
+        }
+        create: {
+          args: Prisma.RelationshipTypeDefinitionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>
+        }
+        createMany: {
+          args: Prisma.RelationshipTypeDefinitionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RelationshipTypeDefinitionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>[]
+        }
+        delete: {
+          args: Prisma.RelationshipTypeDefinitionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>
+        }
+        update: {
+          args: Prisma.RelationshipTypeDefinitionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>
+        }
+        deleteMany: {
+          args: Prisma.RelationshipTypeDefinitionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RelationshipTypeDefinitionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RelationshipTypeDefinitionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>[]
+        }
+        upsert: {
+          args: Prisma.RelationshipTypeDefinitionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypeDefinitionPayload>
+        }
+        aggregate: {
+          args: Prisma.RelationshipTypeDefinitionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRelationshipTypeDefinition>
+        }
+        groupBy: {
+          args: Prisma.RelationshipTypeDefinitionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationshipTypeDefinitionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RelationshipTypeDefinitionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationshipTypeDefinitionCountAggregateOutputType> | number
+        }
+      }
+    }
     NerLexiconRule: {
       payload: Prisma.$NerLexiconRulePayload<ExtArgs>
       fields: Prisma.NerLexiconRuleFieldRefs
@@ -2792,6 +2867,7 @@ export const RelationshipScalarFieldEnum = {
   sourceId: 'sourceId',
   targetId: 'targetId',
   type: 'type',
+  relationshipTypeCode: 'relationshipTypeCode',
   weight: 'weight',
   description: 'description',
   evidence: 'evidence',
@@ -3003,6 +3079,31 @@ export const GenericTitleRuleScalarFieldEnum = {
 } as const
 
 export type GenericTitleRuleScalarFieldEnum = (typeof GenericTitleRuleScalarFieldEnum)[keyof typeof GenericTitleRuleScalarFieldEnum]
+
+
+export const RelationshipTypeDefinitionScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  group: 'group',
+  directionMode: 'directionMode',
+  sourceRoleLabel: 'sourceRoleLabel',
+  targetRoleLabel: 'targetRoleLabel',
+  edgeLabel: 'edgeLabel',
+  reverseEdgeLabel: 'reverseEdgeLabel',
+  aliases: 'aliases',
+  description: 'description',
+  usageNotes: 'usageNotes',
+  examples: 'examples',
+  color: 'color',
+  sortOrder: 'sortOrder',
+  status: 'status',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipTypeDefinitionScalarFieldEnum = (typeof RelationshipTypeDefinitionScalarFieldEnum)[keyof typeof RelationshipTypeDefinitionScalarFieldEnum]
 
 
 export const NerLexiconRuleScalarFieldEnum = {
@@ -3537,6 +3638,7 @@ export type GlobalOmitConfig = {
   bookAliasPack?: Prisma.BookAliasPackOmit
   surnameRule?: Prisma.SurnameRuleOmit
   genericTitleRule?: Prisma.GenericTitleRuleOmit
+  relationshipTypeDefinition?: Prisma.RelationshipTypeDefinitionOmit
   nerLexiconRule?: Prisma.NerLexiconRuleOmit
   historicalFigureEntry?: Prisma.HistoricalFigureEntryOmit
   namePatternRule?: Prisma.NamePatternRuleOmit

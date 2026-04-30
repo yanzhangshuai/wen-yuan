@@ -181,7 +181,8 @@ describe("generateEntries", () => {
       protocol : "openai-compatible",
       modelName: "deepseek-chat"
     });
-    expect(result.skipped).toBe(2);
+    expect(result.skipped).toBe(3);
+    expect(result.skippedExisting).toBe(1);
     expect(result.candidates[0]).toMatchObject({
       canonicalName    : "赵云",
       aliases          : ["子龙", "常山赵子龙"],
@@ -190,21 +191,13 @@ describe("generateEntries", () => {
       recommendedAction: "SELECT"
     });
     expect(result.candidates[1]).toMatchObject({
-      canonicalName    : "关羽",
-      confidence       : 0.97,
-      defaultSelected  : false,
-      recommendedAction: "REJECT",
-      rejectionReason  : "标准名与现有条目重复，默认不保存"
-    });
-    expect(result.candidates[1].overlapEntries).toContain("关羽");
-    expect(result.candidates[1].overlapTerms).toEqual(expect.arrayContaining(["关羽", "关公", "云长"]));
-    expect(result.candidates[2]).toMatchObject({
       canonicalName    : "低置信",
       confidence       : 0.3,
       defaultSelected  : false,
       recommendedAction: "REJECT",
       rejectionReason  : "置信度低于 0.5，默认不保存"
     });
+    expect(result.candidates.map((candidate) => candidate.canonicalName)).not.toContain("关羽");
     expect(hoisted.createAiProviderClient).toHaveBeenCalledWith({
       provider : "DEEPSEEK",
       protocol : "openai-compatible",

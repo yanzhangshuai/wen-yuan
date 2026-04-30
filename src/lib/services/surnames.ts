@@ -42,9 +42,10 @@ export interface GeneratedSurnameCandidate {
 }
 
 export interface SurnameGenerationReviewResult extends SurnameGenerationPreview {
-  candidates: GeneratedSurnameCandidate[];
-  skipped   : number;
-  rawContent: string;
+  candidates     : GeneratedSurnameCandidate[];
+  skipped        : number;
+  skippedExisting: number;
+  rawContent     : string;
   model: {
     id       : string;
     provider : string;
