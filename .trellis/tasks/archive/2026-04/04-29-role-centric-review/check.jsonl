@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Quality gate for frontend changes and tests."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Review component boundaries and avoid bloating review-panel."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify typed service/component contracts."}
+{"file": ".trellis/spec/backend/review-center-character-events.md", "reason": "Check role/delete/verification behavior against existing review center contract."}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "General quality gate for maintainability and minimal necessary changes."}

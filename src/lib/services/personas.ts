@@ -73,25 +73,26 @@ export interface PersonaSummary {
  */
 export interface PatchPersonaBody {
   /** 新人物名。 */
-  name?         : string;
+  name?                    : string;
   /** 新别名数组。 */
-  aliases?      : string[];
-  gender?       : string | null;
+  aliases?                 : string[];
+  gender?                  : string | null;
   /** 新籍贯；传 `null` 表示显式清空。 */
-  hometown?     : string | null;
-  nameType?     : string;
-  globalTags?   : string[];
+  hometown?                : string | null;
+  nameType?                : string;
+  globalTags?              : string[];
   /** 置信度原始值，范围通常为 0~1（不是百分比）。 */
-  confidence?   : number;
+  confidence?              : number;
   /** 审核确认状态；当前用于把 AI 人物确认为有效人物。 */
-  status?       : "VERIFIED";
+  status?                  : "VERIFIED";
   /** 当前书籍 ID；提供后可同步更新书内档案字段。 */
-  bookId?       : string;
-  localName?    : string;
-  localSummary? : string | null;
-  officialTitle?: string | null;
-  localTags?    : string[];
-  ironyIndex?   : number;
+  bookId?                  : string;
+  localName?               : string;
+  localSummary?            : string | null;
+  officialTitle?           : string | null;
+  localTags?               : string[];
+  ironyIndex?              : number;
+  firstAppearanceChapterId?: string | null;
 }
 
 export interface PersonaDeletePreview {

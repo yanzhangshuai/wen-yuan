@@ -28,7 +28,7 @@
  * - 该接口语义是“差量更新”，不要传入无关字段，避免覆盖后端默认处理逻辑。
  * =============================================================================
  */
-import { clientMutate } from "@/lib/client-api";
+import { clientFetch, clientMutate } from "@/lib/client-api";
 
 /* ------------------------------------------------
    Types
@@ -56,6 +56,19 @@ export interface PatchRelationshipBody {
   evidence?  : string | null;
   /** 置信度（0~1）。可选：用于人工修订模型输出质量。 */
   confidence?: number;
+  /** 审核状态。可选：用于确认/拒绝当前关系草稿。 */
+  status?    : "DRAFT" | "VERIFIED" | "REJECTED";
+}
+
+export interface CreateRelationshipBody {
+  chapterId   : string;
+  sourceId    : string;
+  targetId    : string;
+  type        : string;
+  weight?     : number;
+  description?: string | null;
+  evidence?   : string | null;
+  confidence? : number;
 }
 
 /* ------------------------------------------------
@@ -87,6 +100,14 @@ export interface PatchRelationshipBody {
 export async function patchRelationship(id: string, body: PatchRelationshipBody): Promise<void> {
   await clientMutate(`/api/relationships/${id}`, {
     method : "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
+export async function createRelationship(bookId: string, body: CreateRelationshipBody): Promise<void> {
+  await clientFetch(`/api/books/${encodeURIComponent(bookId)}/relationships`, {
+    method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(body)
   });

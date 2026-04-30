@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Front-end spec index and pre-development checklist for review workbench UI changes."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component boundaries, props, and composition rules for new role-centered workbench components."}
+{"file": ".trellis/spec/frontend/react-guidelines.md", "reason": "React component and state management conventions for interactive review UI."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Type safety requirements for service DTOs and component props."}
+{"file": ".trellis/spec/frontend/design-system.md", "reason": "Visual design rules for admin workbench layout, badges, sheets, and dense UI."}
+{"file": ".trellis/spec/backend/review-center-character-events.md", "reason": "Existing review center contracts for role CRUD, chapter events, delete preview, and verification behavior."}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "Needed if minimal API/service wrapper work reveals missing route behavior or contract checks."}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Shared code quality, minimal change, and readability rules."}

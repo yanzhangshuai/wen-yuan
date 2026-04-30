@@ -18,14 +18,19 @@ describe("listBookPersonas service", () => {
     const findFirst = vi.fn().mockResolvedValue({ id: "book-1" });
     const findMany = vi.fn().mockResolvedValue([
       {
-        id           : "profile-1",
-        bookId       : "book-1",
-        localName    : "周进",
-        localSummary : "旧儒生",
-        officialTitle: "学道",
-        localTags    : ["清苦"],
-        ironyIndex   : 3.1,
-        persona      : {
+        id                      : "profile-1",
+        bookId                  : "book-1",
+        localName               : "周进",
+        localSummary            : "旧儒生",
+        officialTitle           : "学道",
+        localTags               : ["清苦"],
+        ironyIndex              : 3.1,
+        firstAppearanceChapterId: "chapter-1",
+        firstAppearanceChapter  : {
+          no   : 2,
+          title: "王孝廉村学识同科"
+        },
+        persona: {
           id          : "persona-1",
           name        : "周进",
           aliases     : ["周学道"],
@@ -53,10 +58,13 @@ describe("listBookPersonas service", () => {
     expect(findMany).toHaveBeenCalled();
     expect(result).toEqual([
       expect.objectContaining({
-        id          : "persona-1",
-        profileId   : "profile-1",
-        status      : ProcessingStatus.VERIFIED,
-        recordSource: RecordSource.MANUAL
+        id                         : "persona-1",
+        profileId                  : "profile-1",
+        firstAppearanceChapterId   : "chapter-1",
+        firstAppearanceChapterNo   : 2,
+        firstAppearanceChapterTitle: "王孝廉村学识同科",
+        status                     : ProcessingStatus.VERIFIED,
+        recordSource               : RecordSource.MANUAL
       })
     ]);
   });

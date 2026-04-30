@@ -25,7 +25,7 @@
  * - 类别枚举等规则以服务端为准，前端注释仅说明当前业务约定。
  * =============================================================================
  */
-import { clientMutate } from "@/lib/client-api";
+import { clientFetch, clientMutate } from "@/lib/client-api";
 
 /* ------------------------------------------------
    Types
@@ -49,13 +49,27 @@ import { clientMutate } from "@/lib/client-api";
  */
 export interface PatchBiographyBody {
   /** 事件类别编码。可选：不传表示不修改类别。 */
-  category?: string;
+  category   ?: string;
   /** 事件标题。可选；`null` 表示显式清空标题。 */
-  title?   : string | null;
+  title      ?: string | null;
   /** 事件地点。可选；`null` 表示显式清空地点。 */
-  location?: string | null;
+  location   ?: string | null;
   /** 事件描述正文。可选：不传表示不改正文。 */
-  event?   : string;
+  event      ?: string;
+  /** 审核状态。可选：用于确认/拒绝当前传记草稿。 */
+  status     ?: "DRAFT" | "VERIFIED" | "REJECTED";
+  /** 章节 ID。可选：用于移动或创建后编辑传记事件。 */
+  chapterId  ?: string;
+  virtualYear?: string | null;
+}
+
+export interface CreateBiographyBody {
+  chapterId   : string;
+  category   ?: string;
+  title      ?: string | null;
+  location   ?: string | null;
+  event       : string;
+  virtualYear?: string | null;
 }
 
 /* ------------------------------------------------
@@ -89,5 +103,19 @@ export async function patchBiography(id: string, body: PatchBiographyBody): Prom
     method : "PATCH",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(body)
+  });
+}
+
+export async function createBiography(personaId: string, body: CreateBiographyBody): Promise<void> {
+  await clientFetch(`/api/personas/${encodeURIComponent(personaId)}/biography`, {
+    method : "POST",
+    headers: { "Content-Type": "application/json" },
+    body   : JSON.stringify(body)
+  });
+}
+
+export async function deleteBiography(id: string): Promise<void> {
+  await clientMutate(`/api/biography/${encodeURIComponent(id)}`, {
+    method: "DELETE"
   });
 }

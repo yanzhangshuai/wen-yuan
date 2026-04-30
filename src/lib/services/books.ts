@@ -306,54 +306,61 @@ export interface AnalysisJobListItem {
  */
 export interface BookPersonaListItem {
   /** 人物 ID。 */
-  id           : string;
+  id                         : string;
   /** 当前书内档案 ID。 */
-  profileId    : string;
+  profileId                  : string;
   /** 所属书籍 ID。 */
-  bookId       : string;
+  bookId                     : string;
   /** 人物标准名。 */
-  name         : string;
+  name                       : string;
   /** 书内称谓。 */
-  localName    : string;
+  localName                  : string;
   /** 别名列表。 */
-  aliases      : string[];
+  aliases                    : string[];
   /** 性别。 */
-  gender       : string | null;
+  gender                     : string | null;
   /** 籍贯。 */
-  hometown     : string | null;
+  hometown                   : string | null;
   /** 姓名类型。 */
-  nameType     : string;
+  nameType                   : string;
   /** 全局标签。 */
-  globalTags   : string[];
+  globalTags                 : string[];
   /** 书内标签。 */
-  localTags    : string[];
+  localTags                  : string[];
   /** 书内官职头衔。 */
-  officialTitle: string | null;
+  officialTitle              : string | null;
   /** 书内摘要。 */
-  localSummary : string | null;
+  localSummary               : string | null;
+  /** 显式维护的首次出场章节 ID。 */
+  firstAppearanceChapterId   : string | null;
+  /** 显式维护的首次出场章节序号。 */
+  firstAppearanceChapterNo   : number | null;
+  /** 显式维护的首次出场章节标题。 */
+  firstAppearanceChapterTitle: string | null;
   /** 书内讽刺指数。 */
-  ironyIndex   : number;
+  ironyIndex                 : number;
   /** 置信度。 */
-  confidence   : number;
+  confidence                 : number;
   /** 数据来源。 */
-  recordSource : string;
+  recordSource               : string;
   /** 审核状态。 */
-  status       : string;
+  status                     : string;
 }
 
 export interface CreateBookPersonaBody {
-  name          : string;
-  aliases?      : string[];
-  gender?       : string | null;
-  hometown?     : string | null;
-  nameType?     : string;
-  globalTags?   : string[];
-  localName?    : string;
-  localSummary? : string | null;
-  officialTitle?: string | null;
-  localTags?    : string[];
-  ironyIndex?   : number;
-  confidence?   : number;
+  name                     : string;
+  aliases?                 : string[];
+  gender?                  : string | null;
+  hometown?                : string | null;
+  nameType?                : string;
+  globalTags?              : string[];
+  localName?               : string;
+  localSummary?            : string | null;
+  officialTitle?           : string | null;
+  localTags?               : string[];
+  ironyIndex?              : number;
+  firstAppearanceChapterId?: string | null;
+  confidence?              : number;
 }
 
 /**

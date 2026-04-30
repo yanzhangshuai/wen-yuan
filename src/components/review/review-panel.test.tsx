@@ -11,8 +11,8 @@ vi.mock("@/components/review/chapter-events-workbench", () => ({
   )
 }));
 
-vi.mock("@/components/review/role-management-tab", () => ({
-  RoleManagementTab: () => <div>统一角色列表</div>
+vi.mock("@/components/review/role-review-workbench", () => ({
+  RoleReviewWorkbench: () => <div>统一角色列表</div>
 }));
 
 vi.mock("@/components/graph", () => ({
@@ -98,6 +98,8 @@ describe("ReviewPanel role workspace", () => {
 
     expect(screen.queryByRole("button", { name: /人物草稿/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /角色管理/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /关系草稿/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /传记事件/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /角色审核\s*2/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "待审核" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "已入库" })).not.toBeInTheDocument();

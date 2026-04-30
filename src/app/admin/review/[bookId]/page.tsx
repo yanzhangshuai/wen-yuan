@@ -75,11 +75,11 @@ export default async function AdminBookReviewPage({
   ]);
 
   return (
-    <div className="admin-review-page flex min-h-[calc(100vh-96px)] items-start gap-4">
+    <div className="admin-review-page flex h-[calc(100vh-96px)] min-h-0 items-start gap-4 overflow-hidden">
       <BookReviewSidebar books={allBooks} currentBookId={bookId} />
 
       {/* 右侧审核主体：由客户端组件承载复杂交互（筛选、批量操作、编辑等）。 */}
-      <div className="min-w-0 flex-1">
+      <div className="h-full min-h-0 min-w-0 flex-1 overflow-hidden">
         <Suspense
           fallback={
             <div className="flex flex-col gap-3">

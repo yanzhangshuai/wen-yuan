@@ -27,13 +27,19 @@ describe("createBookPersona service", () => {
       confidence  : 1,
       recordSource: RecordSource.MANUAL
     });
+    const chapterFindFirst = vi.fn().mockResolvedValue({
+      id   : "chapter-1",
+      no   : 2,
+      title: "王孝廉村学识同科"
+    });
     const profileCreate = vi.fn().mockResolvedValue({
-      id           : "profile-1",
-      localName    : "周进",
-      localSummary : null,
-      officialTitle: null,
-      localTags    : ["清苦"],
-      ironyIndex   : 0
+      id                      : "profile-1",
+      localName               : "周进",
+      localSummary            : null,
+      officialTitle           : null,
+      firstAppearanceChapterId: "chapter-1",
+      localTags               : ["清苦"],
+      ironyIndex              : 0
     });
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       book: {
@@ -41,6 +47,9 @@ describe("createBookPersona service", () => {
       },
       persona: {
         create: personaCreate
+      },
+      chapter: {
+        findFirst: chapterFindFirst
       },
       profile: {
         create: profileCreate
@@ -51,9 +60,10 @@ describe("createBookPersona service", () => {
     } as never);
 
     const result = await service.createBookPersona("book-1", {
-      name     : " 周进 ",
-      aliases  : ["周学道", " 周学道 "],
-      localTags: ["清苦"]
+      name                    : " 周进 ",
+      aliases                 : ["周学道", " 周学道 "],
+      localTags               : ["清苦"],
+      firstAppearanceChapterId: "chapter-1"
     });
 
     expect(personaCreate).toHaveBeenCalledWith(expect.objectContaining({
@@ -65,15 +75,19 @@ describe("createBookPersona service", () => {
     }));
     expect(profileCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
-        bookId   : "book-1",
-        localName: "周进"
+        bookId                  : "book-1",
+        localName               : "周进",
+        firstAppearanceChapterId: "chapter-1"
       })
     }));
     expect(result).toEqual(expect.objectContaining({
-      id          : "persona-1",
-      profileId   : "profile-1",
-      recordSource: RecordSource.MANUAL,
-      status      : ProcessingStatus.VERIFIED
+      id                         : "persona-1",
+      profileId                  : "profile-1",
+      firstAppearanceChapterId   : "chapter-1",
+      firstAppearanceChapterNo   : 2,
+      firstAppearanceChapterTitle: "王孝廉村学识同科",
+      recordSource               : RecordSource.MANUAL,
+      status                     : ProcessingStatus.VERIFIED
     }));
   });
 

@@ -22,3 +22,12 @@ export class PersonaNotFoundError extends Error {
     this.personaId = personaId;
   }
 }
+
+export class PersonaInputError extends Error {
+  readonly detail: string;
+
+  constructor(detail: string) {
+    super(detail);
+    this.detail = detail;
+  }
+}

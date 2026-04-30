@@ -184,20 +184,29 @@ describe("updatePersona service", () => {
       updatedAt : new Date("2026-04-28T10:00:00.000Z")
     });
     const profileFindFirst = vi.fn().mockResolvedValue({ id: "profile-4" });
+    const chapterFindFirst = vi.fn().mockResolvedValue({ id: "chapter-2" });
     const profileUpdate = vi.fn().mockResolvedValue({
-      id           : "profile-4",
-      bookId       : "book-1",
-      localName    : "王冕",
-      localSummary : "画荷名士",
-      officialTitle: "参军",
-      localTags    : ["名士"],
-      ironyIndex   : 2,
-      updatedAt    : new Date("2026-04-28T10:00:00.000Z")
+      id                      : "profile-4",
+      bookId                  : "book-1",
+      localName               : "王冕",
+      localSummary            : "画荷名士",
+      officialTitle           : "参军",
+      firstAppearanceChapterId: "chapter-2",
+      firstAppearanceChapter  : {
+        no   : 1,
+        title: "说楔子敷陈大义"
+      },
+      localTags : ["名士"],
+      ironyIndex: 2,
+      updatedAt : new Date("2026-04-28T10:00:00.000Z")
     });
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
       persona: {
         findFirst: vi.fn().mockResolvedValue({ id: "persona-4" }),
         update   : personaUpdate
+      },
+      chapter: {
+        findFirst: chapterFindFirst
       },
       profile: {
         findFirst: profileFindFirst,
@@ -209,13 +218,14 @@ describe("updatePersona service", () => {
     } as never);
 
     const result = await service.updatePersona("persona-4", {
-      bookId       : "book-1",
-      name         : " 王冕 ",
-      localName    : " 王冕 ",
-      localSummary : " 画荷名士 ",
-      officialTitle: " 参军 ",
-      localTags    : ["名士", " 名士 "],
-      ironyIndex   : 2
+      bookId                  : "book-1",
+      name                    : " 王冕 ",
+      localName               : " 王冕 ",
+      localSummary            : " 画荷名士 ",
+      officialTitle           : " 参军 ",
+      localTags               : ["名士", " 名士 "],
+      ironyIndex              : 2,
+      firstAppearanceChapterId: "chapter-2"
     });
 
     expect(profileFindFirst).toHaveBeenCalledWith(expect.objectContaining({
@@ -228,17 +238,21 @@ describe("updatePersona service", () => {
     expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "profile-4" },
       data : {
-        localName    : "王冕",
-        localSummary : "画荷名士",
-        officialTitle: "参军",
-        localTags    : ["名士"],
-        ironyIndex   : 2
+        localName               : "王冕",
+        localSummary            : "画荷名士",
+        officialTitle           : "参军",
+        firstAppearanceChapterId: "chapter-2",
+        localTags               : ["名士"],
+        ironyIndex              : 2
       }
     }));
     expect(result.profile).toEqual(expect.objectContaining({
-      id           : "profile-4",
-      localSummary : "画荷名士",
-      officialTitle: "参军"
+      id                         : "profile-4",
+      localSummary               : "画荷名士",
+      officialTitle              : "参军",
+      firstAppearanceChapterId   : "chapter-2",
+      firstAppearanceChapterNo   : 1,
+      firstAppearanceChapterTitle: "说楔子敷陈大义"
     }));
   });
 });

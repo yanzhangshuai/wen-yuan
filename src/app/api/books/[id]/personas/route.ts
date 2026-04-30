@@ -17,6 +17,7 @@ import {
   listBookPersonas,
   type BookPersonaListItem
 } from "@/server/modules/personas/listBookPersonas";
+import { PersonaInputError } from "@/server/modules/personas/errors";
 import { ERROR_CODES } from "@/types/api";
 
 /**
@@ -60,18 +61,19 @@ import { ERROR_CODES } from "@/types/api";
  * - `confidence`：0~1 的可信度评分，供人工复核排序。
  */
 const createBookPersonaBodySchema = z.object({
-  name         : z.string().trim().min(1, "人物姓名不能为空"),
-  aliases      : z.array(z.string().trim().min(1, "人物别名不能为空")).optional(),
-  gender       : z.string().trim().min(1, "人物性别不能为空").nullable().optional(),
-  hometown     : z.string().trim().min(1, "人物籍贯不能为空").nullable().optional(),
-  nameType     : z.nativeEnum(NameType).optional(),
-  globalTags   : z.array(z.string().trim().min(1, "人物标签不能为空")).optional(),
-  localName    : z.string().trim().min(1, "书中称谓不能为空").optional(),
-  localSummary : z.string().trim().nullable().optional(),
-  officialTitle: z.string().trim().nullable().optional(),
-  localTags    : z.array(z.string().trim().min(1, "本书标签不能为空")).optional(),
-  ironyIndex   : z.number().min(0, "讽刺指数不能小于 0").max(10, "讽刺指数不能大于 10").optional(),
-  confidence   : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional()
+  name                    : z.string().trim().min(1, "人物姓名不能为空"),
+  aliases                 : z.array(z.string().trim().min(1, "人物别名不能为空")).optional(),
+  gender                  : z.string().trim().min(1, "人物性别不能为空").nullable().optional(),
+  hometown                : z.string().trim().min(1, "人物籍贯不能为空").nullable().optional(),
+  nameType                : z.nativeEnum(NameType).optional(),
+  globalTags              : z.array(z.string().trim().min(1, "人物标签不能为空")).optional(),
+  localName               : z.string().trim().min(1, "书中称谓不能为空").optional(),
+  localSummary            : z.string().trim().nullable().optional(),
+  officialTitle           : z.string().trim().nullable().optional(),
+  localTags               : z.array(z.string().trim().min(1, "本书标签不能为空")).optional(),
+  ironyIndex              : z.number().min(0, "讽刺指数不能小于 0").max(10, "讽刺指数不能大于 10").optional(),
+  firstAppearanceChapterId: z.string().uuid("出场章节 ID 不合法").nullable().optional(),
+  confidence              : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional()
 });
 
 /**
@@ -257,6 +259,9 @@ export async function POST(
     if (error instanceof BookNotFoundError) {
       // 业务实体缺失：返回 404，提示前端书籍已不存在或被删除。
       return notFoundJson(requestId, startedAt, error.bookId);
+    }
+    if (error instanceof PersonaInputError) {
+      return badRequestJson(requestId, startedAt, path, error.detail);
     }
 
     // 未知异常兜底：避免将内部错误直接暴露给调用方。

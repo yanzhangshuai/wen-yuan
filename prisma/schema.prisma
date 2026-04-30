@@ -223,6 +223,7 @@ model Chapter {
   relations   Relationship[] // 本章关系边
   phaseLogs   AnalysisPhaseLog[] // 阶段调用日志
   biographyVerifications ChapterBiographyVerification[] // 本章角色事迹校验状态
+  firstAppearanceProfiles Profile[] @relation("ProfileFirstAppearanceChapter") // 以本章作为首次出场章节的角色档案
 
   @@unique([bookId, type, no], map: "chapter_book_type_no_key") // 联合唯一约束
   @@map("chapters") // 数据库物理表名：复数
@@ -296,6 +297,7 @@ model Profile {
   localTags     String[] @default([]) @map("local_tags") // 性格/社会角色标签，如 ["伪君子","官僚"]
   ironyIndex    Float    @default(0) @map("irony_index") // 讽刺指数 (0-10)
   moralTier     String?  @map("moral_tier") // 人格档次，如"伪君子"
+  firstAppearanceChapterId String? @map("first_appearance_chapter_id") @db.Uuid // 手动维护的首次出场章节
 
   // 3D 视觉配置缓存：存储节点颜色、发光度、初始坐标建议等
   visualConfig Json?     @map("visual_config") // 前端可视化配置缓存
@@ -305,9 +307,11 @@ model Profile {
 
   persona Persona @relation(fields: [personaId], references: [id]) // 关联角色
   book    Book    @relation(fields: [bookId], references: [id]) // 关联书籍
+  firstAppearanceChapter Chapter? @relation("ProfileFirstAppearanceChapter", fields: [firstAppearanceChapterId], references: [id]) // 首次出场章节
 
   @@unique([personaId, bookId], map: "profile_persona_id_book_id_key") // 一角色在同一本书仅一条档案
   @@index([bookId, deletedAt], map: "profiles_book_id_deleted_at_idx") // 书籍维度的有效档案筛选索引
+  @@index([firstAppearanceChapterId], map: "profiles_first_appearance_chapter_idx")
   @@map("profiles")
 }
 

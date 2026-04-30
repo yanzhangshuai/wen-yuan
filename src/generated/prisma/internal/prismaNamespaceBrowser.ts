@@ -219,6 +219,7 @@ export const ProfileScalarFieldEnum = {
   localTags: 'localTags',
   ironyIndex: 'ironyIndex',
   moralTier: 'moralTier',
+  firstAppearanceChapterId: 'firstAppearanceChapterId',
   visualConfig: 'visualConfig',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',

@@ -27,39 +27,45 @@ import { BookNotFoundError } from "@/server/modules/books/errors";
  */
 export interface BookPersonaListItem {
   /** 人物 ID。 */
-  id           : string;
+  id                         : string;
   /** 书内档案 ID。 */
-  profileId    : string;
+  profileId                  : string;
   /** 所属书籍 ID。 */
-  bookId       : string;
+  bookId                     : string;
   /** 标准人物名。 */
-  name         : string;
+  name                       : string;
   /** 书内展示名。 */
-  localName    : string;
+  localName                  : string;
   /** 别名列表。 */
-  aliases      : string[];
+  aliases                    : string[];
   /** 性别。 */
-  gender       : string | null;
+  gender                     : string | null;
   /** 籍贯。 */
-  hometown     : string | null;
+  hometown                   : string | null;
   /** 姓名类型。 */
-  nameType     : string;
+  nameType                   : string;
   /** 全局标签。 */
-  globalTags   : string[];
+  globalTags                 : string[];
   /** 书内标签。 */
-  localTags    : string[];
+  localTags                  : string[];
   /** 官职/头衔。 */
-  officialTitle: string | null;
+  officialTitle              : string | null;
   /** 书内小传。 */
-  localSummary : string | null;
+  localSummary               : string | null;
+  /** 显式维护的首次出场章节 ID。 */
+  firstAppearanceChapterId   : string | null;
+  /** 显式维护的首次出场章节序号。 */
+  firstAppearanceChapterNo   : number | null;
+  /** 显式维护的首次出场章节标题。 */
+  firstAppearanceChapterTitle: string | null;
   /** 讽刺指数。 */
-  ironyIndex   : number;
+  ironyIndex                 : number;
   /** 置信度。 */
-  confidence   : number;
+  confidence                 : number;
   /** 数据来源。 */
-  recordSource : RecordSource;
+  recordSource               : RecordSource;
   /** 审核状态。 */
-  status       : ProcessingStatus;
+  status                     : ProcessingStatus;
 }
 
 /**
@@ -105,14 +111,21 @@ export function createListBookPersonasService(
       },
       orderBy: [{ updatedAt: "desc" }],
       select : {
-        id           : true,
-        bookId       : true,
-        localName    : true,
-        localSummary : true,
-        officialTitle: true,
-        localTags    : true,
-        ironyIndex   : true,
-        persona      : {
+        id                      : true,
+        bookId                  : true,
+        localName               : true,
+        localSummary            : true,
+        officialTitle           : true,
+        localTags               : true,
+        ironyIndex              : true,
+        firstAppearanceChapterId: true,
+        firstAppearanceChapter  : {
+          select: {
+            no   : true,
+            title: true
+          }
+        },
+        persona: {
           select: {
             id          : true,
             name        : true,
@@ -129,23 +142,26 @@ export function createListBookPersonasService(
     });
 
     return profiles.map((profile) => ({
-      id           : profile.persona.id,
-      profileId    : profile.id,
-      bookId       : profile.bookId,
-      name         : profile.persona.name,
-      localName    : profile.localName,
-      aliases      : profile.persona.aliases,
-      gender       : profile.persona.gender,
-      hometown     : profile.persona.hometown,
-      nameType     : profile.persona.nameType,
-      globalTags   : profile.persona.globalTags,
-      localTags    : profile.localTags,
-      officialTitle: profile.officialTitle,
-      localSummary : profile.localSummary,
-      ironyIndex   : profile.ironyIndex,
-      confidence   : profile.persona.confidence,
-      recordSource : profile.persona.recordSource,
-      status       : resolvePersonaStatus(profile.persona.recordSource)
+      id                         : profile.persona.id,
+      profileId                  : profile.id,
+      bookId                     : profile.bookId,
+      name                       : profile.persona.name,
+      localName                  : profile.localName,
+      aliases                    : profile.persona.aliases,
+      gender                     : profile.persona.gender,
+      hometown                   : profile.persona.hometown,
+      nameType                   : profile.persona.nameType,
+      globalTags                 : profile.persona.globalTags,
+      localTags                  : profile.localTags,
+      officialTitle              : profile.officialTitle,
+      localSummary               : profile.localSummary,
+      firstAppearanceChapterId   : profile.firstAppearanceChapterId,
+      firstAppearanceChapterNo   : profile.firstAppearanceChapter?.no ?? null,
+      firstAppearanceChapterTitle: profile.firstAppearanceChapter?.title ?? null,
+      ironyIndex                 : profile.ironyIndex,
+      confidence                 : profile.persona.confidence,
+      recordSource               : profile.persona.recordSource,
+      status                     : resolvePersonaStatus(profile.persona.recordSource)
     }));
   }
 

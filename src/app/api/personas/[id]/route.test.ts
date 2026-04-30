@@ -33,6 +33,15 @@ vi.mock("@/server/modules/personas/deletePersona", () => ({
 }));
 
 vi.mock("@/server/modules/personas/errors", () => {
+  class PersonaInputError extends Error {
+    readonly detail: string;
+
+    constructor(detail: string) {
+      super(detail);
+      this.detail = detail;
+    }
+  }
+
   class PersonaNotFoundError extends Error {
     readonly personaId: string;
 
@@ -43,6 +52,7 @@ vi.mock("@/server/modules/personas/errors", () => {
   }
 
   return {
+    PersonaInputError,
     PersonaNotFoundError
   };
 });
@@ -249,7 +259,7 @@ describe("DELETE /api/personas/:id", () => {
     expect(response.status).toBe(200);
     const payload = await response.json();
     expect(payload.code).toBe("PERSONA_DELETED");
-    expect(deletePersonaMock).toHaveBeenCalledWith(personaId);
+    expect(deletePersonaMock).toHaveBeenCalledWith(personaId, { bookId: undefined });
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

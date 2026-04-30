@@ -416,7 +416,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
@@ -424,11 +424,11 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
       )}
       <div
         className={cn(
-          "chapter-events-workbench grid min-h-0 gap-3 xl:h-[calc(100vh-136px)] xl:grid-cols-[240px_minmax(0,1fr)]",
+          "chapter-events-workbench grid h-full min-h-0 flex-1 grid-rows-[minmax(0,240px)_minmax(0,1fr)] gap-3 overflow-hidden xl:grid-cols-[240px_minmax(0,1fr)] xl:grid-rows-1",
           chapterProgressCollapsed && "xl:grid-cols-[52px_minmax(0,1fr)]"
         )}
       >
-        <aside className="flex min-h-0 flex-col rounded-md border border-border bg-card xl:h-full">
+        <aside className="chapter-events-progress flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card">
           <div className={cn("border-b border-border p-3", chapterProgressCollapsed && "px-2")}>
             <div className={cn(
               "flex items-center justify-between gap-2",
@@ -498,8 +498,8 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
           </div>
         </aside>
 
-        <section className="grid min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] xl:h-full">
-          <div className="flex min-h-[420px] flex-col rounded-md border border-border bg-card xl:h-full xl:min-h-0">
+        <section className="grid h-full min-h-0 grid-rows-2 gap-3 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] lg:grid-rows-1">
+          <div className="chapter-events-source-panel flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <div className="text-sm font-medium text-foreground">{activeChapter?.title ?? "未选择章节"}</div>
@@ -514,7 +514,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
             </div>
           </div>
 
-          <div className="flex min-h-[420px] flex-col rounded-md border border-border bg-card xl:h-full xl:min-h-0">
+          <div className="chapter-events-list-panel flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
               <div>
                 <div className="text-sm font-medium text-foreground">角色事迹</div>
@@ -688,7 +688,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                     setSheetOpen(false);
                     onOpenRoles();
                   }}>
-                    去角色管理新建
+                    去角色审核新建
                   </Button>
                 </div>
               )}

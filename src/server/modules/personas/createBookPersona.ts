@@ -26,35 +26,38 @@ import {
 } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import { PersonaInputError } from "@/server/modules/personas/errors";
 
 /**
  * 手动新增人物输入。
  */
 export interface CreateBookPersonaInput {
   /** 标准人物名称。 */
-  name          : string;
+  name                     : string;
   /** 别名集合。 */
-  aliases?      : string[];
+  aliases?                 : string[];
   /** 性别。 */
-  gender?       : string | null;
+  gender?                  : string | null;
   /** 籍贯。 */
-  hometown?     : string | null;
+  hometown?                : string | null;
   /** 姓名类型（NAMED/TITLE_ONLY）。 */
-  nameType?     : NameType;
+  nameType?                : NameType;
   /** 全局标签集合。 */
-  globalTags?   : string[];
+  globalTags?              : string[];
   /** 该书内展示名。 */
-  localName?    : string;
+  localName?               : string;
   /** 该书内小传。 */
-  localSummary? : string | null;
+  localSummary?            : string | null;
   /** 官职/头衔。 */
-  officialTitle?: string | null;
+  officialTitle?           : string | null;
   /** 该书内标签。 */
-  localTags?    : string[];
+  localTags?               : string[];
   /** 讽刺指数。 */
-  ironyIndex?   : number;
+  ironyIndex?              : number;
+  /** 首次出场章节 ID。 */
+  firstAppearanceChapterId?: string | null;
   /** 置信度。 */
-  confidence?   : number;
+  confidence?              : number;
 }
 
 /**
@@ -62,39 +65,45 @@ export interface CreateBookPersonaInput {
  */
 export interface CreateBookPersonaResult {
   /** 人物 ID。 */
-  id           : string;
+  id                         : string;
   /** 书内档案 ID。 */
-  profileId    : string;
+  profileId                  : string;
   /** 所属书籍 ID。 */
-  bookId       : string;
+  bookId                     : string;
   /** 标准名。 */
-  name         : string;
+  name                       : string;
   /** 书内展示名。 */
-  localName    : string;
+  localName                  : string;
   /** 别名。 */
-  aliases      : string[];
+  aliases                    : string[];
   /** 性别。 */
-  gender       : string | null;
+  gender                     : string | null;
   /** 籍贯。 */
-  hometown     : string | null;
+  hometown                   : string | null;
   /** 姓名类型。 */
-  nameType     : NameType;
+  nameType                   : NameType;
   /** 全局标签。 */
-  globalTags   : string[];
+  globalTags                 : string[];
   /** 书内标签。 */
-  localTags    : string[];
+  localTags                  : string[];
   /** 书内小传。 */
-  localSummary : string | null;
+  localSummary               : string | null;
   /** 官职/头衔。 */
-  officialTitle: string | null;
+  officialTitle              : string | null;
+  /** 显式维护的首次出场章节 ID。 */
+  firstAppearanceChapterId   : string | null;
+  /** 显式维护的首次出场章节序号。 */
+  firstAppearanceChapterNo   : number | null;
+  /** 显式维护的首次出场章节标题。 */
+  firstAppearanceChapterTitle: string | null;
   /** 讽刺指数。 */
-  ironyIndex   : number;
+  ironyIndex                 : number;
   /** 置信度。 */
-  confidence   : number;
+  confidence                 : number;
   /** 数据来源（MANUAL）。 */
-  recordSource : RecordSource;
+  recordSource               : RecordSource;
   /** 审核状态（VERIFIED）。 */
-  status       : ProcessingStatus;
+  status                     : ProcessingStatus;
 }
 
 /**
@@ -159,6 +168,23 @@ export function createCreateBookPersonaService(
         throw new BookNotFoundError(bookId);
       }
 
+      const firstAppearanceChapter = input.firstAppearanceChapterId
+        ? await tx.chapter.findFirst({
+          where: {
+            id: input.firstAppearanceChapterId,
+            bookId
+          },
+          select: {
+            id   : true,
+            no   : true,
+            title: true
+          }
+        })
+        : null;
+      if (input.firstAppearanceChapterId && !firstAppearanceChapter) {
+        throw new PersonaInputError("出场章节不属于当前书籍");
+      }
+
       const normalizedName = input.name.trim();
       const persona = await tx.persona.create({
         data: {
@@ -187,42 +213,47 @@ export function createCreateBookPersonaService(
 
       const profile = await tx.profile.create({
         data: {
-          personaId    : persona.id,
+          personaId               : persona.id,
           bookId,
-          localName    : input.localName?.trim() || normalizedName,
-          localSummary : normalizeNullableText(input.localSummary),
-          officialTitle: normalizeNullableText(input.officialTitle),
-          localTags    : normalizeDistinctItems(input.localTags),
-          ironyIndex   : input.ironyIndex ?? 0
+          localName               : input.localName?.trim() || normalizedName,
+          localSummary            : normalizeNullableText(input.localSummary),
+          officialTitle           : normalizeNullableText(input.officialTitle),
+          localTags               : normalizeDistinctItems(input.localTags),
+          ironyIndex              : input.ironyIndex ?? 0,
+          firstAppearanceChapterId: firstAppearanceChapter?.id ?? null
         },
         select: {
-          id           : true,
-          localName    : true,
-          localSummary : true,
-          officialTitle: true,
-          localTags    : true,
-          ironyIndex   : true
+          id                      : true,
+          localName               : true,
+          localSummary            : true,
+          officialTitle           : true,
+          localTags               : true,
+          ironyIndex              : true,
+          firstAppearanceChapterId: true
         }
       });
 
       return {
-        id           : persona.id,
-        profileId    : profile.id,
+        id                         : persona.id,
+        profileId                  : profile.id,
         bookId,
-        name         : persona.name,
-        localName    : profile.localName,
-        aliases      : persona.aliases,
-        gender       : persona.gender,
-        hometown     : persona.hometown,
-        nameType     : persona.nameType,
-        globalTags   : persona.globalTags,
-        localTags    : profile.localTags,
-        localSummary : profile.localSummary,
-        officialTitle: profile.officialTitle,
-        ironyIndex   : profile.ironyIndex,
-        confidence   : persona.confidence,
-        recordSource : persona.recordSource,
-        status       : ProcessingStatus.VERIFIED
+        name                       : persona.name,
+        localName                  : profile.localName,
+        aliases                    : persona.aliases,
+        gender                     : persona.gender,
+        hometown                   : persona.hometown,
+        nameType                   : persona.nameType,
+        globalTags                 : persona.globalTags,
+        localTags                  : profile.localTags,
+        localSummary               : profile.localSummary,
+        officialTitle              : profile.officialTitle,
+        firstAppearanceChapterId   : profile.firstAppearanceChapterId,
+        firstAppearanceChapterNo   : firstAppearanceChapter?.no ?? null,
+        firstAppearanceChapterTitle: firstAppearanceChapter?.title ?? null,
+        ironyIndex                 : profile.ironyIndex,
+        confidence                 : persona.confidence,
+        recordSource               : persona.recordSource,
+        status                     : ProcessingStatus.VERIFIED
       };
     });
   }

@@ -9,7 +9,7 @@
  * 在 Next.js 应用中的角色：
  * - 该组件由 `app/admin/review/[bookId]/page.tsx`（Server Component）渲染并注入首屏数据；
  * - 本组件声明 `'use client'`，属于 Client Component，负责审核台所有高频交互：
- *   Tab 切换、来源筛选、批量勾选、单条确认/拒绝、编辑、合并建议处理等。
+ *   Tab 切换、来源筛选、合并建议处理，以及全局审核视图的刷新。
  *
  * 为什么必须是 Client Component：
  * - 依赖大量浏览器事件与本地状态（useState/useEffect）；
@@ -17,7 +17,7 @@
  * - 这些行为无法在纯 Server Component 中完成。
  *
  * 业务职责：
- * 1) 承载审核工作台主视图（人物/关系/传记/合并/别名/自检六个页签）；
+ * 1) 承载审核工作台主视图（角色审核/章节事迹/合并/别名/自检五个页签）；
  * 2) 通过 `src/lib/services/reviews.ts` 调用管理端 API 完成读写；
  * 3) 在“首屏服务端预取 + 客户端增量刷新”之间做状态衔接。
  *
@@ -32,23 +32,18 @@
  * - 将部分子流程委托给子组件（编辑表单、合并工具、别名审核、自检报告）。
  *
  * 维护注意：
- * - 这里的状态字段彼此存在联动（例如切换书籍必须清空选中和编辑态）；
- * - 不要随意改动 `selectedIds` 与 `editingId/editingType` 的配合方式；
- * - `handleBulkAction` 中的静默 catch 是现有行为，若要改为显式提示需整体评估 UX。
+ * - 这里的状态字段彼此存在联动（例如切换书籍必须重置活跃页签与筛选）；
+ * - 角色级审核逻辑应继续收敛在 `RoleReviewWorkbench` 及其子组件中；
+ * - 懒加载数据的静默 catch 是现有行为，若要改为显式提示需整体评估 UX。
  * =============================================================================
  */
 
-import { useCallback, useEffect, useState, Suspense, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   Check,
-  X as XIcon,
-  Edit3,
   Filter,
   Users,
-  Link2,
-  Calendar,
   GitMerge,
-  Loader2,
   Tags,
   ShieldCheck,
   BookOpen
@@ -57,7 +52,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
 import {
   Select,
   SelectContent,
@@ -67,17 +61,12 @@ import {
   SelectValue,
   isSelectEmptyValue
 } from "@/components/ui/select";
-import { RelationshipEditForm } from "@/components/review/relationship-edit-form";
-import { BiographyEditForm } from "@/components/review/biography-edit-form";
 import { EntityMergeTool } from "@/components/review/entity-merge-tool";
 import { ManualEntityTool } from "@/components/review/manual-entity-tool";
 import { AliasReviewTab } from "@/components/review/alias-review-tab";
 import { ValidationReportTab } from "@/components/review/validation-report-tab";
 import { ChapterEventsWorkbench } from "@/components/review/chapter-events-workbench";
-import { RoleManagementTab } from "@/components/review/role-management-tab";
-import { TextReaderPanel } from "@/components/graph";
-import { fetchChapterContent } from "@/lib/services/books";
-import type { ChapterContent } from "@/lib/services/books";
+import { RoleReviewWorkbench } from "@/components/review/role-review-workbench";
 import type { PersonaSummary } from "@/lib/services/personas";
 import { fetchPersonaSummary } from "@/lib/services/personas";
 import {
@@ -86,8 +75,6 @@ import {
   acceptMergeSuggestion,
   rejectMergeSuggestion,
   deferMergeSuggestion,
-  bulkVerifyDrafts,
-  bulkRejectDrafts,
   type MergeSuggestionItem,
   type DraftsData
 } from "@/lib/services/reviews";
@@ -121,7 +108,7 @@ export interface ReviewPanelProps {
 /* ------------------------------------------------
    Tab types
    ------------------------------------------------ */
-type ReviewTab = "relationships" | "biography" | "chapterEvents" | "roles" | "merge" | "aliases" | "validation";
+type ReviewTab = "roleReview" | "chapterEvents" | "merge" | "aliases" | "validation";
 
 /**
  * Tab 展示配置。
@@ -131,9 +118,7 @@ type ReviewTab = "relationships" | "biography" | "chapterEvents" | "roles" | "me
  * - `icon` 是视觉辅助，帮助审核员快速定位功能区。
  */
 const TAB_CONFIG: { id: ReviewTab; label: string; icon: ReactNode }[] = [
-  { id: "roles", label: "角色管理", icon: <Users size={14} /> },
-  { id: "relationships", label: "关系草稿", icon: <Link2 size={14} /> },
-  { id: "biography", label: "传记事件", icon: <Calendar size={14} /> },
+  { id: "roleReview", label: "角色审核", icon: <Users size={14} /> },
   { id: "chapterEvents", label: "章节事迹", icon: <BookOpen size={14} /> },
   { id: "merge", label: "合并建议", icon: <GitMerge size={14} /> },
   { id: "aliases", label: "别名映射", icon: <Tags size={14} /> },
@@ -148,12 +133,8 @@ function getTabBadgeCount(args: {
   validationCount  : number;
 }): number | null {
   switch (args.tabId) {
-    case "roles":
-      return null;
-    case "relationships":
-      return args.drafts?.summary.relationship ?? 0;
-    case "biography":
-      return args.drafts?.summary.biography ?? 0;
+    case "roleReview":
+      return args.drafts?.summary.total ?? 0;
     case "merge":
       return args.mergeCount;
     case "aliases":
@@ -164,16 +145,6 @@ function getTabBadgeCount(args: {
       return null;
   }
 }
-
-const BIO_CATEGORY_LABELS: Record<string, string> = {
-  BIRTH : "出生",
-  EXAM  : "科举",
-  CAREER: "仕途",
-  TRAVEL: "行旅",
-  SOCIAL: "社交",
-  DEATH : "逝世",
-  EVENT : "事件"
-};
 
 /* ------------------------------------------------
    Component
@@ -186,8 +157,8 @@ export function ReviewPanel({
   initialAliasMappings,
   initialValidationReports
 }: ReviewPanelProps) {
-  // 当前激活页签。默认落在统一角色管理入口，承接 AI 生成与手动创建角色维护。
-  const [activeTab, setActiveTab] = useState<ReviewTab>("roles");
+  // 当前激活页签。默认进入角色为中心的审核工作台。
+  const [activeTab, setActiveTab] = useState<ReviewTab>("roleReview");
   // 来源筛选（AI / MANUAL / 全部）。null 表示“不筛选来源”。
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   // 草稿主数据集。初始化采用服务端预取值，保证首屏直出。
@@ -200,14 +171,6 @@ export function ReviewPanel({
   const [validationReports, setValidationReports] = useState<ValidationReportItem[]>(initialValidationReports ?? []);
   // 草稿刷新中的加载态（影响骨架屏显示）。
   const [loading, setLoading] = useState(false);
-  // 批量操作的选中 ID 集合。使用 Set 便于 O(1) 判重与切换。
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  // 批量确认/拒绝进行中标记，避免用户重复点击提交。
-  const [bulkLoading, setBulkLoading] = useState(false);
-  // 当前正在编辑的记录 ID。
-  const [editingId, setEditingId] = useState<string | null>(null);
-  // 当前编辑类型（人物/关系/传记）。与 editingId 组合决定渲染哪个编辑表单。
-  const [editingType, setEditingType] = useState<"relationship" | "biography" | null>(null);
   // 通用加载错误提示文案，展示在面板顶部。
   const [loadError, setLoadError] = useState<string | null>(null);
   // 合并预览上下文：点击“接受合并”后，切换到合并工具并传入 source/target 详情 Promise。
@@ -216,14 +179,6 @@ export function ReviewPanel({
     sourcePromise: Promise<PersonaSummary | null>;
     targetPromise: Promise<PersonaSummary | null>;
   } | null>(null);
-  /**
-   * FG-07: 原文阅读面板状态。
-   * 点击关系/传记草稿的"查看原文"时触发，携带章节内容 Promise 与可选段落高亮。
-   */
-  const [textReader, setTextReader] = useState<{
-    promise   : Promise<ChapterContent>;
-    paraIndex?: number;
-  } | null>(null);
   useEffect(() => {
     /* 模块切换时重置本地状态，避免旧书籍的筛选/选中态遗留到新 bookId。 */
     // 这里依赖 `bookId + initial*`，是因为从左侧切书时不仅路由变，首屏注入数据也会整体替换。
@@ -231,14 +186,10 @@ export function ReviewPanel({
     setMergeSuggestions(initialMergeSuggestions);
     setAliasMappings(initialAliasMappings ?? []);
     setValidationReports(initialValidationReports ?? []);
-    setActiveTab("roles");
+    setActiveTab("roleReview");
     setSourceFilter(null);
-    setSelectedIds(new Set());
-    setBulkLoading(false);
     setLoading(false);
     setLoadError(null);
-    setEditingId(null);
-    setEditingType(null);
     setMergePreview(null);
   }, [bookId, initialDrafts, initialMergeSuggestions, initialAliasMappings, initialValidationReports]);
 
@@ -258,24 +209,6 @@ export function ReviewPanel({
   // 风险提示：silent catch 会降低错误可观测性，后续可考虑接入埋点或轻量 toast。
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId]);
-
-  /** 进入编辑态：记录目标 ID 与类型，切换对应行为内联编辑表单。 */
-  function startEdit(id: string, type: "relationship" | "biography") {
-    setEditingId(id);
-    setEditingType(type);
-  }
-
-  /** 退出编辑态：回到普通列表展示。 */
-  function cancelEdit() {
-    setEditingId(null);
-    setEditingType(null);
-  }
-
-  /** 编辑保存成功后的收敛动作：关闭编辑态并刷新草稿列表。 */
-  function handleEditSaved() {
-    cancelEdit();
-    void fetchDrafts(sourceFilter);
-  }
 
   /**
    * 刷新草稿主列表（人物/关系/传记）。
@@ -329,34 +262,6 @@ export function ReviewPanel({
     }
   }, [bookId]);
 
-  /** 批量确认当前选中草稿。 */
-  async function handleBulkVerify() {
-    // 防御分支：按钮理论上只在有选中时显示，但这里仍做二次保护，防止异常触发。
-    if (selectedIds.size === 0) return;
-    setBulkLoading(true);
-    try {
-      await bulkVerifyDrafts([...selectedIds]);
-      // 成功后清空选中，避免用户误以为这些条目仍待操作。
-      setSelectedIds(new Set());
-      void fetchDrafts(sourceFilter);
-    } finally {
-      setBulkLoading(false);
-    }
-  }
-
-  /** 批量拒绝当前选中草稿。 */
-  async function handleBulkReject() {
-    if (selectedIds.size === 0) return;
-    setBulkLoading(true);
-    try {
-      await bulkRejectDrafts([...selectedIds]);
-      setSelectedIds(new Set());
-      void fetchDrafts(sourceFilter);
-    } finally {
-      setBulkLoading(false);
-    }
-  }
-
   /**
    * 处理合并建议的轻量动作（拒绝/暂缓，或在其它入口触发接受）。
    * @param id 合并建议 ID
@@ -378,34 +283,8 @@ export function ReviewPanel({
     }
   }
 
-  /**
-   * 切换单条勾选状态。
-   * 采用函数式 `setState(prev => ...)`，避免并发点击时读取到过期闭包值。
-   */
-  function toggleSelect(id: string) {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  /**
-   * 全选/取消全选当前列表。
-   * 业务规则：如果“当前列表每一项都已选中”，再次点击视为“清空选择”。
-   */
-  function selectAll(ids: string[]) {
-    const allSelected = ids.every(id => selectedIds.has(id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(ids));
-    }
-  }
-
   return (
-    <div className="review-panel flex min-h-0 flex-col gap-4">
+    <div className="review-panel flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       {/* 头部区域：展示当前书名与汇总统计，帮助审核员快速判断待审规模。 */}
       <div className="flex items-center justify-between">
         <div>
@@ -446,8 +325,7 @@ export function ReviewPanel({
       </div>
 
       {/* Tab 导航：
-          - activeTab 决定下方渲染哪个业务区；
-          - 切换 tab 时清空 selectedIds，避免跨类型草稿误批量操作。 */}
+          - activeTab 决定下方渲染哪个业务区。 */}
       <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
         {TAB_CONFIG.map(tab => {
           const badgeCount = getTabBadgeCount({
@@ -461,7 +339,7 @@ export function ReviewPanel({
             <button
               key={tab.id}
               type="button"
-              onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); }}
+              onClick={() => { setActiveTab(tab.id); }}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
                 activeTab === tab.id
                   ? "bg-card font-medium text-foreground shadow-sm"
@@ -480,24 +358,6 @@ export function ReviewPanel({
         })}
       </div>
 
-      {/* 批量操作条：
-          仅在有选中项时展示，减少界面噪音并降低误触概率。 */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 rounded-md bg-primary-subtle px-3 py-2">
-          <span className="text-sm text-foreground">
-            已选 {selectedIds.size} 项
-          </span>
-          <Button size="sm" onClick={() => { void handleBulkVerify(); }} disabled={bulkLoading}>
-            {bulkLoading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            <span className="ml-1">批量确认</span>
-          </Button>
-          <Button size="sm" variant="destructive" onClick={() => { void handleBulkReject(); }} disabled={bulkLoading}>
-            <XIcon size={14} />
-            <span className="ml-1">批量拒绝</span>
-          </Button>
-        </div>
-      )}
-
       {/* 刷新中骨架屏：只覆盖主列表区，保留顶部筛选和 tab，避免用户失去上下文。 */}
       {loading && (
         <div className="flex flex-col gap-3">
@@ -514,231 +374,24 @@ export function ReviewPanel({
         </div>
       )}
 
-      {/* 角色管理页签：统一展示书籍角色数据，AI 生成与手动创建使用同一套编辑/删除流程。 */}
-      {!loading && activeTab === "roles" && drafts && (
-        <RoleManagementTab bookId={bookId} />
-      )}
-
-      {/* 关系草稿页签：审核人物关系边，重点信息包括关系类型、章节位置、证据片段。 */}
-      {!loading && activeTab === "relationships" && drafts && (
-        <div className="flex flex-col gap-2">
-          {drafts.relationships.length === 0 && (
-            <EmptyState text="暂无关系草稿" />
-          )}
-          {drafts.relationships.length > 0 && (
-            <div className="mb-1 flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={drafts.relationships.every(r => selectedIds.has(r.id))}
-                onChange={() => selectAll(drafts.relationships.map(r => r.id))}
-                className="accent-primary"
-                aria-label="全选"
-              />
-              <span className="text-xs text-muted-foreground">全选</span>
-            </div>
-          )}
-          {drafts.relationships.map(rel => (
-            editingId === rel.id && editingType === "relationship" ? (
-              <RelationshipEditForm
-                key={rel.id}
-                relationshipId={rel.id}
-                initialData={{
-                  type      : rel.type,
-                  weight    : rel.weight,
-                  evidence  : rel.evidence,
-                  confidence: rel.confidence
-                }}
-                onSaved={handleEditSaved}
-                onCancel={cancelEdit}
-              />
-            ) : (
-            <div
-              key={rel.id}
-              className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(rel.id)}
-                onChange={() => toggleSelect(rel.id)}
-                className="mt-1 accent-primary"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-foreground">{rel.sourceName}</span>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="font-medium text-foreground">{rel.targetName}</span>
-                  <Badge variant="outline" className="text-xs">{rel.type}</Badge>
-                </div>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>第{rel.chapterNo}回</span>
-                  <span>权重 {rel.weight}</span>
-                  <span>置信度 {(rel.confidence * 100).toFixed(0)}%</span>
-                </div>
-                {rel.evidence && (
-                  // 证据只展示前 100 字，避免长文本挤压列表阅读效率。
-                  <p className="mt-1 text-xs italic text-muted-foreground">
-                    &ldquo;{rel.evidence.slice(0, 100)}{rel.evidence.length > 100 ? "…" : ""}&rdquo;
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setTextReader({ promise: fetchChapterContent(bookId, rel.chapterId) })}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-                  aria-label="查看原文"
-                  title="查看原文"
-                >
-                  <BookOpen size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkAction([rel.id], "verify"); }}
-                  className="rounded p-1.5 text-success hover:bg-success/10"
-                  aria-label="确认"
-                  title="确认"
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkAction([rel.id], "reject"); }}
-                  className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                  aria-label="拒绝"
-                  title="拒绝"
-                >
-                  <XIcon size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startEdit(rel.id, "relationship")}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-                  aria-label="编辑"
-                  title="编辑"
-                >
-                  <Edit3 size={16} />
-                </button>
-              </div>
-            </div>
-            )
-          ))}
-        </div>
-      )}
-
-      {/* 传记草稿页签：审核事件时间线信息，强调人物、类别、章节与事件文本。 */}
-      {!loading && activeTab === "biography" && drafts && (
-        <div className="flex flex-col gap-2">
-          {drafts.biographyRecords.length === 0 && (
-            <EmptyState text="暂无传记事件草稿" />
-          )}
-          {drafts.biographyRecords.length > 0 && (
-            <div className="mb-1 flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={drafts.biographyRecords.every(b => selectedIds.has(b.id))}
-                onChange={() => selectAll(drafts.biographyRecords.map(b => b.id))}
-                className="accent-primary"
-                aria-label="全选"
-              />
-              <span className="text-xs text-muted-foreground">全选</span>
-            </div>
-          )}
-          {drafts.biographyRecords.map(bio => (
-            editingId === bio.id && editingType === "biography" ? (
-              <BiographyEditForm
-                key={bio.id}
-                biographyId={bio.id}
-                initialData={{
-                  category: bio.category,
-                  title   : bio.title,
-                  location: bio.location,
-                  event   : bio.event
-                }}
-                onSaved={handleEditSaved}
-                onCancel={cancelEdit}
-              />
-            ) : (
-            <div
-              key={bio.id}
-              className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(bio.id)}
-                onChange={() => toggleSelect(bio.id)}
-                className="mt-1 accent-primary"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{bio.personaName}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {/* 类别优先映射为中文标签；未收录值回退显示原始 code，避免信息丢失。 */}
-                    {BIO_CATEGORY_LABELS[bio.category] ?? bio.category}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">第{bio.chapterNo}回</span>
-                </div>
-                {bio.title && (
-                  // 标题不是必填字段，缺失时只展示事件正文。
-                  <p className="mt-0.5 text-sm text-foreground">{bio.title}</p>
-                )}
-                <p className="mt-0.5 text-xs text-muted-foreground">{bio.event}</p>
-                {bio.location && (
-                  // 地点为空代表来源文本未明确提取地理信息。
-                  <p className="text-xs text-muted-foreground">地点：{bio.location}</p>
-                )}
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setTextReader({ promise: fetchChapterContent(bookId, bio.chapterId) })}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-                  aria-label="查看原文"
-                  title="查看原文"
-                >
-                  <BookOpen size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkAction([bio.id], "verify"); }}
-                  className="rounded p-1.5 text-success hover:bg-success/10"
-                  aria-label="确认"
-                  title="确认"
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkAction([bio.id], "reject"); }}
-                  className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                  aria-label="拒绝"
-                  title="拒绝"
-                >
-                  <XIcon size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startEdit(bio.id, "biography")}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-                  aria-label="编辑"
-                  title="编辑"
-                >
-                  <Edit3 size={16} />
-                </button>
-              </div>
-            </div>
-            )
-          ))}
+      {!loading && activeTab === "roleReview" && drafts && (
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <RoleReviewWorkbench
+            bookId={bookId}
+            drafts={drafts}
+            aliasMappings={aliasMappings}
+            onRefreshDrafts={() => { void fetchDrafts(sourceFilter); }}
+            onRefreshAliases={() => { void fetchAliases(); }}
+          />
         </div>
       )}
 
       {!loading && activeTab === "chapterEvents" && (
-        <div className="min-h-0">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <ChapterEventsWorkbench
             bookId={bookId}
             onOpenRoles={() => {
-              setActiveTab("roles");
-              setSelectedIds(new Set());
-              cancelEdit();
+              setActiveTab("roleReview");
             }}
           />
         </div>
@@ -747,150 +400,124 @@ export function ReviewPanel({
       {/* 合并建议页签：
           这里处理“疑似同人”建议，支持拒绝/暂缓，或进入精细化合并工具。 */}
       {!loading && activeTab === "merge" && (
-        <div className="flex flex-col gap-2">
-          <ManualEntityTool
-            bookId={bookId}
-            onDone={() => {
-              setMergePreview(null);
-              void fetchMerge();
-              void fetchDrafts(sourceFilter);
-            }}
-          />
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2">
+            <ManualEntityTool
+              bookId={bookId}
+              onDone={() => {
+                setMergePreview(null);
+                void fetchMerge();
+                void fetchDrafts(sourceFilter);
+              }}
+            />
 
-          {mergeSuggestions.length === 0 && (
-            <EmptyState text="暂无合并建议" />
-          )}
-          {mergeSuggestions.map(sug => (
-            // 分支 A：当前建议处于“预览合并”态，渲染 EntityMergeTool。
-            mergePreview?.suggestionId === sug.id ? (
-              <EntityMergeTool
-                key={sug.id}
-                sourcePromise={mergePreview.sourcePromise}
-                targetPromise={mergePreview.targetPromise}
-                suggestionId={sug.id}
-                reason={sug.reason}
-                confidence={sug.confidence}
-                onDone={() => {
-                  // 合并完成后同时刷新建议与草稿列表：
-                  // - 建议状态会从 PENDING 变更；
-                  // - 草稿列表可能因实体合并产生联动变化。
-                  setMergePreview(null);
-                  void fetchMerge();
-                  void fetchDrafts(sourceFilter);
-                }}
-                onCancel={() => setMergePreview(null)}
-              />
-            ) : (
-            <div
-              key={sug.id}
-              className="rounded-lg border border-border bg-card p-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{sug.sourceName}</span>
-                    <GitMerge size={14} className="text-muted-foreground" />
-                    <span className="font-medium text-foreground">{sug.targetName}</span>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{sug.reason}</p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>置信度 {(sug.confidence * 100).toFixed(0)}%</span>
-                    <Badge variant="outline" className="text-xs">
-                      {/* 状态文案映射：让审核员一眼识别当前处理进度。 */}
-                      {sug.status === "PENDING" ? "待处理" : sug.status === "ACCEPTED" ? "已接受" : sug.status === "REJECTED" ? "已拒绝" : "已暂缓"}
-                    </Badge>
+            {mergeSuggestions.length === 0 && (
+              <EmptyState text="暂无合并建议" />
+            )}
+            {mergeSuggestions.map(sug => (
+              // 分支 A：当前建议处于“预览合并”态，渲染 EntityMergeTool。
+              mergePreview?.suggestionId === sug.id ? (
+                <EntityMergeTool
+                  key={sug.id}
+                  sourcePromise={mergePreview.sourcePromise}
+                  targetPromise={mergePreview.targetPromise}
+                  suggestionId={sug.id}
+                  reason={sug.reason}
+                  confidence={sug.confidence}
+                  onDone={() => {
+                    // 合并完成后同时刷新建议与草稿列表：
+                    // - 建议状态会从 PENDING 变更；
+                    // - 草稿列表可能因实体合并产生联动变化。
+                    setMergePreview(null);
+                    void fetchMerge();
+                    void fetchDrafts(sourceFilter);
+                  }}
+                  onCancel={() => setMergePreview(null)}
+                />
+              ) : (
+                <div
+                  key={sug.id}
+                  className="rounded-lg border border-border bg-card p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{sug.sourceName}</span>
+                        <GitMerge size={14} className="text-muted-foreground" />
+                        <span className="font-medium text-foreground">{sug.targetName}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">{sug.reason}</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>置信度 {(sug.confidence * 100).toFixed(0)}%</span>
+                        <Badge variant="outline" className="text-xs">
+                          {/* 状态文案映射：让审核员一眼识别当前处理进度。 */}
+                          {sug.status === "PENDING" ? "待处理" : sug.status === "ACCEPTED" ? "已接受" : sug.status === "REJECTED" ? "已拒绝" : "已暂缓"}
+                        </Badge>
+                      </div>
+                    </div>
+                    {sug.status === "PENDING" && (
+                      // 仅“待处理”状态允许操作，已处理建议只读展示，防止流程逆转。
+                      <div className="flex shrink-0 gap-1">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // 点击“接受合并”先拉取双方人物摘要，交给合并工具做人审确认。
+                            setMergePreview({
+                              suggestionId : sug.id,
+                              sourcePromise: fetchPersonaSummary(sug.sourcePersonaId),
+                              targetPromise: fetchPersonaSummary(sug.targetPersonaId)
+                            });
+                          }}
+                        >
+                          接受合并
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { void handleMergeAction(sug.id, "reject"); }}
+                        >
+                          拒绝
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { void handleMergeAction(sug.id, "defer"); }}
+                        >
+                          稍后
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {sug.status === "PENDING" && (
-                  // 仅“待处理”状态允许操作，已处理建议只读展示，防止流程逆转。
-                  <div className="flex shrink-0 gap-1">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        // 点击“接受合并”先拉取双方人物摘要，交给合并工具做人审确认。
-                        setMergePreview({
-                          suggestionId : sug.id,
-                          sourcePromise: fetchPersonaSummary(sug.sourcePersonaId),
-                          targetPromise: fetchPersonaSummary(sug.targetPersonaId)
-                        });
-                      }}
-                    >
-                      接受合并
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { void handleMergeAction(sug.id, "reject"); }}
-                    >
-                      拒绝
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => { void handleMergeAction(sug.id, "defer"); }}
-                    >
-                      稍后
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-            )
-          ))}
+              )
+            ))}
+          </div>
         </div>
       )}
 
       {/* 别名映射页签：交由专门子组件处理，父组件仅提供 bookId、数据与刷新入口。 */}
       {!loading && activeTab === "aliases" && (
-        <AliasReviewTab
-          bookId={bookId}
-          aliasMappings={aliasMappings}
-          onRefresh={() => { void fetchAliases(); }}
-        />
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <AliasReviewTab
+            bookId={bookId}
+            aliasMappings={aliasMappings}
+            onRefresh={() => { void fetchAliases(); }}
+          />
+        </div>
       )}
 
       {/* 自检报告页签：展示 AI 自检结果，供人工补充复核。 */}
       {!loading && activeTab === "validation" && (
-        <ValidationReportTab
-          bookId={bookId}
-          reports={validationReports}
-          onRefresh={() => { void fetchValidation(); }}
-        />
-      )}
-
-      {/* FG-07: 原文阅读侧栏（关系/传记草稿点击"查看原文"时显示）。 */}
-      {textReader && (
-        <AsyncErrorBoundary fallback={<div className="fixed right-0 top-0 h-full w-96 bg-background p-4 text-sm text-destructive shadow-lg">原文加载失败</div>}>
-          <Suspense fallback={<div className="fixed right-0 top-0 h-full w-96 bg-background p-4 text-sm text-muted-foreground shadow-lg">原文加载中...</div>}>
-            <TextReaderPanel
-              bookId={bookId}
-              chapterPromise={textReader.promise}
-              highlightParaIndex={textReader.paraIndex}
-              onClose={() => setTextReader(null)}
-            />
-          </Suspense>
-        </AsyncErrorBoundary>
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <ValidationReportTab
+            bookId={bookId}
+            reports={validationReports}
+            onRefresh={() => { void fetchValidation(); }}
+          />
+        </div>
       )}
     </div>
   );
-
-  /**
-   * 单条确认/拒绝的统一入口。
-   * 设计原因：复用批量接口，避免维护一套额外的“单条接口”与重复鉴权逻辑。
-   *
-   * 风险提示（仅说明，不改行为）：
-   * - 当前 catch 为静默处理，用户不会看到失败反馈；
-   * - 若后续要提升可观测性，可在不改接口语义前提下补充错误提示或埋点。
-   */
-  async function handleBulkAction(ids: string[], action: "verify" | "reject") {
-    try {
-      if (action === "verify") await bulkVerifyDrafts(ids);
-      else                     await bulkRejectDrafts(ids);
-      void fetchDrafts(sourceFilter);
-    } catch {
-      // Silent
-    }
-  }
 }
 
 /* ------------------------------------------------

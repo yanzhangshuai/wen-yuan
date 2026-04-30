@@ -20,40 +20,42 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { type NameType, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
-import { PersonaNotFoundError } from "@/server/modules/personas/errors";
+import { PersonaInputError, PersonaNotFoundError } from "@/server/modules/personas/errors";
 
 /**
  * 人物更新输入。
  */
 export interface UpdatePersonaInput {
   /** 当前书籍 ID；提供时允许同步更新书内档案字段。 */
-  bookId?       : string;
+  bookId?                  : string;
   /** 新标准名。 */
-  name?         : string;
+  name?                    : string;
   /** 新别名集合。 */
-  aliases?      : string[];
+  aliases?                 : string[];
   /** 新性别。 */
-  gender?       : string | null;
+  gender?                  : string | null;
   /** 新籍贯。 */
-  hometown?     : string | null;
+  hometown?                : string | null;
   /** 新姓名类型。 */
-  nameType?     : NameType;
+  nameType?                : NameType;
   /** 新全局标签集合。 */
-  globalTags?   : string[];
+  globalTags?              : string[];
   /** 新置信度。 */
-  confidence?   : number;
+  confidence?              : number;
   /** 审核状态。当前仅支持把 AI 人物确认为有效人工审核人物。 */
-  status?       : "VERIFIED";
+  status?                  : "VERIFIED";
   /** 书内展示名。 */
-  localName?    : string;
+  localName?               : string;
   /** 书内小传。 */
-  localSummary? : string | null;
+  localSummary?            : string | null;
   /** 官职/头衔。 */
-  officialTitle?: string | null;
+  officialTitle?           : string | null;
   /** 书内标签。 */
-  localTags?    : string[];
+  localTags?               : string[];
   /** 讽刺指数。 */
-  ironyIndex?   : number;
+  ironyIndex?              : number;
+  /** 首次出场章节 ID；传 null 表示清空。 */
+  firstAppearanceChapterId?: string | null;
 }
 
 /**
@@ -80,14 +82,17 @@ export interface UpdatePersonaResult {
   updatedAt : string;
   /** 可选：同步更新的书内档案。 */
   profile?  : {
-    id           : string;
-    bookId       : string;
-    localName    : string;
-    localSummary : string | null;
-    officialTitle: string | null;
-    localTags    : string[];
-    ironyIndex   : number;
-    updatedAt    : string;
+    id                         : string;
+    bookId                     : string;
+    localName                  : string;
+    localSummary               : string | null;
+    officialTitle              : string | null;
+    firstAppearanceChapterId   : string | null;
+    firstAppearanceChapterNo   : number | null;
+    firstAppearanceChapterTitle: string | null;
+    localTags                  : string[];
+    ironyIndex                 : number;
+    updatedAt                  : string;
   };
 }
 
@@ -202,23 +207,29 @@ export function createUpdatePersonaService(
 
       let profile:
         | {
-          id           : string;
-          bookId       : string;
-          localName    : string;
-          localSummary : string | null;
-          officialTitle: string | null;
-          localTags    : string[];
-          ironyIndex   : number;
-          updatedAt    : Date;
+          id                      : string;
+          bookId                  : string;
+          localName               : string;
+          localSummary            : string | null;
+          officialTitle           : string | null;
+          firstAppearanceChapterId: string | null;
+          firstAppearanceChapter?: {
+            no   : number;
+            title: string;
+          } | null;
+          localTags : string[];
+          ironyIndex: number;
+          updatedAt : Date;
         }
         | null = null;
 
       const profileData: {
-        localName?    : string;
-        localSummary? : string | null;
-        officialTitle?: string | null;
-        localTags?    : string[];
-        ironyIndex?   : number;
+        localName?               : string;
+        localSummary?            : string | null;
+        officialTitle?           : string | null;
+        localTags?               : string[];
+        ironyIndex?              : number;
+        firstAppearanceChapterId?: string | null;
       } = {};
       if (input.localName !== undefined) {
         profileData.localName = input.localName.trim();
@@ -235,8 +246,24 @@ export function createUpdatePersonaService(
       if (input.ironyIndex !== undefined) {
         profileData.ironyIndex = input.ironyIndex;
       }
+      if (input.firstAppearanceChapterId !== undefined) {
+        profileData.firstAppearanceChapterId = input.firstAppearanceChapterId;
+      }
 
       if (input.bookId !== undefined && Object.keys(profileData).length > 0) {
+        if (input.firstAppearanceChapterId) {
+          const chapter = await tx.chapter.findFirst({
+            where: {
+              id    : input.firstAppearanceChapterId,
+              bookId: input.bookId
+            },
+            select: { id: true }
+          });
+          if (!chapter) {
+            throw new PersonaInputError("出场章节不属于当前书籍");
+          }
+        }
+
         const existingProfile = await tx.profile.findFirst({
           where: {
             personaId: personaId,
@@ -253,14 +280,21 @@ export function createUpdatePersonaService(
           where : { id: existingProfile.id },
           data  : profileData,
           select: {
-            id           : true,
-            bookId       : true,
-            localName    : true,
-            localSummary : true,
-            officialTitle: true,
-            localTags    : true,
-            ironyIndex   : true,
-            updatedAt    : true
+            id                      : true,
+            bookId                  : true,
+            localName               : true,
+            localSummary            : true,
+            officialTitle           : true,
+            firstAppearanceChapterId: true,
+            firstAppearanceChapter  : {
+              select: {
+                no   : true,
+                title: true
+              }
+            },
+            localTags : true,
+            ironyIndex: true,
+            updatedAt : true
           }
         });
       }
@@ -278,14 +312,17 @@ export function createUpdatePersonaService(
         ...(profile
           ? {
             profile: {
-              id           : profile.id,
-              bookId       : profile.bookId,
-              localName    : profile.localName,
-              localSummary : profile.localSummary,
-              officialTitle: profile.officialTitle,
-              localTags    : profile.localTags,
-              ironyIndex   : profile.ironyIndex,
-              updatedAt    : profile.updatedAt.toISOString()
+              id                         : profile.id,
+              bookId                     : profile.bookId,
+              localName                  : profile.localName,
+              localSummary               : profile.localSummary,
+              officialTitle              : profile.officialTitle,
+              firstAppearanceChapterId   : profile.firstAppearanceChapterId,
+              firstAppearanceChapterNo   : profile.firstAppearanceChapter?.no ?? null,
+              firstAppearanceChapterTitle: profile.firstAppearanceChapter?.title ?? null,
+              localTags                  : profile.localTags,
+              ironyIndex                 : profile.ironyIndex,
+              updatedAt                  : profile.updatedAt.toISOString()
             }
           }
           : {})

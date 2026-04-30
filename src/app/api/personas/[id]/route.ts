@@ -10,7 +10,7 @@ import {
   deletePersona,
   type DeletePersonaResult
 } from "@/server/modules/personas/deletePersona";
-import { PersonaNotFoundError } from "@/server/modules/personas/errors";
+import { PersonaInputError, PersonaNotFoundError } from "@/server/modules/personas/errors";
 import {
   getPersonaById,
   type PersonaDetailSnapshot
@@ -63,20 +63,21 @@ const personaRouteParamsSchema = z.object({
  * 副作用：无。
  */
 const updatePersonaBodySchema = z.object({
-  name         : z.string().trim().min(1, "人物姓名不能为空").optional(),
-  aliases      : z.array(z.string().trim().min(1, "人物别名不能为空")).optional(),
-  gender       : z.string().trim().min(1, "人物性别不能为空").nullable().optional(),
-  hometown     : z.string().trim().min(1, "人物籍贯不能为空").nullable().optional(),
-  nameType     : z.nativeEnum(NameType).optional(),
-  globalTags   : z.array(z.string().trim().min(1, "人物标签不能为空")).optional(),
-  confidence   : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional(),
-  status       : z.enum([ProcessingStatus.VERIFIED]).optional(),
-  bookId       : z.string().uuid("书籍 ID 不合法").optional(),
-  localName    : z.string().trim().min(1, "书中称谓不能为空").optional(),
-  localSummary : z.string().trim().nullable().optional(),
-  officialTitle: z.string().trim().nullable().optional(),
-  localTags    : z.array(z.string().trim().min(1, "本书标签不能为空")).optional(),
-  ironyIndex   : z.number().min(0, "讽刺指数不能小于 0").max(10, "讽刺指数不能大于 10").optional()
+  name                    : z.string().trim().min(1, "人物姓名不能为空").optional(),
+  aliases                 : z.array(z.string().trim().min(1, "人物别名不能为空")).optional(),
+  gender                  : z.string().trim().min(1, "人物性别不能为空").nullable().optional(),
+  hometown                : z.string().trim().min(1, "人物籍贯不能为空").nullable().optional(),
+  nameType                : z.nativeEnum(NameType).optional(),
+  globalTags              : z.array(z.string().trim().min(1, "人物标签不能为空")).optional(),
+  confidence              : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional(),
+  status                  : z.enum([ProcessingStatus.VERIFIED]).optional(),
+  bookId                  : z.string().uuid("书籍 ID 不合法").optional(),
+  localName               : z.string().trim().min(1, "书中称谓不能为空").optional(),
+  localSummary            : z.string().trim().nullable().optional(),
+  officialTitle           : z.string().trim().nullable().optional(),
+  localTags               : z.array(z.string().trim().min(1, "本书标签不能为空")).optional(),
+  ironyIndex              : z.number().min(0, "讽刺指数不能小于 0").max(10, "讽刺指数不能大于 10").optional(),
+  firstAppearanceChapterId: z.string().uuid("出场章节 ID 不合法").nullable().optional()
 }).refine((data) => Object.keys(data).length > 0, {
   message: "至少需要一个可更新字段"
 }).refine((data) => {
@@ -84,7 +85,8 @@ const updatePersonaBodySchema = z.object({
     || data.localSummary !== undefined
     || data.officialTitle !== undefined
     || data.localTags !== undefined
-    || data.ironyIndex !== undefined;
+    || data.ironyIndex !== undefined
+    || data.firstAppearanceChapterId !== undefined;
   return !hasProfileField || data.bookId !== undefined;
 }, {
   message: "更新书内档案字段时必须提供 bookId"
@@ -252,6 +254,21 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof PersonaNotFoundError) {
       return notFoundJson(requestId, startedAt, error.personaId);
+    }
+    if (error instanceof PersonaInputError) {
+      const meta = createApiMeta(path, requestId, startedAt);
+      return toNextJson(
+        errorResponse(
+          ERROR_CODES.COMMON_BAD_REQUEST,
+          "请求参数不合法",
+          {
+            type  : "ValidationError",
+            detail: error.detail
+          },
+          meta
+        ),
+        400
+      );
     }
 
     // 鉴权失败、未知异常等均由 failJson 统一映射。
