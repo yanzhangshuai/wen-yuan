@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * 文件定位（Next.js 应用内角色）：
  * - 该文件是“分析域（analysis）共享类型与解析工具层”，位于 `src/types`，被服务端分析流水线与部分 API DTO 映射共同依赖。
@@ -38,6 +40,48 @@ export const BIO_CATEGORY_VALUES = [
  */
 export type BioCategoryValue = (typeof BIO_CATEGORY_VALUES)[number];
 
+export const aiMentionSchema = z.object({
+  personaName: z.string().min(1),
+  rawText    : z.string().min(1),
+  summary    : z.string().optional(),
+  paraIndex  : z.number().int().nonnegative().optional()
+});
+
+export const aiBiographySchema = z.object({
+  personaName: z.string().min(1),
+  category   : z.enum(BIO_CATEGORY_VALUES),
+  event      : z.string().min(1),
+  title      : z.string().optional(),
+  location   : z.string().optional(),
+  virtualYear: z.string().optional(),
+  ironyNote  : z.string().optional()
+});
+
+export const aiRelationshipSchema = z.object({
+  sourceName          : z.string().min(1),
+  targetName          : z.string().min(1),
+  relationshipTypeCode: z.string().min(1),
+  evidence            : z.string().optional()
+});
+
+export const aiRelationshipEventSchema = z.object({
+  sourceName          : z.string().min(1),
+  targetName          : z.string().min(1),
+  relationshipTypeCode: z.string().min(1),
+  summary             : z.string().min(1),
+  evidence            : z.string().optional(),
+  attitudeTags        : z.array(z.string()).max(3).default([]),
+  paraIndex           : z.number().int().nonnegative().optional(),
+  confidence          : z.number().min(0).max(1).default(0.8)
+});
+
+export const chapterAnalysisResponseSchema = z.object({
+  biographies       : z.array(aiBiographySchema).default([]),
+  mentions          : z.array(aiMentionSchema).default([]),
+  relationships     : z.array(aiRelationshipSchema).default([]),
+  relationshipEvents: z.array(aiRelationshipEventSchema).default([])
+});
+
 /**
  * 功能：定义传给 AI 的人物上下文结构（来自 profiles + personas）。
  * 输入：无。
@@ -69,16 +113,7 @@ export interface AnalysisProfileContext {
  * 异常：无。
  * 副作用：无。
  */
-export interface AiMention {
-  /** AI 识别的人物名（可能是主名，也可能是别名/称号）。 */
-  personaName: string;
-  /** 原文证据片段，供后续人工复核与定位。 */
-  rawText    : string;
-  /** 可选摘要，说明该提及在上下文中的含义。 */
-  summary?   : string;
-  /** 可选段落下标（用于回写定位）。 */
-  paraIndex? : number;
-}
+export type AiMention = z.infer<typeof aiMentionSchema>;
 
 /**
  * 功能：定义 AI 提取到的生平轨迹事件结构。
@@ -87,22 +122,7 @@ export interface AiMention {
  * 异常：无。
  * 副作用：无。
  */
-export interface AiBiographyRecord {
-  /** 事件归属的人物名。 */
-  personaName : string;
-  /** 事件类别（出生/仕途/交游等），必须命中白名单枚举。 */
-  category    : BioCategoryValue;
-  /** 事件正文描述。 */
-  event       : string;
-  /** 可选事件标题（更短标签）。 */
-  title?      : string;
-  /** 可选地点。 */
-  location?   : string;
-  /** 可选虚拟纪年（古籍常见模糊时间表达）。 */
-  virtualYear?: string;
-  /** 可选反讽/讥评备注，服务于文学分析场景。 */
-  ironyNote?  : string;
-}
+export type AiBiographyRecord = z.infer<typeof aiBiographySchema>;
 
 /**
  * 功能：定义 AI 提取到的人物关系结构。
@@ -111,20 +131,9 @@ export interface AiBiographyRecord {
  * 异常：无。
  * 副作用：无。
  */
-export interface AiRelationship {
-  /** 关系起点人物。 */
-  sourceName  : string;
-  /** 关系终点人物。 */
-  targetName  : string;
-  /** 关系类型（如师生、亲属、政治同盟等）。 */
-  type        : string;
-  /** 关系强度，归一化到 0-1。 */
-  weight?     : number;
-  /** 关系描述文本。 */
-  description?: string;
-  /** 原文证据或推理依据。 */
-  evidence?   : string;
-}
+export type AiRelationship = z.infer<typeof aiRelationshipSchema>;
+
+export type AiRelationshipEvent = z.infer<typeof aiRelationshipEventSchema>;
 
 /**
  * 功能：定义 AI 章节分析标准输出结构。
@@ -133,14 +142,7 @@ export interface AiRelationship {
  * 异常：无。
  * 副作用：无。
  */
-export interface ChapterAnalysisResponse {
-  /** 生平事件列表。 */
-  biographies  : AiBiographyRecord[];
-  /** 原文提及列表。 */
-  mentions     : AiMention[];
-  /** 人物关系列表。 */
-  relationships: AiRelationship[];
-}
+export type ChapterAnalysisResponse = z.infer<typeof chapterAnalysisResponseSchema>;
 
 /**
  * 别名类型白名单。
@@ -238,25 +240,6 @@ function isBioCategory(value: unknown): value is BioCategoryValue {
   return typeof value === "string" && (BIO_CATEGORY_VALUES as readonly string[]).includes(value);
 }
 
-function normalizeRelationWeight(weight: unknown): number | undefined {
-  // 关系权重允许缺失；缺失表示“模型未提供”而非 0。
-  if (typeof weight !== "number" || Number.isNaN(weight)) {
-    return undefined;
-  }
-
-  if (weight < 0) {
-    // 防御性截断：负值对业务无意义，归零处理。
-    return 0;
-  }
-
-  if (weight > 1) {
-    // 防御性截断：超过 1 视为过界噪声，归一到上限。
-    return 1;
-  }
-
-  return weight;
-}
-
 function isAliasType(value: unknown): value is AliasTypeValue {
   return typeof value === "string" && (ALIAS_TYPE_VALUES as readonly string[]).includes(value);
 }
@@ -289,10 +272,11 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
     throw new Error("AI response is not a JSON object");
   }
 
-  // Step 2: 对三类主字段做“数组兜底”，保证后续 map/filter 可安全执行。
+  // Step 2: 对四类主字段做“数组兜底”，保证后续 map/filter 可安全执行。
   const biographies = Array.isArray(parsed.biographies) ? parsed.biographies : [];
   const mentions = Array.isArray(parsed.mentions) ? parsed.mentions : [];
   const relationships = Array.isArray(parsed.relationships) ? parsed.relationships : [];
+  const relationshipEvents = Array.isArray(parsed.relationshipEvents) ? parsed.relationshipEvents : [];
 
   // Step 3: biographies 逐条做最小字段校验与可选字段收敛。
   const normalizedBiographies: AiBiographyRecord[] = biographies
@@ -319,30 +303,41 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
       paraIndex  : typeof item.paraIndex === "number" ? item.paraIndex : undefined
     }));
 
-  // Step 5: relationships 仅保留关系三元组完整的记录，权重做区间归一化。
+  // Step 5: relationships 仅保留结构关系三元组完整的记录。
   const normalizedRelationships: AiRelationship[] = relationships
     .filter(isRecord)
     .filter(
       (item) =>
         typeof item.sourceName === "string" &&
         typeof item.targetName === "string" &&
-        typeof item.type === "string"
+        typeof item.relationshipTypeCode === "string"
     )
     .map((item) => ({
-      sourceName : item.sourceName as string,
-      targetName : item.targetName as string,
-      type       : item.type as string,
-      weight     : normalizeRelationWeight(item.weight),
-      description: typeof item.description === "string" ? item.description : undefined,
-      evidence   : typeof item.evidence === "string" ? item.evidence : undefined
+      sourceName          : item.sourceName as string,
+      targetName          : item.targetName as string,
+      relationshipTypeCode: item.relationshipTypeCode as string,
+      evidence            : typeof item.evidence === "string" ? item.evidence : undefined
     }));
 
-  // Step 6: 返回结构稳定对象，供下游入库/图谱计算直接消费。
-  return {
-    biographies  : normalizedBiographies,
-    mentions     : normalizedMentions,
-    relationships: normalizedRelationships
+  const normalizedRelationshipEvents: AiRelationshipEvent[] = relationshipEvents
+    .filter(isRecord)
+    .map((item) => aiRelationshipEventSchema.safeParse(item))
+    .filter((result): result is { success: true; data: AiRelationshipEvent } => result.success)
+    .map((result) => result.data);
+
+  const normalized = {
+    biographies       : normalizedBiographies,
+    mentions          : normalizedMentions,
+    relationships     : normalizedRelationships,
+    relationshipEvents: normalizedRelationshipEvents
   };
+  const validated = chapterAnalysisResponseSchema.safeParse(normalized);
+  if (!validated.success) {
+    throw new Error("AI response failed chapter analysis schema validation");
+  }
+
+  // Step 6: 返回结构稳定对象，供下游入库/图谱计算直接消费。
+  return validated.data;
 }
 
 /**

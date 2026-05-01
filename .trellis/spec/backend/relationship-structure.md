@@ -152,3 +152,133 @@ await prisma.$transaction(async (tx) => {
 ```
 
 The database owns active-row uniqueness, while service code owns soft-delete cascade and monotonic source transitions.
+
+## Scenario: AI Relationship Dual Write
+
+### 1. Scope / Trigger
+
+- Trigger: 章节分析 AI 输出从旧的单段关系，升级为 `relationships`（书级结构）与 `relationshipEvents`（章节事件）双段协议。
+- 适用范围：`ChapterAnalysisService`、章节分析 Prompt、AI 输出 schema、analysis job 的章节校验 payload。
+- AI 写入只产生草稿数据；人工审核、合并、聚合查询属于后续服务/API 层任务。
+
+### 2. Signatures
+
+AI output:
+
+```ts
+relationships: Array<{
+  sourceName: string;
+  targetName: string;
+  relationshipTypeCode: string;
+  evidence?: string;
+}>;
+
+relationshipEvents: Array<{
+  sourceName: string;
+  targetName: string;
+  relationshipTypeCode: string;
+  summary: string;
+  evidence?: string;
+  attitudeTags: string[];
+  paraIndex?: number;
+  confidence: number;
+}>;
+```
+
+DB write:
+
+```ts
+await tx.relationship.create({
+  data: {
+    bookId,
+    sourceId,
+    targetId,
+    relationshipTypeCode,
+    recordSource: RecordSource.DRAFT_AI,
+    status      : ProcessingStatus.DRAFT
+  }
+});
+
+await tx.relationshipEvent.createMany({
+  data: [{
+    relationshipId,
+    bookId,
+    chapterId,
+    chapterNo,
+    sourceId,
+    targetId,
+    summary,
+    evidence,
+    attitudeTags,
+    paraIndex,
+    confidence,
+    recordSource: RecordSource.DRAFT_AI,
+    status      : ProcessingStatus.DRAFT
+  }]
+});
+```
+
+### 3. Contracts
+
+- `relationshipTypeCode` must come from active `RelationshipTypeDefinition` rows injected into the chapter analysis prompt.
+- `relationships` declares book-level structure only; never put `summary`, `chapterId`, `paraIndex`, `confidence`, or attitude data on `Relationship`.
+- `relationshipEvents` stores chapter-level evidence and interaction detail; an event is written only when it matches a relationship declared in the same AI result after canonicalization.
+- For `directionMode === "SYMMETRIC"`, both relationship and event endpoints are canonicalized by persona UUID string order before lookup/create.
+- AI-created rows use `RecordSource.DRAFT_AI` and `ProcessingStatus.DRAFT`; this project does not have a `PENDING` processing status.
+- Sequential and twopass pipelines must pass the same normalized AI output contract downstream.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+| --- | --- |
+| `relationshipTypeCode` missing from active dictionary | Skip relationship/event write |
+| Either endpoint cannot resolve to a persona | Skip write and count hallucinated endpoints where resolver reports hallucination |
+| `sourceId === targetId` | Skip write |
+| Symmetric relationship endpoints reversed | Canonicalize before lookup/create |
+| Duplicate relationship in one chapter result | Reuse the same relationship id |
+| Event has no matching relationship in same AI result | Skip event; do not implicitly create the relationship |
+| Duplicate event payload in one chapter result | Deduplicate before `createMany` |
+| `attitudeTags` contains blanks or duplicates | Trim, remove blanks, dedupe, cap at 3 |
+
+### 5. Good/Base/Bad Cases
+
+- Good: AI outputs `relationships[{范进, 胡屠户, IN_LAW}]` and two matching events in chapter 3; service creates or reuses one book-level `Relationship` and writes two chapter-level `RelationshipEvent` rows.
+- Base: AI outputs a structure relationship with no event; service creates or reuses only the `Relationship`, leaving event count unchanged.
+- Bad: AI outputs only `relationshipEvents` for a pair and no matching `relationships` entry; service creates no implicit structure row because the event cannot prove the book-level relationship contract alone.
+
+### 6. Tests Required
+
+- Unit tests for active dictionary gate, inactive/missing type skip, self-loop skip, hallucinated endpoint skip.
+- Unit tests for symmetric canonicalization and idempotent relationship reuse.
+- Unit tests proving events attach only to relationships declared in `relationships`.
+- Prompt/schema tests proving `relationshipTypeCode`, `relationshipEvents`, `attitudeTags`, and fallback empty arrays remain aligned.
+- Job runner tests must mock `relationshipEvent.findMany` for chapter validation payloads; old `relationship.findMany` mocks no longer cover this path.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+// Event-only output creates a structure relationship implicitly.
+if (!relationshipId) {
+  relationshipId = await createRelationshipFromEvent(event);
+}
+```
+
+#### Correct
+
+```ts
+const relationshipId = relationshipIdByKey.get(relationshipKey);
+if (!relationshipId) {
+  continue;
+}
+
+relationshipEventData.push({
+  relationshipId,
+  summary: event.summary,
+  recordSource: RecordSource.DRAFT_AI,
+  status: ProcessingStatus.DRAFT
+});
+```
+
+This keeps AI structure claims and chapter evidence separate, while preventing event hallucinations from creating book-level facts.

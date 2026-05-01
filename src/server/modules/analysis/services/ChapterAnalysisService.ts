@@ -17,7 +17,10 @@ import {
 } from "@/server/modules/analysis/config/lexicon";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
-import type { RosterDiscoveryInput } from "@/server/modules/analysis/services/prompts";
+import {
+  formatRelationshipTypeDictionary,
+  type RosterDiscoveryInput
+} from "@/server/modules/analysis/services/prompts";
 import type {
   AnalysisProfileContext,
   ChapterAnalysisResponse,
@@ -58,10 +61,11 @@ export interface ChapterAnalysisResult {
   chunkCount        : number;
   hallucinationCount: number;
   created: {
-    personas     : number;
-    mentions     : number;
-    biographies  : number;
-    relationships: number;
+    personas          : number;
+    mentions          : number;
+    biographies       : number;
+    relationships     : number;
+    relationshipEvents: number;
   };
   grayZoneCount?: number;
 }
@@ -309,6 +313,20 @@ export function createChapterAnalysisService(
       ANALYSIS_PIPELINE_CONFIG.maxChunkLength,
       ANALYSIS_PIPELINE_CONFIG.chunkOverlap
     );
+    const relationshipTypeDictionary = formatRelationshipTypeDictionary(await prismaClient.relationshipTypeDefinition.findMany({
+      where  : { status: "ACTIVE" },
+      orderBy: [
+        { group: "asc" },
+        { sortOrder: "asc" },
+        { code: "asc" }
+      ],
+      select: {
+        code         : true,
+        name         : true,
+        group        : true,
+        directionMode: true
+      }
+    }));
 
     const aiResults: ChapterAnalysisResponse[] = [];
     for (let i = 0; i < chunks.length; i += AI_CONCURRENCY) {
@@ -327,7 +345,8 @@ export function createChapterAnalysisService(
           chunkCount                 : chunks.length,
           genericTitlesExample,
           entityExtractionRules      : bookLexiconConfig.entityExtractionRules,
-          relationshipExtractionRules: bookLexiconConfig.relationshipExtractionRules
+          relationshipExtractionRules: bookLexiconConfig.relationshipExtractionRules,
+          relationshipTypeDictionary
         }
       }, stageAiCallExecutor));
       const results = await Promise.all(batchPromises);
@@ -511,107 +530,164 @@ export function createChapterAnalysisService(
       }
     }
 
-    const relationshipTypes = await tx.relationshipTypeDefinition.findMany({
+    const activeRelationshipTypes = await tx.relationshipTypeDefinition.findMany({
       where : { status: "ACTIVE" },
       select: {
         code         : true,
-        name         : true,
-        aliases      : true,
         directionMode: true
       }
     });
-    const relationshipTypeByToken = new Map<string, (typeof relationshipTypes)[number]>();
-    for (const relationshipType of relationshipTypes) {
-      relationshipTypeByToken.set(relationshipType.code, relationshipType);
-      relationshipTypeByToken.set(relationshipType.name, relationshipType);
-      for (const alias of relationshipType.aliases) {
-        relationshipTypeByToken.set(alias, relationshipType);
-      }
-    }
+    const relationshipTypeByCode = new Map(activeRelationshipTypes.map((type) => [type.code, type]));
 
-    const relationKeys = new Set<string>();
-    let relationshipEventCreated = 0;
-    for (const r of input.merged.relationships) {
-      const s = await resolve(r.sourceName);
-      const t = await resolve(r.targetName);
-      if (s.status === "hallucinated") {
+    const normalizeRelationshipTypeCode = (code: string) => code.trim();
+    const buildRelationshipKey = (sourceId: string, targetId: string, typeCode: string) => [
+      sourceId,
+      targetId,
+      typeCode
+    ].join("|");
+    const normalizeAttitudeTags = (tags: readonly string[]) => {
+      const seen = new Set<string>();
+      const normalized: string[] = [];
+      for (const tag of tags) {
+        const trimmed = tag.trim();
+        if (!trimmed || seen.has(trimmed)) continue;
+        seen.add(trimmed);
+        normalized.push(trimmed);
+        if (normalized.length >= 3) break;
+      }
+      return normalized;
+    };
+    const resolveRelationshipPair = async (relationship: {
+      sourceName          : string;
+      targetName          : string;
+      relationshipTypeCode: string;
+    }): Promise<{
+      sourceId: string;
+      targetId: string;
+      typeCode: string;
+    } | null> => {
+      const source = await resolve(relationship.sourceName);
+      const target = await resolve(relationship.targetName);
+      if (source.status === "hallucinated") {
         hallucinationCount += 1;
       }
-      if (t.status === "hallucinated") {
+      if (target.status === "hallucinated") {
         hallucinationCount += 1;
       }
-      if (s.personaId && t.personaId && s.personaId !== t.personaId) {
-        const relationshipType = relationshipTypeByToken.get(r.type.trim());
-        if (!relationshipType) {
-          continue;
+      if (!source.personaId || !target.personaId || source.personaId === target.personaId) {
+        return null;
+      }
+
+      const typeCode = normalizeRelationshipTypeCode(relationship.relationshipTypeCode);
+      const relationshipType = relationshipTypeByCode.get(typeCode);
+      if (!relationshipType) {
+        return null;
+      }
+
+      if (relationshipType.directionMode === "SYMMETRIC" && source.personaId > target.personaId) {
+        return {
+          sourceId: target.personaId,
+          targetId: source.personaId,
+          typeCode
+        };
+      }
+
+      return {
+        sourceId: source.personaId,
+        targetId: target.personaId,
+        typeCode
+      };
+    };
+
+    const relationshipIdByKey = new Map<string, string>();
+    for (const relationship of input.merged.relationships) {
+      const canonicalPair = await resolveRelationshipPair(relationship);
+      if (!canonicalPair) {
+        continue;
+      }
+
+      const key = buildRelationshipKey(canonicalPair.sourceId, canonicalPair.targetId, canonicalPair.typeCode);
+      if (relationshipIdByKey.has(key)) {
+        continue;
+      }
+
+      const existingRelationship = await tx.relationship.findFirst({
+        where: {
+          bookId              : input.bookId,
+          sourceId            : canonicalPair.sourceId,
+          targetId            : canonicalPair.targetId,
+          relationshipTypeCode: canonicalPair.typeCode,
+          deletedAt           : null
+        },
+        select: {
+          id: true
         }
+      });
 
-        let sourceId = s.personaId;
-        let targetId = t.personaId;
-        if (relationshipType.directionMode === "SYMMETRIC" && sourceId > targetId) {
-          sourceId = t.personaId;
-          targetId = s.personaId;
-        }
-
-        const normalizedDescription = sanitizeRelationshipField(r.description);
-        const normalizedEvidence = sanitizeRelationshipField(r.evidence);
-        const key = [
-          input.chapterId,
-          sourceId,
-          targetId,
-          relationshipType.code,
-          normalizedDescription ?? "",
-          normalizedEvidence ?? ""
-        ].join("|");
-        if (relationKeys.has(key)) continue;
-        relationKeys.add(key);
-
-        const existingRelationship = await tx.relationship.findFirst({
-          where: {
+      const persistedRelationship = existingRelationship
+        ? existingRelationship
+        : await tx.relationship.create({
+          data: {
             bookId              : input.bookId,
-            sourceId,
-            targetId,
-            relationshipTypeCode: relationshipType.code,
-            deletedAt           : null
+            sourceId            : canonicalPair.sourceId,
+            targetId            : canonicalPair.targetId,
+            relationshipTypeCode: canonicalPair.typeCode,
+            recordSource        : RecordSource.DRAFT_AI,
+            status              : ProcessingStatus.DRAFT
           },
           select: {
             id: true
           }
         });
 
-        const relationship = existingRelationship
-          ? existingRelationship
-          : await tx.relationship.create({
-            data: {
-              bookId              : input.bookId,
-              sourceId,
-              targetId,
-              relationshipTypeCode: relationshipType.code,
-              recordSource        : RecordSource.DRAFT_AI,
-              status              : ProcessingStatus.DRAFT
-            },
-            select: {
-              id: true
-            }
-          });
+      relationshipIdByKey.set(key, persistedRelationship.id);
+    }
 
-        await tx.relationshipEvent.create({
-          data: {
-            relationshipId: relationship.id,
-            bookId        : input.bookId,
-            chapterId     : input.chapterId,
-            chapterNo     : input.chapterNo,
-            sourceId,
-            targetId,
-            summary       : normalizedDescription ?? relationshipType.name,
-            evidence      : normalizedEvidence,
-            confidence    : r.weight ?? 1,
-            recordSource  : RecordSource.DRAFT_AI,
-            status        : ProcessingStatus.DRAFT
-          }
-        });
-        relationshipEventCreated += 1;
+    const relationshipEventData: Prisma.RelationshipEventCreateManyInput[] = [];
+    const relationshipEventKeys = new Set<string>();
+    for (const event of input.merged.relationshipEvents) {
+      const canonicalPair = await resolveRelationshipPair(event);
+      if (!canonicalPair) {
+        continue;
       }
+
+      const relationshipKey = buildRelationshipKey(canonicalPair.sourceId, canonicalPair.targetId, canonicalPair.typeCode);
+      const relationshipId = relationshipIdByKey.get(relationshipKey);
+      if (!relationshipId) {
+        continue;
+      }
+
+      const summary = sanitizeRelationshipField(event.summary);
+      if (!summary) {
+        continue;
+      }
+      const evidence = sanitizeRelationshipField(event.evidence);
+      const eventKey = [
+        relationshipId,
+        summary,
+        evidence ?? "",
+        event.paraIndex ?? "null"
+      ].join("|");
+      if (relationshipEventKeys.has(eventKey)) {
+        continue;
+      }
+      relationshipEventKeys.add(eventKey);
+
+      relationshipEventData.push({
+        relationshipId,
+        bookId      : input.bookId,
+        chapterId   : input.chapterId,
+        chapterNo   : input.chapterNo,
+        sourceId    : canonicalPair.sourceId,
+        targetId    : canonicalPair.targetId,
+        summary,
+        evidence,
+        attitudeTags: normalizeAttitudeTags(event.attitudeTags),
+        paraIndex   : event.paraIndex,
+        confidence  : event.confidence,
+        recordSource: RecordSource.DRAFT_AI,
+        status      : ProcessingStatus.DRAFT
+      });
     }
 
     if (mentionData.length > 0) {
@@ -620,14 +696,18 @@ export function createChapterAnalysisService(
     if (bioData.length > 0) {
       await tx.biographyRecord.createMany({ data: bioData });
     }
+    if (relationshipEventData.length > 0) {
+      await tx.relationshipEvent.createMany({ data: relationshipEventData });
+    }
     return {
       hallucinationCount,
       grayZoneCount,
       created: {
-        personas     : personaCreated,
-        mentions     : mentionData.length,
-        biographies  : bioData.length,
-        relationships: relationshipEventCreated
+        personas          : personaCreated,
+        mentions          : mentionData.length,
+        biographies       : bioData.length,
+        relationships     : relationshipIdByKey.size,
+        relationshipEvents: relationshipEventData.length
       }
     };
   }

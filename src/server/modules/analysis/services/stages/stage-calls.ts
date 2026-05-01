@@ -97,15 +97,16 @@ export async function analyzeChunkByStage(
   const prompt = await resolvePromptTemplate({
     slug        : "CHAPTER_ANALYSIS",
     replacements: {
-      bookTitle    : input.chunkInput.bookTitle,
-      chapterNo    : String(input.chunkInput.chapterNo),
-      chapterTitle : input.chunkInput.chapterTitle,
-      content      : input.chunkInput.content,
-      chunkIndex   : String(input.chunkInput.chunkIndex + 1),
-      chunkCount   : String(input.chunkInput.chunkCount),
-      genericTitles: input.chunkInput.genericTitlesExample ?? "",
-      analysisRules: buildChapterAnalysisRulesText(input.chunkInput),
-      knownEntities: input.chunkInput.profiles.map((profile, index) => {
+      bookTitle                 : input.chunkInput.bookTitle,
+      chapterNo                 : String(input.chunkInput.chapterNo),
+      chapterTitle              : input.chunkInput.chapterTitle,
+      content                   : input.chunkInput.content,
+      chunkIndex                : String(input.chunkInput.chunkIndex + 1),
+      chunkCount                : String(input.chunkInput.chunkCount),
+      genericTitles             : input.chunkInput.genericTitlesExample ?? "",
+      analysisRules             : buildChapterAnalysisRulesText(input.chunkInput),
+      relationshipTypeDictionary: input.chunkInput.relationshipTypeDictionary ?? "",
+      knownEntities             : input.chunkInput.profiles.map((profile, index) => {
         const uniqueAliases = profile.aliases.filter((alias) => alias !== profile.canonicalName);
         const aliasStr = uniqueAliases.length > 0 ? uniqueAliases.join(",") : "无";
         return `[${index + 1}] ${profile.canonicalName}|${aliasStr}`;

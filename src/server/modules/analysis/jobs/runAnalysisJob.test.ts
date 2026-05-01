@@ -117,7 +117,8 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
   const profileFindMany = vi.fn().mockResolvedValue([]);
   const mentionGroupBy = vi.fn().mockResolvedValue([]);
   const mentionFindMany = vi.fn().mockResolvedValue([]);
-  const relationshipFindMany = vi.fn().mockResolvedValue([]);
+  const relationshipEventFindMany = vi.fn().mockResolvedValue([]);
+  const relationshipTypeDefinitionFindMany = vi.fn().mockResolvedValue([]);
   const personaFindMany = vi.fn().mockResolvedValue([]);
   const personaUpdateMany = vi.fn().mockResolvedValue({ count: 0 });
 
@@ -136,13 +137,14 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
       updateMany: analysisJobUpdateMany,
       update    : analysisJobUpdate
     },
-    chapter     : { findMany: chapterFindMany, findUnique: chapterFindUnique, updateMany: chapterUpdateMany, update: chapterUpdate },
-    book        : { findUnique: bookFindUnique, update: bookUpdate, updateMany: bookUpdateMany },
-    profile     : { findMany: profileFindMany },
-    mention     : { groupBy: mentionGroupBy, findMany: mentionFindMany },
-    relationship: { findMany: relationshipFindMany },
-    persona     : { findMany: personaFindMany, updateMany: personaUpdateMany },
-    $transaction: transaction
+    chapter                   : { findMany: chapterFindMany, findUnique: chapterFindUnique, updateMany: chapterUpdateMany, update: chapterUpdate },
+    book                      : { findUnique: bookFindUnique, update: bookUpdate, updateMany: bookUpdateMany },
+    profile                   : { findMany: profileFindMany },
+    mention                   : { groupBy: mentionGroupBy, findMany: mentionFindMany },
+    relationshipEvent         : { findMany: relationshipEventFindMany },
+    relationshipTypeDefinition: { findMany: relationshipTypeDefinitionFindMany },
+    persona                   : { findMany: personaFindMany, updateMany: personaUpdateMany },
+    $transaction              : transaction
   } as never, resolvedChapterAnalyzer);
 
   return {
@@ -171,7 +173,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
     profileFindMany,
     mentionGroupBy,
     mentionFindMany,
-    relationshipFindMany,
+    relationshipEventFindMany,
     personaFindMany,
     personaUpdateMany
   };
@@ -910,7 +912,7 @@ describe("analysis job runner", () => {
       validateChapterResult,
       personaFindMany,
       mentionFindMany,
-      relationshipFindMany,
+      relationshipEventFindMany,
       profileFindMany
     } = createRunnerContext({ withValidation: true });
 
@@ -957,8 +959,12 @@ describe("analysis job runner", () => {
     mentionFindMany.mockResolvedValueOnce([
       { personaId: "persona-missing", rawText: "陌生人" }
     ]);
-    relationshipFindMany.mockResolvedValueOnce([
-      { sourceId: "persona-related", targetId: "persona-missing", type: "RIVAL" }
+    relationshipEventFindMany.mockResolvedValueOnce([
+      {
+        sourceId    : "persona-related",
+        targetId    : "persona-missing",
+        relationship: { relationshipTypeCode: "RIVAL" }
+      }
     ]);
     profileFindMany.mockResolvedValueOnce([
       {

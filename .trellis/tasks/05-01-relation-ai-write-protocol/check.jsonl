@@ -1,1 +1,16 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引，辅助检查覆盖面"}
+{"file": ".trellis/spec/backend/ai-output-contract.md", "reason": "检查 AI 输出解析和异常处理是否合规"}
+{"file": ".trellis/spec/backend/analysis-pipeline.md", "reason": "检查 sequential/twopass 兼容性"}
+{"file": ".trellis/spec/backend/analysis-runtime-knowledge.md", "reason": "检查 Prompt 字典注入契约"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "检查 Relationship/RelationshipEvent 写入契约"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "检查 Prisma 事务与唯一约束处理"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "检查测试策略与 mock 质量"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "检查类型安全"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "检查日志与诊断信息"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "检查后端质量门禁"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "检查 Zod-first 类型契约"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "检查全局代码质量"}
+{"file": ".trellis/spec/guides/index.md", "reason": "共享思考指南索引"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "检查跨层一致性"}
+{"file": ".trellis/spec/guides/module-boundary-guidelines.md", "reason": "检查模块边界"}

@@ -11,7 +11,7 @@
  * - 这里的断言大多是业务规则（如状态推进、去重策略、容错路径），不是简单技术实现细节。
  */
 
-import { ProcessingStatus } from "@/generated/prisma/enums";
+import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -119,8 +119,28 @@ function createPrismaMock(chapter = buildChapter()) {
   const mentionCreateMany = vi.fn().mockResolvedValue({ count: 0 });
   const biographyDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const biographyCreateMany = vi.fn().mockResolvedValue({ count: 0 });
-  const relationshipDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
-  const relationshipCreateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const relationshipEventDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
+  const relationshipEventCreateMany = vi.fn().mockResolvedValue({ count: 0 });
+  const relationshipTypeFindMany = vi.fn().mockResolvedValue([
+    {
+      code         : "ALLY",
+      name         : "同盟",
+      group        : "社交",
+      aliases      : [],
+      directionMode: "INVERSE"
+    },
+    {
+      code         : "FRIEND",
+      name         : "朋友",
+      group        : "社交",
+      aliases      : [],
+      directionMode: "SYMMETRIC"
+    }
+  ]);
+  const relationshipFindFirst = vi.fn().mockResolvedValue(null);
+  const relationshipCreate = vi.fn().mockImplementation(({ data }) => Promise.resolve({
+    id: `rel-${data.sourceId}-${data.targetId}-${data.relationshipTypeCode}`
+  }));
 
   const tx = {
     mention: {
@@ -131,9 +151,16 @@ function createPrismaMock(chapter = buildChapter()) {
       deleteMany: biographyDeleteMany,
       createMany: biographyCreateMany
     },
+    relationshipTypeDefinition: {
+      findMany: relationshipTypeFindMany
+    },
     relationship: {
-      deleteMany: relationshipDeleteMany,
-      createMany: relationshipCreateMany
+      findFirst: relationshipFindFirst,
+      create   : relationshipCreate
+    },
+    relationshipEvent: {
+      deleteMany: relationshipEventDeleteMany,
+      createMany: relationshipEventCreateMany
     }
   };
 
@@ -155,6 +182,9 @@ function createPrismaMock(chapter = buildChapter()) {
       findMany  : vi.fn().mockResolvedValue([]),
       findFirst : vi.fn().mockResolvedValue(buildEnabledModel())
     },
+    relationshipTypeDefinition: {
+      findMany: relationshipTypeFindMany
+    },
     modelStrategyConfig: {
       findFirst: vi.fn().mockResolvedValue(null)
     },
@@ -170,8 +200,11 @@ function createPrismaMock(chapter = buildChapter()) {
     mentionCreateMany,
     biographyDeleteMany,
     biographyCreateMany,
-    relationshipDeleteMany,
-    relationshipCreateMany
+    relationshipEventDeleteMany,
+    relationshipEventCreateMany,
+    relationshipTypeFindMany,
+    relationshipFindFirst,
+    relationshipCreate
   };
 }
 
@@ -260,10 +293,12 @@ describe("chapter analysis service", () => {
       prismaMock,
       mentionCreateMany,
       biographyCreateMany,
-      relationshipCreateMany,
+      relationshipEventCreateMany,
       mentionDeleteMany,
       biographyDeleteMany,
-      relationshipDeleteMany
+      relationshipEventDeleteMany,
+      relationshipFindFirst,
+      relationshipCreate
     } = createPrismaMock(chapter);
 
     const resolveMock = vi.fn(async ({ extractedName }: { extractedName: string }) => {
@@ -307,13 +342,39 @@ describe("chapter analysis service", () => {
         { personaName: "幻影", category: "BIRTH", event: "不存在" }
       ],
       relationships: [
-        { sourceName: "张三", targetName: "李四", type: "ALLY", description: "a", evidence: "  证据  " },
-        { sourceName: "张三", targetName: "李四", type: "ALLY", description: "a", evidence: "证据" },
-        { sourceName: "张三", targetName: "张三", type: "SELF", description: "self", evidence: "x" },
-        { sourceName: "幻影", targetName: "李四", type: "ALLY" }
+        { sourceName: "张三", targetName: "李四", relationshipTypeCode: "ALLY", evidence: "  证据  " },
+        { sourceName: "张三", targetName: "李四", relationshipTypeCode: "ALLY", evidence: "证据" },
+        { sourceName: "张三", targetName: "张三", relationshipTypeCode: "ALLY", evidence: "x" },
+        { sourceName: "幻影", targetName: "李四", relationshipTypeCode: "ALLY" }
+      ],
+      relationshipEvents: [
+        {
+          sourceName          : "张三",
+          targetName          : "李四",
+          relationshipTypeCode: "ALLY",
+          summary             : "张三帮助李四",
+          evidence            : "  证据  ",
+          attitudeTags        : ["资助", "资助", " 感激 ", ""],
+          paraIndex           : 2,
+          confidence          : 0.86
+        },
+        {
+          sourceName          : "张三",
+          targetName          : "张三",
+          relationshipTypeCode: "ALLY",
+          summary             : "自循环应跳过",
+          evidence            : "x"
+        },
+        {
+          sourceName          : "张三",
+          targetName          : "李四",
+          relationshipTypeCode: "UNKNOWN",
+          summary             : "字典 miss 应跳过",
+          evidence            : "x"
+        }
       ]
     };
-    const emptyChunkData = { mentions: [], biographies: [], relationships: [] };
+    const emptyChunkData = { mentions: [], biographies: [], relationships: [], relationshipEvents: [] };
     const mockExecutor = createMockExecutor({
       [PipelineStage.CHUNK_EXTRACTION]: (input: { stage: string; chunkIndex?: number }) => {
         return input.chunkIndex === 0 ? chunkData : emptyChunkData;
@@ -327,10 +388,11 @@ describe("chapter analysis service", () => {
     expect(result.chunkCount).toBe(1);
     expect(result.hallucinationCount).toBe(3);
     expect(result.created).toEqual({
-      personas     : 1,
-      mentions     : 1,
-      biographies  : 2,
-      relationships: 1
+      personas          : 1,
+      mentions          : 1,
+      biographies       : 2,
+      relationships     : 1,
+      relationshipEvents: 1
     });
 
     expect(mentionDeleteMany).toHaveBeenCalledWith({
@@ -339,7 +401,7 @@ describe("chapter analysis service", () => {
     expect(biographyDeleteMany).toHaveBeenCalledWith({
       where: { chapterId: "chapter-1", status: ProcessingStatus.DRAFT }
     });
-    expect(relationshipDeleteMany).toHaveBeenCalledWith({
+    expect(relationshipEventDeleteMany).toHaveBeenCalledWith({
       where: { chapterId: "chapter-1", status: ProcessingStatus.DRAFT }
     });
 
@@ -370,37 +432,69 @@ describe("chapter analysis service", () => {
       ]
     });
 
-    expect(relationshipCreateMany).toHaveBeenCalledWith({
+    expect(relationshipFindFirst).toHaveBeenCalledWith({
+      where: {
+        bookId              : "book-1",
+        sourceId            : "persona-zhang",
+        targetId            : "persona-li",
+        relationshipTypeCode: "ALLY",
+        deletedAt           : null
+      },
+      select: {
+        id: true
+      }
+    });
+    expect(relationshipCreate).toHaveBeenCalledWith({
+      data: {
+        bookId              : "book-1",
+        sourceId            : "persona-zhang",
+        targetId            : "persona-li",
+        relationshipTypeCode: "ALLY",
+        recordSource        : RecordSource.DRAFT_AI,
+        status              : ProcessingStatus.DRAFT
+      },
+      select: {
+        id: true
+      }
+    });
+    expect(relationshipEventCreateMany).toHaveBeenCalledWith({
       data: [{
-        chapterId  : "chapter-1",
-        sourceId   : "persona-zhang",
-        targetId   : "persona-li",
-        type       : "ALLY",
-        weight     : 1,
-        description: undefined,
-        evidence   : "证据",
-        status     : ProcessingStatus.DRAFT
+        relationshipId: "rel-persona-zhang-persona-li-ALLY",
+        bookId        : "book-1",
+        chapterId     : "chapter-1",
+        chapterNo     : 1,
+        sourceId      : "persona-zhang",
+        targetId      : "persona-li",
+        summary       : "张三帮助李四",
+        evidence      : "证据",
+        attitudeTags  : ["资助", "感激"],
+        paraIndex     : 2,
+        confidence    : 0.86,
+        recordSource  : RecordSource.DRAFT_AI,
+        status        : ProcessingStatus.DRAFT
       }]
     });
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips createMany calls when ai extraction is empty", async () => {
-    const { prismaMock, mentionCreateMany, biographyCreateMany, relationshipCreateMany } = createPrismaMock();
+    const { prismaMock, mentionCreateMany, biographyCreateMany, relationshipCreate, relationshipEventCreateMany } = createPrismaMock();
 
     const service = createChapterAnalysisService(prismaMock as never, undefined, createMockExecutor() as never);
 
     const result = await service.analyzeChapter("chapter-1", { jobId: "test-job" });
 
     expect(result.created).toEqual({
-      personas     : 0,
-      mentions     : 0,
-      biographies  : 0,
-      relationships: 0
+      personas          : 0,
+      mentions          : 0,
+      biographies       : 0,
+      relationships     : 0,
+      relationshipEvents: 0
     });
     expect(mentionCreateMany).not.toHaveBeenCalled();
     expect(biographyCreateMany).not.toHaveBeenCalled();
-    expect(relationshipCreateMany).not.toHaveBeenCalled();
+    expect(relationshipCreate).not.toHaveBeenCalled();
+    expect(relationshipEventCreateMany).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -1373,8 +1467,9 @@ describe("chapter analysis merge helpers", () => {
         { personaName: "范进", rawText: "范进", paraIndex: 0, summary: "首次出现" },
         { personaName: "范进", rawText: "范进", paraIndex: 0, summary: "重复出现" }
       ],
-      biographies  : [],
-      relationships: []
+      biographies       : [],
+      relationships     : [],
+      relationshipEvents: []
     }];
 
     // Act
@@ -1398,8 +1493,9 @@ describe("chapter analysis merge helpers", () => {
         { personaName: "范进", rawText: "范进", paraIndex: 0 },
         { personaName: "范进", rawText: "范进", paraIndex: 1 }
       ],
-      biographies  : [],
-      relationships: []
+      biographies       : [],
+      relationships     : [],
+      relationshipEvents: []
     }];
 
     // Act
@@ -1420,7 +1516,8 @@ describe("chapter analysis merge helpers", () => {
         category   : "EVENT" as const,
         event      : "病中伸二指"
       }],
-      relationships: []
+      relationships     : [],
+      relationshipEvents: []
     }];
 
     // Act
@@ -1430,36 +1527,36 @@ describe("chapter analysis merge helpers", () => {
     // Assert
     // 空输入必须稳定返回空结构，避免调用方出现 undefined 分支。
     expect(emptyMerged).toEqual({
-      mentions     : [],
-      biographies  : [],
-      relationships: []
+      mentions          : [],
+      biographies       : [],
+      relationships     : [],
+      relationshipEvents: []
     });
     // 单分片输入应保持原样，防止 merge 逻辑引入额外副作用。
     expect(singleMerged).toEqual(singleChunk[0]);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("merges relationships with max weight and caps evidence entries at five", () => {
+  it("merges relationships by structure and caps evidence entries at five", () => {
     // Arrange
     const results = [{
       mentions     : [],
       biographies  : [],
       relationships: [
         {
-          sourceName: "范进",
-          targetName: "周学道",
-          type      : "师生",
-          weight    : 0.3,
-          evidence  : "证据1"
+          sourceName          : "范进",
+          targetName          : "周学道",
+          relationshipTypeCode: "MENTOR",
+          evidence            : "证据1"
         },
         {
-          sourceName: "范进",
-          targetName: "周学道",
-          type      : "师生",
-          weight    : 0.9,
-          evidence  : "证据2；证据3；证据4；证据5；证据6；证据7"
+          sourceName          : "范进",
+          targetName          : "周学道",
+          relationshipTypeCode: "MENTOR",
+          evidence            : "证据2；证据3；证据4；证据5；证据6；证据7"
         }
-      ]
+      ],
+      relationshipEvents: []
     }];
 
     // Act
@@ -1469,15 +1566,19 @@ describe("chapter analysis merge helpers", () => {
 
     // Assert
     expect(merged.relationships).toHaveLength(1);
-    // 合并后权重取 max，确保强证据关系优先保留。
-    expect(relationship?.weight).toBe(0.9);
+    // 合并后应保留结构关系并聚合证据，避免重复结构行。
+    expect(relationship).toMatchObject({
+      sourceName          : "范进",
+      targetName          : "周学道",
+      relationshipTypeCode: "MENTOR"
+    });
     // evidence 限制为 5 条，防止异常长文本污染后续展示与日志统计。
     expect(evidenceItems).toHaveLength(5);
     expect(evidenceItems).toEqual(["证据1", "证据2", "证据3", "证据4", "证据5"]);
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("falls back to mention base keys and collapses empty relationship evidence to undefined", () => {
+  it("falls back to mention base keys and ignores blank relationship evidence", () => {
     // Arrange
     const results = [{
       mentions: [
@@ -1498,18 +1599,19 @@ describe("chapter analysis merge helpers", () => {
       ],
       relationships: [
         {
-          sourceName : "范进",
-          targetName : "周学道",
-          type       : "师生",
-          description: "旧描述"
+          sourceName          : "范进",
+          targetName          : "周学道",
+          relationshipTypeCode: "MENTOR",
+          evidence            : "旧描述"
         },
         {
-          sourceName: "范进",
-          targetName: "周学道",
-          type      : "师生",
-          evidence  : "   "
+          sourceName          : "范进",
+          targetName          : "周学道",
+          relationshipTypeCode: "MENTOR",
+          evidence            : "   "
         }
-      ]
+      ],
+      relationshipEvents: []
     }];
 
     // Act
@@ -1520,16 +1622,15 @@ describe("chapter analysis merge helpers", () => {
     expect(merged.mentions).toHaveLength(1);
     // biography 同键事件应只保留一条。
     expect(merged.biographies).toHaveLength(1);
-    // 空白 evidence 与缺省 weight 不应生成脏值，description 保留更早的完整描述。
+    // 空白 evidence 不应生成脏值，证据应保留更早的完整值。
     expect(merged.relationships).toHaveLength(1);
     expect(merged.relationships[0]).toMatchObject({
-      sourceName : "范进",
-      targetName : "周学道",
-      type       : "师生",
-      description: "旧描述"
+      sourceName          : "范进",
+      targetName          : "周学道",
+      relationshipTypeCode: "MENTOR",
+      evidence            : "旧描述"
     });
-    expect(merged.relationships[0]?.weight).toBeUndefined();
-    expect(merged.relationships[0]?.evidence).toBeUndefined();
+    expect(merged.relationships[0]?.evidence).toBe("旧描述");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

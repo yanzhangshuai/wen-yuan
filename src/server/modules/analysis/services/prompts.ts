@@ -53,6 +53,15 @@ export interface BuildPromptInput {
   entityExtractionRules?      : readonly string[];
   /** 可选覆盖的关系抽取规则。 */
   relationshipExtractionRules?: readonly string[];
+  /** 当前启用的关系类型字典渲染文本。 */
+  relationshipTypeDictionary? : string;
+}
+
+export interface RelationshipTypeDictionaryPromptEntry {
+  code         : string;
+  name         : string;
+  group        : string;
+  directionMode: string;
 }
 
 /**
@@ -194,7 +203,11 @@ export function buildRosterDiscoveryRulesText(input: Pick<RosterDiscoveryInput, 
 export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "genericTitlesExample" | "entityExtractionRules" | "relationshipExtractionRules">): string {
   const genericTitlesExample = input.genericTitlesExample ?? "";
   const analysisPreRules: readonly string[] = [
-    "仅输出原始 JSON，禁止 markdown 代码块。"
+    "仅输出原始 JSON，禁止 markdown 代码块。",
+    "relationships 只声明全书唯一的结构身份关系，字段使用 relationshipTypeCode，不写章节互动摘要。",
+    "relationshipEvents 只写本章互动事件；每条事件必须能通过 sourceName + targetName + relationshipTypeCode 对应到 relationships 中一条。",
+    "relationshipTypeCode 必须从已知关系类型字典中选择；未列出的关系不要自创，也不要输出。",
+    "attitudeTags 每条最多 3 个；信号不足时输出 []。"
   ];
   const analysisPostRules: readonly string[] = [
     "biography.category 限定: BIRTH|EXAM|CAREER|TRAVEL|SOCIAL|DEATH|EVENT。",
@@ -208,6 +221,32 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
     ...analysisPostRules,
     ...relationshipRules
   ], { genericTitles: genericTitlesExample });
+}
+
+export function formatRelationshipTypeDictionary(
+  entries: readonly RelationshipTypeDictionaryPromptEntry[]
+): string {
+  if (entries.length === 0) {
+    return "（暂无启用关系类型；relationships 与 relationshipEvents 必须返回 []）";
+  }
+
+  const groupMap = new Map<string, RelationshipTypeDictionaryPromptEntry[]>();
+  for (const entry of entries) {
+    const group = entry.group.trim() || "未分组";
+    const groupEntries = groupMap.get(group) ?? [];
+    groupEntries.push(entry);
+    groupMap.set(group, groupEntries);
+  }
+
+  const lines: string[] = [];
+  for (const [group, groupEntries] of groupMap) {
+    lines.push(`【${group}】`);
+    for (const entry of groupEntries) {
+      lines.push(`- ${entry.code} · ${entry.name} · ${entry.directionMode}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 export function buildIndependentExtractionRulesText(input: Pick<IndependentExtractionInput, "entityExtractionRules" | "genericTitlesExample">): string {

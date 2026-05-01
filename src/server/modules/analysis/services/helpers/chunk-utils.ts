@@ -115,13 +115,15 @@ export function mergeRosterEntriesForAnalysis(entries: EnhancedChapterRosterEntr
 /**
  * 分段结果聚合：
  * - mention：按 paraIndex 感知去重，减少跨段误折叠；
- * - relationship：同键关系保留最大权重，并聚合证据；
+ * - relationship：按结构三元组去重，并聚合证据；
+ * - relationshipEvent：按精确事件语义去重，保留同 Pair 同章节的多事件；
  * - evidence 聚合后截断到 5 条，防止异常长链污染结果与日志。
  */
 export function mergeChunkResultsForAnalysis(results: ChapterAnalysisResponse[]): ChapterAnalysisResponse {
   const mentionMap = new Map<string, ChapterAnalysisResponse["mentions"][number]>();
   const biographyMap = new Map<string, ChapterAnalysisResponse["biographies"][number]>();
   const relationshipMap = new Map<string, ChapterAnalysisResponse["relationships"][number]>();
+  const relationshipEventMap = new Map<string, ChapterAnalysisResponse["relationshipEvents"][number]>();
 
   for (const result of results) {
     for (const mention of result.mentions) {
@@ -139,7 +141,7 @@ export function mergeChunkResultsForAnalysis(results: ChapterAnalysisResponse[])
     }
 
     for (const relationship of result.relationships) {
-      const key = `${relationship.sourceName}||${relationship.targetName}||${relationship.type}`;
+      const key = `${relationship.sourceName}||${relationship.targetName}||${relationship.relationshipTypeCode}`;
       const existing = relationshipMap.get(key);
       if (!existing) {
         relationshipMap.set(key, { ...relationship });
@@ -168,18 +170,30 @@ export function mergeChunkResultsForAnalysis(results: ChapterAnalysisResponse[])
 
       relationshipMap.set(key, {
         ...existing,
-        // 权重采用最大值，避免高置信边被后续低置信片段"冲淡"。
-        weight     : Math.max(existing.weight ?? 0, relationship.weight ?? 0) || undefined,
-        description: existing.description ?? relationship.description,
-        evidence   : Array.from(evidences).filter(Boolean).slice(0, RELATIONSHIP_EVIDENCE_LIMIT).join("；") || undefined
+        evidence: Array.from(evidences).filter(Boolean).slice(0, RELATIONSHIP_EVIDENCE_LIMIT).join("；") || undefined
       });
+    }
+
+    for (const event of result.relationshipEvents ?? []) {
+      const key = [
+        event.sourceName,
+        event.targetName,
+        event.relationshipTypeCode,
+        event.summary,
+        event.evidence ?? "",
+        event.paraIndex ?? "null"
+      ].join("||");
+      if (!relationshipEventMap.has(key)) {
+        relationshipEventMap.set(key, event);
+      }
     }
   }
 
   return {
-    biographies  : Array.from(biographyMap.values()),
-    mentions     : Array.from(mentionMap.values()),
-    relationships: Array.from(relationshipMap.values())
+    biographies       : Array.from(biographyMap.values()),
+    mentions          : Array.from(mentionMap.values()),
+    relationships     : Array.from(relationshipMap.values()),
+    relationshipEvents: Array.from(relationshipEventMap.values())
   };
 }
 

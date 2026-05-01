@@ -1,1 +1,16 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引，定位本任务相关约定"}
+{"file": ".trellis/spec/backend/ai-output-contract.md", "reason": "AI 输出必须用 Zod 校验并处理异常/幻觉"}
+{"file": ".trellis/spec/backend/analysis-pipeline.md", "reason": "ChapterAnalysisService 与 sequential/twopass 管线边界"}
+{"file": ".trellis/spec/backend/analysis-runtime-knowledge.md", "reason": "运行时知识库到 Prompt/Resolver 的 DB-only 契约"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "关系结构与关系事件 schema/service 契约"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 事务、唯一约束与生成代码约定"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Vitest/mock/集成测试编写规范"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "服务层类型安全规则"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "结构化日志与诊断信息规则"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "后端交付质量门禁"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "Zod-first 外部数据类型规范"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "全局代码质量与禁用模式"}
+{"file": ".trellis/spec/guides/index.md", "reason": "共享思考指南索引"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层数据流一致性检查"}
+{"file": ".trellis/spec/guides/module-boundary-guidelines.md", "reason": "模块边界与职责划分"}

@@ -130,22 +130,37 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
       return {
         ...meta,
         isActive    : true,
-        systemPrompt: "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。重点：优先将称谓映射到已知人物，避免重复创建同一角色。",
-        userPrompt  : [
+        systemPrompt: [
+          "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。",
+          "重点 1：优先将称谓映射到已知人物，避免重复创建同一角色。",
+          "重点 2：关系分两层。结构关系（relationships）描述身份事实（父子/师生/同僚），全书唯一；关系事件（relationshipEvents）描述本章互动（资助/背叛/赔礼），可多次发生。",
+          "重点 3：relationshipTypeCode 必须从字典挑选，不要自创。"
+        ].join("\n"),
+        userPrompt: [
           "## Task",
-          "分析《{bookTitle}》第{chapterNo}回（{chapterTitle}）片段（{chunkIndex}/{chunkCount}），提取 biographies/mentions/relationships。",
+          "分析《{bookTitle}》第{chapterNo}回（{chapterTitle}）片段（{chunkIndex}/{chunkCount}），提取 biographies/mentions/relationships/relationshipEvents。",
           "",
           "## Rules",
           "{analysisRules}",
+          "",
+          "## 已知关系类型字典",
+          "{relationshipTypeDictionary}",
+          "",
+          "## attitudeTags 三分类引导（每条事件最多 3 个，必须来自下列示例库）",
+          "【情感态度】感激 / 怨恨 / 倾慕 / 厌恶 / 愧疚 / 惧怕",
+          "【行为倾向】资助 / 提携 / 排挤 / 背叛 / 庇护",
+          "【关系演化】疏远 / 决裂 / 修好 / 公开 / 隐瞒 / 利用",
+          "若文本无明确态度信号，输出 []。",
           "",
           "## Known Entities",
           "{knownEntities}",
           "",
           "## JSON Format",
           JSON.stringify({
-            biographies  : [{ personaName: "标准名", category: "枚举", event: "行为", title: "头衔", location: "地点", virtualYear: "时间", ironyNote: "可选" }],
-            mentions     : [{ personaName: "标准名", rawText: "原文", summary: "状态", paraIndex: 0 }],
-            relationships: [{ sourceName: "发起者", targetName: "接收者", type: "关系类型", weight: 0.5, description: "结论", evidence: "原文证据" }]
+            biographies       : [{ personaName: "标准名", category: "枚举", event: "行为", title: "头衔", location: "地点", virtualYear: "时间", ironyNote: "可选" }],
+            mentions          : [{ personaName: "标准名", rawText: "原文", summary: "状态", paraIndex: 0 }],
+            relationships     : [{ sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "PARENT_CHILD", evidence: "可选，原文片段" }],
+            relationshipEvents: [{ sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "PARENT_CHILD", summary: "本章互动事件摘要", evidence: "原文证据片段", attitudeTags: ["感激", "资助"], paraIndex: 12, confidence: 0.85 }]
           }, null, 2),
           "",
           "## Source Text",
