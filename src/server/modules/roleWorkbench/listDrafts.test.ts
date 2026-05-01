@@ -22,20 +22,21 @@ describe("list drafts service", () => {
     const biographyCount = vi.fn().mockResolvedValue(3);
     const relationshipFindMany = vi.fn().mockResolvedValue([
       {
-        id          : "rel-1",
-        chapterId   : "chapter-1",
-        type        : "师生",
-        weight      : 1,
-        confidence  : 0.88,
-        evidence    : "原文证据",
-        recordSource: RecordSource.AI,
-        chapter     : {
-          no    : 1,
-          bookId: "book-1",
-          book  : { title: "儒林外史" }
-        },
-        source: { id: "p-1", name: "周进" },
-        target: { id: "p-2", name: "范进" }
+        id                  : "rel-1",
+        bookId              : "book-1",
+        relationshipTypeCode: "师生",
+        recordSource        : RecordSource.AI,
+        book                : { title: "儒林外史" },
+        source              : { id: "p-1", name: "周进" },
+        target              : { id: "p-2", name: "范进" },
+        events              : [
+          {
+            chapterId : "chapter-1",
+            chapterNo : 1,
+            confidence: 0.88,
+            evidence  : "原文证据"
+          }
+        ]
       }
     ]);
     const service = createListDraftsService({

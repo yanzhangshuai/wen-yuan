@@ -5,109 +5,56 @@
  * 文件路径：`src/server/modules/relationships/createBookRelationship.ts`
  *
  * 模块职责：
- * - 在指定书籍/章节下创建一条人物关系；
- * - 校验起终点人物与章节归属，防止跨书误关联。
+ * - 在指定书籍下创建或恢复一条书级人物关系；
+ * - 通过关系类型字典校验与对称关系 canonicalize，保证同一关系不会反向重复。
  *
  * 业务语义：
- * - 人工补全关系默认来源为人工（MANUAL）且高置信，体现“人工确认优先”规则；
- * - 章节绑定用于追溯关系证据来源，支撑审核与回放。
- *
- * 上下游：
- * - 上游：`POST /api/books/:id/relationships`；
- * - 下游：关系表持久化与关系列表刷新。
+ * - 人工写入默认升级为 `MANUAL + VERIFIED`；
+ * - 关系证据不再写入主表，章节级证据由 `RelationshipEvent` 承载。
  * =============================================================================
  */
-import type { PrismaClient } from "@/generated/prisma/client";
-import {
-  ProcessingStatus,
-  RecordSource
-} from "@/generated/prisma/enums";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
 
-/**
- * 人工补全关系的输入参数。
- * 由 API 层完成字段格式校验后传入 service。
- */
 export interface CreateBookRelationshipInput {
-  /** 关系首次出现章节 ID（UUID，且必须属于目标书籍）。 */
-  chapterId   : string;
-  /** 关系起点人物 ID（UUID）。 */
-  sourceId    : string;
-  /** 关系终点人物 ID（UUID）。 */
-  targetId    : string;
-  /** 关系类型（如 `师生`、`同僚`、`敌对`）。 */
-  type        : string;
-  /** 关系权重，默认 1。 */
-  weight?     : number;
-  /** 关系背景描述，可选。 */
-  description?: string | null;
-  /** 原文证据片段，可选。 */
-  evidence?   : string | null;
-  /** 置信度，默认 1（人工补全视为高置信）。 */
-  confidence? : number;
+  sourceId            : string;
+  targetId            : string;
+  relationshipTypeCode: string;
 }
 
-/**
- * 人工补全关系后的返回快照。
- * 用于 API 响应与前端列表即时刷新。
- */
 export interface CreateBookRelationshipResult {
-  /** 关系主键 ID。 */
-  id          : string;
-  /** 关系所属书籍 ID。 */
-  bookId      : string;
-  /** 关系首次出现章节 ID。 */
-  chapterId   : string;
-  /** 关系首次出现章节序号。 */
-  chapterNo   : number;
-  /** 起点人物 ID。 */
-  sourceId    : string;
-  /** 终点人物 ID。 */
-  targetId    : string;
-  /** 关系类型。 */
-  type        : string;
-  /** 关系权重。 */
-  weight      : number;
-  /** 关系背景描述。 */
-  description : string | null;
-  /** 原文证据片段。 */
-  evidence    : string | null;
-  /** 关系置信度。 */
-  confidence  : number;
-  /** 数据来源（MANUAL）。 */
-  recordSource: RecordSource;
-  /** 资料确认状态（人工补全默认 VERIFIED）。 */
-  status      : ProcessingStatus;
+  id                  : string;
+  bookId              : string;
+  sourceId            : string;
+  targetId            : string;
+  relationshipTypeCode: string;
+  recordSource        : RecordSource;
+  status              : ProcessingStatus;
 }
 
-/**
- * 将可空文本标准化为「trim 后字符串或 null」。
- * 避免空白字符串进入数据库。
- */
-function normalizeNullableText(input: string | null | undefined): string | null {
-  if (input == null) {
-    return null;
-  }
+const CREATE_RELATIONSHIP_SELECT = {
+  id                  : true,
+  bookId              : true,
+  sourceId            : true,
+  targetId            : true,
+  relationshipTypeCode: true,
+  recordSource        : true,
+  status              : true
+} as const;
 
-  const value = input.trim();
-  return value.length > 0 ? value : null;
+function isUniqueConstraintError(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
 export function createCreateBookRelationshipService(
   prismaClient: PrismaClient = prisma
 ) {
   /**
-   * 功能：为指定书籍手动新增一条人物关系。
-   * 输入：`bookId` + `CreateBookRelationshipInput`。
-   * 输出：创建后的关系快照。
-   * 异常：
-   * - `BookNotFoundError`：书籍不存在；
-   * - `PersonaNotFoundError`：起点/终点人物不存在；
-   * - `RelationshipInputError`：关系不合法（自环、重复、章节不匹配）。
-   * 副作用：写入 `relationship` 表，`recordSource=MANUAL`，`status=VERIFIED`。
+   * 手工创建书级关系。对称关系先按 UUID 字符串排序，避免 A-B 与 B-A 形成两条边。
    */
   async function createBookRelationship(
     bookId: string,
@@ -117,7 +64,7 @@ export function createCreateBookRelationshipService(
       throw new RelationshipInputError("关系起点和终点不能相同");
     }
 
-    return prismaClient.$transaction(async (tx) => {
+    const runWrite = async () => prismaClient.$transaction(async (tx) => {
       const book = await tx.book.findFirst({
         where: {
           id       : bookId,
@@ -127,20 +74,6 @@ export function createCreateBookRelationshipService(
       });
       if (!book) {
         throw new BookNotFoundError(bookId);
-      }
-
-      const chapter = await tx.chapter.findFirst({
-        where: {
-          id: input.chapterId,
-          bookId
-        },
-        select: {
-          id: true,
-          no: true
-        }
-      });
-      if (!chapter) {
-        throw new RelationshipInputError("章节不存在或不属于当前书籍");
       }
 
       const personas = await tx.persona.findMany({
@@ -159,68 +92,67 @@ export function createCreateBookRelationshipService(
         throw new PersonaNotFoundError(input.targetId);
       }
 
-      const normalizedType = input.type.trim();
-      const duplicated = await tx.relationship.findFirst({
-        where: {
-          deletedAt   : null,
-          chapterId   : chapter.id,
-          sourceId    : source.id,
-          targetId    : target.id,
-          type        : normalizedType,
-          recordSource: RecordSource.MANUAL
-        },
-        select: {
-          id: true
-        }
+      const relationshipTypeCode = input.relationshipTypeCode.trim();
+      const relationshipType = await tx.relationshipTypeDefinition.findFirst({
+        where : { code: relationshipTypeCode, status: "ACTIVE" },
+        select: { code: true, directionMode: true }
       });
-      if (duplicated) {
-        throw new RelationshipInputError("关系已存在");
+      if (!relationshipType) {
+        throw new RelationshipInputError("关系类型未启用");
       }
 
-      const created = await tx.relationship.create({
+      let sourceId = source.id;
+      let targetId = target.id;
+      if (relationshipType.directionMode === "SYMMETRIC" && sourceId > targetId) {
+        sourceId = target.id;
+        targetId = source.id;
+      }
+
+      const existingRelationship = await tx.relationship.findFirst({
+        where: {
+          bookId,
+          sourceId,
+          targetId,
+          relationshipTypeCode,
+          deletedAt: null
+        },
+        select: { id: true }
+      });
+
+      if (existingRelationship) {
+        return tx.relationship.update({
+          where: { id: existingRelationship.id },
+          data : {
+            recordSource: RecordSource.MANUAL,
+            status      : ProcessingStatus.VERIFIED,
+            deletedAt   : null
+          },
+          select: CREATE_RELATIONSHIP_SELECT
+        });
+      }
+
+      return tx.relationship.create({
         data: {
-          chapterId   : chapter.id,
-          sourceId    : source.id,
-          targetId    : target.id,
-          type        : normalizedType,
-          weight      : input.weight ?? 1,
-          description : normalizeNullableText(input.description),
-          evidence    : normalizeNullableText(input.evidence),
-          confidence  : input.confidence ?? 1,
+          bookId,
+          sourceId,
+          targetId,
+          relationshipTypeCode,
           recordSource: RecordSource.MANUAL,
           status      : ProcessingStatus.VERIFIED
         },
-        select: {
-          id          : true,
-          chapterId   : true,
-          sourceId    : true,
-          targetId    : true,
-          type        : true,
-          weight      : true,
-          description : true,
-          evidence    : true,
-          confidence  : true,
-          recordSource: true,
-          status      : true
-        }
+        select: CREATE_RELATIONSHIP_SELECT
       });
-
-      return {
-        id          : created.id,
-        bookId,
-        chapterId   : created.chapterId,
-        chapterNo   : chapter.no,
-        sourceId    : created.sourceId,
-        targetId    : created.targetId,
-        type        : created.type,
-        weight      : created.weight,
-        description : created.description,
-        evidence    : created.evidence,
-        confidence  : created.confidence,
-        recordSource: created.recordSource,
-        status      : created.status
-      };
     });
+
+    try {
+      return await runWrite();
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error;
+      }
+
+      return await runWrite();
+    }
   }
 
   return {

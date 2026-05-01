@@ -1,672 +1,567 @@
-# brainstorm: 角色关系录入设计
-
-## Goal
-
-在角色资料内，为录入/校对人员提供一种方便、清晰、准确的方式，对照书籍内容录入角色关系，并能表达关系随剧情章节发生变化的事实。
-
-## What I already know
-
-* 用户希望在“角色资料内”对照书籍录入角色关系。
-* 角色关系与角色互动需要区分：如“岳婿”是相对稳定的关系身份，“轻视/奉承”属于某章节发生的行为、态度或互动事件。
-* 项目是面向中国古典文学的知识图谱系统，已有书籍、章节、角色、关系、审核工作台等模块。
-* 当前 Prisma `Relationship` 模型已按章节记录关系，字段包括 `chapterId/sourceId/targetId/type/weight/description/evidence/recordSource/confidence/status`。
-* 当前人工新增关系位于角色工作台，默认创建“当前角色 -> 对方角色”的出向关系，并要求选择章节、关系类型、证据等。
-* 当前编辑 UI 主要是表单式录入，缺少强引导的“读书对照”“同一对角色关系轨迹”“关系变更原因/结束章节”等体验。
-
-## Assumptions (temporary)
-
-* MVP 优先复用现有 `Relationship` 的章节化记录，而不是立刻新增复杂图谱版本表。
-* “关系会变化”需要拆成两类：关系身份变化（如陌生 -> 师生、同盟 -> 敌对）与关系下的互动行为变化（如轻视、奉承、求助、训斥）。
-* 准确性核心来自：章节坐标、原文证据、方向、关系类型、状态审核。
-
-## Open Questions
-
-* 是否需要把关系表达成“阶段区间”（起始章节到结束章节），还是先保持“章节事件点”记录？
-
-## Requirements (evolving)
-
-* 关系录入必须绑定具体章节，便于对照原文和回溯剧情位置。
-* 关系录入必须保留原文证据，至少支持粘贴证据片段。
-* 关系需要清楚表达方向：A 对 B、B 对 A，以及是否需要互为反向关系。
-* 同一对角色应能看到按章节排序的“双层轨迹”：稳定关系身份，以及该关系下发生的互动行为/态度事件。
-* 角色资料中的核心查看方式应从“零散关系列表”升级为“两个角色之间的关系档案”：上方展示稳定关系身份（如岳婿），下方按章节展示互动行为、态度变化、证据与事件描述。
-* 前台全局关系图谱保持“当前章节截面图”心智：主画布显示当前章节进度下仍然成立/已出现的关系网络，关系走向细节放在点击节点或边后的详情面板中。
-* 前台需要支持从一条边进入“两人关系档案”：展示稳定关系类型、关系是否发生身份变化，以及该角色对在全书中的互动事件时间线。
-* 后台关系档案设置应类似“章节事迹设置”：提供原文对照、录入、编辑、删除能力，而不是只读时间线。
-* 关系档案互动事件需要支持分组与查询，方便按行为类型、章节、角色对、审核状态快速定位。
-* 关系档案分组不应做成单一固定树，而应采用“事件类别 + 行为标签 + 查询视图”的组合：类别负责结构化归档，标签负责细粒度检索，查询视图负责录入效率。
-* 关系档案录入不应只依赖“先找分组再新增”的资料库模式，还需要支持按章节连续录入、按角色对连续录入、从原文选段快速生成事件，降低逐条建档成本。
-* 人工录入应继续标记为 `MANUAL + VERIFIED`，与 AI 草稿区分。
-* 人物资料页需要明确分层：基础资料、章节事迹、关系档案、证据与审核，不应把所有信息堆在同一张关系表里。
-* 同一本书内同一组角色应归并到同一个“角色对档案”，即 `book + min(characterA, characterB) + max(characterA, characterB)` 唯一；方向只影响称谓、事件方向和展示文案。
-* MVP 不强制维护复杂关系起止区间，先用“关系确认章节 + 关系档案事件作用”推导关系走向。
-* 关系档案事件需要记录事件作用，例如确认关系、强化关系、削弱关系、改变关系、结束关系、普通互动。
-* 关系和关系档案事件都必须有章节坐标与原文证据文本；后续可扩展原文 `startOffset/endOffset` 来精确定位证据片段。
-* AI 只能生成待审核草稿；人工确认后才进入正式关系档案。AI 生成的结构关系必须匹配关系类型知识库，不能把“轻视/奉承”等行为词写入关系类型。
-
-## Acceptance Criteria (evolving)
-
-* [ ] 录入人员能在角色资料中选择章节、对方角色、关系类型、方向和证据。
-* [ ] 同一对角色的稳定关系身份能与互动行为事件分开展示，避免把“轻视/奉承”等行为误标成关系类型。
-* [ ] 录入人员能从某个角色进入与另一个角色的关系档案，并沿章节顺序校对、补录、修正互动行为和证据。
-* [ ] 录入人员能在关系档案中对照章节原文新增、编辑、删除互动事件。
-* [ ] 录入人员能按分组和筛选条件查询关系档案事件，例如按互动类别、章节、状态、证据关键词过滤。
-* [ ] 录入人员能用预设查询视图快速切换“本章待录入”“未绑定证据”“某类互动”“待审核 AI 事件”等工作列表。
-* [ ] 录入人员能在同一个工作台里完成“阅读原文 -> 选取证据 -> 新增事件 -> 继续下一条”的连续录入流程。
-* [ ] 人物资料页能清晰分区展示基础资料、章节事迹、关系档案、证据/审核状态。
-* [ ] 同一书籍内 A-B 与 B-A 不会生成两个重复角色对档案，系统能在同一档案内按方向展示关系称谓和事件。
-* [ ] 关系档案事件能标记事件作用，并可用于解释关系走向变化。
-* [ ] AI 生成的关系/事件先进入待审核草稿，人工确认后才转为正式记录。
-* [ ] 前台用户在主图上看到的是简洁关系网络，点击边或人物关系项后能看到两人的关系档案与互动事件时间线。
-* [ ] 前台章节滑块切换时，主图关系边能反映当前章节截面的稳定关系状态，详情时间线可保留全书互动轨迹并高亮当前章节之前/之后。
-* [ ] 关系记录能回到对应章节和原文证据。
-* [ ] 不允许自关系；重复关系需要有明确的去重或变更规则。
-
-## Frontend Graph Display Notes
-
-* 主画布：仍展示人物节点与关系边，避免在全局图上直接绘制多条时间线造成拥挤。
-* 边的摘要：同一对角色在当前章节进度下只显示一条“稳定关系边”，边标签使用关系身份（如岳婿、师生、同僚），不使用“轻视/奉承”等行为词。
-* 边详情：点击边打开“两人关系档案”抽屉/侧栏，上方展示稳定关系身份，下方按章节列出互动行为事件。
-* 人物详情：现有“直接关系”列表可以升级为按对方角色聚合，点击对方进入同一个“两人关系档案”视图。
-* 章节时间轴：滑块控制主图截面；关系档案中保留完整互动轨迹，但高亮当前章节及之前的记录，弱化未来章节记录。
-* 证据联动：每个互动事件保留“查看原文”入口，复用现有 `TextReaderPanel` 证据阅读能力。
-
-## Definition of Done (team quality bar)
-
-* Tests added/updated (unit/integration where appropriate)
-* Lint / typecheck / CI green
-* Docs/notes updated if behavior changes
-* Rollout/rollback considered if risky
-
-## Out of Scope (explicit)
-
-* 暂不决定是否立即重构数据库关系模型。
-* 暂不决定是否改造 3D 图谱展示算法。
-* 暂不讨论 AI 自动抽取 prompt 的大范围重写。
-* 关系类型知识库已拆分为独立子任务 `.trellis/tasks/04-30-relationship-type-knowledge-base`；本任务只保留引用关系类型知识库的使用边界。
-
-## Technical Notes
-
-* `prisma/schema.prisma`：`Relationship` 已是动态关系表，天然绑定章节。
-* `src/server/modules/relationships/createBookRelationship.ts`：人工新增关系会校验书籍、章节、人物与重复关系。
-* `src/server/modules/relationships/updateRelationship.ts`：支持差量更新关系类型、权重、描述、证据、置信度和审核状态。
-* `src/components/review/role-review-workbench.tsx`：当前关系新增/编辑流程所在地。
-* `src/components/review/role-review-sheet-fields.tsx`：当前关系表单字段所在地。
-* `src/components/review/relationship-edit-form.tsx`：较早的关系编辑子组件，支持 type/weight/evidence/confidence。
-
-## Proposed Design
-
-### Domain Split
-
-**RelationshipType / Relationship**
-
-* 含义：两个人之间的结构性关系身份。
-* 示例：岳婿、父子、夫妻、师生、同僚、主仆、仇敌。
-* 展示位置：前台主图边标签、角色资料关系摘要。
-* 数据要求：起点、终点、关系类型、确认章节、证据、状态。
-* 关系类型应进入知识库/字典管理，只收结构性身份关系，不收章节行为、态度或互动动作。
-* 角色关系记录引用知识库中的关系类型 code/key，而不是自由输入关系类型名称。
-
-**RelationshipArchive / RelationshipEvent**
-
-* 含义：某段结构性关系下，章节中发生的互动、态度、行为和证据。
-* 示例：轻视、奉承、训斥、求助、袒护、欺骗、背叛。
-* 展示位置：点击关系边后的“两人关系档案”详情。
-* 数据要求：所属关系或角色对、章节、行为标签、事件描述、原文证据、方向、状态。
-* 关系档案事件的行为标签可以使用字符串标签，并允许多选；这些标签不进入关系类型知识库。
-* 事件类别 `category` 保持单选，用于主分组和统计；行为标签 `tags` 作为多选字符串，用于细粒度检索。
-
-### Role Profile Relationship Settings
-
-角色资料中的“关系”应从单一表单升级为两个层次：
-
-1. **关系类型设置**
-   * 选择对方角色。
-   * 选择关系身份，如岳婿/师生/同僚。
-   * 设置方向，明确 A -> B 或 B -> A；对称关系可在 UI 上标记为双向展示。
-   * 选择确认章节。
-   * 填写确认该关系身份的原文证据。
-
-2. **关系档案设置**
-   * 进入某个角色对后录入互动事件。
-   * 每条事件绑定章节。
-   * 记录行为/态度标签，如轻视、奉承、求助。
-   * 记录事件描述，而不是改写关系类型。
-   * 填写原文证据。
-   * 提供类似章节事迹工作台的原文对照能力：左侧/上方显示章节原文，右侧/下方编辑互动事件。
-   * 支持新增、编辑、删除互动事件。
-   * 支持从原文中选择或复制证据片段，写入事件证据字段。
-   * 支持按章节筛选当前角色对的互动事件，方便逐章校对。
-   * 支持给互动事件设置分组/类别，方便后续检索。
-   * 支持给互动事件添加多个行为标签，避免事件只能归入一个固定分组。
-   * 删除互动事件只删除档案事件，不应删除稳定关系类型本身。
-
-### Frontend Graph Display
-
-1. **主图**
-   * 只展示结构性关系身份。
-   * 边标签显示“岳婿/师生/同僚”等关系类型。
-   * 边颜色可基于关系类型情感映射。
-   * 边粗细可基于关系权重或互动事件数量，但不改变关系类型语义。
-
-2. **边详情 / 两人关系档案**
-   * 点击边打开右侧抽屉。
-   * 顶部展示角色 A、角色 B、稳定关系类型、确认章节、关系证据。
-   * 下方展示互动事件时间线。
-   * 每条事件显示章节、行为标签、事件描述、证据入口。
-
-3. **人物详情侧栏**
-   * “直接关系”按对方角色聚合，而不是罗列所有关系记录。
-   * 每个对方角色卡片展示主关系类型与互动事件数量。
-   * 点击卡片进入同一个“两人关系档案”视图。
-
-4. **章节滑块**
-   * 控制主图当前章节截面。
-   * 关系身份在确认章节之后出现。
-   * 关系档案中保留全书事件线，但当前章节之后的事件弱化展示，避免剧透时可配置隐藏。
-
-### Suggested Data Evolution
-
-MVP 可以先复用 `Relationship` 表承载关系身份，同时新增一类互动事件模型：
-
-* `Relationship`：只存“岳婿/师生/同僚”等关系身份。
-* `RelationshipEvent`：存“轻视/奉承/训斥”等互动事件。
-
-后续如果同一对角色存在多个稳定关系身份，可允许一个角色对下挂多个 `Relationship`，每个 `Relationship` 下再挂自己的互动事件；也可以用角色对作为归档容器，把互动事件关联到 source/target + book + chapter。
-
-### Relationship Archive Workbench
-
-后台关系档案工作台应采用“原文对照 + 结构化事件列表”的模式，和章节事迹设置保持一致：
-
-* 入口：从角色资料的某个对方角色关系卡片进入。
-* 左侧：章节选择与原文阅读区，支持按章节切换。
-* 右侧：当前角色对在该章节的互动事件列表。
-* 新增：选择行为标签，填写事件描述，粘贴或选取原文证据。
-* 编辑：允许修改章节、行为标签、描述、证据和状态。
-* 删除：删除单条互动事件，删除前提示不会影响稳定关系类型。
-* 分组：互动事件支持按类别分组，例如态度变化、利益往来、权力压制、求助依附、冲突伤害、身份确认、其他。
-* 查询：支持按章节、事件类别、行为标签、审核状态、证据关键词查询。
-* 查询视图：支持保存或预置常用视图，例如“当前章节”“未填证据”“待审核”“冲突事件”“利益往来”“关系转折”。
-* 连续录入：支持在当前章节原文中选择证据后快速创建事件，自动带入书籍、章节、当前角色对和证据文本。
-* 批量补录：支持固定当前章节或当前角色对后连续新增多条事件，避免每条都重复选择上下文。
-* 审核：人工创建的互动事件默认为 `MANUAL + VERIFIED`；AI 产出默认为草稿，支持确认/驳回。
-* 约束：互动事件必须关联角色对、章节和证据；行为标签不能写入 `Relationship.type`。
-
-### Recommended Grouping Model
-
-推荐关系档案事件使用三层检索模型，而不是只用一个分组字段：
-
-1. **事件类别 `category`**：单选，用于主分组和统计。
-   * `IDENTITY_CONFIRMATION`：身份/关系确认，如确认岳婿、师生、主仆。
-   * `ATTITUDE_CHANGE`：态度变化，如轻视、欣赏、鄙夷、敬畏。
-   * `POWER_PRESSURE`：权力压制，如训斥、威胁、控制、羞辱。
-   * `INTEREST_EXCHANGE`：利益往来，如赠予、借贷、荐举、索取。
-   * `DEPENDENCE_REQUEST`：求助依附，如求助、投靠、奉承、请托。
-   * `CONFLICT_HARM`：冲突伤害，如欺骗、背叛、陷害、争执。
-   * `SUPPORT_PROTECTION`：支持维护，如帮助、袒护、救助、维护。
-   * `RELATION_TURNING_POINT`：关系转折，如亲近、疏远、决裂、和解。
-   * `OTHER`：无法归类但有证据价值的互动。
-
-2. **行为标签 `tags`**：多选，用于细粒度查询。
-   * 示例：轻视、奉承、训斥、求助、袒护、欺骗、背叛、荐举。
-   * 同一事件可以有多个标签，例如“奉承 + 利益索取”。
-
-3. **查询视图 `views`**：面向录入工作流。
-   * 当前章节事件。
-   * 当前角色对全书事件。
-   * 未绑定证据事件。
-   * 待审核 AI 事件。
-   * 某一类别事件。
-   * 证据关键词搜索结果。
-
-### Entry UX Recommendation
-
-更优方案是把“档案管理”和“原文录入”合并成一个工作台，但用不同视图承载不同任务：
-
-1. **按章节录入视图**
-   * 适合第一次读书建档。
-   * 左侧显示章节原文，右侧显示本章涉及的角色对事件。
-   * 从原文选择证据后新增事件，系统自动带入章节和证据。
-
-2. **按角色对档案视图**
-   * 适合校对某两个人的完整关系走向。
-   * 顶部显示稳定关系类型，下面按章节展示全书互动事件。
-   * 支持按类别折叠分组，也支持时间线展开。
-
-3. **按类别/标签查询视图**
-   * 适合后期检查和研究。
-   * 通过事件类别、行为标签、审核状态、证据关键词过滤。
-   * 分组结果只是查询呈现，不强迫事件只能固定放进某一个目录。
-
-推荐 MVP 优先实现预置视图，不先做复杂的自定义分组树。这样结构清晰、录入负担低，也不会限制后续扩展。
-
-### Optimization Recommendations
-
-关系类型与关系档案还可以进一步优化成“角色对档案”为中心的模型，避免未来数据混乱：
-
-1. **以角色对作为归档容器**
-   * 建议把“书籍 + 角色 A + 角色 B”视为一个关系档案容器。
-   * 稳定关系类型和互动事件都挂在这个角色对档案下。
-   * 互动事件可以可选关联某条稳定关系类型，但不要强制依赖某条 `Relationship` 记录，否则关系身份变化后容易产生历史事件归属混乱。
-
-2. **关系类型字典需要带方向规则**
-   * 每个关系类型除了名称，还应配置方向语义。
-   * 示例：`岳父 -> 女婿` 与 `女婿 -> 岳父` 是一组互逆关系；`夫妻` 是对称关系；`同僚` 可能是对称关系；`主仆` 是强方向关系。
-   * UI 录入时用户只选一个语义清晰的方向，系统负责展示反向称谓，降低重复录入和方向错误。
-   * 关系类型不建议只存任意字符串，也不建议完全写死为数据库枚举；推荐使用“可配置关系类型字典”：数据库存稳定 key/code，前端展示中文 label，字典中维护方向、反向称谓、分组和颜色等元信息。
-   * 反向推断由关系类型字典完成：对称关系正反显示相同称谓；互逆关系按 source/target 自动切换称谓；无明确反向称谓的关系显示通用反向文案或要求人工补充。
-   * 关系类型字典属于知识库基础数据，只放“关系类型”，例如血缘、姻亲、师生、主仆、同僚、上下级、同盟、敌对等。
-   * 关系档案事件不使用关系类型字典，而使用 `category + tags`：类别负责归档，标签可多选并可逐步扩展。
-
-3. **关系类型建议只收“结构身份”，不要混入态度**
-   * 适合作为关系类型：血缘、姻亲、师生、主仆、同僚、上下级、同盟、敌对、主顾、债务关系。
-   * 不适合作为关系类型：轻视、奉承、训斥、求助、袒护、欺骗、欣赏、敬畏。
-   * 边界情况如“同盟/敌对”可以作为稳定关系类型，但具体“背叛/争执/和解”仍应进入关系档案事件。
-
-4. **关系档案事件需要有“事件作用”字段**
-   * 除了类别和标签，建议给事件增加一个简单作用：确认关系、强化关系、削弱关系、改变关系、结束关系、普通互动。
-   * 这样前台可以从事件中推导关系走向，例如某章之后关系恶化、某章关系确认、某章关系断裂。
-   * 这比让用户手工维护复杂的关系趋势图更轻量。
-
-### Character Profile Information Architecture
-
-人物资料页不应只围绕“关系列表”组织，而应拆成四个稳定区块：
-
-1. **基础资料**
-   * 人物标准名、别名、身份标签、简介、所属书籍。
-   * 展示首次出场章节、最后出现章节、主要章节数量等摘要。
-   * 保留审核状态、来源、置信度等基础治理信息。
-
-2. **章节事迹**
-   * 复用现有章节事迹/传记事件能力。
-   * 按章节展示人物行为、经历和剧情节点。
-   * 与关系档案互相跳转：某条事迹如果涉及另一角色，可进入对应角色对档案。
-
-3. **关系档案**
-   * 按“对方角色”聚合，而不是直接罗列所有 `Relationship` 记录。
-   * 每个对方角色卡片展示当前主关系类型、关系状态摘要、互动事件数量、最近证据章节。
-   * 点击后进入两人关系档案，查看稳定关系身份和互动事件时间线。
-
-4. **证据与审核**
-   * 汇总该人物资料、关系、关系档案事件的待审核项。
-   * 支持快速定位“缺证据”“AI 待确认”“冲突关系”“重复角色对”等问题。
-   * 审核信息服务录入质量，不应干扰前台普通阅读展示。
-
-### Character Pair Archive Identity
-
-关系档案应以“角色对”为中心，避免同一对人物因为方向不同产生重复档案：
-
-* 唯一键建议为 `bookId + canonicalCharacterAId + canonicalCharacterBId`。
-* `canonicalCharacterAId/canonicalCharacterBId` 可按稳定排序存储，保证 A-B 与 B-A 命中同一档案。
-* 方向信息不丢失：稳定关系记录和互动事件仍然保存 `sourceId/targetId`，用于表达“谁对谁”的称谓、行为和证据。
-* UI 从任一人物进入时，都以当前人物作为视角重新渲染称谓，例如从岳父视角看到“女婿”，从女婿视角看到“岳父”。
-* 关系类型字典负责反向称谓推断；角色对档案负责聚合展示和查询。
-
-### Relationship Lifecycle Rules
-
-MVP 不引入完整版本化关系区间，采用轻量生命周期规则：
-
-* 稳定关系身份通过 `Relationship` 的确认章节出现。
-* 关系是否强化、削弱、改变或结束，通过关系档案事件的 `effect` 字段表达。
-* 推荐 `effect` 取值：
-  * `CONFIRM_RELATIONSHIP`：确认关系。
-  * `STRENGTHEN_RELATIONSHIP`：强化关系。
-  * `WEAKEN_RELATIONSHIP`：削弱关系。
-  * `CHANGE_RELATIONSHIP`：改变关系。
-  * `END_RELATIONSHIP`：结束关系。
-  * `INTERACTION_ONLY`：普通互动，不改变结构关系。
-* 前台章节滑块可以先使用确认章节决定关系边是否出现，再用事件作用解释关系走向；不在 MVP 中强制计算精确起止区间。
-* 如果同一角色对存在多个稳定关系身份，优先在档案顶部展示当前章节截面下最相关的一条，并在详情中列出历史关系变化。
-
-### Evidence Anchoring
-
-准确性优先级高于录入速度，关系相关记录必须能回到原文：
-
-* 稳定关系和关系档案事件都必须绑定 `bookId`、`chapterId`、证据文本。
-* 证据文本用于当前 MVP 的人工核对。
-* 后续可扩展 `startOffset/endOffset`、段落 ID 或句子 ID，用于从阅读器中高亮原文片段。
-* 编辑证据时应保留审核痕迹，避免 AI 草稿或人工修改覆盖原始依据。
-* 删除互动事件时只删除事件记录，不删除证据对应章节，也不影响稳定关系类型。
-
-### AI Draft Boundary
-
-AI 可以提高录入效率，但不能直接污染正式人物关系档案：
-
-* AI 生成的结构关系必须先匹配关系类型知识库；无法匹配时进入“待补关系类型/待人工判断”，不能自动创建自由字符串关系类型。
-* AI 生成的互动事件使用 `category + tags + effect`，不能把行为标签写入 `Relationship.type`。
-* AI 生成记录默认 `recordSource = AI`、`status = PENDING_REVIEW`。
-* 人工确认后才转为正式档案记录；人工录入则默认为 `MANUAL + VERIFIED`。
-* 驳回 AI 草稿时应保存驳回原因，供后续提示词和知识库优化参考。
-
-5. **前台摘要应由关系档案自动聚合**
-   * 主图边显示当前关系类型。
-   * 边详情顶部显示当前摘要，例如“姻亲关系，近期互动偏冲突”。
-   * 这个摘要可以由最近若干档案事件的类别、标签、作用自动推导，避免录入人员重复写一份“关系走向总结”。
-
-6. **证据最好抽象为可复用证据片段**
-   * MVP 可以先保留文本证据字段。
-   * 后续建议支持章节位置、原文起止偏移、证据片段复用。
-   * 同一段原文可能同时证明“岳婿关系”和“轻视行为”，证据复用能减少重复粘贴，也方便回看原文。
-
-7. **录入体验采用“最小必填 + 逐步补全”**
-   * 新增关系类型最小必填：对方角色、关系类型、方向、确认章节、证据。
-   * 新增档案事件最小必填：章节、事件类别、事件描述、证据。
-   * 标签、事件作用、置信度、审核状态可以作为进阶字段，避免第一次录入过重。
-
-### Recommended MVP Boundary
-
-MVP 推荐优先做：
-
-* 角色对关系档案入口。
-* 关系类型与互动事件分离。
-* 关系类型方向/反向称谓规则。
-* 可配置关系类型字典，使用稳定 key/code 存储，避免任意字符串造成不可控，也避免数据库 enum 后续扩展困难。
-* 关系类型知识库只管理结构性关系；关系档案的行为标签作为可多选字符串，不进入关系类型知识库。
-* 关系档案原文对照录入、编辑、删除。
-* 事件类别、标签、预置查询视图。
-* 事件作用字段，用于表达确认、强化、削弱、改变、结束关系。
-
-暂缓：
-
-* 自定义分组树。
-* 自动生成复杂关系走势图。
-* 证据偏移量精确定位。
-* 多关系版本区间的完整建模。
-
-### Relationship Type Knowledge Base Design
-
-关系类型知识库应作为“结构性角色关系”的标准字典，不承载章节互动行为。它的职责是统一关系命名、支持反向推断、约束录入、支撑图谱展示和后续 AI 抽取归一化。
-
-#### Core Fields
-
-* `code`：稳定唯一标识，例如 `kinship_father_son`、`marriage_father_in_law_son_in_law`。用于数据库引用，不随中文展示名变化。
-* `name`：关系类型名称，例如“父子”“岳婿”“师生”。
-* `group`：关系大类，例如血缘、姻亲、师承、社会身份、权力关系、利益关系、情感关系、敌对关系。
-* `directionMode`：方向模式，例如 `SYMMETRIC`、`INVERSE`、`DIRECTED`。
-* `sourceRoleLabel`：从 source 看 target 时，source 的身份称谓，例如“岳父”“师父”“主人”。
-* `targetRoleLabel`：从 source 看 target 时，target 的身份称谓，例如“女婿”“徒弟”“仆人”。
-* `edgeLabel`：图谱边上的摘要标签，例如“岳婿”“师生”“主仆”。
-* `reverseEdgeLabel`：必要时的反向边摘要；对称关系可以为空或等于 `edgeLabel`。
-* `description`：关系定义和使用说明。
-* `examples`：典型文学场景示例，帮助录入人员判断。
-* `aliases`：同义词/别名，例如“岳丈”“丈人”“泰山”可归一到同一关系类型。
-* `status`：启用状态，例如启用、停用、待审核。
-* `sortOrder`：后台下拉和知识库列表排序。
-
-#### Direction Modes
-
-1. **`SYMMETRIC` 对称关系**
-   * 适用：夫妻、同僚、朋友、同盟、敌对。
-   * source 与 target 对调后，关系名称不变。
-   * 图谱可只显示一条无方向或弱方向边。
-
-2. **`INVERSE` 互逆关系**
-   * 适用：父子、母子、师生、主仆、岳婿、上下级。
-   * source 与 target 对调后，展示称谓需要自动切换。
-   * 示例：胡屠户 -> 范进：岳父；范进 -> 胡屠户：女婿；边摘要：岳婿。
-
-3. **`DIRECTED` 单向关系**
-   * 适用：保护者、依附者、债主、恩主、荐举者等。
-   * 关系语义依赖方向，反向展示可以用配置的反向称谓；没有反向称谓时显示“被保护者/受恩者”等系统文案或要求补充。
-
-#### Suggested Initial Groups
-
-* 血缘：父子、母子、兄弟、姐妹、叔侄、祖孙。
-* 姻亲：夫妻、岳婿、翁媳、妯娌、连襟。
-* 师承：师生、同门、师兄弟。
-* 社会身份：主仆、同僚、上下级、乡邻、同窗。
-* 权力关系：君臣、官民、审判者与被审者、管理者与被管理者。
-* 利益关系：债务、主顾、雇佣、荐举、资助。
-* 情感关系：朋友、知己、恋慕、恩义。
-* 对立关系：敌对、竞争、仇怨。
-
-#### Admin UX
-
-关系类型知识库后台建议提供：
-
-* 列表：按分组、启用状态、关键词筛选。
-* 新增/编辑：维护名称、code、分组、方向模式、source/target 称谓、边标签、别名、说明。
-* 反向预览：录入 A 和 B 两个占位名后，实时预览“A 对 B 如何显示”“B 对 A 如何显示”“图谱边如何显示”。
-* 冲突检查：不允许重复 `code`；提示相同名称或别名可能已存在。
-* 停用而非硬删除：已有角色关系引用的类型不能直接删除，只能停用，避免历史数据断链。
-
-#### Frontend Knowledge Base Configuration
-
-前端知识库配置应面向管理员，重点是“建标准关系类型”，不承担具体角色录入：
-
-1. **关系类型列表页**
-   * 左侧或顶部按大类筛选：血缘、姻亲、师承、社会身份、权力关系、利益关系、情感关系、对立关系。
-   * 列表展示：关系名称、分组、方向模式、正向称谓、反向称谓、边标签、别名数量、启用状态。
-   * 支持关键词搜索，搜索范围包括名称、别名、描述、code。
-   * 支持启用/停用；已被角色关系引用的类型不提供硬删除。
-
-2. **新增/编辑关系类型抽屉**
-   * 基础信息：关系名称、稳定 code、分组、描述。
-   * 方向规则：选择 `SYMMETRIC`、`INVERSE`、`DIRECTED`。
-   * 展示称谓：配置 source 侧称谓、target 侧称谓、图谱边摘要、可选反向边摘要。
-   * 归一化：配置别名/同义词，例如“岳丈、丈人、泰山”。
-   * 图谱展示：可配置颜色、线型或重要度，MVP 可先只配置颜色/分组。
-   * 使用说明：填写适用场景和不适用场景，帮助录入人员区分关系类型与行为标签。
-
-3. **反向预览区**
-   * 管理员输入两个示例名，例如“胡屠户”“范进”。
-   * 系统实时预览：
-     * 胡屠户 -> 范进：岳父
-     * 范进 -> 胡屠户：女婿
-     * 图谱边：岳婿
-   * 如果方向模式和称谓配置不完整，前端直接提示缺少正向/反向称谓。
-
-4. **配置校验**
-   * `code` 必须唯一，创建后不建议随意修改。
-   * `SYMMETRIC` 可以不填反向称谓，默认与名称相同。
-   * `INVERSE` 必须填写 sourceRoleLabel 和 targetRoleLabel。
-   * `DIRECTED` 至少填写 sourceRoleLabel；反向称谓可选，但前端应提示反向展示效果。
-   * 别名不能与其他启用关系类型的名称或别名冲突，冲突时提示合并或改名。
-
-#### Relationship Record Usage
-
-角色资料中的结构关系记录应引用关系类型知识库：
-
-* `relationshipTypeCode`：引用关系类型 `code`。
-* `sourcePersonaId` / `targetPersonaId`：保存录入方向。
-* `confirmedChapterId`：确认该结构关系的章节。
-* `evidence`：证明结构关系的原文证据。
-* 前台展示时，根据 `relationshipTypeCode + source/target + directionMode` 推导当前视角下的称谓。
-
-#### Role Profile Relationship Type Setting
-
-角色资料里的关系类型设置应面向录入人员，重点是“选标准类型 + 确认方向 + 绑定证据”：
-
-1. **入口**
-   * 在角色资料的“关系”页签中，按对方角色聚合展示关系卡片。
-   * 卡片展示当前关系类型、对方角色、确认章节、证据状态、档案事件数量。
-   * 点击“新增关系类型”或“编辑关系类型”进入设置表单。
-
-2. **设置表单**
-   * 选择对方角色。
-   * 选择关系类型：从知识库关系类型中搜索选择，按分组展示，不允许自由输入为正式类型。
-   * 设置方向：用自然语言预览辅助确认，例如“胡屠户 是 范进的 岳父 / 范进 是 胡屠户的 女婿”。
-   * 选择确认章节。
-   * 填写或选取原文证据。
-   * 可选填写说明：记录为什么这样判定，尤其用于边界关系。
-
-3. **方向确认交互**
-   * 选择关系类型后，表单立即显示正反向预览。
-   * 提供“交换角色方向”按钮，一键调换 source/target。
-   * 对称关系隐藏复杂方向设置，只显示双方关系一致。
-   * 互逆/单向关系必须确认方向后才能保存。
-
-4. **未知类型处理**
-   * 如果录入人员找不到合适关系类型，不允许直接写成正式关系类型。
-   * 提供“申请新增关系类型”入口，提交名称、分组建议、说明和例证。
-   * 申请通过后进入知识库，再回到角色资料中引用。
-
-5. **与关系档案的连接**
-   * 保存关系类型后，可以直接进入该角色对的关系档案。
-   * 关系档案事件使用 `category + tags`，不使用关系类型知识库。
-   * 关系档案可以引用当前结构关系作为上下文，但事件本身仍绑定角色对和章节。
-
-#### Boundaries
-
-* 关系类型知识库只收“结构性关系”，不收“轻视、奉承、训斥、求助”等互动行为。
-* 行为词进入关系档案事件的 `tags`，可以多选，也可以逐步扩展。
-* 边界类型如“同盟/敌对”可以进入关系类型，因为它们是相对稳定的结构关系；“背叛/争执/和解”进入关系档案事件。
-
-### Complete Relationship Type Knowledge Base Proposal
-
-#### Product Goal
-
-关系类型知识库用于统一管理“角色之间是什么结构关系”，为角色资料、关系图谱、AI 抽取归一化、前台筛选和反向称谓展示提供标准来源。它不是行为标签库，不记录章节互动。
-
-#### Information Architecture
-
-知识库中建议将关系类型分成三级：
-
-1. **关系大类 `group`**
-   * 用于管理和筛选，例如血缘、姻亲、师承、社会身份、权力关系、利益关系、情感关系、对立关系。
-
-2. **关系类型 `relationshipType`**
-   * 一个可被角色关系引用的标准类型，例如父子、岳婿、师生、主仆、同僚、敌对。
-
-3. **称谓/别名 `labels & aliases`**
-   * 用于展示、搜索和 AI 归一化，例如岳婿关系下可有岳父、女婿、岳丈、丈人、泰山等。
-
-#### Data Model Draft
-
-推荐新增 `RelationshipTypeDefinition`，或者在现有知识库体系下增加等价实体：
-
-* `id`：内部主键。
-* `code`：稳定唯一 key，例如 `kinship_father_son`、`marriage_father_in_law_son_in_law`。
-* `name`：标准名称，例如“父子”“岳婿”。
-* `group`：大类，例如“血缘”“姻亲”。
-* `directionMode`：方向模式，取值 `SYMMETRIC`、`INVERSE`、`DIRECTED`。
-* `sourceRoleLabel`：source 在该关系中的身份称谓，例如“岳父”“师父”“主人”。
-* `targetRoleLabel`：target 在该关系中的身份称谓，例如“女婿”“徒弟”“仆人”。
-* `edgeLabel`：图谱边摘要，例如“岳婿”“师生”“主仆”。
-* `reverseEdgeLabel`：可选，反向边摘要；多数情况可为空。
-* `aliases`：字符串数组，存同义词、俗称、古典称谓。
-* `description`：定义说明。
-* `usageNotes`：使用说明，特别说明和行为标签的边界。
-* `examples`：典型例子，帮助录入人员判断。
-* `color`：图谱颜色，MVP 可选。
-* `sortOrder`：排序。
-* `status`：`ACTIVE`、`INACTIVE`、`PENDING_REVIEW`。
-* `createdAt`、`updatedAt`：审计字段。
-
-#### Direction Rules
-
-关系类型必须具备可验证的方向规则：
-
-1. `SYMMETRIC`
-   * 双方展示一致。
-   * 示例：夫妻、同僚、朋友、同盟、敌对。
-   * 可只要求 `name` 和 `edgeLabel`，source/target 称谓可选。
-
-2. `INVERSE`
-   * 双方称谓互逆。
-   * 示例：父子、母子、师生、主仆、岳婿、上下级。
-   * 必须填写 `sourceRoleLabel` 和 `targetRoleLabel`。
-
-3. `DIRECTED`
-   * 关系语义主要从 source 指向 target。
-   * 示例：保护者、债主、恩主、荐举者、依附者。
-   * 至少填写 source 侧称谓；target 侧称谓建议填写，否则前台使用通用“被保护者/受恩者”等文案。
-
-#### Reverse Inference Contract
-
-系统反向推断不靠猜测文本，而只依赖 `directionMode + sourceRoleLabel + targetRoleLabel`：
-
-* 正向视角：`sourcePersona` 对 `targetPersona` 显示 `sourceRoleLabel -> targetRoleLabel` 规则。
-* 反向视角：交换 source/target 后自动切换称谓。
-* 图谱边：优先显示 `edgeLabel`，必要时按视角使用 `reverseEdgeLabel`。
-* 若配置不完整，保存关系类型时阻止提交，不把问题留到角色资料录入阶段。
-
-#### Admin UI
-
-知识库配置前端建议包含 4 个区域：
-
-1. **关系类型列表**
-   * 支持按大类、方向模式、状态筛选。
-   * 支持搜索 name、code、aliases、description。
-   * 列表字段：名称、大类、方向模式、正向称谓、反向称谓、边标签、别名、状态、引用数量。
-
-2. **新增/编辑抽屉**
-   * 基础信息：名称、code、大类、描述、使用说明。
-   * 方向规则：方向模式、source 称谓、target 称谓、边标签、反向边标签。
-   * 归一化：别名列表。
-   * 图谱配置：颜色、排序。
-   * 状态管理：启用、停用、待审核。
-
-3. **反向预览**
-   * 输入或使用默认占位角色 A/B。
-   * 实时展示：
-     * A 对 B 的显示。
-     * B 对 A 的显示。
-     * 图谱边显示。
-     * 角色资料卡片显示。
-
-4. **校验与冲突提示**
-   * code 唯一。
-   * name 在启用类型中唯一或提示重复。
-   * aliases 不得与其他启用类型的 name/aliases 冲突。
-   * `INVERSE` 必须有双向称谓。
-   * 被引用的关系类型不能硬删除，只能停用。
-
-#### Role Profile Usage
-
-角色资料设置关系类型时，只引用知识库：
-
-* 选择对方角色。
-* 搜索选择关系类型。
-* 根据预览确认方向。
-* 选择确认章节。
-* 录入原文证据。
-* 保存结构关系。
-
-如果找不到合适类型：
-
-* 不允许自由输入成为正式关系类型。
-* 提供“申请新增关系类型”。
-* 申请内容包含建议名称、分组、方向说明、原文例证。
-* 管理员审核通过后进入知识库，再被角色资料引用。
-
-#### Frontend Graph Usage
-
-前台图谱从关系类型知识库读取展示元信息：
-
-* 边标签使用 `edgeLabel`。
-* 边颜色可来自 `group` 或 `color`。
-* 筛选器可按 `group` 过滤。
-* 点击边详情时，根据当前视角显示 source/target 称谓。
-* 关系档案事件不改变边标签，只影响详情摘要和时间线。
-
-#### Initial Seed Set
-
-MVP 可以预置一批常用类型：
-
-* 血缘：父子、母子、兄弟、姐妹、祖孙、叔侄。
-* 姻亲：夫妻、岳婿、翁媳、妯娌、连襟。
-* 师承：师生、同门、师兄弟。
-* 社会身份：主仆、同僚、上下级、乡邻、同窗。
-* 权力关系：君臣、官民、审判者与被审者。
-* 利益关系：债务、主顾、雇佣、荐举、资助。
-* 情感关系：朋友、知己、恋慕、恩义。
-* 对立关系：敌对、竞争、仇怨。
-
-#### MVP Scope
-
-第一阶段建议实现：
-
-* 关系类型列表、新增、编辑、启用/停用。
-* 方向模式与反向预览。
-* code/name/alias 冲突校验。
-* 角色关系引用关系类型 code。
-* 前台图谱边读取 `edgeLabel` 和分组。
-
-暂缓：
-
-* 多语言称谓。
-* 复杂本体继承关系。
-* 自动合并相似关系类型。
-* 精细图谱样式配置。
-* AI 自动新增知识库类型。
+# 角色关系录入设计（v3.5 · 关系+事件双层 · 终版）
+
+> 历史版本：
+> - v1（独立 RelationshipEvent + 三套词表 + 双 Prompt + 工作台 + 5 视图）已归档为 `prd.v1.md.bak`。
+> - v2（按章节存 Relationship 行 + 6 枚举 evolutionEffect 状态机）已废弃。
+> - v3 / v3.1 / v3.2 / v3.3 / v3.4 均在拷问中被逐代升级，本版为终稿。
+> - v3.5 在 v3.4 基础上补足：attitudeTags Prompt 三分类引导 + 示例库；聚合 API MVP 不 cache；图谱单边 + 数字徽章；mergePersonas 内 SYMMETRIC re-canonicalize；re-analyze 仅清空 DRAFT。
+>
+> 本版（v3.5）确定的核心模型：
+> - **结构关系** `Relationship`：`(bookId, sourceId, targetId, relationshipTypeCode)` 全书唯一一行，记录稳定身份关系。
+> - **关系事件** `RelationshipEvent`：挂在结构关系下，按章节录入互动/态度演化。
+> - 一切表现层语义（关系强弱、终结、转化）由前端从事件层推导，**不进 schema**。
+>
+> ⚠️ **不保留任何旧 Relationship 数据**：本任务上线前，存量 `relationships` 表清空（详见 §2.4）。
+
+---
+
+## 1. 目标
+
+1. **一对人一关系类型只存一行**：`Relationship` 升级为书级唯一。
+2. **事件按章节录入**：新增 `RelationshipEvent` 表。
+3. **关系类型严格受控**：`relationshipTypeCode` NOT NULL，必须命中 `RelationshipTypeDefinition` 字典。
+4. **`recordSource` 单调不可降级**：HUMAN > AI > DRAFT，AI 永远不能覆盖人工录入。
+
+非目标：
+- ❌ `evolutionEffect` 状态机
+- ❌ `weight` 字段（已废）
+- ❌ `Relationship.chapterId`（首次出现章节由前端从事件层 `MIN(events.chapterNo)` 推导）
+- ❌ `Relationship.confidence`（结构关系是离散身份事实，置信度只对单条事件有意义）
+- ❌ `endedAtChapterId` / `supersededByRelationshipId`（前端从事件层推导）
+- ❌ `attitudeTags` 字典化（MVP 自由文本，后续按统计择优入字典）
+- ❌ 双 Prompt 串行 / 5 套预置视图 / 连续录入工作台
+
+---
+
+## 2. 数据模型变更（Prisma）
+
+### 2.1 `Relationship` 表（语义升级 · 书级唯一）
+
+| 字段 | 变更 | 说明 |
+| ---- | ---- | ---- |
+| `bookId` | **新增** `String @db.Uuid` NOT NULL，FK → Book | 书级唯一所必需 |
+| `chapterId` | **删除** | 结构关系是身份事实，不绑定章节；"首次出现章节" 由前端从 `MIN(events.chapterNo)` 推导 |
+| `confidence` | **删除** | 结构关系是离散身份事实，置信度只对单条事件有意义；保留在 `RelationshipEvent.confidence` |
+| `relationshipTypeCode` | 收紧为 NOT NULL，FK `onDelete: Restrict` | 必须命中字典 |
+| `type` | **删除** | 不再使用，旧数据已清 |
+| `weight` | **删除** | 图谱边粗细 = 该关系下事件数（前端聚合） |
+| `description` / `evidence` | **删除** | 内容下沉到 `RelationshipEvent` |
+| 旧唯一键 `(chapterId, sourceId, targetId, type, recordSource)` | **删除** | — |
+| 新唯一键 `(bookId, sourceId, targetId, relationshipTypeCode)` | **新增** | 一对人一类型一行 |
+
+保留字段：`recordSource` / `status` / `deletedAt` / `createdAt` / `updatedAt`。
+
+最终 `Relationship` schema：
+
+```prisma
+model Relationship {
+  id                   String @id @default(uuid()) @db.Uuid
+  bookId               String @map("book_id") @db.Uuid
+  sourceId             String @map("source_id") @db.Uuid
+  targetId             String @map("target_id") @db.Uuid
+  relationshipTypeCode String @map("relationship_type_code")
+
+  recordSource RecordSource     @default(AI) @map("record_source")
+  status       ProcessingStatus @default(DRAFT)
+
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book           Book                         @relation(fields: [bookId], references: [id])
+  source         Persona                      @relation("RelationshipSource", fields: [sourceId], references: [id])
+  target         Persona                      @relation("RelationshipTarget", fields: [targetId], references: [id])
+  relationshipType RelationshipTypeDefinition @relation(fields: [relationshipTypeCode], references: [code], onDelete: Restrict)
+  events         RelationshipEvent[]
+
+  @@unique([bookId, sourceId, targetId, relationshipTypeCode], map: "relationships_pair_type_uk")
+  @@map("relationships")
+}
+```
+
+### 2.2 `RelationshipEvent` 表（新增）
+
+```prisma
+model RelationshipEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  relationshipId String   @map("relationship_id") @db.Uuid
+  chapterId      String   @map("chapter_id") @db.Uuid
+
+  description    String   @db.Text                          // 事件一句话描述（必填）
+  evidenceQuote  String?  @map("evidence_quote") @db.Text   // 原文片段
+  attitudeTags   String[] @default([]) @map("attitude_tags") // 自由文本，不进字典
+
+  recordSource   RecordSource     @default(AI) @map("record_source")
+  confidence     Float            @default(1.0)
+  status         ProcessingStatus @default(DRAFT)
+
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  relationship Relationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  chapter      Chapter      @relation(fields: [chapterId], references: [id])
+
+  @@index([relationshipId, chapterId], map: "rel_events_rel_chapter_idx")
+  @@index([chapterId, status], map: "rel_events_chapter_status_idx")
+  @@map("relationship_events")
+}
+```
+
+**不设事件唯一键** —— 同一章可有多条事件，去重交给 AI/审核员。
+
+### 2.3 `recordSource` 升级规则（结构关系层）
+
+| 现状 → 新输入 | 行为 |
+| ---- | ---- |
+| 无记录 → 任意来源 | 新建 |
+| `DRAFT` → `AI/HUMAN` | 升级 `recordSource` |
+| `AI` → `HUMAN` | 升级 `recordSource = HUMAN` |
+| `AI` → `AI` | 不动 |
+| `HUMAN` → `AI` | **不覆盖**，仅触发事件层插入 |
+| `HUMAN` → `HUMAN` | 不动 |
+
+规则：`recordSource` 单调升级，序数 `DRAFT < AI < HUMAN`，永不降级。`RelationshipEvent` 不做来源升级（每条事件独立保留来源）。
+
+### 2.4 软删除级联规则
+
+| 操作 | 级联行为 |
+| ---- | ---- |
+| 软删 `Relationship`（`deletedAt = now()`） | **同事务**将该关系下所有 `RelationshipEvent.deletedAt` 一并写入 |
+| 软删某条 `RelationshipEvent` | **不动** `Relationship`：结构关系是身份事实，无事件也成立 |
+| 软删 `Relationship` 后再恢复（撤销软删） | 不级联恢复事件，需人工逐条恢复（避免误恢复历史脏数据） |
+
+聚合 API 与图谱接口默认过滤 `deletedAt IS NOT NULL`。
+
+### 2.5 迁移策略（一刀切）
+
+由于产品仍在内测、存量 `relationships` 数据全部由 AI 抽取且未经人工核准：
+
+1. **清空 `relationships` 表**（DELETE）。
+2. 跑一次 `initializeCommonRelationshipTypes` 确保字典种子齐全。
+3. 用 Prisma migration 一次性完成：
+   - 删除旧字段：`chapterId` / `confidence` / `type` / `weight` / `description` / `evidence`；
+   - 删除旧唯一键 `relationships_dedup_key`；
+   - 新增 `bookId` NOT NULL FK + 新唯一键 `(bookId, sourceId, targetId, relationshipTypeCode)`；
+   - `relationshipTypeCode` 改 NOT NULL；
+   - 新建 `relationship_events` 表。
+4. 用户可在管理后台对已导入书籍重新跑解析。
+
+### 2.6 人物合并（mergePersonas）与 canonical 不变量
+
+`mergePersonas(loserId → winnerId)` 在事务内重定向 `Relationship.sourceId/targetId` 时，必须**对 SYMMETRIC 类型重新 canonicalize**：
+
+1. 先把 `sourceId=loserId` 与 `targetId=loserId` 全部改写为 `winnerId`；
+2. 对改写后行的 `relationshipTypeCode` 查 `directionMode`：
+   - `SYMMETRIC`：若 `sourceId > targetId`（UUID 字典序），事务内 swap 两列，使新行仍满足 §3 写入规则的 canonical 不变量（小 UUID 当 source）；
+   - `INVERSE` / `DIRECTED`：方向保留不动。
+3. 重定向后若与已有行触发 `(bookId, sourceId, targetId, relationshipTypeCode)` 唯一键冲突，按 `recordSource` 单调升级规则合并（保留高优先级一行，低优先级的事件 `relationshipId` 重定向到保留行）。
+
+该流程保证：合并完成后，库内不存在「同 SYMMETRIC pair 用反向 source/target 双行存在」的破窗状态，聚合 API 与字典序 join 永远只看到一行。
+
+---
+
+## 3. AI 抽取协议
+
+继续单 Prompt，输出协议两段：
+
+```jsonc
+{
+  "relationships": [   // 结构关系（书级 upsert）
+    {
+      "sourcePersonaName": "胡屠户",
+      "targetPersonaName": "范进",
+      "relationshipTypeCode": "relationship_xxxxxx"
+    }
+  ],
+  "relationshipEvents": [  // 章节事件
+    {
+      "sourcePersonaName": "胡屠户",
+      "targetPersonaName": "范进",
+      "relationshipTypeCode": "relationship_xxxxxx",
+      "description": "范进中举后，胡屠户改口称\"贤婿老爷\"",
+      "evidenceQuote": "胡屠户上前道：'我的女婿，方才不是我敢大胆……'",
+      "attitudeTags": ["改口", "奉承"],
+      "confidence": 0.9
+    }
+  ]
+}
+```
+
+**写入规则**（服务端）：
+
+1. **字典 gate**：`relationshipTypeCode` 必须命中 `RelationshipTypeDefinition` 且 `status='ACTIVE'`；否则整条丢进 DRAFT 字典审核队列，不写正式表。
+2. **方向 canonicalize**（关键）：写入 `Relationship` 前查 `directionMode`：
+   - `SYMMETRIC`：比较 `sourceId/targetId` UUID 字符串，**字典序小的当 `sourceId`**（保证 `(A,B)` 和 `(B,A)` 落同一行）。
+   - `INVERSE` / `DIRECTED`：保留 AI 输出方向不动。
+   - 同 canonicalize 规则也作用于 `RelationshipEvent` 写入前的关系查找。
+3. `relationships`：canonicalize 后按 §2.3 规则 upsert。
+4. `relationshipEvents`：canonicalize 后按 `(bookId, source, target, code)` 查找已有结构关系：
+   - **命中** → 插入 `RelationshipEvent`。
+   - **未命中** → 整条丢 DRAFT 字典审核队列，**不隐式 upsert 结构关系**（避免 AI 事件段误抽的 typeCode 静默污染 Pair；字典 gate 是唯一防线）。
+5. **事件不去重、不限量**：同一章节同一关系允许多条事件，服务端不设任何上限（接受 AI 偶发重复，由审核员批量 reject；强制唯一键或截断反而会丢失同章多次互动如「同章节两次羞辱」）。
+6. 行为词被 `generateRelationshipTypes` 拒绝清单拦截（已在子任务实现）。
+
+Prompt 中嵌入字典 code 列表（仅 `status='ACTIVE'`，按 group 分组），由 `RelationshipTypeDefinition` 表生成。
+
+**`attitudeTags` Prompt 引导规则**：
+
+字段保持平铺 `String[]`、不入字典。Prompt 中明确要求 AI 按**三分类**输出，每事件每类 1-3 项：
+
+1. **情绪态度**（描写 source 对 target 的情感色彩）：奉承 / 嘲讽 / 疏远 / 亲近 / 敌视 / 敬畏 / 轻蔑 / 真诚 / 虚伪 ……
+2. **行为动作**（具体互动动作）：改口 / 跪拜 / 报恩 / 背叛 / 对抗 / 和解 ……
+3. **评价定性**（对该次互动的总体定性）：原谅 / 决裂 / 修复 / 升级 ……
+
+Prompt 内嵌**示例库**（约 16 个高频 tag，**优先复用**，无合适项再自创）：
+`奉承 / 嘲讽 / 疏远 / 亲近 / 对抗 / 和解 / 改口 / 跪拜 / 虚伪 / 真诚 / 报恩 / 背叛 / 原谅 / 敌视 / 敬畏 / 轻蔑`。
+
+服务端不在落库前做归并（保持自由文本灵活性），仅由前端做 lowercase + trim + 去标点的展示去重（§5.4）。
+
+### 3.1 解析重跑（re-analyze）写入语义
+
+触发书籍重新解析时，**同事务**先：
+
+1. `DELETE FROM relationship_events WHERE chapter.bookId = :bookId AND status = 'DRAFT' AND record_source = 'AI'`；
+2. `DELETE FROM relationships WHERE bookId = :bookId AND status = 'DRAFT' AND record_source = 'AI' AND NOT EXISTS (CONFIRMED 事件)`；
+3. `recordSource = HUMAN` 或 `status = CONFIRMED` 或 `deletedAt IS NOT NULL` 的行**一律保留**；
+4. 然后由本轮解析重新 upsert / 插入 DRAFT 数据。
+
+该策略保证：重跑不会把上一轮的 AI DRAFT 与本轮 AI DRAFT 重复堆积成「追加污染」，同时人工核准成果不丢。
+
+---
+
+## 4. 聚合 API
+
+```
+GET /api/persona-pairs/:bookId/:personaAId/:personaBId
+```
+
+**路径参数顺序无关**：服务端按 `personaAId/personaBId` UUID 字典序内部 canonicalize（小者为 `aId`），不做 HTTP redirect。前端用返回的 `pairCanonical` 做 cache key。
+
+返回：
+
+```ts
+{
+  pairCanonical: { aId: string; bId: string },  // UUID 字典序，aId < bId
+  relationships: Array<{
+    id: string;
+    relationshipTypeCode: string;
+    relationshipTypeLabel: string;        // 字典 join
+    directionMode: "SYMMETRIC" | "INVERSE" | "DIRECTED";
+    sourceId: string;                     // canonicalize 后的真实存储方向
+    targetId: string;
+    sourceRoleLabel: string | null;
+    targetRoleLabel: string | null;
+    edgeLabel: string;
+    firstChapterNo: number | null;        // 无事件时为 null（人工录入但未补事件）
+    eventCount: number;                   // 用于图谱边粗细；不含 deletedAt 事件
+    status: "DRAFT" | "CONFIRMED" | "REJECTED";
+    recordSource: "AI" | "HUMAN" | "DRAFT";
+    events: Array<{
+      id: string;
+      chapterNo: number;
+      chapterTitle: string;
+      description: string;
+      evidenceQuote: string | null;
+      attitudeTags: string[];
+      status: "DRAFT" | "CONFIRMED" | "REJECTED";
+      recordSource: "AI" | "HUMAN" | "DRAFT";
+      confidence: number;
+    }>;  // 按 chapterNo 升序
+  }>
+}
+```
+
+**结构关系排序**（服务端定，前端直接渲染）：
+1. `firstChapterNo ASC`（`null` 排最后）
+2. `eventCount DESC`
+3. `relationshipTypeCode ASC`（稳定 tie-breaker）
+
+实现：两次 query + dictionary join，无状态机、无 weight。
+
+**性能策略：MVP 不做服务端 cache**，直接两次 query + 内存 join，预期 p95 < 50ms（全书 Pair 单次拉取，事件量级有限）。上线后接入 APM 监控；若 p95 突破阈值，再迭代加 ETag / Redis cache，**当前不投入**。
+
+---
+
+## 5. 前端
+
+### 5.1 双人 Pair 抽屉
+
+入口：图谱点边、人物详情页"关系"区点条目。
+
+布局：
+- 顶部：Pair 头像 + "他们之间的关系"
+- 列出该 Pair 全部结构关系（每条一个折叠卡片，排序由聚合 API 决定）：
+  - 关系标签（`edgeLabel` + 双侧称谓）
+  - 元信息（首次章节 / 「尚无互动」、来源、事件数、`status` 徽章）
+  - **跨事件 `attitudeTags` 词云**：卡片头部展示全部事件去重后的 `attitudeTags`，按**出现频次 DESC** 排序，并列时按首次出现章节升序（前端纯计算，零后端成本）。
+  - 折叠展开 → 章节事件时间线（每条：章节号 + 描述 + 证据 + `attitudeTags` 徽章 + 事件 `status` 徽章）
+  - 管理员可在此就地"新增事件"/"编辑事件"
+
+**默认折叠策略**：
+- 抽屉打开时**默认全部折叠**；
+- 若该 Pair 仅一条结构关系 → 自动展开（节省一次点击）。
+
+不再做 Tab、不再有总览图表。
+
+### 5.2 人物详情页
+
+四区：
+1. 基础资料
+2. 章节事迹（沿用 biography 模块）
+3. **关系（按 Pair 列表）**：每个 Pair 一行，显示该 Pair 全部 `edgeLabel` 标签 + 总事件数；点开 5.1 抽屉。Pair 排序按 "事件总数 DESC"，便于发现核心关系人。对 `eventCount=0` 的 Pair（人工录入但未补事件）加"待补充事件"徽章以免被埋没，但**排序仍由 eventCount 决定**（事件密度即关系强度，不为手工录入破例）。
+4. 证据与审核
+
+### 5.3 图谱
+
+同一 Pair **永远只画一条边**（不画平行边，避免视觉混乱）：
+
+- **边色** = 该 Pair 中 `eventCount` 最大的那条 `Relationship` 所属 `relationshipType.group`（家族 / 师友 / 敌对 ……）。
+- **边粗细** = 该 Pair 全部结构关系的 `eventCount` 之和（事件密度）。
+- **数字徽章**：当该 Pair 的结构关系总数 `N > 1` 时，在边的右上角渲染小徽章显示 `N`，提示「这两人之间有多种身份关系」。
+- **hover tooltip**：列出该 Pair 全部 `edgeLabel`（按聚合 API 排序），让用户一眼看到所有关系类型。
+- **点边** → 5.1 Pair 抽屉，抽屉内逐条卡片展开。
+
+### 5.4 `attitudeTags` 展示规则
+
+- 前端做 lowercase + trim + 去标点的"展示去重"（同一卡片内 `"改口"` 和 `"改口 "` 合并）。
+- 跨事件词云：同一结构关系下全部事件的 `attitudeTags`使用同一 normalize 函数后去重汇总（实现在抽屉卡片组件内，纡 useMemo）。
+- 不做服务端归并。
+
+---
+
+## 6. AI 写入与审核
+
+### 6.1 写入路径
+
+| 路径 | 行为 |
+| ---- | ---- |
+| AI 输出 `relationships` 命中字典 | 按 §2.3 规则 upsert，`status=DRAFT`、`recordSource=AI`（首建时） |
+| AI 输出 `relationships` 不命中字典 | 整条丢字典审核队列 |
+| AI 输出 `relationshipEvents` 命中关系 | 插入 `RelationshipEvent`，`status=DRAFT` |
+| AI 输出 `relationshipEvents` 找不到关系 | 整条丢 DRAFT 字典审核队列，**不隐式创建结构关系**（字典 gate 是唯一防线） |
+| 人工录入结构关系 | `recordSource=HUMAN`，`status=CONFIRMED` |
+| 人工录入事件 | `recordSource=HUMAN`，`status=CONFIRMED` |
+
+### 6.2 双层 `status` 独立性
+
+`Relationship.status` 与 `RelationshipEvent.status` 完全独立，互不联动：
+
+- 关系层 `status` 表达 "这两人是否真存在该类型关系"（结构事实是否被采信）；
+- 事件层 `status` 表达 "这条章节互动是否被采信"。
+- AI 升级关系结构（DRAFT→CONFIRMED）不会自动确认其下任何事件；反之亦然。
+- 审核台 "关系" 分页与 "关系事件" 分页相互独立工作。
+
+### 6.3 展示过滤规则
+
+| 场景 | 过滤条件 |
+| ---- | ---- |
+| 图谱默认视图 | 仅展示 `Relationship.status = CONFIRMED` 且 `deletedAt IS NULL` 的边；事件计数仅计 `RelationshipEvent.status = CONFIRMED` 的事件 |
+| Pair 抽屉 | 列出 Pair 全部 `Relationship.status ∈ {CONFIRMED, DRAFT}`；事件按各自 `status` 显示徽章（DRAFT/CONFIRMED/REJECTED 视觉区分），管理员可全量查看 |
+| 审核台 | 按 `status=DRAFT` 单独筛选关系层或事件层 |
+
+审核台：现有 `/admin/review` 增加"关系事件"分页（结构与"关系"分页一致）。
+
+### 6.4 批量操作责任边界
+
+| 操作 | 允许与安全措施 |
+| ---- | ---- |
+| 批量 confirm 关系层 / 事件层 | 允许，无需额外确认 |
+| 批量 reject 关系层 | 允许；**不级联 reject 事件**（双层 status 独立是本设计核心扯，参 §6.2）；如需同时 reject 事件请在事件分页独立操作 |
+| 批量 reject 事件层 | 允许，无需额外确认 |
+| 批量软删 `Relationship` | 允许；必须弹窗二次确认 + 勾选 `我知道将级联软删 N 条事件` checkbox（遵守 §2.4 级联规则） |
+| 批量软删 `RelationshipEvent` | 允许，无需额外确认（不动 Relationship） |
+
+不引入 "软删 30 天后 auto-purge" 机制（MVP 结构不必要）。
+
+---
+
+## 7. 验收标准（父任务）
+
+1. **Schema 迁移**：migration 在测试库一次跑通，`relationships` 表新结构正确，`relationship_events` 表创建成功，存量数据已清空。
+2. **`recordSource` 单调升级**：单测覆盖 §2.3 全部 6 条规则。
+3. **SYMMETRIC canonicalize**：单测覆盖：同一对人 `(A,B)` 与 `(B,A)` 在 SYMMETRIC 类型下落同一行；INVERSE/DIRECTED 不被 canonicalize。
+4. **字典 status gate**：`status≠'ACTIVE'` 的 code 被 AI 输出中命中时进 DRAFT 字典审核队列；已存在 Relationship 不受影响。
+5. **AI 写入路径**：单测覆盖 4 条路径（命中/不命中 × 关系/事件）。
+6. **软删除级联**：单测覆盖 §2.4 三条规则。
+7. **聚合 API** `GET /api/persona-pairs/...` 单测覆盖率 ≥ 90%，覆盖 5 case：
+   - 路径参数顺序互换后 `pairCanonical` 一致
+   - 无结构关系
+   - 单结构关系无事件（`firstChapterNo=null` 排最后）
+   - 单结构关系多事件
+   - 多结构关系多事件（验证三级排序 firstChapterNo / eventCount / typeCode）
+8. **肉眼校验**：在儒林外史样书上重跑解析，王冕↔母亲、范进↔胡屠户、严监生↔王氏 三对 Pair 显示正确（结构关系类型 + 事件按章节排序）。
+9. **子任务 `04-30-relationship-type-knowledge-base`** 已交付。
+10. **`attitudeTags` Prompt 三分类 + 示例库**：单测/对话回放验证 Prompt 中明确出现三分类引导与 16 个示例 tag；金标小样本回归验证 AI 输出对示例库的复用率 ≥ 70%。
+11. **图谱单边 + 数字徽章渲染**：组件测覆盖 N=1（无徽章）、N=2 / N=3（显示徽章），边色取 `eventCount` 最大关系的 group，hover tooltip 列出全部 `edgeLabel`。
+12. **`mergePersonas` SYMMETRIC re-canonicalize**：单测覆盖（a）合并后产生 `source>target` 行被 swap；（b）唯一键冲突时按 `recordSource` 单调升级规则合并；（c）INVERSE / DIRECTED 类型方向保留不动。
+13. **re-analyze DRAFT 清空 + HUMAN/CONFIRMED 保留**：单测覆盖重跑前同事务删除 DRAFT-AI 行，保留 HUMAN / CONFIRMED / `deletedAt IS NOT NULL` 数据；重跑后无重复堆积。
+
+> **召回率指标**（如"`relationshipTypeCode` 不命中字典率 ≤ 5%"）依赖金标 v2 升级，已挪到子任务/后续专项验收，不在父任务范围。
+
+---
+
+## 8. 拆分
+
+- **本父任务**：`Relationship` 重构 + `RelationshipEvent` 新表 + 一刀切迁移 + AI 双段输出协议 + `recordSource` 升级规则 + 聚合 API + Pair 抽屉。
+- **子任务 `04-30-relationship-type-knowledge-base`**（保持原 PRD 不变）：字典 CRUD、aliases、AI 写入校验、反向预览。
+
+---
+
+## 9. 风险
+
+| 风险 | 缓解 |
+| ---- | ---- |
+| 清空 `relationships` 后用户需重跑解析 | 内测期可接受；管理后台已支持一键重跑 |
+| 同 Pair 同章节多事件无去重 | 接受重复，由审核合并；强制唯一键反而会丢真实多事件 |
+| AI 把事件误抽为结构关系 | 字典强约束 + 行为词拒绝清单（子任务已实现） |
+| `attitudeTags` 自由文本维度发散、近义词泛滥 | Prompt 三分类引导 + 16 个高频 tag 示例库强制优先复用；前端 normalize 去重；后续按统计择优入字典 |
+| 聚合 API p95 飙升 | MVP 不投入 cache 复杂度，依赖 APM 监控 p95；超阈值再迭代加 ETag / Redis |
+| 同 Pair 多关系类型在图谱呈现混乱 | 单边 + 数字徽章 + hover tooltip 列全部 `edgeLabel`，避免平行边视觉噪音 |
+| `mergePersonas` 后 canonical 不变量被破坏（SYMMETRIC 反向双行） | 合并事务内对 SYMMETRIC 类型 re-canonicalize（swap source/target），唯一键冲突按 `recordSource` 单调升级合并 |
+| re-analyze 追加污染（旧 DRAFT 与新 DRAFT 堆积） | 同事务先 DELETE 该书 DRAFT-AI 行，HUMAN / CONFIRMED / 已软删数据保留；本轮 AI 重新填充 |
+| **SYMMETRIC 类型方向双行**（AI 分别产出 A→B 和 B→A） | 服务端写入前按 UUID 字典序 canonicalize（小者当 source），保证唯一键自然去重 |
+| **字典 code 停用/合并**（`status≠'ACTIVE'` 或需迁移） | AI 写入仅接受 ACTIVE；已存 Relationship 不受影响；code 合并/删除工具在子任务实现，父任务依赖 `onDelete:Restrict` 兌底 |
+| Pair 抽屉多关系交互冷却（全折叠） | 单关系自动展开，多关系默认全折叠，由使用者点击选择关注点 |
+| **AI 事件段 typeCode 误抽静默创建结构关系** | 事件找不到关系不隐式 upsert，统一进 DRAFT 字典审核队列 |
+| **人工录入无事件关系被埋没** | 人物详情页 Pair 列表加 「待补充事件」 徽章，避免肉眼遗漏 |
+| **批量软删关系误点击丢全部事件** | 强制弹窗 + checkbox，展示将级联软删 N 条事件计数 |
+
+---
+
+## 10. 实施计划与文件清单（执行准绳）
+
+> 本节是父任务的"指挥地图"：每个子任务必须严格按照 §10.1–§10.8 落地，子任务 PRD 不得绕过这些约束。
+
+### 10.1 枚举与命名最终方案（**所有子任务统一遵守**）
+
+为避免大规模破坏性重命名，**保留代码中现存命名**，PRD §1–§9 文本中的别名按下表读取：
+
+| PRD 文本 | 代码实际值（来源：`@/generated/prisma/enums`） | 说明 |
+| ---- | ---- | ---- |
+| `recordSource = HUMAN` | `RecordSource.MANUAL` | 人工录入 |
+| `recordSource = AI` | `RecordSource.AI` | AI 抽取 |
+| `recordSource = DRAFT` | **新增枚举值** `RecordSource.DRAFT_AI` | AI 待审；子任务 A 在 Prisma schema 中扩展枚举 |
+| `status = CONFIRMED` | `ProcessingStatus.VERIFIED` | 已审核确认 |
+| `status = DRAFT` | `ProcessingStatus.PENDING` | 草稿待审 |
+| `status = REJECTED` | `ProcessingStatus.REJECTED` | 已拒绝 |
+| Persona 关系 alias `RelationshipSource` / `RelationshipTarget` | 保留现有 `SourcePersona` / `TargetPersona` | Prisma 关系名不改 |
+
+**recordSource 单调升级链**（最终落地）：`DRAFT_AI` < `AI` < `MANUAL`。
+**status 双层独立性**：`Relationship.status` 与 `RelationshipEvent.status` 独立流转；只要任一层 `recordSource=MANUAL` 即视为人工锁定。
+
+### 10.2 现有代码触点（必须修改 / 联动验证）
+
+| 文件 / 路径 | 关联子任务 | 触点说明 |
+| ---- | ---- | ---- |
+| [prisma/schema.prisma](prisma/schema.prisma) 行 372-410 | A | `Relationship` 改造、新增 `RelationshipEvent`、`RecordSource` 枚举扩展 |
+| `prisma/migrations/2026XXXXXXXXXX_relationship_event_split/` | A | 新建迁移：DROP 旧唯一键 / 旧字段 → ALTER + ADD → CREATE 新表 → 清空旧数据 |
+| [prisma/seed.ts](prisma/seed.ts) | A | 调用 `initializeCommonRelationshipTypes`（已交付） |
+| [src/server/modules/relationships/createBookRelationship.ts](src/server/modules/relationships/createBookRelationship.ts) 行 130-200 | A | 改用 `(bookId,sourceId,targetId,relationshipTypeCode)` 唯一键；删除 `chapterId/type/weight/description/evidence/confidence` 写入；改为 upsert + canonicalize |
+| [src/server/modules/relationships/listBookRelationships.ts](src/server/modules/relationships/listBookRelationships.ts) | A | 输出形态调整为新 schema |
+| [src/server/modules/relationships/updateRelationship.ts](src/server/modules/relationships/updateRelationship.ts) | A | 仅允许改 `relationshipTypeCode / status / recordSource`；移除 `type/weight/...` |
+| [src/server/modules/relationships/deleteRelationship.ts](src/server/modules/relationships/deleteRelationship.ts) | A | 软删时同事务级联软删该关系下全部 `RelationshipEvent` |
+| [src/app/api/books/[id]/relationships/route.ts](src/app/api/books/[id]/relationships/route.ts) | A | Zod schema 同步 |
+| [src/app/api/relationships/[id]/route.ts](src/app/api/relationships/[id]/route.ts) | A | PATCH/DELETE body 同步 |
+| [src/lib/services/relationships.ts](src/lib/services/relationships.ts) | A、E | `PatchRelationshipBody` / `CreateRelationshipBody` 客户端类型同步 |
+| [src/server/modules/analysis/services/ChapterAnalysisService.ts](src/server/modules/analysis/services/ChapterAnalysisService.ts) 行 ~559 | B | `tx.relationship.createMany` 唯一写入站点重构：解析 LLM 双段输出 → canonicalize → 字典 gate → upsert Relationship + createMany RelationshipEvent；`recordSource` 默认 `DRAFT_AI` |
+| [src/server/modules/knowledge/prompt-template-baselines.ts](src/server/modules/knowledge/prompt-template-baselines.ts) 行 130-156 case `CHAPTER_ANALYSIS` | B | JSON 协议 `relationships` 段改为新格式 + 新增 `relationshipEvents` 段 + `attitudeTags` 三分类引导 + 16 tag 示例库 |
+| [src/server/modules/knowledge/prompt-templates.ts](src/server/modules/knowledge/prompt-templates.ts) | B | `resolvePromptTemplate({slug:"CHAPTER_ANALYSIS"})` 不需要改；通过新建版本激活新 baseline |
+| [src/server/modules/analysis/pipelines/sequential/SequentialPipeline.ts](src/server/modules/analysis/pipelines/sequential/SequentialPipeline.ts) | B | 仅做兼容性回归测试，无需改动 |
+| [src/server/modules/analysis/pipelines/twopass/TwoPassPipeline.ts](src/server/modules/analysis/pipelines/twopass/TwoPassPipeline.ts) | B | 同上 |
+| [src/server/modules/personas/mergePersonas.ts](src/server/modules/personas/mergePersonas.ts) 行 100-200 | C | 改造：(1) 关系迁移 `(sourceId|targetId)=loserId → winnerId`；(2) SYMMETRIC 类型 swap 保 canonical；(3) 唯一键冲突按 `recordSource` 单调升级合并；(4) 同事务迁移 `RelationshipEvent.relationshipId` |
+| [src/server/modules/books/startBookAnalysis.ts](src/server/modules/books/startBookAnalysis.ts) | C | 同事务前置：`DELETE Relationship WHERE bookId=? AND recordSource='DRAFT_AI'` 与 `DELETE RelationshipEvent ...`；HUMAN/AI/已软删保留 |
+| `src/server/modules/relationships/getPersonaPair.ts` (**新建**) | D | `(bookId, aId, bId)` Pair 聚合 service |
+| `src/app/api/persona-pairs/[bookId]/[aId]/[bId]/route.ts` (**新建**) | D | GET 路由（admin + viewer 都可访问；MVP 不 cache） |
+| `src/lib/services/persona-pairs.ts` (**新建**) | D、E | 客户端 fetch 工具 |
+| [src/components/graph/force-graph.tsx](src/components/graph/force-graph.tsx) | E | 同 Pair 多关系合并为单边 + 数字徽章 + hover tooltip 列全部 `edgeLabel` |
+| [src/components/review/relation-editor/](src/components/review/relation-editor/) | E | 关系编辑器扩展为 Pair 抽屉容器，分「结构关系」「关系事件」两 tab |
+| [src/components/review/relationship-edit-form.tsx](src/components/review/relationship-edit-form.tsx) | E | 字段改造（去掉 `type/weight/description/evidence/confidence`，加 `relationshipTypeCode` 选择器） |
+| `src/components/review/relationship-event-form.tsx` (**新建**) | E | 关系事件录入/编辑表单（含 `attitudeTags` 输入 + 16 tag 快捷输入） |
+| [src/components/review/role-review-workbench.tsx](src/components/review/role-review-workbench.tsx) | E | 「关系事件」分页 tab 接入 |
+| [src/app/admin/role-workbench/[bookId]/page.tsx](src/app/admin/role-workbench/[bookId]/page.tsx) | E | 集成 Pair 抽屉触发点 |
+
+> 说明：文中"人物详情页"在当前代码中实际由 [src/components/graph/persona-detail-panel.tsx](src/components/graph/persona-detail-panel.tsx) 承载（图谱右侧抽屉）；子任务 E 在该面板加 Pair 列表入口，**不新建 `personas/[id]` 路由**。
+
+### 10.3 子任务依赖关系（执行顺序）
+
+```
+A (schema + 服务层 CRUD 改造)
+  ├─ 阻塞 B、C、D、E
+B (AI 写入协议 + Prompt 升级)
+  ├─ 依赖 A
+  └─ 与 C 可并行
+C (mergePersonas + re-analyze 清场)
+  ├─ 依赖 A
+  └─ 与 B 可并行
+D (Pair 聚合 API)
+  ├─ 依赖 A
+  └─ 与 B、C 可并行
+E (前端：图谱单边/Pair 抽屉/审核台事件分页)
+  └─ 依赖 A、D（必需）；建议 B、C 完成后再联调
+```
+
+**串行执行建议**：A → (B ∥ C ∥ D) → E；其中 D 在 A 完成后即可起步，不必等 B/C。
+
+### 10.4 迁移文件命名约定
+
+参考 [prisma/migrations/20260415114937_kb_refactor](prisma/migrations/20260415114937_kb_refactor/)。子任务 A 新建：
+- 目录：`prisma/migrations/2026XXXXXXXXXX_relationship_event_split/`（`X` 为执行时戳，由 `prisma migrate dev --name relationship_event_split` 自动生成）。
+- 内容：
+  1. `DROP INDEX relationships_dedup_key;`
+  2. `ALTER TABLE relationships DROP COLUMN chapter_id, DROP COLUMN type, DROP COLUMN weight, DROP COLUMN description, DROP COLUMN evidence, DROP COLUMN confidence;`
+  3. `ALTER TABLE relationships ADD COLUMN book_id UUID NOT NULL REFERENCES books(id);`
+  4. `ALTER TABLE relationships ALTER COLUMN relationship_type_code SET NOT NULL;`
+  5. `ALTER TYPE "RecordSource" ADD VALUE 'DRAFT_AI';`
+  6. `CREATE UNIQUE INDEX relationships_book_pair_type_key ON relationships (book_id, source_id, target_id, relationship_type_code) WHERE deleted_at IS NULL;`
+  7. `CREATE TABLE relationship_events (...)` 含 FK `relationship_id → relationships(id) ON DELETE RESTRICT`、`chapter_id → chapters(id)`、`source_id` / `target_id` 冗余便于查询；索引 `(relationship_id, chapter_no)`、`(book_id, chapter_id)`、`(deleted_at) WHERE deleted_at IS NULL`。
+  8. `DELETE FROM relationships;`（一刀切，**v3.5 §2.5**）
+
+### 10.5 单元测试目标
+
+| 子任务 | 单测文件 | 必须覆盖的验收点 |
+| ---- | ---- | ---- |
+| A | `createBookRelationship.test.ts`、`updateRelationship.test.ts`、`deleteRelationship.test.ts`、`listBookRelationships.test.ts` 全部按新 schema 重写 | §7.1、§7.6 |
+| B | `ChapterAnalysisService.test.ts`（新增针对关系/事件双段写入路径的用例） | §7.2、§7.3、§7.4、§7.5、§7.10 |
+| C | `mergePersonas.test.ts`（补 SYMMETRIC re-canonicalize、唯一键冲突合并、级联事件迁移）、`startBookAnalysis.test.ts`（补 DRAFT_AI 清场） | §7.12、§7.13 |
+| D | `getPersonaPair.test.ts`（新建）、route handler 集成测 | §7.7 |
+| E | `force-graph.test.tsx`（补单边+数字徽章）、`relationship-event-form.test.tsx`（新建）、`role-review-workbench.test.tsx`（补关系事件分页） | §7.8、§7.11 |
+
+行覆盖率门槛 ≥ 90%（与项目全局一致）；新增 service 文件本身覆盖率应 ≥ 95%。
+
+### 10.6 Prompt 版本管理
+
+- slug：`CHAPTER_ANALYSIS`（不新增 slug，避免与现有 pipeline stage 解耦）。
+- 实施方式：子任务 B 在 [prompt-template-baselines.ts](src/server/modules/knowledge/prompt-template-baselines.ts) 修改 `case "CHAPTER_ANALYSIS"`；运行 `pnpm db:seed` 生成新 `PromptTemplateVersion`，同时通过 `isActive: true` 自动激活新版本。
+- 旧版本通过 `prompt_template_versions` 历史记录回溯，无需手动归档。
+
+### 10.7 attitudeTags 三分类引导（Prompt 内嵌·权威定义）
+
+```
+关系事件提取 attitudeTags 时，每个标签必须从下列三大维度中选取，并优先复用示例库（共 16 个高频值），不要发明同义词：
+
+【情感态度】感激 / 怨恨 / 倾慕 / 厌恶 / 愧疚 / 惧怕
+【行为倾向】资助 / 提携 / 排挤 / 背叛 / 庇护
+【关系演化】疏远 / 决裂 / 修好 / 公开 / 隐瞒 / 利用
+
+输出形如 ["感激","资助"]，最多 3 个；若文本无明确态度信号，输出空数组。
+```
+
+### 10.8 回滚与失败处理
+
+- **本任务为内测期·破坏性升级**：不需要历史数据兼容。
+- 单元测试任意失败 → 阻塞该子任务进入 check 阶段。
+- 集成测试中如发现 prompt 召回率显著下降（>10pp）：先回滚 prompt baseline 版本（`isActive=false`），不回滚 schema。
+- DB 出现意外脏数据：执行 `pnpm prisma:migrate reset` + `pnpm db:seed` + 在管理台一键重跑书籍解析；schema 与种子始终是单一事实源。
+
+### 10.9 子任务清单与目录
+
+| 子任务 slug | 一句话职责 | 验收点映射 |
+| ---- | ---- | ---- |
+| `05-01-relation-schema-migration`        | Prisma schema 改造 + 迁移 + relationships 服务层 CRUD 同步 | §7.1, §7.6 |
+| `05-01-relation-ai-write-protocol`       | `ChapterAnalysisService` 写入路径重构 + `CHAPTER_ANALYSIS` baseline 升级 + 双 pipeline 兼容回归 | §7.2, §7.3, §7.4, §7.5, §7.10 |
+| `05-01-relation-merge-and-reanalyze`     | `mergePersonas` SYMMETRIC re-canonicalize + 关系/事件迁移；`startBookAnalysis` 前置 DRAFT_AI 清场 | §7.12, §7.13 |
+| `05-01-persona-pair-aggregation-api`     | `GET /api/persona-pairs/:bookId/:aId/:bId` 路由 + service + 客户端 fetch 工具 | §7.7 |
+| `05-01-relation-frontend-pair-drawer`    | Pair 抽屉组件 + 关系事件表单 + 图谱单边+数字徽章 + 审核台关系事件分页 + attitudeTags 词云 | §7.8, §7.11 |
+
+> 已交付子任务 `04-30-relationship-type-knowledge-base`（关系类型字典 CRUD + AI 写入校验）保持原样，不在本次新拆任务范围内。

@@ -64,9 +64,14 @@ export type BiographyRecord = Prisma.BiographyRecordModel
 export type Mention = Prisma.MentionModel
 /**
  * Model Relationship
- * @db.remark: 动态关系表。
+ * @db.remark: 书级人物关系表，同一书内一对人物每种关系类型仅保留一行。
  */
 export type Relationship = Prisma.RelationshipModel
+/**
+ * Model RelationshipEvent
+ * @db.remark: 关系事件表。记录关系在具体章节中的证据与事件摘要。
+ */
+export type RelationshipEvent = Prisma.RelationshipEventModel
 /**
  * Model AnalysisJob
  * @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。

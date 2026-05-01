@@ -1,0 +1,10 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "校验后端服务、API、Prisma 与测试规范入口"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "校验 Prisma schema、事务、迁移与生成代码约束"}
+{"file": ".trellis/spec/backend/migration-guidelines.md", "reason": "校验数据库迁移顺序、破坏性变更与回滚策略"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "校验关系结构与关系事件拆分后的 DB/service/API 契约"}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "校验 Route Handler 鉴权、Zod 校验与错误映射规则"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "校验服务层与 Route Handler 测试覆盖模式"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "校验服务/API 类型安全与禁用模式"}
+{"file": ".trellis/spec/shared/index.md", "reason": "校验跨前后端共享规范入口"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "校验 API 请求体 Zod-first 类型约束"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "校验全局代码质量、最小修改与可读性要求"}

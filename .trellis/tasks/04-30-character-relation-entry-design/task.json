@@ -19,7 +19,12 @@
   "pr_url": null,
   "subtasks": [],
   "children": [
-    "04-30-relationship-type-knowledge-base"
+    "04-30-relationship-type-knowledge-base",
+    "05-01-relation-schema-migration",
+    "05-01-relation-ai-write-protocol",
+    "05-01-relation-merge-and-reanalyze",
+    "05-01-persona-pair-aggregation-api",
+    "05-01-relation-frontend-pair-drawer"
   ],
   "parent": null,
   "relatedFiles": [],

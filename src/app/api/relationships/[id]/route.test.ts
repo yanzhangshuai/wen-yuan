@@ -14,7 +14,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AppRole, ProcessingStatus } from "@/generated/prisma/enums";
+import { AppRole, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 
 const updateRelationshipMock = vi.fn();
 const deleteRelationshipMock = vi.fn();
@@ -60,17 +60,14 @@ describe("PATCH /api/relationships/:id", () => {
   it("updates relationship when admin requests", async () => {
     const relationshipId = "c3f1f87e-f8e5-4f40-b6c9-eec52f4eaf77";
     updateRelationshipMock.mockResolvedValue({
-      id         : relationshipId,
-      chapterId  : "chapter-1",
-      sourceId   : "persona-1",
-      targetId   : "persona-2",
-      type       : "师生",
-      weight     : 0.8,
-      description: null,
-      evidence   : null,
-      confidence : 0.9,
-      status     : ProcessingStatus.VERIFIED,
-      updatedAt  : "2026-03-25T00:00:00.000Z"
+      id                  : relationshipId,
+      bookId              : "3ef159df-cd11-44b9-8afb-84b2f5db8c72",
+      sourceId            : "persona-1",
+      targetId            : "persona-2",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.AI,
+      status              : ProcessingStatus.DRAFT,
+      updatedAt           : "2026-03-25T00:00:00.000Z"
     });
     const { PATCH } = await import("./route");
 
@@ -81,8 +78,9 @@ describe("PATCH /api/relationships/:id", () => {
         "x-auth-role" : AppRole.ADMIN
       },
       body: JSON.stringify({
-        type      : "师生",
-        confidence: 0.9
+        relationshipTypeCode: "teacher_student",
+        status              : "DRAFT",
+        recordSource        : "AI"
       })
     }), { params: Promise.resolve({ id: relationshipId }) });
 
@@ -90,8 +88,9 @@ describe("PATCH /api/relationships/:id", () => {
     const payload = await response.json();
     expect(payload.code).toBe("RELATIONSHIP_UPDATED");
     expect(updateRelationshipMock).toHaveBeenCalledWith(relationshipId, {
-      type      : "师生",
-      confidence: 0.9
+      relationshipTypeCode: "teacher_student",
+      status              : ProcessingStatus.DRAFT,
+      recordSource        : RecordSource.AI
     });
   });
 
@@ -106,7 +105,7 @@ describe("PATCH /api/relationships/:id", () => {
         "content-type": "application/json",
         "x-auth-role" : AppRole.VIEWER
       },
-      body: JSON.stringify({ type: "师生" })
+      body: JSON.stringify({ relationshipTypeCode: "teacher_student" })
     }), { params: Promise.resolve({ id: relationshipId }) });
 
     expect(response.status).toBe(403);
@@ -140,7 +139,7 @@ describe("PATCH /api/relationships/:id", () => {
         "content-type": "application/json",
         "x-auth-role" : AppRole.ADMIN
       },
-      body: JSON.stringify({ type: "师生" })
+      body: JSON.stringify({ relationshipTypeCode: "teacher_student" })
     }), { params: Promise.resolve({ id: "invalid-id" }) });
 
     expect(response.status).toBe(400);
@@ -160,7 +159,7 @@ describe("PATCH /api/relationships/:id", () => {
         "content-type": "application/json",
         "x-auth-role" : AppRole.ADMIN
       },
-      body: JSON.stringify({ type: "师生" })
+      body: JSON.stringify({ relationshipTypeCode: "teacher_student" })
     }), { params: Promise.resolve({ id: relationshipId }) });
 
     expect(response.status).toBe(404);
@@ -180,7 +179,7 @@ describe("PATCH /api/relationships/:id", () => {
         "content-type": "application/json",
         "x-auth-role" : AppRole.ADMIN
       },
-      body: JSON.stringify({ type: "师生" })
+      body: JSON.stringify({ relationshipTypeCode: "teacher_student" })
     }), { params: Promise.resolve({ id: relationshipId }) });
 
     expect(response.status).toBe(400);
@@ -199,7 +198,7 @@ describe("PATCH /api/relationships/:id", () => {
         "content-type": "application/json",
         "x-auth-role" : AppRole.ADMIN
       },
-      body: JSON.stringify({ type: "师生" })
+      body: JSON.stringify({ relationshipTypeCode: "teacher_student" })
     }), { params: Promise.resolve({ id: relationshipId }) });
 
     expect(response.status).toBe(500);
@@ -219,9 +218,10 @@ describe("DELETE /api/relationships/:id", () => {
   it("soft deletes relationship when admin requests", async () => {
     const relationshipId = "c3f1f87e-f8e5-4f40-b6c9-eec52f4eaf77";
     deleteRelationshipMock.mockResolvedValue({
-      id       : relationshipId,
-      status   : ProcessingStatus.REJECTED,
-      deletedAt: "2026-03-25T00:00:00.000Z"
+      id                   : relationshipId,
+      status               : ProcessingStatus.REJECTED,
+      deletedAt            : "2026-03-25T00:00:00.000Z",
+      softDeletedEventCount: 2
     });
     const { DELETE } = await import("./route");
 

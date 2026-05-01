@@ -232,22 +232,23 @@ export function createGetPersonaByIdService(
             { sourceId: personaId },
             { targetId: personaId }
           ],
-          chapter: {
-            book: { deletedAt: null }
-          }
+          book: { deletedAt: null }
         },
         orderBy: [{ updatedAt: "desc" }],
         select : {
-          id          : true,
-          chapterId   : true,
-          type        : true,
-          weight      : true,
-          evidence    : true,
-          recordSource: true,
-          status      : true,
-          sourceId    : true,
-          targetId    : true,
-          source      : {
+          id                  : true,
+          bookId              : true,
+          relationshipTypeCode: true,
+          recordSource        : true,
+          status              : true,
+          sourceId            : true,
+          targetId            : true,
+          book                : {
+            select: {
+              title: true
+            }
+          },
+          source: {
             select: {
               id  : true,
               name: true
@@ -259,15 +260,14 @@ export function createGetPersonaByIdService(
               name: true
             }
           },
-          chapter: {
-            select: {
-              no    : true,
-              bookId: true,
-              book  : {
-                select: {
-                  title: true
-                }
-              }
+          events: {
+            where  : { deletedAt: null },
+            orderBy: [{ chapterNo: "asc" }],
+            take   : 1,
+            select : {
+              chapterId: true,
+              chapterNo: true,
+              evidence : true
             }
           }
         }
@@ -317,16 +317,16 @@ export function createGetPersonaByIdService(
 
         return {
           id             : item.id,
-          bookId         : item.chapter.bookId,
-          bookTitle      : item.chapter.book.title,
-          chapterId      : item.chapterId,
-          chapterNo      : item.chapter.no,
+          bookId         : item.bookId,
+          bookTitle      : item.book.title,
+          chapterId      : item.events[0]?.chapterId ?? "",
+          chapterNo      : item.events[0]?.chapterNo ?? 0,
           direction      : isOutgoing ? "outgoing" : "incoming",
           counterpartId  : counterpart.id,
           counterpartName: counterpart.name,
-          type           : item.type,
-          weight         : item.weight,
-          evidence       : item.evidence,
+          type           : item.relationshipTypeCode,
+          weight         : 1,
+          evidence       : item.events[0]?.evidence ?? null,
           recordSource   : item.recordSource,
           status         : item.status
         };

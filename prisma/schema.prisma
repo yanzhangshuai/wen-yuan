@@ -23,6 +23,7 @@ enum NameType {
 enum RecordSource {
   AI // AI 解析产出（默认）
   MANUAL // 用户手动录入
+  DRAFT_AI // AI 待审稿，需通过审核才能升级为 AI 或 MANUAL
 
   @@map("record_source")
 }
@@ -187,6 +188,8 @@ model Book {
 
   chapters                      Chapter[] // 章节列表
   profiles                      Profile[] // 本书角色档案
+  relationships                 Relationship[] // 书级人物关系
+  relationshipEvents            RelationshipEvent[] // 关系事件明细
   chapterBiographyVerifications ChapterBiographyVerification[] // 章节角色事迹校验状态
   analysisJobs                  AnalysisJob[] // 解析任务记录
   aliasMappings                 AliasMapping[] // 别名映射记录
@@ -220,7 +223,7 @@ model Chapter {
   book                    Book                           @relation(fields: [bookId], references: [id]) // 所属书籍
   mentions                Mention[] // 本章提及记录
   biographies             BiographyRecord[] // 本章履历事件
-  relations               Relationship[] // 本章关系边
+  relationshipEvents      RelationshipEvent[] // 本章关系事件
   phaseLogs               AnalysisPhaseLog[] // 阶段调用日志
   biographyVerifications  ChapterBiographyVerification[] // 本章角色事迹校验状态
   firstAppearanceProfiles Profile[]                      @relation("ProfileFirstAppearanceChapter") // 以本章作为首次出场章节的角色档案
@@ -279,6 +282,8 @@ model Persona {
   // 建立双向关系关联，方便 3D 图谱从 Persona 直接出发查询
   sourceRels Relationship[] @relation("SourcePersona")
   targetRels Relationship[] @relation("TargetPersona")
+  eventsAsSource RelationshipEvent[] @relation("EventSourcePersona")
+  eventsAsTarget RelationshipEvent[] @relation("EventTargetPersona")
 
   @@index([name], map: "persona_name_idx") // 人名检索索引
   @@index([deletedAt], map: "persona_deleted_at_idx") // 软删除清理索引
@@ -368,35 +373,61 @@ model Mention {
   @@map("mentions")
 }
 
-/// @db.remark: 动态关系表。
+/// @db.remark: 书级人物关系表，同一书内一对人物每种关系类型仅保留一行。
 model Relationship {
-  id        String @id @default(uuid()) @db.Uuid // 关系主键
-  chapterId String @map("chapter_id") @db.Uuid // 关系确认的章节
-  sourceId  String @map("source_id") @db.Uuid // 发起者 ID
-  targetId  String @map("target_id") @db.Uuid // 接收者 ID
-
-  type                 String // 关系类型，如"同年"、"师生"
-  relationshipTypeCode String?          @map("relationship_type_code") // 标准关系类型知识库 code；保留 type 兼容历史数据
-  weight               Float            @default(1.0) // 亲密度
-  description          String?          @db.Text // 关系背景描述
-  evidence             String?          @db.Text // 原文证据片段
-  recordSource         RecordSource     @default(AI) @map("record_source") // 数据来源
-  confidence           Float            @default(1.0) // AI 置信度 0.0-1.0
-  status               ProcessingStatus @default(DRAFT) // 审核状态
+  id                   String           @id @default(uuid()) @db.Uuid // 关系主键
+  bookId               String           @map("book_id") @db.Uuid // 所属书籍 ID
+  sourceId             String           @map("source_id") @db.Uuid // 发起者 ID
+  targetId             String           @map("target_id") @db.Uuid // 接收者 ID
+  relationshipTypeCode String           @map("relationship_type_code") @db.VarChar(120) // 标准关系类型知识库 code
+  recordSource         RecordSource     @default(DRAFT_AI) @map("record_source") // 数据来源
+  status               ProcessingStatus @default(DRAFT) @map("status") // 审核状态
   deletedAt            DateTime?        @map("deleted_at") @db.Timestamptz(6) // 软删除时间
   createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 
-  chapter          Chapter                     @relation(fields: [chapterId], references: [id]) // 关系确认章节
-  source           Persona                     @relation("SourcePersona", fields: [sourceId], references: [id]) // 关系发起方
-  target           Persona                     @relation("TargetPersona", fields: [targetId], references: [id]) // 关系接收方
-  relationshipType RelationshipTypeDefinition? @relation(fields: [relationshipTypeCode], references: [code]) // 标准关系类型定义
+  book             Book                       @relation(fields: [bookId], references: [id], onDelete: Cascade) // 所属书籍
+  source           Persona                    @relation("SourcePersona", fields: [sourceId], references: [id], onDelete: Restrict) // 关系发起方
+  target           Persona                    @relation("TargetPersona", fields: [targetId], references: [id], onDelete: Restrict) // 关系接收方
+  relationshipType RelationshipTypeDefinition @relation(fields: [relationshipTypeCode], references: [code], onDelete: Restrict) // 标准关系类型定义
+  events           RelationshipEvent[] // 关系事件明细
 
-  @@unique([chapterId, sourceId, targetId, type, recordSource], map: "relationships_dedup_key") // 防止重复关系边
   @@index([sourceId, targetId], map: "relationships_source_id_target_id_idx") // 双点关系查询索引
   @@index([relationshipTypeCode], map: "relationships_relationship_type_code_idx") // 按标准关系类型查询
-  @@index([status, recordSource, chapterId], map: "relationships_review_query_idx") // 审核列表查询索引
+  @@index([bookId, status, deletedAt], map: "relationships_book_status_deleted_idx") // 书内审核列表查询
   @@map("relationships")
+}
+
+/// @db.remark: 关系事件表。记录关系在具体章节中的证据与事件摘要。
+model RelationshipEvent {
+  id             String           @id @default(uuid()) @db.Uuid
+  relationshipId String           @map("relationship_id") @db.Uuid
+  bookId         String           @map("book_id") @db.Uuid
+  chapterId      String           @map("chapter_id") @db.Uuid
+  chapterNo      Int              @map("chapter_no")
+  sourceId       String           @map("source_id") @db.Uuid
+  targetId       String           @map("target_id") @db.Uuid
+  summary        String           @map("summary") @db.Text
+  evidence       String?          @map("evidence") @db.Text
+  attitudeTags   String[]         @default([]) @map("attitude_tags")
+  paraIndex      Int?             @map("para_index")
+  confidence     Float            @default(1)
+  recordSource   RecordSource     @default(DRAFT_AI) @map("record_source")
+  status         ProcessingStatus @default(DRAFT) @map("status")
+  deletedAt      DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  relationship Relationship @relation(fields: [relationshipId], references: [id], onDelete: Restrict)
+  book         Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter      Chapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  source       Persona      @relation("EventSourcePersona", fields: [sourceId], references: [id], onDelete: Restrict)
+  target       Persona      @relation("EventTargetPersona", fields: [targetId], references: [id], onDelete: Restrict)
+
+  @@index([relationshipId, chapterNo], map: "relationship_events_relationship_chapter_idx")
+  @@index([bookId, chapterId], map: "relationship_events_book_chapter_idx")
+  @@index([bookId, status, deletedAt], map: "relationship_events_book_status_deleted_idx")
+  @@map("relationship_events")
 }
 
 /// @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。

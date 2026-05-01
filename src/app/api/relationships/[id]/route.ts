@@ -21,7 +21,7 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { ProcessingStatus } from "@/generated/prisma/enums";
+import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
@@ -36,6 +36,7 @@ import {
 } from "@/server/modules/relationships/errors";
 import {
   updateRelationship,
+  type UpdateRelationshipInput,
   type UpdateRelationshipResult
 } from "@/server/modules/relationships/updateRelationship";
 import { ERROR_CODES } from "@/types/api";
@@ -48,18 +49,25 @@ const relationshipRouteParamsSchema = z.object({
 });
 
 /**
- * PATCH 请求体校验：允许按需更新关系字段。
+ * PATCH 请求体校验：允许按需更新书级关系字段。
  */
 const updateRelationshipBodySchema = z.object({
-  type       : z.string().trim().min(1, "关系类型不能为空").optional(),
-  weight     : z.number().positive("关系权重必须大于 0").optional(),
-  description: z.string().trim().nullable().optional(),
-  evidence   : z.string().trim().nullable().optional(),
-  confidence : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional(),
-  status     : z.nativeEnum(ProcessingStatus).optional()
+  relationshipTypeCode: z.string().trim().min(1, "关系类型不能为空").max(64, "关系类型过长").optional(),
+  status              : z.enum(["DRAFT", "VERIFIED", "REJECTED"]).optional(),
+  recordSource        : z.enum(["DRAFT_AI", "AI", "MANUAL"]).optional()
 }).refine((data) => Object.keys(data).length > 0, {
   message: "至少需要一个可更新字段"
 });
+
+type UpdateRelationshipBody = z.infer<typeof updateRelationshipBodySchema>;
+
+function toUpdateRelationshipInput(body: UpdateRelationshipBody): UpdateRelationshipInput {
+  return {
+    relationshipTypeCode: body.relationshipTypeCode,
+    status              : body.status ? ProcessingStatus[body.status] : undefined,
+    recordSource        : body.recordSource ? RecordSource[body.recordSource] : undefined
+  };
+}
 
 /**
  * Next.js App Router 的动态路由上下文。
@@ -153,7 +161,10 @@ export async function PATCH(
       );
     }
 
-    const data = await updateRelationship(parsedParams.data.id, parsedBody.data);
+    const data = await updateRelationship(
+      parsedParams.data.id,
+      toUpdateRelationshipInput(parsedBody.data)
+    );
     return okJson<UpdateRelationshipResult>({
       path   : `/api/relationships/${parsedParams.data.id}`,
       requestId,

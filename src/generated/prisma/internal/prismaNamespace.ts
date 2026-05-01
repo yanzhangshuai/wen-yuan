@@ -394,6 +394,7 @@ export const ModelName = {
   BiographyRecord: 'BiographyRecord',
   Mention: 'Mention',
   Relationship: 'Relationship',
+  RelationshipEvent: 'RelationshipEvent',
   AnalysisJob: 'AnalysisJob',
   ModelStrategyConfig: 'ModelStrategyConfig',
   AnalysisPhaseLog: 'AnalysisPhaseLog',
@@ -429,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "relationshipTypeDefinition" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "relationshipEvent" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "relationshipTypeDefinition" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1170,6 +1171,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.RelationshipCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.RelationshipCountAggregateOutputType> | number
+        }
+      }
+    }
+    RelationshipEvent: {
+      payload: Prisma.$RelationshipEventPayload<ExtArgs>
+      fields: Prisma.RelationshipEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RelationshipEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RelationshipEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>
+        }
+        findFirst: {
+          args: Prisma.RelationshipEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RelationshipEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>
+        }
+        findMany: {
+          args: Prisma.RelationshipEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>[]
+        }
+        create: {
+          args: Prisma.RelationshipEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>
+        }
+        createMany: {
+          args: Prisma.RelationshipEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RelationshipEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>[]
+        }
+        delete: {
+          args: Prisma.RelationshipEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>
+        }
+        update: {
+          args: Prisma.RelationshipEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.RelationshipEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RelationshipEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RelationshipEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.RelationshipEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipEventPayload>
+        }
+        aggregate: {
+          args: Prisma.RelationshipEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRelationshipEvent>
+        }
+        groupBy: {
+          args: Prisma.RelationshipEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationshipEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RelationshipEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationshipEventCountAggregateOutputType> | number
         }
       }
     }
@@ -2863,16 +2938,11 @@ export type MentionScalarFieldEnum = (typeof MentionScalarFieldEnum)[keyof typeo
 
 export const RelationshipScalarFieldEnum = {
   id: 'id',
-  chapterId: 'chapterId',
+  bookId: 'bookId',
   sourceId: 'sourceId',
   targetId: 'targetId',
-  type: 'type',
   relationshipTypeCode: 'relationshipTypeCode',
-  weight: 'weight',
-  description: 'description',
-  evidence: 'evidence',
   recordSource: 'recordSource',
-  confidence: 'confidence',
   status: 'status',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -2880,6 +2950,29 @@ export const RelationshipScalarFieldEnum = {
 } as const
 
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
+
+
+export const RelationshipEventScalarFieldEnum = {
+  id: 'id',
+  relationshipId: 'relationshipId',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  sourceId: 'sourceId',
+  targetId: 'targetId',
+  summary: 'summary',
+  evidence: 'evidence',
+  attitudeTags: 'attitudeTags',
+  paraIndex: 'paraIndex',
+  confidence: 'confidence',
+  recordSource: 'recordSource',
+  status: 'status',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipEventScalarFieldEnum = (typeof RelationshipEventScalarFieldEnum)[keyof typeof RelationshipEventScalarFieldEnum]
 
 
 export const AnalysisJobScalarFieldEnum = {
@@ -3626,6 +3719,7 @@ export type GlobalOmitConfig = {
   biographyRecord?: Prisma.BiographyRecordOmit
   mention?: Prisma.MentionOmit
   relationship?: Prisma.RelationshipOmit
+  relationshipEvent?: Prisma.RelationshipEventOmit
   analysisJob?: Prisma.AnalysisJobOmit
   modelStrategyConfig?: Prisma.ModelStrategyConfigOmit
   analysisPhaseLog?: Prisma.AnalysisPhaseLogOmit

@@ -22,12 +22,11 @@ describe("getBookGraph service", () => {
       relationship: {
         findMany: vi.fn().mockResolvedValue([
           {
-            id      : "rel-1",
-            sourceId: "persona-1",
-            targetId: "persona-2",
-            type    : "师生",
-            weight  : 1.5,
-            status  : ProcessingStatus.DRAFT
+            id                  : "rel-1",
+            sourceId            : "persona-1",
+            targetId            : "persona-2",
+            relationshipTypeCode: "师生",
+            status              : ProcessingStatus.DRAFT
           }
         ])
       },
@@ -113,20 +112,18 @@ describe("getBookGraph service", () => {
       relationship: {
         findMany: vi.fn().mockResolvedValue([
           {
-            id      : "rel-neg",
-            sourceId: "persona-1",
-            targetId: "persona-2",
-            type    : "敌对",
-            weight  : 0.8,
-            status  : ProcessingStatus.VERIFIED
+            id                  : "rel-neg",
+            sourceId            : "persona-1",
+            targetId            : "persona-2",
+            relationshipTypeCode: "敌对",
+            status              : ProcessingStatus.VERIFIED
           },
           {
-            id      : "rel-neutral",
-            sourceId: "persona-2",
-            targetId: "persona-1",
-            type    : "陌生",
-            weight  : 0.2,
-            status  : ProcessingStatus.DRAFT
+            id                  : "rel-neutral",
+            sourceId            : "persona-2",
+            targetId            : "persona-1",
+            relationshipTypeCode: "陌生",
+            status              : ProcessingStatus.DRAFT
           }
         ])
       },

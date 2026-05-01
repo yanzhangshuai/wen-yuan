@@ -38,22 +38,18 @@ function createPrismaStub() {
     relationship: {
       findMany: vi.fn().mockResolvedValue([
         {
-          id       : "r1",
-          sourceId : "p1",
-          targetId : "p2",
-          type     : "师生",
-          weight   : 1.0,
-          chapterId: "c1",
-          chapter  : { no: 1 }
+          id                  : "r1",
+          sourceId            : "p1",
+          targetId            : "p2",
+          relationshipTypeCode: "师生",
+          events              : [{ chapterId: "c1", chapterNo: 1 }]
         },
         {
-          id       : "r2",
-          sourceId : "p2",
-          targetId : "p3",
-          type     : "同僚",
-          weight   : 0.8,
-          chapterId: "c2",
-          chapter  : { no: 2 }
+          id                  : "r2",
+          sourceId            : "p2",
+          targetId            : "p3",
+          relationshipTypeCode: "同僚",
+          events              : [{ chapterId: "c2", chapterNo: 2 }]
         }
       ])
     }
@@ -83,13 +79,11 @@ describe("findPersonaPath service", () => {
     const prismaClient = createPrismaStub();
     prismaClient.relationship.findMany.mockResolvedValue([
       {
-        id       : "r1",
-        sourceId : "p1",
-        targetId : "p2",
-        type     : "师生",
-        weight   : 1.0,
-        chapterId: "c1",
-        chapter  : { no: 1 }
+        id                  : "r1",
+        sourceId            : "p1",
+        targetId            : "p2",
+        relationshipTypeCode: "师生",
+        events              : [{ chapterId: "c1", chapterNo: 1 }]
       }
     ]);
     const service = createFindPersonaPathService(prismaClient as never, null);
@@ -196,13 +190,11 @@ describe("findPersonaPath service", () => {
     ]);
     prismaClient.relationship.findMany.mockResolvedValueOnce([
       {
-        id       : "r-extra",
-        sourceId : "p1",
-        targetId : "p3",
-        type     : "同乡",
-        weight   : 1,
-        chapterId: "c1",
-        chapter  : { no: 1 }
+        id                  : "r-extra",
+        sourceId            : "p1",
+        targetId            : "p3",
+        relationshipTypeCode: "同乡",
+        events              : [{ chapterId: "c1", chapterNo: 1 }]
       }
     ]);
     prismaClient.persona.findMany

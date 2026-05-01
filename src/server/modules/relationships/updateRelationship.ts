@@ -5,96 +5,55 @@
  * 文件路径：`src/server/modules/relationships/updateRelationship.ts`
  *
  * 模块职责：
- * - 对单条关系执行部分字段更新；
- * - 统一处理输入校验、空值语义、业务错误抛出。
- *
- * 业务场景：
- * - 录入人员在校对时修正关系类型、权重、证据与状态；
- * - PATCH 设计可降低全量提交带来的误覆盖风险。
- *
- * 维护约束：
- * - 允许置空字段（description/evidence）是明确业务能力，不能误改成必填；
- * - 至少一项字段更新是防御性规则，避免写入空变更并误导操作结果。
+ * - 对单条书级关系执行部分字段更新；
+ * - 强制 `recordSource` 只能从 DRAFT_AI → AI → MANUAL 单调升级。
  * =============================================================================
  */
 import type { PrismaClient } from "@/generated/prisma/client";
-import { type ProcessingStatus } from "@/generated/prisma/enums";
+import { type ProcessingStatus, RecordSource, type RecordSource as RecordSourceValue } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import {
   RelationshipInputError,
   RelationshipNotFoundError
 } from "@/server/modules/relationships/errors";
 
-/**
- * 关系更新输入。
- * 字段全部可选，但至少需要传入一个字段。
- */
 export interface UpdateRelationshipInput {
-  /** 新关系类型。 */
-  type?       : string;
-  /** 新权重，需为正数。 */
-  weight?     : number;
-  /** 新关系描述，可置空。 */
-  description?: string | null;
-  /** 新原文证据，可置空。 */
-  evidence?   : string | null;
-  /** 新置信度（0~1）。 */
-  confidence? : number;
-  /** 新资料确认状态。 */
-  status?     : ProcessingStatus;
+  relationshipTypeCode?: string;
+  status?              : ProcessingStatus;
+  recordSource?        : RecordSourceValue;
 }
 
-/**
- * 关系更新结果。
- */
 export interface UpdateRelationshipResult {
-  /** 关系主键 ID。 */
-  id         : string;
-  /** 所属章节 ID。 */
-  chapterId  : string;
-  /** 起点人物 ID。 */
-  sourceId   : string;
-  /** 终点人物 ID。 */
-  targetId   : string;
-  /** 关系类型。 */
-  type       : string;
-  /** 权重。 */
-  weight     : number;
-  /** 关系描述。 */
-  description: string | null;
-  /** 原文证据。 */
-  evidence   : string | null;
-  /** 置信度。 */
-  confidence : number;
-  /** 资料确认状态。 */
-  status     : ProcessingStatus;
-  /** 更新时间（ISO 字符串）。 */
-  updatedAt  : string;
+  id                  : string;
+  bookId              : string;
+  sourceId            : string;
+  targetId            : string;
+  relationshipTypeCode: string;
+  recordSource        : RecordSourceValue;
+  status              : ProcessingStatus;
+  updatedAt           : string;
 }
 
-/**
- * 规范化可空文本：`trim` 后空串转 `null`。
- */
-function normalizeNullableText(input: string | null): string | null {
-  if (input === null) {
-    return null;
-  }
+const RECORD_SOURCE_RANK: Record<RecordSourceValue, number> = {
+  [RecordSource.DRAFT_AI]: 0,
+  [RecordSource.AI]      : 1,
+  [RecordSource.MANUAL]  : 2
+};
 
-  const value = input.trim();
-  return value.length > 0 ? value : null;
+function assertRecordSourceUpgrade(
+  current: RecordSourceValue,
+  next: RecordSourceValue
+): void {
+  if (RECORD_SOURCE_RANK[next] < RECORD_SOURCE_RANK[current]) {
+    throw new RelationshipInputError("recordSource 不可降级");
+  }
 }
 
 export function createUpdateRelationshipService(
   prismaClient: PrismaClient = prisma
 ) {
   /**
-   * 功能：更新单条关系记录。
-   * 输入：`relationshipId` + `UpdateRelationshipInput`。
-   * 输出：更新后关系快照。
-   * 异常：
-   * - `RelationshipInputError`：未提供任何更新字段；
-   * - `RelationshipNotFoundError`：目标关系不存在或已软删除。
-   * 副作用：更新 `relationship` 表记录。
+   * 更新关系主表字段。关系类型变更必须指向启用中的字典项，避免写入悬空 code。
    */
   async function updateRelationship(
     relationshipId: string,
@@ -110,70 +69,66 @@ export function createUpdateRelationshipService(
           id       : relationshipId,
           deletedAt: null
         },
-        select: { id: true }
+        select: {
+          id          : true,
+          recordSource: true
+        }
       });
       if (!current) {
         throw new RelationshipNotFoundError(relationshipId);
       }
 
       const data: {
-        type?       : string;
-        weight?     : number;
-        description?: string | null;
-        evidence?   : string | null;
-        confidence? : number;
-        status?     : ProcessingStatus;
+        relationshipTypeCode?: string;
+        status?              : ProcessingStatus;
+        recordSource?        : RecordSourceValue;
       } = {};
 
-      if (input.type !== undefined) {
-        data.type = input.type.trim();
+      if (input.relationshipTypeCode !== undefined) {
+        const relationshipTypeCode = input.relationshipTypeCode.trim();
+        const relationshipType = await tx.relationshipTypeDefinition.findFirst({
+          where : { code: relationshipTypeCode, status: "ACTIVE" },
+          select: { code: true }
+        });
+        if (!relationshipType) {
+          throw new RelationshipInputError("关系类型未启用");
+        }
+        data.relationshipTypeCode = relationshipTypeCode;
       }
-      if (input.weight !== undefined) {
-        data.weight = input.weight;
-      }
-      if (input.description !== undefined) {
-        data.description = normalizeNullableText(input.description);
-      }
-      if (input.evidence !== undefined) {
-        data.evidence = normalizeNullableText(input.evidence);
-      }
-      if (input.confidence !== undefined) {
-        data.confidence = input.confidence;
-      }
+
       if (input.status !== undefined) {
         data.status = input.status;
+      }
+
+      if (input.recordSource !== undefined) {
+        assertRecordSourceUpgrade(current.recordSource, input.recordSource);
+        data.recordSource = input.recordSource;
       }
 
       const updated = await tx.relationship.update({
         where : { id: relationshipId },
         data,
         select: {
-          id         : true,
-          chapterId  : true,
-          sourceId   : true,
-          targetId   : true,
-          type       : true,
-          weight     : true,
-          description: true,
-          evidence   : true,
-          confidence : true,
-          status     : true,
-          updatedAt  : true
+          id                  : true,
+          bookId              : true,
+          sourceId            : true,
+          targetId            : true,
+          relationshipTypeCode: true,
+          recordSource        : true,
+          status              : true,
+          updatedAt           : true
         }
       });
 
       return {
-        id         : updated.id,
-        chapterId  : updated.chapterId,
-        sourceId   : updated.sourceId,
-        targetId   : updated.targetId,
-        type       : updated.type,
-        weight     : updated.weight,
-        description: updated.description,
-        evidence   : updated.evidence,
-        confidence : updated.confidence,
-        status     : updated.status,
-        updatedAt  : updated.updatedAt.toISOString()
+        id                  : updated.id,
+        bookId              : updated.bookId,
+        sourceId            : updated.sourceId,
+        targetId            : updated.targetId,
+        relationshipTypeCode: updated.relationshipTypeCode,
+        recordSource        : updated.recordSource,
+        status              : updated.status,
+        updatedAt           : updated.updatedAt.toISOString()
       };
     });
   }

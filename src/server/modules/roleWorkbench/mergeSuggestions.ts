@@ -345,7 +345,7 @@ export function createMergeSuggestionsService(
       // 第三步：处理关系边迁移。
       // 关系比 biography/mention 更复杂，因为替换 sourceId/targetId 后可能出现：
       // 1) 自环边（source===target）；
-      // 2) 重复边（同 chapter/source/target/type/source 重复）。
+      // 2) 重复边（同 book/source/target/relationshipTypeCode 重复）。
       const affectedRelations = await tx.relationship.findMany({
         where: {
           deletedAt: null,
@@ -355,12 +355,11 @@ export function createMergeSuggestionsService(
           ]
         },
         select: {
-          id          : true,
-          chapterId   : true,
-          sourceId    : true,
-          targetId    : true,
-          type        : true,
-          recordSource: true
+          id                  : true,
+          bookId              : true,
+          sourceId            : true,
+          targetId            : true,
+          relationshipTypeCode: true
         }
       });
 
@@ -383,13 +382,12 @@ export function createMergeSuggestionsService(
         // 分支 B：替换后与现存边重复，也作废当前边，避免图数据重复。
         const duplicated = await tx.relationship.findFirst({
           where: {
-            id          : { not: relation.id },
-            deletedAt   : null,
-            chapterId   : relation.chapterId,
-            sourceId    : nextSourceId,
-            targetId    : nextTargetId,
-            type        : relation.type,
-            recordSource: relation.recordSource
+            id                  : { not: relation.id },
+            deletedAt           : null,
+            bookId              : relation.bookId,
+            sourceId            : nextSourceId,
+            targetId            : nextTargetId,
+            relationshipTypeCode: relation.relationshipTypeCode
           },
           select: { id: true }
         });
@@ -409,6 +407,13 @@ export function createMergeSuggestionsService(
         if (nextSourceId !== relation.sourceId || nextTargetId !== relation.targetId) {
           await tx.relationship.update({
             where: { id: relation.id },
+            data : {
+              sourceId: nextSourceId,
+              targetId: nextTargetId
+            }
+          });
+          await tx.relationshipEvent.updateMany({
+            where: { relationshipId: relation.id, deletedAt: null },
             data : {
               sourceId: nextSourceId,
               targetId: nextTargetId

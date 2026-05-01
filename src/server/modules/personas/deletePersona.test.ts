@@ -128,12 +128,16 @@ describe("deletePersona service", () => {
       relationship: {
         findMany: vi.fn().mockResolvedValue([
           {
-            id         : "rel-1",
-            type       : "师生",
-            description: "周进提携范进",
-            chapter    : { no: 3, title: "范进中举" },
-            source     : { name: "周进" },
-            target     : { name: "范进" }
+            id                  : "rel-1",
+            relationshipTypeCode: "师生",
+            source              : { name: "周进" },
+            target              : { name: "范进" },
+            events              : [
+              {
+                summary: "周进提携范进",
+                chapter: { no: 3, title: "范进中举" }
+              }
+            ]
           }
         ])
       },

@@ -1,4 +1,4 @@
-import { ProcessingStatus } from "@/generated/prisma/enums";
+import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { aliasRegistryService, type AliasRegistryService } from "@/server/modules/analysis/services/AliasRegistryService";
@@ -390,7 +390,7 @@ export function createChapterAnalysisService(
     await tx.biographyRecord.deleteMany({
       where: { chapterId: input.chapterId, status: ProcessingStatus.DRAFT }
     });
-    await tx.relationship.deleteMany({
+    await tx.relationshipEvent.deleteMany({
       where: { chapterId: input.chapterId, status: ProcessingStatus.DRAFT }
     });
 
@@ -511,8 +511,26 @@ export function createChapterAnalysisService(
       }
     }
 
-    const relationData: Prisma.RelationshipCreateManyInput[] = [];
+    const relationshipTypes = await tx.relationshipTypeDefinition.findMany({
+      where : { status: "ACTIVE" },
+      select: {
+        code         : true,
+        name         : true,
+        aliases      : true,
+        directionMode: true
+      }
+    });
+    const relationshipTypeByToken = new Map<string, (typeof relationshipTypes)[number]>();
+    for (const relationshipType of relationshipTypes) {
+      relationshipTypeByToken.set(relationshipType.code, relationshipType);
+      relationshipTypeByToken.set(relationshipType.name, relationshipType);
+      for (const alias of relationshipType.aliases) {
+        relationshipTypeByToken.set(alias, relationshipType);
+      }
+    }
+
     const relationKeys = new Set<string>();
+    let relationshipEventCreated = 0;
     for (const r of input.merged.relationships) {
       const s = await resolve(r.sourceName);
       const t = await resolve(r.targetName);
@@ -523,29 +541,76 @@ export function createChapterAnalysisService(
         hallucinationCount += 1;
       }
       if (s.personaId && t.personaId && s.personaId !== t.personaId) {
+        const relationshipType = relationshipTypeByToken.get(r.type.trim());
+        if (!relationshipType) {
+          continue;
+        }
+
+        let sourceId = s.personaId;
+        let targetId = t.personaId;
+        if (relationshipType.directionMode === "SYMMETRIC" && sourceId > targetId) {
+          sourceId = t.personaId;
+          targetId = s.personaId;
+        }
+
         const normalizedDescription = sanitizeRelationshipField(r.description);
         const normalizedEvidence = sanitizeRelationshipField(r.evidence);
-        // 去重 key 与 DB 唯一约束保持一致：(chapterId, sourceId, targetId, type)
-        // recordSource 固定为 AI，不纳入 key；description/evidence 不在 DB 唯一索引中，不作去重依据
         const key = [
           input.chapterId,
-          s.personaId,
-          t.personaId,
-          r.type
+          sourceId,
+          targetId,
+          relationshipType.code,
+          normalizedDescription ?? "",
+          normalizedEvidence ?? ""
         ].join("|");
         if (relationKeys.has(key)) continue;
         relationKeys.add(key);
 
-        relationData.push({
-          chapterId  : input.chapterId,
-          sourceId   : s.personaId,
-          targetId   : t.personaId,
-          type       : r.type,
-          weight     : r.weight ?? 1,
-          description: normalizedDescription,
-          evidence   : normalizedEvidence,
-          status     : ProcessingStatus.DRAFT
+        const existingRelationship = await tx.relationship.findFirst({
+          where: {
+            bookId              : input.bookId,
+            sourceId,
+            targetId,
+            relationshipTypeCode: relationshipType.code,
+            deletedAt           : null
+          },
+          select: {
+            id: true
+          }
         });
+
+        const relationship = existingRelationship
+          ? existingRelationship
+          : await tx.relationship.create({
+            data: {
+              bookId              : input.bookId,
+              sourceId,
+              targetId,
+              relationshipTypeCode: relationshipType.code,
+              recordSource        : RecordSource.DRAFT_AI,
+              status              : ProcessingStatus.DRAFT
+            },
+            select: {
+              id: true
+            }
+          });
+
+        await tx.relationshipEvent.create({
+          data: {
+            relationshipId: relationship.id,
+            bookId        : input.bookId,
+            chapterId     : input.chapterId,
+            chapterNo     : input.chapterNo,
+            sourceId,
+            targetId,
+            summary       : normalizedDescription ?? relationshipType.name,
+            evidence      : normalizedEvidence,
+            confidence    : r.weight ?? 1,
+            recordSource  : RecordSource.DRAFT_AI,
+            status        : ProcessingStatus.DRAFT
+          }
+        });
+        relationshipEventCreated += 1;
       }
     }
 
@@ -555,10 +620,6 @@ export function createChapterAnalysisService(
     if (bioData.length > 0) {
       await tx.biographyRecord.createMany({ data: bioData });
     }
-    if (relationData.length > 0) {
-      await tx.relationship.createMany({ data: relationData });
-    }
-
     return {
       hallucinationCount,
       grayZoneCount,
@@ -566,7 +627,7 @@ export function createChapterAnalysisService(
         personas     : personaCreated,
         mentions     : mentionData.length,
         biographies  : bioData.length,
-        relationships: relationData.length
+        relationships: relationshipEventCreated
       }
     };
   }

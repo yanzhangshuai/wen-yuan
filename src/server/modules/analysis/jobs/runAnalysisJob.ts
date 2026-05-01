@@ -477,10 +477,18 @@ export function createAnalysisJobRunner(
         select: { personaId: true, rawText: true },
         take  : 200
       }),
-      prismaClient.relationship.findMany({
+      prismaClient.relationshipEvent.findMany({
         where : { chapterId: chapterRow.id, deletedAt: null },
-        select: { sourceId: true, targetId: true, type: true },
-        take  : 100
+        select: {
+          sourceId    : true,
+          targetId    : true,
+          relationship: {
+            select: {
+              relationshipTypeCode: true
+            }
+          }
+        },
+        take: 100
       }),
       prismaClient.profile.findMany({
         where  : { bookId: chapterRow.bookId, deletedAt: null },
@@ -523,7 +531,7 @@ export function createAnalysisJobRunner(
             rawText  : `${personaNameMap.get(m.personaId) ?? m.personaId}: ${m.rawText}`
           })),
           newRelationships: newRelationships.map((r) => ({
-            sourceId: r.sourceId, targetId: r.targetId, type: r.type
+            sourceId: r.sourceId, targetId: r.targetId, type: r.relationship.relationshipTypeCode
           })),
           existingProfiles: existingProfiles.map((p) => ({
             personaId    : p.personaId,

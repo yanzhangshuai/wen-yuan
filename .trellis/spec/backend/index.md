@@ -29,6 +29,7 @@
 | [数据迁移规范](./migration-guidelines.md) | expand-contract 与回滚策略 | 数据可靠性要求 |
 | [知识库批量操作契约](./knowledge-base-batch-ops.md) | 知识库管理台批量 API/Service/Prisma 跨层契约 | 04-16 知识库批量操作 |
 | [角色资料工作台章节事迹与角色管理契约](./role-workbench-character-events.md) | 章节事迹校验、角色 CRUD、删除级联预览的跨层契约 | 04-28 角色资料工作台角色事迹管理 |
+| [关系结构契约](./relationship-structure.md) | 书级结构关系、章节级关系事件、CRUD 与 API 类型契约 | 05-01 关系结构 schema 改造 |
 | [测试规范](./test-guidelines.md) | Vitest 测试模式、mock 策略、Route Handler 测试 | 项目测试约定 |
 | [分析管线架构规范](./analysis-pipeline.md) | sequential/twopass 管线边界与调用约定 | 管线架构约定 |
 | [Route Handler 编写规范](./route-handler-guidelines.md) | 鉴权顺序、Zod 校验、错误映射、分页解析 | 项目既有模式 |

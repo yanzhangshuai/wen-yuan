@@ -28,26 +28,18 @@ describe("relationship service wrappers", () => {
     clientFetchMock.mockResolvedValueOnce({ id: "rel-1" });
 
     await createRelationship("book/1", {
-      chapterId : "chapter-1",
-      sourceId  : "persona-1",
-      targetId  : "persona-2",
-      type      : "师生",
-      weight    : 2,
-      evidence  : "原文证据",
-      confidence: 0.75
+      sourceId            : "persona-1",
+      targetId            : "persona-2",
+      relationshipTypeCode: "teacher_student"
     });
 
     expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F1/relationships", {
       method : "POST",
       headers: { "Content-Type": "application/json" },
       body   : JSON.stringify({
-        chapterId : "chapter-1",
-        sourceId  : "persona-1",
-        targetId  : "persona-2",
-        type      : "师生",
-        weight    : 2,
-        evidence  : "原文证据",
-        confidence: 0.75
+        sourceId            : "persona-1",
+        targetId            : "persona-2",
+        relationshipTypeCode: "teacher_student"
       })
     });
   });

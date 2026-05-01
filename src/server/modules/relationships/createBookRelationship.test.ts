@@ -1,297 +1,379 @@
-/**
- * 文件定位（服务模块单测）：
- * - 覆盖领域服务输入校验、分支处理与输出映射契约。
- * - 该层通常是 API Route 的核心下游，承担业务规则落地职责。
- *
- * 业务职责：
- * - 保证成功路径与异常路径都可预测。
- * - 降低重构时误改核心规则的风险。
- */
-
 import { describe, expect, it, vi } from "vitest";
 
+import { Prisma } from "@/generated/prisma/client";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { createCreateBookRelationshipService } from "@/server/modules/relationships/createBookRelationship";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
 
-// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
+function createTransactionMock(tx: unknown) {
+  return vi.fn().mockImplementation(async (callback: (transactionClient: unknown) => unknown) => callback(tx));
+}
+
 describe("createBookRelationship service", () => {
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("creates manual relationship as verified", async () => {
-    const bookFindFirst = vi.fn().mockResolvedValue({ id: "book-1" });
-    const chapterFindFirst = vi.fn().mockResolvedValue({ id: "chapter-1", no: 2 });
-    const personaFindMany = vi.fn().mockResolvedValue([
-      { id: "persona-a" },
-      { id: "persona-b" }
-    ]);
+  it("creates a first manual relationship as verified", async () => {
     const relationshipFindFirst = vi.fn().mockResolvedValue(null);
     const relationshipCreate = vi.fn().mockResolvedValue({
-      id          : "rel-1",
-      chapterId   : "chapter-1",
-      sourceId    : "persona-a",
-      targetId    : "persona-b",
-      type        : "师生",
-      weight      : 1.2,
-      description : "关系背景",
-      evidence    : "证据片段",
-      confidence  : 0.95,
-      recordSource: RecordSource.MANUAL,
-      status      : ProcessingStatus.VERIFIED
+      id                  : "rel-1",
+      bookId              : "book-1",
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
     });
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+    const tx = {
       book: {
-        findFirst: bookFindFirst
-      },
-      chapter: {
-        findFirst: chapterFindFirst
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
       },
       persona: {
-        findMany: personaFindMany
+        findMany: vi.fn().mockResolvedValue([
+          { id: "persona-a" },
+          { id: "persona-b" }
+        ])
+      },
+      relationshipTypeDefinition: {
+        findFirst: vi.fn().mockResolvedValue({
+          code         : "teacher_student",
+          directionMode: "INVERSE"
+        })
       },
       relationship: {
         findFirst: relationshipFindFirst,
         create   : relationshipCreate
       }
-    }));
+    };
+    const service = createCreateBookRelationshipService({
+      $transaction: createTransactionMock(tx)
+    } as never);
 
+    const result = await service.createBookRelationship("book-1", {
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: " teacher_student "
+    });
+
+    expect(tx.relationshipTypeDefinition.findFirst).toHaveBeenCalledWith({
+      where : { code: "teacher_student", status: "ACTIVE" },
+      select: { code: true, directionMode: true }
+    });
+    expect(relationshipFindFirst).toHaveBeenCalledWith({
+      where: {
+        bookId              : "book-1",
+        sourceId            : "persona-a",
+        targetId            : "persona-b",
+        relationshipTypeCode: "teacher_student",
+        deletedAt           : null
+      },
+      select: {
+        id: true
+      }
+    });
+    expect(relationshipCreate).toHaveBeenCalledWith({
+      data: {
+        bookId              : "book-1",
+        sourceId            : "persona-a",
+        targetId            : "persona-b",
+        relationshipTypeCode: "teacher_student",
+        recordSource        : RecordSource.MANUAL,
+        status              : ProcessingStatus.VERIFIED
+      },
+      select: {
+        id                  : true,
+        bookId              : true,
+        sourceId            : true,
+        targetId            : true,
+        relationshipTypeCode: true,
+        recordSource        : true,
+        status              : true
+      }
+    });
+    expect(result).toEqual({
+      id                  : "rel-1",
+      bookId              : "book-1",
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
+    });
+  });
+
+  it("retries as an idempotent update when a concurrent create hits the unique index", async () => {
+    const uniqueConflict = new Prisma.PrismaClientKnownRequestError(
+      "Unique constraint failed on the relationship pair index",
+      {
+        code         : "P2002",
+        clientVersion: "test"
+      }
+    );
+    const firstCreate = vi.fn().mockRejectedValue(uniqueConflict);
+    const firstTx = {
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      persona: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "persona-a" },
+          { id: "persona-b" }
+        ])
+      },
+      relationshipTypeDefinition: {
+        findFirst: vi.fn().mockResolvedValue({
+          code         : "teacher_student",
+          directionMode: "INVERSE"
+        })
+      },
+      relationship: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create   : firstCreate
+      }
+    };
+    const relationshipUpdate = vi.fn().mockResolvedValue({
+      id                  : "rel-1",
+      bookId              : "book-1",
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
+    });
+    const secondTx = {
+      book: {
+        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+      },
+      persona: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "persona-a" },
+          { id: "persona-b" }
+        ])
+      },
+      relationshipTypeDefinition: {
+        findFirst: vi.fn().mockResolvedValue({
+          code         : "teacher_student",
+          directionMode: "INVERSE"
+        })
+      },
+      relationship: {
+        findFirst: vi.fn().mockResolvedValue({ id: "rel-1" }),
+        update   : relationshipUpdate
+      }
+    };
+    const transaction = vi.fn()
+      .mockImplementationOnce(async (callback: (transactionClient: unknown) => unknown) => callback(firstTx))
+      .mockImplementationOnce(async (callback: (transactionClient: unknown) => unknown) => callback(secondTx));
     const service = createCreateBookRelationshipService({
       $transaction: transaction
     } as never);
 
     const result = await service.createBookRelationship("book-1", {
-      chapterId  : "chapter-1",
-      sourceId   : "persona-a",
-      targetId   : "persona-b",
-      type       : " 师生 ",
-      weight     : 1.2,
-      description: "关系背景",
-      evidence   : "证据片段",
-      confidence : 0.95
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student"
     });
 
-    expect(relationshipCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        type        : "师生",
+    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(firstCreate).toHaveBeenCalledTimes(1);
+    expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "rel-1" },
+      data : expect.objectContaining({
         recordSource: RecordSource.MANUAL,
-        status      : ProcessingStatus.VERIFIED
+        status      : ProcessingStatus.VERIFIED,
+        deletedAt   : null
       })
     }));
     expect(result).toEqual({
-      id          : "rel-1",
-      bookId      : "book-1",
-      chapterId   : "chapter-1",
-      chapterNo   : 2,
-      sourceId    : "persona-a",
-      targetId    : "persona-b",
-      type        : "师生",
-      weight      : 1.2,
-      description : "关系背景",
-      evidence    : "证据片段",
-      confidence  : 0.95,
-      recordSource: RecordSource.MANUAL,
-      status      : ProcessingStatus.VERIFIED
+      id                  : "rel-1",
+      bookId              : "book-1",
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
     });
   });
 
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws input error when source and target are same", async () => {
+  it("upgrades an existing DRAFT_AI relationship to MANUAL", async () => {
+    const relationshipUpdate = vi.fn().mockResolvedValue({
+      id                  : "rel-1",
+      bookId              : "book-1",
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
+    });
     const service = createCreateBookRelationshipService({
-      $transaction: vi.fn()
+      $transaction: createTransactionMock({
+        book: {
+          findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
+        },
+        persona: {
+          findMany: vi.fn().mockResolvedValue([{ id: "persona-a" }, { id: "persona-b" }])
+        },
+        relationshipTypeDefinition: {
+          findFirst: vi.fn().mockResolvedValue({ code: "teacher_student", directionMode: "INVERSE" })
+        },
+        relationship: {
+          findFirst: vi.fn().mockResolvedValue({ id: "rel-1" }),
+          update   : relationshipUpdate
+        }
+      })
+    } as never);
+
+    await service.createBookRelationship("book-1", {
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student"
+    });
+
+    expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "rel-1" },
+      data : expect.objectContaining({
+        recordSource: RecordSource.MANUAL,
+        status      : ProcessingStatus.VERIFIED,
+        deletedAt   : null
+      })
+    }));
+  });
+
+  it("keeps an existing MANUAL relationship idempotent", async () => {
+    const relationshipUpdate = vi.fn().mockResolvedValue({
+      id                  : "rel-manual",
+      bookId              : "book-1",
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
+    });
+    const service = createCreateBookRelationshipService({
+      $transaction: createTransactionMock({
+        book                      : { findFirst: vi.fn().mockResolvedValue({ id: "book-1" }) },
+        persona                   : { findMany: vi.fn().mockResolvedValue([{ id: "persona-a" }, { id: "persona-b" }]) },
+        relationshipTypeDefinition: {
+          findFirst: vi.fn().mockResolvedValue({ code: "teacher_student", directionMode: "INVERSE" })
+        },
+        relationship: {
+          findFirst: vi.fn().mockResolvedValue({ id: "rel-manual" }),
+          update   : relationshipUpdate
+        }
+      })
+    } as never);
+
+    const result = await service.createBookRelationship("book-1", {
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student"
+    });
+
+    expect(result.id).toBe("rel-manual");
+    expect(result.recordSource).toBe(RecordSource.MANUAL);
+  });
+
+  it("canonicalizes symmetric relationship endpoints by UUID order", async () => {
+    const relationshipFindFirst = vi.fn().mockResolvedValue(null);
+    const relationshipCreate = vi.fn().mockResolvedValue({
+      id                  : "rel-1",
+      bookId              : "book-1",
+      sourceId            : "00000000-0000-0000-0000-000000000001",
+      targetId            : "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      relationshipTypeCode: "classmate",
+      recordSource        : RecordSource.MANUAL,
+      status              : ProcessingStatus.VERIFIED
+    });
+    const service = createCreateBookRelationshipService({
+      $transaction: createTransactionMock({
+        book   : { findFirst: vi.fn().mockResolvedValue({ id: "book-1" }) },
+        persona: {
+          findMany: vi.fn().mockResolvedValue([
+            { id: "ffffffff-ffff-ffff-ffff-ffffffffffff" },
+            { id: "00000000-0000-0000-0000-000000000001" }
+          ])
+        },
+        relationshipTypeDefinition: {
+          findFirst: vi.fn().mockResolvedValue({ code: "classmate", directionMode: "SYMMETRIC" })
+        },
+        relationship: {
+          findFirst: relationshipFindFirst,
+          create   : relationshipCreate
+        }
+      })
+    } as never);
+
+    await service.createBookRelationship("book-1", {
+      sourceId            : "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      targetId            : "00000000-0000-0000-0000-000000000001",
+      relationshipTypeCode: "classmate"
+    });
+
+    expect(relationshipFindFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        bookId              : "book-1",
+        sourceId            : "00000000-0000-0000-0000-000000000001",
+        targetId            : "ffffffff-ffff-ffff-ffff-ffffffffffff",
+        relationshipTypeCode: "classmate",
+        deletedAt           : null
+      }
+    }));
+  });
+
+  it("rejects inactive relationship type definitions", async () => {
+    const service = createCreateBookRelationshipService({
+      $transaction: createTransactionMock({
+        book                      : { findFirst: vi.fn().mockResolvedValue({ id: "book-1" }) },
+        persona                   : { findMany: vi.fn().mockResolvedValue([{ id: "persona-a" }, { id: "persona-b" }]) },
+        relationshipTypeDefinition: { findFirst: vi.fn().mockResolvedValue(null) },
+        relationship              : { upsert: vi.fn() }
+      })
     } as never);
 
     await expect(service.createBookRelationship("book-1", {
-      chapterId: "chapter-1",
-      sourceId : "persona-a",
-      targetId : "persona-a",
-      type     : "师生"
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "inactive_type"
     })).rejects.toBeInstanceOf(RelationshipInputError);
   });
 
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("throws persona not found when one endpoint is missing", async () => {
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      book: {
-        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
-      },
-      chapter: {
-        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 1 })
-      },
-      persona: {
-        findMany: vi.fn().mockResolvedValue([{ id: "persona-a" }])
-      },
-      relationship: {
-        findFirst: vi.fn()
-      }
-    }));
+  it("rejects self-loop relationships", async () => {
+    const service = createCreateBookRelationshipService({ $transaction: vi.fn() } as never);
+
+    await expect(service.createBookRelationship("book-1", {
+      sourceId            : "persona-a",
+      targetId            : "persona-a",
+      relationshipTypeCode: "teacher_student"
+    })).rejects.toBeInstanceOf(RelationshipInputError);
+  });
+
+  it("rejects soft-deleted persona endpoints", async () => {
     const service = createCreateBookRelationshipService({
-      $transaction: transaction
+      $transaction: createTransactionMock({
+        book                      : { findFirst: vi.fn().mockResolvedValue({ id: "book-1" }) },
+        persona                   : { findMany: vi.fn().mockResolvedValue([{ id: "persona-a" }]) },
+        relationshipTypeDefinition: { findFirst: vi.fn() },
+        relationship              : { upsert: vi.fn() }
+      })
     } as never);
 
     await expect(service.createBookRelationship("book-1", {
-      chapterId: "chapter-1",
-      sourceId : "persona-a",
-      targetId : "persona-b",
-      type     : "师生"
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student"
     })).rejects.toBeInstanceOf(PersonaNotFoundError);
   });
 
   it("throws book not found when target book does not exist", async () => {
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      book: {
-        findFirst: vi.fn().mockResolvedValue(null)
-      }
-    }));
     const service = createCreateBookRelationshipService({
-      $transaction: transaction
+      $transaction: createTransactionMock({
+        book: { findFirst: vi.fn().mockResolvedValue(null) }
+      })
     } as never);
 
     await expect(service.createBookRelationship("missing-book", {
-      chapterId: "chapter-1",
-      sourceId : "persona-a",
-      targetId : "persona-b",
-      type     : "师生"
+      sourceId            : "persona-a",
+      targetId            : "persona-b",
+      relationshipTypeCode: "teacher_student"
     })).rejects.toBeInstanceOf(BookNotFoundError);
-  });
-
-  it("throws input error when chapter does not belong to book", async () => {
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      book: {
-        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
-      },
-      chapter: {
-        findFirst: vi.fn().mockResolvedValue(null)
-      }
-    }));
-    const service = createCreateBookRelationshipService({
-      $transaction: transaction
-    } as never);
-
-    await expect(service.createBookRelationship("book-1", {
-      chapterId: "chapter-404",
-      sourceId : "persona-a",
-      targetId : "persona-b",
-      type     : "师生"
-    })).rejects.toBeInstanceOf(RelationshipInputError);
-  });
-
-  it("throws persona not found when source persona is missing", async () => {
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      book: {
-        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
-      },
-      chapter: {
-        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 1 })
-      },
-      persona: {
-        findMany: vi.fn().mockResolvedValue([{ id: "persona-b" }])
-      },
-      relationship: {
-        findFirst: vi.fn()
-      }
-    }));
-    const service = createCreateBookRelationshipService({
-      $transaction: transaction
-    } as never);
-
-    await expect(service.createBookRelationship("book-1", {
-      chapterId: "chapter-1",
-      sourceId : "persona-a",
-      targetId : "persona-b",
-      type     : "师生"
-    })).rejects.toBeInstanceOf(PersonaNotFoundError);
-  });
-
-  it("throws input error when manual relationship already exists", async () => {
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      book: {
-        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
-      },
-      chapter: {
-        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 2 })
-      },
-      persona: {
-        findMany: vi.fn().mockResolvedValue([
-          { id: "persona-a" },
-          { id: "persona-b" }
-        ])
-      },
-      relationship: {
-        findFirst: vi.fn().mockResolvedValue({ id: "rel-existing" })
-      }
-    }));
-    const service = createCreateBookRelationshipService({
-      $transaction: transaction
-    } as never);
-
-    await expect(service.createBookRelationship("book-1", {
-      chapterId: "chapter-1",
-      sourceId : "persona-a",
-      targetId : "persona-b",
-      type     : "同盟"
-    })).rejects.toBeInstanceOf(RelationshipInputError);
-  });
-
-  it("defaults numeric fields and normalizes optional text fields", async () => {
-    const relationshipCreate = vi.fn().mockResolvedValue({
-      id          : "rel-2",
-      chapterId   : "chapter-1",
-      sourceId    : "persona-a",
-      targetId    : "persona-b",
-      type        : "同盟",
-      weight      : 1,
-      description : null,
-      evidence    : null,
-      confidence  : 1,
-      recordSource: RecordSource.MANUAL,
-      status      : ProcessingStatus.VERIFIED
-    });
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      book: {
-        findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
-      },
-      chapter: {
-        findFirst: vi.fn().mockResolvedValue({ id: "chapter-1", no: 2 })
-      },
-      persona: {
-        findMany: vi.fn().mockResolvedValue([
-          { id: "persona-a" },
-          { id: "persona-b" }
-        ])
-      },
-      relationship: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        create   : relationshipCreate
-      }
-    }));
-    const service = createCreateBookRelationshipService({
-      $transaction: transaction
-    } as never);
-
-    const result = await service.createBookRelationship("book-1", {
-      chapterId  : "chapter-1",
-      sourceId   : "persona-a",
-      targetId   : "persona-b",
-      type       : " 同盟 ",
-      description: "   ",
-      evidence   : "\n"
-    });
-
-    expect(relationshipCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        type       : "同盟",
-        weight     : 1,
-        description: null,
-        evidence   : null,
-        confidence : 1
-      })
-    }));
-    expect(result).toEqual(expect.objectContaining({
-      weight     : 1,
-      description: null,
-      evidence   : null,
-      confidence : 1
-    }));
   });
 });

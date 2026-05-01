@@ -91,7 +91,7 @@ function chapterLabel(chapter: { no?: number | null; title?: string | null } | n
 }
 
 function scopedCascadeWhere(personaId: string, options: PreviewOptions = {}) {
-  const bookScope = options.bookId ? { chapter: { bookId: options.bookId } } : {};
+  const chapterBookScope = options.bookId ? { chapter: { bookId: options.bookId } } : {};
   return {
     relationships: {
       deletedAt: null,
@@ -99,17 +99,17 @@ function scopedCascadeWhere(personaId: string, options: PreviewOptions = {}) {
         { sourceId: personaId },
         { targetId: personaId }
       ],
-      ...bookScope
+      ...(options.bookId ? { bookId: options.bookId } : {})
     },
     biographies: {
       personaId,
       deletedAt: null,
-      ...bookScope
+      ...chapterBookScope
     },
     mentions: {
       personaId,
       deletedAt: null,
-      ...bookScope
+      ...chapterBookScope
     },
     profiles: {
       personaId,
@@ -156,12 +156,19 @@ export function createDeletePersonaService(
         where  : where.relationships,
         orderBy: [{ updatedAt: "desc" }],
         select : {
-          id         : true,
-          type       : true,
-          description: true,
-          chapter    : { select: { no: true, title: true } },
-          source     : { select: { name: true } },
-          target     : { select: { name: true } }
+          id                  : true,
+          relationshipTypeCode: true,
+          source              : { select: { name: true } },
+          target              : { select: { name: true } },
+          events              : {
+            where  : { deletedAt: null },
+            orderBy: [{ chapterNo: "asc" }],
+            take   : 1,
+            select : {
+              summary: true,
+              chapter: { select: { no: true, title: true } }
+            }
+          }
         }
       }),
       prismaClient.biographyRecord.findMany({
@@ -212,11 +219,11 @@ export function createDeletePersonaService(
       })),
       relationships: relationships.map(item => ({
         id         : item.id,
-        type       : item.type,
+        type       : item.relationshipTypeCode,
         sourceName : item.source.name,
         targetName : item.target.name,
-        description: item.description,
-        chapter    : chapterLabel(item.chapter)
+        description: item.events[0]?.summary ?? null,
+        chapter    : chapterLabel(item.events[0]?.chapter)
       })),
       mentions: mentions.map(item => ({
         id     : item.id,

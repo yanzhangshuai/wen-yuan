@@ -194,21 +194,20 @@ export function createGetBookGraphService(
     const relationships = await prismaClient.relationship.findMany({
       where: {
         deletedAt: null,
-        chapter  : {
-          bookId: input.bookId,
-          ...(typeof input.chapter === "number" ? { no: { lte: input.chapter } } : {})
-        },
+        bookId   : input.bookId,
+        ...(typeof input.chapter === "number"
+          ? { events: { some: { chapterNo: { lte: input.chapter }, deletedAt: null } } }
+          : {}),
         source: { deletedAt: null },
         target: { deletedAt: null }
       },
       orderBy: [{ updatedAt: "desc" }],
       select : {
-        id      : true,
-        sourceId: true,
-        targetId: true,
-        type    : true,
-        weight  : true,
-        status  : true
+        id                  : true,
+        sourceId            : true,
+        targetId            : true,
+        relationshipTypeCode: true,
+        status              : true
       }
     });
 
@@ -334,9 +333,9 @@ export function createGetBookGraphService(
       id       : relation.id,
       source   : relation.sourceId,
       target   : relation.targetId,
-      type     : relation.type,
-      weight   : relation.weight,
-      sentiment: resolveSentiment(relation.type),
+      type     : relation.relationshipTypeCode,
+      weight   : 1,
+      sentiment: resolveSentiment(relation.relationshipTypeCode),
       status   : relation.status
     }));
 

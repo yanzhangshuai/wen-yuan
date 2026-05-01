@@ -514,12 +514,12 @@ export function createValidationAgentService(
       prismaClient.relationship.findMany({
         where: {
           deletedAt: null,
-          chapter  : { bookId }
+          bookId
         },
         select: {
-          sourceId: true,
-          targetId: true,
-          type    : true
+          sourceId            : true,
+          targetId            : true,
+          relationshipTypeCode: true
         }
       }),
       prismaClient.chapter.findMany({
@@ -535,7 +535,7 @@ export function createValidationAgentService(
 
     const relationCounter = new Map<string, { sourceId: string; targetId: string; type: string; count: number }>();
     for (const relation of relationships) {
-      const key = [relation.sourceId, relation.targetId, relation.type].join("|");
+      const key = [relation.sourceId, relation.targetId, relation.relationshipTypeCode].join("|");
       const previous = relationCounter.get(key);
       if (previous) {
         // 同类型关系按 pair 聚合计数，避免把重复边逐条喂给模型导致噪音过大。
@@ -544,7 +544,7 @@ export function createValidationAgentService(
         relationCounter.set(key, {
           sourceId: relation.sourceId,
           targetId: relation.targetId,
-          type    : relation.type,
+          type    : relation.relationshipTypeCode,
           count   : 1
         });
       }

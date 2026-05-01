@@ -497,23 +497,16 @@ export function RoleReviewWorkbench({
     try {
       if (sheetMode === "relationship-create" && selectedPersona) {
         await createRelationship(bookId, {
-          chapterId : relationshipForm.chapterId,
-          sourceId  : selectedPersona.id,
-          targetId  : relationshipForm.targetId,
-          type      : relationshipForm.type.trim(),
-          weight    : Number(relationshipForm.weight) || 1,
-          evidence  : relationshipForm.evidence.trim() || null,
-          confidence: Math.min(100, Math.max(0, Number(relationshipForm.confidence) || 0)) / 100
+          sourceId            : selectedPersona.id,
+          targetId            : relationshipForm.targetId,
+          relationshipTypeCode: relationshipForm.type.trim()
         });
         onRefreshDrafts();
         await loadPersonaDetail(selectedPersona.id);
       }
       if (sheetMode === "relationship-edit" && editingRelationship) {
         await patchRelationship(editingRelationship.id, {
-          type      : relationshipForm.type.trim(),
-          weight    : Number(relationshipForm.weight) || 1,
-          evidence  : relationshipForm.evidence.trim() || null,
-          confidence: Math.min(100, Math.max(0, Number(relationshipForm.confidence) || 0)) / 100
+          relationshipTypeCode: relationshipForm.type.trim()
         });
         onRefreshDrafts();
         await loadPersonaDetail(selectedPersona.id);

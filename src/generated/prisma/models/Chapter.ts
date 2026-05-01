@@ -275,7 +275,7 @@ export type ChapterWhereInput = {
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
   mentions?: Prisma.MentionListRelationFilter
   biographies?: Prisma.BiographyRecordListRelationFilter
-  relations?: Prisma.RelationshipListRelationFilter
+  relationshipEvents?: Prisma.RelationshipEventListRelationFilter
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
   biographyVerifications?: Prisma.ChapterBiographyVerificationListRelationFilter
   firstAppearanceProfiles?: Prisma.ProfileListRelationFilter
@@ -297,7 +297,7 @@ export type ChapterOrderByWithRelationInput = {
   book?: Prisma.BookOrderByWithRelationInput
   mentions?: Prisma.MentionOrderByRelationAggregateInput
   biographies?: Prisma.BiographyRecordOrderByRelationAggregateInput
-  relations?: Prisma.RelationshipOrderByRelationAggregateInput
+  relationshipEvents?: Prisma.RelationshipEventOrderByRelationAggregateInput
   phaseLogs?: Prisma.AnalysisPhaseLogOrderByRelationAggregateInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationOrderByRelationAggregateInput
   firstAppearanceProfiles?: Prisma.ProfileOrderByRelationAggregateInput
@@ -323,7 +323,7 @@ export type ChapterWhereUniqueInput = Prisma.AtLeast<{
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
   mentions?: Prisma.MentionListRelationFilter
   biographies?: Prisma.BiographyRecordListRelationFilter
-  relations?: Prisma.RelationshipListRelationFilter
+  relationshipEvents?: Prisma.RelationshipEventListRelationFilter
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
   biographyVerifications?: Prisma.ChapterBiographyVerificationListRelationFilter
   firstAppearanceProfiles?: Prisma.ProfileListRelationFilter
@@ -382,7 +382,7 @@ export type ChapterCreateInput = {
   book: Prisma.BookCreateNestedOneWithoutChaptersInput
   mentions?: Prisma.MentionCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -403,7 +403,7 @@ export type ChapterUncheckedCreateInput = {
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -424,7 +424,7 @@ export type ChapterUpdateInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutChaptersNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -445,7 +445,7 @@ export type ChapterUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -678,18 +678,18 @@ export type ChapterUpdateOneRequiredWithoutMentionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ChapterUpdateToOneWithWhereWithoutMentionsInput, Prisma.ChapterUpdateWithoutMentionsInput>, Prisma.ChapterUncheckedUpdateWithoutMentionsInput>
 }
 
-export type ChapterCreateNestedOneWithoutRelationsInput = {
-  create?: Prisma.XOR<Prisma.ChapterCreateWithoutRelationsInput, Prisma.ChapterUncheckedCreateWithoutRelationsInput>
-  connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutRelationsInput
+export type ChapterCreateNestedOneWithoutRelationshipEventsInput = {
+  create?: Prisma.XOR<Prisma.ChapterCreateWithoutRelationshipEventsInput, Prisma.ChapterUncheckedCreateWithoutRelationshipEventsInput>
+  connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutRelationshipEventsInput
   connect?: Prisma.ChapterWhereUniqueInput
 }
 
-export type ChapterUpdateOneRequiredWithoutRelationsNestedInput = {
-  create?: Prisma.XOR<Prisma.ChapterCreateWithoutRelationsInput, Prisma.ChapterUncheckedCreateWithoutRelationsInput>
-  connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutRelationsInput
-  upsert?: Prisma.ChapterUpsertWithoutRelationsInput
+export type ChapterUpdateOneRequiredWithoutRelationshipEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.ChapterCreateWithoutRelationshipEventsInput, Prisma.ChapterUncheckedCreateWithoutRelationshipEventsInput>
+  connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutRelationshipEventsInput
+  upsert?: Prisma.ChapterUpsertWithoutRelationshipEventsInput
   connect?: Prisma.ChapterWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.ChapterUpdateToOneWithWhereWithoutRelationsInput, Prisma.ChapterUpdateWithoutRelationsInput>, Prisma.ChapterUncheckedUpdateWithoutRelationsInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ChapterUpdateToOneWithWhereWithoutRelationshipEventsInput, Prisma.ChapterUpdateWithoutRelationshipEventsInput>, Prisma.ChapterUncheckedUpdateWithoutRelationshipEventsInput>
 }
 
 export type ChapterCreateNestedOneWithoutPhaseLogsInput = {
@@ -722,7 +722,7 @@ export type ChapterCreateWithoutBookInput = {
   updatedAt?: Date | string
   mentions?: Prisma.MentionCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -742,7 +742,7 @@ export type ChapterUncheckedCreateWithoutBookInput = {
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -807,7 +807,7 @@ export type ChapterCreateWithoutBiographyVerificationsInput = {
   book: Prisma.BookCreateNestedOneWithoutChaptersInput
   mentions?: Prisma.MentionCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
 }
@@ -827,7 +827,7 @@ export type ChapterUncheckedCreateWithoutBiographyVerificationsInput = {
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
 }
@@ -863,7 +863,7 @@ export type ChapterUpdateWithoutBiographyVerificationsInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutChaptersNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
 }
@@ -883,7 +883,7 @@ export type ChapterUncheckedUpdateWithoutBiographyVerificationsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedUpdateManyWithoutFirstAppearanceChapterNestedInput
 }
@@ -903,7 +903,7 @@ export type ChapterCreateWithoutFirstAppearanceProfilesInput = {
   book: Prisma.BookCreateNestedOneWithoutChaptersInput
   mentions?: Prisma.MentionCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationCreateNestedManyWithoutChapterInput
 }
@@ -923,7 +923,7 @@ export type ChapterUncheckedCreateWithoutFirstAppearanceProfilesInput = {
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedCreateNestedManyWithoutChapterInput
 }
@@ -959,7 +959,7 @@ export type ChapterUpdateWithoutFirstAppearanceProfilesInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutChaptersNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUpdateManyWithoutChapterNestedInput
 }
@@ -979,7 +979,7 @@ export type ChapterUncheckedUpdateWithoutFirstAppearanceProfilesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedUpdateManyWithoutChapterNestedInput
 }
@@ -998,7 +998,7 @@ export type ChapterCreateWithoutBiographiesInput = {
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutChaptersInput
   mentions?: Prisma.MentionCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -1018,7 +1018,7 @@ export type ChapterUncheckedCreateWithoutBiographiesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -1054,7 +1054,7 @@ export type ChapterUpdateWithoutBiographiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutChaptersNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -1074,7 +1074,7 @@ export type ChapterUncheckedUpdateWithoutBiographiesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -1094,7 +1094,7 @@ export type ChapterCreateWithoutMentionsInput = {
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutChaptersInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -1114,7 +1114,7 @@ export type ChapterUncheckedCreateWithoutMentionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
@@ -1150,7 +1150,7 @@ export type ChapterUpdateWithoutMentionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutChaptersNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -1170,13 +1170,13 @@ export type ChapterUncheckedUpdateWithoutMentionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedUpdateManyWithoutFirstAppearanceChapterNestedInput
 }
 
-export type ChapterCreateWithoutRelationsInput = {
+export type ChapterCreateWithoutRelationshipEventsInput = {
   id?: string
   type?: $Enums.ChapterType
   no: number
@@ -1196,7 +1196,7 @@ export type ChapterCreateWithoutRelationsInput = {
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
 }
 
-export type ChapterUncheckedCreateWithoutRelationsInput = {
+export type ChapterUncheckedCreateWithoutRelationshipEventsInput = {
   id?: string
   bookId: string
   type?: $Enums.ChapterType
@@ -1216,23 +1216,23 @@ export type ChapterUncheckedCreateWithoutRelationsInput = {
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
 }
 
-export type ChapterCreateOrConnectWithoutRelationsInput = {
+export type ChapterCreateOrConnectWithoutRelationshipEventsInput = {
   where: Prisma.ChapterWhereUniqueInput
-  create: Prisma.XOR<Prisma.ChapterCreateWithoutRelationsInput, Prisma.ChapterUncheckedCreateWithoutRelationsInput>
+  create: Prisma.XOR<Prisma.ChapterCreateWithoutRelationshipEventsInput, Prisma.ChapterUncheckedCreateWithoutRelationshipEventsInput>
 }
 
-export type ChapterUpsertWithoutRelationsInput = {
-  update: Prisma.XOR<Prisma.ChapterUpdateWithoutRelationsInput, Prisma.ChapterUncheckedUpdateWithoutRelationsInput>
-  create: Prisma.XOR<Prisma.ChapterCreateWithoutRelationsInput, Prisma.ChapterUncheckedCreateWithoutRelationsInput>
+export type ChapterUpsertWithoutRelationshipEventsInput = {
+  update: Prisma.XOR<Prisma.ChapterUpdateWithoutRelationshipEventsInput, Prisma.ChapterUncheckedUpdateWithoutRelationshipEventsInput>
+  create: Prisma.XOR<Prisma.ChapterCreateWithoutRelationshipEventsInput, Prisma.ChapterUncheckedCreateWithoutRelationshipEventsInput>
   where?: Prisma.ChapterWhereInput
 }
 
-export type ChapterUpdateToOneWithWhereWithoutRelationsInput = {
+export type ChapterUpdateToOneWithWhereWithoutRelationshipEventsInput = {
   where?: Prisma.ChapterWhereInput
-  data: Prisma.XOR<Prisma.ChapterUpdateWithoutRelationsInput, Prisma.ChapterUncheckedUpdateWithoutRelationsInput>
+  data: Prisma.XOR<Prisma.ChapterUpdateWithoutRelationshipEventsInput, Prisma.ChapterUncheckedUpdateWithoutRelationshipEventsInput>
 }
 
-export type ChapterUpdateWithoutRelationsInput = {
+export type ChapterUpdateWithoutRelationshipEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumChapterTypeFieldUpdateOperationsInput | $Enums.ChapterType
   no?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1252,7 +1252,7 @@ export type ChapterUpdateWithoutRelationsInput = {
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
 }
 
-export type ChapterUncheckedUpdateWithoutRelationsInput = {
+export type ChapterUncheckedUpdateWithoutRelationshipEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumChapterTypeFieldUpdateOperationsInput | $Enums.ChapterType
@@ -1287,7 +1287,7 @@ export type ChapterCreateWithoutPhaseLogsInput = {
   book: Prisma.BookCreateNestedOneWithoutChaptersInput
   mentions?: Prisma.MentionCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileCreateNestedManyWithoutFirstAppearanceChapterInput
 }
@@ -1307,7 +1307,7 @@ export type ChapterUncheckedCreateWithoutPhaseLogsInput = {
   updatedAt?: Date | string
   mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutChapterInput
   biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutChapterInput
-  relations?: Prisma.RelationshipUncheckedCreateNestedManyWithoutChapterInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutChapterInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedCreateNestedManyWithoutChapterInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutFirstAppearanceChapterInput
 }
@@ -1343,7 +1343,7 @@ export type ChapterUpdateWithoutPhaseLogsInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutChaptersNestedInput
   mentions?: Prisma.MentionUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
 }
@@ -1363,7 +1363,7 @@ export type ChapterUncheckedUpdateWithoutPhaseLogsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedUpdateManyWithoutFirstAppearanceChapterNestedInput
 }
@@ -1396,7 +1396,7 @@ export type ChapterUpdateWithoutBookInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -1416,7 +1416,7 @@ export type ChapterUncheckedUpdateWithoutBookInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mentions?: Prisma.MentionUncheckedUpdateManyWithoutChapterNestedInput
   biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutChapterNestedInput
-  relations?: Prisma.RelationshipUncheckedUpdateManyWithoutChapterNestedInput
+  relationshipEvents?: Prisma.RelationshipEventUncheckedUpdateManyWithoutChapterNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutChapterNestedInput
   biographyVerifications?: Prisma.ChapterBiographyVerificationUncheckedUpdateManyWithoutChapterNestedInput
   firstAppearanceProfiles?: Prisma.ProfileUncheckedUpdateManyWithoutFirstAppearanceChapterNestedInput
@@ -1444,7 +1444,7 @@ export type ChapterUncheckedUpdateManyWithoutBookInput = {
 export type ChapterCountOutputType = {
   mentions: number
   biographies: number
-  relations: number
+  relationshipEvents: number
   phaseLogs: number
   biographyVerifications: number
   firstAppearanceProfiles: number
@@ -1453,7 +1453,7 @@ export type ChapterCountOutputType = {
 export type ChapterCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   mentions?: boolean | ChapterCountOutputTypeCountMentionsArgs
   biographies?: boolean | ChapterCountOutputTypeCountBiographiesArgs
-  relations?: boolean | ChapterCountOutputTypeCountRelationsArgs
+  relationshipEvents?: boolean | ChapterCountOutputTypeCountRelationshipEventsArgs
   phaseLogs?: boolean | ChapterCountOutputTypeCountPhaseLogsArgs
   biographyVerifications?: boolean | ChapterCountOutputTypeCountBiographyVerificationsArgs
   firstAppearanceProfiles?: boolean | ChapterCountOutputTypeCountFirstAppearanceProfilesArgs
@@ -1486,8 +1486,8 @@ export type ChapterCountOutputTypeCountBiographiesArgs<ExtArgs extends runtime.T
 /**
  * ChapterCountOutputType without action
  */
-export type ChapterCountOutputTypeCountRelationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.RelationshipWhereInput
+export type ChapterCountOutputTypeCountRelationshipEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RelationshipEventWhereInput
 }
 
 /**
@@ -1528,7 +1528,7 @@ export type ChapterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   mentions?: boolean | Prisma.Chapter$mentionsArgs<ExtArgs>
   biographies?: boolean | Prisma.Chapter$biographiesArgs<ExtArgs>
-  relations?: boolean | Prisma.Chapter$relationsArgs<ExtArgs>
+  relationshipEvents?: boolean | Prisma.Chapter$relationshipEventsArgs<ExtArgs>
   phaseLogs?: boolean | Prisma.Chapter$phaseLogsArgs<ExtArgs>
   biographyVerifications?: boolean | Prisma.Chapter$biographyVerificationsArgs<ExtArgs>
   firstAppearanceProfiles?: boolean | Prisma.Chapter$firstAppearanceProfilesArgs<ExtArgs>
@@ -1587,7 +1587,7 @@ export type ChapterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   mentions?: boolean | Prisma.Chapter$mentionsArgs<ExtArgs>
   biographies?: boolean | Prisma.Chapter$biographiesArgs<ExtArgs>
-  relations?: boolean | Prisma.Chapter$relationsArgs<ExtArgs>
+  relationshipEvents?: boolean | Prisma.Chapter$relationshipEventsArgs<ExtArgs>
   phaseLogs?: boolean | Prisma.Chapter$phaseLogsArgs<ExtArgs>
   biographyVerifications?: boolean | Prisma.Chapter$biographyVerificationsArgs<ExtArgs>
   firstAppearanceProfiles?: boolean | Prisma.Chapter$firstAppearanceProfilesArgs<ExtArgs>
@@ -1606,7 +1606,7 @@ export type $ChapterPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     book: Prisma.$BookPayload<ExtArgs>
     mentions: Prisma.$MentionPayload<ExtArgs>[]
     biographies: Prisma.$BiographyRecordPayload<ExtArgs>[]
-    relations: Prisma.$RelationshipPayload<ExtArgs>[]
+    relationshipEvents: Prisma.$RelationshipEventPayload<ExtArgs>[]
     phaseLogs: Prisma.$AnalysisPhaseLogPayload<ExtArgs>[]
     biographyVerifications: Prisma.$ChapterBiographyVerificationPayload<ExtArgs>[]
     firstAppearanceProfiles: Prisma.$ProfilePayload<ExtArgs>[]
@@ -2021,7 +2021,7 @@ export interface Prisma__ChapterClient<T, Null = never, ExtArgs extends runtime.
   book<T extends Prisma.BookDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookDefaultArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   mentions<T extends Prisma.Chapter$mentionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$mentionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MentionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   biographies<T extends Prisma.Chapter$biographiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$biographiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BiographyRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  relations<T extends Prisma.Chapter$relationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$relationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  relationshipEvents<T extends Prisma.Chapter$relationshipEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$relationshipEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   phaseLogs<T extends Prisma.Chapter$phaseLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$phaseLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisPhaseLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   biographyVerifications<T extends Prisma.Chapter$biographyVerificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$biographyVerificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChapterBiographyVerificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   firstAppearanceProfiles<T extends Prisma.Chapter$firstAppearanceProfilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$firstAppearanceProfilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2515,27 +2515,27 @@ export type Chapter$biographiesArgs<ExtArgs extends runtime.Types.Extensions.Int
 }
 
 /**
- * Chapter.relations
+ * Chapter.relationshipEvents
  */
-export type Chapter$relationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Chapter$relationshipEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Relationship
+   * Select specific fields to fetch from the RelationshipEvent
    */
-  select?: Prisma.RelationshipSelect<ExtArgs> | null
+  select?: Prisma.RelationshipEventSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Relationship
+   * Omit specific fields from the RelationshipEvent
    */
-  omit?: Prisma.RelationshipOmit<ExtArgs> | null
+  omit?: Prisma.RelationshipEventOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.RelationshipInclude<ExtArgs> | null
-  where?: Prisma.RelationshipWhereInput
-  orderBy?: Prisma.RelationshipOrderByWithRelationInput | Prisma.RelationshipOrderByWithRelationInput[]
-  cursor?: Prisma.RelationshipWhereUniqueInput
+  include?: Prisma.RelationshipEventInclude<ExtArgs> | null
+  where?: Prisma.RelationshipEventWhereInput
+  orderBy?: Prisma.RelationshipEventOrderByWithRelationInput | Prisma.RelationshipEventOrderByWithRelationInput[]
+  cursor?: Prisma.RelationshipEventWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.RelationshipScalarFieldEnum | Prisma.RelationshipScalarFieldEnum[]
+  distinct?: Prisma.RelationshipEventScalarFieldEnum | Prisma.RelationshipEventScalarFieldEnum[]
 }
 
 /**

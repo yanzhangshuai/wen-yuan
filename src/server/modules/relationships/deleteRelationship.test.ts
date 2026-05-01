@@ -4,54 +4,97 @@ import { ProcessingStatus } from "@/generated/prisma/enums";
 import { createDeleteRelationshipService } from "@/server/modules/relationships/deleteRelationship";
 import { RelationshipNotFoundError } from "@/server/modules/relationships/errors";
 
-/**
- * 文件定位（关系服务单测）：
- * - 验证人物关系删除采用软删除语义，确保图谱关系可审计、可追踪。
- * - 作为服务层契约测试，保障接口层调用 `deleteRelationship` 时返回稳定行为。
- */
+function createTransactionMock(tx: unknown) {
+  return vi.fn().mockImplementation(async (callback: (transactionClient: unknown) => unknown) => callback(tx));
+}
+
 describe("deleteRelationship service", () => {
-  it("soft deletes relationship and marks as rejected", async () => {
-    // 业务语义：删除关系并不意味着彻底丢弃数据，而是转为 REJECTED，避免误删后无恢复线索。
-    const relationshipFindFirst = vi.fn().mockResolvedValue({ id: "rel-1" });
+  it("soft deletes relationship events before soft deleting the relationship", async () => {
+    const relationshipEventUpdateMany = vi.fn().mockResolvedValue({ count: 2 });
     const relationshipUpdate = vi.fn().mockResolvedValue({
       id       : "rel-1",
       status   : ProcessingStatus.REJECTED,
       deletedAt: new Date("2026-03-25T00:00:00.000Z")
     });
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      relationship: {
-        findFirst: relationshipFindFirst,
-        update   : relationshipUpdate
-      }
-    }));
     const service = createDeleteRelationshipService({
-      $transaction: transaction
+      $transaction: createTransactionMock({
+        relationship: {
+          findUnique: vi.fn().mockResolvedValue({ id: "rel-1", deletedAt: null }),
+          update    : relationshipUpdate
+        },
+        relationshipEvent: {
+          updateMany: relationshipEventUpdateMany
+        }
+      })
     } as never);
 
     const result = await service.deleteRelationship("rel-1");
 
-    expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
+    expect(relationshipEventUpdateMany).toHaveBeenCalledWith({
+      where: { relationshipId: "rel-1", deletedAt: null },
+      data : { deletedAt: expect.any(Date) }
+    });
+    expect(relationshipUpdate).toHaveBeenCalledWith({
+      where: { id: "rel-1" },
+      data : {
         status   : ProcessingStatus.REJECTED,
         deletedAt: expect.any(Date)
-      })
-    }));
+      },
+      select: {
+        id       : true,
+        status   : true,
+        deletedAt: true
+      }
+    });
     expect(result).toEqual({
-      id       : "rel-1",
-      status   : ProcessingStatus.REJECTED,
-      deletedAt: "2026-03-25T00:00:00.000Z"
+      id                   : "rel-1",
+      status               : ProcessingStatus.REJECTED,
+      deletedAt            : "2026-03-25T00:00:00.000Z",
+      softDeletedEventCount: 2
+    });
+  });
+
+  it("returns an already soft-deleted relationship idempotently", async () => {
+    const relationshipEventUpdateMany = vi.fn();
+    const relationshipUpdate = vi.fn();
+    const service = createDeleteRelationshipService({
+      $transaction: createTransactionMock({
+        relationship: {
+          findUnique: vi.fn().mockResolvedValue({
+            id       : "rel-1",
+            status   : ProcessingStatus.REJECTED,
+            deletedAt: new Date("2026-03-24T00:00:00.000Z")
+          }),
+          update: relationshipUpdate
+        },
+        relationshipEvent: {
+          updateMany: relationshipEventUpdateMany
+        }
+      })
+    } as never);
+
+    const result = await service.deleteRelationship("rel-1");
+
+    expect(relationshipEventUpdateMany).not.toHaveBeenCalled();
+    expect(relationshipUpdate).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      id                   : "rel-1",
+      status               : ProcessingStatus.REJECTED,
+      deletedAt            : "2026-03-24T00:00:00.000Z",
+      softDeletedEventCount: 0
     });
   });
 
   it("throws not found when relationship does not exist", async () => {
-    // 防御场景：前端传入过期/错误关系 ID 时，服务应快速失败并让上层返回 404 类语义。
-    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
-      relationship: {
-        findFirst: vi.fn().mockResolvedValue(null)
-      }
-    }));
     const service = createDeleteRelationshipService({
-      $transaction: transaction
+      $transaction: createTransactionMock({
+        relationship: {
+          findUnique: vi.fn().mockResolvedValue(null)
+        },
+        relationshipEvent: {
+          updateMany: vi.fn()
+        }
+      })
     } as never);
 
     await expect(service.deleteRelationship("rel-missing"))

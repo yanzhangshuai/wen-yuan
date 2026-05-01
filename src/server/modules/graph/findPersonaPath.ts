@@ -302,26 +302,25 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
       where: {
         deletedAt: null,
         status   : { in: PATH_SEARCH_RELATIONSHIP_STATUSES },
-        chapter  : {
-          bookId
-        },
-        source: { deletedAt: null },
-        target: { deletedAt: null }
+        bookId,
+        source   : { deletedAt: null },
+        target   : { deletedAt: null }
       },
       orderBy: [
-        { chapter: { no: "asc" } },
         { createdAt: "asc" }
       ],
       select: {
-        id       : true,
-        sourceId : true,
-        targetId : true,
-        type     : true,
-        weight   : true,
-        chapterId: true,
-        chapter  : {
-          select: {
-            no: true
+        id                  : true,
+        sourceId            : true,
+        targetId            : true,
+        relationshipTypeCode: true,
+        events              : {
+          where  : { deletedAt: null },
+          orderBy: [{ chapterNo: "asc" }],
+          take   : 1,
+          select : {
+            chapterId: true,
+            chapterNo: true
           }
         }
       }
@@ -349,10 +348,10 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     id       : item.id,
     sourceId : item.sourceId,
     targetId : item.targetId,
-    type     : item.type,
-    weight   : item.weight,
-    chapterId: item.chapterId,
-    chapterNo: item.chapter.no
+    type     : item.relationshipTypeCode,
+    weight   : 1,
+    chapterId: item.events[0]?.chapterId ?? "",
+    chapterNo: item.events[0]?.chapterNo ?? 0
   }));
 
   // 先用 profile 作为人物主体集合。

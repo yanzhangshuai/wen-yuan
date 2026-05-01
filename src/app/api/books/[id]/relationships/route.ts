@@ -5,7 +5,7 @@
  * 文件路径：`src/app/api/books/[id]/relationships/route.ts`
  *
  * 路由职责：
- * - `GET /api/books/:id/relationships`：按条件检索书内人物关系；
+ * - `GET /api/books/:id/relationships`：按条件检索书级人物关系；
  * - `POST /api/books/:id/relationships`：手工新增一条关系。
  *
  * 在渲染链路中的位置：
@@ -13,9 +13,9 @@
  * - 不承担持久化细节，重点是参数契约、鉴权与错误语义统一。
  *
  * 关键业务规则：
- * - 所有关系必须绑定到具体书籍与章节，避免跨书污染图谱；
- * - 过滤条件（type/status/source）用于支持审核流场景下的精细检索；
- * - 手工创建关系默认高置信，这体现“人工审核优先”的业务策略。
+ * - 所有关系必须绑定到具体书籍，避免跨书污染图谱；
+ * - 过滤条件（relationshipTypeCode/status/source）用于支持审核流场景下的精细检索；
+ * - 手工创建关系默认 `MANUAL + VERIFIED`，体现“人工审核优先”的业务策略。
  * =============================================================================
  */
 import { randomUUID } from "node:crypto";
@@ -45,23 +45,18 @@ import { ERROR_CODES } from "@/types/api";
  * 查询参数校验：关系列表筛选条件。
  */
 const relationshipQuerySchema = z.object({
-  type  : z.string().trim().min(1, "关系类型不能为空").optional(),
-  status: z.nativeEnum(ProcessingStatus).optional(),
-  source: z.nativeEnum(RecordSource).optional()
+  relationshipTypeCode: z.string().trim().min(1, "关系类型不能为空").optional(),
+  status              : z.nativeEnum(ProcessingStatus).optional(),
+  source              : z.nativeEnum(RecordSource).optional()
 });
 
 /**
  * 创建关系请求体校验。
  */
 const createRelationshipBodySchema = z.object({
-  chapterId  : z.string().uuid("章节 ID 不合法"),
-  sourceId   : z.string().uuid("起点人物 ID 不合法"),
-  targetId   : z.string().uuid("终点人物 ID 不合法"),
-  type       : z.string().trim().min(1, "关系类型不能为空"),
-  weight     : z.number().positive("关系权重必须大于 0").optional(),
-  description: z.string().trim().nullable().optional(),
-  evidence   : z.string().trim().nullable().optional(),
-  confidence : z.number().min(0, "置信度不能小于 0").max(1, "置信度不能大于 1").optional()
+  sourceId            : z.string().uuid("起点人物 ID 不合法"),
+  targetId            : z.string().uuid("终点人物 ID 不合法"),
+  relationshipTypeCode: z.string().trim().min(1, "关系类型不能为空").max(64, "关系类型过长")
 });
 
 /**
@@ -123,7 +118,7 @@ function badRequestJson(requestId: string, startedAt: number, path: string, deta
 
 /**
  * 功能：读取书籍关系列表。
- * 输入：`bookId` 路由参数 + 可选查询参数 `type/status/source`。
+ * 输入：`bookId` 路由参数 + 可选查询参数 `relationshipTypeCode/status/source`。
  * 输出：统一 API 成功响应，`data` 为关系列表。
  * 异常：参数错误返回 400；书籍不存在返回 404；其余返回 500。
  * 副作用：无（只读接口）。
@@ -144,9 +139,9 @@ export async function GET(
 
     const url = new URL(request.url);
     const parsedQuery = relationshipQuerySchema.safeParse({
-      type  : url.searchParams.get("type") ?? undefined,
-      status: url.searchParams.get("status") ?? undefined,
-      source: url.searchParams.get("source") ?? undefined
+      relationshipTypeCode: url.searchParams.get("relationshipTypeCode") ?? url.searchParams.get("type") ?? undefined,
+      status              : url.searchParams.get("status") ?? undefined,
+      source              : url.searchParams.get("source") ?? undefined
     });
     if (!parsedQuery.success) {
       return badRequestJson(
@@ -184,7 +179,7 @@ export async function GET(
 
 /**
  * 功能：手动新增关系。
- * 输入：`bookId` 路由参数 + JSON body（章节、起止人物、类型等）。
+ * 输入：`bookId` 路由参数 + JSON body（起止人物、关系类型 code）。
  * 输出：统一 API 成功响应（201），`data` 为新建关系快照。
  * 异常：参数错误返回 400；书籍/人物不存在返回 404；其余返回 500。
  * 副作用：要求管理员权限，向 `relationship` 写入 `MANUAL + VERIFIED` 记录。

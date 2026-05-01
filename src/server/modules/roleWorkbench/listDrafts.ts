@@ -206,8 +206,7 @@ function buildRelationshipWhere(filter: z.infer<typeof listDraftsFilterSchema>) 
     // 这里只查询待确认草稿，已确认/已拒绝不会在工作台待处理池重复出现。
     status   : ProcessingStatus.DRAFT,
     deletedAt: null,
-    // 根据是否有 bookId，拼接不同层级的 chapter->book 过滤条件。
-    ...(filter.bookId ? { chapter: { bookId: filter.bookId, book: { deletedAt: null } } } : { chapter: { book: { deletedAt: null } } }),
+    ...(filter.bookId ? { bookId: filter.bookId, book: { deletedAt: null } } : { book: { deletedAt: null } }),
     ...(filter.source ? { recordSource: filter.source } : {})
   };
 }
@@ -291,22 +290,13 @@ export function createListDraftsService(
           where  : relationshipWhere,
           orderBy: [{ updatedAt: "desc" }],
           select : {
-            id          : true,
-            chapterId   : true,
-            type        : true,
-            weight      : true,
-            confidence  : true,
-            evidence    : true,
-            recordSource: true,
-            chapter     : {
+            id                  : true,
+            bookId              : true,
+            relationshipTypeCode: true,
+            recordSource        : true,
+            book                : {
               select: {
-                no    : true,
-                bookId: true,
-                book  : {
-                  select: {
-                    title: true
-                  }
-                }
+                title: true
               }
             },
             source: {
@@ -319,6 +309,17 @@ export function createListDraftsService(
               select: {
                 id  : true,
                 name: true
+              }
+            },
+            events: {
+              where  : { deletedAt: null },
+              orderBy: [{ chapterNo: "asc" }],
+              take   : 1,
+              select : {
+                chapterId : true,
+                chapterNo : true,
+                confidence: true,
+                evidence  : true
               }
             }
           }
@@ -382,18 +383,18 @@ export function createListDraftsService(
       })),
       relationships: relationships.map((item) => ({
         id             : item.id,
-        bookId         : item.chapter.bookId,
-        bookTitle      : item.chapter.book.title,
-        chapterId      : item.chapterId,
-        chapterNo      : item.chapter.no,
+        bookId         : item.bookId,
+        bookTitle      : item.book.title,
+        chapterId      : item.events[0]?.chapterId ?? "",
+        chapterNo      : item.events[0]?.chapterNo ?? 0,
         sourcePersonaId: item.source.id,
         sourceName     : item.source.name,
         targetPersonaId: item.target.id,
         targetName     : item.target.name,
-        type           : item.type,
-        weight         : item.weight,
-        confidence     : item.confidence,
-        evidence       : item.evidence,
+        type           : item.relationshipTypeCode,
+        weight         : 1,
+        confidence     : item.events[0]?.confidence ?? 1,
+        evidence       : item.events[0]?.evidence ?? null,
         recordSource   : item.recordSource,
         status         : ProcessingStatus.DRAFT
       })),

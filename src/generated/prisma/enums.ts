@@ -19,7 +19,8 @@ export type NameType = (typeof NameType)[keyof typeof NameType]
 
 export const RecordSource = {
   AI: 'AI',
-  MANUAL: 'MANUAL'
+  MANUAL: 'MANUAL',
+  DRAFT_AI: 'DRAFT_AI'
 } as const
 
 export type RecordSource = (typeof RecordSource)[keyof typeof RecordSource]

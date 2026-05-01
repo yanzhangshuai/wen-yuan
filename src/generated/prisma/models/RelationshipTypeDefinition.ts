@@ -582,9 +582,9 @@ export type RelationshipTypeDefinitionUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type RelationshipTypeDefinitionNullableScalarRelationFilter = {
-  is?: Prisma.RelationshipTypeDefinitionWhereInput | null
-  isNot?: Prisma.RelationshipTypeDefinitionWhereInput | null
+export type RelationshipTypeDefinitionScalarRelationFilter = {
+  is?: Prisma.RelationshipTypeDefinitionWhereInput
+  isNot?: Prisma.RelationshipTypeDefinitionWhereInput
 }
 
 export type RelationshipTypeDefinitionCountOrderByAggregateInput = {
@@ -663,12 +663,10 @@ export type RelationshipTypeDefinitionCreateNestedOneWithoutRelationshipsInput =
   connect?: Prisma.RelationshipTypeDefinitionWhereUniqueInput
 }
 
-export type RelationshipTypeDefinitionUpdateOneWithoutRelationshipsNestedInput = {
+export type RelationshipTypeDefinitionUpdateOneRequiredWithoutRelationshipsNestedInput = {
   create?: Prisma.XOR<Prisma.RelationshipTypeDefinitionCreateWithoutRelationshipsInput, Prisma.RelationshipTypeDefinitionUncheckedCreateWithoutRelationshipsInput>
   connectOrCreate?: Prisma.RelationshipTypeDefinitionCreateOrConnectWithoutRelationshipsInput
   upsert?: Prisma.RelationshipTypeDefinitionUpsertWithoutRelationshipsInput
-  disconnect?: Prisma.RelationshipTypeDefinitionWhereInput | boolean
-  delete?: Prisma.RelationshipTypeDefinitionWhereInput | boolean
   connect?: Prisma.RelationshipTypeDefinitionWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.RelationshipTypeDefinitionUpdateToOneWithWhereWithoutRelationshipsInput, Prisma.RelationshipTypeDefinitionUpdateWithoutRelationshipsInput>, Prisma.RelationshipTypeDefinitionUncheckedUpdateWithoutRelationshipsInput>
 }

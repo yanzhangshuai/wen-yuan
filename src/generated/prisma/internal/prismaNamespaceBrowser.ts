@@ -61,6 +61,7 @@ export const ModelName = {
   BiographyRecord: 'BiographyRecord',
   Mention: 'Mention',
   Relationship: 'Relationship',
+  RelationshipEvent: 'RelationshipEvent',
   AnalysisJob: 'AnalysisJob',
   ModelStrategyConfig: 'ModelStrategyConfig',
   AnalysisPhaseLog: 'AnalysisPhaseLog',
@@ -270,16 +271,11 @@ export type MentionScalarFieldEnum = (typeof MentionScalarFieldEnum)[keyof typeo
 
 export const RelationshipScalarFieldEnum = {
   id: 'id',
-  chapterId: 'chapterId',
+  bookId: 'bookId',
   sourceId: 'sourceId',
   targetId: 'targetId',
-  type: 'type',
   relationshipTypeCode: 'relationshipTypeCode',
-  weight: 'weight',
-  description: 'description',
-  evidence: 'evidence',
   recordSource: 'recordSource',
-  confidence: 'confidence',
   status: 'status',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -287,6 +283,29 @@ export const RelationshipScalarFieldEnum = {
 } as const
 
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
+
+
+export const RelationshipEventScalarFieldEnum = {
+  id: 'id',
+  relationshipId: 'relationshipId',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  sourceId: 'sourceId',
+  targetId: 'targetId',
+  summary: 'summary',
+  evidence: 'evidence',
+  attitudeTags: 'attitudeTags',
+  paraIndex: 'paraIndex',
+  confidence: 'confidence',
+  recordSource: 'recordSource',
+  status: 'status',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipEventScalarFieldEnum = (typeof RelationshipEventScalarFieldEnum)[keyof typeof RelationshipEventScalarFieldEnum]
 
 
 export const AnalysisJobScalarFieldEnum = {

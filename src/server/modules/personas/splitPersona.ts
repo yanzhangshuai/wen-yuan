@@ -218,20 +218,19 @@ export function createSplitPersonaService(
 
       const relations = await tx.relationship.findMany({
         where: {
-          chapterId: { in: chapterIds },
           deletedAt: null,
+          events   : { some: { chapterId: { in: chapterIds }, deletedAt: null } },
           OR       : [
             { sourceId: sourcePersona.id },
             { targetId: sourcePersona.id }
           ]
         },
         select: {
-          id          : true,
-          chapterId   : true,
-          sourceId    : true,
-          targetId    : true,
-          type        : true,
-          recordSource: true
+          id                  : true,
+          bookId              : true,
+          sourceId            : true,
+          targetId            : true,
+          relationshipTypeCode: true
         }
       });
 
@@ -257,13 +256,12 @@ export function createSplitPersonaService(
 
         const duplicated = await tx.relationship.findFirst({
           where: {
-            id          : { not: relation.id },
-            deletedAt   : null,
-            chapterId   : relation.chapterId,
-            sourceId    : nextSourceId,
-            targetId    : nextTargetId,
-            type        : relation.type,
-            recordSource: relation.recordSource
+            id                  : { not: relation.id },
+            deletedAt           : null,
+            bookId              : relation.bookId,
+            sourceId            : nextSourceId,
+            targetId            : nextTargetId,
+            relationshipTypeCode: relation.relationshipTypeCode
           },
           select: { id: true }
         });
@@ -281,6 +279,13 @@ export function createSplitPersonaService(
 
         await tx.relationship.update({
           where: { id: relation.id },
+          data : {
+            sourceId: nextSourceId,
+            targetId: nextTargetId
+          }
+        });
+        await tx.relationshipEvent.updateMany({
+          where: { relationshipId: relation.id, deletedAt: null },
           data : {
             sourceId: nextSourceId,
             targetId: nextTargetId

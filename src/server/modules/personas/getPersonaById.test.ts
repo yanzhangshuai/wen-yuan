@@ -64,22 +64,23 @@ describe("getPersonaById service", () => {
       relationship: {
         findMany: vi.fn().mockResolvedValue([
           {
-            id          : "rel-1",
-            chapterId   : "chapter-1",
-            type        : "师生",
-            weight      : 1.2,
-            evidence    : "原文证据",
-            recordSource: RecordSource.AI,
-            status      : ProcessingStatus.DRAFT,
-            sourceId    : "persona-1",
-            targetId    : "persona-2",
-            source      : { id: "persona-1", name: "周进" },
-            target      : { id: "persona-2", name: "范进" },
-            chapter     : {
-              no    : 1,
-              bookId: "book-1",
-              book  : { title: "儒林外史" }
-            }
+            id                  : "rel-1",
+            bookId              : "book-1",
+            relationshipTypeCode: "师生",
+            recordSource        : RecordSource.AI,
+            status              : ProcessingStatus.DRAFT,
+            sourceId            : "persona-1",
+            targetId            : "persona-2",
+            book                : { title: "儒林外史" },
+            source              : { id: "persona-1", name: "周进" },
+            target              : { id: "persona-2", name: "范进" },
+            events              : [
+              {
+                chapterId: "chapter-1",
+                chapterNo: 1,
+                evidence : "原文证据"
+              }
+            ]
           }
         ])
       }
