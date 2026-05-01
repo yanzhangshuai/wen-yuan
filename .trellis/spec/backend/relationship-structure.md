@@ -258,6 +258,91 @@ await tx.relationshipEvent.createMany({
 
 #### Wrong
 
+---
+
+## Scenario: Persona Merge and Full Reanalysis Cleanup
+
+### 1. Scope / Trigger
+
+- Trigger: `mergePersonas(targetId, sourceId)` 需要把 loser 相关的结构关系与关系事件重定向到 winner；`startBookAnalysis(bookId, options)` 在全量重跑前需要清理旧草稿关系。
+- 涉及层级：`src/server/modules/personas/mergePersonas.ts`、`src/server/modules/books/startBookAnalysis.ts`、对应单测。
+
+### 2. Signatures
+
+```ts
+mergePersonas({ targetId, sourceId }): {
+  sourceId: string;
+  targetId: string;
+  redirectedRelationships: number;
+  rejectedRelationships: number;
+  redirectedRelationshipEvents: number;
+  redirectedBiographyCount: number;
+  redirectedMentionCount: number;
+}
+
+startBookAnalysis(bookId, input?): Promise<StartBookAnalysisResult>
+```
+
+### 3. Contracts
+
+- `Relationship` 以 `(bookId, sourceId, targetId, relationshipTypeCode)` 作为 active 唯一键语义。
+- `RelationshipEvent` 是关系事件的唯一承载层，迁移时必须同步更新 `relationshipId/sourceId/targetId`。
+- `RecordSource` 只允许单调升级：`DRAFT_AI -> AI -> MANUAL`。
+- `mergePersonas` 合并同名边时，优先保留更高 `recordSource`；同级时保留 `id` 字典序更小者。
+- `startBookAnalysis` 只在全量重跑时硬删除该书的 `DRAFT_AI` `RelationshipEvent` 与 `Relationship`，且必须与创建 `AnalysisJob` 处于同一事务。
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+| --- | --- |
+| `sourceId === targetId` | Throw `PersonaMergeInputError` |
+| 合并后 source/target 相同 | 软删关系并软删 active events |
+| `directionMode === "SYMMETRIC"` | 合并后按 UUID 字符串顺序 canonicalize |
+| 唯一键冲突 | 按 `recordSource` 与 `id` 规则决定保留者 |
+| 全量重跑 | 先清 `DRAFT_AI` 草稿，再创建 `AnalysisJob` |
+| 章节子集重跑 | 不清草稿 |
+
+### 5. Good/Base/Bad Cases
+
+- Good: loser 的关系事件全部迁到 winner，事件冗余端点与关系端点一致。
+- Base: 对称关系在重定向后仍保持“小者在前”的 canonical 顺序。
+- Bad: 把 `summary`、`evidence`、`confidence` 写进 `Relationship`；或在部分重跑时误删非草稿关系。
+
+### 6. Tests Required
+
+- `mergePersonas.test.ts`
+  - 普通迁移更新关系与事件端点。
+  - 自环软删关系并软删事件。
+  - 对称关系重新 canonicalize。
+  - 冲突按 `recordSource` 和 `id` 合并。
+- `startBookAnalysis.test.ts`
+  - 全量重跑清理 `DRAFT_AI` 关系与事件。
+  - 章节子集不清理。
+  - 清理失败回滚且不创建 `AnalysisJob`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+await tx.relationship.deleteMany({ where: { bookId } });
+await tx.analysisJob.create(...);
+```
+
+#### Correct
+
+```ts
+await tx.$transaction(async (tx) => {
+  await tx.relationshipEvent.deleteMany({
+    where: { bookId, recordSource: RecordSource.DRAFT_AI }
+  });
+  await tx.relationship.deleteMany({
+    where: { bookId, recordSource: RecordSource.DRAFT_AI }
+  });
+  await tx.analysisJob.create(...);
+});
+```
+
 ```ts
 // Event-only output creates a structure relationship implicitly.
 if (!relationshipId) {

@@ -1,1 +1,10 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "关系结构与关系事件迁移契约"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma事务与批量写入规范"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Vitest和mock规范"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "类型安全规范"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "后端质量门禁"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "全局代码质量"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "Zod和类型推导规范"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层一致性检查"}

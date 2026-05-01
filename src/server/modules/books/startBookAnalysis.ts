@@ -17,7 +17,7 @@
  * - 因此“scope 与章节参数匹配关系”是业务规则，不是技术实现细节。
  * =============================================================================
  */
-import { AnalysisJobStatus } from "@/generated/prisma/enums";
+import { AnalysisJobStatus, RecordSource } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
@@ -276,6 +276,21 @@ export function createStartBookAnalysisService(
     }
 
     const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
+      if (scope === "FULL_BOOK") {
+        await tx.relationshipEvent.deleteMany({
+          where: {
+            bookId      : book.id,
+            recordSource: RecordSource.DRAFT_AI
+          }
+        });
+        await tx.relationship.deleteMany({
+          where: {
+            bookId      : book.id,
+            recordSource: RecordSource.DRAFT_AI
+          }
+        });
+      }
+
       const createdJob = await tx.analysisJob.create({
         data: {
           bookId      : book.id,

@@ -8,7 +8,7 @@
  * - 降低重构时误改核心规则的风险。
  */
 
-import { AnalysisJobStatus } from "@/generated/prisma/enums";
+import { AnalysisJobStatus, RecordSource } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -24,7 +24,9 @@ function createMockPrisma() {
   const tx = {
     analysisJob        : { create: vi.fn() },
     modelStrategyConfig: { create: vi.fn() },
-    book               : { update: bookUpdate }
+    book               : { update: bookUpdate },
+    relationshipEvent  : { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    relationship       : { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) }
   };
 
   const prisma = {
@@ -32,7 +34,9 @@ function createMockPrisma() {
     chapter            : { count: vi.fn() },
     $transaction       : vi.fn(async (callback: (input: typeof tx) => Promise<unknown>) => callback(tx)),
     analysisJob        : { create: tx.analysisJob.create, findFirst: analysisJobFindFirst },
-    modelStrategyConfig: tx.modelStrategyConfig
+    modelStrategyConfig: tx.modelStrategyConfig,
+    relationshipEvent  : tx.relationshipEvent,
+    relationship       : tx.relationship
   };
 
   return { prisma, tx, analysisJobFindFirst };
@@ -81,6 +85,18 @@ describe("startBookAnalysis", () => {
         keepHistory     : false
       })
     }));
+    expect(tx.relationshipEvent.deleteMany).toHaveBeenCalledWith({
+      where: {
+        bookId      : "book-1",
+        recordSource: RecordSource.DRAFT_AI
+      }
+    });
+    expect(tx.relationship.deleteMany).toHaveBeenCalledWith({
+      where: {
+        bookId      : "book-1",
+        recordSource: RecordSource.DRAFT_AI
+      }
+    });
     expect(tx.modelStrategyConfig.create).not.toHaveBeenCalled();
     expect(tx.book.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "book-1" },
@@ -264,6 +280,8 @@ describe("startBookAnalysis", () => {
     }));
     expect(result.chapterIndices).toEqual([1, 3, 5]);
     expect(result.scope).toBe("CHAPTER_LIST");
+    expect(tx.relationshipEvent.deleteMany).not.toHaveBeenCalled();
+    expect(tx.relationship.deleteMany).not.toHaveBeenCalled();
   });
 
   it("creates CHAPTER_RANGE analysis job with override strategy and keepHistory", async () => {
@@ -313,6 +331,38 @@ describe("startBookAnalysis", () => {
       overrideStrategy: "ALL_DRAFTS",
       keepHistory     : true
     }));
+    expect(tx.relationshipEvent.deleteMany).not.toHaveBeenCalled();
+    expect(tx.relationship.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("does not create job when full reanalysis draft cleanup fails", async () => {
+    const { prisma, tx } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(12);
+    tx.analysisJob.create.mockResolvedValue({
+      id              : "job-should-not-create",
+      status          : AnalysisJobStatus.QUEUED,
+      architecture    : "sequential",
+      scope           : "FULL_BOOK",
+      chapterStart    : null,
+      chapterEnd      : null,
+      chapterIndices  : [],
+      overrideStrategy: "DRAFT_ONLY",
+      keepHistory     : false
+    });
+    tx.book.update.mockResolvedValue({
+      status       : "PROCESSING",
+      parseProgress: 0,
+      parseStage   : "文本清洗"
+    });
+    tx.relationshipEvent.deleteMany.mockRejectedValue(new Error("cleanup failed"));
+
+    const service = createStartBookAnalysisService(prisma as never);
+
+    await expect(service.startBookAnalysis("book-1")).rejects.toThrow("cleanup failed");
+    expect(tx.relationship.deleteMany).not.toHaveBeenCalled();
+    expect(tx.analysisJob.create).not.toHaveBeenCalled();
+    expect(tx.book.update).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

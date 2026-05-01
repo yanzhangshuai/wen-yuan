@@ -17,7 +17,7 @@
  * - 该模块涉及多实体事务与冲突策略，改动前需验证“无自环、无重复边、无孤儿引用”。
  * =============================================================================
  */
-import { ProcessingStatus } from "@/generated/prisma/enums";
+import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
@@ -37,17 +37,19 @@ export interface MergePersonasInput {
  */
 export interface MergePersonasResult {
   /** 源人物 ID。 */
-  sourceId                : string;
+  sourceId                    : string;
   /** 目标人物 ID。 */
-  targetId                : string;
+  targetId                    : string;
   /** 被重定向的关系数量。 */
-  redirectedRelationships : number;
+  redirectedRelationships     : number;
   /** 因冲突被拒绝的关系数量。 */
-  rejectedRelationships   : number;
+  rejectedRelationships       : number;
+  /** 被重定向的关系事件数量。 */
+  redirectedRelationshipEvents: number;
   /** 被重定向的传记事件数量。 */
-  redirectedBiographyCount: number;
+  redirectedBiographyCount    : number;
   /** 被重定向的 mention 数量。 */
-  redirectedMentionCount  : number;
+  redirectedMentionCount      : number;
 }
 
 /**
@@ -80,6 +82,35 @@ function normalizeAliases(input: string[]): string[] {
   }
 
   return result;
+}
+
+const RECORD_SOURCE_RANK: Record<RecordSource, number> = {
+  [RecordSource.DRAFT_AI]: 1,
+  [RecordSource.AI]      : 2,
+  [RecordSource.MANUAL]  : 3
+};
+
+interface MergeableRelationship {
+  id                  : string;
+  bookId              : string;
+  sourceId            : string;
+  targetId            : string;
+  relationshipTypeCode: string;
+  recordSource        : RecordSource;
+}
+
+function shouldKeepFirstRelationship(
+  first: Pick<MergeableRelationship, "id" | "recordSource">,
+  second: Pick<MergeableRelationship, "id" | "recordSource">
+): boolean {
+  const firstRank = RECORD_SOURCE_RANK[first.recordSource];
+  const secondRank = RECORD_SOURCE_RANK[second.recordSource];
+
+  if (firstRank !== secondRank) {
+    return firstRank > secondRank;
+  }
+
+  return first.id < second.id;
 }
 
 export function createMergePersonasService(
@@ -159,16 +190,26 @@ export function createMergePersonasService(
           bookId              : true,
           sourceId            : true,
           targetId            : true,
-          relationshipTypeCode: true
+          relationshipTypeCode: true,
+          recordSource        : true
         }
       });
+      const symmetricRelationshipTypes = await tx.relationshipTypeDefinition.findMany({
+        where: {
+          directionMode: "SYMMETRIC",
+          status       : "ACTIVE"
+        },
+        select: { code: true }
+      });
+      const symmetricTypeCodes = new Set(symmetricRelationshipTypes.map((item) => item.code));
 
       let redirectedRelationships = 0;
       let rejectedRelationships = 0;
+      let redirectedRelationshipEvents = 0;
 
       for (const relation of relations) {
-        const nextSourceId = relation.sourceId === sourcePersona.id ? targetPersona.id : relation.sourceId;
-        const nextTargetId = relation.targetId === sourcePersona.id ? targetPersona.id : relation.targetId;
+        let nextSourceId = relation.sourceId === sourcePersona.id ? targetPersona.id : relation.sourceId;
+        let nextTargetId = relation.targetId === sourcePersona.id ? targetPersona.id : relation.targetId;
 
         if (nextSourceId === nextTargetId) {
           await tx.relationship.update({
@@ -178,8 +219,16 @@ export function createMergePersonasService(
               deletedAt: now
             }
           });
+          await tx.relationshipEvent.updateMany({
+            where: { relationshipId: relation.id, deletedAt: null },
+            data : { deletedAt: now }
+          });
           rejectedRelationships += 1;
           continue;
+        }
+
+        if (symmetricTypeCodes.has(relation.relationshipTypeCode) && nextSourceId > nextTargetId) {
+          [nextSourceId, nextTargetId] = [nextTargetId, nextSourceId];
         }
 
         const duplicated = await tx.relationship.findFirst({
@@ -191,17 +240,54 @@ export function createMergePersonasService(
             targetId            : nextTargetId,
             relationshipTypeCode: relation.relationshipTypeCode
           },
-          select: { id: true }
+          select: {
+            id          : true,
+            recordSource: true
+          }
         });
 
         if (duplicated) {
+          const keepCurrentRelation = shouldKeepFirstRelationship(relation, duplicated);
+          const keptRelationshipId = keepCurrentRelation ? relation.id : duplicated.id;
+          const rejectedRelationshipId = keepCurrentRelation ? duplicated.id : relation.id;
+
+          const movedEvents = await tx.relationshipEvent.updateMany({
+            where: { relationshipId: rejectedRelationshipId, deletedAt: null },
+            data : {
+              relationshipId: keptRelationshipId,
+              sourceId      : nextSourceId,
+              targetId      : nextTargetId
+            }
+          });
+          redirectedRelationshipEvents += movedEvents.count;
+
           await tx.relationship.update({
-            where: { id: relation.id },
+            where: { id: rejectedRelationshipId },
             data : {
               status   : ProcessingStatus.REJECTED,
               deletedAt: now
             }
           });
+
+          if (keepCurrentRelation) {
+            await tx.relationship.update({
+              where: { id: relation.id },
+              data : {
+                sourceId: nextSourceId,
+                targetId: nextTargetId
+              }
+            });
+            const redirectedEvents = await tx.relationshipEvent.updateMany({
+              where: { relationshipId: relation.id, deletedAt: null },
+              data : {
+                sourceId: nextSourceId,
+                targetId: nextTargetId
+              }
+            });
+            redirectedRelationshipEvents += redirectedEvents.count;
+            redirectedRelationships += 1;
+          }
+
           rejectedRelationships += 1;
           continue;
         }
@@ -214,16 +300,27 @@ export function createMergePersonasService(
               targetId: nextTargetId
             }
           });
-          await tx.relationshipEvent.updateMany({
+          const redirectedEvents = await tx.relationshipEvent.updateMany({
             where: { relationshipId: relation.id, deletedAt: null },
             data : {
               sourceId: nextSourceId,
               targetId: nextTargetId
             }
           });
+          redirectedRelationshipEvents += redirectedEvents.count;
           redirectedRelationships += 1;
         }
       }
+
+      const redirectedSourceEvents = await tx.relationshipEvent.updateMany({
+        where: { sourceId: sourcePersona.id, deletedAt: null },
+        data : { sourceId: targetPersona.id }
+      });
+      const redirectedTargetEvents = await tx.relationshipEvent.updateMany({
+        where: { targetId: sourcePersona.id, deletedAt: null },
+        data : { targetId: targetPersona.id }
+      });
+      redirectedRelationshipEvents += redirectedSourceEvents.count + redirectedTargetEvents.count;
 
       await tx.persona.update({
         where: { id: targetPersona.id },
@@ -247,6 +344,7 @@ export function createMergePersonasService(
         targetId                : targetPersona.id,
         redirectedRelationships,
         rejectedRelationships,
+        redirectedRelationshipEvents,
         redirectedBiographyCount: biographyUpdated.count,
         redirectedMentionCount  : mentionUpdated.count
       };
