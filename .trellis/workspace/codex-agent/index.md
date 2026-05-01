@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 10
-- **Last Active**: 2026-04-30
+- **Total Sessions**: 11
+- **Last Active**: 2026-05-01
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~575 | Active |
+| `journal-1.md` | ~609 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 11 | 2026-05-01 | 关系结构 schema 改造 | `6ccbd67`, `bf82d4e` | `dev_3` |
 | 10 | 2026-04-30 | Finish role-centric-review | - | `dev_3` |
 | 9 | 2026-04-16 | 知识库模型生成、批量操作 UI 与 Prompt 规则链路修复归档 | `45ede02`, `e074d28`, `edc7264`, `ebeddc6` | `dev` |
 | 8 | 2026-04-16 | 技术债清理：移除僵尸脚本与 ExtractionRule 残留 | `c9bff4f` | `dev` |

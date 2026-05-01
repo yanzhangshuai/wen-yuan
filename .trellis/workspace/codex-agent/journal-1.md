@@ -573,3 +573,37 @@ Archived 04-29-role-centric-review after role-centric review workbench refactor,
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 关系结构 schema 改造
+
+**Date**: 2026-05-01
+**Task**: 关系结构 schema 改造
+**Branch**: `dev_3`
+
+### Summary
+
+完成 Relationship/RelationshipEvent schema 拆分、服务/API/client 同步、测试验证与关系结构规范沉淀
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ccbd67` | (see git log) |
+| `bf82d4e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
