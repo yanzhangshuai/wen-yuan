@@ -1,1 +1,12 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引，确认本任务相关的 API、数据库、测试与质量规范入口。"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "Pair 聚合 API 必须遵守 Relationship / RelationshipEvent 分层与查询契约。"}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "新增 Route Handler 必须返回统一 API envelope。"}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "新增 Next.js route.ts 需要遵守鉴权、路径参数校验和错误映射规范。"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "新增 service、route、client 测试需要遵守 Vitest 与 mock 约定。"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 查询与避免 N+1 的数据库访问约束。"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "共享类型、service 显式返回类型与依赖注入模式约束。"}
+{"file": ".trellis/spec/backend/security-guidelines.md", "reason": "接口登录态访问和输入校验必须先于业务逻辑。"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "全局最小修改、可读性、禁止 any/非空断言和 import 顺序约束。"}
+{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "URL 参数作为外部输入需使用 Zod 校验并推导类型。"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "新增导出函数和测试需要补充有价值的业务注释。"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "该任务跨 API、service、DB 与客户端类型，需要显式检查边界契约。"}

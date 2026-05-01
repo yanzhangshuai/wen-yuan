@@ -1,1 +1,10 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "检查 Pair 聚合实现是否遵守 Relationship / RelationshipEvent 分层、排序和 N+1 约束。"}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "检查新增 API 是否使用统一 success/error envelope。"}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "检查 route 鉴权、Zod 校验、错误映射和 params await 约定。"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "检查 Vitest mock、route handler 测试和覆盖关键分支。"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "最终质量门禁、覆盖率和交付前验证清单。"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "检查跨层共享类型、service 返回类型和禁止类型捷径。"}
+{"file": ".trellis/spec/backend/security-guidelines.md", "reason": "检查登录态访问和外部输入校验是否在业务逻辑之前。"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "检查可读性、最小修改、禁止 any/非空断言、import 顺序。"}
+{"file": ".trellis/spec/guides/comment-guidelines.md", "reason": "检查新增导出函数、复杂分支和测试注释是否足够。"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "检查 API/service/DB/client 边界是否存在契约漂移。"}

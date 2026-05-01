@@ -367,3 +367,97 @@ relationshipEventData.push({
 ```
 
 This keeps AI structure claims and chapter evidence separate, while preventing event hallucinations from creating book-level facts.
+
+---
+
+## Scenario: Persona Pair Aggregation API
+
+### 1. Scope / Trigger
+
+- Trigger: 前端 Pair 详情面板需要一次读取两个人物之间的结构关系，以及每条关系下的章节级事件。
+- 涉及层级：`src/server/modules/relationships/getPersonaPair.ts`、`src/app/api/persona-pairs/[bookId]/[aId]/[bId]/route.ts`、`src/lib/services/persona-pairs.ts`、`src/types/persona-pair.ts`。
+
+### 2. Signatures
+
+```ts
+GET /api/persona-pairs/:bookId/:aId/:bId
+
+getPersonaPair({
+  bookId: string;
+  aId: string;
+  bId: string;
+}): Promise<PersonaPairResponse>
+```
+
+### 3. Contracts
+
+- Route 只接受路径参数；无 body、无 query。
+- 登录态即可访问；未登录返回 401。
+- `personas` 返回 `[a, b]` 顺序的人物快照；当前 `Persona` 无 `portraitUrl` 列时输出 `null`。
+- `relationships` 必须覆盖 `a -> b` 与 `b -> a` 两个方向的 active 结构关系。
+- 每条关系的 `events` 只包含 active `RelationshipEvent`，并附带章节标题。
+- `status` 使用项目真实 `ProcessingStatus`：`DRAFT | VERIFIED | REJECTED`；不要引入不存在的 `PENDING`。
+- `relationshipType.inverseLabel` 映射自 `RelationshipTypeDefinition.reverseEdgeLabel`。
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+| --- | --- |
+| 任一路径参数不是 UUID | 400 `BAD_REQUEST` |
+| `aId === bId` | 400 `BAD_REQUEST` |
+| 未登录 | 401 `UNAUTHORIZED` |
+| 书籍不存在或软删 | 404 `BOOK_NOT_FOUND` |
+| 任一人物不存在或软删 | 404 `PERSONA_NOT_FOUND` |
+
+### 5. Good/Base/Bad Cases
+
+- Good: 同一 pair 有多条不同 type 的结构关系，每条关系都一次性带回按章节排序的事件。
+- Base: pair 没有 active 关系时仍返回 200，且 `relationships: []`。
+- Bad: 在 service 中按关系循环查询事件；这会重新引入 N+1。
+
+### 6. Tests Required
+
+- Service tests:
+  - 双向关系均返回。
+  - 软删关系/事件被过滤。
+  - `firstChapterNo`、`lastChapterNo`、`eventCount` 从 active events 计算。
+  - 关系按 `relationshipTypeCode` 排序，事件按 `chapterNo`、`paraIndex`、`createdAt` 排序。
+- Route tests:
+  - 200、401、400、404 映射稳定。
+- Client tests:
+  - `bookId/aId/bId` 必须 `encodeURIComponent` 后拼接。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const relationships = await prisma.relationship.findMany({ where });
+for (const relationship of relationships) {
+  relationship.events = await prisma.relationshipEvent.findMany({
+    where: { relationshipId: relationship.id }
+  });
+}
+```
+
+#### Correct
+
+```ts
+await prisma.relationship.findMany({
+  where: {
+    bookId,
+    deletedAt: null,
+    OR: [
+      { sourceId: aId, targetId: bId },
+      { sourceId: bId, targetId: aId }
+    ]
+  },
+  include: {
+    relationshipType: true,
+    events: {
+      where: { deletedAt: null },
+      include: { chapter: { select: { id: true, no: true, title: true } } }
+    }
+  }
+});
+```
