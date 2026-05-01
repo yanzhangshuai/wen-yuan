@@ -641,3 +641,37 @@ Archived 04-29-role-centric-review after role-centric review workbench refactor,
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: relation merge and reanalyze
+
+**Date**: 2026-05-01
+**Task**: relation merge and reanalyze
+**Branch**: `dev_3`
+
+### Summary
+
+Implemented relation merge cleanup and full reanalysis cleanup, then archived the task.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b757524` | (see git log) |
+| `432beba` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

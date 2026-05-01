@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 12
+- **Total Sessions**: 13
 - **Last Active**: 2026-05-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~643 | Active |
+| `journal-1.md` | ~677 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 13 | 2026-05-01 | relation merge and reanalyze | `b757524`, `432beba` | `dev_3` |
 | 12 | 2026-05-01 | 完成 AI 关系事件写入协议 | `59829ae`, `4942b89` | `dev_3` |
 | 11 | 2026-05-01 | 关系结构 schema 改造 | `6ccbd67`, `bf82d4e` | `dev_3` |
 | 10 | 2026-04-30 | Finish role-centric-review | - | `dev_3` |
