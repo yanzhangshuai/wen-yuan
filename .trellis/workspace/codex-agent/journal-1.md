@@ -607,3 +607,37 @@ Archived 04-29-role-centric-review after role-centric review workbench refactor,
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: 完成 AI 关系事件写入协议
+
+**Date**: 2026-05-01
+**Task**: 完成 AI 关系事件写入协议
+**Branch**: `dev_3`
+
+### Summary
+
+升级章节分析 Prompt 与 AI 输出 schema，按关系类型字典写入 Relationship/RelationshipEvent 草稿，补充回归测试与关系结构规范。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `59829ae` | (see git log) |
+| `4942b89` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
