@@ -228,6 +228,9 @@ describe("merge suggestions service", () => {
         findFirst,
         update  : relationshipUpdate
       },
+      relationshipEvent: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
+      },
       persona: {
         update: personaUpdate
       }

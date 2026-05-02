@@ -64,19 +64,15 @@ describe("parseChapterAnalysisResponse", () => {
         ],
         relationships: [
           {
-            sourceName : "胡屠户",
-            targetName : "范进",
-            type       : "姻亲",
-            weight     : 0.8,
-            description: "态度明显转变",
-            evidence   : "胡屠户在范进中举后态度骤变"
+            sourceName          : "胡屠户",
+            targetName          : "范进",
+            relationshipTypeCode: "姻亲",
+            evidence            : "胡屠户在范进中举后态度骤变"
           },
           {
-            sourceName : "张静斋",
-            targetName : "范进",
-            type       : "结交",
-            weight     : "heavy",
-            description: 0
+            sourceName          : "张静斋",
+            targetName          : "范进",
+            relationshipTypeCode: "结交"
           },
           {
             sourceName: "无效关系",
@@ -114,22 +110,19 @@ describe("parseChapterAnalysisResponse", () => {
       ],
       relationships: [
         {
-          sourceName : "胡屠户",
-          targetName : "范进",
-          type       : "姻亲",
-          weight     : 0.8,
-          description: "态度明显转变",
-          evidence   : "胡屠户在范进中举后态度骤变"
+          sourceName          : "胡屠户",
+          targetName          : "范进",
+          relationshipTypeCode: "姻亲",
+          evidence            : "胡屠户在范进中举后态度骤变"
         },
         {
-          sourceName : "张静斋",
-          targetName : "范进",
-          type       : "结交",
-          weight     : undefined,
-          description: undefined,
-          evidence   : undefined
+          sourceName          : "张静斋",
+          targetName          : "范进",
+          relationshipTypeCode: "结交",
+          evidence            : undefined
         }
-      ]
+      ],
+      relationshipEvents: []
     });
   });
 
@@ -144,9 +137,10 @@ describe("parseChapterAnalysisResponse", () => {
     );
 
     expect(result).toEqual({
-      biographies  : [],
-      mentions     : [],
-      relationships: []
+      biographies       : [],
+      mentions          : [],
+      relationships     : [],
+      relationshipEvents: []
     });
   });
 

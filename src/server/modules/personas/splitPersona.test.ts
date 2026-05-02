@@ -131,32 +131,32 @@ describe("splitPersona", () => {
       relationship: {
         findMany: vi.fn().mockResolvedValue([
           {
-            id          : "rel-self-loop",
-            chapterId   : "chapter-1",
-            sourceId    : "source-persona",
-            targetId    : "source-persona",
-            type        : "师生",
-            recordSource: "AI"
+            id                  : "rel-self-loop",
+            bookId              : "book-1",
+            sourceId            : "source-persona",
+            targetId            : "source-persona",
+            relationshipTypeCode: "师生"
           },
           {
-            id          : "rel-dup",
-            chapterId   : "chapter-1",
-            sourceId    : "source-persona",
-            targetId    : "other-persona",
-            type        : "同僚",
-            recordSource: "AI"
+            id                  : "rel-dup",
+            bookId              : "book-1",
+            sourceId            : "source-persona",
+            targetId            : "other-persona",
+            relationshipTypeCode: "同僚"
           },
           {
-            id          : "rel-update",
-            chapterId   : "chapter-2",
-            sourceId    : "source-persona",
-            targetId    : "third-persona",
-            type        : "友好",
-            recordSource: "AI"
+            id                  : "rel-update",
+            bookId              : "book-1",
+            sourceId            : "source-persona",
+            targetId            : "third-persona",
+            relationshipTypeCode: "友好"
           }
         ]),
         findFirst: relationshipFindFirst,
         update   : relationshipUpdate
+      },
+      relationshipEvent: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
       }
     }));
     const service = createSplitPersonaService({
@@ -265,6 +265,9 @@ describe("splitPersona", () => {
         findMany : relationshipFindMany,
         findFirst: vi.fn(),
         update   : vi.fn()
+      },
+      relationshipEvent: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 })
       }
     }));
     const service = createSplitPersonaService({
@@ -310,7 +313,7 @@ describe("splitPersona", () => {
     }));
     expect(relationshipFindMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
-        chapterId: { in: ["chapter-1", "chapter-3"] }
+        events: { some: { chapterId: { in: ["chapter-1", "chapter-3"] }, deletedAt: null } }
       })
     }));
   });
