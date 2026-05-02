@@ -24,6 +24,7 @@ import {
 } from "@/components/graph";
 import { GraphPageHeader } from "@/components/graph/graph-page-header";
 import { GraphLegend } from "@/components/graph/graph-legend";
+import { PersonaPairDrawer } from "@/components/relations/persona-pair-drawer";
 import { getEdgeTypeColorsForTheme } from "@/theme";
 import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
 import { toast } from "sonner";
@@ -247,6 +248,7 @@ export function GraphView({
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ node: GraphNode; position: { x: number; y: number } } | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<GraphEdge | null>(null);
+  const [pairDrawer, setPairDrawer] = useState<{ aId: string; bId: string } | null>(null);
 
   // 工具栏状态：筛选条件、布局模式、路径高亮（节点 + 边）集合。
   const [filter, setFilter] = useState<GraphFilter>({
@@ -353,6 +355,10 @@ export function GraphView({
   function handleNodeClick(node: GraphNode) {
     openPersonaDetail(node.id);
     setContextMenu(null);
+  }
+
+  function openPersonaPair(aId: string, bId: string) {
+    setPairDrawer({ aId, bId });
   }
 
   /**
@@ -674,6 +680,7 @@ export function GraphView({
           onNodeDoubleClick={handleNodeDoubleClick}
           onNodeRightClick={handleNodeRightClick}
           onEdgeHover={setHoveredEdge}
+          onEdgeClick={(_pairKey, sourceId, targetId) => openPersonaPair(sourceId, targetId)}
           onBackgroundClick={handleBackgroundClick}
           highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
           highlightPathEdgeIds={highlightPathEdgeIds.size > 0 ? highlightPathEdgeIds : undefined}
@@ -728,6 +735,7 @@ export function GraphView({
               bookId={bookId}
               onClose={() => setSelectedPersona(null)}
               onEvidenceClick={handleEvidenceClick}
+              onPairClick={openPersonaPair}
               onEditClick={(id) => {
                 void id; // Phase 4: inline editing
               }}
@@ -785,6 +793,18 @@ export function GraphView({
             />
           </Suspense>
         </AsyncErrorBoundary>
+      )}
+      {pairDrawer && (
+        <PersonaPairDrawer
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setPairDrawer(null);
+          }}
+          bookId={bookId}
+          aId={pairDrawer.aId}
+          bId={pairDrawer.bId}
+          role="viewer"
+        />
       )}
       </div>
     </div>

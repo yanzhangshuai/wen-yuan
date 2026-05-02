@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import {
   X,
   MapPin,
@@ -12,7 +12,7 @@ import {
   Edit3
 } from "lucide-react";
 
-import type { PersonaDetail, ProcessingStatus } from "@/types/graph";
+import type { PersonaDetail, PersonaRelation, ProcessingStatus } from "@/types/graph";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -72,6 +72,16 @@ export interface PersonaDetailPanelProps {
    * 仅暴露 `personaId`，由上层决定跳转路由/权限校验，避免详情面板耦合业务流程。
    */
   onEditClick?: (personaId: string) => void;
+  /** 点击人物 Pair 汇总入口，通常由上层打开 Pair 抽屉。 */
+  onPairClick?: (aId: string, bId: string) => void;
+}
+
+interface PersonaPairSummary {
+  counterpartId  : string;
+  counterpartName: string;
+  typeCount      : number;
+  totalEvents    : number;
+  relationshipIds: string[];
 }
 
 /* ------------------------------------------------
@@ -111,6 +121,48 @@ const BIO_CATEGORY_LABELS: Record<string, string> = {
   EVENT : "事件"
 };
 
+function buildPairSummaries(relationships: PersonaRelation[]): PersonaPairSummary[] {
+  const byCounterpart = new Map<string, {
+    counterpartId  : string;
+    counterpartName: string;
+    typeLabels     : Set<string>;
+    totalEvents    : number;
+    relationshipIds: string[];
+  }>();
+
+  for (const relationship of relationships) {
+    const current = byCounterpart.get(relationship.counterpartId);
+    if (current) {
+      current.typeLabels.add(relationship.type);
+      current.totalEvents += relationship.eventCount ?? 0;
+      current.relationshipIds.push(relationship.id);
+      continue;
+    }
+
+    byCounterpart.set(relationship.counterpartId, {
+      counterpartId  : relationship.counterpartId,
+      counterpartName: relationship.counterpartName,
+      typeLabels     : new Set([relationship.type]),
+      totalEvents    : relationship.eventCount ?? 0,
+      relationshipIds: [relationship.id]
+    });
+  }
+
+  return Array.from(byCounterpart.values())
+    .map(pair => ({
+      counterpartId  : pair.counterpartId,
+      counterpartName: pair.counterpartName,
+      typeCount      : pair.typeLabels.size,
+      totalEvents    : pair.totalEvents,
+      relationshipIds: pair.relationshipIds
+    }))
+    .sort((left, right) => {
+      if (left.totalEvents !== right.totalEvents) return right.totalEvents - left.totalEvents;
+      if (left.typeCount !== right.typeCount) return right.typeCount - left.typeCount;
+      return left.counterpartName.localeCompare(right.counterpartName, "zh-Hans-CN");
+    });
+}
+
 /* ------------------------------------------------
    Component
    ------------------------------------------------ */
@@ -119,7 +171,8 @@ export function PersonaDetailPanel({
   bookId,
   onClose,
   onEvidenceClick,
-  onEditClick
+  onEditClick,
+  onPairClick
 }: PersonaDetailPanelProps) {
   /**
    * 直接消费 Promise（React 19 `use`）。
@@ -138,6 +191,10 @@ export function PersonaDetailPanel({
   const bookRelationships = persona?.relationships
     .filter(r => r.bookId === bookId)
     .filter(r => !activeRelTypeFilter || r.type === activeRelTypeFilter) ?? [];
+
+  const pairSummaries = useMemo(() => {
+    return buildPairSummaries(persona.relationships.filter(r => r.bookId === bookId));
+  }, [bookId, persona.relationships]);
 
   /** 当前书籍范围内的时间轴事件。 */
   const bookTimeline = persona?.timeline
@@ -326,6 +383,33 @@ export function PersonaDetailPanel({
             - 可进一步按关系类型筛选；
             - 展示当前筛选后条目数，帮助用户判断过滤结果。
           */}
+          {persona.relationships.filter(r => r.bookId === bookId).length > 0 && (
+            <section aria-label="与他/她的关系">
+              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Users size={12} className="mr-1 inline" />
+                与他/她的关系
+              </h3>
+              <div className="flex flex-col gap-1">
+                {pairSummaries.map(pair => (
+                  <button
+                    key={pair.counterpartId}
+                    type="button"
+                    onClick={() => onPairClick?.(persona.id, pair.counterpartId)}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-foreground">{pair.counterpartName}</span>
+                    </span>
+                    <Badge variant="outline" className="text-xs">{pair.typeCount} 类</Badge>
+                    <Badge variant="secondary" className="text-xs">{pair.totalEvents} 事件</Badge>
+                    {pair.totalEvents === 0 && <Badge variant="warning" className="text-xs">待补充事件</Badge>}
+                    <ChevronRight size={14} className="text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {persona.relationships.filter(r => r.bookId === bookId).length > 0 && (
             <div>
               <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">

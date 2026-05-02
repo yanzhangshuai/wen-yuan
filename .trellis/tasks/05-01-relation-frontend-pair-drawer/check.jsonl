@@ -1,1 +1,10 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "前端质量检查入口"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端交付质量检查"}
+{"file": ".trellis/spec/frontend/graph-visualization.md", "reason": "图谱单边合并和交互检查"}
+{"file": ".trellis/spec/frontend/design-audit.md", "reason": "抽屉、tab、表单视觉与可用性检查"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "关系事件 CRUD 与 Pair 聚合契约检查"}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "新增 route handler 检查"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "Vitest、route handler 与 service 测试检查"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "全局代码质量检查"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层数据流检查"}

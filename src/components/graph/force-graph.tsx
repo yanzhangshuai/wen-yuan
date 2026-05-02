@@ -142,6 +142,8 @@ export interface ForceGraphProps {
   onNodeRightClick?    : (node: GraphNode, position: { x: number; y: number }) => void;
   /** 边 hover 回调：用于在外层显示关系信息浮层。 */
   onEdgeHover?         : (edge: GraphEdge | null) => void;
+  /** 边单击回调：用于打开同一人物 Pair 的关系抽屉。 */
+  onEdgeClick?         : (pairKey: string, sourceId: string, targetId: string) => void;
   /** 背景点击回调：用于关闭面板、重置临时状态。 */
   onBackgroundClick?   : () => void;
   /**
@@ -171,6 +173,18 @@ export interface ForceGraphProps {
    */
   edgeTypeColorMap?    : ReadonlyMap<string, string>;
 }
+
+interface VisualEdge {
+  pairKey     : string;
+  sourceId    : string;
+  targetId    : string;
+  typeCount   : number;
+  totalEvents : number;
+  primaryLabel: string;
+  underlying  : GraphEdge[];
+}
+
+interface SimulationVisualEdge extends SimulationEdge, VisualEdge {}
 
 /* ------------------------------------------------
    Helpers
@@ -301,12 +315,16 @@ function nodeScaleTransform(scale: number): string {
  * 优先使用显式边集合；当未提供边集合时回退到旧策略（两端节点都在路径节点集合）。
  */
 function isPathEdge(
-  edge: SimulationEdge,
+  edge: SimulationEdge | SimulationVisualEdge,
   highlightPathNodeIds: Set<string> | undefined,
   highlightPathEdgeIds: Set<string> | undefined
 ): boolean {
   if (highlightPathEdgeIds && highlightPathEdgeIds.size > 0) {
-    return highlightPathEdgeIds.has(edge.id);
+    const underlying = "underlying" in edge ? edge.underlying : [];
+    return (
+      highlightPathEdgeIds.has(edge.id)
+      || underlying.some(rawEdge => highlightPathEdgeIds.has(rawEdge.id))
+    );
   }
 
   if (highlightPathNodeIds && highlightPathNodeIds.size > 0) {
@@ -314,6 +332,56 @@ function isPathEdge(
   }
 
   return false;
+}
+
+function canonicalPair(a: string, b: string): string {
+  return [a, b].sort().join("|");
+}
+
+function edgeEventCount(edge: GraphEdge): number {
+  return edge.eventCount ?? Math.max(0, Math.round(edge.weight));
+}
+
+function buildVisualEdges(edges: GraphEdge[]): VisualEdge[] {
+  const byPair = new Map<string, VisualEdge>();
+
+  for (const edge of edges) {
+    const pairKey = canonicalPair(edge.source, edge.target);
+    const existing = byPair.get(pairKey);
+    if (!existing) {
+      byPair.set(pairKey, {
+        pairKey,
+        sourceId    : edge.source,
+        targetId    : edge.target,
+        typeCount   : 1,
+        totalEvents : edgeEventCount(edge),
+        primaryLabel: edge.type,
+        underlying  : [edge]
+      });
+      continue;
+    }
+
+    existing.underlying.push(edge);
+    existing.typeCount = existing.underlying.length;
+    existing.totalEvents += edgeEventCount(edge);
+    existing.primaryLabel = `${existing.underlying[0]?.type ?? edge.type} 等 ${existing.typeCount} 类`;
+  }
+
+  return Array.from(byPair.values()).map((edge) => {
+    if (edge.typeCount <= 1) {
+      return edge;
+    }
+    return {
+      ...edge,
+      primaryLabel: `${edge.underlying[0]?.type ?? edge.primaryLabel} 等 ${edge.typeCount} 类`
+    };
+  });
+}
+
+function visualEdgeTitle(edge: SimulationVisualEdge): string {
+  return edge.underlying
+    .map(rawEdge => `${rawEdge.type}（${edgeEventCount(rawEdge)} 事件）`)
+    .join("\n");
 }
 
 /**
@@ -409,6 +477,7 @@ export function ForceGraph({
   onNodeDoubleClick,
   onNodeRightClick,
   onEdgeHover,
+  onEdgeClick,
   onBackgroundClick,
   highlightPathIds,
   highlightPathEdgeIds,
@@ -424,6 +493,8 @@ export function ForceGraph({
   const simulationRef = useRef<Simulation<SimulationNode, SimulationEdge> | null>(null);
   /** 缩放行为引用：供“路径查询完成后自动适配视口”复用。 */
   const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  /** 初始自适应缩放的动画帧，用于重绘/卸载时取消未执行回调。 */
+  const initialAutoFitFrameRef = useRef<number | null>(null);
   /** 已处理的路径自动适配版本号（保证每次查询成功只触发一次视口动画）。 */
   const pathAutoFitHandledVersionRef = useRef(0);
   /** 画布尺寸状态；初始为 0，等待 ResizeObserver 首次回调。 */
@@ -435,6 +506,7 @@ export function ForceGraph({
   const onNodeDoubleClickRef = useRef(onNodeDoubleClick);
   const onNodeRightClickRef = useRef(onNodeRightClick);
   const onEdgeHoverRef = useRef(onEdgeHover);
+  const onEdgeClickRef = useRef(onEdgeClick);
   const onBackgroundClickRef = useRef(onBackgroundClick);
   /** 拖拽结束回调 ref（FG-04 布局持久化）：避免 renderGraph 闭包过期。 */
   const onNodeDragEndRef = useRef(onNodeDragEnd);
@@ -454,6 +526,7 @@ export function ForceGraph({
     onNodeDoubleClickRef.current = onNodeDoubleClick;
     onNodeRightClickRef.current = onNodeRightClick;
     onEdgeHoverRef.current = onEdgeHover;
+    onEdgeClickRef.current = onEdgeClick;
     onBackgroundClickRef.current = onBackgroundClick;
     onNodeDragEndRef.current = onNodeDragEnd;
     focusedNodeIdRef.current = focusedNodeId;
@@ -466,6 +539,7 @@ export function ForceGraph({
     onNodeDoubleClick,
     onNodeRightClick,
     onEdgeHover,
+    onEdgeClick,
     onBackgroundClick,
     onNodeDragEnd,
     focusedNodeId,
@@ -524,6 +598,8 @@ export function ForceGraph({
       focusedNodeId
     });
   }, [layoutMode, filteredNodes, focusedNodeId]);
+
+  const visualEdges = useMemo(() => buildVisualEdges(filteredEdges), [filteredEdges]);
 
   /**
    * D3 主渲染流程。
@@ -591,17 +667,27 @@ export function ForceGraph({
     // 仅保留两端节点都存在的边，防止异常数据导致渲染崩溃。
     // 这里不用 `!` 非空断言，是为了把“脏边”当作数据问题显式吞掉，
     // 避免把异常传播到 D3 simulation（出现 NaN 坐标、tick 报错或整图卡死）。
-    const simEdges: SimulationEdge[] = [];
-    for (const edge of filteredEdges) {
-      const sourceNode = nodeMap.get(edge.source);
-      const targetNode = nodeMap.get(edge.target);
+    const simEdges: SimulationVisualEdge[] = [];
+    for (const edge of visualEdges) {
+      const sourceNode = nodeMap.get(edge.sourceId);
+      const targetNode = nodeMap.get(edge.targetId);
       if (!sourceNode || !targetNode) {
         continue;
       }
+      const primaryEdge = edge.underlying[0];
+      if (!primaryEdge) {
+        continue;
+      }
       simEdges.push({
+        id        : edge.typeCount === 1 ? primaryEdge.id : edge.pairKey,
         ...edge,
-        source: sourceNode,
-        target: targetNode
+        source    : sourceNode,
+        target    : targetNode,
+        type      : primaryEdge.type,
+        weight    : Math.max(edge.totalEvents, 1),
+        eventCount: edge.totalEvents,
+        sentiment : primaryEdge.sentiment,
+        status    : primaryEdge.status
       });
     }
 
@@ -670,7 +756,7 @@ export function ForceGraph({
 
     // 绘制关系边。
     const edgeGroup = g.append("g").attr("class", "edges");
-    const edgeSelection = edgeGroup.selectAll<SVGLineElement, SimulationEdge>("line")
+    const edgeSelection = edgeGroup.selectAll<SVGLineElement, SimulationVisualEdge>("line")
       .data(simEdges, (d) => d.id)
       .enter()
       .append("line")
@@ -680,17 +766,14 @@ export function ForceGraph({
       .attr("stroke-dasharray", d => d.status === "DRAFT" ? "4,4" : "none")
       // 常态隐藏箭头，降低视觉噪声；仅在 hover / 路径高亮显示方向。
       .attr("marker-end", "none")
+      .attr("cursor", "pointer")
+      .on("click", (event: MouseEvent, d) => {
+        event.stopPropagation();
+        onEdgeClickRef.current?.(d.pairKey, d.sourceId, d.targetId);
+      })
       .on("mouseenter", function (_event, d) {
         // 把 SimulationEdge 还原为 GraphEdge 形态回传给上层。
-        onEdgeHoverRef.current?.({
-          id       : d.id,
-          source   : d.source.id,
-          target   : d.target.id,
-          type     : d.type,
-          weight   : d.weight,
-          sentiment: d.sentiment,
-          status   : d.status
-        });
+        onEdgeHoverRef.current?.(d.underlying[0] ? { ...d.underlying[0] } : null);
         // hover 加粗边，提升当前关系辨识度。
         select(this)
           .attr("stroke-width", d.weight * 2 + 2)
@@ -710,10 +793,11 @@ export function ForceGraph({
           )
           .attr("marker-end", isHighlightedPathEdge ? EDGE_ARROW_MARKER_URL : "none");
       });
+    edgeSelection.append("title").text(d => visualEdgeTitle(d));
 
     // 边标签（默认透明，可由样式控制何时显示）。
     const edgeLabelGroup = g.append("g").attr("class", "edge-labels");
-    const edgeLabelSelection = edgeLabelGroup.selectAll<SVGTextElement, SimulationEdge>("text")
+    const edgeLabelSelection = edgeLabelGroup.selectAll<SVGTextElement, SimulationVisualEdge>("text")
       .data(simEdges, d => d.id)
       .enter()
       .append("text")
@@ -721,7 +805,26 @@ export function ForceGraph({
       .attr("font-size", "10px")
       .attr("fill", "var(--muted-foreground)")
       .attr("opacity", 0)
-      .text(d => d.type);
+      .text(d => d.primaryLabel);
+
+    const edgeBadgeGroup = g.append("g").attr("class", "edge-badges");
+    const edgeBadgeSelection = edgeBadgeGroup.selectAll<SVGGElement, SimulationVisualEdge>("g")
+      .data(simEdges.filter(edge => edge.typeCount > 1), d => d.id)
+      .enter()
+      .append("g")
+      .attr("pointer-events", "none");
+    edgeBadgeSelection.append("circle")
+      .attr("r", 8)
+      .attr("fill", "var(--background)")
+      .attr("stroke", "var(--foreground)")
+      .attr("stroke-width", 1);
+    edgeBadgeSelection.append("text")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em")
+      .attr("font-size", "10px")
+      .attr("font-weight", 700)
+      .attr("fill", "var(--foreground)")
+      .text(d => String(d.typeCount));
 
     // 绘制节点容器组（一个节点 = path + text）。
     const nodeGroup = g.append("g").attr("class", "nodes");
@@ -960,6 +1063,9 @@ export function ForceGraph({
           .attr("x", d => (d.source.x + d.target.x) / 2)
           .attr("y", d => (d.source.y + d.target.y) / 2);
 
+        edgeBadgeSelection
+          .attr("transform", d => `translate(${(d.source.x + d.target.x) / 2},${(d.source.y + d.target.y) / 2})`);
+
         nodeSelection.attr("transform", d => `translate(${d.x},${d.y})`);
 
         // 持续缓存坐标，供后续局部重绘复用，降低“重算后全图跳位”感知。
@@ -1021,7 +1127,12 @@ export function ForceGraph({
     }
 
     // 初始自适应缩放：让图形尽可能“首屏可见”。
-    requestAnimationFrame(() => {
+    if (initialAutoFitFrameRef.current !== null) {
+      cancelAnimationFrame(initialAutoFitFrameRef.current);
+    }
+
+    initialAutoFitFrameRef.current = requestAnimationFrame(() => {
+      initialAutoFitFrameRef.current = null;
       const bounds = (g.node() as SVGGElement)?.getBBox();
       if (bounds && bounds.width > 0) {
         const scale = Math.min(
@@ -1039,7 +1150,7 @@ export function ForceGraph({
   }, [
     dimensions,
     filteredNodes,
-    filteredEdges,
+    visualEdges,
     factionColors,
     maxInfluence,
     layoutMode,
@@ -1193,7 +1304,16 @@ export function ForceGraph({
   // 当渲染依赖变化时重绘；卸载时停止 simulation，防止后台持续占用 CPU。
   useEffect(() => {
     renderGraph();
+    const currentSvg = svgRef.current;
     return () => {
+      if (initialAutoFitFrameRef.current !== null) {
+        cancelAnimationFrame(initialAutoFitFrameRef.current);
+        initialAutoFitFrameRef.current = null;
+      }
+      if (currentSvg) {
+        select(currentSvg).interrupt();
+        select(currentSvg).selectAll("*").interrupt();
+      }
       simulationRef.current?.stop();
     };
   }, [renderGraph]);
@@ -1287,7 +1407,7 @@ export function ForceGraph({
       className="force-graph relative h-full w-full overflow-hidden"
       style={{ backgroundColor: "var(--color-graph-bg)" }}
       role="img"
-      aria-label={`人物关系图谱，包含 ${filteredNodes.length} 个人物和 ${filteredEdges.length} 条关系`}
+      aria-label={`人物关系图谱，包含 ${filteredNodes.length} 个人物和 ${visualEdges.length} 条关系`}
     >
       <svg
         ref={svgRef}
@@ -1319,5 +1439,7 @@ export const forceGraphTesting = {
   nodeScaleTransform,
   isPathEdge,
   shouldIncludeNode,
-  shouldIncludeEdge
+  shouldIncludeEdge,
+  canonicalPair,
+  buildVisualEdges
 };

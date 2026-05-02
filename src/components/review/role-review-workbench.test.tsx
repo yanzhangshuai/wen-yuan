@@ -83,6 +83,12 @@ vi.mock("@/lib/services/role-workbench", () => ({
   fetchChapterEventChapters: fetchChapterEventChaptersMock
 }));
 
+vi.mock("@/components/relations/persona-pair-drawer", () => ({
+  PersonaPairDrawer: ({ open, aId, bId, role }: { open: boolean; aId: string; bId: string; role: string }) => (
+    open ? <div role="dialog">Pair Drawer {aId} {bId} {role}</div> : null
+  )
+}));
+
 function buildPersona(overrides: Partial<BookPersonaListItem>): BookPersonaListItem {
   return {
     id                         : "persona-1",
@@ -751,5 +757,24 @@ describe("RoleReviewWorkbench", { timeout: ROLE_REVIEW_WORKBENCH_TEST_TIMEOUT },
     fireEvent.click(screen.getByRole("button", { name: "传记事件" }));
     expect(await screen.findByText("已确认传记")).toBeInTheDocument();
     expect(screen.getByText("范进中举后发疯。")).toBeInTheDocument();
+  });
+
+  it("shows relationship events tab and opens the selected pair drawer", async () => {
+    render(
+      <RoleReviewWorkbench
+        bookId="book-1"
+        drafts={buildDrafts()}
+        aliasMappings={buildAliases()}
+        onRefreshDrafts={vi.fn()}
+        onRefreshAliases={vi.fn()}
+      />
+    );
+
+    await screen.findByRole("button", { name: /范进/ });
+    fireEvent.click(screen.getByRole("button", { name: "关系事件" }));
+    const relationshipEventsRegion = screen.getByRole("region", { name: "关系事件" });
+    fireEvent.click(within(relationshipEventsRegion).getByRole("button", { name: /胡屠户/ }));
+
+    expect(screen.getByRole("dialog")).toHaveTextContent("Pair Drawer persona-1 persona-2 admin");
   });
 });

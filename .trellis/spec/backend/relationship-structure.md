@@ -153,6 +153,129 @@ await prisma.$transaction(async (tx) => {
 
 The database owns active-row uniqueness, while service code owns soft-delete cascade and monotonic source transitions.
 
+## Scenario: RelationshipEvent Manual Mutation API
+
+### 1. Scope / Trigger
+
+- Trigger: 前端 Pair 抽屉需要人工录入、修订、软删除 `RelationshipEvent`。
+- 涉及层级：`src/server/modules/relationships/*RelationshipEvent.ts`、`src/app/api/relationships/[id]/events/route.ts`、`src/app/api/relationship-events/[id]/route.ts`、`src/lib/services/relationship-events.ts`。
+- 写入接口只维护事件明细；结构关系类型、端点与书籍归属仍由父 `Relationship` 决定。
+
+### 2. Signatures
+
+Service signatures:
+
+```ts
+createRelationshipEvent(relationshipId, {
+  chapterId,
+  summary,
+  evidence?,
+  attitudeTags?,
+  paraIndex?,
+  confidence?
+});
+
+updateRelationshipEvent(eventId, {
+  chapterId?,
+  summary?,
+  evidence?,
+  attitudeTags?,
+  paraIndex?,
+  confidence?,
+  recordSource?,
+  status?
+});
+
+deleteRelationshipEvent(eventId);
+```
+
+API signatures:
+
+- `POST /api/relationships/:id/events`
+  - admin only
+  - body: `{ chapterId: uuid, summary: string, evidence?: string | null, attitudeTags?: string[], paraIndex?: number | null, confidence?: number }`
+- `PATCH /api/relationship-events/:id`
+  - admin only
+  - body: partial `{ chapterId, summary, evidence, attitudeTags, paraIndex, confidence, recordSource, status }`，至少一个字段。
+- `DELETE /api/relationship-events/:id`
+  - admin only
+  - soft-deletes the event and returns `{ id, status, deletedAt }`.
+
+### 3. Contracts
+
+- Create must read the active parent `Relationship` first and copy `bookId/sourceId/targetId` onto the new event.
+- Create/update with `chapterId` must verify the chapter belongs to the same `bookId`.
+- Manual create always uses `recordSource = MANUAL` and `status = VERIFIED`.
+- `summary` is trimmed and cannot become blank.
+- `evidence` is trimmed; blank strings are stored as `null`.
+- `attitudeTags` are trimmed, blank values removed, and case-insensitive duplicates collapsed while preserving the first label spelling.
+- Delete is idempotent for already-soft-deleted events and does not soft-delete the parent `Relationship`.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+| --- | --- |
+| Viewer calls POST/PATCH/DELETE | Return 403 before parsing or service mutation |
+| Route id is not UUID | Return 400 |
+| POST missing `chapterId` or non-blank `summary` | Return 400 |
+| PATCH body has no fields | Return 400 / `RelationshipInputError("至少需要一个可更新字段")` |
+| Parent relationship missing or soft-deleted | Throw/return `RelationshipNotFoundError` / 404 |
+| Event missing or soft-deleted on update | Throw/return `RelationshipEventNotFoundError` / 404 |
+| Chapter not in event/relationship book | Throw/return `RelationshipInputError("章节不存在或不属于当前书籍")` / 400 |
+| Delete missing event | Throw/return `RelationshipEventNotFoundError` / 404 |
+
+### 5. Good/Base/Bad Cases
+
+- Good: Admin creates an event under an active relationship; the service copies parent endpoints, validates chapter ownership, normalizes tags, and returns ISO datetime fields.
+- Base: Admin deletes an already-soft-deleted event; the service returns the existing `deletedAt` without issuing another update.
+- Bad: Client sends `sourceId`, `targetId`, `bookId`, or `relationshipTypeCode` in the event body; route schemas must ignore/reject these because event identity comes from the parent relationship.
+
+### 6. Tests Required
+
+- Service tests for create/update/delete must assert parent lookup, chapter ownership, tag/evidence normalization, idempotent delete, and not-found errors.
+- Route tests must assert admin-only access, UUID/body validation, enum mapping, and error status mapping.
+- Client service tests must assert URL encoding and request method/body shape.
+- Form/component tests must assert create vs patch payloads and that UI state is visible before submitting user-added tags.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+await tx.relationshipEvent.create({
+  data: {
+    relationshipId,
+    bookId: body.bookId,
+    sourceId: body.sourceId,
+    targetId: body.targetId,
+    summary: body.summary
+  }
+});
+```
+
+This trusts client-provided structure fields and can create events outside the parent relationship contract.
+
+#### Correct
+
+```ts
+const relationship = await tx.relationship.findFirst({
+  where : { id: relationshipId, deletedAt: null },
+  select: { id: true, bookId: true, sourceId: true, targetId: true }
+});
+
+await tx.relationshipEvent.create({
+  data: {
+    relationshipId: relationship.id,
+    bookId        : relationship.bookId,
+    sourceId      : relationship.sourceId,
+    targetId      : relationship.targetId,
+    summary       : input.summary.trim()
+  }
+});
+```
+
+The parent relationship remains the source of truth for pair identity; the event body only supplies chapter-level details.
+
 ## Scenario: AI Relationship Dual Write
 
 ### 1. Scope / Trigger

@@ -160,13 +160,14 @@ function buildSimulationNode(overrides: Partial<SimulationNode> = {}): Simulatio
 
 function buildEdge(overrides: Partial<GraphEdge> = {}): GraphEdge {
   return {
-    id       : overrides.id ?? "edge-1",
-    source   : overrides.source ?? "hero",
-    target   : overrides.target ?? "ally",
-    type     : overrides.type ?? "ALLY",
-    weight   : overrides.weight ?? 2,
-    sentiment: overrides.sentiment ?? "positive",
-    status   : overrides.status ?? "VERIFIED"
+    id        : overrides.id ?? "edge-1",
+    source    : overrides.source ?? "hero",
+    target    : overrides.target ?? "ally",
+    type      : overrides.type ?? "ALLY",
+    weight    : overrides.weight ?? 2,
+    eventCount: overrides.eventCount,
+    sentiment : overrides.sentiment ?? "positive",
+    status    : overrides.status ?? "VERIFIED"
   };
 }
 
@@ -269,6 +270,10 @@ function findNodePath(container: HTMLElement, label: string): SVGPathElement {
 
 function edgeLines(container: HTMLElement): SVGLineElement[] {
   return Array.from(container.querySelectorAll<SVGLineElement>("g.edges line"));
+}
+
+function edgeBadges(container: HTMLElement): SVGTextElement[] {
+  return Array.from(container.querySelectorAll<SVGTextElement>("g.edge-badges text"));
 }
 
 async function waitForGraphReady() {
@@ -398,6 +403,30 @@ describe("forceGraphTesting helpers", () => {
       new Set(["ally"])
     )).toBe(false);
   });
+
+  it("groups raw edges by unordered persona pair for visual rendering", () => {
+    const visualEdges = forceGraphTesting.buildVisualEdges([
+      buildEdge({ id: "rel-mentor", source: "hero", target: "ally", type: "师生", eventCount: 3 }),
+      buildEdge({ id: "rel-rival", source: "ally", target: "hero", type: "竞争", eventCount: 2 }),
+      buildEdge({ id: "rel-guild", source: "hero", target: "guild", type: "同僚", eventCount: 1 })
+    ]);
+
+    expect(forceGraphTesting.canonicalPair("hero", "ally")).toBe("ally|hero");
+    expect(visualEdges).toHaveLength(2);
+    expect(visualEdges[0]).toMatchObject({
+      pairKey     : "ally|hero",
+      sourceId    : "hero",
+      targetId    : "ally",
+      typeCount   : 2,
+      totalEvents : 5,
+      primaryLabel: "师生 等 2 类"
+    });
+    expect(visualEdges[0]?.underlying.map(edge => edge.id)).toEqual(["rel-mentor", "rel-rival"]);
+    expect(visualEdges[1]).toMatchObject({
+      pairKey     : "guild|hero",
+      primaryLabel: "同僚"
+    });
+  });
 });
 
 describe("resolveRadialAnchorNodeId", () => {
@@ -491,6 +520,94 @@ describe("ForceGraph", () => {
     expect(allyEdge).toHaveAttribute("stroke", "#246bce");
     expect(enemyEdge).toHaveAttribute("stroke", "var(--color-graph-edge-negative)");
     expect(mentorEdge).toHaveAttribute("stroke", "var(--muted-foreground)");
+  });
+
+  it("renders multiple relationship types for the same pair as one visual edge with a numeric badge", async () => {
+    const snapshot: GraphSnapshot = {
+      nodes: [
+        buildNode({ id: "hero", name: "主角" }),
+        buildNode({ id: "ally", name: "同伴" })
+      ],
+      edges: [
+        buildEdge({ id: "rel-mentor", source: "hero", target: "ally", type: "师生", eventCount: 3 }),
+        buildEdge({ id: "rel-rival", source: "ally", target: "hero", type: "竞争", eventCount: 2 })
+      ]
+    };
+
+    const { container } = render(
+      <ForceGraph
+        snapshot={snapshot}
+        theme="danqing"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("img")).toHaveAttribute(
+        "aria-label",
+        "人物关系图谱，包含 2 个人物和 1 条关系"
+      );
+    });
+
+    expect(edgeLines(container)).toHaveLength(1);
+    expect(edgeBadges(container).map(badge => badge.textContent)).toEqual(["2"]);
+    expect(screen.getByText("师生 等 2 类")).toBeInTheDocument();
+    expect(container.querySelector("g.edges title")?.textContent).toContain("师生（3 事件）");
+    expect(container.querySelector("g.edges title")?.textContent).toContain("竞争（2 事件）");
+  });
+
+  it("does not render a numeric badge for a single relationship pair", async () => {
+    const snapshot: GraphSnapshot = {
+      nodes: [
+        buildNode({ id: "hero", name: "主角" }),
+        buildNode({ id: "ally", name: "同伴" })
+      ],
+      edges: [
+        buildEdge({ id: "rel-mentor", source: "hero", target: "ally", type: "师生", eventCount: 3 })
+      ]
+    };
+
+    const { container } = render(
+      <ForceGraph
+        snapshot={snapshot}
+        theme="danqing"
+      />
+    );
+
+    await waitFor(() => {
+      expect(edgeLines(container)).toHaveLength(1);
+    });
+
+    expect(edgeBadges(container)).toHaveLength(0);
+    expect(screen.getByText("师生")).toBeInTheDocument();
+  });
+
+  it("notifies pair identity when a visual edge is clicked", async () => {
+    const onEdgeClick = vi.fn();
+    const snapshot: GraphSnapshot = {
+      nodes: [
+        buildNode({ id: "hero", name: "主角" }),
+        buildNode({ id: "ally", name: "同伴" })
+      ],
+      edges: [
+        buildEdge({ id: "rel-mentor", source: "hero", target: "ally", type: "师生", eventCount: 3 })
+      ]
+    };
+
+    const { container } = render(
+      <ForceGraph
+        snapshot={snapshot}
+        theme="danqing"
+        onEdgeClick={onEdgeClick}
+      />
+    );
+
+    await waitFor(() => {
+      expect(edgeLines(container)).toHaveLength(1);
+    });
+
+    fireEvent.click(edgeLines(container)[0]);
+
+    expect(onEdgeClick).toHaveBeenCalledWith("ally|hero", "hero", "ally");
   });
 
   it("filters nodes and edges, including tree isolated lane rendering", async () => {

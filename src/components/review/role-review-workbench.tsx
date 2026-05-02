@@ -63,7 +63,9 @@ import {
 } from "@/lib/services/role-workbench";
 import type { PersonaDetail } from "@/types/graph";
 
+import { PersonaPairDrawer } from "@/components/relations/persona-pair-drawer";
 import { RoleReviewSidebar } from "./role-review-sidebar";
+import { RelationshipEventsTab } from "./relationship-events-tab";
 import {
   ImpactCount,
   ImpactDetails,
@@ -158,6 +160,7 @@ export function RoleReviewWorkbench({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [personaDetail, setPersonaDetail] = useState<PersonaDetail | null>(null);
   const [chapterSummaries, setChapterSummaries] = useState<ChapterOption[]>([]);
+  const [pairDrawer, setPairDrawer] = useState<{ aId: string; bId: string } | null>(null);
 
   const pendingCounts = useMemo(() => {
     const counts = new Map<string, PendingCounts>();
@@ -431,6 +434,10 @@ export function RoleReviewWorkbench({
     });
     setSheetDirty(false);
     setSheetMode("alias-create");
+  }
+
+  function openPersonaPair(aId: string, bId: string) {
+    setPairDrawer({ aId, bId });
   }
 
   function validateSheetForm(): string | null {
@@ -733,6 +740,13 @@ export function RoleReviewWorkbench({
                   onReject={(id) => { void updateRelationshipStatus(id, "REJECTED"); }}
                 />
               )}
+              {activeTab === "relationship-events" && (
+                <RelationshipEventsTab
+                  persona={selectedPersona}
+                  relationships={selectedRelationships}
+                  onOpenPersonaPair={openPersonaPair}
+                />
+              )}
               {activeTab === "biographies" && (
                 <RoleBiographiesSection
                   biographies={selectedBiographies}
@@ -863,6 +877,19 @@ export function RoleReviewWorkbench({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {pairDrawer && (
+        <PersonaPairDrawer
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setPairDrawer(null);
+          }}
+          bookId={bookId}
+          aId={pairDrawer.aId}
+          bId={pairDrawer.bId}
+          role="admin"
+        />
+      )}
     </div>
   );
 }

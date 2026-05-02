@@ -50,19 +50,21 @@ export interface GraphNode {
 /** 图谱边（后端快照关系边）。 */
 export interface GraphEdge {
   /** 关系 ID。 */
-  id       : string;
+  id         : string;
   /** 起点节点 ID。 */
-  source   : string;
+  source     : string;
   /** 终点节点 ID。 */
-  target   : string;
+  target     : string;
   /** 关系类型（如“同僚”“敌对”）。 */
-  type     : string;
+  type       : string;
   /** 关系权重。 */
-  weight   : number;
+  weight     : number;
+  /** 该结构关系下聚合出的事件数量；旧数据缺省时前端回退使用 weight。 */
+  eventCount?: number;
   /** 情感极性（影响颜色语义）。 */
-  sentiment: RelationSentiment;
+  sentiment  : RelationSentiment;
   /** 审核状态。 */
-  status   : ProcessingStatus;
+  status     : ProcessingStatus;
 }
 
 /** 图谱快照（图谱接口顶层 payload）。 */
@@ -98,19 +100,21 @@ export interface SimulationNode extends GraphNode {
  */
 export interface SimulationEdge {
   /** 关系 ID。 */
-  id       : string;
+  id         : string;
   /** 起点节点对象引用。 */
-  source   : SimulationNode;
+  source     : SimulationNode;
   /** 终点节点对象引用。 */
-  target   : SimulationNode;
+  target     : SimulationNode;
   /** 关系类型。 */
-  type     : string;
+  type       : string;
   /** 权重。 */
-  weight   : number;
+  weight     : number;
+  /** 该结构关系下聚合出的事件数量。 */
+  eventCount?: number;
   /** 情感极性。 */
-  sentiment: RelationSentiment;
+  sentiment  : RelationSentiment;
   /** 审核状态。 */
-  status   : ProcessingStatus;
+  status     : ProcessingStatus;
 }
 
 /** 人物详情面板时间轴事件。 */
@@ -161,6 +165,8 @@ export interface PersonaRelation {
   type           : string;
   /** 关系权重。 */
   weight         : number;
+  /** 该结构关系下的事件数量；旧详情接口缺省时前端按 0 处理。 */
+  eventCount?    : number;
   /** 证据文本，可为空。 */
   evidence       : string | null;
   /** 记录来源。 */

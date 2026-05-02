@@ -1,1 +1,14 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "前端规范总索引，包含本任务涉及的组件、hook、设计、图谱和质量规范入口"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Pair 抽屉、表单、tab 等组件实现规范"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "SWR/客户端数据交互与 hook 边界规范"}
+{"file": ".trellis/spec/frontend/design-system.md", "reason": "抽屉、徽章、关系事件 timeline 和图谱视觉需符合设计系统"}
+{"file": ".trellis/spec/frontend/graph-visualization.md", "reason": "force graph 单边合并、hover/click 交互和渲染性能契约"}
+{"file": ".trellis/spec/frontend/performance-guidelines.md", "reason": "图谱 reducer/useMemo、抽屉局部状态和列表渲染性能约束"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "前端类型安全与跨层 DTO 使用规范"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "关系结构、关系事件 CRUD、Pair 聚合 API 的核心契约"}
+{"file": ".trellis/spec/backend/api-response-standard.md", "reason": "新增事件 CRUD route 必须返回统一 API envelope"}
+{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "新增 route handler 的鉴权、Zod 校验和错误映射规范"}
+{"file": ".trellis/spec/backend/security-guidelines.md", "reason": "事件 CRUD admin-only 鉴权与输入安全规范"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "全局代码质量、可读性和禁用模式"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本任务跨 API、service、client service 和 UI，需要明确边界契约"}
