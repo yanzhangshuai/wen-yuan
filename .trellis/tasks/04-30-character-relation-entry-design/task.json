@@ -20,7 +20,6 @@
   "subtasks": [],
   "children": [
     "04-30-relationship-type-knowledge-base",
-    "05-01-persona-pair-aggregation-api",
     "05-01-relation-frontend-pair-drawer"
   ],
   "parent": null,
