@@ -675,3 +675,37 @@ Implemented relation merge cleanup and full reanalysis cleanup, then archived th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: 知识库新建/模型生成内联面板重构
+
+**Date**: 2026-05-04
+**Task**: 知识库新建/模型生成内联面板重构
+**Branch**: `dev_4`
+
+### Summary
+
+将知识库 6 个模块的「新建」与「模型生成」从独立子路由统一改为列表页内联面板，删除 16 个 new/generate 目录；同步精简模型管理表单组件，lint/type-check 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `83953c7` | (see git log) |
+| `25850bf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
