@@ -28,14 +28,6 @@ import {
   SelectValue,
   isSelectEmptyValue
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchBookPersonas, fetchChapterContent, type BookPersonaListItem, type ChapterContent } from "@/lib/services/books";
 import { cn } from "@/lib/utils";
@@ -646,13 +638,25 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
         </section>
       </div>
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>{editingEvent ? "编辑角色事迹" : "新增角色事迹"}</SheetTitle>
-            <SheetDescription>保存后会刷新当前章节事迹列表。</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-4 px-4">
+      {sheetOpen ? (
+        <div className="chapter-events-form-panel mb-3 rounded-md border bg-muted/30 p-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold">{editingEvent ? "编辑角色事迹" : "新增角色事迹"}</div>
+              <div className="mt-1 text-xs text-muted-foreground">保存后会刷新当前章节事迹列表。</div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="关闭"
+              disabled={saving}
+              onClick={() => setSheetOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="space-y-4">
             <label className="block text-sm">
               <span className="mb-1 block text-muted-foreground">角色</span>
               <Input
@@ -803,14 +807,17 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
               />
             </label>
           </div>
-          <SheetFooter>
+          <div className="mt-3 flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={saving} onClick={() => setSheetOpen(false)}>
+              取消
+            </Button>
             <Button type="button" onClick={() => { void saveEvent(); }} disabled={saving}>
               {saving && <Loader2 className="mr-1 size-4 animate-spin" />}
               保存
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,1 +1,8 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+
+{"phase": "implement", "status": "in-progress", "todos": [
+  {"id": 1, "status": "completed", "title": "抽象层组件与 hooks 雏形（含单测）"},
+  {"id": 2, "status": "completed", "title": "试点模块迁移（book-types + 角色基础信息）"},
+  {"id": 3, "status": "completed", "title": "复杂模块迁移（如 alias-packs、关系/传记 Tab）"},
+  {"id": 4, "status": "completed", "title": "全量替换、冗余文件清理、文档补全"}
+]}

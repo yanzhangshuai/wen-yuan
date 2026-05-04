@@ -6,7 +6,8 @@ import {
   Edit3,
   Loader2,
   Plus,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 
 import {
@@ -21,14 +22,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet";
 import {
   createBookPersona,
   fetchBookPersonas,
@@ -779,13 +772,25 @@ export function RoleReviewWorkbench({
         )}
       </main>
 
-      <Sheet modal={false} open={sheetMode !== null} onOpenChange={requestSheetClose}>
-        <SheetContent showOverlay={false} className="w-full overflow-y-auto sm:max-w-2xl">
-          <SheetHeader>
-            <SheetTitle>{getSheetTitle(sheetMode)}</SheetTitle>
-            <SheetDescription>{getSheetDescription(sheetMode)}</SheetDescription>
-          </SheetHeader>
-          <div className="grid gap-3 px-4">
+      {sheetMode !== null ? (
+        <div className="role-review-form-panel rounded-md border bg-muted/30 p-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{getSheetTitle(sheetMode)}</h3>
+              <div className="mt-1 text-xs text-muted-foreground">{getSheetDescription(sheetMode)}</div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Close"
+              disabled={saving}
+              onClick={() => requestSheetClose(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid gap-3">
             {(sheetMode === "relationship-create" || sheetMode === "relationship-edit") && (
               <RelationshipFields
                 form={relationshipForm}
@@ -807,14 +812,17 @@ export function RoleReviewWorkbench({
               <AliasFields form={aliasForm} onChange={(form) => { setAliasForm(form); markDirty(); }} />
             )}
           </div>
-          <SheetFooter>
+          <div className="mt-3 flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={saving} onClick={() => requestSheetClose(false)}>
+              取消
+            </Button>
             <Button type="button" onClick={() => { void saveSheet(); }} disabled={saving}>
               {saving && <Loader2 className="size-4 animate-spin" />}
               保存
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </div>
+        </div>
+      ) : null}
 
       <AlertDialog open={showDirtyGuard} onOpenChange={setShowDirtyGuard}>
         <AlertDialogContent>

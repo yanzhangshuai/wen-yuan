@@ -1,16 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Eye, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,9 +30,7 @@ import {
 } from "@/components/layout/page-header";
 import { useToast } from "@/hooks/use-toast";
 import {
-  fetchChangeLog,
   fetchChangeLogs,
-  type KnowledgeChangeLogItem,
   type KnowledgeChangeLogPage
 } from "@/lib/services/change-logs";
 
@@ -48,8 +41,6 @@ export default function ChangeLogsPage() {
   const [loading, setLoading] = useState(true);
   const [objectType, setObjectType] = useState("");
   const [action, setAction] = useState<ActionFilter>("all");
-  const [detail, setDetail] = useState<KnowledgeChangeLogItem | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -72,16 +63,6 @@ export default function ChangeLogsPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function handleOpenDetail(id: string) {
-    try {
-      const data = await fetchChangeLog(id);
-      setDetail(data);
-      setDetailOpen(true);
-    } catch (error) {
-      toast({ title: "详情加载失败", description: String(error), variant: "destructive" });
-    }
-  }
 
   return (
     <PageContainer>
@@ -148,8 +129,10 @@ export default function ChangeLogsPage() {
                     <TableCell>{item.operatorId ?? "系统/未知"}</TableCell>
                     <TableCell>{new Date(item.createdAt).toLocaleString("zh-CN")}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => void handleOpenDetail(item.id)}>
-                        <Eye className="h-3.5 w-3.5" />
+                      <Button asChild variant="ghost" size="sm" aria-label="查看详情">
+                        <Link href={`/admin/knowledge-base/change-logs/${item.id}`}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </Link>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -159,24 +142,6 @@ export default function ChangeLogsPage() {
           </div>
         )}
       </PageSection>
-
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{detail?.objectName ?? "日志详情"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <div>
-              <div className="mb-2 text-sm font-medium">变更前</div>
-              <pre className="max-h-[460px] overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{JSON.stringify(detail?.before ?? null, null, 2)}</pre>
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-medium">变更后</div>
-              <pre className="max-h-[460px] overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{JSON.stringify(detail?.after ?? null, null, 2)}</pre>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </PageContainer>
   );
 }

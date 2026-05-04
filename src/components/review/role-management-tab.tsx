@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Edit3, Loader2, Plus, Trash2 } from "lucide-react";
+import { Edit3, Loader2, Plus, Trash2, X } from "lucide-react";
 
 import {
   AlertDialog,
@@ -23,14 +23,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet";
 import {
   createBookPersona,
   fetchBookPersonas,
@@ -406,13 +398,25 @@ export function RoleManagementTab({ bookId }: RoleManagementTabProps) {
         </article>
       ))}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-          <SheetHeader>
-            <SheetTitle>{editingPersona ? "编辑角色" : "新增角色"}</SheetTitle>
-            <SheetDescription>角色基础信息与当前书籍档案会一起保存。</SheetDescription>
-          </SheetHeader>
-          <div className="grid gap-3 px-4 sm:grid-cols-2">
+      {sheetOpen ? (
+        <div className="role-management-form-panel rounded-md border bg-muted/30 p-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold">{editingPersona ? "编辑角色" : "新增角色"}</div>
+              <div className="mt-1 text-xs text-muted-foreground">角色基础信息与当前书籍档案会一起保存。</div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="关闭"
+              disabled={saving}
+              onClick={() => setSheetOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
             <FormInput label="姓名" value={form.name} onChange={(value) => setForm(prev => ({ ...prev, name: value }))} />
             <FormInput label="书中称谓" value={form.localName} onChange={(value) => setForm(prev => ({ ...prev, localName: value }))} />
             <FormInput label="别名（顿号分隔）" value={form.aliases} onChange={(value) => setForm(prev => ({ ...prev, aliases: value }))} />
@@ -444,14 +448,17 @@ export function RoleManagementTab({ bookId }: RoleManagementTabProps) {
               />
             </label>
           </div>
-          <SheetFooter>
+          <div className="mt-3 flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={saving} onClick={() => setSheetOpen(false)}>
+              取消
+            </Button>
             <Button onClick={() => { void savePersona(); }} disabled={saving}>
               {saving && <Loader2 className="mr-1 size-4 animate-spin" />}
               保存
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </div>
+        </div>
+      ) : null}
 
       <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => {
         if (!open) setDeleteTarget(null);

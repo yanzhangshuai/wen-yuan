@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, GitCompareArrows, Plus, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Eye, GitCompareArrows, Plus, RotateCcw, X } from "lucide-react";
 
 import {
   PageContainer,
@@ -11,22 +13,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -35,15 +27,12 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  getPromptTemplateMetadata,
-  type PromptTemplateMetadataItem
+  getPromptTemplateMetadata
 } from "@/lib/prompt-template-metadata";
 import {
   activatePromptVersion,
-  createPromptVersion,
   diffPromptVersions,
   fetchPromptTemplate,
   fetchPromptTemplates,
@@ -55,22 +44,21 @@ import {
 } from "@/lib/services/prompt-templates";
 
 export default function PromptTemplatesPage() {
-  const [templates, setTemplates] = useState<PromptTemplateListItem[]>([]);
-  const [selectedSlug, setSelectedSlug] = useState("");
-  const [detail, setDetail] = useState<PromptTemplateItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [versionDialogOpen, setVersionDialogOpen] = useState(false);
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<PromptPreviewResult | null>(null);
-  const [diffData, setDiffData] = useState<PromptDiffResult | null>(null);
-  const [compareA, setCompareA] = useState("");
-  const [compareB, setCompareB] = useState("");
+  const searchParams = useSearchParams();
+  const initialSlug  = searchParams?.get("slug") ?? "";
+
+  const [templates,    setTemplates]    = useState<PromptTemplateListItem[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState(initialSlug);
+  const [detail,       setDetail]       = useState<PromptTemplateItem | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [previewData,  setPreviewData]  = useState<PromptPreviewResult | null>(null);
+  const [diffData,     setDiffData]     = useState<PromptDiffResult | null>(null);
+  const [compareA,     setCompareA]     = useState("");
+  const [compareB,     setCompareB]     = useState("");
   const { toast } = useToast();
 
   const templateMetadata = useMemo(() => {
-    if (!selectedSlug) {
-      return null;
-    }
+    if (!selectedSlug) return null;
     return getPromptTemplateMetadata(selectedSlug);
   }, [selectedSlug]);
 
@@ -107,6 +95,8 @@ export default function PromptTemplatesPage() {
         const versions = templateDetail.versions ?? [];
         setCompareA(versions[0]?.id ?? "");
         setCompareB(versions[1]?.id ?? versions[0]?.id ?? "");
+        setPreviewData(null);
+        setDiffData(null);
       } catch (error) {
         toast({ title: "模板详情加载失败", description: String(error), variant: "destructive" });
       }
@@ -124,7 +114,6 @@ export default function PromptTemplatesPage() {
         sampleInput: templateMetadata?.sampleInput
       });
       setPreviewData(data);
-      setPreviewDialogOpen(true);
     } catch (error) {
       toast({ title: "预览失败", description: String(error), variant: "destructive" });
     }
@@ -158,13 +147,15 @@ export default function PromptTemplatesPage() {
         description="查看模板版本历史、激活版本，并预览实际渲染的提示词内容。"
         breadcrumbs={[
           { label: "管理后台", href: "/admin" },
-          { label: "知识库", href: "/admin/knowledge-base" },
+          { label: "知识库",   href: "/admin/knowledge-base" },
           { label: "提示词模板" }
         ]}
       >
-        <Button size="sm" onClick={() => setVersionDialogOpen(true)} disabled={!selectedSlug}>
-          <Plus className="mr-1 h-4 w-4" />
-          新建版本
+        <Button asChild size="sm" disabled={!selectedSlug}>
+          <Link href={selectedSlug ? `/admin/knowledge-base/prompt-templates/${encodeURIComponent(selectedSlug)}/new-version` : "#"}>
+            <Plus className="mr-1 h-4 w-4" />
+            新建版本
+          </Link>
         </Button>
       </PageHeader>
 
@@ -264,6 +255,27 @@ export default function PromptTemplatesPage() {
                 ) : null}
               </div>
 
+              {previewData ? (
+                <div className="rounded-md border p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-sm font-medium">提示词预览</div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setPreviewData(null)} aria-label="关闭预览">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <div>
+                      <div className="mb-2 text-sm font-medium">系统提示词</div>
+                      <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{previewData.systemPrompt}</pre>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-sm font-medium">用户提示词</div>
+                      <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{previewData.userPrompt}</pre>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -290,10 +302,10 @@ export default function PromptTemplatesPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => void handlePreview(version.id)}>
+                            <Button variant="ghost" size="sm" onClick={() => void handlePreview(version.id)} aria-label="预览">
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => void handleActivate(version.id)} disabled={activeVersionId === version.id}>
+                            <Button variant="ghost" size="sm" onClick={() => void handleActivate(version.id)} disabled={activeVersionId === version.id} aria-label="激活">
                               <RotateCcw className="h-3.5 w-3.5" />
                             </Button>
                           </div>
@@ -309,136 +321,6 @@ export default function PromptTemplatesPage() {
           )}
         </PageSection>
       </div>
-
-      <PromptVersionDialog
-        open={versionDialogOpen}
-        slug={selectedSlug}
-        metadata={templateMetadata}
-        onOpenChange={setVersionDialogOpen}
-        onSaved={loadTemplates}
-      />
-
-      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>提示词预览</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <div>
-              <div className="mb-2 text-sm font-medium">系统提示词</div>
-              <pre className="max-h-105 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{previewData?.systemPrompt ?? ""}</pre>
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-medium">用户提示词</div>
-              <pre className="max-h-105 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{previewData?.userPrompt ?? ""}</pre>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </PageContainer>
-  );
-}
-
-function PromptVersionDialog({
-  open,
-  slug,
-  metadata,
-  onOpenChange,
-  onSaved
-}: {
-  open        : boolean;
-  slug        : string;
-  metadata    : PromptTemplateMetadataItem | null;
-  onOpenChange: (open: boolean) => void;
-  onSaved     : () => Promise<void>;
-}) {
-  const [systemPrompt, setSystemPrompt] = useState("");
-  const [userPrompt, setUserPrompt] = useState("");
-  const [genreKey, setGenreKey] = useState("");
-  const [changeNote, setChangeNote] = useState("");
-  const [isBaseline, setIsBaseline] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!open) return;
-    setSystemPrompt("");
-    setUserPrompt("");
-    setGenreKey("");
-    setChangeNote("");
-    setIsBaseline(false);
-  }, [open]);
-
-  async function handleSubmit() {
-    if (!slug) return;
-    setSaving(true);
-    try {
-      await createPromptVersion(slug, {
-        systemPrompt,
-        userPrompt,
-        genreKey  : genreKey.trim() || undefined,
-        changeNote: changeNote || undefined,
-        isBaseline
-      });
-      toast({ title: "版本创建成功" });
-      onOpenChange(false);
-      await onSaved();
-    } catch (error) {
-      toast({ title: "创建失败", description: String(error), variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>新建模板版本</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
-          {metadata ? (
-            <div className="rounded-md border p-3">
-              <div className="mb-2 text-sm font-medium">可用占位符</div>
-              <div className="flex flex-wrap gap-2">
-                {metadata.placeholders.map((placeholder) => (
-                  <Badge key={placeholder.key} variant="outline">{`{${placeholder.key}}`}</Badge>
-                ))}
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                使用上面的占位符保持模板可复用。保存后可点击“预览”查看实际渲染结果。
-              </div>
-            </div>
-          ) : null}
-
-          <div className="grid gap-2">
-            <Label>书籍类型覆盖（可选）</Label>
-            <Input value={genreKey} onChange={(event) => setGenreKey(event.target.value)} placeholder="例如：历史演义" />
-          </div>
-          <div className="grid gap-2">
-            <Label>系统提示词</Label>
-            <Textarea rows={8} value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>用户提示词</Label>
-            <Textarea rows={10} value={userPrompt} onChange={(event) => setUserPrompt(event.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>变更说明</Label>
-            <Input value={changeNote} onChange={(event) => setChangeNote(event.target.value)} />
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch checked={isBaseline} onCheckedChange={setIsBaseline} />
-            <Label>标记为基线版本</Label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={() => void handleSubmit()} disabled={saving || !systemPrompt.trim() || !userPrompt.trim()}>
-            {saving ? "保存中..." : "保存版本"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

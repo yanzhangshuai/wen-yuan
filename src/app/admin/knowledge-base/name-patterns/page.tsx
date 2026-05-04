@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import {
   PageContainer,
@@ -19,15 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -35,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -44,12 +36,10 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   NAME_PATTERN_ACTIONS,
   NAME_PATTERN_RULE_TYPES,
-  createNamePattern,
   deleteNamePattern,
   fetchNamePatterns,
   getNamePatternActionLabel,
@@ -60,6 +50,7 @@ import {
   type NamePatternRuleItem,
   type NamePatternRuleType
 } from "@/lib/services/name-patterns";
+import { NamePatternForm } from "./_components/name-pattern-form";
 
 const NO_RULE_TYPE_FILTER = "all";
 const NO_ACTION_FILTER = "all";
@@ -69,23 +60,14 @@ export default function NamePatternsPage() {
   const [loading, setLoading] = useState(true);
   const [ruleTypeFilter, setRuleTypeFilter] = useState<string>(NO_RULE_TYPE_FILTER);
   const [actionFilter, setActionFilter] = useState<string>(NO_ACTION_FILTER);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<NamePatternRuleItem | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<NamePatternRuleItem | null>(null);
   const [deletePending, setDeletePending] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // 测试面板
   const [testName, setTestName] = useState("");
   const [testResult, setTestResult] = useState<Awaited<ReturnType<typeof testNamePattern>> | null>(null);
-
-  // 编辑表单
-  const [ruleType, setRuleType] = useState<NamePatternRuleType>("FAMILY_HOUSE");
-  const [pattern, setPattern] = useState("");
-  const [action, setAction] = useState<NamePatternAction>("BLOCK");
-  const [patternDescription, setPatternDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   const { toast } = useToast();
 
@@ -132,61 +114,6 @@ export default function NamePatternsPage() {
         ? new Set()
         : new Set(items.map((i) => i.id))
     );
-  }
-
-  function openCreate() {
-    setEditing(null);
-    setRuleType("FAMILY_HOUSE");
-    setPattern("");
-    setAction("BLOCK");
-    setPatternDescription("");
-    setIsActive(true);
-    setDialogOpen(true);
-  }
-
-  function openEdit(item: NamePatternRuleItem) {
-    setEditing(item);
-    setRuleType(item.ruleType);
-    setPattern(item.pattern);
-    setAction(item.action);
-    setPatternDescription(item.description ?? "");
-    setIsActive(item.isActive);
-    setDialogOpen(true);
-  }
-
-  async function handleSave() {
-    if (!pattern.trim()) {
-      toast({ title: "请填写正则模式", variant: "destructive" });
-      return;
-    }
-    setSaving(true);
-    try {
-      if (editing) {
-        await updateNamePattern(editing.id, {
-          ruleType,
-          pattern    : pattern.trim(),
-          action,
-          description: patternDescription.trim() || null,
-          isActive
-        });
-        toast({ title: "更新成功" });
-      } else {
-        await createNamePattern({
-          ruleType,
-          pattern    : pattern.trim(),
-          action,
-          description: patternDescription.trim() || undefined,
-          isActive
-        });
-        toast({ title: "创建成功" });
-      }
-      setDialogOpen(false);
-      await load();
-    } catch (error) {
-      toast({ title: "保存失败", description: String(error), variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function handleDeleteConfirmed(item: NamePatternRuleItem) {
@@ -332,11 +259,35 @@ export default function NamePatternsPage() {
             </SelectContent>
           </Select>
           <div className="flex-1" />
-          <Button type="button" size="sm" onClick={openCreate}>
+          <Button type="button" size="sm" onClick={() => setCreating(true)} disabled={creating}>
             <Plus className="mr-1.5 h-4 w-4" />
             新增规则
           </Button>
         </div>
+
+        {creating ? (
+          <div className="mb-4 rounded-md border bg-muted/30 p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">新增名字模式规则</h3>
+                <div className="mt-1 text-xs text-muted-foreground">新增正则模式规则，防止名字误识别。</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="关闭"
+                onClick={() => setCreating(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <NamePatternForm
+              onSuccess={() => { setCreating(false); void load(); }}
+              onCancel={() => setCreating(false)}
+            />
+          </div>
+        ) : null}
 
         {/* 批量操作栏 */}
         {selected.size > 0 && (
@@ -419,14 +370,16 @@ export default function NamePatternsPage() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
+                              asChild
                               type="button"
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
-                              onClick={() => openEdit(item)}
                               aria-label="编辑"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Link href={`/admin/knowledge-base/name-patterns/${item.id}/edit`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
                             </Button>
                             <Button
                               type="button"
@@ -448,81 +401,6 @@ export default function NamePatternsPage() {
             )
         }
       </PageSection>
-
-      {/* 新增/编辑弹窗 */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!saving) setDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "编辑名字模式规则" : "新增名字模式规则"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="np-rule-type">规则类型 *</Label>
-              <Select value={ruleType} onValueChange={(v) => setRuleType(v as NamePatternRuleType)} disabled={saving}>
-                <SelectTrigger id="np-rule-type" aria-label="规则类型">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NAME_PATTERN_RULE_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      <span>{t.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {NAME_PATTERN_RULE_TYPES.find((t) => t.value === ruleType)?.description}
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="np-pattern">正则模式 *</Label>
-              <Input
-                id="np-pattern"
-                value={pattern}
-                onChange={(e) => setPattern(e.target.value)}
-                placeholder="如：.{1,3}(家|府|庄)$"
-                className="font-mono text-sm"
-                disabled={saving}
-              />
-              <p className="text-xs text-muted-foreground">标准 Unicode 正则表达式，服务端会验证语法安全性。</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="np-action">动作 *</Label>
-              <Select value={action} onValueChange={(v) => setAction(v as NamePatternAction)} disabled={saving}>
-                <SelectTrigger id="np-action" aria-label="动作">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NAME_PATTERN_ACTIONS.map((a) => (
-                    <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="np-description">说明</Label>
-              <Textarea
-                id="np-description"
-                value={patternDescription}
-                onChange={(e) => setPatternDescription(e.target.value)}
-                placeholder="可选，说明此规则的适用场景"
-                rows={2}
-                disabled={saving}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch id="np-active" checked={isActive} onCheckedChange={setIsActive} disabled={saving} />
-              <Label htmlFor="np-active">启用</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>取消</Button>
-            <Button type="button" onClick={() => void handleSave()} disabled={saving}>
-              {saving ? "保存中…" : "保存"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* 删除确认弹窗 */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && !deletePending) setDeleteTarget(null); }}>

@@ -1,17 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from "@/components/ui/sheet";
 import { fetchPersonaPair } from "@/lib/services/persona-pairs";
 import type {
   PersonaPairEvent,
@@ -164,13 +157,25 @@ export function PersonaPairDrawer({
     });
   }
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-[720px] lg:max-w-[50vw]">
-        <SheetHeader className="border-b pr-12">
-          <SheetTitle>{leftName} 与 {rightName} 的关系</SheetTitle>
-          <SheetDescription>结构关系、事件时间线与态度标签聚合</SheetDescription>
-        </SheetHeader>
+    <div className="persona-pair-panel rounded-md border bg-card">
+      <div className="flex items-start justify-between gap-3 border-b p-4">
+        <div>
+          <div className="text-sm font-semibold">{leftName} 与 {rightName} 的关系</div>
+          <div className="mt-1 text-xs text-muted-foreground">结构关系、事件时间线与态度标签聚合</div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="关闭"
+          onClick={() => onOpenChange(false)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
 
         <div className="flex flex-1 flex-col gap-4 p-4">
           {isLoading && <p className="text-sm text-muted-foreground">正在加载人物关系...</p>}
@@ -306,13 +311,12 @@ export function PersonaPairDrawer({
         </div>
 
         {isAdmin && (
-          <SheetFooter className="border-t">
+          <div className="border-t p-4">
             <Button type="button" onClick={() => onCreateRelationship?.()}>
               + 新增结构关系
             </Button>
-          </SheetFooter>
+          </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </div>
   );
 }
