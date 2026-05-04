@@ -63,6 +63,10 @@ const INHERIT_PARAM_VALUE = "__INHERIT_PARAM__";
 const ENABLE_THINKING_TRUE = "__ENABLE_THINKING_TRUE__";
 /** 布尔参数在 Select 中的字符串映射值（关闭）。 */
 const ENABLE_THINKING_FALSE = "__ENABLE_THINKING_FALSE__";
+/** 联网搜索在 Select 中的字符串映射值（开启）。 */
+const ENABLE_WEB_SEARCH_TRUE = "__ENABLE_WEB_SEARCH_TRUE__";
+/** 联网搜索在 Select 中的字符串映射值（关闭）。 */
+const ENABLE_WEB_SEARCH_FALSE = "__ENABLE_WEB_SEARCH_FALSE__";
 
 /**
  * 表单展示阶段集合：
@@ -92,15 +96,19 @@ const STAGE_LABELS: Record<PipelineStage, string> = {
 
 export interface EnabledModelItem {
   /** 模型主键（后端模型表 ID）。 */
-  id             : string;
+  id               : string;
   /** 管理端展示名称。 */
-  name           : string;
+  name             : string;
   /** 模型提供商标识。 */
-  provider       : string;
+  provider         : string;
   /** 提供商侧模型 ID。 */
-  providerModelId: string;
+  providerModelId  : string;
   /** 推荐匹配使用的别名键（可选）。 */
-  aliasKey?      : string | null;
+  aliasKey?        : string | null;
+  /** 能力声明：是否支持深度思考。 */
+  supportsThinking : boolean;
+  /** 能力声明：是否支持联网搜索。 */
+  supportsWebSearch: boolean;
 }
 
 interface ModelStrategyFormProps {
@@ -353,6 +361,27 @@ export function ModelStrategyForm({
     });
   }
 
+  /**
+   * 更新 enableWebSearch（布尔）参数。
+   * 仅当所选模型声明 supportsWebSearch 时才会被下发。
+   */
+  function updateEnableWebSearchParam(stage: PipelineStage, value: string) {
+    updateStageConfig(stage, (current) => {
+      if (!current?.modelId) {
+        return current;
+      }
+
+      const next = { ...current };
+      if (value === INHERIT_PARAM_VALUE) {
+        delete next.enableWebSearch;
+      } else {
+        next.enableWebSearch = value === ENABLE_WEB_SEARCH_TRUE;
+      }
+
+      return next;
+    });
+  }
+
   /** 切换某阶段高级参数展开态。 */
   function toggleExpand(stage: PipelineStage) {
     setExpandedStages((current) => {
@@ -401,6 +430,7 @@ export function ModelStrategyForm({
         topP           : current?.topP,
         enableThinking : current?.enableThinking,
         reasoningEffort: current?.reasoningEffort,
+        enableWebSearch: current?.enableWebSearch,
         maxRetries     : current?.maxRetries,
         retryBaseMs    : current?.retryBaseMs
       };
@@ -679,10 +709,10 @@ export function ModelStrategyForm({
                           onValueChange={(value) => {
                             updateEnableThinkingParam(stage, value);
                           }}
-                          disabled={readOnly || !stageConfig?.modelId}
+                          disabled={readOnly || !stageConfig?.modelId || !selectedModel?.supportsThinking}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="继承默认" />
+                            <SelectValue placeholder={selectedModel && !selectedModel.supportsThinking ? "模型未声明支持" : "继承默认"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={INHERIT_PARAM_VALUE}>继承阶段默认</SelectItem>
@@ -698,16 +728,37 @@ export function ModelStrategyForm({
                           onValueChange={(value) => {
                             updateReasoningEffortParam(stage, value);
                           }}
-                          disabled={readOnly || !stageConfig?.modelId}
+                          disabled={readOnly || !stageConfig?.modelId || !selectedModel?.supportsThinking}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="继承默认" />
+                            <SelectValue placeholder={selectedModel && !selectedModel.supportsThinking ? "模型未声明支持" : "继承默认"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={INHERIT_PARAM_VALUE}>继承模型默认（推荐）</SelectItem>
                             <SelectItem value="low">low</SelectItem>
                             <SelectItem value="medium">medium</SelectItem>
                             <SelectItem value="high">high</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">enableWebSearch</Label>
+                        <Select
+                          value={typeof stageConfig?.enableWebSearch === "boolean"
+                            ? (stageConfig.enableWebSearch ? ENABLE_WEB_SEARCH_TRUE : ENABLE_WEB_SEARCH_FALSE)
+                            : INHERIT_PARAM_VALUE}
+                          onValueChange={(value) => {
+                            updateEnableWebSearchParam(stage, value);
+                          }}
+                          disabled={readOnly || !stageConfig?.modelId || !selectedModel?.supportsWebSearch}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={selectedModel && !selectedModel.supportsWebSearch ? "模型未声明支持" : "继承默认"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={INHERIT_PARAM_VALUE}>继承默认（不下发）</SelectItem>
+                            <SelectItem value={ENABLE_WEB_SEARCH_TRUE}>开启</SelectItem>
+                            <SelectItem value={ENABLE_WEB_SEARCH_FALSE}>关闭</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

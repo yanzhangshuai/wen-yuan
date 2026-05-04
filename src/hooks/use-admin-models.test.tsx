@@ -30,9 +30,11 @@ function buildModel(overrides: Partial<AdminModelItem> = {}): AdminModelItem {
         cost     : 0
       }
     },
-    isEnabled: overrides.isEnabled ?? true,
-    isDefault: overrides.isDefault ?? false,
-    updatedAt: overrides.updatedAt ?? "2026-04-11T00:00:00.000Z"
+    isEnabled        : overrides.isEnabled ?? true,
+    isDefault        : overrides.isDefault ?? false,
+    supportsThinking : overrides.supportsThinking ?? false,
+    supportsWebSearch: overrides.supportsWebSearch ?? false,
+    updatedAt        : overrides.updatedAt ?? "2026-04-11T00:00:00.000Z"
   };
 }
 

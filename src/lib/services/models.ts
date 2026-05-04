@@ -80,11 +80,15 @@ export interface AdminModelItem {
     };
   };
   /** 是否启用。禁用后不应参与模型选择。 */
-  isEnabled: boolean;
+  isEnabled        : boolean;
   /** 是否系统默认模型。 */
-  isDefault: boolean;
+  isDefault        : boolean;
+  /** 能力声明：是否支持“深度思考”（thinking / reasoning）。 */
+  supportsThinking : boolean;
+  /** 能力声明：是否支持联网搜索。 */
+  supportsWebSearch: boolean;
   /** 最近更新时间（ISO 字符串）。 */
-  updatedAt: string;
+  updatedAt        : string;
 }
 
 /**
@@ -117,41 +121,49 @@ export interface ModelTestResult {
  * - `apiKey` 的三态（undefined/null/string）有明确语义，不能混用。
  */
 export interface PatchModelBody {
-  provider?       : string;
-  protocol?       : "openai-compatible" | "gemini";
-  name?           : string;
-  aliasKey?       : string | null;
+  provider?         : string;
+  protocol?         : "openai-compatible" | "gemini";
+  name?             : string;
+  aliasKey?         : string | null;
   /** 供应商模型 ID。 */
-  providerModelId?: string;
+  providerModelId?  : string;
   /** API 基础地址。 */
-  baseUrl?        : string;
+  baseUrl?          : string;
   /** API Key：`null`=清空，`string`=更新，`undefined`=保持不变。 */
-  apiKey?         : string | null;
+  apiKey?           : string | null;
   /** 启停状态。 */
-  isEnabled?      : boolean;
+  isEnabled?        : boolean;
+  /** 能力声明：是否支持深度思考。 */
+  supportsThinking? : boolean;
+  /** 能力声明：是否支持联网搜索。 */
+  supportsWebSearch?: boolean;
 }
 
 export interface CreateModelBody {
-  provider  : string;
-  protocol  : "openai-compatible" | "gemini";
-  name      : string;
-  modelId   : string;
-  aliasKey? : string | null;
-  baseUrl   : string;
-  apiKey?   : string;
-  isEnabled?: boolean;
-  isDefault?: boolean;
+  provider          : string;
+  protocol          : "openai-compatible" | "gemini";
+  name              : string;
+  modelId           : string;
+  aliasKey?         : string | null;
+  baseUrl           : string;
+  apiKey?           : string;
+  isEnabled?        : boolean;
+  isDefault?        : boolean;
+  supportsThinking? : boolean;
+  supportsWebSearch?: boolean;
 }
 
 export interface ExportedModelConfig {
-  provider : string;
-  protocol : "openai-compatible" | "gemini";
-  name     : string;
-  modelId  : string;
-  aliasKey : string | null;
-  baseUrl  : string;
-  isEnabled: boolean;
-  isDefault: boolean;
+  provider         : string;
+  protocol         : "openai-compatible" | "gemini";
+  name             : string;
+  modelId          : string;
+  aliasKey         : string | null;
+  baseUrl          : string;
+  isEnabled        : boolean;
+  isDefault        : boolean;
+  supportsThinking : boolean;
+  supportsWebSearch: boolean;
 }
 
 export interface ImportModelsResult {

@@ -56,11 +56,13 @@ export function BookStrategyPanel({ bookId }: BookStrategyPanelProps) {
 
   // 可用模型映射为表单所需格式
   const availableModels: EnabledModelItem[] = models.map((model) => ({
-    id             : model.id,
-    name           : model.name,
-    provider       : model.provider,
-    providerModelId: model.providerModelId,
-    aliasKey       : model.aliasKey
+    id               : model.id,
+    name             : model.name,
+    provider         : model.provider,
+    providerModelId  : model.providerModelId,
+    aliasKey         : model.aliasKey,
+    supportsThinking : model.supportsThinking,
+    supportsWebSearch: model.supportsWebSearch
   }));
 
   // 书籍策略单独加载（与模型列表解耦）

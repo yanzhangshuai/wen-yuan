@@ -84,14 +84,16 @@ export async function updateAdminModel(
 ): Promise<ModelListItem> {
   return updateModel({
     id,
-    provider       : payload.provider,
-    protocol       : payload.protocol,
-    name           : payload.name,
-    aliasKey       : payload.aliasKey,
-    providerModelId: payload.providerModelId,
-    baseUrl        : payload.baseUrl,
-    isEnabled      : payload.isEnabled,
-    apiKey         : toApiKeyChange(payload.apiKey)
+    provider         : payload.provider,
+    protocol         : payload.protocol,
+    name             : payload.name,
+    aliasKey         : payload.aliasKey,
+    providerModelId  : payload.providerModelId,
+    baseUrl          : payload.baseUrl,
+    isEnabled        : payload.isEnabled,
+    supportsThinking : payload.supportsThinking,
+    supportsWebSearch: payload.supportsWebSearch,
+    apiKey           : toApiKeyChange(payload.apiKey)
   });
 }
 

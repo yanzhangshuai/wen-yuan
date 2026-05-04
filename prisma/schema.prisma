@@ -150,6 +150,12 @@ model AiModel {
   isEnabled Boolean @default(false) @map("is_enabled") // Key 配置后才可启用
   isDefault Boolean @default(false) @map("is_default") // 导入向导默认选中
 
+  // 能力声明（管理员勾选）：用于 UI 决定是否暴露阶段级 thinking / webSearch 开关，
+  // 并在 provider 客户端按各家协议下发对应参数；
+  // 默认 false，只有显式开启的模型才会在策略中显示对应能力。
+  supportsThinking  Boolean @default(false) @map("supports_thinking")
+  supportsWebSearch Boolean @default(false) @map("supports_web_search")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
 

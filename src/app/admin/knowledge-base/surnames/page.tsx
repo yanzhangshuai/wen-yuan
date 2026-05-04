@@ -51,6 +51,7 @@ import {
   type SurnameTestResult
 } from "@/lib/services/surnames";
 import { SurnameForm } from "./_components/surname-form";
+import { SurnameGeneratorPanel } from "./_components/surname-generator-panel";
 
 type CompoundFilter = "all" | "single" | "compound";
 
@@ -81,6 +82,7 @@ export default function SurnamesPage() {
   const [testName, setTestName]             = useState("");
   const [testResult, setTestResult]         = useState<SurnameTestResult | null>(null);
   const [creating, setCreating]             = useState(false);
+  const [generating, setGenerating]         = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -214,11 +216,9 @@ export default function SurnamesPage() {
         ]}
       >
         <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link href="/admin/knowledge-base/surnames/generate">
-              <Sparkles className="mr-1 h-4 w-4" />
-              模型生成
-            </Link>
+          <Button type="button" variant="outline" size="sm" onClick={() => setGenerating(true)} disabled={generating}>
+            <Sparkles className="mr-1 h-4 w-4" />
+            模型生成
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setImportOpen((value) => !value)}>
             <Upload className="mr-1 h-4 w-4" />
@@ -255,6 +255,32 @@ export default function SurnamesPage() {
               redirectTo="/admin/knowledge-base/surnames"
               onSuccess={() => { setCreating(false); void load(); }}
               onCancel={() => setCreating(false)}
+            />
+          </div>
+        </PageSection>
+      ) : null}
+
+      {generating ? (
+        <PageSection>
+          <div className="rounded-md border bg-muted/30 p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">模型生成姓氏候选</h3>
+                <div className="mt-1 text-xs text-muted-foreground">调用大模型生成候选姓氏，预审通过后再写入词库。</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="关闭"
+                onClick={() => setGenerating(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <SurnameGeneratorPanel
+              onClose={() => setGenerating(false)}
+              onSaved={() => { setGenerating(false); void load(); }}
             />
           </div>
         </PageSection>

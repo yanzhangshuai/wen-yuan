@@ -59,6 +59,12 @@ export interface StageModelConfigInput {
    */
   reasoningEffort?: "low" | "medium" | "high";
   /**
+   * 是否启用联网搜索。
+   * 业务语义：仅当所选模型声明 `supportsWebSearch=true` 时生效；
+   * 不同协议下游字段不同（qwen 走 enable_search，doubao/glm 走 tools，gemini 走 googleSearch tool）。
+   */
+  enableWebSearch?: boolean;
+  /**
    * 失败重试次数。
    * 可选：用于在稳定性与时延之间做业务权衡。
    */

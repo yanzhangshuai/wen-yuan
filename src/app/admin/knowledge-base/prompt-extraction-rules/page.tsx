@@ -49,6 +49,7 @@ import {
   type PromptRuleType
 } from "@/lib/services/prompt-extraction-rules";
 import { PromptExtractionRuleForm } from "./_components/prompt-extraction-rule-form";
+import { PromptExtractionRuleGeneratorPanel } from "./_components/prompt-extraction-rule-generator-panel";
 
 const ALL_BOOK_TYPES_VALUE = "__ALL_BOOK_TYPES__";
 
@@ -81,6 +82,7 @@ export default function PromptExtractionRulesPage() {
   const [deleteTarget, setDeleteTarget]       = useState<PromptExtractionRuleItem | null>(null);
   const [deletePending, setDeletePending]     = useState(false);
   const [creating, setCreating]               = useState(false);
+  const [generating, setGenerating]           = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -208,11 +210,9 @@ export default function PromptExtractionRulesPage() {
         ]}
       >
         <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link href="/admin/knowledge-base/prompt-extraction-rules/generate">
-              <Sparkles className="mr-1 h-4 w-4" />
-              模型生成
-            </Link>
+          <Button type="button" variant="outline" size="sm" onClick={() => setGenerating(true)} disabled={generating}>
+            <Sparkles className="mr-1 h-4 w-4" />
+            模型生成
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => void handlePreview()}>
             <Eye className="mr-1 h-4 w-4" />
@@ -253,6 +253,32 @@ export default function PromptExtractionRulesPage() {
               redirectTo={`/admin/knowledge-base/prompt-extraction-rules?ruleType=${ruleType}`}
               onSuccess={() => { setCreating(false); void load(); }}
               onCancel={() => setCreating(false)}
+            />
+          </div>
+        </PageSection>
+      ) : null}
+
+      {generating ? (
+        <PageSection>
+          <div className="rounded-md border bg-muted/30 p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">模型生成 Prompt 提取规则</h3>
+                <div className="mt-1 text-xs text-muted-foreground">生成结果会直接写入数据库，来源为 LLM_SUGGESTED，默认停用；完成后请在列表中复核并手动启用。</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="关闭"
+                onClick={() => setGenerating(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <PromptExtractionRuleGeneratorPanel
+              onClose={() => setGenerating(false)}
+              onSaved={() => { setGenerating(false); void load(); }}
             />
           </div>
         </PageSection>

@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 
-import { PageContainer, PageHeader, PageSection } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,12 +45,18 @@ function formatModelOption(model: { name: string; provider: string; isDefault: b
   return `${model.name} · ${model.provider}${model.isDefault ? " · 默认" : ""}`;
 }
 
-export default function GenerateNerRulesPage() {
-  const router  = useRouter();
-  const search  = useSearchParams();
+export function NerRuleGeneratorPanel({
+  initialRuleType,
+  onClose,
+  onSaved
+}: {
+  initialRuleType?: NerLexiconRuleType;
+  onClose         : () => void;
+  onSaved         : () => void;
+}) {
   const { toast } = useToast();
 
-  const [ruleType,         setRuleType]         = useState<NerLexiconRuleType>(parseRuleType(search?.get("ruleType") ?? null));
+  const [ruleType,         setRuleType]         = useState<NerLexiconRuleType>(initialRuleType ?? "HARD_BLOCK_SUFFIX");
   const [targetCount,      setTargetCount]      = useState("20");
   const [selectedModelId,  setSelectedModelId]  = useState("");
   const [bookTypeId,       setBookTypeId]       = useState(GLOBAL_BOOK_TYPE_VALUE);
@@ -168,7 +171,7 @@ export default function GenerateNerRulesPage() {
                 title      : "生成完成",
                 description: `新增 ${job.result.created} 条，跳过 ${job.result.skipped} 条；新规则默认停用。`
               });
-              router.push("/admin/knowledge-base/ner-rules");
+              onSaved();
             } else if (job.status === "error") {
               stopPolling();
               setGenerating(false);
@@ -193,23 +196,7 @@ export default function GenerateNerRulesPage() {
     : bookTypes.find((b) => b.id === bookTypeId)?.name ?? "未知书籍类型";
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="模型生成 NER 词典规则"
-        description="使用大模型批量生成词典规则；新规则默认停用，需在列表中手动启用。"
-        breadcrumbs={[
-          { label: "管理后台",     href: "/admin" },
-          { label: "知识库",       href: "/admin/knowledge-base" },
-          { label: "NER 词典规则", href: "/admin/knowledge-base/ner-rules" },
-          { label: "模型生成" }
-        ]}
-      >
-        <Button asChild variant="outline" disabled={generating}>
-          <Link href="/admin/knowledge-base/ner-rules">返回</Link>
-        </Button>
-      </PageHeader>
-
-      <PageSection>
+    <div>
         <div className="grid max-w-3xl gap-4">
           <div className="grid gap-2">
             <Label>生成模型</Label>
@@ -297,6 +284,7 @@ export default function GenerateNerRulesPage() {
             </div>
           ) : (
             <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>返回</Button>
               <Button type="button" variant="outline" onClick={() => void handlePreview()} disabled={previewLoading}>
                 {previewLoading ? "预览中…" : "预览提示词"}
               </Button>
@@ -322,7 +310,6 @@ export default function GenerateNerRulesPage() {
             </div>
           ) : null}
         </div>
-      </PageSection>
-    </PageContainer>
+    </div>
   );
 }

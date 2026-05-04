@@ -75,6 +75,7 @@ import {
 import { AliasChipsInput, normalizeAliasValues } from "./_components/alias-chips-input";
 import { PackForm } from "./_components/pack-form";
 import { EntryForm } from "./_components/entry-form";
+import { AliasPackGeneratorPanel } from "./_components/alias-pack-generator-panel";
 
 type EntryTypeValue = "CHARACTER" | "LOCATION" | "ORGANIZATION";
 
@@ -178,7 +179,7 @@ function buildEntryOverlapPreview(input: {
 /**
  * `/admin/knowledge-base/alias-packs`
  * 人物别名知识包管理页：左栏包列表 + 右栏条目管理。
- * 所有 Dialog/Sheet 已迁移为子路由（new/edit/entries-new/generate/import）或内联面板，
+ * 所有 Dialog/Sheet 已迁移为内联面板（创建、模型生成）或独立子路由（编辑/导入），
  * 仅保留 AlertDialog 用于不可恢复的删除确认。
  */
 export default function AliasPacksPage() {
@@ -424,6 +425,7 @@ function EntryList({
   const [rejectNote, setRejectNote]                 = useState("");
   const [rejectSubmitting, setRejectSubmitting]     = useState(false);
   const [creatingEntry, setCreatingEntry]           = useState(false);
+  const [generatingEntries, setGeneratingEntries]   = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -639,11 +641,9 @@ function EntryList({
           <Button asChild variant="ghost" size="sm">
             <a href={getExportUrl(pack.id, "json", "all")} download>导出全部</a>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/admin/knowledge-base/alias-packs/${pack.id}/generate`}>
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
-              模型生成
-            </Link>
+          <Button variant="outline" size="sm" type="button" onClick={() => setGeneratingEntries(true)} disabled={generatingEntries}>
+            <Sparkles className="mr-1 h-3.5 w-3.5" />
+            模型生成
           </Button>
           <Button size="sm" type="button" onClick={() => setCreatingEntry(true)} disabled={creatingEntry}>
             <Plus className="mr-1 h-3.5 w-3.5" />
@@ -674,6 +674,31 @@ function EntryList({
             redirectTo={`/admin/knowledge-base/alias-packs?packId=${pack.id}`}
             onSuccess={() => { setCreatingEntry(false); void load(); void onRefresh(); }}
             onCancel={() => setCreatingEntry(false)}
+          />
+        </div>
+      ) : null}
+
+      {generatingEntries ? (
+        <div className="mb-3 rounded-md border bg-muted/30 p-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">模型生成候选条目</h3>
+              <div className="mt-1 text-xs text-muted-foreground">为知识包「{pack.name}」调用大模型生成候选人物条目，预审通过后再写入。</div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="关闭"
+              onClick={() => setGeneratingEntries(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <AliasPackGeneratorPanel
+            packId={pack.id}
+            onClose={() => setGeneratingEntries(false)}
+            onSaved={() => { setGeneratingEntries(false); void load(); void onRefresh(); }}
           />
         </div>
       ) : null}

@@ -61,6 +61,8 @@ export interface StageParams {
   enableThinking? : boolean;
   /** 推理强度档位：仅部分模型支持。 */
   reasoningEffort?: "low" | "medium" | "high";
+  /** 是否启用联网搜索：仅在所选模型声明 supportsWebSearch 时下发。 */
+  enableWebSearch?: boolean;
 }
 
 /**

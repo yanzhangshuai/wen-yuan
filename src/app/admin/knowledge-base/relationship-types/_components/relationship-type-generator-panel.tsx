@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 
-import { PageContainer, PageHeader, PageSection } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,8 +48,7 @@ function previewLabels(candidate: GeneratedRelationshipTypeCandidate) {
   };
 }
 
-export default function GenerateRelationshipTypesPage() {
-  const router = useRouter();
+export function RelationshipTypeGeneratorPanel({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [models, setModels]                                         = useState<AdminModelItem[]>([]);
   const [targetCount, setTargetCount]                               = useState(30);
   const [targetGroup, setTargetGroup]                               = useState(ALL_VALUE);
@@ -131,8 +128,7 @@ export default function GenerateRelationshipTypesPage() {
         await createRelationshipType({ ...candidate, status: "PENDING_REVIEW" });
       }
       toast.success(`已保存 ${selectedCandidates.length} 条候选为待审核`);
-      router.push("/admin/knowledge-base/relationship-types");
-      router.refresh();
+      onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "候选保存失败");
     } finally {
@@ -141,22 +137,8 @@ export default function GenerateRelationshipTypesPage() {
   }
 
   return (
-    <PageContainer fullWidth>
-      <PageHeader
-        title="模型生成关系类型候选"
-        description="生成结果只作为候选预审，保存后进入待审核状态，不会直接启用。"
-        breadcrumbs={[
-          { label: "管理后台", href: "/admin" },
-          { label: "知识库",   href: "/admin/knowledge-base" },
-          { label: "关系类型", href: "/admin/knowledge-base/relationship-types" },
-          { label: "模型生成" }
-        ]}
-      >
-        <Button type="button" variant="outline" onClick={() => router.push("/admin/knowledge-base/relationship-types")}>返回</Button>
-      </PageHeader>
-
-      <PageSection>
-        <div className="grid gap-4">
+    <div>
+      <div className="grid gap-4">
           <div className="grid gap-3 lg:grid-cols-[160px_180px_minmax(180px,1fr)_auto]">
             <Field label="目标条数" id="target-count">
               <Input id="target-count" type="number" min={1} max={100} value={targetCount} onChange={(event) => setTargetCount(Number(event.target.value))} />
@@ -164,6 +146,7 @@ export default function GenerateRelationshipTypesPage() {
             <FilterSelect label="目标分组" value={targetGroup} values={[ALL_VALUE, ...RELATIONSHIP_TYPE_GROUPS]} getLabel={(value) => value === ALL_VALUE ? "不限分组" : value} onValueChange={setTargetGroup} />
             <FilterSelect label="生成模型" value={modelId} values={[ALL_VALUE, ...activeModels.map((item) => item.id)]} getLabel={(value) => value === ALL_VALUE ? "使用默认模型" : activeModels.find((item) => item.id === value)?.name ?? value} onValueChange={setModelId} />
             <div className="flex items-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>返回</Button>
               <Button type="button" variant="outline" onClick={() => void handlePreviewPrompt()}>预览提示词</Button>
               <Button type="button" onClick={() => void handleGenerate()} disabled={generating}>{generating ? "生成中..." : "开始预审"}</Button>
             </div>
@@ -224,8 +207,7 @@ export default function GenerateRelationshipTypesPage() {
             </div>
           ) : null}
         </div>
-      </PageSection>
-    </PageContainer>
+    </div>
   );
 }
 

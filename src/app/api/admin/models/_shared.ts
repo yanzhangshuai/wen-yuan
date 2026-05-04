@@ -18,21 +18,25 @@ export const modelRouteParamsSchema = z.object({
 /** 更新模型配置请求体 Schema。 */
 export const updateModelBodySchema = z.object({
   /** Provider 分组名，允许管理员自定义。 */
-  provider       : z.string().trim().min(1, "Provider 不能为空").optional(),
+  provider         : z.string().trim().min(1, "Provider 不能为空").optional(),
   /** 调用协议。 */
-  protocol       : z.enum(["openai-compatible", "gemini"]).optional(),
+  protocol         : z.enum(["openai-compatible", "gemini"]).optional(),
   /** 展示名称。 */
-  name           : z.string().trim().min(1, "模型名称不能为空").optional(),
+  name             : z.string().trim().min(1, "模型名称不能为空").optional(),
   /** 策略别名；null 表示清空。 */
-  aliasKey       : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
+  aliasKey         : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
   /** 供应商侧模型标识（接口字段），为空字符串视为无效输入。 */
-  providerModelId: z.string().trim().min(1, "模型标识不能为空").optional(),
+  providerModelId  : z.string().trim().min(1, "模型标识不能为空").optional(),
   /** API Key：可选；允许显式传 `null` 表示“清空已存储密钥”（业务规则）。 */
-  apiKey         : z.string().trim().min(1, "API Key 不能为空").nullable().optional(),
+  apiKey           : z.string().trim().min(1, "API Key 不能为空").nullable().optional(),
   /** 自定义 BaseURL：仅接受完整 URL，避免后续请求拼接出错。 */
-  baseUrl        : z.string().trim().url("BaseURL 格式不合法").optional(),
+  baseUrl          : z.string().trim().url("BaseURL 格式不合法").optional(),
   /** 是否启用模型开关，影响该模型是否可被策略层选择。 */
-  isEnabled      : z.boolean().optional()
+  isEnabled        : z.boolean().optional(),
+  /** 能力声明：是否支持深度思考。 */
+  supportsThinking : z.boolean().optional(),
+  /** 能力声明：是否支持联网搜索。 */
+  supportsWebSearch: z.boolean().optional()
 }).refine((value) => Object.keys(value).length > 0, {
   // 防御目的：拒绝“空更新”请求，避免看似成功但实际无变更，造成调用方误判。
   message: "至少提供一个可更新字段"
@@ -40,15 +44,17 @@ export const updateModelBodySchema = z.object({
 
 /** 新增模型请求体 Schema。 */
 export const createModelBodySchema = z.object({
-  provider : z.string().trim().min(1, "Provider 不能为空"),
-  protocol : z.enum(["openai-compatible", "gemini"]),
-  name     : z.string().trim().min(1, "模型名称不能为空"),
-  modelId  : z.string().trim().min(1, "模型标识不能为空"),
-  aliasKey : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
-  baseUrl  : z.string().trim().url("BaseURL 格式不合法"),
-  apiKey   : z.string().trim().min(1, "API Key 不能为空").optional(),
-  isEnabled: z.boolean().optional(),
-  isDefault: z.boolean().optional()
+  provider         : z.string().trim().min(1, "Provider 不能为空"),
+  protocol         : z.enum(["openai-compatible", "gemini"]),
+  name             : z.string().trim().min(1, "模型名称不能为空"),
+  modelId          : z.string().trim().min(1, "模型标识不能为空"),
+  aliasKey         : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
+  baseUrl          : z.string().trim().url("BaseURL 格式不合法"),
+  apiKey           : z.string().trim().min(1, "API Key 不能为空").optional(),
+  isEnabled        : z.boolean().optional(),
+  isDefault        : z.boolean().optional(),
+  supportsThinking : z.boolean().optional(),
+  supportsWebSearch: z.boolean().optional()
 });
 
 /**

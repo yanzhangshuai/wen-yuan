@@ -28,6 +28,27 @@ function toAiUsage(usage: GeminiUsageMetadata | undefined): AiUsage {
 }
 
 /**
+ * 把跨厂商 reasoningEffort / enableThinking 映射为 Gemini thinkingConfig.thinkingBudget。
+ * 约定：未启用 enableThinking 时返回 undefined（不下发字段）；
+ * 启用后按 reasoningEffort 推断预算：low=512、medium=2048、high=8192；未指定则交由模型自动决定（-1）。
+ */
+function mapReasoningEffortToThinkingBudget(options: AiGenerateOptions | undefined): number | undefined {
+  if (options?.enableThinking !== true) {
+    return undefined;
+  }
+  switch (options.reasoningEffort) {
+    case "low":
+      return 512;
+    case "medium":
+      return 2048;
+    case "high":
+      return 8192;
+    default:
+      return -1;
+  }
+}
+
+/**
  * 功能：实现 Gemini Provider，按统一接口生成 JSON 文本。
  * 输入：构造参数（apiKey、modelName）与 generateJson 参数。
  * 输出：模型返回的 JSON 文本。
@@ -66,11 +87,19 @@ export class GeminiClient implements AiProviderClient {
     input: PromptMessageInput,
     options?: AiGenerateOptions
   ): Promise<{ content: string; usage: AiUsage | null }> {
+    // 思考 / 联网搜索集中在 SDK 上层参数，仅在管理员勾选且模型声明支持时下发，
+    // 避免限制到不支持该能力的 Gemini 模型上报错。
+    const thinkingBudget = mapReasoningEffortToThinkingBudget(options);
+    const enableSearch = options?.enableWebSearch === true;
+
     // 按当前配置加载模型（默认 gemini-3.1-flash）。
     const model = this.client.getGenerativeModel({
       model            : this.modelName,
-      systemInstruction: input.system.trim().length > 0 ? input.system : undefined
-    });
+      systemInstruction: input.system.trim().length > 0 ? input.system : undefined,
+      // googleSearch 是 Gemini SDK 提供的内置联网搜索工具，
+      // 仅当用户明确启用时下发。
+      ...(enableSearch ? { tools: [{ googleSearch: {} }] } : {})
+    } as Parameters<GoogleGenerativeAI["getGenerativeModel"]>[0]);
 
     const result = await model.generateContent({
       contents        : [{ role: "user", parts: [{ text: input.user }] }],
@@ -81,7 +110,10 @@ export class GeminiClient implements AiProviderClient {
         temperature     : options?.temperature ?? 0.2,
         topP            : options?.topP,
         // 展开输出 token 上限，防止内容被截断。
-        maxOutputTokens : options?.maxOutputTokens ?? 8192
+        maxOutputTokens : options?.maxOutputTokens ?? 8192,
+        // thinkingBudget 传 -1 表示交由 Gemini 自动判定思考预算，
+        // 0 表示关闭思考，正数表示为思考预留的 token 上限。
+        ...(typeof thinkingBudget === "number" ? { thinkingConfig: { thinkingBudget } } : {})
       }
     });
 

@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
-import {
-  PageContainer,
-  PageHeader,
-  PageSection
-} from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,8 +43,7 @@ function formatGenerationModelOption(model: { name: string; provider: string; is
   return `${model.name} · ${model.provider}${model.isDefault ? " · 默认" : ""}`;
 }
 
-export default function TitleFilterGeneratePage() {
-  const router = useRouter();
+export function GenericTitleGeneratorPanel({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast();
 
   const [bookTypes, setBookTypes] = useState<BookTypeItem[]>([]);
@@ -230,8 +223,7 @@ export default function TitleFilterGeneratePage() {
         title      : failureCount > 0 ? "部分候选已保存" : "生成结果已保存",
         description: `成功 ${successCount} 条${failureCount > 0 ? `，失败 ${failureCount} 条` : ""}。`
       });
-      router.push("/admin/knowledge-base/title-filters");
-      router.refresh();
+      onSaved();
     } finally {
       setSaving(false);
     }
@@ -241,20 +233,9 @@ export default function TitleFilterGeneratePage() {
   const selectedBookTypeName = bookTypes.find((bt) => bt.id === selectedReferenceBookTypeId)?.name;
 
   return (
-    <PageContainer>
-      <PageHeader
-        title={review ? "审核生成结果" : "模型生成泛化称谓候选"}
-        description={review ? "选择需要保存的候选条目，确认后写入泛称词库。" : "调用大模型生成候选称谓，预审通过后再写入词库。"}
-        breadcrumbs={[
-          { label: "管理后台", href: "/admin" },
-          { label: "知识库",   href: "/admin/knowledge-base" },
-          { label: "泛化称谓", href: "/admin/knowledge-base/title-filters" },
-          { label: review ? "审核候选" : "模型生成" }
-        ]}
-      />
-
+    <>
       {!review ? (
-        <PageSection>
+        <div>
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
@@ -336,7 +317,7 @@ export default function TitleFilterGeneratePage() {
 
             {!generating ? (
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => router.push("/admin/knowledge-base/title-filters")}>返回</Button>
+                <Button type="button" variant="outline" onClick={onClose}>返回</Button>
                 <Button type="button" variant="outline" onClick={() => void handlePreview()} disabled={previewLoading}>
                   {previewLoading ? "预览中…" : "预览提示词"}
                 </Button>
@@ -360,9 +341,9 @@ export default function TitleFilterGeneratePage() {
               </div>
             ) : null}
           </div>
-        </PageSection>
+        </div>
       ) : (
-        <PageSection>
+        <div>
           <div className="grid gap-4">
             <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
               模型：{review.model.provider} / {review.model.modelName} · 候选 {review.candidates.length} 条 · 已选中 {selectedCandidates.size} 条 · 跳过 {review.skipped} 条 · 已过滤已有 {review.skippedExisting} 条
@@ -450,8 +431,8 @@ export default function TitleFilterGeneratePage() {
               </Button>
             </div>
           </div>
-        </PageSection>
+        </div>
       )}
-    </PageContainer>
+    </>
   );
 }

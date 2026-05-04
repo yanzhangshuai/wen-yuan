@@ -1,9 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
-import { PageContainer, PageHeader, PageSection } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,8 +43,7 @@ function formatGenerationModelOption(model: { name: string; provider: string; is
   return `${model.name} · ${model.provider}${model.isDefault ? " · 默认" : ""}`;
 }
 
-export default function GeneratePromptExtractionRulesPage() {
-  const router = useRouter();
+export function PromptExtractionRuleGeneratorPanel({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast();
   const [bookTypes, setBookTypes]                           = useState<BookTypeItem[]>([]);
   const [localRuleType, setLocalRuleType]                   = useState<PromptRuleType>("ENTITY");
@@ -153,8 +150,7 @@ export default function GeneratePromptExtractionRulesPage() {
                 title      : "生成完成",
                 description: `新增 ${job.result.created} 条，跳过 ${job.result.skipped} 条；新规则默认停用。`
               });
-              router.push("/admin/knowledge-base/prompt-extraction-rules");
-              router.refresh();
+              onSaved();
             } else if (job.status === "error") {
               stopPolling();
               setGenerating(false);
@@ -179,21 +175,7 @@ export default function GeneratePromptExtractionRulesPage() {
     : bookTypes.find((bookType) => bookType.id === bookTypeId)?.name ?? "未知书籍类型";
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="模型生成 Prompt 提取规则"
-        description="生成结果会直接写入数据库，来源为 LLM_SUGGESTED，默认停用；完成后请在列表中复核并手动启用。"
-        breadcrumbs={[
-          { label: "管理后台",         href: "/admin" },
-          { label: "知识库",           href: "/admin/knowledge-base" },
-          { label: "Prompt 提取规则", href: "/admin/knowledge-base/prompt-extraction-rules" },
-          { label: "模型生成" }
-        ]}
-      >
-        <Button type="button" variant="outline" onClick={() => router.push("/admin/knowledge-base/prompt-extraction-rules")} disabled={generating}>返回</Button>
-      </PageHeader>
-
-      <PageSection>
+    <div>
         <div className="grid max-w-3xl gap-4">
           <div className="space-y-1.5">
             <Label>生成模型</Label>
@@ -277,6 +259,7 @@ export default function GeneratePromptExtractionRulesPage() {
             </div>
           ) : (
             <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>返回</Button>
               <Button type="button" variant="outline" onClick={() => void handlePreview()} disabled={previewLoading}>
                 {previewLoading ? "预览中…" : "预览提示词"}
               </Button>
@@ -302,7 +285,6 @@ export default function GeneratePromptExtractionRulesPage() {
             </div>
           ) : null}
         </div>
-      </PageSection>
-    </PageContainer>
+    </div>
   );
 }

@@ -127,6 +127,8 @@ export const AiModelScalarFieldEnum = {
   apiKey: 'apiKey',
   isEnabled: 'isEnabled',
   isDefault: 'isDefault',
+  supportsThinking: 'supportsThinking',
+  supportsWebSearch: 'supportsWebSearch',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

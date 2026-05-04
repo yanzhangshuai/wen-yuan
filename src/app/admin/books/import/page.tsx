@@ -498,11 +498,13 @@ export default function AdminImportPage() {
    * 这里显式映射是为了隔离后端字段变化，形成页面自己的输入契约。
    */
   const enabledModels: EnabledModelItem[] = models.map((model) => ({
-    id             : model.id,
-    name           : model.name,
-    provider       : model.provider,
-    providerModelId: model.providerModelId,
-    aliasKey       : model.aliasKey
+    id               : model.id,
+    name             : model.name,
+    provider         : model.provider,
+    providerModelId  : model.providerModelId,
+    aliasKey         : model.aliasKey,
+    supportsThinking : model.supportsThinking,
+    supportsWebSearch: model.supportsWebSearch
   }));
 
   return (

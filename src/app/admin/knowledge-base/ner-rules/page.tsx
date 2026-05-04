@@ -47,6 +47,7 @@ import {
   type NerLexiconRuleType
 } from "@/lib/services/ner-rules";
 import { NerRuleForm } from "./_components/ner-rule-form";
+import { NerRuleGeneratorPanel } from "./_components/ner-rule-generator-panel";
 
 const ALL_BOOK_TYPES_VALUE = "__ALL_BOOK_TYPES__";
 
@@ -80,6 +81,7 @@ export default function NerRulesPage() {
   const [deleteTarget,   setDeleteTarget]   = useState<NerLexiconRuleItem | null>(null);
   const [deletePending,  setDeletePending]  = useState(false);
   const [creating,       setCreating]       = useState(false);
+  const [generating,     setGenerating]     = useState(false);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -196,11 +198,9 @@ export default function NerRulesPage() {
         ]}
       >
         <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/knowledge-base/ner-rules/generate?ruleType=${ruleType}`}>
-              <Sparkles className="mr-1 h-4 w-4" />
-              模型生成
-            </Link>
+          <Button type="button" variant="outline" size="sm" onClick={() => setGenerating(true)} disabled={generating}>
+            <Sparkles className="mr-1 h-4 w-4" />
+            模型生成
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => void persistOrder()} disabled={items.length === 0}>
             保存排序
@@ -237,6 +237,33 @@ export default function NerRulesPage() {
               redirectTo={`/admin/knowledge-base/ner-rules?ruleType=${ruleType}`}
               onSuccess={() => { setCreating(false); void load(); }}
               onCancel={() => setCreating(false)}
+            />
+          </div>
+        </PageSection>
+      ) : null}
+
+      {generating ? (
+        <PageSection>
+          <div className="rounded-md border bg-muted/30 p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">模型生成 NER 词典规则</h3>
+                <div className="mt-1 text-xs text-muted-foreground">使用大模型批量生成词典规则；新规则默认停用，需在列表中手动启用。</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="关闭"
+                onClick={() => setGenerating(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <NerRuleGeneratorPanel
+              initialRuleType={ruleType}
+              onClose={() => setGenerating(false)}
+              onSaved={() => { setGenerating(false); void load(); }}
             />
           </div>
         </PageSection>

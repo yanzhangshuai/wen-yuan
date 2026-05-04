@@ -60,27 +60,31 @@ const aliasKeySchema = z.string().trim().min(1, "Alias Key 不能为空").nullab
 const baseUrlSchema = z.string().trim().url("BaseURL 格式不合法");
 
 const createModelInputSchema = z.object({
-  provider : providerSchema,
-  protocol : protocolSchema,
-  name     : nameSchema,
-  modelId  : providerModelIdSchema,
-  aliasKey : aliasKeySchema.optional(),
-  baseUrl  : baseUrlSchema,
-  apiKey   : z.string().trim().min(1, "API Key 不能为空").optional(),
-  isEnabled: z.boolean().optional(),
-  isDefault: z.boolean().optional()
+  provider         : providerSchema,
+  protocol         : protocolSchema,
+  name             : nameSchema,
+  modelId          : providerModelIdSchema,
+  aliasKey         : aliasKeySchema.optional(),
+  baseUrl          : baseUrlSchema,
+  apiKey           : z.string().trim().min(1, "API Key 不能为空").optional(),
+  isEnabled        : z.boolean().optional(),
+  isDefault        : z.boolean().optional(),
+  supportsThinking : z.boolean().optional(),
+  supportsWebSearch: z.boolean().optional()
 });
 
 const updateModelInputSchema = z.object({
-  id             : idSchema,
-  provider       : providerSchema.optional(),
-  protocol       : protocolSchema.optional(),
-  name           : nameSchema.optional(),
-  providerModelId: providerModelIdSchema.optional(),
-  aliasKey       : aliasKeySchema.optional(),
-  baseUrl        : baseUrlSchema.optional(),
-  isEnabled      : z.boolean().optional(),
-  apiKey         : z.discriminatedUnion("action", [
+  id               : idSchema,
+  provider         : providerSchema.optional(),
+  protocol         : protocolSchema.optional(),
+  name             : nameSchema.optional(),
+  providerModelId  : providerModelIdSchema.optional(),
+  aliasKey         : aliasKeySchema.optional(),
+  baseUrl          : baseUrlSchema.optional(),
+  isEnabled        : z.boolean().optional(),
+  supportsThinking : z.boolean().optional(),
+  supportsWebSearch: z.boolean().optional(),
+  apiKey           : z.discriminatedUnion("action", [
     z.object({
       action: z.literal("unchanged")
     }),
@@ -100,27 +104,31 @@ const updateModelInputSchema = z.object({
  */
 interface AiModelRecord {
   /** 模型记录主键 ID。 */
-  id       : string;
+  id               : string;
   /** 提供商标识/显示分组。 */
-  provider : string;
+  provider         : string;
   /** 调用协议。 */
-  protocol : string;
+  protocol         : string;
   /** 管理端展示名称。 */
-  name     : string;
+  name             : string;
   /** 提供商侧模型 ID（真实调用使用）。 */
-  modelId  : string;
+  modelId          : string;
   /** 别名键（用于推荐与策略映射，可为空）。 */
-  aliasKey : string | null;
+  aliasKey         : string | null;
   /** 提供商 API Base URL。 */
-  baseUrl  : string;
+  baseUrl          : string;
   /** 密钥（存储层可为空；存在时通常为加密串）。 */
-  apiKey   : string | null;
+  apiKey           : string | null;
   /** 是否启用。 */
-  isEnabled: boolean;
+  isEnabled        : boolean;
   /** 是否全局默认模型。 */
-  isDefault: boolean;
+  isDefault        : boolean;
+  /** 能力声明：深度思考。 */
+  supportsThinking : boolean;
+  /** 能力声明：联网搜索。 */
+  supportsWebSearch: boolean;
   /** 最近更新时间（用于缓存与变更追踪）。 */
-  updatedAt: Date;
+  updatedAt        : Date;
 }
 
 export interface ModelPerformanceRatings {
@@ -149,31 +157,35 @@ export interface ModelPerformanceSnapshot {
 
 export interface ModelListItem {
   /** 模型 ID。 */
-  id             : string;
+  id               : string;
   /** 提供商。 */
-  provider       : string;
+  provider         : string;
   /** 调用协议。 */
-  protocol       : AiModelProtocol;
+  protocol         : AiModelProtocol;
   /** 管理台显示名。 */
-  name           : string;
+  name             : string;
   /** 提供商模型标识。 */
-  providerModelId: string;
+  providerModelId  : string;
   /** 推荐/策略别名。 */
-  aliasKey       : string | null;
+  aliasKey         : string | null;
   /** 调用基地址。 */
-  baseUrl        : string;
+  baseUrl          : string;
   /** 是否启用。 */
-  isEnabled      : boolean;
+  isEnabled        : boolean;
   /** 是否默认。 */
-  isDefault      : boolean;
+  isDefault        : boolean;
+  /** 能力声明：深度思考。 */
+  supportsThinking : boolean;
+  /** 能力声明：联网搜索。 */
+  supportsWebSearch: boolean;
   /** 脱敏后的密钥（仅供回显状态，不可用于调用）。 */
-  apiKeyMasked   : string | null;
+  apiKeyMasked     : string | null;
   /** 是否完成可调用配置（baseUrl + apiKey 等）。 */
-  isConfigured   : boolean;
+  isConfigured     : boolean;
   /** 性能快照。 */
-  performance    : ModelPerformanceSnapshot;
+  performance      : ModelPerformanceSnapshot;
   /** ISO 时间字符串，便于前端直接显示。 */
-  updatedAt      : string;
+  updatedAt        : string;
 }
 
 export type ApiKeyChange =
@@ -183,55 +195,65 @@ export type ApiKeyChange =
 
 export interface UpdateModelInput {
   /** Provider 分组名。 */
-  provider?       : string;
+  provider?         : string;
   /** 调用协议。 */
-  protocol?       : AiModelProtocol;
+  protocol?         : AiModelProtocol;
   /** 管理台显示名称。 */
-  name?           : string;
+  name?             : string;
   /** 推荐/策略别名。 */
-  aliasKey?       : string | null;
+  aliasKey?         : string | null;
   /** 目标模型 ID。 */
-  providerModelId?: string;
+  providerModelId?  : string;
   /** 被更新的记录 ID。 */
-  id              : string;
+  id                : string;
   /** 新 baseUrl。 */
-  baseUrl?        : string;
+  baseUrl?          : string;
   /** 新启停状态。 */
-  isEnabled?      : boolean;
+  isEnabled?        : boolean;
+  /** 能力声明：深度思考。 */
+  supportsThinking? : boolean;
+  /** 能力声明：联网搜索。 */
+  supportsWebSearch?: boolean;
   /** 密钥变更动作（不变/清空/设置）。 */
-  apiKey?         : ApiKeyChange;
+  apiKey?           : ApiKeyChange;
 }
 
 export interface UpdateAdminModelPayload {
   /** 可选覆盖 provider。 */
-  provider?       : string;
+  provider?         : string;
   /** 可选覆盖协议。 */
-  protocol?       : AiModelProtocol;
+  protocol?         : AiModelProtocol;
   /** 可选覆盖显示名。 */
-  name?           : string;
+  name?             : string;
   /** 可选覆盖别名。 */
-  aliasKey?       : string | null;
+  aliasKey?         : string | null;
   /** 可选覆盖的 providerModelId。 */
-  providerModelId?: string;
+  providerModelId?  : string;
   /** 可选覆盖的 baseUrl。 */
-  baseUrl?        : string;
+  baseUrl?          : string;
   /** 可选启停状态。 */
-  isEnabled?      : boolean;
+  isEnabled?        : boolean;
+  /** 能力声明：深度思考。 */
+  supportsThinking? : boolean;
+  /** 能力声明：联网搜索。 */
+  supportsWebSearch?: boolean;
   /** 管理端输入的明文密钥；null 表示显式清空。 */
-  apiKey?         : string | null;
+  apiKey?           : string | null;
 }
 
 export type CreateModelInput = z.infer<typeof createModelInputSchema>;
 
 export interface ExportedModelConfig {
-  provider : string;
-  protocol : AiModelProtocol;
-  name     : string;
-  modelId  : string;
-  aliasKey : string | null;
-  baseUrl  : string;
-  isEnabled: boolean;
-  isDefault: boolean;
+  provider         : string;
+  protocol         : AiModelProtocol;
+  name             : string;
+  modelId          : string;
+  aliasKey         : string | null;
+  baseUrl          : string;
+  isEnabled        : boolean;
+  isDefault        : boolean;
+  supportsThinking : boolean;
+  supportsWebSearch: boolean;
 }
 
 export interface ImportModelsResult {
@@ -262,17 +284,19 @@ export interface ModelConnectivityResult {
 }
 
 const modelSelect = {
-  id       : true,
-  provider : true,
-  protocol : true,
-  name     : true,
-  modelId  : true,
-  aliasKey : true,
-  baseUrl  : true,
-  apiKey   : true,
-  isEnabled: true,
-  isDefault: true,
-  updatedAt: true
+  id               : true,
+  provider         : true,
+  protocol         : true,
+  name             : true,
+  modelId          : true,
+  aliasKey         : true,
+  baseUrl          : true,
+  apiKey           : true,
+  isEnabled        : true,
+  isDefault        : true,
+  supportsThinking : true,
+  supportsWebSearch: true,
+  updatedAt        : true
 } as const;
 
 const FINAL_MODEL_CALL_STATUSES = ["SUCCESS", "ERROR"] as const;
@@ -386,19 +410,21 @@ function toModelListItem(
   const plainApiKey = readStoredApiKey(model.apiKey);
 
   return {
-    id             : model.id,
-    provider       : model.provider,
-    protocol       : protocolSchema.parse(model.protocol),
-    name           : model.name,
-    providerModelId: model.modelId,
-    aliasKey       : model.aliasKey,
-    baseUrl        : model.baseUrl,
-    isEnabled      : model.isEnabled,
-    isDefault      : model.isDefault,
-    apiKeyMasked   : maskSensitiveValue(plainApiKey),
-    isConfigured   : Boolean(plainApiKey),
+    id               : model.id,
+    provider         : model.provider,
+    protocol         : protocolSchema.parse(model.protocol),
+    name             : model.name,
+    providerModelId  : model.modelId,
+    aliasKey         : model.aliasKey,
+    baseUrl          : model.baseUrl,
+    isEnabled        : model.isEnabled,
+    isDefault        : model.isDefault,
+    supportsThinking : model.supportsThinking,
+    supportsWebSearch: model.supportsWebSearch,
+    apiKeyMasked     : maskSensitiveValue(plainApiKey),
+    isConfigured     : Boolean(plainApiKey),
     performance,
-    updatedAt      : model.updatedAt.toISOString()
+    updatedAt        : model.updatedAt.toISOString()
   };
 }
 
@@ -429,14 +455,16 @@ function containsStringValue(value: unknown, targets: Set<string>): boolean {
 
 function toExportedModelConfig(model: AiModelRecord): ExportedModelConfig {
   return {
-    provider : model.provider,
-    protocol : protocolSchema.parse(model.protocol),
-    name     : model.name,
-    modelId  : model.modelId,
-    aliasKey : model.aliasKey,
-    baseUrl  : model.baseUrl,
-    isEnabled: model.isEnabled,
-    isDefault: model.isDefault
+    provider         : model.provider,
+    protocol         : protocolSchema.parse(model.protocol),
+    name             : model.name,
+    modelId          : model.modelId,
+    aliasKey         : model.aliasKey,
+    baseUrl          : model.baseUrl,
+    isEnabled        : model.isEnabled,
+    isDefault        : model.isDefault,
+    supportsThinking : model.supportsThinking,
+    supportsWebSearch: model.supportsWebSearch
   };
 }
 
@@ -661,15 +689,17 @@ export function createModelsModule(
 
       return tx.aiModel.create({
         data: {
-          provider : normalizedProvider,
-          protocol : parsedInput.protocol,
-          name     : parsedInput.name.trim(),
-          modelId  : normalizedModelId,
-          aliasKey : normalizedAliasKey,
-          baseUrl  : normalizedBaseUrl,
-          apiKey   : encryptedApiKey,
+          provider         : normalizedProvider,
+          protocol         : parsedInput.protocol,
+          name             : parsedInput.name.trim(),
+          modelId          : normalizedModelId,
+          aliasKey         : normalizedAliasKey,
+          baseUrl          : normalizedBaseUrl,
+          apiKey           : encryptedApiKey,
           isEnabled,
-          isDefault: parsedInput.isDefault ?? false
+          isDefault        : parsedInput.isDefault ?? false,
+          supportsThinking : parsedInput.supportsThinking ?? false,
+          supportsWebSearch: parsedInput.supportsWebSearch ?? false
         },
         select: modelSelect
       });
@@ -732,6 +762,12 @@ export function createModelsModule(
         aliasKey : nextAliasKey,
         baseUrl  : nextBaseUrl,
         isEnabled: nextIsEnabled,
+        ...(typeof parsedInput.supportsThinking === "boolean"
+          ? { supportsThinking: parsedInput.supportsThinking }
+          : {}),
+        ...(typeof parsedInput.supportsWebSearch === "boolean"
+          ? { supportsWebSearch: parsedInput.supportsWebSearch }
+          : {}),
         ...(parsedInput.apiKey ? { apiKey: nextEncryptedApiKey } : {})
       },
       select: modelSelect
@@ -822,14 +858,16 @@ export function createModelsModule(
         }
 
         const data = {
-          provider : model.provider.trim(),
-          protocol : model.protocol,
-          name     : model.name.trim(),
-          modelId  : model.modelId.trim(),
-          aliasKey : normalizedAliasKey,
-          baseUrl  : normalizedBaseUrl,
-          isEnabled: model.isEnabled ?? false,
-          isDefault: model.isDefault ?? false
+          provider         : model.provider.trim(),
+          protocol         : model.protocol,
+          name             : model.name.trim(),
+          modelId          : model.modelId.trim(),
+          aliasKey         : normalizedAliasKey,
+          baseUrl          : normalizedBaseUrl,
+          isEnabled        : model.isEnabled ?? false,
+          isDefault        : model.isDefault ?? false,
+          supportsThinking : model.supportsThinking ?? false,
+          supportsWebSearch: model.supportsWebSearch ?? false
         };
 
         if (existing) {

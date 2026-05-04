@@ -32,6 +32,8 @@ export const stageModelConfigSchema = z.object({
   enableThinking : z.boolean().optional(),
   /** 推理强度档位：用于平衡延迟、成本与质量。 */
   reasoningEffort: z.enum(["low", "medium", "high"]).optional(),
+  /** 是否启用联网搜索：仅在所选模型声明支持时下发。 */
+  enableWebSearch: z.boolean().optional(),
   /** 失败重试次数（不含首次请求）。 */
   maxRetries     : z.number().int().min(0).max(5).optional(),
   /** 重试退避基础毫秒数，避免瞬时雪崩重试。 */

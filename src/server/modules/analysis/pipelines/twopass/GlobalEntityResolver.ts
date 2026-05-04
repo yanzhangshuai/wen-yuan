@@ -139,6 +139,9 @@ export function createGlobalEntityResolver(
         : {}),
       ...(model.params.reasoningEffort
         ? { reasoningEffort: model.params.reasoningEffort }
+        : {}),
+      ...(typeof model.params.enableWebSearch === "boolean"
+        ? { enableWebSearch: model.params.enableWebSearch }
         : {})
     };
   }

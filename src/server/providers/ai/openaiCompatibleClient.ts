@@ -64,13 +64,15 @@ function extractTextContent(content: string | Array<{ text?: string; type?: stri
  */
 export interface OpenAiCompatibleConfig {
   /** 供应商名，仅用于错误信息与日志可读性。 */
-  providerName: string;
+  providerName   : string;
   /** API Key（缺失即抛错，防止以匿名请求误调用生产网关）。 */
-  apiKey      : string | undefined;
+  apiKey         : string | undefined;
   /** 兼容网关基地址。 */
-  baseUrl     : string;
+  baseUrl        : string;
   /** 默认模型名。 */
-  modelName   : string;
+  modelName      : string;
+  /** 联网搜索接入风格；qwen 走 enable_search 顶层字段，其余走通用 tools 数组。 */
+  webSearchStyle?: "tools" | "qwen" | "none";
 }
 
 /**
@@ -78,10 +80,11 @@ export interface OpenAiCompatibleConfig {
  * 这样新模型平台只要提供兼容网关，就不需要再为每个厂商单独维护一套请求逻辑。
  */
 export class OpenAiCompatibleClient implements AiProviderClient {
-  private readonly providerName: string;
-  private readonly apiKey      : string;
-  private readonly baseUrl     : string;
-  private readonly modelName   : string;
+  private readonly providerName  : string;
+  private readonly apiKey        : string;
+  private readonly baseUrl       : string;
+  private readonly modelName     : string;
+  private readonly webSearchStyle: "tools" | "qwen" | "none";
 
   constructor(config: OpenAiCompatibleConfig) {
     if (!config.apiKey) {
@@ -93,6 +96,7 @@ export class OpenAiCompatibleClient implements AiProviderClient {
     // 统一移除尾部斜杠，避免后续路径拼接出现 `//chat/completions`。
     this.baseUrl = config.baseUrl.replace(/\/+$/, "");
     this.modelName = config.modelName;
+    this.webSearchStyle = config.webSearchStyle ?? "tools";
   }
 
   /**
@@ -125,6 +129,14 @@ export class OpenAiCompatibleClient implements AiProviderClient {
           : {}),
         ...(options?.reasoningEffort
           ? { reasoning_effort: options.reasoningEffort }
+          : {}),
+        // 联网搜索：qwen 系走顶层 enable_search 字段，其余兼容供应商（doubao/glm）走 tools 数组。
+        // 未启用 / 供应商不支持时不下发任何参数，避免下游报 400。
+        ...(options?.enableWebSearch && this.webSearchStyle === "qwen"
+          ? { enable_search: true }
+          : {}),
+        ...(options?.enableWebSearch && this.webSearchStyle === "tools"
+          ? { tools: [{ type: "web_search" }] }
           : {}),
         response_format: { type: "json_object" },
         messages

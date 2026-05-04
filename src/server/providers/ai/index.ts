@@ -26,6 +26,8 @@ export interface AiGenerateOptions {
   enableThinking? : boolean;
   /** 推理强度档位。 */
   reasoningEffort?: "low" | "medium" | "high";
+  /** 是否启用联网搜索；不同协议落地参数不同，仅在模型声明 supportsWebSearch 时才会启用。 */
+  enableWebSearch?: boolean;
 }
 
 export interface AiGenerateResult {
@@ -60,15 +62,17 @@ export type AiProviderProtocol = "openai-compatible" | "gemini";
  */
 export interface CreateAiProviderInput {
   /** Provider 标识，仅用于错误提示和日志可读性。 */
-  provider : string;
+  provider       : string;
   /** 协议类型，决定实例化哪个 SDK 适配器。 */
-  protocol : AiProviderProtocol;
+  protocol       : AiProviderProtocol;
   /** 访问密钥（敏感字段，需服务端加密存储）。 */
-  apiKey   : string;
+  apiKey         : string;
   /** 可选自定义网关地址，未配置时使用各厂商默认地址。 */
-  baseUrl? : string;
+  baseUrl?       : string;
   /** 具体模型名（如 deepseek-chat、qwen-max 等）。 */
-  modelName: string;
+  modelName      : string;
+  /** 联网搜索接入风格；缺省走通用 tools 数组（适配 doubao/glm 等），qwen 走 enable_search 顶层字段。 */
+  webSearchStyle?: "tools" | "qwen" | "none";
 }
 
 /**
@@ -78,6 +82,24 @@ export interface CreateAiProviderInput {
  * 异常：protocol 不受支持或关键参数缺失时抛错。
  * 副作用：无（仅创建客户端对象，不发请求）。
  */
+/**
+ * 功能：根据 provider 名称推断兼容网关的 web search 协议风格。
+ * 输入：provider 显示/分组名（管理员可自定义大小写）。
+ * 输出："qwen" / "tools" / "none"。
+ * 异常：无（未知供应商默认 tools，由模型能力开关决定是否真正启用）。
+ */
+function inferWebSearchStyle(provider: string): "qwen" | "tools" | "none" {
+  const normalized = provider.trim().toLowerCase();
+  if (normalized.includes("qwen") || normalized.includes("通义") || normalized.includes("dashscope")) {
+    return "qwen";
+  }
+  if (normalized.includes("deepseek")) {
+    // DeepSeek 暂未提供官方联网搜索能力，显式声明为 none，避免静默下发无效参数。
+    return "none";
+  }
+  return "tools";
+}
+
 export function createAiProviderClient(input: CreateAiProviderInput): AiProviderClient {
   if (!input.modelName.trim()) {
     // 业务防御：空模型名会导致后续请求落到厂商默认值，风险不可控，因此直接拒绝。
@@ -93,10 +115,14 @@ export function createAiProviderClient(input: CreateAiProviderInput): AiProvider
       }
 
       return new OpenAiCompatibleClient({
-        providerName: input.provider,
-        apiKey      : input.apiKey,
-        baseUrl     : input.baseUrl,
-        modelName   : input.modelName
+        providerName  : input.provider,
+        apiKey        : input.apiKey,
+        baseUrl       : input.baseUrl,
+        modelName     : input.modelName,
+        // 不同兼容供应商的联网搜索协议有差异：qwen 用顶层 enable_search，
+        // doubao/glm 用通用 tools 数组；这里通过 provider 名做轻量推断，
+        // 未识别供应商默认走 tools 风格。
+        webSearchStyle: inferWebSearchStyle(input.provider)
       });
     }
     default: {

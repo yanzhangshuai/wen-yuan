@@ -67,6 +67,7 @@ import {
   type RelationshipTypeStatus
 } from "@/lib/services/relationship-types";
 import { RelationshipTypeForm } from "./_components/relationship-type-form";
+import { RelationshipTypeGeneratorPanel } from "./_components/relationship-type-generator-panel";
 
 const ALL_VALUE = "__ALL__";
 
@@ -118,6 +119,7 @@ export default function RelationshipTypesPage() {
   const [batchGroup, setBatchGroup]                     = useState<RelationshipTypeGroup>("血缘");
   const [batchPending, setBatchPending]                 = useState(false);
   const [creating, setCreating]                         = useState(false);
+  const [generating, setGenerating]                     = useState(false);
 
   async function load() {
     setLoading(true);
@@ -273,11 +275,9 @@ export default function RelationshipTypesPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        <Button type="button" variant="outline" size="sm" asChild>
-          <Link href="/admin/knowledge-base/relationship-types/generate">
-            <Sparkles className="h-4 w-4" />
-            模型生成
-          </Link>
+        <Button type="button" variant="outline" size="sm" onClick={() => setGenerating(true)} disabled={generating}>
+          <Sparkles className="h-4 w-4" />
+          模型生成
         </Button>
         <Button type="button" size="sm" onClick={() => setCreating(true)} disabled={creating}>
           <Plus className="h-4 w-4" />
@@ -308,6 +308,32 @@ export default function RelationshipTypesPage() {
               redirectTo="/admin/knowledge-base/relationship-types"
               onSuccess={() => { setCreating(false); void load(); }}
               onCancel={() => setCreating(false)}
+            />
+          </div>
+        </PageSection>
+      ) : null}
+
+      {generating ? (
+        <PageSection>
+          <div className="rounded-md border bg-muted/30 p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">模型生成关系类型候选</h3>
+                <div className="mt-1 text-xs text-muted-foreground">生成结果只作为候选预审，保存后进入待审核状态。</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="关闭"
+                onClick={() => setGenerating(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <RelationshipTypeGeneratorPanel
+              onClose={() => setGenerating(false)}
+              onSaved={() => { setGenerating(false); void load(); }}
             />
           </div>
         </PageSection>
