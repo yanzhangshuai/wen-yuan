@@ -324,6 +324,8 @@ export type AnalysisJobWhereInput = {
   modelStrategies?: Prisma.ModelStrategyConfigListRelationFilter
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
   validationReports?: Prisma.ValidationReportListRelationFilter
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftListRelationFilter
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceListRelationFilter
 }
 
 export type AnalysisJobOrderByWithRelationInput = {
@@ -348,6 +350,8 @@ export type AnalysisJobOrderByWithRelationInput = {
   modelStrategies?: Prisma.ModelStrategyConfigOrderByRelationAggregateInput
   phaseLogs?: Prisma.AnalysisPhaseLogOrderByRelationAggregateInput
   validationReports?: Prisma.ValidationReportOrderByRelationAggregateInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftOrderByRelationAggregateInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceOrderByRelationAggregateInput
 }
 
 export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
@@ -375,6 +379,8 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   modelStrategies?: Prisma.ModelStrategyConfigListRelationFilter
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
   validationReports?: Prisma.ValidationReportListRelationFilter
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftListRelationFilter
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceListRelationFilter
 }, "id">
 
 export type AnalysisJobOrderByWithAggregationInput = {
@@ -446,6 +452,8 @@ export type AnalysisJobCreateInput = {
   modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateInput = {
@@ -469,6 +477,8 @@ export type AnalysisJobUncheckedCreateInput = {
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUpdateInput = {
@@ -492,6 +502,8 @@ export type AnalysisJobUpdateInput = {
   modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateInput = {
@@ -515,6 +527,8 @@ export type AnalysisJobUncheckedUpdateInput = {
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobCreateManyInput = {
@@ -777,6 +791,38 @@ export type AnalysisJobUpdateOneWithoutValidationReportsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutValidationReportsInput, Prisma.AnalysisJobUpdateWithoutValidationReportsInput>, Prisma.AnalysisJobUncheckedUpdateWithoutValidationReportsInput>
 }
 
+export type AnalysisJobCreateNestedOneWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUncheckedCreateWithoutFirstUnknownRelationshipTypeDraftsInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutFirstUnknownRelationshipTypeDraftsInput
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+}
+
+export type AnalysisJobUpdateOneWithoutFirstUnknownRelationshipTypeDraftsNestedInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUncheckedCreateWithoutFirstUnknownRelationshipTypeDraftsInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutFirstUnknownRelationshipTypeDraftsInput
+  upsert?: Prisma.AnalysisJobUpsertWithoutFirstUnknownRelationshipTypeDraftsInput
+  disconnect?: Prisma.AnalysisJobWhereInput | boolean
+  delete?: Prisma.AnalysisJobWhereInput | boolean
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUpdateWithoutFirstUnknownRelationshipTypeDraftsInput>, Prisma.AnalysisJobUncheckedUpdateWithoutFirstUnknownRelationshipTypeDraftsInput>
+}
+
+export type AnalysisJobCreateNestedOneWithoutUnknownRelationshipTypeOccurrencesInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesInput
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+}
+
+export type AnalysisJobUpdateOneWithoutUnknownRelationshipTypeOccurrencesNestedInput = {
+  create?: Prisma.XOR<Prisma.AnalysisJobCreateWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesInput>
+  connectOrCreate?: Prisma.AnalysisJobCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesInput
+  upsert?: Prisma.AnalysisJobUpsertWithoutUnknownRelationshipTypeOccurrencesInput
+  disconnect?: Prisma.AnalysisJobWhereInput | boolean
+  delete?: Prisma.AnalysisJobWhereInput | boolean
+  connect?: Prisma.AnalysisJobWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisJobUpdateToOneWithWhereWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUpdateWithoutUnknownRelationshipTypeOccurrencesInput>, Prisma.AnalysisJobUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesInput>
+}
+
 export type AnalysisJobCreateWithoutBookInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
@@ -797,6 +843,8 @@ export type AnalysisJobCreateWithoutBookInput = {
   modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutBookInput = {
@@ -819,6 +867,8 @@ export type AnalysisJobUncheckedCreateWithoutBookInput = {
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutBookInput = {
@@ -890,6 +940,8 @@ export type AnalysisJobCreateWithoutModelStrategiesInput = {
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutModelStrategiesInput = {
@@ -912,6 +964,8 @@ export type AnalysisJobUncheckedCreateWithoutModelStrategiesInput = {
   updatedAt?: Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutModelStrategiesInput = {
@@ -950,6 +1004,8 @@ export type AnalysisJobUpdateWithoutModelStrategiesInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutModelStrategiesInput = {
@@ -972,6 +1028,8 @@ export type AnalysisJobUncheckedUpdateWithoutModelStrategiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobCreateWithoutPhaseLogsInput = {
@@ -994,6 +1052,8 @@ export type AnalysisJobCreateWithoutPhaseLogsInput = {
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
   modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutPhaseLogsInput = {
@@ -1016,6 +1076,8 @@ export type AnalysisJobUncheckedCreateWithoutPhaseLogsInput = {
   updatedAt?: Date | string
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutPhaseLogsInput = {
@@ -1054,6 +1116,8 @@ export type AnalysisJobUpdateWithoutPhaseLogsInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
   modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
   validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutPhaseLogsInput = {
@@ -1076,6 +1140,8 @@ export type AnalysisJobUncheckedUpdateWithoutPhaseLogsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobCreateWithoutValidationReportsInput = {
@@ -1098,6 +1164,8 @@ export type AnalysisJobCreateWithoutValidationReportsInput = {
   book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
   modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
@@ -1120,6 +1188,8 @@ export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
   updatedAt?: Date | string
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedCreateNestedManyWithoutFirstJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutJobInput
 }
 
 export type AnalysisJobCreateOrConnectWithoutValidationReportsInput = {
@@ -1158,6 +1228,8 @@ export type AnalysisJobUpdateWithoutValidationReportsInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
   modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
@@ -1180,6 +1252,232 @@ export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutJobNestedInput
+}
+
+export type AnalysisJobCreateWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  id?: string
+  status?: $Enums.AnalysisJobStatus
+  architecture?: string
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
+  modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutJobInput
+}
+
+export type AnalysisJobUncheckedCreateWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  id?: string
+  bookId: string
+  status?: $Enums.AnalysisJobStatus
+  architecture?: string
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutJobInput
+}
+
+export type AnalysisJobCreateOrConnectWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  where: Prisma.AnalysisJobWhereUniqueInput
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUncheckedCreateWithoutFirstUnknownRelationshipTypeDraftsInput>
+}
+
+export type AnalysisJobUpsertWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  update: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUncheckedUpdateWithoutFirstUnknownRelationshipTypeDraftsInput>
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUncheckedCreateWithoutFirstUnknownRelationshipTypeDraftsInput>
+  where?: Prisma.AnalysisJobWhereInput
+}
+
+export type AnalysisJobUpdateToOneWithWhereWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  where?: Prisma.AnalysisJobWhereInput
+  data: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutFirstUnknownRelationshipTypeDraftsInput, Prisma.AnalysisJobUncheckedUpdateWithoutFirstUnknownRelationshipTypeDraftsInput>
+}
+
+export type AnalysisJobUpdateWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  architecture?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
+  modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutJobNestedInput
+}
+
+export type AnalysisJobUncheckedUpdateWithoutFirstUnknownRelationshipTypeDraftsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  architecture?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutJobNestedInput
+}
+
+export type AnalysisJobCreateWithoutUnknownRelationshipTypeOccurrencesInput = {
+  id?: string
+  status?: $Enums.AnalysisJobStatus
+  architecture?: string
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  book: Prisma.BookCreateNestedOneWithoutAnalysisJobsInput
+  modelStrategies?: Prisma.ModelStrategyConfigCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutJobInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftCreateNestedManyWithoutFirstJobInput
+}
+
+export type AnalysisJobUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesInput = {
+  id?: string
+  bookId: string
+  status?: $Enums.AnalysisJobStatus
+  architecture?: string
+  scope?: string
+  chapterStart?: number | null
+  chapterEnd?: number | null
+  chapterIndices?: Prisma.AnalysisJobCreatechapterIndicesInput | number[]
+  attempt?: number
+  errorLog?: string | null
+  experimentTag?: string | null
+  overrideStrategy?: string | null
+  keepHistory?: boolean
+  startedAt?: Date | string | null
+  finishedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedCreateNestedManyWithoutAnalysisJobInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutJobInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutJobInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedCreateNestedManyWithoutFirstJobInput
+}
+
+export type AnalysisJobCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesInput = {
+  where: Prisma.AnalysisJobWhereUniqueInput
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesInput>
+}
+
+export type AnalysisJobUpsertWithoutUnknownRelationshipTypeOccurrencesInput = {
+  update: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesInput>
+  create: Prisma.XOR<Prisma.AnalysisJobCreateWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesInput>
+  where?: Prisma.AnalysisJobWhereInput
+}
+
+export type AnalysisJobUpdateToOneWithWhereWithoutUnknownRelationshipTypeOccurrencesInput = {
+  where?: Prisma.AnalysisJobWhereInput
+  data: Prisma.XOR<Prisma.AnalysisJobUpdateWithoutUnknownRelationshipTypeOccurrencesInput, Prisma.AnalysisJobUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesInput>
+}
+
+export type AnalysisJobUpdateWithoutUnknownRelationshipTypeOccurrencesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  architecture?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  book?: Prisma.BookUpdateOneRequiredWithoutAnalysisJobsNestedInput
+  modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUpdateManyWithoutFirstJobNestedInput
+}
+
+export type AnalysisJobUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  architecture?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  chapterIndices?: Prisma.AnalysisJobUpdatechapterIndicesInput | number[]
+  attempt?: Prisma.IntFieldUpdateOperationsInput | number
+  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  experimentTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedUpdateManyWithoutFirstJobNestedInput
 }
 
 export type AnalysisJobCreateManyBookInput = {
@@ -1221,6 +1519,8 @@ export type AnalysisJobUpdateWithoutBookInput = {
   modelStrategies?: Prisma.ModelStrategyConfigUpdateManyWithoutAnalysisJobNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateWithoutBookInput = {
@@ -1243,6 +1543,8 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   modelStrategies?: Prisma.ModelStrategyConfigUncheckedUpdateManyWithoutAnalysisJobNestedInput
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutJobNestedInput
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutJobNestedInput
+  firstUnknownRelationshipTypeDrafts?: Prisma.UnknownRelationshipTypeDraftUncheckedUpdateManyWithoutFirstJobNestedInput
+  unknownRelationshipTypeOccurrences?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutJobNestedInput
 }
 
 export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
@@ -1273,12 +1575,16 @@ export type AnalysisJobCountOutputType = {
   modelStrategies: number
   phaseLogs: number
   validationReports: number
+  firstUnknownRelationshipTypeDrafts: number
+  unknownRelationshipTypeOccurrences: number
 }
 
 export type AnalysisJobCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   modelStrategies?: boolean | AnalysisJobCountOutputTypeCountModelStrategiesArgs
   phaseLogs?: boolean | AnalysisJobCountOutputTypeCountPhaseLogsArgs
   validationReports?: boolean | AnalysisJobCountOutputTypeCountValidationReportsArgs
+  firstUnknownRelationshipTypeDrafts?: boolean | AnalysisJobCountOutputTypeCountFirstUnknownRelationshipTypeDraftsArgs
+  unknownRelationshipTypeOccurrences?: boolean | AnalysisJobCountOutputTypeCountUnknownRelationshipTypeOccurrencesArgs
 }
 
 /**
@@ -1312,6 +1618,20 @@ export type AnalysisJobCountOutputTypeCountValidationReportsArgs<ExtArgs extends
   where?: Prisma.ValidationReportWhereInput
 }
 
+/**
+ * AnalysisJobCountOutputType without action
+ */
+export type AnalysisJobCountOutputTypeCountFirstUnknownRelationshipTypeDraftsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UnknownRelationshipTypeDraftWhereInput
+}
+
+/**
+ * AnalysisJobCountOutputType without action
+ */
+export type AnalysisJobCountOutputTypeCountUnknownRelationshipTypeOccurrencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UnknownRelationshipTypeOccurrenceWhereInput
+}
+
 
 export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1335,6 +1655,8 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   modelStrategies?: boolean | Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>
   phaseLogs?: boolean | Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>
   validationReports?: boolean | Prisma.AnalysisJob$validationReportsArgs<ExtArgs>
+  firstUnknownRelationshipTypeDrafts?: boolean | Prisma.AnalysisJob$firstUnknownRelationshipTypeDraftsArgs<ExtArgs>
+  unknownRelationshipTypeOccurrences?: boolean | Prisma.AnalysisJob$unknownRelationshipTypeOccurrencesArgs<ExtArgs>
   _count?: boolean | Prisma.AnalysisJobCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["analysisJob"]>
 
@@ -1406,6 +1728,8 @@ export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.Internal
   modelStrategies?: boolean | Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>
   phaseLogs?: boolean | Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>
   validationReports?: boolean | Prisma.AnalysisJob$validationReportsArgs<ExtArgs>
+  firstUnknownRelationshipTypeDrafts?: boolean | Prisma.AnalysisJob$firstUnknownRelationshipTypeDraftsArgs<ExtArgs>
+  unknownRelationshipTypeOccurrences?: boolean | Prisma.AnalysisJob$unknownRelationshipTypeOccurrencesArgs<ExtArgs>
   _count?: boolean | Prisma.AnalysisJobCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AnalysisJobIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1422,6 +1746,8 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
     modelStrategies: Prisma.$ModelStrategyConfigPayload<ExtArgs>[]
     phaseLogs: Prisma.$AnalysisPhaseLogPayload<ExtArgs>[]
     validationReports: Prisma.$ValidationReportPayload<ExtArgs>[]
+    firstUnknownRelationshipTypeDrafts: Prisma.$UnknownRelationshipTypeDraftPayload<ExtArgs>[]
+    unknownRelationshipTypeOccurrences: Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1839,6 +2165,8 @@ export interface Prisma__AnalysisJobClient<T, Null = never, ExtArgs extends runt
   modelStrategies<T extends Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ModelStrategyConfigPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   phaseLogs<T extends Prisma.AnalysisJob$phaseLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisPhaseLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   validationReports<T extends Prisma.AnalysisJob$validationReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$validationReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ValidationReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  firstUnknownRelationshipTypeDrafts<T extends Prisma.AnalysisJob$firstUnknownRelationshipTypeDraftsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$firstUnknownRelationshipTypeDraftsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UnknownRelationshipTypeDraftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  unknownRelationshipTypeOccurrences<T extends Prisma.AnalysisJob$unknownRelationshipTypeOccurrencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AnalysisJob$unknownRelationshipTypeOccurrencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2355,6 +2683,54 @@ export type AnalysisJob$validationReportsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.ValidationReportScalarFieldEnum | Prisma.ValidationReportScalarFieldEnum[]
+}
+
+/**
+ * AnalysisJob.firstUnknownRelationshipTypeDrafts
+ */
+export type AnalysisJob$firstUnknownRelationshipTypeDraftsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UnknownRelationshipTypeDraft
+   */
+  select?: Prisma.UnknownRelationshipTypeDraftSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UnknownRelationshipTypeDraft
+   */
+  omit?: Prisma.UnknownRelationshipTypeDraftOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UnknownRelationshipTypeDraftInclude<ExtArgs> | null
+  where?: Prisma.UnknownRelationshipTypeDraftWhereInput
+  orderBy?: Prisma.UnknownRelationshipTypeDraftOrderByWithRelationInput | Prisma.UnknownRelationshipTypeDraftOrderByWithRelationInput[]
+  cursor?: Prisma.UnknownRelationshipTypeDraftWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UnknownRelationshipTypeDraftScalarFieldEnum | Prisma.UnknownRelationshipTypeDraftScalarFieldEnum[]
+}
+
+/**
+ * AnalysisJob.unknownRelationshipTypeOccurrences
+ */
+export type AnalysisJob$unknownRelationshipTypeOccurrencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UnknownRelationshipTypeOccurrence
+   */
+  select?: Prisma.UnknownRelationshipTypeOccurrenceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UnknownRelationshipTypeOccurrence
+   */
+  omit?: Prisma.UnknownRelationshipTypeOccurrenceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UnknownRelationshipTypeOccurrenceInclude<ExtArgs> | null
+  where?: Prisma.UnknownRelationshipTypeOccurrenceWhereInput
+  orderBy?: Prisma.UnknownRelationshipTypeOccurrenceOrderByWithRelationInput | Prisma.UnknownRelationshipTypeOccurrenceOrderByWithRelationInput[]
+  cursor?: Prisma.UnknownRelationshipTypeOccurrenceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UnknownRelationshipTypeOccurrenceScalarFieldEnum | Prisma.UnknownRelationshipTypeOccurrenceScalarFieldEnum[]
 }
 
 /**

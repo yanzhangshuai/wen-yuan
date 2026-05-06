@@ -8,6 +8,13 @@ import {
 
 function createPrismaMock() {
   return {
+    book: {
+      findUnique: vi.fn().mockResolvedValue({
+        id        : "book-1",
+        bookTypeId: null,
+        bookType  : null
+      })
+    },
     bookType: {
       findUnique: vi.fn().mockResolvedValue(null)
     },
@@ -39,6 +46,9 @@ function createPrismaMock() {
       findMany: vi.fn().mockResolvedValue([])
     },
     namePatternRule: {
+      findMany: vi.fn().mockResolvedValue([])
+    },
+    relationshipTypeDefinition: {
       findMany: vi.fn().mockResolvedValue([])
     }
   };
@@ -114,9 +124,16 @@ describe("load-book-knowledge", () => {
     ]);
 
     const prisma = prismaMock as unknown as PrismaClient;
-    const knowledge = await loadFullRuntimeKnowledge("book-1", "classic", prisma);
+    prismaMock.book.findUnique.mockResolvedValueOnce({
+      id        : "book-1",
+      bookTypeId: "book-type-classic",
+      bookType  : { key: "classic" }
+    });
+
+    const knowledge = await loadFullRuntimeKnowledge({ bookId: "book-1", prisma });
 
     expect(knowledge.bookId).toBe("book-1");
+    expect(knowledge.bookTypeId).toBe("book-type-classic");
     expect(knowledge.bookTypeKey).toBe("classic");
     expect(knowledge.aliasLookup.get("范老爷")).toBe("范进");
     expect(knowledge.aliasLookup.get("王太守")).toBe("王惠");
@@ -154,10 +171,11 @@ describe("load-book-knowledge", () => {
 
     const prisma = prismaMock as unknown as PrismaClient;
 
-    const first = await loadFullRuntimeKnowledge("book-cache", null, prisma);
-    const second = await loadFullRuntimeKnowledge("book-cache", null, prisma);
+    const first = await loadFullRuntimeKnowledge({ bookId: "book-cache", prisma });
+    const second = await loadFullRuntimeKnowledge({ bookId: "book-cache", prisma });
 
     expect(second).toBe(first);
+    expect(prismaMock.book.findUnique).toHaveBeenCalledTimes(1);
     expect(prismaMock.namePatternRule.findMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.bookAliasPack.findMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.genericTitleRule.findMany).toHaveBeenCalledTimes(1);
@@ -167,12 +185,65 @@ describe("load-book-knowledge", () => {
     const prismaMock = createPrismaMock();
     const prisma = prismaMock as unknown as PrismaClient;
 
-    const first = await loadFullRuntimeKnowledge("book-refresh", null, prisma);
+    const first = await loadFullRuntimeKnowledge({ bookId: "book-refresh", prisma });
     clearKnowledgeCache("book-refresh");
-    const second = await loadFullRuntimeKnowledge("book-refresh", null, prisma);
+    const second = await loadFullRuntimeKnowledge({ bookId: "book-refresh", prisma });
 
     expect(second).not.toBe(first);
     expect(prismaMock.namePatternRule.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it("force refreshes cached runtime knowledge and filters relationship types by book type", async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.book.findUnique.mockResolvedValue({
+      id        : "book-filtered",
+      bookTypeId: "type-classic",
+      bookType  : { key: "classic" }
+    });
+    prismaMock.relationshipTypeDefinition.findMany.mockResolvedValueOnce([
+      {
+        code           : "relationship_common",
+        name           : "父子",
+        group          : "血缘",
+        directionMode  : "INVERSE",
+        sourceRoleLabel: "父亲",
+        targetRoleLabel: "儿子",
+        aliases        : ["父亲", "儿子"],
+        examples       : ["范父→范进", "周父→周进", "多余例子"]
+      },
+      {
+        code           : "relationship_classic",
+        name           : "同门",
+        group          : "师承",
+        directionMode  : "SYMMETRIC",
+        sourceRoleLabel: null,
+        targetRoleLabel: null,
+        aliases        : ["同师"],
+        examples       : []
+      }
+    ]);
+    prismaMock.relationshipTypeDefinition.findMany.mockResolvedValueOnce([]);
+
+    const prisma = prismaMock as unknown as PrismaClient;
+    const first = await loadFullRuntimeKnowledge({ bookId: "book-filtered", prisma });
+    const second = await loadFullRuntimeKnowledge({ bookId: "book-filtered", prisma, forceRefresh: true });
+
+    expect(second).not.toBe(first);
+    expect(prismaMock.relationshipTypeDefinition.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      where: {
+        status: "ACTIVE",
+        OR    : [
+          { bookTypeId: "type-classic" },
+          { bookTypeId: null }
+        ]
+      }
+    }));
+    expect(first.relationshipTypes.map((item) => item.code)).toEqual(["relationship_common", "relationship_classic"]);
+    expect(first.relationshipTypeByCode.get("relationship_common")?.sourceRoleLabel).toBe("父亲");
+    expect(first.relationshipTypeDictionaryText).toContain("relationship_common · 父子 · INVERSE · 父亲→儿子");
+    expect(first.relationshipTypeDictionaryText).toContain("别名: 父亲/儿子");
+    expect(first.relationshipTypeDictionaryText).toContain("例: 范父→范进；周父→周进");
+    expect(first.relationshipTypeDictionaryText).not.toContain("多余例子");
   });
 
   it("applies D9 guards and only keeps valid name pattern rules", async () => {
@@ -211,7 +282,7 @@ describe("load-book-knowledge", () => {
     ]);
 
     const prisma = prismaMock as unknown as PrismaClient;
-    const knowledge = await loadFullRuntimeKnowledge("book-d9", null, prisma);
+    const knowledge = await loadFullRuntimeKnowledge({ bookId: "book-d9", prisma });
 
     expect(knowledge.namePatternRules.map((item) => item.id)).toEqual(["rule-valid"]);
 
@@ -241,7 +312,7 @@ describe("load-book-knowledge", () => {
     ]);
 
     const prisma = prismaMock as unknown as PrismaClient;
-    const knowledge = await loadFullRuntimeKnowledge("book-timeout", null, prisma);
+    const knowledge = await loadFullRuntimeKnowledge({ bookId: "book-timeout", prisma });
 
     expect(knowledge.namePatternRules).toHaveLength(0);
     expect(

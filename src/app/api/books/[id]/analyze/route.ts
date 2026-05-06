@@ -35,6 +35,7 @@ import {
   ANALYSIS_OVERRIDE_STRATEGY_VALUES,
   AnalysisScopeInvalidError,
   BookNotFoundError,
+  EmptyRelationshipKnowledgeError,
   startBookAnalysis,
   type StartBookAnalysisResult
 } from "@/server/modules/books/startBookAnalysis";
@@ -218,7 +219,7 @@ export async function POST(
       return notFoundJson(requestId, startedAt, error.bookId);
     }
 
-    if (error instanceof AnalysisScopeInvalidError) {
+    if (error instanceof AnalysisScopeInvalidError || error instanceof EmptyRelationshipKnowledgeError) {
       return badRequestJson(
         requestId,
         startedAt,

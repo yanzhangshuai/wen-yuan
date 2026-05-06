@@ -202,6 +202,7 @@ export const relationshipTypeStatusSchema = z.enum(["ACTIVE", "INACTIVE", "PENDI
 export const relationshipTypeGroupSchema = z.enum(["血缘", "姻亲", "师承", "社会身份", "权力关系", "利益关系", "情感关系", "对立关系", "其他"]);
 
 export const createRelationshipTypeSchema = z.object({
+  bookTypeId      : z.string().uuid().nullable().optional(),
   name            : z.string().trim().min(1, "关系名称不能为空"),
   group           : relationshipTypeGroupSchema,
   directionMode   : relationshipTypeDirectionModeSchema,

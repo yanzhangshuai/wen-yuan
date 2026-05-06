@@ -8,11 +8,13 @@ import {
   createRelationshipType,
   deleteRelationshipType,
   initializeCommonRelationshipTypes,
-  inferRelationshipTypeLabels
+  inferRelationshipTypeLabels,
+  listRelationshipTypes
 } from "@/server/modules/knowledge/relationship-types";
 
 const hoisted = vi.hoisted(() => ({
-  prisma: {
+  clearKnowledgeCache: vi.fn(),
+  prisma             : {
     relationshipTypeDefinition: {
       findMany  : vi.fn(),
       findUnique: vi.fn(),
@@ -27,6 +29,10 @@ const hoisted = vi.hoisted(() => ({
 
 vi.mock("@/server/db/prisma", () => ({
   prisma: hoisted.prisma
+}));
+
+vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
+  clearKnowledgeCache: hoisted.clearKnowledgeCache
 }));
 
 describe("relationship-types", () => {
@@ -46,12 +52,14 @@ describe("relationship-types", () => {
       sourceRoleLabel: "岳父",
       targetRoleLabel: "女婿",
       aliases        : ["岳丈", "岳丈", "丈人"],
-      examples       : ["胡屠户与范进"]
+      examples       : ["胡屠户与范进"],
+      bookTypeId     : "book-type-1"
     })).resolves.toEqual({ id: "rel-type-1" });
 
     expect(hoisted.prisma.relationshipTypeDefinition.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         code           : expect.stringMatching(/^relationship_[a-f0-9]{10}$/),
+        bookTypeId     : "book-type-1",
         name           : "岳婿",
         edgeLabel      : "岳婿",
         aliases        : ["岳丈", "丈人"],
@@ -61,6 +69,20 @@ describe("relationship-types", () => {
         targetRoleLabel: "女婿"
       })
     });
+    expect(hoisted.clearKnowledgeCache).toHaveBeenCalledTimes(1);
+  });
+
+  it("lists relationship types with book type filtering", async () => {
+    hoisted.prisma.relationshipTypeDefinition.findMany.mockResolvedValueOnce([]);
+
+    await expect(listRelationshipTypes({ bookTypeId: "book-type-1" })).resolves.toEqual([]);
+
+    expect(hoisted.prisma.relationshipTypeDefinition.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where  : { bookTypeId: "book-type-1" },
+      include: expect.objectContaining({
+        bookType: { select: { id: true, key: true, name: true } }
+      })
+    }));
   });
 
   it("rejects inverse relationship types without both role labels", async () => {
@@ -134,6 +156,7 @@ describe("relationship-types", () => {
       where: { id: { in: ["rel-type-1", "rel-type-2"] } },
       data : { group: "姻亲" }
     });
+    expect(hoisted.clearKnowledgeCache).toHaveBeenCalledTimes(2);
   });
 
   it("infers forward and reverse labels for inverse relationship types", () => {

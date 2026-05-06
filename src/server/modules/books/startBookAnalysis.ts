@@ -21,7 +21,8 @@ import { AnalysisJobStatus, RecordSource } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
-import { AnalysisScopeInvalidError, BookNotFoundError } from "@/server/modules/books/errors";
+import { AnalysisScopeInvalidError, BookNotFoundError, EmptyRelationshipKnowledgeError } from "@/server/modules/books/errors";
+import { loadFullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import {
   ANALYSIS_ARCHITECTURE_VALUES,
   type AnalysisArchitecture
@@ -275,6 +276,15 @@ export function createStartBookAnalysisService(
       throw new AnalysisScopeInvalidError("请先确认章节后再启动解析");
     }
 
+    const runtimeKnowledge = await loadFullRuntimeKnowledge({
+      bookId      : book.id,
+      prisma      : prismaClient,
+      forceRefresh: true
+    });
+    if (runtimeKnowledge.relationshipTypes.length === 0) {
+      throw new EmptyRelationshipKnowledgeError(book.id);
+    }
+
     const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
       if (scope === "FULL_BOOK") {
         await tx.relationshipEvent.deleteMany({
@@ -368,5 +378,6 @@ export const { startBookAnalysis } = createStartBookAnalysisService();
 export { ANALYSIS_ARCHITECTURE_VALUES };
 export {
   AnalysisScopeInvalidError,
-  BookNotFoundError
+  BookNotFoundError,
+  EmptyRelationshipKnowledgeError
 } from "@/server/modules/books/errors";

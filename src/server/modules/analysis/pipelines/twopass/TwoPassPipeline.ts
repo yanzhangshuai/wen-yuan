@@ -227,7 +227,8 @@ export function createTwoPassPipeline(
       progressBase          : 40,
       progressRange         : 60,
       externalPersonaMap    : globalPersonaMap,
-      preloadedLexiconConfig: runtimeContext.runtimeKnowledge.lexiconConfig
+      preloadedLexiconConfig: runtimeContext.runtimeKnowledge.lexiconConfig,
+      runtimeKnowledge      : runtimeContext.runtimeKnowledge
     });
   }
 

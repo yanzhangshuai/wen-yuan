@@ -5,6 +5,7 @@ import {
   BookOpenText,
   FileClock,
   Filter,
+  GitMerge,
   History,
   Network,
   Regex,
@@ -30,6 +31,7 @@ export type KnowledgeBaseNavIconKey =
   | "change-log"
   | "historical-figure"
   | "relationship-type"
+  | "unknown-relationship-type"
   | "name-pattern";
 
 export interface KnowledgeBaseNavLink {
@@ -43,18 +45,19 @@ export interface KnowledgeBaseNavProps {
 }
 
 const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
-  overview                : BookMarked,
-  "book-type"             : BookOpenText,
-  "alias-pack"            : Sparkles,
-  surname                 : UserRoundSearch,
-  "title-filter"          : Filter,
-  "prompt-template"       : ScrollText,
-  "ner-rule"              : BookMarked,
-  "prompt-extraction-rule": ScrollText,
-  "historical-figure"     : History,
-  "relationship-type"     : Network,
-  "name-pattern"          : Regex,
-  "change-log"            : FileClock
+  overview                   : BookMarked,
+  "book-type"                : BookOpenText,
+  "alias-pack"               : Sparkles,
+  surname                    : UserRoundSearch,
+  "title-filter"             : Filter,
+  "prompt-template"          : ScrollText,
+  "ner-rule"                 : BookMarked,
+  "prompt-extraction-rule"   : ScrollText,
+  "historical-figure"        : History,
+  "relationship-type"        : Network,
+  "unknown-relationship-type": GitMerge,
+  "name-pattern"             : Regex,
+  "change-log"               : FileClock
 };
 
 /**

@@ -86,21 +86,25 @@ function createMockRuntimeKnowledge(overrides?: Partial<{
   defaultGenericTitles: Set<string>;
 }>): FullRuntimeKnowledge {
   return {
-    bookId              : "book-1",
-    bookTypeKey         : null,
-    lexiconConfig       : {},
-    aliasLookup         : new Map(),
-    historicalFigures   : overrides?.historicalFigures ?? new Set(),
-    historicalFigureMap : (overrides?.historicalFigureMap ?? new Map()) as never,
-    relationalTerms     : overrides?.relationalTerms ?? new Set(),
-    namePatternRules    : overrides?.namePatternRules ?? [],
-    hardBlockSuffixes   : new Set(),
-    softBlockSuffixes   : new Set(),
-    safetyGenericTitles : overrides?.safetyGenericTitles ?? new Set(),
-    defaultGenericTitles: overrides?.defaultGenericTitles ?? new Set(),
-    titlePatterns       : [],
-    positionPatterns    : [],
-    loadedAt            : new Date()
+    bookId                        : "book-1",
+    bookTypeId                    : null,
+    bookTypeKey                   : null,
+    lexiconConfig                 : {},
+    relationshipTypes             : [],
+    relationshipTypeByCode        : new Map(),
+    relationshipTypeDictionaryText: "",
+    aliasLookup                   : new Map(),
+    historicalFigures             : overrides?.historicalFigures ?? new Set(),
+    historicalFigureMap           : (overrides?.historicalFigureMap ?? new Map()) as never,
+    relationalTerms               : overrides?.relationalTerms ?? new Set(),
+    namePatternRules              : overrides?.namePatternRules ?? [],
+    hardBlockSuffixes             : new Set(),
+    softBlockSuffixes             : new Set(),
+    safetyGenericTitles           : overrides?.safetyGenericTitles ?? new Set(),
+    defaultGenericTitles          : overrides?.defaultGenericTitles ?? new Set(),
+    titlePatterns                 : [],
+    positionPatterns              : [],
+    loadedAt                      : new Date()
   };
 }
 

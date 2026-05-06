@@ -196,6 +196,8 @@ model Book {
   profiles                      Profile[] // 本书角色档案
   relationships                 Relationship[] // 书级人物关系
   relationshipEvents            RelationshipEvent[] // 关系事件明细
+  unknownRelationshipTypeDrafts UnknownRelationshipTypeDraft[]
+  unknownRelationshipTypeOccurrences UnknownRelationshipTypeOccurrence[]
   chapterBiographyVerifications ChapterBiographyVerification[] // 章节角色事迹校验状态
   analysisJobs                  AnalysisJob[] // 解析任务记录
   aliasMappings                 AliasMapping[] // 别名映射记录
@@ -230,6 +232,8 @@ model Chapter {
   mentions                Mention[] // 本章提及记录
   biographies             BiographyRecord[] // 本章履历事件
   relationshipEvents      RelationshipEvent[] // 本章关系事件
+  firstUnknownRelationshipTypeDrafts UnknownRelationshipTypeDraft[]      @relation("UnknownRelationshipTypeDraftFirstChapter")
+  unknownRelationshipTypeOccurrences UnknownRelationshipTypeOccurrence[]
   phaseLogs               AnalysisPhaseLog[] // 阶段调用日志
   biographyVerifications  ChapterBiographyVerification[] // 本章角色事迹校验状态
   firstAppearanceProfiles Profile[]                      @relation("ProfileFirstAppearanceChapter") // 以本章作为首次出场章节的角色档案
@@ -290,6 +294,8 @@ model Persona {
   targetRels Relationship[] @relation("TargetPersona")
   eventsAsSource RelationshipEvent[] @relation("EventSourcePersona")
   eventsAsTarget RelationshipEvent[] @relation("EventTargetPersona")
+  unknownRelationshipTypeOccurrencesAsSource UnknownRelationshipTypeOccurrence[] @relation("UnknownRelationshipTypeOccurrenceSourcePersona")
+  unknownRelationshipTypeOccurrencesAsTarget UnknownRelationshipTypeOccurrence[] @relation("UnknownRelationshipTypeOccurrenceTargetPersona")
 
   @@index([name], map: "persona_name_idx") // 人名检索索引
   @@index([deletedAt], map: "persona_deleted_at_idx") // 软删除清理索引
@@ -460,6 +466,8 @@ model AnalysisJob {
   modelStrategies   ModelStrategyConfig[] @relation("JobStrategies")
   phaseLogs         AnalysisPhaseLog[]
   validationReports ValidationReport[] // 该任务生成的自检报告
+  firstUnknownRelationshipTypeDrafts UnknownRelationshipTypeDraft[]       @relation("UnknownRelationshipTypeDraftFirstJob")
+  unknownRelationshipTypeOccurrences UnknownRelationshipTypeOccurrence[]  @relation("UnknownRelationshipTypeOccurrenceJob")
 
   @@index([bookId, createdAt], map: "analysis_jobs_book_created_at_idx") // 书籍任务时间序查询索引
   @@index([status, createdAt], map: "analysis_jobs_status_created_at_idx") // 状态队列查询索引
@@ -598,6 +606,7 @@ model BookType {
   books                 Book[]
   aliasPacks            AliasPack[]
   surnameRules          SurnameRule[]
+  relationshipTypes     RelationshipTypeDefinition[]
   nerLexiconRules       NerLexiconRule[]
   promptExtractionRules PromptExtractionRule[]
   promptVersions        PromptTemplateVersion[]
@@ -743,15 +752,75 @@ model RelationshipTypeDefinition {
   sortOrder        Int      @default(0) @map("sort_order")
   status           String   @default("ACTIVE") @db.VarChar(20)
   source           String   @default("MANUAL") @db.VarChar(30)
+  bookTypeId       String?  @map("book_type_id") @db.Uuid
 
   relationships Relationship[]
+  bookType      BookType?      @relation(fields: [bookTypeId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([group, status, sortOrder], map: "relationship_type_definitions_group_status_sort_idx")
   @@index([directionMode, status], map: "relationship_type_definitions_direction_status_idx")
+  @@index([bookTypeId, status, sortOrder], map: "rt_def_book_type_status_sort_idx")
   @@map("relationship_type_definitions")
+}
+
+model UnknownRelationshipTypeDraft {
+  id                      String   @id @default(uuid()) @db.Uuid
+  bookId                  String   @map("book_id") @db.Uuid
+  firstChapterId          String   @map("first_chapter_id") @db.Uuid
+  firstJobId              String?  @map("first_job_id") @db.Uuid
+  signature               String   @db.VarChar(200)
+  proposedName            String   @map("proposed_name") @db.VarChar(80)
+  proposedGroup           String   @map("proposed_group") @db.VarChar(40)
+  proposedDirectionMode   String   @map("proposed_direction_mode") @db.VarChar(20)
+  proposedSourceRoleLabel String?  @map("proposed_source_role_label") @db.VarChar(80)
+  proposedTargetRoleLabel String?  @map("proposed_target_role_label") @db.VarChar(80)
+  occurrenceCount         Int      @default(1) @map("occurrence_count")
+  status                  String   @default("PENDING") @db.VarChar(20)
+  rejectionReason         String?  @map("rejection_reason") @db.Text
+  approvedTypeCode        String?  @map("approved_type_code") @db.VarChar(120)
+  mergedIntoDraftId       String?  @map("merged_into_draft_id") @db.Uuid
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  book            Book                              @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  firstChapter    Chapter                           @relation("UnknownRelationshipTypeDraftFirstChapter", fields: [firstChapterId], references: [id], onDelete: Cascade)
+  firstJob        AnalysisJob?                       @relation("UnknownRelationshipTypeDraftFirstJob", fields: [firstJobId], references: [id], onDelete: SetNull)
+  mergedIntoDraft UnknownRelationshipTypeDraft?      @relation("UnknownRelationshipTypeDraftMerge", fields: [mergedIntoDraftId], references: [id], onDelete: SetNull)
+  mergedDrafts    UnknownRelationshipTypeDraft[]     @relation("UnknownRelationshipTypeDraftMerge")
+  occurrences     UnknownRelationshipTypeOccurrence[]
+
+  @@unique([bookId, signature], map: "unknown_rel_draft_book_signature_key")
+  @@index([bookId, status], map: "unknown_rel_draft_book_status_idx")
+  @@index([approvedTypeCode], map: "unknown_rel_draft_approved_code_idx")
+  @@map("unknown_relationship_type_drafts")
+}
+
+model UnknownRelationshipTypeOccurrence {
+  id              String   @id @default(uuid()) @db.Uuid
+  draftId         String   @map("draft_id") @db.Uuid
+  bookId          String   @map("book_id") @db.Uuid
+  chapterId       String   @map("chapter_id") @db.Uuid
+  jobId           String?  @map("job_id") @db.Uuid
+  sourceName      String   @map("source_name")
+  targetName      String   @map("target_name")
+  sourcePersonaId String?  @map("source_persona_id") @db.Uuid
+  targetPersonaId String?  @map("target_persona_id") @db.Uuid
+  evidence        String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  draft         UnknownRelationshipTypeDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  book          Book                         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter       Chapter                      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  job           AnalysisJob?                 @relation("UnknownRelationshipTypeOccurrenceJob", fields: [jobId], references: [id], onDelete: SetNull)
+  sourcePersona Persona?                     @relation("UnknownRelationshipTypeOccurrenceSourcePersona", fields: [sourcePersonaId], references: [id], onDelete: SetNull)
+  targetPersona Persona?                     @relation("UnknownRelationshipTypeOccurrenceTargetPersona", fields: [targetPersonaId], references: [id], onDelete: SetNull)
+
+  @@unique([draftId, chapterId, sourceName, targetName], map: "unknown_rel_occurrence_unique_key")
+  @@index([bookId, chapterId], map: "unknown_rel_occurrence_book_chapter_idx")
+  @@map("unknown_relationship_type_occurrences")
 }
 
 /// NER 算法配置：后缀惩罚规则与称号/职位词干

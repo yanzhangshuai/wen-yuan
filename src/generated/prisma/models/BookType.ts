@@ -243,6 +243,7 @@ export type BookTypeWhereInput = {
   books?: Prisma.BookListRelationFilter
   aliasPacks?: Prisma.AliasPackListRelationFilter
   surnameRules?: Prisma.SurnameRuleListRelationFilter
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionListRelationFilter
   nerLexiconRules?: Prisma.NerLexiconRuleListRelationFilter
   promptExtractionRules?: Prisma.PromptExtractionRuleListRelationFilter
   promptVersions?: Prisma.PromptTemplateVersionListRelationFilter
@@ -260,6 +261,7 @@ export type BookTypeOrderByWithRelationInput = {
   books?: Prisma.BookOrderByRelationAggregateInput
   aliasPacks?: Prisma.AliasPackOrderByRelationAggregateInput
   surnameRules?: Prisma.SurnameRuleOrderByRelationAggregateInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionOrderByRelationAggregateInput
   nerLexiconRules?: Prisma.NerLexiconRuleOrderByRelationAggregateInput
   promptExtractionRules?: Prisma.PromptExtractionRuleOrderByRelationAggregateInput
   promptVersions?: Prisma.PromptTemplateVersionOrderByRelationAggregateInput
@@ -280,6 +282,7 @@ export type BookTypeWhereUniqueInput = Prisma.AtLeast<{
   books?: Prisma.BookListRelationFilter
   aliasPacks?: Prisma.AliasPackListRelationFilter
   surnameRules?: Prisma.SurnameRuleListRelationFilter
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionListRelationFilter
   nerLexiconRules?: Prisma.NerLexiconRuleListRelationFilter
   promptExtractionRules?: Prisma.PromptExtractionRuleListRelationFilter
   promptVersions?: Prisma.PromptTemplateVersionListRelationFilter
@@ -327,6 +330,7 @@ export type BookTypeCreateInput = {
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
@@ -344,6 +348,7 @@ export type BookTypeUncheckedCreateInput = {
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
@@ -361,6 +366,7 @@ export type BookTypeUpdateInput = {
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
@@ -378,6 +384,7 @@ export type BookTypeUncheckedUpdateInput = {
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
@@ -510,6 +517,22 @@ export type BookTypeUpdateOneWithoutSurnameRulesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutSurnameRulesInput, Prisma.BookTypeUpdateWithoutSurnameRulesInput>, Prisma.BookTypeUncheckedUpdateWithoutSurnameRulesInput>
 }
 
+export type BookTypeCreateNestedOneWithoutRelationshipTypesInput = {
+  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
+  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutRelationshipTypesInput
+  connect?: Prisma.BookTypeWhereUniqueInput
+}
+
+export type BookTypeUpdateOneWithoutRelationshipTypesNestedInput = {
+  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
+  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutRelationshipTypesInput
+  upsert?: Prisma.BookTypeUpsertWithoutRelationshipTypesInput
+  disconnect?: Prisma.BookTypeWhereInput | boolean
+  delete?: Prisma.BookTypeWhereInput | boolean
+  connect?: Prisma.BookTypeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutRelationshipTypesInput, Prisma.BookTypeUpdateWithoutRelationshipTypesInput>, Prisma.BookTypeUncheckedUpdateWithoutRelationshipTypesInput>
+}
+
 export type BookTypeCreateNestedOneWithoutNerLexiconRulesInput = {
   create?: Prisma.XOR<Prisma.BookTypeCreateWithoutNerLexiconRulesInput, Prisma.BookTypeUncheckedCreateWithoutNerLexiconRulesInput>
   connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutNerLexiconRulesInput
@@ -569,6 +592,7 @@ export type BookTypeCreateWithoutBooksInput = {
   updatedAt?: Date | string
   aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
@@ -585,6 +609,7 @@ export type BookTypeUncheckedCreateWithoutBooksInput = {
   updatedAt?: Date | string
   aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
@@ -617,6 +642,7 @@ export type BookTypeUpdateWithoutBooksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
@@ -633,6 +659,7 @@ export type BookTypeUncheckedUpdateWithoutBooksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
@@ -649,6 +676,7 @@ export type BookTypeCreateWithoutAliasPacksInput = {
   updatedAt?: Date | string
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
@@ -665,6 +693,7 @@ export type BookTypeUncheckedCreateWithoutAliasPacksInput = {
   updatedAt?: Date | string
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
@@ -697,6 +726,7 @@ export type BookTypeUpdateWithoutAliasPacksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
@@ -713,6 +743,7 @@ export type BookTypeUncheckedUpdateWithoutAliasPacksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
@@ -729,6 +760,7 @@ export type BookTypeCreateWithoutSurnameRulesInput = {
   updatedAt?: Date | string
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
@@ -745,6 +777,7 @@ export type BookTypeUncheckedCreateWithoutSurnameRulesInput = {
   updatedAt?: Date | string
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
@@ -777,6 +810,7 @@ export type BookTypeUpdateWithoutSurnameRulesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
@@ -793,6 +827,91 @@ export type BookTypeUncheckedUpdateWithoutSurnameRulesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
+  nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
+}
+
+export type BookTypeCreateWithoutRelationshipTypesInput = {
+  id?: string
+  key: string
+  name: string
+  description?: string | null
+  isActive?: boolean
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
+  aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
+  surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
+  promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
+  promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
+}
+
+export type BookTypeUncheckedCreateWithoutRelationshipTypesInput = {
+  id?: string
+  key: string
+  name: string
+  description?: string | null
+  isActive?: boolean
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
+  aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
+  surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
+}
+
+export type BookTypeCreateOrConnectWithoutRelationshipTypesInput = {
+  where: Prisma.BookTypeWhereUniqueInput
+  create: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
+}
+
+export type BookTypeUpsertWithoutRelationshipTypesInput = {
+  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedUpdateWithoutRelationshipTypesInput>
+  create: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
+  where?: Prisma.BookTypeWhereInput
+}
+
+export type BookTypeUpdateToOneWithWhereWithoutRelationshipTypesInput = {
+  where?: Prisma.BookTypeWhereInput
+  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedUpdateWithoutRelationshipTypesInput>
+}
+
+export type BookTypeUpdateWithoutRelationshipTypesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
+  aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
+  surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
+  promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
+  promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
+}
+
+export type BookTypeUncheckedUpdateWithoutRelationshipTypesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
+  aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
+  surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
@@ -810,6 +929,7 @@ export type BookTypeCreateWithoutNerLexiconRulesInput = {
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
 }
@@ -826,6 +946,7 @@ export type BookTypeUncheckedCreateWithoutNerLexiconRulesInput = {
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
 }
@@ -858,6 +979,7 @@ export type BookTypeUpdateWithoutNerLexiconRulesInput = {
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
 }
@@ -874,6 +996,7 @@ export type BookTypeUncheckedUpdateWithoutNerLexiconRulesInput = {
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
 }
@@ -890,6 +1013,7 @@ export type BookTypeCreateWithoutPromptVersionsInput = {
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleCreateNestedManyWithoutBookTypeInput
 }
@@ -906,6 +1030,7 @@ export type BookTypeUncheckedCreateWithoutPromptVersionsInput = {
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
 }
@@ -938,6 +1063,7 @@ export type BookTypeUpdateWithoutPromptVersionsInput = {
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUpdateManyWithoutBookTypeNestedInput
 }
@@ -954,6 +1080,7 @@ export type BookTypeUncheckedUpdateWithoutPromptVersionsInput = {
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptExtractionRules?: Prisma.PromptExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
 }
@@ -970,6 +1097,7 @@ export type BookTypeCreateWithoutPromptExtractionRulesInput = {
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
 }
@@ -986,6 +1114,7 @@ export type BookTypeUncheckedCreateWithoutPromptExtractionRulesInput = {
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
   aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
   surnameRules?: Prisma.SurnameRuleUncheckedCreateNestedManyWithoutBookTypeInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedCreateNestedManyWithoutBookTypeInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
 }
@@ -1018,6 +1147,7 @@ export type BookTypeUpdateWithoutPromptExtractionRulesInput = {
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
 }
@@ -1034,6 +1164,7 @@ export type BookTypeUncheckedUpdateWithoutPromptExtractionRulesInput = {
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
   aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
   surnameRules?: Prisma.SurnameRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
   nerLexiconRules?: Prisma.NerLexiconRuleUncheckedUpdateManyWithoutBookTypeNestedInput
   promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
 }
@@ -1047,6 +1178,7 @@ export type BookTypeCountOutputType = {
   books: number
   aliasPacks: number
   surnameRules: number
+  relationshipTypes: number
   nerLexiconRules: number
   promptExtractionRules: number
   promptVersions: number
@@ -1056,6 +1188,7 @@ export type BookTypeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   books?: boolean | BookTypeCountOutputTypeCountBooksArgs
   aliasPacks?: boolean | BookTypeCountOutputTypeCountAliasPacksArgs
   surnameRules?: boolean | BookTypeCountOutputTypeCountSurnameRulesArgs
+  relationshipTypes?: boolean | BookTypeCountOutputTypeCountRelationshipTypesArgs
   nerLexiconRules?: boolean | BookTypeCountOutputTypeCountNerLexiconRulesArgs
   promptExtractionRules?: boolean | BookTypeCountOutputTypeCountPromptExtractionRulesArgs
   promptVersions?: boolean | BookTypeCountOutputTypeCountPromptVersionsArgs
@@ -1095,6 +1228,13 @@ export type BookTypeCountOutputTypeCountSurnameRulesArgs<ExtArgs extends runtime
 /**
  * BookTypeCountOutputType without action
  */
+export type BookTypeCountOutputTypeCountRelationshipTypesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RelationshipTypeDefinitionWhereInput
+}
+
+/**
+ * BookTypeCountOutputType without action
+ */
 export type BookTypeCountOutputTypeCountNerLexiconRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.NerLexiconRuleWhereInput
 }
@@ -1126,6 +1266,7 @@ export type BookTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   books?: boolean | Prisma.BookType$booksArgs<ExtArgs>
   aliasPacks?: boolean | Prisma.BookType$aliasPacksArgs<ExtArgs>
   surnameRules?: boolean | Prisma.BookType$surnameRulesArgs<ExtArgs>
+  relationshipTypes?: boolean | Prisma.BookType$relationshipTypesArgs<ExtArgs>
   nerLexiconRules?: boolean | Prisma.BookType$nerLexiconRulesArgs<ExtArgs>
   promptExtractionRules?: boolean | Prisma.BookType$promptExtractionRulesArgs<ExtArgs>
   promptVersions?: boolean | Prisma.BookType$promptVersionsArgs<ExtArgs>
@@ -1170,6 +1311,7 @@ export type BookTypeInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   books?: boolean | Prisma.BookType$booksArgs<ExtArgs>
   aliasPacks?: boolean | Prisma.BookType$aliasPacksArgs<ExtArgs>
   surnameRules?: boolean | Prisma.BookType$surnameRulesArgs<ExtArgs>
+  relationshipTypes?: boolean | Prisma.BookType$relationshipTypesArgs<ExtArgs>
   nerLexiconRules?: boolean | Prisma.BookType$nerLexiconRulesArgs<ExtArgs>
   promptExtractionRules?: boolean | Prisma.BookType$promptExtractionRulesArgs<ExtArgs>
   promptVersions?: boolean | Prisma.BookType$promptVersionsArgs<ExtArgs>
@@ -1184,6 +1326,7 @@ export type $BookTypePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     books: Prisma.$BookPayload<ExtArgs>[]
     aliasPacks: Prisma.$AliasPackPayload<ExtArgs>[]
     surnameRules: Prisma.$SurnameRulePayload<ExtArgs>[]
+    relationshipTypes: Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>[]
     nerLexiconRules: Prisma.$NerLexiconRulePayload<ExtArgs>[]
     promptExtractionRules: Prisma.$PromptExtractionRulePayload<ExtArgs>[]
     promptVersions: Prisma.$PromptTemplateVersionPayload<ExtArgs>[]
@@ -1594,6 +1737,7 @@ export interface Prisma__BookTypeClient<T, Null = never, ExtArgs extends runtime
   books<T extends Prisma.BookType$booksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$booksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aliasPacks<T extends Prisma.BookType$aliasPacksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$aliasPacksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AliasPackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   surnameRules<T extends Prisma.BookType$surnameRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$surnameRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SurnameRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  relationshipTypes<T extends Prisma.BookType$relationshipTypesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$relationshipTypesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   nerLexiconRules<T extends Prisma.BookType$nerLexiconRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$nerLexiconRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NerLexiconRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   promptExtractionRules<T extends Prisma.BookType$promptExtractionRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$promptExtractionRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PromptExtractionRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   promptVersions<T extends Prisma.BookType$promptVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$promptVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PromptTemplateVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2096,6 +2240,30 @@ export type BookType$surnameRulesArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.SurnameRuleScalarFieldEnum | Prisma.SurnameRuleScalarFieldEnum[]
+}
+
+/**
+ * BookType.relationshipTypes
+ */
+export type BookType$relationshipTypesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RelationshipTypeDefinition
+   */
+  select?: Prisma.RelationshipTypeDefinitionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RelationshipTypeDefinition
+   */
+  omit?: Prisma.RelationshipTypeDefinitionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RelationshipTypeDefinitionInclude<ExtArgs> | null
+  where?: Prisma.RelationshipTypeDefinitionWhereInput
+  orderBy?: Prisma.RelationshipTypeDefinitionOrderByWithRelationInput | Prisma.RelationshipTypeDefinitionOrderByWithRelationInput[]
+  cursor?: Prisma.RelationshipTypeDefinitionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RelationshipTypeDefinitionScalarFieldEnum | Prisma.RelationshipTypeDefinitionScalarFieldEnum[]
 }
 
 /**

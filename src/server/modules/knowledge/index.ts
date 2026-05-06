@@ -121,6 +121,16 @@ export {
 } from "./relationship-types";
 
 export {
+  UNKNOWN_RELATIONSHIP_TYPE_DRAFT_STATUSES,
+  approveUnknownRelationshipTypeDraft,
+  buildUnknownRelationshipTypeSignature,
+  listUnknownRelationshipTypeDrafts,
+  mergeUnknownRelationshipTypeDraft,
+  recordUnknownRelationshipTypeOccurrence,
+  rejectUnknownRelationshipTypeDraft
+} from "./unknown-relationship-types";
+
+export {
   listPromptTemplates,
   getPromptTemplate,
   createPromptVersion,

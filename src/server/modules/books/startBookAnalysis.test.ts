@@ -9,13 +9,21 @@
  */
 
 import { AnalysisJobStatus, RecordSource } from "@/generated/prisma/enums";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AnalysisScopeInvalidError,
   BookNotFoundError,
+  EmptyRelationshipKnowledgeError,
   createStartBookAnalysisService
 } from "@/server/modules/books/startBookAnalysis";
+import { loadFullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
+
+vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
+  loadFullRuntimeKnowledge: vi.fn()
+}));
+
+const mockedLoadFullRuntimeKnowledge = vi.mocked(loadFullRuntimeKnowledge);
 
 function createMockPrisma() {
   const bookFindFirst = vi.fn();
@@ -44,6 +52,13 @@ function createMockPrisma() {
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("startBookAnalysis", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedLoadFullRuntimeKnowledge.mockResolvedValue({
+      relationshipTypes: [{ code: "ALLY" }]
+    } as never);
+  });
+
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("creates analysis job and updates book processing status", async () => {
     const { prisma, tx } = createMockPrisma();
@@ -67,6 +82,12 @@ describe("startBookAnalysis", () => {
 
     const service = createStartBookAnalysisService(prisma as never);
     const result = await service.startBookAnalysis("book-1");
+
+    expect(mockedLoadFullRuntimeKnowledge).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      prisma      : prisma,
+      forceRefresh: true
+    });
 
     expect(prisma.book.findFirst).toHaveBeenCalledWith({
       where: {
@@ -240,6 +261,25 @@ describe("startBookAnalysis", () => {
     const service = createStartBookAnalysisService(prisma as never);
 
     await expect(service.startBookAnalysis("book-1")).rejects.toBeInstanceOf(AnalysisScopeInvalidError);
+    expect(mockedLoadFullRuntimeKnowledge).not.toHaveBeenCalled();
+  });
+
+  it("throws EmptyRelationshipKnowledgeError before queuing when relationship knowledge is empty", async () => {
+    const { prisma, tx } = createMockPrisma();
+    prisma.book.findFirst.mockResolvedValue({ id: "book-1" });
+    prisma.chapter.count.mockResolvedValue(12);
+    mockedLoadFullRuntimeKnowledge.mockResolvedValueOnce({ relationshipTypes: [] } as never);
+    const service = createStartBookAnalysisService(prisma as never);
+
+    await expect(service.startBookAnalysis("book-1")).rejects.toBeInstanceOf(EmptyRelationshipKnowledgeError);
+
+    expect(mockedLoadFullRuntimeKnowledge).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      prisma      : prisma,
+      forceRefresh: true
+    });
+    expect(tx.analysisJob.create).not.toHaveBeenCalled();
+    expect(tx.book.update).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

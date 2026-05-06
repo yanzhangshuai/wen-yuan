@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   Download,
+  Plug,
   Plus,
   Upload,
   X
@@ -111,6 +112,7 @@ export function ModelManager({
   );
   const [isImporting, setImporting] = useState(false);
   const [isExporting, setExporting] = useState(false);
+  const [isTestingAll, setTestingAll] = useState(false);
   const [deletingModelId, setDeletingModelId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminModelItem | null>(null);
 
@@ -253,6 +255,70 @@ export function ModelManager({
     }
   }
 
+  /* ------------ 批量连通性测试 ------------ */
+  /**
+   * 为所有已配置 API Key 的模型并行调用 testModel。
+   *
+   * 设计考量：
+   * - 并行调用（Promise.all）以缩短整体等待；不同模型多对应不同供应商，
+   *   通常不会触发同一账号的限流；
+   * - 单个失败不影响整体流程，最后汇总提示；
+   * - 测试中锁定全局按钮 + 各卡片 test 动作，避免重复触发。
+   */
+  async function handleTestAll() {
+    const targets = models.filter((model) => model.isConfigured);
+    if (targets.length === 0) {
+      toast.error("没有已配置 API Key 的模型可测试");
+      return;
+    }
+    setTestingAll(true);
+    setLoadingActions((prev) => {
+      const next = { ...prev };
+      for (const model of targets) next[model.id] = "test";
+      return next;
+    });
+    try {
+      const results = await Promise.all(
+        targets.map(async (model) => {
+          try {
+            const result = await testModel(model.id);
+            return {
+              model,
+              success: result.success,
+              message: result.errorMessage ?? result.detail
+            };
+          } catch (error) {
+            return {
+              model,
+              success: false,
+              message: error instanceof Error ? error.message : "请求异常"
+            };
+          }
+        })
+      );
+      const succeeded = results.filter((item) => item.success).length;
+      const failures = results.filter((item) => !item.success);
+      if (failures.length === 0) {
+        toast.success(`全部成功：${succeeded}/${targets.length} 个模型连通。`);
+      } else {
+        const detail = failures
+          .slice(0, 5)
+          .map((item) => `${item.model.name}：${item.message}`)
+          .join("\n");
+        toast.error(`成功 ${succeeded}，失败 ${failures.length}。\n${detail}${failures.length > 5 ? "\n…" : ""}`);
+      }
+    } finally {
+      setLoadingActions((prev) => {
+        const next = { ...prev };
+        for (const model of targets) {
+          if (next[model.id] === "test") next[model.id] = null;
+        }
+        return next;
+      });
+      setTestingAll(false);
+    }
+  }
+
   /* ------------ 导入/导出 ------------ */
   async function handleExportModels() {
     setExporting(true);
@@ -324,6 +390,15 @@ export function ModelManager({
               >
                 <Plus className="mr-2 h-4 w-4" />
                 新增模型
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleTestAll()}
+                disabled={isTestingAll || models.every((model) => !model.isConfigured)}
+              >
+                <Plug className="mr-2 h-4 w-4" />
+                {isTestingAll ? "测试中…" : "测试所有连接"}
               </Button>
               <Button
                 variant="outline"

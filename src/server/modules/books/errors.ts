@@ -122,3 +122,23 @@ export class AnalysisScopeInvalidError extends Error {
     super(message);
   }
 }
+
+/**
+ * 功能：表示解析启动时没有任何可用关系类型知识。
+ * 输入：`bookId`（书籍主键 ID）。
+ * 输出：`EmptyRelationshipKnowledgeError` 错误实例。
+ * 异常：无。
+ * 副作用：无。
+ */
+export class EmptyRelationshipKnowledgeError extends Error {
+  /** 缺少关系类型知识的书籍 ID。 */
+  readonly bookId: string;
+
+  /**
+   * @param bookId 书籍主键 ID。
+   */
+  constructor(bookId: string) {
+    super(`Relationship type knowledge is empty: ${bookId}`);
+    this.bookId = bookId;
+  }
+}

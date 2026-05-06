@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { clearKnowledgeCache } from "@/server/modules/knowledge/load-book-knowledge";
 
 export const RELATIONSHIP_DIRECTION_MODES = ["SYMMETRIC", "INVERSE", "DIRECTED"] as const;
 export const RELATIONSHIP_TYPE_STATUSES = ["ACTIVE", "INACTIVE", "PENDING_REVIEW"] as const;
@@ -26,6 +27,7 @@ export interface RelationshipTypeInput {
   sortOrder?       : number;
   status?          : RelationshipTypeStatus;
   source?          : string;
+  bookTypeId?      : string | null;
 }
 
 export interface RelationshipTypeListParams {
@@ -33,6 +35,7 @@ export interface RelationshipTypeListParams {
   group?        : string;
   directionMode?: RelationshipDirectionMode;
   status?       : RelationshipTypeStatus;
+  bookTypeId?   : string | null;
 }
 
 export interface InitializeCommonRelationshipTypesResult {
@@ -304,12 +307,13 @@ async function assertNoActiveNameOrAliasConflict(input: {
   }
 }
 
-function toCreateData(code: string, input: RelationshipTypeInput): Prisma.RelationshipTypeDefinitionCreateInput {
+function toCreateData(code: string, input: RelationshipTypeInput): Prisma.RelationshipTypeDefinitionUncheckedCreateInput {
   const aliases = compactUnique(input.aliases);
   const examples = compactUnique(input.examples);
 
   return {
     code,
+    bookTypeId      : input.bookTypeId ?? null,
     name            : input.name.trim(),
     group           : input.group,
     directionMode   : input.directionMode,
@@ -356,6 +360,7 @@ export async function listRelationshipTypes(params?: RelationshipTypeListParams)
   if (params?.group) where.group = params.group;
   if (params?.directionMode) where.directionMode = params.directionMode;
   if (params?.status) where.status = params.status;
+  if (params && "bookTypeId" in params) where.bookTypeId = params.bookTypeId ?? null;
   if (params?.q) {
     const q = params.q.trim();
     where.OR = [
@@ -370,6 +375,9 @@ export async function listRelationshipTypes(params?: RelationshipTypeListParams)
     where,
     orderBy: [{ group: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
     include: {
+      bookType: {
+        select: { id: true, key: true, name: true }
+      },
       _count: {
         select: { relationships: true }
       }
@@ -387,9 +395,11 @@ export async function createRelationshipType(input: RelationshipTypeInput) {
   });
 
   const code = await generateRelationshipTypeCode(normalized);
-  return prisma.relationshipTypeDefinition.create({
+  const created = await prisma.relationshipTypeDefinition.create({
     data: toCreateData(code, normalized)
   });
+  clearKnowledgeCache();
+  return created;
 }
 
 function collectRelationshipTypeTokens(input: Pick<RelationshipTypeInput, "name" | "aliases">): string[] {
@@ -460,7 +470,8 @@ export async function updateRelationshipType(id: string, input: Partial<Relation
     color           : input.color !== undefined ? input.color : current.color,
     sortOrder       : input.sortOrder ?? current.sortOrder,
     status          : (input.status ?? current.status) as RelationshipTypeStatus,
-    source          : current.source
+    source          : current.source,
+    bookTypeId      : input.bookTypeId !== undefined ? input.bookTypeId : current.bookTypeId
   };
 
   validateRelationshipTypeInput(merged);
@@ -471,9 +482,10 @@ export async function updateRelationshipType(id: string, input: Partial<Relation
     status : merged.status
   });
 
-  return prisma.relationshipTypeDefinition.update({
+  const updated = await prisma.relationshipTypeDefinition.update({
     where: { id },
     data : {
+      bookTypeId      : merged.bookTypeId ?? null,
       name            : merged.name.trim(),
       group           : merged.group,
       directionMode   : merged.directionMode,
@@ -490,6 +502,8 @@ export async function updateRelationshipType(id: string, input: Partial<Relation
       status          : merged.status
     }
   });
+  clearKnowledgeCache();
+  return updated;
 }
 
 export async function deleteRelationshipType(id: string) {
@@ -504,7 +518,9 @@ export async function deleteRelationshipType(id: string) {
     throw new Error("该关系类型已被角色关系引用，只能停用，不能删除");
   }
 
-  return prisma.relationshipTypeDefinition.delete({ where: { id } });
+  const deleted = await prisma.relationshipTypeDefinition.delete({ where: { id } });
+  clearKnowledgeCache();
+  return deleted;
 }
 
 export async function batchUpdateRelationshipTypeStatus(ids: string[], status: RelationshipTypeStatus) {
@@ -512,10 +528,12 @@ export async function batchUpdateRelationshipTypeStatus(ids: string[], status: R
     throw new Error("关系类型状态不合法");
   }
 
-  return prisma.relationshipTypeDefinition.updateMany({
+  const result = await prisma.relationshipTypeDefinition.updateMany({
     where: { id: { in: ids } },
     data : { status }
   });
+  clearKnowledgeCache();
+  return result;
 }
 
 export async function batchChangeRelationshipTypeGroup(ids: string[], group: string) {
@@ -523,10 +541,12 @@ export async function batchChangeRelationshipTypeGroup(ids: string[], group: str
     throw new Error("关系分组不合法");
   }
 
-  return prisma.relationshipTypeDefinition.updateMany({
+  const result = await prisma.relationshipTypeDefinition.updateMany({
     where: { id: { in: ids } },
     data : { group }
   });
+  clearKnowledgeCache();
+  return result;
 }
 
 export async function batchDeleteRelationshipTypes(ids: string[]) {
@@ -549,5 +569,6 @@ export async function batchDeleteRelationshipTypes(ids: string[]) {
   const result = await prisma.relationshipTypeDefinition.deleteMany({
     where: { id: { in: ids } }
   });
+  clearKnowledgeCache();
   return { count: result.count };
 }

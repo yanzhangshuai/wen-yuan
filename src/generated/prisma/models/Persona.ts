@@ -298,6 +298,8 @@ export type PersonaWhereInput = {
   targetRels?: Prisma.RelationshipListRelationFilter
   eventsAsSource?: Prisma.RelationshipEventListRelationFilter
   eventsAsTarget?: Prisma.RelationshipEventListRelationFilter
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceListRelationFilter
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceListRelationFilter
 }
 
 export type PersonaOrderByWithRelationInput = {
@@ -326,6 +328,8 @@ export type PersonaOrderByWithRelationInput = {
   targetRels?: Prisma.RelationshipOrderByRelationAggregateInput
   eventsAsSource?: Prisma.RelationshipEventOrderByRelationAggregateInput
   eventsAsTarget?: Prisma.RelationshipEventOrderByRelationAggregateInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceOrderByRelationAggregateInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceOrderByRelationAggregateInput
 }
 
 export type PersonaWhereUniqueInput = Prisma.AtLeast<{
@@ -357,6 +361,8 @@ export type PersonaWhereUniqueInput = Prisma.AtLeast<{
   targetRels?: Prisma.RelationshipListRelationFilter
   eventsAsSource?: Prisma.RelationshipEventListRelationFilter
   eventsAsTarget?: Prisma.RelationshipEventListRelationFilter
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceListRelationFilter
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceListRelationFilter
 }, "id">
 
 export type PersonaOrderByWithAggregationInput = {
@@ -429,6 +435,8 @@ export type PersonaCreateInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateInput = {
@@ -457,6 +465,8 @@ export type PersonaUncheckedCreateInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUpdateInput = {
@@ -485,6 +495,8 @@ export type PersonaUpdateInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateInput = {
@@ -513,6 +525,8 @@ export type PersonaUncheckedUpdateInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateManyInput = {
@@ -825,6 +839,38 @@ export type PersonaUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PersonaUpdateToOneWithWhereWithoutTargetMergeSuggestionsInput, Prisma.PersonaUpdateWithoutTargetMergeSuggestionsInput>, Prisma.PersonaUncheckedUpdateWithoutTargetMergeSuggestionsInput>
 }
 
+export type PersonaCreateNestedOneWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  create?: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+  connectOrCreate?: Prisma.PersonaCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesAsSourceInput
+  connect?: Prisma.PersonaWhereUniqueInput
+}
+
+export type PersonaCreateNestedOneWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  create?: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+  connectOrCreate?: Prisma.PersonaCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesAsTargetInput
+  connect?: Prisma.PersonaWhereUniqueInput
+}
+
+export type PersonaUpdateOneWithoutUnknownRelationshipTypeOccurrencesAsSourceNestedInput = {
+  create?: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+  connectOrCreate?: Prisma.PersonaCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesAsSourceInput
+  upsert?: Prisma.PersonaUpsertWithoutUnknownRelationshipTypeOccurrencesAsSourceInput
+  disconnect?: Prisma.PersonaWhereInput | boolean
+  delete?: Prisma.PersonaWhereInput | boolean
+  connect?: Prisma.PersonaWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PersonaUpdateToOneWithWhereWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>, Prisma.PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+}
+
+export type PersonaUpdateOneWithoutUnknownRelationshipTypeOccurrencesAsTargetNestedInput = {
+  create?: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+  connectOrCreate?: Prisma.PersonaCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesAsTargetInput
+  upsert?: Prisma.PersonaUpsertWithoutUnknownRelationshipTypeOccurrencesAsTargetInput
+  disconnect?: Prisma.PersonaWhereInput | boolean
+  delete?: Prisma.PersonaWhereInput | boolean
+  connect?: Prisma.PersonaWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PersonaUpdateToOneWithWhereWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>, Prisma.PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+}
+
 export type PersonaCreateWithoutProfilesInput = {
   id?: string
   name: string
@@ -850,6 +896,8 @@ export type PersonaCreateWithoutProfilesInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutProfilesInput = {
@@ -877,6 +925,8 @@ export type PersonaUncheckedCreateWithoutProfilesInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutProfilesInput = {
@@ -920,6 +970,8 @@ export type PersonaUpdateWithoutProfilesInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutProfilesInput = {
@@ -947,6 +999,8 @@ export type PersonaUncheckedUpdateWithoutProfilesInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateWithoutBiographiesInput = {
@@ -974,6 +1028,8 @@ export type PersonaCreateWithoutBiographiesInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutBiographiesInput = {
@@ -1001,6 +1057,8 @@ export type PersonaUncheckedCreateWithoutBiographiesInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutBiographiesInput = {
@@ -1044,6 +1102,8 @@ export type PersonaUpdateWithoutBiographiesInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutBiographiesInput = {
@@ -1071,6 +1131,8 @@ export type PersonaUncheckedUpdateWithoutBiographiesInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateWithoutMentionsInput = {
@@ -1098,6 +1160,8 @@ export type PersonaCreateWithoutMentionsInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutMentionsInput = {
@@ -1125,6 +1189,8 @@ export type PersonaUncheckedCreateWithoutMentionsInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutMentionsInput = {
@@ -1168,6 +1234,8 @@ export type PersonaUpdateWithoutMentionsInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutMentionsInput = {
@@ -1195,6 +1263,8 @@ export type PersonaUncheckedUpdateWithoutMentionsInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateWithoutSourceRelsInput = {
@@ -1222,6 +1292,8 @@ export type PersonaCreateWithoutSourceRelsInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutSourceRelsInput = {
@@ -1249,6 +1321,8 @@ export type PersonaUncheckedCreateWithoutSourceRelsInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutSourceRelsInput = {
@@ -1281,6 +1355,8 @@ export type PersonaCreateWithoutTargetRelsInput = {
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutTargetRelsInput = {
@@ -1308,6 +1384,8 @@ export type PersonaUncheckedCreateWithoutTargetRelsInput = {
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutTargetRelsInput = {
@@ -1351,6 +1429,8 @@ export type PersonaUpdateWithoutSourceRelsInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutSourceRelsInput = {
@@ -1378,6 +1458,8 @@ export type PersonaUncheckedUpdateWithoutSourceRelsInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUpsertWithoutTargetRelsInput = {
@@ -1416,6 +1498,8 @@ export type PersonaUpdateWithoutTargetRelsInput = {
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutTargetRelsInput = {
@@ -1443,6 +1527,8 @@ export type PersonaUncheckedUpdateWithoutTargetRelsInput = {
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateWithoutEventsAsSourceInput = {
@@ -1470,6 +1556,8 @@ export type PersonaCreateWithoutEventsAsSourceInput = {
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutEventsAsSourceInput = {
@@ -1497,6 +1585,8 @@ export type PersonaUncheckedCreateWithoutEventsAsSourceInput = {
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutEventsAsSourceInput = {
@@ -1529,6 +1619,8 @@ export type PersonaCreateWithoutEventsAsTargetInput = {
   sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutEventsAsTargetInput = {
@@ -1556,6 +1648,8 @@ export type PersonaUncheckedCreateWithoutEventsAsTargetInput = {
   sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutEventsAsTargetInput = {
@@ -1599,6 +1693,8 @@ export type PersonaUpdateWithoutEventsAsSourceInput = {
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutEventsAsSourceInput = {
@@ -1626,6 +1722,8 @@ export type PersonaUncheckedUpdateWithoutEventsAsSourceInput = {
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUpsertWithoutEventsAsTargetInput = {
@@ -1664,6 +1762,8 @@ export type PersonaUpdateWithoutEventsAsTargetInput = {
   sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutEventsAsTargetInput = {
@@ -1691,6 +1791,8 @@ export type PersonaUncheckedUpdateWithoutEventsAsTargetInput = {
   sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateWithoutAliasMappingsInput = {
@@ -1718,6 +1820,8 @@ export type PersonaCreateWithoutAliasMappingsInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutAliasMappingsInput = {
@@ -1745,6 +1849,8 @@ export type PersonaUncheckedCreateWithoutAliasMappingsInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutAliasMappingsInput = {
@@ -1788,6 +1894,8 @@ export type PersonaUpdateWithoutAliasMappingsInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutAliasMappingsInput = {
@@ -1815,6 +1923,8 @@ export type PersonaUncheckedUpdateWithoutAliasMappingsInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaCreateWithoutSourceMergeSuggestionsInput = {
@@ -1842,6 +1952,8 @@ export type PersonaCreateWithoutSourceMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutSourceMergeSuggestionsInput = {
@@ -1869,6 +1981,8 @@ export type PersonaUncheckedCreateWithoutSourceMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutSourceMergeSuggestionsInput = {
@@ -1901,6 +2015,8 @@ export type PersonaCreateWithoutTargetMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaUncheckedCreateWithoutTargetMergeSuggestionsInput = {
@@ -1928,6 +2044,8 @@ export type PersonaUncheckedCreateWithoutTargetMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
 }
 
 export type PersonaCreateOrConnectWithoutTargetMergeSuggestionsInput = {
@@ -1971,6 +2089,8 @@ export type PersonaUpdateWithoutSourceMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutSourceMergeSuggestionsInput = {
@@ -1998,6 +2118,8 @@ export type PersonaUncheckedUpdateWithoutSourceMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUpsertWithoutTargetMergeSuggestionsInput = {
@@ -2036,6 +2158,8 @@ export type PersonaUpdateWithoutTargetMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
 }
 
 export type PersonaUncheckedUpdateWithoutTargetMergeSuggestionsInput = {
@@ -2063,6 +2187,272 @@ export type PersonaUncheckedUpdateWithoutTargetMergeSuggestionsInput = {
   targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
   eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
   eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
+}
+
+export type PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  id?: string
+  name: string
+  type?: $Enums.PersonaType
+  gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
+  birthYear?: string | null
+  deathYear?: string | null
+  globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
+  mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
+  biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
+  targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
+  eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
+  eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutTargetPersonaInput
+}
+
+export type PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  id?: string
+  name: string
+  type?: $Enums.PersonaType
+  gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
+  birthYear?: string | null
+  deathYear?: string | null
+  globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
+  mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
+  biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
+  targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
+  eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
+  eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutTargetPersonaInput
+}
+
+export type PersonaCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  where: Prisma.PersonaWhereUniqueInput
+  create: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+}
+
+export type PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  id?: string
+  name: string
+  type?: $Enums.PersonaType
+  gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
+  birthYear?: string | null
+  deathYear?: string | null
+  globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  profiles?: Prisma.ProfileCreateNestedManyWithoutPersonaInput
+  mentions?: Prisma.MentionCreateNestedManyWithoutPersonaInput
+  biographies?: Prisma.BiographyRecordCreateNestedManyWithoutPersonaInput
+  aliasMappings?: Prisma.AliasMappingCreateNestedManyWithoutPersonaInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutSourcePersonaInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionCreateNestedManyWithoutTargetPersonaInput
+  sourceRels?: Prisma.RelationshipCreateNestedManyWithoutSourceInput
+  targetRels?: Prisma.RelationshipCreateNestedManyWithoutTargetInput
+  eventsAsSource?: Prisma.RelationshipEventCreateNestedManyWithoutSourceInput
+  eventsAsTarget?: Prisma.RelationshipEventCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceCreateNestedManyWithoutSourcePersonaInput
+}
+
+export type PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  id?: string
+  name: string
+  type?: $Enums.PersonaType
+  gender?: string | null
+  nameType?: $Enums.NameType
+  recordSource?: $Enums.RecordSource
+  confidence?: number
+  aliases?: Prisma.PersonaCreatealiasesInput | string[]
+  hometown?: string | null
+  birthYear?: string | null
+  deathYear?: string | null
+  globalTags?: Prisma.PersonaCreateglobalTagsInput | string[]
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  profiles?: Prisma.ProfileUncheckedCreateNestedManyWithoutPersonaInput
+  mentions?: Prisma.MentionUncheckedCreateNestedManyWithoutPersonaInput
+  biographies?: Prisma.BiographyRecordUncheckedCreateNestedManyWithoutPersonaInput
+  aliasMappings?: Prisma.AliasMappingUncheckedCreateNestedManyWithoutPersonaInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput
+  sourceRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutSourceInput
+  targetRels?: Prisma.RelationshipUncheckedCreateNestedManyWithoutTargetInput
+  eventsAsSource?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutSourceInput
+  eventsAsTarget?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutTargetInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedCreateNestedManyWithoutSourcePersonaInput
+}
+
+export type PersonaCreateOrConnectWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  where: Prisma.PersonaWhereUniqueInput
+  create: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+}
+
+export type PersonaUpsertWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  update: Prisma.XOR<Prisma.PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+  create: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+  where?: Prisma.PersonaWhereInput
+}
+
+export type PersonaUpdateToOneWithWhereWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  where?: Prisma.PersonaWhereInput
+  data: Prisma.XOR<Prisma.PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput, Prisma.PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput>
+}
+
+export type PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
+  mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
+  biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
+  targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
+  eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
+  eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutTargetPersonaNestedInput
+}
+
+export type PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsSourceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
+  mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
+  biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
+  targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
+  eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
+  eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsTarget?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutTargetPersonaNestedInput
+}
+
+export type PersonaUpsertWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  update: Prisma.XOR<Prisma.PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+  create: Prisma.XOR<Prisma.PersonaCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUncheckedCreateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+  where?: Prisma.PersonaWhereInput
+}
+
+export type PersonaUpdateToOneWithWhereWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  where?: Prisma.PersonaWhereInput
+  data: Prisma.XOR<Prisma.PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput, Prisma.PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput>
+}
+
+export type PersonaUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profiles?: Prisma.ProfileUpdateManyWithoutPersonaNestedInput
+  mentions?: Prisma.MentionUpdateManyWithoutPersonaNestedInput
+  biographies?: Prisma.BiographyRecordUpdateManyWithoutPersonaNestedInput
+  aliasMappings?: Prisma.AliasMappingUpdateManyWithoutPersonaNestedInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput
+  sourceRels?: Prisma.RelationshipUpdateManyWithoutSourceNestedInput
+  targetRels?: Prisma.RelationshipUpdateManyWithoutTargetNestedInput
+  eventsAsSource?: Prisma.RelationshipEventUpdateManyWithoutSourceNestedInput
+  eventsAsTarget?: Prisma.RelationshipEventUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyWithoutSourcePersonaNestedInput
+}
+
+export type PersonaUncheckedUpdateWithoutUnknownRelationshipTypeOccurrencesAsTargetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumPersonaTypeFieldUpdateOperationsInput | $Enums.PersonaType
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nameType?: Prisma.EnumNameTypeFieldUpdateOperationsInput | $Enums.NameType
+  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
+  aliases?: Prisma.PersonaUpdatealiasesInput | string[]
+  hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  globalTags?: Prisma.PersonaUpdateglobalTagsInput | string[]
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profiles?: Prisma.ProfileUncheckedUpdateManyWithoutPersonaNestedInput
+  mentions?: Prisma.MentionUncheckedUpdateManyWithoutPersonaNestedInput
+  biographies?: Prisma.BiographyRecordUncheckedUpdateManyWithoutPersonaNestedInput
+  aliasMappings?: Prisma.AliasMappingUncheckedUpdateManyWithoutPersonaNestedInput
+  sourceMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput
+  targetMergeSuggestions?: Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput
+  sourceRels?: Prisma.RelationshipUncheckedUpdateManyWithoutSourceNestedInput
+  targetRels?: Prisma.RelationshipUncheckedUpdateManyWithoutTargetNestedInput
+  eventsAsSource?: Prisma.RelationshipEventUncheckedUpdateManyWithoutSourceNestedInput
+  eventsAsTarget?: Prisma.RelationshipEventUncheckedUpdateManyWithoutTargetNestedInput
+  unknownRelationshipTypeOccurrencesAsSource?: Prisma.UnknownRelationshipTypeOccurrenceUncheckedUpdateManyWithoutSourcePersonaNestedInput
 }
 
 
@@ -2081,6 +2471,8 @@ export type PersonaCountOutputType = {
   targetRels: number
   eventsAsSource: number
   eventsAsTarget: number
+  unknownRelationshipTypeOccurrencesAsSource: number
+  unknownRelationshipTypeOccurrencesAsTarget: number
 }
 
 export type PersonaCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2094,6 +2486,8 @@ export type PersonaCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   targetRels?: boolean | PersonaCountOutputTypeCountTargetRelsArgs
   eventsAsSource?: boolean | PersonaCountOutputTypeCountEventsAsSourceArgs
   eventsAsTarget?: boolean | PersonaCountOutputTypeCountEventsAsTargetArgs
+  unknownRelationshipTypeOccurrencesAsSource?: boolean | PersonaCountOutputTypeCountUnknownRelationshipTypeOccurrencesAsSourceArgs
+  unknownRelationshipTypeOccurrencesAsTarget?: boolean | PersonaCountOutputTypeCountUnknownRelationshipTypeOccurrencesAsTargetArgs
 }
 
 /**
@@ -2176,6 +2570,20 @@ export type PersonaCountOutputTypeCountEventsAsTargetArgs<ExtArgs extends runtim
   where?: Prisma.RelationshipEventWhereInput
 }
 
+/**
+ * PersonaCountOutputType without action
+ */
+export type PersonaCountOutputTypeCountUnknownRelationshipTypeOccurrencesAsSourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UnknownRelationshipTypeOccurrenceWhereInput
+}
+
+/**
+ * PersonaCountOutputType without action
+ */
+export type PersonaCountOutputTypeCountUnknownRelationshipTypeOccurrencesAsTargetArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UnknownRelationshipTypeOccurrenceWhereInput
+}
+
 
 export type PersonaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2203,6 +2611,8 @@ export type PersonaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   targetRels?: boolean | Prisma.Persona$targetRelsArgs<ExtArgs>
   eventsAsSource?: boolean | Prisma.Persona$eventsAsSourceArgs<ExtArgs>
   eventsAsTarget?: boolean | Prisma.Persona$eventsAsTargetArgs<ExtArgs>
+  unknownRelationshipTypeOccurrencesAsSource?: boolean | Prisma.Persona$unknownRelationshipTypeOccurrencesAsSourceArgs<ExtArgs>
+  unknownRelationshipTypeOccurrencesAsTarget?: boolean | Prisma.Persona$unknownRelationshipTypeOccurrencesAsTargetArgs<ExtArgs>
   _count?: boolean | Prisma.PersonaCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["persona"]>
 
@@ -2272,6 +2682,8 @@ export type PersonaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   targetRels?: boolean | Prisma.Persona$targetRelsArgs<ExtArgs>
   eventsAsSource?: boolean | Prisma.Persona$eventsAsSourceArgs<ExtArgs>
   eventsAsTarget?: boolean | Prisma.Persona$eventsAsTargetArgs<ExtArgs>
+  unknownRelationshipTypeOccurrencesAsSource?: boolean | Prisma.Persona$unknownRelationshipTypeOccurrencesAsSourceArgs<ExtArgs>
+  unknownRelationshipTypeOccurrencesAsTarget?: boolean | Prisma.Persona$unknownRelationshipTypeOccurrencesAsTargetArgs<ExtArgs>
   _count?: boolean | Prisma.PersonaCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PersonaIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2290,6 +2702,8 @@ export type $PersonaPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     targetRels: Prisma.$RelationshipPayload<ExtArgs>[]
     eventsAsSource: Prisma.$RelationshipEventPayload<ExtArgs>[]
     eventsAsTarget: Prisma.$RelationshipEventPayload<ExtArgs>[]
+    unknownRelationshipTypeOccurrencesAsSource: Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>[]
+    unknownRelationshipTypeOccurrencesAsTarget: Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2711,6 +3125,8 @@ export interface Prisma__PersonaClient<T, Null = never, ExtArgs extends runtime.
   targetRels<T extends Prisma.Persona$targetRelsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$targetRelsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   eventsAsSource<T extends Prisma.Persona$eventsAsSourceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$eventsAsSourceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   eventsAsTarget<T extends Prisma.Persona$eventsAsTargetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$eventsAsTargetArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  unknownRelationshipTypeOccurrencesAsSource<T extends Prisma.Persona$unknownRelationshipTypeOccurrencesAsSourceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$unknownRelationshipTypeOccurrencesAsSourceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  unknownRelationshipTypeOccurrencesAsTarget<T extends Prisma.Persona$unknownRelationshipTypeOccurrencesAsTargetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Persona$unknownRelationshipTypeOccurrencesAsTargetArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3385,6 +3801,54 @@ export type Persona$eventsAsTargetArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.RelationshipEventScalarFieldEnum | Prisma.RelationshipEventScalarFieldEnum[]
+}
+
+/**
+ * Persona.unknownRelationshipTypeOccurrencesAsSource
+ */
+export type Persona$unknownRelationshipTypeOccurrencesAsSourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UnknownRelationshipTypeOccurrence
+   */
+  select?: Prisma.UnknownRelationshipTypeOccurrenceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UnknownRelationshipTypeOccurrence
+   */
+  omit?: Prisma.UnknownRelationshipTypeOccurrenceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UnknownRelationshipTypeOccurrenceInclude<ExtArgs> | null
+  where?: Prisma.UnknownRelationshipTypeOccurrenceWhereInput
+  orderBy?: Prisma.UnknownRelationshipTypeOccurrenceOrderByWithRelationInput | Prisma.UnknownRelationshipTypeOccurrenceOrderByWithRelationInput[]
+  cursor?: Prisma.UnknownRelationshipTypeOccurrenceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UnknownRelationshipTypeOccurrenceScalarFieldEnum | Prisma.UnknownRelationshipTypeOccurrenceScalarFieldEnum[]
+}
+
+/**
+ * Persona.unknownRelationshipTypeOccurrencesAsTarget
+ */
+export type Persona$unknownRelationshipTypeOccurrencesAsTargetArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UnknownRelationshipTypeOccurrence
+   */
+  select?: Prisma.UnknownRelationshipTypeOccurrenceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UnknownRelationshipTypeOccurrence
+   */
+  omit?: Prisma.UnknownRelationshipTypeOccurrenceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UnknownRelationshipTypeOccurrenceInclude<ExtArgs> | null
+  where?: Prisma.UnknownRelationshipTypeOccurrenceWhereInput
+  orderBy?: Prisma.UnknownRelationshipTypeOccurrenceOrderByWithRelationInput | Prisma.UnknownRelationshipTypeOccurrenceOrderByWithRelationInput[]
+  cursor?: Prisma.UnknownRelationshipTypeOccurrenceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UnknownRelationshipTypeOccurrenceScalarFieldEnum | Prisma.UnknownRelationshipTypeOccurrenceScalarFieldEnum[]
 }
 
 /**

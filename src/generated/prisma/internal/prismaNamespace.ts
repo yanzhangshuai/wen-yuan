@@ -408,6 +408,8 @@ export const ModelName = {
   SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
   RelationshipTypeDefinition: 'RelationshipTypeDefinition',
+  UnknownRelationshipTypeDraft: 'UnknownRelationshipTypeDraft',
+  UnknownRelationshipTypeOccurrence: 'UnknownRelationshipTypeOccurrence',
   NerLexiconRule: 'NerLexiconRule',
   HistoricalFigureEntry: 'HistoricalFigureEntry',
   NamePatternRule: 'NamePatternRule',
@@ -430,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "relationshipEvent" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "relationshipTypeDefinition" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "relationshipEvent" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "relationshipTypeDefinition" | "unknownRelationshipTypeDraft" | "unknownRelationshipTypeOccurrence" | "nerLexiconRule" | "historicalFigureEntry" | "namePatternRule" | "promptTemplate" | "promptTemplateVersion" | "promptExtractionRule" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2210,6 +2212,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UnknownRelationshipTypeDraft: {
+      payload: Prisma.$UnknownRelationshipTypeDraftPayload<ExtArgs>
+      fields: Prisma.UnknownRelationshipTypeDraftFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UnknownRelationshipTypeDraftFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UnknownRelationshipTypeDraftFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>
+        }
+        findFirst: {
+          args: Prisma.UnknownRelationshipTypeDraftFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UnknownRelationshipTypeDraftFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>
+        }
+        findMany: {
+          args: Prisma.UnknownRelationshipTypeDraftFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>[]
+        }
+        create: {
+          args: Prisma.UnknownRelationshipTypeDraftCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>
+        }
+        createMany: {
+          args: Prisma.UnknownRelationshipTypeDraftCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UnknownRelationshipTypeDraftCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>[]
+        }
+        delete: {
+          args: Prisma.UnknownRelationshipTypeDraftDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>
+        }
+        update: {
+          args: Prisma.UnknownRelationshipTypeDraftUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>
+        }
+        deleteMany: {
+          args: Prisma.UnknownRelationshipTypeDraftDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UnknownRelationshipTypeDraftUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UnknownRelationshipTypeDraftUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>[]
+        }
+        upsert: {
+          args: Prisma.UnknownRelationshipTypeDraftUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeDraftPayload>
+        }
+        aggregate: {
+          args: Prisma.UnknownRelationshipTypeDraftAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUnknownRelationshipTypeDraft>
+        }
+        groupBy: {
+          args: Prisma.UnknownRelationshipTypeDraftGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UnknownRelationshipTypeDraftGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UnknownRelationshipTypeDraftCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UnknownRelationshipTypeDraftCountAggregateOutputType> | number
+        }
+      }
+    }
+    UnknownRelationshipTypeOccurrence: {
+      payload: Prisma.$UnknownRelationshipTypeOccurrencePayload<ExtArgs>
+      fields: Prisma.UnknownRelationshipTypeOccurrenceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>
+        }
+        findFirst: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>
+        }
+        findMany: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>[]
+        }
+        create: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>
+        }
+        createMany: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>[]
+        }
+        delete: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>
+        }
+        update: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>
+        }
+        deleteMany: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>[]
+        }
+        upsert: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UnknownRelationshipTypeOccurrencePayload>
+        }
+        aggregate: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUnknownRelationshipTypeOccurrence>
+        }
+        groupBy: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UnknownRelationshipTypeOccurrenceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UnknownRelationshipTypeOccurrenceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UnknownRelationshipTypeOccurrenceCountAggregateOutputType> | number
+        }
+      }
+    }
     NerLexiconRule: {
       payload: Prisma.$NerLexiconRulePayload<ExtArgs>
       fields: Prisma.NerLexiconRuleFieldRefs
@@ -3194,11 +3344,52 @@ export const RelationshipTypeDefinitionScalarFieldEnum = {
   sortOrder: 'sortOrder',
   status: 'status',
   source: 'source',
+  bookTypeId: 'bookTypeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type RelationshipTypeDefinitionScalarFieldEnum = (typeof RelationshipTypeDefinitionScalarFieldEnum)[keyof typeof RelationshipTypeDefinitionScalarFieldEnum]
+
+
+export const UnknownRelationshipTypeDraftScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  firstChapterId: 'firstChapterId',
+  firstJobId: 'firstJobId',
+  signature: 'signature',
+  proposedName: 'proposedName',
+  proposedGroup: 'proposedGroup',
+  proposedDirectionMode: 'proposedDirectionMode',
+  proposedSourceRoleLabel: 'proposedSourceRoleLabel',
+  proposedTargetRoleLabel: 'proposedTargetRoleLabel',
+  occurrenceCount: 'occurrenceCount',
+  status: 'status',
+  rejectionReason: 'rejectionReason',
+  approvedTypeCode: 'approvedTypeCode',
+  mergedIntoDraftId: 'mergedIntoDraftId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UnknownRelationshipTypeDraftScalarFieldEnum = (typeof UnknownRelationshipTypeDraftScalarFieldEnum)[keyof typeof UnknownRelationshipTypeDraftScalarFieldEnum]
+
+
+export const UnknownRelationshipTypeOccurrenceScalarFieldEnum = {
+  id: 'id',
+  draftId: 'draftId',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  jobId: 'jobId',
+  sourceName: 'sourceName',
+  targetName: 'targetName',
+  sourcePersonaId: 'sourcePersonaId',
+  targetPersonaId: 'targetPersonaId',
+  evidence: 'evidence',
+  createdAt: 'createdAt'
+} as const
+
+export type UnknownRelationshipTypeOccurrenceScalarFieldEnum = (typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum)[keyof typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum]
 
 
 export const NerLexiconRuleScalarFieldEnum = {
@@ -3735,6 +3926,8 @@ export type GlobalOmitConfig = {
   surnameRule?: Prisma.SurnameRuleOmit
   genericTitleRule?: Prisma.GenericTitleRuleOmit
   relationshipTypeDefinition?: Prisma.RelationshipTypeDefinitionOmit
+  unknownRelationshipTypeDraft?: Prisma.UnknownRelationshipTypeDraftOmit
+  unknownRelationshipTypeOccurrence?: Prisma.UnknownRelationshipTypeOccurrenceOmit
   nerLexiconRule?: Prisma.NerLexiconRuleOmit
   historicalFigureEntry?: Prisma.HistoricalFigureEntryOmit
   namePatternRule?: Prisma.NamePatternRuleOmit

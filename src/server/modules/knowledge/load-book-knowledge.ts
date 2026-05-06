@@ -1,5 +1,9 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { BookLexiconConfig } from "@/server/modules/analysis/config/lexicon";
+import {
+  formatRelationshipTypeDictionary,
+  type RelationshipTypeDictionaryPromptEntry
+} from "@/server/modules/analysis/services/prompts";
 
 /**
  * 解析流水线集成：从数据库加载书籍知识配置。
@@ -38,11 +42,15 @@ export interface CompiledNamePatternRule {
 }
 
 export interface FullRuntimeKnowledge {
-  bookId             : string;
-  bookTypeKey        : string | null;
-  lexiconConfig      : BookLexiconConfig;
-  aliasLookup        : Map<string, string>;
-  historicalFigures  : Set<string>;
+  bookId                        : string;
+  bookTypeId                    : string | null;
+  bookTypeKey                   : string | null;
+  lexiconConfig                 : BookLexiconConfig;
+  relationshipTypes             : RelationshipTypeDictionaryPromptEntry[];
+  relationshipTypeByCode        : Map<string, RelationshipTypeDictionaryPromptEntry>;
+  relationshipTypeDictionaryText: string;
+  aliasLookup                   : Map<string, string>;
+  historicalFigures             : Set<string>;
   historicalFigureMap: Map<string, {
     id         : string;
     name       : string;
@@ -63,6 +71,12 @@ export interface FullRuntimeKnowledge {
 }
 
 const runtimeKnowledgeCache = new Map<string, FullRuntimeKnowledge>();
+
+interface LoadFullRuntimeKnowledgeParams {
+  bookId       : string;
+  prisma       : PrismaClient;
+  forceRefresh?: boolean;
+}
 
 function normalizeLookupValue(value: string): string {
   return value.trim().toLowerCase();
@@ -366,22 +380,50 @@ export function clearKnowledgeCache(bookId?: string): void {
   runtimeKnowledgeCache.clear();
 }
 
-export async function loadFullRuntimeKnowledge(
-  bookId: string,
-  bookTypeKey: string | null | undefined,
-  prisma: PrismaClient
-): Promise<FullRuntimeKnowledge> {
-  const normalizedBookTypeKey = bookTypeKey ?? null;
+export async function loadFullRuntimeKnowledge({
+  bookId,
+  prisma,
+  forceRefresh = false
+}: LoadFullRuntimeKnowledgeParams): Promise<FullRuntimeKnowledge> {
   const cached = runtimeKnowledgeCache.get(bookId);
-  if (cached && cached.bookTypeKey === normalizedBookTypeKey) {
+  if (cached && !forceRefresh) {
     return cached;
   }
+
+  const book = await prisma.book.findUnique({
+    where : { id: bookId },
+    select: {
+      id        : true,
+      bookTypeId: true,
+      bookType  : { select: { key: true } }
+    }
+  });
+
+  if (!book) {
+    throw new Error(`书籍不存在: ${bookId}`);
+  }
+
+  const normalizedBookTypeId = book.bookTypeId ?? null;
+  const normalizedBookTypeKey = book.bookType?.key ?? null;
+  const relationshipTypeWhere = normalizedBookTypeId
+    ? {
+      status: "ACTIVE",
+      OR    : [
+        { bookTypeId: normalizedBookTypeId },
+        { bookTypeId: null }
+      ]
+    }
+    : {
+      status    : "ACTIVE",
+      bookTypeId: null
+    };
 
   const [
     runtimeLexiconPayload,
     aliasLookup,
     historicalFigureEntries,
-    namePatternRuleEntries
+    namePatternRuleEntries,
+    relationshipTypeEntries
   ] = await Promise.all([
     loadRuntimeLexiconPayload(normalizedBookTypeKey, prisma),
     buildAliasLookupFromDb(bookId, normalizedBookTypeKey, prisma),
@@ -393,6 +435,24 @@ export async function loadFullRuntimeKnowledge(
       where  : { reviewStatus: "VERIFIED", isActive: true },
       orderBy: [{ ruleType: "asc" }, { createdAt: "asc" }],
       select : { id: true, ruleType: true, action: true, pattern: true, description: true }
+    }),
+    prisma.relationshipTypeDefinition.findMany({
+      where  : relationshipTypeWhere,
+      orderBy: [
+        { group: "asc" },
+        { sortOrder: "asc" },
+        { code: "asc" }
+      ],
+      select: {
+        code           : true,
+        name           : true,
+        group          : true,
+        directionMode  : true,
+        sourceRoleLabel: true,
+        targetRoleLabel: true,
+        aliases        : true,
+        examples       : true
+      }
     })
   ]);
 
@@ -439,23 +499,38 @@ export async function loadFullRuntimeKnowledge(
   const namePatternRules = namePatternRuleEntries
     .map((rule) => compileNamePatternRule(rule))
     .filter((rule): rule is CompiledNamePatternRule => Boolean(rule));
+  const relationshipTypes = relationshipTypeEntries.map((entry) => ({
+    code           : entry.code,
+    name           : entry.name,
+    group          : entry.group,
+    directionMode  : entry.directionMode,
+    sourceRoleLabel: entry.sourceRoleLabel,
+    targetRoleLabel: entry.targetRoleLabel,
+    aliases        : toUniqueList(entry.aliases),
+    examples       : toUniqueList(entry.examples)
+  }));
+  const relationshipTypeByCode = new Map(relationshipTypes.map((item) => [item.code, item]));
 
   const loadedKnowledge: FullRuntimeKnowledge = {
     bookId,
-    bookTypeKey         : normalizedBookTypeKey,
-    lexiconConfig       : runtimeLexicon.lexiconConfig,
+    bookTypeId                    : normalizedBookTypeId,
+    bookTypeKey                   : normalizedBookTypeKey,
+    lexiconConfig                 : runtimeLexicon.lexiconConfig,
+    relationshipTypes,
+    relationshipTypeByCode,
+    relationshipTypeDictionaryText: formatRelationshipTypeDictionary(relationshipTypes),
     aliasLookup,
     historicalFigures,
     historicalFigureMap,
     relationalTerms,
     namePatternRules,
-    hardBlockSuffixes   : new Set(runtimeLexicon.hardBlockSuffixes),
-    softBlockSuffixes   : new Set(runtimeLexicon.softBlockSuffixes),
-    safetyGenericTitles : new Set(runtimeLexicon.safetyGenericTitles),
-    defaultGenericTitles: new Set(runtimeLexicon.defaultGenericTitles),
-    titlePatterns       : compileStemPatterns(runtimeLexicon.titleStems),
-    positionPatterns    : compileStemPatterns(runtimeLexicon.positionStems),
-    loadedAt            : new Date()
+    hardBlockSuffixes             : new Set(runtimeLexicon.hardBlockSuffixes),
+    softBlockSuffixes             : new Set(runtimeLexicon.softBlockSuffixes),
+    safetyGenericTitles           : new Set(runtimeLexicon.safetyGenericTitles),
+    defaultGenericTitles          : new Set(runtimeLexicon.defaultGenericTitles),
+    titlePatterns                 : compileStemPatterns(runtimeLexicon.titleStems),
+    positionPatterns              : compileStemPatterns(runtimeLexicon.positionStems),
+    loadedAt                      : new Date()
   };
 
   runtimeKnowledgeCache.set(bookId, loadedKnowledge);

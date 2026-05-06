@@ -9,8 +9,14 @@ export type RelationshipDirectionMode = typeof RELATIONSHIP_DIRECTION_MODES[numb
 export type RelationshipTypeStatus = typeof RELATIONSHIP_TYPE_STATUSES[number];
 
 export interface RelationshipTypeItem {
-  id              : string;
-  code            : string;
+  id        : string;
+  code      : string;
+  bookTypeId: string | null;
+  bookType        : {
+    id  : string;
+    key : string;
+    name: string;
+  } | null;
   name            : string;
   group           : RelationshipTypeGroup;
   directionMode   : RelationshipDirectionMode;
@@ -34,6 +40,7 @@ export interface RelationshipTypeItem {
 }
 
 export interface RelationshipTypePayload {
+  bookTypeId      ?: string | null;
   name             : string;
   group            : RelationshipTypeGroup;
   directionMode    : RelationshipDirectionMode;
@@ -105,12 +112,14 @@ export async function fetchRelationshipTypes(params?: {
   group?        : string;
   directionMode?: string;
   status?       : string;
+  bookTypeId?   : string | null;
 }): Promise<RelationshipTypeItem[]> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.group) sp.set("group", params.group);
   if (params?.directionMode) sp.set("directionMode", params.directionMode);
   if (params?.status) sp.set("status", params.status);
+  if (params && "bookTypeId" in params) sp.set("bookTypeId", params.bookTypeId ?? "__GLOBAL__");
   const qs = sp.toString() ? `?${sp.toString()}` : "";
   return clientFetch<RelationshipTypeItem[]>(`/api/admin/knowledge/relationship-types${qs}`);
 }

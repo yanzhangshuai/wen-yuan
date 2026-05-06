@@ -18,9 +18,10 @@ import {
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import {
-  formatRelationshipTypeDictionary,
+  type RelationshipTypeDictionaryPromptEntry,
   type RosterDiscoveryInput
 } from "@/server/modules/analysis/services/prompts";
+import { recordUnknownRelationshipTypeOccurrence } from "@/server/modules/knowledge/unknown-relationship-types";
 import type {
   AnalysisProfileContext,
   ChapterAnalysisResponse,
@@ -67,7 +68,8 @@ export interface ChapterAnalysisResult {
     relationships     : number;
     relationshipEvents: number;
   };
-  grayZoneCount?: number;
+  grayZoneCount?           : number;
+  unknownRelationshipDrafts: number;
 }
 
 export interface GrayZoneMentionRecord {
@@ -191,7 +193,7 @@ export function createChapterAnalysisService(
       ),
       localSummary: p.localSummary
     }));
-    const bookLexiconConfig = executionContext.preloadedLexiconConfig ?? {};
+    const bookLexiconConfig = executionContext.runtimeKnowledge?.lexiconConfig ?? executionContext.preloadedLexiconConfig ?? {};
     const effectiveGenericTitles = buildEffectiveGenericTitles(bookLexiconConfig);
     const genericTitlesExample = Array.from(effectiveGenericTitles).slice(0, GENERIC_TITLES_PROMPT_LIMIT).join("、") + "等";
 
@@ -313,20 +315,7 @@ export function createChapterAnalysisService(
       ANALYSIS_PIPELINE_CONFIG.maxChunkLength,
       ANALYSIS_PIPELINE_CONFIG.chunkOverlap
     );
-    const relationshipTypeDictionary = formatRelationshipTypeDictionary(await prismaClient.relationshipTypeDefinition.findMany({
-      where  : { status: "ACTIVE" },
-      orderBy: [
-        { group: "asc" },
-        { sortOrder: "asc" },
-        { code: "asc" }
-      ],
-      select: {
-        code         : true,
-        name         : true,
-        group        : true,
-        directionMode: true
-      }
-    }));
+    const relationshipTypeDictionary = executionContext.runtimeKnowledge?.relationshipTypeDictionaryText ?? "";
 
     const aiResults: ChapterAnalysisResponse[] = [];
     for (let i = 0; i < chunks.length; i += AI_CONCURRENCY) {
@@ -360,6 +349,7 @@ export function createChapterAnalysisService(
         chapterId       : chapter.id,
         chapterNo       : chapter.no,
         bookId          : chapter.bookId,
+        jobId           : executionContext.jobId,
         chapterContent  : chapter.content,
         merged,
         rosterMap,
@@ -395,6 +385,7 @@ export function createChapterAnalysisService(
       chapterId                 : string;
       chapterNo                 : number;
       bookId                    : string;
+      jobId                     : string;
       chapterContent            : string;
       merged                    : ChapterAnalysisResponse;
       rosterMap                 : Map<string, string>;
@@ -530,16 +521,10 @@ export function createChapterAnalysisService(
       }
     }
 
-    const activeRelationshipTypes = await tx.relationshipTypeDefinition.findMany({
-      where : { status: "ACTIVE" },
-      select: {
-        code         : true,
-        directionMode: true
-      }
-    });
-    const relationshipTypeByCode = new Map(activeRelationshipTypes.map((type) => [type.code, type]));
+    const relationshipTypeByCode: ReadonlyMap<string, RelationshipTypeDictionaryPromptEntry> = input.runtimeKnowledge?.relationshipTypeByCode
+      ?? new Map<string, RelationshipTypeDictionaryPromptEntry>();
 
-    const normalizeRelationshipTypeCode = (code: string) => code.trim();
+    const normalizeRelationshipTypeCode = (code: string | null | undefined) => (code ?? "").trim();
     const buildRelationshipKey = (sourceId: string, targetId: string, typeCode: string) => [
       sourceId,
       targetId,
@@ -558,9 +543,9 @@ export function createChapterAnalysisService(
       return normalized;
     };
     const resolveRelationshipPair = async (relationship: {
-      sourceName          : string;
-      targetName          : string;
-      relationshipTypeCode: string;
+      sourceName           : string;
+      targetName           : string;
+      relationshipTypeCode?: string | null;
     }): Promise<{
       sourceId: string;
       targetId: string;
@@ -579,8 +564,17 @@ export function createChapterAnalysisService(
       }
 
       const typeCode = normalizeRelationshipTypeCode(relationship.relationshipTypeCode);
+      if (!typeCode) {
+        return null;
+      }
       const relationshipType = relationshipTypeByCode.get(typeCode);
       if (!relationshipType) {
+        log("analysis.relationship_type_unknown", {
+          chapterId : input.chapterId,
+          typeCode,
+          sourceName: relationship.sourceName,
+          targetName: relationship.targetName
+        });
         return null;
       }
 
@@ -599,8 +593,48 @@ export function createChapterAnalysisService(
       };
     };
 
+    const recordUnknownRelationshipProposal = async (relationship: {
+      sourceName          : string;
+      targetName          : string;
+      evidence?           : string | null;
+      unknownTypeProposal?: ChapterAnalysisResponse["relationships"][number]["unknownTypeProposal"];
+    }) => {
+      if (!relationship.unknownTypeProposal) {
+        return false;
+      }
+
+      const source = await resolve(relationship.sourceName);
+      const target = await resolve(relationship.targetName);
+      if (source.status === "hallucinated") {
+        hallucinationCount += 1;
+      }
+      if (target.status === "hallucinated") {
+        hallucinationCount += 1;
+      }
+
+      return await recordUnknownRelationshipTypeOccurrence(tx, {
+        bookId         : input.bookId,
+        chapterId      : input.chapterId,
+        jobId          : input.jobId,
+        sourceName     : relationship.sourceName,
+        targetName     : relationship.targetName,
+        sourcePersonaId: source.personaId ?? null,
+        targetPersonaId: target.personaId ?? null,
+        proposal       : relationship.unknownTypeProposal,
+        evidence       : relationship.evidence
+      });
+    };
+
     const relationshipIdByKey = new Map<string, string>();
+    let unknownRelationshipDrafts = 0;
     for (const relationship of input.merged.relationships) {
+      if (!normalizeRelationshipTypeCode(relationship.relationshipTypeCode) && relationship.unknownTypeProposal) {
+        if (await recordUnknownRelationshipProposal(relationship)) {
+          unknownRelationshipDrafts += 1;
+        }
+        continue;
+      }
+
       const canonicalPair = await resolveRelationshipPair(relationship);
       if (!canonicalPair) {
         continue;
@@ -646,6 +680,13 @@ export function createChapterAnalysisService(
     const relationshipEventData: Prisma.RelationshipEventCreateManyInput[] = [];
     const relationshipEventKeys = new Set<string>();
     for (const event of input.merged.relationshipEvents) {
+      if (!normalizeRelationshipTypeCode(event.relationshipTypeCode) && event.unknownTypeProposal) {
+        if (await recordUnknownRelationshipProposal(event)) {
+          unknownRelationshipDrafts += 1;
+        }
+        continue;
+      }
+
       const canonicalPair = await resolveRelationshipPair(event);
       if (!canonicalPair) {
         continue;
@@ -702,6 +743,7 @@ export function createChapterAnalysisService(
     return {
       hallucinationCount,
       grayZoneCount,
+      unknownRelationshipDrafts,
       created: {
         personas          : personaCreated,
         mentions          : mentionData.length,

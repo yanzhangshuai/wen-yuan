@@ -75,6 +75,8 @@ export const ModelName = {
   SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
   RelationshipTypeDefinition: 'RelationshipTypeDefinition',
+  UnknownRelationshipTypeDraft: 'UnknownRelationshipTypeDraft',
+  UnknownRelationshipTypeOccurrence: 'UnknownRelationshipTypeOccurrence',
   NerLexiconRule: 'NerLexiconRule',
   HistoricalFigureEntry: 'HistoricalFigureEntry',
   NamePatternRule: 'NamePatternRule',
@@ -527,11 +529,52 @@ export const RelationshipTypeDefinitionScalarFieldEnum = {
   sortOrder: 'sortOrder',
   status: 'status',
   source: 'source',
+  bookTypeId: 'bookTypeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type RelationshipTypeDefinitionScalarFieldEnum = (typeof RelationshipTypeDefinitionScalarFieldEnum)[keyof typeof RelationshipTypeDefinitionScalarFieldEnum]
+
+
+export const UnknownRelationshipTypeDraftScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  firstChapterId: 'firstChapterId',
+  firstJobId: 'firstJobId',
+  signature: 'signature',
+  proposedName: 'proposedName',
+  proposedGroup: 'proposedGroup',
+  proposedDirectionMode: 'proposedDirectionMode',
+  proposedSourceRoleLabel: 'proposedSourceRoleLabel',
+  proposedTargetRoleLabel: 'proposedTargetRoleLabel',
+  occurrenceCount: 'occurrenceCount',
+  status: 'status',
+  rejectionReason: 'rejectionReason',
+  approvedTypeCode: 'approvedTypeCode',
+  mergedIntoDraftId: 'mergedIntoDraftId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UnknownRelationshipTypeDraftScalarFieldEnum = (typeof UnknownRelationshipTypeDraftScalarFieldEnum)[keyof typeof UnknownRelationshipTypeDraftScalarFieldEnum]
+
+
+export const UnknownRelationshipTypeOccurrenceScalarFieldEnum = {
+  id: 'id',
+  draftId: 'draftId',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  jobId: 'jobId',
+  sourceName: 'sourceName',
+  targetName: 'targetName',
+  sourcePersonaId: 'sourcePersonaId',
+  targetPersonaId: 'targetPersonaId',
+  evidence: 'evidence',
+  createdAt: 'createdAt'
+} as const
+
+export type UnknownRelationshipTypeOccurrenceScalarFieldEnum = (typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum)[keyof typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum]
 
 
 export const NerLexiconRuleScalarFieldEnum = {

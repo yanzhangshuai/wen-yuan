@@ -41,6 +41,11 @@ const knowledgeBaseLinks = [
     iconKey: "relationship-type"
   },
   {
+    href   : "/admin/knowledge-base/unknown-relationship-types",
+    label  : "未知关系类型",
+    iconKey: "unknown-relationship-type"
+  },
+  {
     href   : "/admin/knowledge-base/prompt-templates",
     label  : "提示词模板",
     iconKey: "prompt-template"

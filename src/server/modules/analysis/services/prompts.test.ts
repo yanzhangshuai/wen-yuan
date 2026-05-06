@@ -15,8 +15,41 @@ import { describe, expect, it, vi } from "vitest";
 import type * as AnalysisTypes from "@/types/analysis";
 
 import {
+  formatRelationshipTypeDictionary,
   parseValidationResponse
 } from "./prompts";
+
+describe("formatRelationshipTypeDictionary", () => {
+  it("renders grouped relationship codes with aliases, role labels and capped examples", () => {
+    const result = formatRelationshipTypeDictionary([
+      {
+        code           : "relationship_a1b2c3d4e5",
+        name           : "父子",
+        group          : "血缘",
+        directionMode  : "INVERSE",
+        sourceRoleLabel: "父亲",
+        targetRoleLabel: "儿子",
+        aliases        : ["父亲", "儿子"],
+        examples       : ["范父→范进", "周父→周进", "第三条不应出现"]
+      },
+      {
+        code           : "relationship_f6789abcde",
+        name           : "兄弟姐妹",
+        group          : "血缘",
+        directionMode  : "SYMMETRIC",
+        sourceRoleLabel: null,
+        targetRoleLabel: null,
+        aliases        : ["兄", "弟", "姊妹"],
+        examples       : []
+      }
+    ]);
+
+    expect(result).toContain("【血缘】");
+    expect(result).toContain("- relationship_a1b2c3d4e5 · 父子 · INVERSE · 父亲→儿子 · 别名: 父亲/儿子 · 例: 范父→范进；周父→周进");
+    expect(result).toContain("- relationship_f6789abcde · 兄弟姐妹 · SYMMETRIC · 别名: 兄/弟/姊妹");
+    expect(result).not.toContain("第三条不应出现");
+  });
+});
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("parseValidationResponse", () => {

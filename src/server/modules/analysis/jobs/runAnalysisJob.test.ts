@@ -15,7 +15,6 @@ import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  clearKnowledgeCache,
   loadFullRuntimeKnowledge,
   type FullRuntimeKnowledge
 } from "@/server/modules/knowledge/load-book-knowledge";
@@ -28,21 +27,25 @@ vi.mock("@/server/modules/knowledge/load-book-knowledge", () => ({
 
 function createRuntimeKnowledge(overrides: Partial<FullRuntimeKnowledge> = {}): FullRuntimeKnowledge {
   return {
-    bookId              : "book-1",
-    bookTypeKey         : null,
-    lexiconConfig       : {},
-    aliasLookup         : new Map<string, string>(),
-    historicalFigures   : new Set<string>(),
-    historicalFigureMap : new Map(),
-    relationalTerms     : new Set<string>(),
-    namePatternRules    : [],
-    hardBlockSuffixes   : new Set<string>(),
-    softBlockSuffixes   : new Set<string>(),
-    safetyGenericTitles : new Set<string>(),
-    defaultGenericTitles: new Set<string>(),
-    titlePatterns       : [],
-    positionPatterns    : [],
-    loadedAt            : new Date("2026-01-01T00:00:00.000Z"),
+    bookId                        : "book-1",
+    bookTypeId                    : null,
+    bookTypeKey                   : null,
+    lexiconConfig                 : {},
+    relationshipTypes             : [],
+    relationshipTypeByCode        : new Map(),
+    relationshipTypeDictionaryText: "",
+    aliasLookup                   : new Map<string, string>(),
+    historicalFigures             : new Set<string>(),
+    historicalFigureMap           : new Map(),
+    relationalTerms               : new Set<string>(),
+    namePatternRules              : [],
+    hardBlockSuffixes             : new Set<string>(),
+    softBlockSuffixes             : new Set<string>(),
+    safetyGenericTitles           : new Set<string>(),
+    defaultGenericTitles          : new Set<string>(),
+    titlePatterns                 : [],
+    positionPatterns              : [],
+    loadedAt                      : new Date("2026-01-01T00:00:00.000Z"),
     ...overrides
   };
 }
@@ -181,13 +184,11 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("analysis job runner", () => {
-  const mockedClearKnowledgeCache = vi.mocked(clearKnowledgeCache);
   const mockedLoadFullRuntimeKnowledge = vi.mocked(loadFullRuntimeKnowledge);
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockedLoadFullRuntimeKnowledge.mockResolvedValue(createRuntimeKnowledge());
-    mockedClearKnowledgeCache.mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -1267,7 +1268,8 @@ describe("analysis job runner", () => {
       expect(context).toMatchObject({
         jobId             : "job-two-pass",
         externalPersonaMap: globalPersonaMap,
-        preloadedLexiconConfig
+        preloadedLexiconConfig,
+        runtimeKnowledge
       });
       return {
         chapterId         : "chapter-1",
@@ -1290,8 +1292,11 @@ describe("analysis job runner", () => {
       { bookId: "book-1", jobId: "job-two-pass" },
       runtimeKnowledge
     );
-    expect(mockedClearKnowledgeCache).toHaveBeenCalledWith("book-1");
-    expect(mockedLoadFullRuntimeKnowledge).toHaveBeenCalledWith("book-1", null, expect.any(Object));
+    expect(mockedLoadFullRuntimeKnowledge).toHaveBeenCalledWith({
+      bookId      : "book-1",
+      prisma      : expect.any(Object),
+      forceRefresh: true
+    });
     expect(analyzeChapter).toHaveBeenCalledTimes(2);
     expect(analysisJobUpdate).toHaveBeenCalledWith({
       where: { id: "job-two-pass" },

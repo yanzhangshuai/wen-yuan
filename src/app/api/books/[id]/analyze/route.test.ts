@@ -30,6 +30,14 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   }
 
   class AnalysisScopeInvalidError extends Error {}
+  class EmptyRelationshipKnowledgeError extends Error {
+    readonly bookId: string;
+
+    constructor(bookId: string) {
+      super(`Relationship type knowledge is empty: ${bookId}`);
+      this.bookId = bookId;
+    }
+  }
 
   return {
     ANALYSIS_ARCHITECTURE_VALUES     : ["sequential", "twopass"] as const,
@@ -37,7 +45,8 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
     ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
     startBookAnalysis                : startBookAnalysisMock,
     BookNotFoundError,
-    AnalysisScopeInvalidError
+    AnalysisScopeInvalidError,
+    EmptyRelationshipKnowledgeError
   };
 });
 
@@ -310,6 +319,27 @@ describe("POST /api/books/:id/analyze", () => {
     const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
     const { AnalysisScopeInvalidError } = await import("@/server/modules/books/startBookAnalysis");
     startBookAnalysisMock.mockRejectedValue(new AnalysisScopeInvalidError("chapter range invalid"));
+    const { POST } = await import("@/app/api/books/[id]/analyze/route");
+
+    const response = await POST(
+      new Request(`http://localhost/api/books/${bookId}/analyze`, {
+        method : "POST",
+        headers: {
+          "x-auth-role": AppRole.ADMIN
+        }
+      }),
+      { params: Promise.resolve({ id: bookId }) }
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe("COMMON_BAD_REQUEST");
+  });
+
+  it("returns 400 when relationship type knowledge is empty", async () => {
+    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
+    const { EmptyRelationshipKnowledgeError } = await import("@/server/modules/books/startBookAnalysis");
+    startBookAnalysisMock.mockRejectedValue(new EmptyRelationshipKnowledgeError(bookId));
     const { POST } = await import("@/app/api/books/[id]/analyze/route");
 
     const response = await POST(

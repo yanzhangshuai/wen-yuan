@@ -23,7 +23,37 @@ const generatedRelationshipTypeSchema = z.object({
   confidence      : z.number().min(0).max(1).default(0.8)
 });
 
-const generatedRelationshipTypesSchema = z.array(generatedRelationshipTypeSchema);
+const generatedRelationshipTypesArraySchema = z.array(generatedRelationshipTypeSchema);
+const generatedRelationshipTypesSchema = z.preprocess((payload) => {
+  if (Array.isArray(payload) || !payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  const record = payload as Record<string, unknown>;
+  return record.relationshipTypes ?? record.items ?? record.candidates ?? payload;
+}, generatedRelationshipTypesArraySchema);
+
+function formatGeneratedRelationshipTypeIssue(issue: z.ZodIssue): string {
+  const candidateIndex = issue.path.find((part): part is number => typeof part === "number");
+  const arrayField = issue.path.find((part): part is "aliases" | "examples" => part === "aliases" || part === "examples");
+
+  if (arrayField) {
+    const prefix = candidateIndex === undefined ? "" : `第 ${candidateIndex + 1} 条 `;
+    return `${prefix}${arrayField} 必须是字符串数组。`;
+  }
+
+  const path = issue.path.length > 0 ? issue.path.join(".") : "顶层结构";
+  return `${path} 不符合 schema：${issue.message}。`;
+}
+
+function formatGeneratedRelationshipTypesSchemaError(error: z.ZodError): Error {
+  const firstIssue = error.issues[0];
+  const detail = firstIssue
+    ? formatGeneratedRelationshipTypeIssue(firstIssue)
+    : "模型输出不符合关系类型 schema。";
+  const remaining = error.issues.length > 1 ? `另有 ${error.issues.length - 1} 处格式错误。` : "";
+  return new Error(`模型输出格式不符合关系类型契约：${detail}${remaining}请重新生成。`);
+}
 
 export interface RelationshipTypeGenerationPreview {
   targetCount : number;
@@ -97,8 +127,10 @@ function buildRelationshipTypePrompts(input: {
 
   const systemPrompt = [
     "你是中文古典文学角色关系类型知识库构建助手。",
-    "请严格输出 JSON 数组，不要输出 Markdown、解释或注释。",
+    "请严格输出 JSON 对象，不要输出 Markdown、解释或注释。",
+    "顶层对象只能包含 relationshipTypes 字段，relationshipTypes 必须是候选数组。",
     "每个对象必须包含 name、group、directionMode、edgeLabel、aliases、confidence，可选 sourceRoleLabel、targetRoleLabel、reverseEdgeLabel、description、usageNotes、examples。",
+    "aliases 与 examples 必须始终是 JSON 字符串数组；即使只有一个值也必须写成数组，没有内容则写 []，不要输出单个字符串。",
     `group 只能是：${RELATIONSHIP_TYPE_GROUPS.join("、")}。`,
     "directionMode 只能是 SYMMETRIC、INVERSE、DIRECTED。",
     "只生成稳定结构关系类型，例如父子、岳婿、师生、主仆、同僚、上下级、同盟、敌对。",
@@ -113,7 +145,7 @@ function buildRelationshipTypePrompts(input: {
     "当前已存在关系类型：",
     existingLines,
     input.additionalInstructions ? `补充要求：${input.additionalInstructions}` : "",
-    '输出示例：[{"name":"岳婿","group":"姻亲","directionMode":"INVERSE","sourceRoleLabel":"岳父","targetRoleLabel":"女婿","edgeLabel":"岳婿","aliases":["岳丈","丈人","泰山"],"description":"妻子父亲与女婿之间的姻亲关系","usageNotes":"用于稳定身份关系，不用于描述态度或行为","examples":["胡屠户与范进"],"confidence":0.92}]'
+    '输出示例：{"relationshipTypes":[{"name":"岳婿","group":"姻亲","directionMode":"INVERSE","sourceRoleLabel":"岳父","targetRoleLabel":"女婿","edgeLabel":"岳婿","aliases":["岳丈","丈人","泰山"],"description":"妻子父亲与女婿之间的姻亲关系","usageNotes":"用于稳定身份关系，不用于描述态度或行为","examples":["胡屠户与范进"],"confidence":0.92}]}'
   ].filter(Boolean).join("\n");
 
   return { systemPrompt, userPrompt };
@@ -233,18 +265,28 @@ export async function reviewGeneratedRelationshipTypes(input: {
   modelId?               : string;
 }): Promise<RelationshipTypeGenerationReviewResult> {
   const preview = await previewRelationshipTypeGenerationPrompt(input);
-  const [generated, existingEntries] = await Promise.all([
-    executeKnowledgeJsonGeneration({
-      selectedModelId: input.modelId,
-      systemPrompt   : preview.systemPrompt,
-      userPrompt     : preview.userPrompt,
-      schema         : generatedRelationshipTypesSchema
-    }),
-    prisma.relationshipTypeDefinition.findMany({
-      where : { status: { not: "INACTIVE" } },
-      select: { name: true, aliases: true }
-    })
-  ]);
+  let generated: Awaited<ReturnType<typeof executeKnowledgeJsonGeneration<typeof generatedRelationshipTypesSchema>>>;
+  let existingEntries: Array<{ name: string; aliases: string[] }>;
+  try {
+    [generated, existingEntries] = await Promise.all([
+      executeKnowledgeJsonGeneration({
+        selectedModelId: input.modelId,
+        systemPrompt   : preview.systemPrompt,
+        userPrompt     : preview.userPrompt,
+        schema         : generatedRelationshipTypesSchema
+      }),
+      prisma.relationshipTypeDefinition.findMany({
+        where : { status: { not: "INACTIVE" } },
+        select: { name: true, aliases: true }
+      })
+    ]);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw formatGeneratedRelationshipTypesSchemaError(error);
+    }
+    throw error;
+  }
+
   const reviewed = buildReviewCandidates({
     parsed: generated.parsed,
     existingEntries

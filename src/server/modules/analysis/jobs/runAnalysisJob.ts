@@ -10,7 +10,6 @@ import { createModelStrategyResolver } from "@/server/modules/analysis/services/
 import { createGlobalEntityResolver, type GlobalEntityResolverService } from "@/server/modules/analysis/pipelines/twopass/GlobalEntityResolver";
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import {
-  clearKnowledgeCache,
   loadFullRuntimeKnowledge,
   type FullRuntimeKnowledge
 } from "@/server/modules/knowledge/load-book-knowledge";
@@ -596,8 +595,7 @@ export function createAnalysisJobRunner(
     const bookRow = await prismaClient.book.findUnique({
       where : { id: bookId },
       select: {
-        title   : true,
-        bookType: { select: { key: true } }
+        title: true
       }
     });
 
@@ -605,10 +603,11 @@ export function createAnalysisJobRunner(
       throw new Error(`书籍不存在: ${bookId}`);
     }
 
-    const bookTypeKey = bookRow.bookType?.key ?? null;
-    // D12：任务启动时强制刷新，保证本任务读到的是最新审核后知识快照。
-    clearKnowledgeCache(bookId);
-    const runtimeKnowledge = await loadFullRuntimeKnowledge(bookId, bookTypeKey, prismaClient);
+    const runtimeKnowledge = await loadFullRuntimeKnowledge({
+      bookId,
+      prisma      : prismaClient,
+      forceRefresh: true
+    });
 
     return {
       bookTitle: bookRow.title,

@@ -8,7 +8,7 @@
  * - 让维护者在修改类型时能及时感知破坏性变更。
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   parseChapterAnalysisResponse,
@@ -124,6 +124,98 @@ describe("parseChapterAnalysisResponse", () => {
       ],
       relationshipEvents: []
     });
+  });
+
+  it("accepts unknown relationship type proposals and rejects mixed code plus proposal records", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const result = parseChapterAnalysisResponse(JSON.stringify({
+      relationships: [
+        {
+          sourceName         : "范进",
+          targetName         : "胡屠户",
+          unknownTypeProposal: {
+            proposedName           : "岳婿以外的姻亲",
+            proposedGroup          : "姻亲",
+            proposedDirectionMode  : "INVERSE",
+            proposedSourceRoleLabel: "长辈",
+            proposedTargetRoleLabel: "晚辈",
+            evidence               : "二人关系无法被现有字典表达"
+          }
+        },
+        {
+          sourceName          : "张三",
+          targetName          : "李四",
+          relationshipTypeCode: "relationship_known",
+          unknownTypeProposal : {
+            proposedName         : "非法混用",
+            proposedGroup        : "其他",
+            proposedDirectionMode: "SYMMETRIC"
+          }
+        },
+        {
+          sourceName         : "王五",
+          targetName         : "赵六",
+          unknownTypeProposal: {
+            proposedName         : "缺少角色标签的互逆关系",
+            proposedGroup        : "其他",
+            proposedDirectionMode: "INVERSE"
+          }
+        }
+      ],
+      relationshipEvents: [
+        {
+          sourceName         : "范进",
+          targetName         : "胡屠户",
+          summary            : "关系提案事件",
+          unknownTypeProposal: {
+            proposedName           : "岳婿以外的姻亲",
+            proposedGroup          : "姻亲",
+            proposedDirectionMode  : "INVERSE",
+            proposedSourceRoleLabel: "长辈",
+            proposedTargetRoleLabel: "晚辈"
+          }
+        },
+        {
+          sourceName         : "周进",
+          targetName         : "范进",
+          summary            : "单向缺 source label 应丢弃",
+          unknownTypeProposal: {
+            proposedName         : "单向提案",
+            proposedGroup        : "其他",
+            proposedDirectionMode: "DIRECTED"
+          }
+        }
+      ]
+    }));
+
+    expect(result.relationships).toEqual([
+      {
+        sourceName          : "范进",
+        targetName          : "胡屠户",
+        relationshipTypeCode: null,
+        evidence            : undefined,
+        unknownTypeProposal : {
+          proposedName           : "岳婿以外的姻亲",
+          proposedGroup          : "姻亲",
+          proposedDirectionMode  : "INVERSE",
+          proposedSourceRoleLabel: "长辈",
+          proposedTargetRoleLabel: "晚辈",
+          evidence               : "二人关系无法被现有字典表达"
+        }
+      }
+    ]);
+    expect(result.relationshipEvents).toEqual([
+      expect.objectContaining({
+        sourceName          : "范进",
+        targetName          : "胡屠户",
+        relationshipTypeCode: null,
+        summary             : "关系提案事件",
+        unknownTypeProposal : expect.objectContaining({ proposedName: "岳婿以外的姻亲" })
+      })
+    ]);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

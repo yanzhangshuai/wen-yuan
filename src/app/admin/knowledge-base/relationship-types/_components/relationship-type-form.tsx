@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchActiveBookTypes, type BookTypeOption } from "@/lib/services/book-types";
 import {
   createRelationshipType,
   RELATIONSHIP_DIRECTION_MODES,
@@ -27,6 +28,8 @@ import {
   type RelationshipTypePayload,
   type RelationshipTypeStatus
 } from "@/lib/services/relationship-types";
+
+const GLOBAL_BOOK_TYPE_VALUE = "__GLOBAL__";
 
 const directionLabels: Record<RelationshipDirectionMode, string> = {
   SYMMETRIC: "对称",
@@ -42,6 +45,7 @@ const statusLabels: Record<RelationshipTypeStatus, string> = {
 
 interface FormState {
   id?             : string;
+  bookTypeId      : string;
   name            : string;
   group           : RelationshipTypeGroup;
   directionMode   : RelationshipDirectionMode;
@@ -60,6 +64,7 @@ interface FormState {
 
 function emptyForm(): FormState {
   return {
+    bookTypeId      : GLOBAL_BOOK_TYPE_VALUE,
     name            : "",
     group           : "血缘",
     directionMode   : "INVERSE",
@@ -80,6 +85,7 @@ function emptyForm(): FormState {
 function itemToForm(item: RelationshipTypeItem): FormState {
   return {
     id              : item.id,
+    bookTypeId      : item.bookTypeId ?? GLOBAL_BOOK_TYPE_VALUE,
     name            : item.name,
     group           : item.group,
     directionMode   : item.directionMode,
@@ -103,6 +109,7 @@ function splitList(value: string): string[] {
 
 function formToPayload(form: FormState): RelationshipTypePayload {
   return {
+    bookTypeId      : form.bookTypeId === GLOBAL_BOOK_TYPE_VALUE ? null : form.bookTypeId,
     name            : form.name.trim(),
     group           : form.group,
     directionMode   : form.directionMode,
@@ -143,6 +150,20 @@ export function RelationshipTypeForm({ initial, redirectTo, onSuccess, onCancel 
   const router = useRouter();
   const [form,   setForm]   = useState<FormState>(() => initial ? itemToForm(initial) : emptyForm());
   const [saving, setSaving] = useState(false);
+  const [bookTypes, setBookTypes] = useState<BookTypeOption[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await fetchActiveBookTypes();
+        if (!cancelled) setBookTypes(data);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "书籍类型加载失败");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const preview = previewLabels(form);
 
@@ -182,6 +203,13 @@ export function RelationshipTypeForm({ initial, redirectTo, onSuccess, onCancel 
         </Field>
         <FormSelect label="分组" value={form.group} values={[...RELATIONSHIP_TYPE_GROUPS]} getLabel={(value) => value} onValueChange={(value) => setForm({ ...form, group: value as RelationshipTypeGroup })} />
       </div>
+      <FormSelect
+        label="适用书籍类型"
+        value={form.bookTypeId}
+        values={[GLOBAL_BOOK_TYPE_VALUE, ...bookTypes.map((item) => item.id)]}
+        getLabel={(value) => value === GLOBAL_BOOK_TYPE_VALUE ? "通用" : bookTypes.find((item) => item.id === value)?.name ?? value}
+        onValueChange={(value) => setForm({ ...form, bookTypeId: value })}
+      />
       <FormSelect label="方向模式" value={form.directionMode} values={[...RELATIONSHIP_DIRECTION_MODES]} getLabel={(value) => directionLabels[value as RelationshipDirectionMode]} onValueChange={(value) => setForm({ ...form, directionMode: value as RelationshipDirectionMode })} />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="source 称谓" id="sourceRoleLabel">

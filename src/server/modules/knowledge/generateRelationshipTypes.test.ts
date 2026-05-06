@@ -178,6 +178,70 @@ describe("generateRelationshipTypes", () => {
     expect(result.skippedExisting).toBe(1);
   });
 
+  it("accepts relationship candidates wrapped in a json_object response", async () => {
+    hoisted.prisma.relationshipTypeDefinition.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    hoisted.executeKnowledgeJsonGeneration.mockImplementationOnce((input: SchemaParseInput) => {
+      const payload = {
+        relationshipTypes: [
+          {
+            name           : "同年",
+            group          : "社会身份",
+            directionMode  : "SYMMETRIC",
+            edgeLabel      : "同年",
+            aliases        : ["科举同年"],
+            examples       : [],
+            confidence     : 0.86
+          }
+        ]
+      };
+
+      return Promise.resolve({
+        parsed    : input.schema.parse(payload),
+        rawContent: JSON.stringify(payload),
+        model     : modelInfo
+      });
+    });
+
+    const result = await reviewGeneratedRelationshipTypes({ targetCount: 1 });
+
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]).toMatchObject({
+      name             : "同年",
+      defaultSelected  : true,
+      recommendedAction: "SELECT"
+    });
+  });
+
+  it("reports a clear contract error when examples is not a string array", async () => {
+    hoisted.prisma.relationshipTypeDefinition.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    hoisted.executeKnowledgeJsonGeneration.mockImplementationOnce((input: SchemaParseInput) => {
+      const payload = [
+        {
+          name         : "同年",
+          group        : "社会身份",
+          directionMode: "SYMMETRIC",
+          edgeLabel    : "同年",
+          aliases      : ["科举同年"],
+          examples     : "范进与张乡绅",
+          confidence   : 0.86
+        }
+      ];
+
+      return Promise.resolve({
+        parsed    : input.schema.parse(payload),
+        rawContent: JSON.stringify(payload),
+        model     : modelInfo
+      });
+    });
+
+    await expect(reviewGeneratedRelationshipTypes({ targetCount: 1 }))
+      .rejects.toThrow("模型输出格式不符合关系类型契约：第 1 条 examples 必须是字符串数组。请重新生成。");
+  });
+
   it("accepts null optional text fields for symmetric candidates and normalizes them to null", async () => {
     hoisted.prisma.relationshipTypeDefinition.findMany
       .mockResolvedValueOnce([])

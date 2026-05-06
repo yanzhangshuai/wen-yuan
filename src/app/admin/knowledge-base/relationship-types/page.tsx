@@ -45,6 +45,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
+import { fetchActiveBookTypes, type BookTypeOption } from "@/lib/services/book-types";
 import {
   Table,
   TableBody,
@@ -70,6 +71,7 @@ import { RelationshipTypeForm } from "./_components/relationship-type-form";
 import { RelationshipTypeGeneratorPanel } from "./_components/relationship-type-generator-panel";
 
 const ALL_VALUE = "__ALL__";
+const GLOBAL_BOOK_TYPE_VALUE = "__GLOBAL__";
 
 const directionLabels: Record<RelationshipDirectionMode, string> = {
   SYMMETRIC: "对称",
@@ -106,8 +108,10 @@ export default function RelationshipTypesPage() {
   const [loading, setLoading]                   = useState(true);
   const [q, setQ]                               = useState("");
   const [group, setGroup]                       = useState(ALL_VALUE);
+  const [bookTypeId, setBookTypeId]             = useState(ALL_VALUE);
   const [directionMode, setDirectionMode]       = useState(ALL_VALUE);
   const [status, setStatus]                     = useState(ALL_VALUE);
+  const [bookTypes, setBookTypes]               = useState<BookTypeOption[]>([]);
   const [initializeCommonOpen, setInitializeCommonOpen] = useState(false);
   const [initializingCommon, setInitializingCommon]     = useState(false);
   const [deleteTarget, setDeleteTarget]                 = useState<RelationshipTypeItem | null>(null);
@@ -127,6 +131,7 @@ export default function RelationshipTypesPage() {
       const data = await fetchRelationshipTypes({
         q            : q.trim() || undefined,
         group        : group === ALL_VALUE ? undefined : group,
+        bookTypeId   : bookTypeId === ALL_VALUE ? undefined : bookTypeId === GLOBAL_BOOK_TYPE_VALUE ? null : bookTypeId,
         directionMode: directionMode === ALL_VALUE ? undefined : directionMode,
         status       : status === ALL_VALUE ? undefined : status
       });
@@ -140,6 +145,13 @@ export default function RelationshipTypesPage() {
 
   useEffect(() => {
     void load();
+    void (async () => {
+      try {
+        setBookTypes(await fetchActiveBookTypes());
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "书籍类型加载失败");
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -340,12 +352,23 @@ export default function RelationshipTypesPage() {
       ) : null}
 
       <PageSection>
-        <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(260px,1fr)_170px_170px_170px_auto]">
+        <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(260px,1fr)_170px_170px_170px_170px_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" value={q} onChange={(event) => setQ(event.target.value)} placeholder="搜索名称、code、别名、说明" />
           </div>
           <FilterSelect label="分组" value={group} values={[ALL_VALUE, ...RELATIONSHIP_TYPE_GROUPS]} getLabel={(value) => value === ALL_VALUE ? "全部分组" : value} onValueChange={setGroup} />
+          <FilterSelect
+            label="书籍类型"
+            value={bookTypeId}
+            values={[ALL_VALUE, GLOBAL_BOOK_TYPE_VALUE, ...bookTypes.map((item) => item.id)]}
+            getLabel={(value) => {
+              if (value === ALL_VALUE) return "全部类型";
+              if (value === GLOBAL_BOOK_TYPE_VALUE) return "通用";
+              return bookTypes.find((item) => item.id === value)?.name ?? value;
+            }}
+            onValueChange={setBookTypeId}
+          />
           <FilterSelect label="方向" value={directionMode} values={[ALL_VALUE, ...RELATIONSHIP_DIRECTION_MODES]} getLabel={(value) => value === ALL_VALUE ? "全部方向" : directionLabels[value as RelationshipDirectionMode]} onValueChange={setDirectionMode} />
           <FilterSelect label="状态" value={status} values={[ALL_VALUE, ...RELATIONSHIP_TYPE_STATUSES]} getLabel={(value) => value === ALL_VALUE ? "全部状态" : statusLabels[value as RelationshipTypeStatus]} onValueChange={setStatus} />
           <Button type="button" variant="outline" onClick={() => void load()}>
@@ -394,6 +417,7 @@ export default function RelationshipTypesPage() {
                 </TableHead>
                 <TableHead className="min-w-64">关系类型</TableHead>
                 <TableHead className="w-48">分组 / 方向</TableHead>
+                <TableHead className="w-36">适用类型</TableHead>
                 <TableHead className="min-w-64">称谓与边</TableHead>
                 <TableHead className="w-24">引用</TableHead>
                 <TableHead className="w-28">状态</TableHead>
@@ -402,9 +426,9 @@ export default function RelationshipTypesPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell className="py-10 text-center text-muted-foreground" colSpan={7}>加载中...</TableCell></TableRow>
+                <TableRow><TableCell className="py-10 text-center text-muted-foreground" colSpan={8}>加载中...</TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell className="py-10 text-center text-muted-foreground" colSpan={7}>暂无关系类型</TableCell></TableRow>
+                <TableRow><TableCell className="py-10 text-center text-muted-foreground" colSpan={8}>暂无关系类型</TableCell></TableRow>
               ) : items.map((item) => {
                 const labels = previewLabels(item);
                 return (
@@ -424,6 +448,9 @@ export default function RelationshipTypesPage() {
                         <Badge variant="outline">{item.group}</Badge>
                         <Badge variant="secondary">{directionLabels[item.directionMode]}</Badge>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={item.bookType ? "outline" : "secondary"}>{item.bookType?.name ?? "通用"}</Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       <div>A 对 B：{labels.aToB}</div>

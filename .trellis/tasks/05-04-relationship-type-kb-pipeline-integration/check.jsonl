@@ -1,0 +1,16 @@
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"Verify schema, migration, and transaction boundaries."}
+{"file":".trellis/spec/backend/migration-guidelines.md","reason":"Verify migration status and avoid rewriting applied migrations."}
+{"file":".trellis/spec/backend/analysis-runtime-knowledge.md","reason":"Verify runtime KB-only behavior and no hardcoded relationship fallback."}
+{"file":".trellis/spec/backend/ai-output-contract.md","reason":"Verify AI schema, prompt, and downstream parsing remain aligned."}
+{"file":".trellis/spec/backend/relationship-structure.md","reason":"Verify unknown types do not pollute Relationship/RelationshipEvent tables."}
+{"file":".trellis/spec/backend/analysis-pipeline.md","reason":"Verify both pipeline architectures receive the shared runtime dictionary context."}
+{"file":".trellis/spec/backend/route-handler-guidelines.md","reason":"Verify admin API auth, Zod validation, and response envelope behavior."}
+{"file":".trellis/spec/backend/test-guidelines.md","reason":"Verify tests use supported Vitest patterns and cover required branches."}
+{"file":".trellis/spec/shared/zod-typescript.md","reason":"Verify schema-first external data contracts."}
+{"file":".trellis/spec/shared/code-quality.md","reason":"Verify readability, minimal edits, no any/non-null assertions/console.log."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify UI component boundaries, Radix Select sentinel values, and theme-safe classes."}
+{"file":".trellis/spec/frontend/design-system.md","reason":"Verify admin page fits Wen Yuan visual tone and theme token rules."}
+{"file":".trellis/spec/frontend/nextjs-best-practices.md","reason":"Verify App Router async API and client/server component boundaries."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Verify DB→service→API→UI→pipeline data flow is complete."}
+{"file":".trellis/spec/guides/module-boundary-guidelines.md","reason":"Verify dependencies do not cross forbidden module boundaries."}
+{"file":".trellis/spec/guides/comment-guidelines.md","reason":"Verify comments explain non-obvious business constraints without noise."}

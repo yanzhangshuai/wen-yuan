@@ -58,10 +58,14 @@ export interface BuildPromptInput {
 }
 
 export interface RelationshipTypeDictionaryPromptEntry {
-  code         : string;
-  name         : string;
-  group        : string;
-  directionMode: string;
+  code            : string;
+  name            : string;
+  group           : string;
+  directionMode   : string;
+  sourceRoleLabel?: string | null;
+  targetRoleLabel?: string | null;
+  aliases         : string[];
+  examples        : string[];
 }
 
 /**
@@ -206,7 +210,8 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
     "仅输出原始 JSON，禁止 markdown 代码块。",
     "relationships 只声明全书唯一的结构身份关系，字段使用 relationshipTypeCode，不写章节互动摘要。",
     "relationshipEvents 只写本章互动事件；每条事件必须能通过 sourceName + targetName + relationshipTypeCode 对应到 relationships 中一条。",
-    "relationshipTypeCode 必须从已知关系类型字典中选择；未列出的关系不要自创，也不要输出。",
+    "relationshipTypeCode 必须整段复制已知关系类型字典里的 code；绝不允许自创 relationshipTypeCode。",
+    "字典无法表达但证据明确的关系，省略 relationshipTypeCode 或填 null，并返回 unknownTypeProposal；非空 relationshipTypeCode 与 unknownTypeProposal 必须二选一。",
     "attitudeTags 每条最多 3 个；信号不足时输出 []。"
   ];
   const analysisPostRules: readonly string[] = [
@@ -242,7 +247,24 @@ export function formatRelationshipTypeDictionary(
   for (const [group, groupEntries] of groupMap) {
     lines.push(`【${group}】`);
     for (const entry of groupEntries) {
-      lines.push(`- ${entry.code} · ${entry.name} · ${entry.directionMode}`);
+      const parts = [entry.code, entry.name, entry.directionMode];
+      const sourceRole = entry.sourceRoleLabel?.trim();
+      const targetRole = entry.targetRoleLabel?.trim();
+      if (sourceRole && targetRole) {
+        parts.push(`${sourceRole}→${targetRole}`);
+      }
+
+      const aliases = entry.aliases.map((alias) => alias.trim()).filter(Boolean);
+      if (aliases.length > 0) {
+        parts.push(`别名: ${aliases.join("/")}`);
+      }
+
+      const examples = entry.examples.map((example) => example.trim()).filter(Boolean).slice(0, 2);
+      if (examples.length > 0) {
+        parts.push(`例: ${examples.join("；")}`);
+      }
+
+      lines.push(`- ${parts.join(" · ")}`);
     }
   }
 

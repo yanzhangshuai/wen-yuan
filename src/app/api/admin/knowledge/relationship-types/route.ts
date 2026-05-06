@@ -12,10 +12,12 @@ import {
   badRequestJson,
   createRelationshipTypeSchema,
   relationshipTypeDirectionModeSchema,
-  relationshipTypeStatusSchema
+  relationshipTypeStatusSchema,
+  uuidParamSchema
 } from "../_shared";
 
 const PATH = "/api/admin/knowledge/relationship-types";
+const GLOBAL_BOOK_TYPE_VALUE = "__GLOBAL__";
 
 export async function GET(request: Request): Promise<Response> {
   const startedAt = Date.now();
@@ -28,8 +30,12 @@ export async function GET(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const directionMode = url.searchParams.get("directionMode") ?? undefined;
     const status = url.searchParams.get("status") ?? undefined;
+    const rawBookTypeId = url.searchParams.get("bookTypeId") ?? undefined;
     const parsedDirectionMode = directionMode ? relationshipTypeDirectionModeSchema.safeParse(directionMode) : null;
     const parsedStatus = status ? relationshipTypeStatusSchema.safeParse(status) : null;
+    const parsedBookTypeId = rawBookTypeId && rawBookTypeId !== GLOBAL_BOOK_TYPE_VALUE
+      ? uuidParamSchema.shape.id.safeParse(rawBookTypeId)
+      : null;
 
     if (parsedDirectionMode && !parsedDirectionMode.success) {
       return badRequestJson(PATH, requestId, startedAt, "directionMode 不合法");
@@ -37,12 +43,16 @@ export async function GET(request: Request): Promise<Response> {
     if (parsedStatus && !parsedStatus.success) {
       return badRequestJson(PATH, requestId, startedAt, "status 不合法");
     }
+    if (parsedBookTypeId && !parsedBookTypeId.success) {
+      return badRequestJson(PATH, requestId, startedAt, "bookTypeId 不合法");
+    }
 
     const data = await listRelationshipTypes({
       q            : url.searchParams.get("q") ?? undefined,
       group        : url.searchParams.get("group") ?? undefined,
       directionMode: parsedDirectionMode?.data,
-      status       : parsedStatus?.data
+      status       : parsedStatus?.data,
+      bookTypeId   : rawBookTypeId === GLOBAL_BOOK_TYPE_VALUE ? null : parsedBookTypeId?.data
     });
     return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_RELATIONSHIP_TYPES_LISTED", message: "关系类型列表获取成功", data });
   } catch (error) {
