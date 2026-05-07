@@ -134,8 +134,8 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
           "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。",
           "重点 1：优先将称谓映射到已知人物，避免重复创建同一角色。",
           "重点 2：关系分两层。结构关系（relationships）描述身份事实（父子/师生/同僚），全书唯一；关系事件（relationshipEvents）描述本章互动（资助/背叛/赔礼），可多次发生。",
-          "重点 3：relationshipTypeCode 必须逐字复制关系类型字典中的 code，绝对不要自创 code。",
-          "重点 4：文本确有稳定结构关系但字典无合适类型时，将 relationshipTypeCode 置为 null，并填写 unknownTypeProposal；二者不能同时出现。"
+          "重点 3：relationshipTypeCode 优先使用字典中的 code；字典中无合适类型时，自创一个简洁的 UPPER_SNAKE_CASE 描述性 code（如 FATHER_SON / MENTOR_STUDENT / FELLOW_OFFICIAL）。",
+          "重点 4：relationshipTypeCode 必须填写非空值，禁止置为 null。unknownTypeProposal 作为补充提名可同时出现，code 优先。"
         ].join("\n"),
         userPrompt: [
           "## Task",
@@ -161,23 +161,9 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
             biographies  : [{ personaName: "标准名", category: "枚举", event: "行为", title: "头衔", location: "地点", virtualYear: "时间", ironyNote: "可选" }],
             mentions     : [{ personaName: "标准名", rawText: "原文", summary: "状态", paraIndex: 0 }],
             relationships: [
-              { sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "relationship_abc123def0", evidence: "可选，原文片段" },
-              {
-                sourceName          : "标准名",
-                targetName          : "标准名",
-                relationshipTypeCode: null,
-                unknownTypeProposal : {
-                  proposedName           : "义父子",
-                  proposedGroup          : "社会身份",
-                  proposedDirectionMode  : "INVERSE",
-                  proposedSourceRoleLabel: "义父",
-                  proposedTargetRoleLabel: "义子",
-                  evidence               : "原文证据片段"
-                },
-                evidence: "原文证据片段"
-              }
+              { sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "FATHER_SON", evidence: "可选，原文片段" }
             ],
-            relationshipEvents: [{ sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "relationship_abc123def0", summary: "本章互动事件摘要", evidence: "原文证据片段", attitudeTags: ["感激", "资助"], paraIndex: 12, confidence: 0.85 }]
+            relationshipEvents: [{ sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "FATHER_SON", summary: "本章互动事件摘要", evidence: "原文证据片段", attitudeTags: ["感激", "资助"], paraIndex: 12, confidence: 0.85 }]
           }, null, 2),
           "",
           "## Source Text",

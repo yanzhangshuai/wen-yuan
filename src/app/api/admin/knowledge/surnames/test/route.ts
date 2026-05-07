@@ -25,7 +25,7 @@ export async function POST(request: Request): Promise<Response> {
       return badRequestJson(PATH, requestId, startedAt, "name 字段不能为空");
     }
 
-    const data = await testSurnameExtraction(body.name);
+    const data = testSurnameExtraction(body.name);
     return okJson({ path: PATH, requestId, startedAt, code: "ADMIN_SURNAME_TESTED", message: "测试完成", data });
   } catch (error) {
     return failJson({ path: PATH, requestId, startedAt, error, fallbackCode: ERROR_CODES.COMMON_INTERNAL_ERROR, fallbackMessage: "姓氏测试失败" });

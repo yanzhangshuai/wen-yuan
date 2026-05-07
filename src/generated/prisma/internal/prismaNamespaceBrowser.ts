@@ -77,12 +77,9 @@ export const ModelName = {
   RelationshipTypeDefinition: 'RelationshipTypeDefinition',
   UnknownRelationshipTypeDraft: 'UnknownRelationshipTypeDraft',
   UnknownRelationshipTypeOccurrence: 'UnknownRelationshipTypeOccurrence',
-  NerLexiconRule: 'NerLexiconRule',
-  HistoricalFigureEntry: 'HistoricalFigureEntry',
-  NamePatternRule: 'NamePatternRule',
+  ExtractionRule: 'ExtractionRule',
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
-  PromptExtractionRule: 'PromptExtractionRule',
   KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
 
@@ -577,7 +574,7 @@ export const UnknownRelationshipTypeOccurrenceScalarFieldEnum = {
 export type UnknownRelationshipTypeOccurrenceScalarFieldEnum = (typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum)[keyof typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum]
 
 
-export const NerLexiconRuleScalarFieldEnum = {
+export const ExtractionRuleScalarFieldEnum = {
   id: 'id',
   ruleType: 'ruleType',
   content: 'content',
@@ -590,43 +587,7 @@ export const NerLexiconRuleScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type NerLexiconRuleScalarFieldEnum = (typeof NerLexiconRuleScalarFieldEnum)[keyof typeof NerLexiconRuleScalarFieldEnum]
-
-
-export const HistoricalFigureEntryScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  aliases: 'aliases',
-  dynasty: 'dynasty',
-  category: 'category',
-  description: 'description',
-  source: 'source',
-  reviewStatus: 'reviewStatus',
-  reviewNote: 'reviewNote',
-  reviewedAt: 'reviewedAt',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type HistoricalFigureEntryScalarFieldEnum = (typeof HistoricalFigureEntryScalarFieldEnum)[keyof typeof HistoricalFigureEntryScalarFieldEnum]
-
-
-export const NamePatternRuleScalarFieldEnum = {
-  id: 'id',
-  ruleType: 'ruleType',
-  pattern: 'pattern',
-  action: 'action',
-  description: 'description',
-  source: 'source',
-  reviewStatus: 'reviewStatus',
-  reviewNote: 'reviewNote',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type NamePatternRuleScalarFieldEnum = (typeof NamePatternRuleScalarFieldEnum)[keyof typeof NamePatternRuleScalarFieldEnum]
+export type ExtractionRuleScalarFieldEnum = (typeof ExtractionRuleScalarFieldEnum)[keyof typeof ExtractionRuleScalarFieldEnum]
 
 
 export const PromptTemplateScalarFieldEnum = {
@@ -658,22 +619,6 @@ export const PromptTemplateVersionScalarFieldEnum = {
 } as const
 
 export type PromptTemplateVersionScalarFieldEnum = (typeof PromptTemplateVersionScalarFieldEnum)[keyof typeof PromptTemplateVersionScalarFieldEnum]
-
-
-export const PromptExtractionRuleScalarFieldEnum = {
-  id: 'id',
-  ruleType: 'ruleType',
-  content: 'content',
-  bookTypeId: 'bookTypeId',
-  sortOrder: 'sortOrder',
-  isActive: 'isActive',
-  source: 'source',
-  changeNote: 'changeNote',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PromptExtractionRuleScalarFieldEnum = (typeof PromptExtractionRuleScalarFieldEnum)[keyof typeof PromptExtractionRuleScalarFieldEnum]
 
 
 export const KnowledgeAuditLogScalarFieldEnum = {

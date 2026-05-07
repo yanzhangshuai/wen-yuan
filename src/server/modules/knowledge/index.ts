@@ -42,16 +42,6 @@ export {
 } from "./generateRelationshipTypes";
 
 export {
-  previewNerLexiconGenerationPrompt,
-  generateNerLexiconRules
-} from "./generateNerLexiconRules";
-
-export {
-  previewPromptExtractionGenerationPrompt,
-  generatePromptExtractionRules
-} from "./generatePromptExtractionRules";
-
-export {
   listKnowledgeEntries,
   createKnowledgeEntry,
   updateKnowledgeEntry,
@@ -140,28 +130,18 @@ export {
   resolvePromptTemplate
 } from "./prompt-templates";
 
+// 统一提取规则（合并 ner_lexicon_rules + prompt_extraction_rules）
 export {
-  listNerLexiconRules,
-  createNerLexiconRule,
-  updateNerLexiconRule,
-  deleteNerLexiconRule,
-  batchDeleteNerLexiconRules,
-  batchToggleNerLexiconRules,
-  batchChangeBookTypeNerLexiconRules,
-  reorderNerLexiconRules
-} from "./ner-lexicon-rules";
-
-export {
-  listPromptExtractionRules,
-  createPromptExtractionRule,
-  updatePromptExtractionRule,
-  deletePromptExtractionRule,
-  batchDeletePromptExtractionRules,
-  batchTogglePromptExtractionRules,
-  batchChangeBookTypePromptExtractionRules,
-  reorderPromptExtractionRules,
-  previewCombinedPromptRules
-} from "./prompt-extraction-rules";
+  listExtractionRules,
+  createExtractionRule,
+  updateExtractionRule,
+  deleteExtractionRule,
+  batchDeleteExtractionRules,
+  batchToggleExtractionRules,
+  batchChangeBookTypeExtractionRules,
+  reorderExtractionRules,
+  previewCombinedExtractionRules
+} from "./extraction-rules";
 
 export {
   listChangeLogs,

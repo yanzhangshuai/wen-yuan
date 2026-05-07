@@ -13,6 +13,7 @@ function createPrismaMock(args: {
   book         ?: { id: string } | null;
   personas     ?: Array<{ id: string; name: string; aliases: string[] }>;
   relationships?: unknown[];
+  typeDefs     ?: Array<{ code: string; name: string; group: string; directionMode: string; sourceRoleLabel: string | null; targetRoleLabel: string | null }>;
 } = {}) {
   const book = Object.hasOwn(args, "book") ? args.book : { id: BOOK_ID };
 
@@ -28,6 +29,16 @@ function createPrismaMock(args: {
     },
     relationship: {
       findMany: vi.fn().mockResolvedValue(args.relationships ?? [])
+    },
+    relationshipTypeDefinition: {
+      findMany: vi.fn().mockImplementation(({ where }: { where: { code: { in: string[] } } }) => {
+        const defaultDefs = args.typeDefs ?? [
+          { code: "teacher_student", name: "师生", group: "师承", directionMode: "INVERSE", sourceRoleLabel: "老师", targetRoleLabel: "学生" }
+        ];
+        return Promise.resolve(
+          defaultDefs.filter((d) => where.code.in.includes(d.code))
+        );
+      })
     }
   };
 }
@@ -38,16 +49,9 @@ function buildRelationship(overrides: Record<string, unknown> = {}) {
     sourceId            : PERSONA_A_ID,
     targetId            : PERSONA_B_ID,
     relationshipTypeCode: "teacher_student",
-    relationshipType    : {
-      code            : "teacher_student",
-      name            : "师生",
-      group           : "师承",
-      directionMode   : "INVERSE",
-      reverseEdgeLabel: "学生"
-    },
-    recordSource: RecordSource.MANUAL,
-    status      : ProcessingStatus.VERIFIED,
-    events      : [
+    recordSource        : RecordSource.MANUAL,
+    status              : ProcessingStatus.VERIFIED,
+    events              : [
       {
         id          : "event-2",
         chapterId   : "chapter-2",
@@ -126,7 +130,7 @@ describe("getPersonaPair service", () => {
           name         : "师生",
           group        : "师承",
           directionMode: "INVERSE",
-          inverseLabel : "学生"
+          inverseLabel : "老师"
         },
         recordSource  : RecordSource.MANUAL,
         status        : ProcessingStatus.VERIFIED,
@@ -246,17 +250,8 @@ describe("getPersonaPair service", () => {
 
   it("rejects invalid relationship direction modes from dictionary data", async () => {
     const service = createGetPersonaPairService(createPrismaMock({
-      relationships: [
-        buildRelationship({
-          relationshipType: {
-            code            : "unknown",
-            name            : "未知",
-            group           : "其他",
-            directionMode   : "SIDEWAYS",
-            reverseEdgeLabel: null
-          }
-        })
-      ]
+      relationships: [buildRelationship()],
+      typeDefs     : [{ code: "teacher_student", name: "未知", group: "其他", directionMode: "SIDEWAYS", sourceRoleLabel: null, targetRoleLabel: null }]
     }) as never);
 
     await expect(service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID }))

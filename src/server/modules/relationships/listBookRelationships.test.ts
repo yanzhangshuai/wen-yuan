@@ -33,6 +33,9 @@ describe("listBookRelationships service", () => {
       },
       relationshipEvent: {
         groupBy: relationshipEventGroupBy
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([{ code: "teacher_student", name: "师生" }])
       }
     } as never);
 
@@ -82,7 +85,6 @@ describe("listBookRelationships service", () => {
             sourceId            : "persona-a",
             targetId            : "persona-b",
             relationshipTypeCode: "teacher_student",
-            relationshipType    : { name: "师生" },
             recordSource        : RecordSource.DRAFT_AI,
             status              : ProcessingStatus.DRAFT
           }
@@ -90,6 +92,9 @@ describe("listBookRelationships service", () => {
       },
       relationshipEvent: {
         groupBy: vi.fn().mockResolvedValue([])
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([{ code: "teacher_student", name: "师生" }])
       }
     } as never);
 
@@ -112,6 +117,9 @@ describe("listBookRelationships service", () => {
       },
       relationshipEvent: {
         groupBy: vi.fn()
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     } as never);
 
@@ -141,6 +149,9 @@ describe("listBookRelationships service", () => {
       },
       relationshipEvent: {
         groupBy: vi.fn()
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn()
       }
     } as never);
 

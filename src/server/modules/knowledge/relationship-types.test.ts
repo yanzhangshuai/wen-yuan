@@ -15,6 +15,10 @@ import {
 const hoisted = vi.hoisted(() => ({
   clearKnowledgeCache: vi.fn(),
   prisma             : {
+    relationship: {
+      count  : vi.fn(),
+      groupBy: vi.fn()
+    },
     relationshipTypeDefinition: {
       findMany  : vi.fn(),
       findUnique: vi.fn(),
@@ -115,9 +119,11 @@ describe("relationship-types", () => {
 
   it("prevents deleting a relationship type already referenced by relationships", async () => {
     hoisted.prisma.relationshipTypeDefinition.findUnique.mockResolvedValueOnce({
-      id    : "rel-type-1",
-      _count: { relationships: 2 }
+      id  : "rel-type-1",
+      code: "relationship_abc123",
+      name: "岳婿"
     });
+    hoisted.prisma.relationship.count.mockResolvedValueOnce(2);
 
     await expect(deleteRelationshipType("rel-type-1")).rejects.toThrow("该关系类型已被角色关系引用，只能停用，不能删除");
     expect(hoisted.prisma.relationshipTypeDefinition.delete).not.toHaveBeenCalled();
@@ -125,8 +131,11 @@ describe("relationship-types", () => {
 
   it("prevents batch deleting relationship types that are already referenced", async () => {
     hoisted.prisma.relationshipTypeDefinition.findMany.mockResolvedValueOnce([
-      { id: "rel-type-1", name: "岳婿", _count: { relationships: 1 } },
-      { id: "rel-type-2", name: "师生", _count: { relationships: 0 } }
+      { id: "rel-type-1", code: "code-1", name: "岳婿" },
+      { id: "rel-type-2", code: "code-2", name: "师生" }
+    ]);
+    hoisted.prisma.relationship.groupBy.mockResolvedValueOnce([
+      { relationshipTypeCode: "code-1", _count: { _all: 1 } }
     ]);
 
     await expect(batchDeleteRelationshipTypes(["rel-type-1", "rel-type-2"]))

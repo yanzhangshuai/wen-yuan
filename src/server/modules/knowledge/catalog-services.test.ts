@@ -20,26 +20,16 @@ import {
   listChangeLogs
 } from "@/server/modules/knowledge/change-logs";
 import {
-  batchChangeBookTypeNerLexiconRules,
-  batchDeleteNerLexiconRules,
-  batchToggleNerLexiconRules,
-  createNerLexiconRule,
-  deleteNerLexiconRule,
-  listNerLexiconRules,
-  reorderNerLexiconRules,
-  updateNerLexiconRule
-} from "@/server/modules/knowledge/ner-lexicon-rules";
-import {
-  batchChangeBookTypePromptExtractionRules,
-  batchDeletePromptExtractionRules,
-  batchTogglePromptExtractionRules,
-  createPromptExtractionRule,
-  deletePromptExtractionRule,
-  listPromptExtractionRules,
-  previewCombinedPromptRules,
-  reorderPromptExtractionRules,
-  updatePromptExtractionRule
-} from "@/server/modules/knowledge/prompt-extraction-rules";
+  batchChangeBookTypeExtractionRules,
+  batchDeleteExtractionRules,
+  batchToggleExtractionRules,
+  createExtractionRule,
+  deleteExtractionRule,
+  listExtractionRules,
+  previewCombinedExtractionRules,
+  reorderExtractionRules,
+  updateExtractionRule
+} from "@/server/modules/knowledge/extraction-rules";
 import {
   batchChangeBookTypeGenericTitles,
   batchDeleteGenericTitles,
@@ -86,13 +76,7 @@ const hoisted = vi.hoisted(() => {
       count     : vi.fn(),
       findUnique: vi.fn()
     },
-    nerLexiconRule: {
-      findMany: vi.fn(),
-      create  : vi.fn(),
-      update  : vi.fn(),
-      delete  : vi.fn()
-    },
-    promptExtractionRule: {
+    extractionRule: {
       findMany: vi.fn(),
       create  : vi.fn(),
       update  : vi.fn(),
@@ -423,139 +407,42 @@ describe("knowledge catalog services", () => {
     });
   });
 
-  describe("ner-lexicon-rules", () => {
-    it("supports list/create/update/delete and reorder flows", async () => {
-      hoisted.prisma.nerLexiconRule.findMany
-        .mockResolvedValueOnce([{ id: "rule-1" }]);
-      hoisted.prisma.nerLexiconRule.create.mockResolvedValueOnce({ id: "rule-new" });
-      hoisted.prisma.nerLexiconRule.update
-        .mockResolvedValueOnce({ id: "rule-1" })
-        .mockResolvedValueOnce({ id: "rule-a" })
-        .mockResolvedValueOnce({ id: "rule-b" });
-      hoisted.prisma.nerLexiconRule.delete.mockResolvedValueOnce({ id: "rule-1" });
-      hoisted.prisma.$transaction.mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
-
-      await expect(listNerLexiconRules({
-        ruleType  : "HARD_BLOCK_SUFFIX",
-        bookTypeId: "classic",
-        active    : true
-      })).resolves.toEqual([{ id: "rule-1" }]);
-      await expect(createNerLexiconRule({
-        ruleType  : "TITLE_STEM",
-        content   : "人物规则",
-        changeNote: "初始导入"
-      })).resolves.toEqual({ id: "rule-new" });
-      await expect(updateNerLexiconRule("rule-1", {
-        content   : "更新规则",
-        bookTypeId: null,
-        sortOrder : 7,
-        isActive  : false,
-        changeNote: "调整"
-      })).resolves.toEqual({ id: "rule-1" });
-      await expect(deleteNerLexiconRule("rule-1")).resolves.toEqual({ id: "rule-1" });
-      await expect(reorderNerLexiconRules(["rule-a", "rule-b"])).resolves.toBeUndefined();
-
-      expect(hoisted.prisma.nerLexiconRule.create).toHaveBeenCalledWith({
-        data: {
-          ruleType  : "TITLE_STEM",
-          content   : "人物规则",
-          bookTypeId: undefined,
-          sortOrder : 0,
-          changeNote: "初始导入"
-        }
-      });
-      expect(hoisted.prisma.nerLexiconRule.findMany).toHaveBeenCalledWith({
-        where  : { ruleType: "HARD_BLOCK_SUFFIX", bookTypeId: "classic", isActive: true },
-        orderBy: [{ ruleType: "asc" }, { sortOrder: "asc" }]
-      });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(1, {
-        where: { id: "rule-1" },
-        data : {
-          content   : "更新规则",
-          bookTypeId: null,
-          sortOrder : 7,
-          isActive  : false,
-          changeNote: "调整"
-        }
-      });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(2, {
-        where: { id: "rule-a" },
-        data : { sortOrder: 1 }
-      });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(3, {
-        where: { id: "rule-b" },
-        data : { sortOrder: 2 }
-      });
-      expect(hoisted.prisma.$transaction).toHaveBeenCalledTimes(1);
-    });
-
-    it("performs batch delete toggle and book type changes for ner lexicon rules", async () => {
-      hoisted.prisma.$transaction
-        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
-        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
-        .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
-
-      await expect(batchDeleteNerLexiconRules(["rule-a", "rule-b"])).resolves.toEqual({ count: 2 });
-      await expect(batchToggleNerLexiconRules(["rule-a", "rule-b"], false)).resolves.toEqual({ count: 2 });
-      await expect(batchChangeBookTypeNerLexiconRules(["rule-a", "rule-b"], "bt-1")).resolves.toEqual({ count: 2 });
-
-      expect(hoisted.prisma.nerLexiconRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "rule-a" } });
-      expect(hoisted.prisma.nerLexiconRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "rule-b" } });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(1, {
-        where: { id: "rule-a" },
-        data : { isActive: false }
-      });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(2, {
-        where: { id: "rule-b" },
-        data : { isActive: false }
-      });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(3, {
-        where: { id: "rule-a" },
-        data : { bookTypeId: "bt-1" }
-      });
-      expect(hoisted.prisma.nerLexiconRule.update).toHaveBeenNthCalledWith(4, {
-        where: { id: "rule-b" },
-        data : { bookTypeId: "bt-1" }
-      });
-    });
-  });
-
-  describe("prompt-extraction-rules", () => {
-    it("supports list/create/update/delete/reorder and combined preview flows", async () => {
-      hoisted.prisma.promptExtractionRule.findMany
+  describe("extraction-rules", () => {
+    it("supports list/create/update/delete/reorder and combined preview for unified rules", async () => {
+      hoisted.prisma.extractionRule.findMany
         .mockResolvedValueOnce([{ id: "rule-1" }])
         .mockResolvedValueOnce([
           { id: "rule-1", content: "规则一", bookTypeId: null, sortOrder: 1 },
           { id: "rule-2", content: "规则二", bookTypeId: "classic", sortOrder: 2 }
         ]);
-      hoisted.prisma.promptExtractionRule.create.mockResolvedValueOnce({ id: "rule-new" });
-      hoisted.prisma.promptExtractionRule.update
+      hoisted.prisma.extractionRule.create.mockResolvedValueOnce({ id: "rule-new" });
+      hoisted.prisma.extractionRule.update
         .mockResolvedValueOnce({ id: "rule-1" })
         .mockResolvedValueOnce({ id: "rule-a" })
         .mockResolvedValueOnce({ id: "rule-b" });
-      hoisted.prisma.promptExtractionRule.delete.mockResolvedValueOnce({ id: "rule-1" });
+      hoisted.prisma.extractionRule.delete.mockResolvedValueOnce({ id: "rule-1" });
       hoisted.prisma.$transaction.mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
 
-      await expect(listPromptExtractionRules({
-        ruleType  : "ENTITY",
+      await expect(listExtractionRules({
+        ruleType  : "HARD_BLOCK_SUFFIX",
         bookTypeId: "classic",
         active    : true
       })).resolves.toEqual([{ id: "rule-1" }]);
-      await expect(createPromptExtractionRule({
+      await expect(createExtractionRule({
         ruleType  : "ENTITY",
         content   : "人物规则",
         changeNote: "初始导入"
       })).resolves.toEqual({ id: "rule-new" });
-      await expect(updatePromptExtractionRule("rule-1", {
+      await expect(updateExtractionRule("rule-1", {
         content   : "更新规则",
         bookTypeId: null,
         sortOrder : 7,
         isActive  : false,
         changeNote: "调整"
       })).resolves.toEqual({ id: "rule-1" });
-      await expect(deletePromptExtractionRule("rule-1")).resolves.toEqual({ id: "rule-1" });
-      await expect(reorderPromptExtractionRules(["rule-a", "rule-b"])).resolves.toBeUndefined();
-      await expect(previewCombinedPromptRules("ENTITY", "classic")).resolves.toEqual({
+      await expect(deleteExtractionRule("rule-1")).resolves.toEqual({ id: "rule-1" });
+      await expect(reorderExtractionRules(["rule-a", "rule-b"])).resolves.toBeUndefined();
+      await expect(previewCombinedExtractionRules("ENTITY", "classic")).resolves.toEqual({
         ruleType  : "ENTITY",
         bookTypeId: "classic",
         count     : 2,
@@ -566,7 +453,7 @@ describe("knowledge catalog services", () => {
         ]
       });
 
-      expect(hoisted.prisma.promptExtractionRule.create).toHaveBeenCalledWith({
+      expect(hoisted.prisma.extractionRule.create).toHaveBeenCalledWith({
         data: {
           ruleType  : "ENTITY",
           content   : "人物规则",
@@ -575,11 +462,11 @@ describe("knowledge catalog services", () => {
           changeNote: "初始导入"
         }
       });
-      expect(hoisted.prisma.promptExtractionRule.findMany).toHaveBeenNthCalledWith(1, {
-        where  : { ruleType: "ENTITY", bookTypeId: "classic", isActive: true },
+      expect(hoisted.prisma.extractionRule.findMany).toHaveBeenNthCalledWith(1, {
+        where  : { ruleType: "HARD_BLOCK_SUFFIX", bookTypeId: "classic", isActive: true },
         orderBy: [{ ruleType: "asc" }, { sortOrder: "asc" }]
       });
-      expect(hoisted.prisma.promptExtractionRule.findMany).toHaveBeenNthCalledWith(2, {
+      expect(hoisted.prisma.extractionRule.findMany).toHaveBeenNthCalledWith(2, {
         where: {
           ruleType: "ENTITY",
           isActive: true,
@@ -590,7 +477,7 @@ describe("knowledge catalog services", () => {
         },
         orderBy: { sortOrder: "asc" }
       });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(1, {
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(1, {
         where: { id: "rule-1" },
         data : {
           content   : "更新规则",
@@ -600,44 +487,44 @@ describe("knowledge catalog services", () => {
           changeNote: "调整"
         }
       });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(2, {
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(2, {
         where: { id: "rule-a" },
         data : { sortOrder: 1 }
       });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(3, {
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(3, {
         where: { id: "rule-b" },
         data : { sortOrder: 2 }
       });
       expect(hoisted.prisma.$transaction).toHaveBeenCalledTimes(1);
     });
 
-    it("performs batch delete toggle and book type changes for prompt extraction rules", async () => {
+    it("performs batch delete toggle and book type changes for extraction rules", async () => {
       hoisted.prisma.$transaction
         .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
         .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }])
         .mockResolvedValueOnce([{ id: "rule-a" }, { id: "rule-b" }]);
 
-      await expect(batchDeletePromptExtractionRules(["rule-a", "rule-b"])).resolves.toEqual({ count: 2 });
-      await expect(batchTogglePromptExtractionRules(["rule-a", "rule-b"], true)).resolves.toEqual({ count: 2 });
-      await expect(batchChangeBookTypePromptExtractionRules(["rule-a", "rule-b"], null)).resolves.toEqual({ count: 2 });
+      await expect(batchDeleteExtractionRules(["rule-a", "rule-b"])).resolves.toEqual({ count: 2 });
+      await expect(batchToggleExtractionRules(["rule-a", "rule-b"], false)).resolves.toEqual({ count: 2 });
+      await expect(batchChangeBookTypeExtractionRules(["rule-a", "rule-b"], "bt-1")).resolves.toEqual({ count: 2 });
 
-      expect(hoisted.prisma.promptExtractionRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "rule-a" } });
-      expect(hoisted.prisma.promptExtractionRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "rule-b" } });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(1, {
+      expect(hoisted.prisma.extractionRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "rule-a" } });
+      expect(hoisted.prisma.extractionRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "rule-b" } });
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(1, {
         where: { id: "rule-a" },
-        data : { isActive: true }
+        data : { isActive: false }
       });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(2, {
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(2, {
         where: { id: "rule-b" },
-        data : { isActive: true }
+        data : { isActive: false }
       });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(3, {
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(3, {
         where: { id: "rule-a" },
-        data : { bookTypeId: null }
+        data : { bookTypeId: "bt-1" }
       });
-      expect(hoisted.prisma.promptExtractionRule.update).toHaveBeenNthCalledWith(4, {
+      expect(hoisted.prisma.extractionRule.update).toHaveBeenNthCalledWith(4, {
         where: { id: "rule-b" },
-        data : { bookTypeId: null }
+        data : { bookTypeId: "bt-1" }
       });
     });
   });
@@ -765,20 +652,6 @@ describe("knowledge catalog services", () => {
 
   describe("surnames", () => {
     it("supports list/create/update/delete/import and extraction helpers", async () => {
-      hoisted.prisma.surnameRule.findMany
-        .mockResolvedValueOnce([{ id: "surname-1" }])
-        .mockResolvedValueOnce([
-          { surname: "欧阳", isCompound: true, priority: 10 },
-          { surname: "赵", isCompound: false, priority: 0 }
-        ])
-        .mockResolvedValueOnce([
-          { surname: "欧阳", isCompound: true, priority: 10 },
-          { surname: "赵", isCompound: false, priority: 0 }
-        ])
-        .mockResolvedValueOnce([
-          { surname: "欧阳", isCompound: true, priority: 10 },
-          { surname: "赵", isCompound: false, priority: 0 }
-        ]);
       hoisted.prisma.surnameRule.create
         .mockResolvedValueOnce({ id: "surname-new" })
         .mockResolvedValueOnce({ id: "created-1" })
@@ -790,11 +663,9 @@ describe("knowledge catalog services", () => {
         .mockResolvedValueOnce({ id: "existing-zhao" })
         .mockResolvedValueOnce(null);
 
-      await expect(listSurnames({
-        compound: true,
-        q       : "欧",
-        active  : true
-      })).resolves.toEqual([{ id: "surname-1" }]);
+      // listSurnames 现在纯静态，不再查询 DB；"欧阳"存在于静态复姓中
+      const listResult = listSurnames({ compound: true, q: "欧" });
+      expect(listResult.some((s) => s.surname === "欧阳" && s.isCompound)).toBe(true);
       await expect(createSurname({
         surname    : "欧阳",
         description: "复姓示例",
@@ -812,33 +683,24 @@ describe("knowledge catalog services", () => {
         created: 2,
         skipped: 1
       });
-      await expect(testSurnameExtraction("欧阳修")).resolves.toEqual({
+      // testSurnameExtraction 现在纯静态
+      expect(testSurnameExtraction("欧阳修")).toEqual({
         input           : "欧阳修",
         extractedSurname: "欧阳",
         matchType       : "compound",
         priority        : 10
       });
-      await expect(testSurnameExtraction("赵云")).resolves.toEqual({
+      expect(testSurnameExtraction("赵云")).toEqual({
         input           : "赵云",
         extractedSurname: "赵",
         matchType       : "single",
         priority        : 0
       });
-      await expect(testSurnameExtraction("李白")).resolves.toEqual({
-        input           : "李白",
+      expect(testSurnameExtraction("洋光")).toEqual({
+        input           : "洋光",
         extractedSurname: null,
         matchType       : "not_found",
         priority        : 0
-      });
-
-      expect(hoisted.prisma.surnameRule.findMany).toHaveBeenNthCalledWith(1, {
-        where: {
-          isCompound: true,
-          isActive  : true,
-          surname   : { contains: "欧" }
-        },
-        orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
-        include: { bookType: { select: { id: true, key: true, name: true } } }
       });
       expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(1, {
         data: {

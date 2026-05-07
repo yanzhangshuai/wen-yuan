@@ -83,6 +83,11 @@ describe("getPersonaById service", () => {
             ]
           }
         ])
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([
+          { code: "师生", name: "师生" }
+        ])
       }
     } as never);
 

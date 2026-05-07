@@ -459,7 +459,7 @@ export function createPersonaResolver(
     }
 
     // ── 名字规则过滤：匹配 BLOCK 规则的直接拦截 ──
-    // 如"X家""X府""X的Y"等结构化模式，由 DB NamePatternRule 驱动。
+    // 如"X家""X府""X的Y"等结构化模式，由静态名字模式规则驱动。
     if (input.runtimeKnowledge?.namePatternRules) {
       for (const rule of input.runtimeKnowledge.namePatternRules) {
         if (rule.action === "BLOCK" && rule.compiled.test(rawName)) {
@@ -512,20 +512,6 @@ export function createPersonaResolver(
           grayZoneEvidence   : evidence
         };
       }
-    }
-
-    // ── 历史人物过滤（D13）：纯提及 → 幻觉，书内参与 → 放行 ──
-    // 判定依据：名字在章节原文中是否出现在明确的"行为/对话/互动"上下文。
-    if (input.runtimeKnowledge?.historicalFigures.has(rawName)) {
-      const isActiveInStory = containsNormalizedName(input.chapterContent, rawName);
-      if (!isActiveInStory) {
-        return {
-          status    : "hallucinated",
-          confidence: 0.9,
-          reason    : "historical_figure_mention_only"
-        };
-      }
-      // 历史人物在原文中有实际出现 → 放行，进入后续正常解析流程
     }
 
     // 优先使用 Phase 1 名册结果：这是同章上下文最强信号，优先级高于全局相似度。

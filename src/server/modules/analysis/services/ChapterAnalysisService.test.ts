@@ -257,8 +257,6 @@ function buildRuntimeKnowledge(overrides: Partial<FullRuntimeKnowledge> = {}): F
     relationshipTypeByCode        : new Map(relationshipTypes.map((type) => [type.code, type])),
     relationshipTypeDictionaryText: "[社交]\n- ALLY = 同盟；方向=INVERSE\n- FRIEND = 朋友；方向=SYMMETRIC",
     aliasLookup                   : new Map(),
-    historicalFigures             : new Set(),
-    historicalFigureMap           : new Map(),
     relationalTerms               : new Set(),
     namePatternRules              : [],
     hardBlockSuffixes             : new Set(),

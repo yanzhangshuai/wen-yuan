@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
+import { lookupRelationshipTypeNames } from "@/server/modules/knowledge/lookupTypeNames";
 
 /**
  * ============================================================================
@@ -15,12 +16,12 @@ import { PersonaNotFoundError } from "@/server/modules/personas/errors";
  * - 聚合 persona 主档、profiles、biographyRecords、relationships 四类数据。
  *
  * 业务目标：
- * - 输出图谱侧栏/角色资料工作台可直接渲染的“人物详情快照”；
+ * - 输出图谱侧栏/角色资料工作台可直接渲染的"人物详情快照"；
  * - 避免前端二次拼接，减少接口数量与并发请求复杂度。
  *
  * 关键规则：
  * - 仅返回未软删除的数据（deletedAt=null）；
- * - 状态字段采用“recordSource -> 默认状态”的映射，保证历史数据可展示。
+ * - 状态字段采用"recordSource -> 默认状态"的映射，保证历史数据可展示。
  * ============================================================================
  */
 
@@ -274,7 +275,9 @@ export function createGetPersonaByIdService(
       })
     ]);
 
-    // Step 3) 映射为统一快照结构。
+    // Step 3) 批量加载 KB 类型名称，映射为统一快照结构。
+    const typeCodes = [...new Set(relationships.map((item) => item.relationshipTypeCode))];
+    const nameByCode = await lookupRelationshipTypeNames(typeCodes, prismaClient);
     return {
       id          : persona.id,
       name        : persona.name,
@@ -309,7 +312,7 @@ export function createGetPersonaByIdService(
         status      : item.status
       })),
       relationships: relationships.map((item) => {
-        // 方向是相对“当前人物”定义的业务语义：
+        // 方向是相对"当前人物"定义的业务语义：
         // - sourceId===personaId -> outgoing
         // - 否则 -> incoming
         const isOutgoing = item.sourceId === personaId;
@@ -324,7 +327,7 @@ export function createGetPersonaByIdService(
           direction      : isOutgoing ? "outgoing" : "incoming",
           counterpartId  : counterpart.id,
           counterpartName: counterpart.name,
-          type           : item.relationshipTypeCode,
+          type           : nameByCode.get(item.relationshipTypeCode) ?? item.relationshipTypeCode,
           weight         : 1,
           evidence       : item.events[0]?.evidence ?? null,
           recordSource   : item.recordSource,

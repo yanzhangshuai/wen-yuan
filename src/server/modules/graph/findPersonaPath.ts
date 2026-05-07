@@ -3,6 +3,7 @@ import { ProcessingStatus } from "@/generated/prisma/enums";
 import { getNeo4jDriver } from "@/server/db/neo4j";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import { lookupRelationshipTypeNames } from "@/server/modules/knowledge/lookupTypeNames";
 
 /**
  * ============================================================================
@@ -344,11 +345,13 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     })
   ]);
 
+  const typeCodes = [...new Set(relationships.map((item) => item.relationshipTypeCode))];
+  const nameByCode = await lookupRelationshipTypeNames(typeCodes, prismaClient);
   const graphEdges: GraphEdge[] = relationships.map((item) => ({
     id       : item.id,
     sourceId : item.sourceId,
     targetId : item.targetId,
-    type     : item.relationshipTypeCode,
+    type     : nameByCode.get(item.relationshipTypeCode) ?? item.relationshipTypeCode,
     weight   : 1,
     chapterId: item.events[0]?.chapterId ?? "",
     chapterNo: item.events[0]?.chapterNo ?? 0

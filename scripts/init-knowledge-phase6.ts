@@ -93,25 +93,9 @@ export interface KnowledgePhase6SeedSummary {
 export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<KnowledgePhase6SeedSummary> {
   console.log("Phase 6 种子数据迁移开始...\n");
 
-  // 1. 姓氏
-  let surnameCount = 0;
-  for (const surname of COMPOUND_SURNAMES) {
-    await prisma.surnameRule.upsert({
-      where : { surname },
-      create: { surname, isCompound: true, priority: 10, source: "IMPORTED" },
-      update: {}
-    });
-    surnameCount++;
-  }
-  for (const surname of SINGLE_SURNAMES) {
-    await prisma.surnameRule.upsert({
-      where : { surname },
-      create: { surname, isCompound: false, priority: 0, source: "IMPORTED" },
-      update: {}
-    });
-    surnameCount++;
-  }
-  console.log(`✓ 姓氏库：${surnameCount} 条（复姓 ${COMPOUND_SURNAMES.length}，单姓 ${SINGLE_SURNAMES.length}）`);
+  // 1. 姓氏（已迁移至静态文件 src/server/modules/knowledge/data/surnames.ts，不再入库）
+  const surnameCount = 0;
+  console.log("✓ 姓氏库：基准数据已迁移至静态文件，DB surname_rules 仅用于 bookType 级覆盖");
 
   // 2. 泛化称谓
   let titleCount = 0;
@@ -133,31 +117,31 @@ export async function seedKnowledgePhase6(prisma: PrismaClient): Promise<Knowled
   }
   console.log(`✓ 泛化称谓库：${titleCount} 条（安全泛称 ${SAFETY_TITLES.length}，默认泛称 ${DEFAULT_TITLES.length}）`);
 
-  // 3. Prompt 提取规则
+  // 3. 提取规则（统一 extraction_rules 表）
   let ruleCount = 0;
   for (let i = 0; i < ENTITY_RULES.length; i++) {
-    const existing = await prisma.promptExtractionRule.findFirst({
+    const existing = await prisma.extractionRule.findFirst({
       where: { ruleType: "ENTITY", content: ENTITY_RULES[i] }
     });
     if (!existing) {
-      await prisma.promptExtractionRule.create({
+      await prisma.extractionRule.create({
         data: { ruleType: "ENTITY", content: ENTITY_RULES[i], sortOrder: i + 1, source: "IMPORTED" }
       });
     }
     ruleCount++;
   }
   for (let i = 0; i < RELATIONSHIP_RULES.length; i++) {
-    const existing = await prisma.promptExtractionRule.findFirst({
+    const existing = await prisma.extractionRule.findFirst({
       where: { ruleType: "RELATIONSHIP", content: RELATIONSHIP_RULES[i] }
     });
     if (!existing) {
-      await prisma.promptExtractionRule.create({
+      await prisma.extractionRule.create({
         data: { ruleType: "RELATIONSHIP", content: RELATIONSHIP_RULES[i], sortOrder: i + 1, source: "IMPORTED" }
       });
     }
     ruleCount++;
   }
-  console.log(`✓ Prompt 提取规则：${ruleCount} 条（实体 ${ENTITY_RULES.length}，关系 ${RELATIONSHIP_RULES.length}）`);
+  console.log(`✓ 提取规则：${ruleCount} 条（实体 ${ENTITY_RULES.length}，关系 ${RELATIONSHIP_RULES.length}）`);
 
   // 4. 提示词模板与基线版本
   let templateCount = 0;

@@ -225,7 +225,6 @@ export type RelationshipWhereInput = {
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
   source?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   target?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
-  relationshipType?: Prisma.XOR<Prisma.RelationshipTypeDefinitionScalarRelationFilter, Prisma.RelationshipTypeDefinitionWhereInput>
   events?: Prisma.RelationshipEventListRelationFilter
 }
 
@@ -243,7 +242,6 @@ export type RelationshipOrderByWithRelationInput = {
   book?: Prisma.BookOrderByWithRelationInput
   source?: Prisma.PersonaOrderByWithRelationInput
   target?: Prisma.PersonaOrderByWithRelationInput
-  relationshipType?: Prisma.RelationshipTypeDefinitionOrderByWithRelationInput
   events?: Prisma.RelationshipEventOrderByRelationAggregateInput
 }
 
@@ -264,7 +262,6 @@ export type RelationshipWhereUniqueInput = Prisma.AtLeast<{
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
   source?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
   target?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
-  relationshipType?: Prisma.XOR<Prisma.RelationshipTypeDefinitionScalarRelationFilter, Prisma.RelationshipTypeDefinitionWhereInput>
   events?: Prisma.RelationshipEventListRelationFilter
 }, "id">
 
@@ -302,6 +299,7 @@ export type RelationshipScalarWhereWithAggregatesInput = {
 
 export type RelationshipCreateInput = {
   id?: string
+  relationshipTypeCode: string
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
@@ -310,7 +308,6 @@ export type RelationshipCreateInput = {
   book: Prisma.BookCreateNestedOneWithoutRelationshipsInput
   source: Prisma.PersonaCreateNestedOneWithoutSourceRelsInput
   target: Prisma.PersonaCreateNestedOneWithoutTargetRelsInput
-  relationshipType: Prisma.RelationshipTypeDefinitionCreateNestedOneWithoutRelationshipsInput
   events?: Prisma.RelationshipEventCreateNestedManyWithoutRelationshipInput
 }
 
@@ -330,6 +327,7 @@ export type RelationshipUncheckedCreateInput = {
 
 export type RelationshipUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -338,7 +336,6 @@ export type RelationshipUpdateInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutRelationshipsNestedInput
   source?: Prisma.PersonaUpdateOneRequiredWithoutSourceRelsNestedInput
   target?: Prisma.PersonaUpdateOneRequiredWithoutTargetRelsNestedInput
-  relationshipType?: Prisma.RelationshipTypeDefinitionUpdateOneRequiredWithoutRelationshipsNestedInput
   events?: Prisma.RelationshipEventUpdateManyWithoutRelationshipNestedInput
 }
 
@@ -371,6 +368,7 @@ export type RelationshipCreateManyInput = {
 
 export type RelationshipUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -585,50 +583,9 @@ export type RelationshipUpdateOneRequiredWithoutEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.RelationshipUpdateToOneWithWhereWithoutEventsInput, Prisma.RelationshipUpdateWithoutEventsInput>, Prisma.RelationshipUncheckedUpdateWithoutEventsInput>
 }
 
-export type RelationshipCreateNestedManyWithoutRelationshipTypeInput = {
-  create?: Prisma.XOR<Prisma.RelationshipCreateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput> | Prisma.RelationshipCreateWithoutRelationshipTypeInput[] | Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput[]
-  connectOrCreate?: Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput | Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput[]
-  createMany?: Prisma.RelationshipCreateManyRelationshipTypeInputEnvelope
-  connect?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-}
-
-export type RelationshipUncheckedCreateNestedManyWithoutRelationshipTypeInput = {
-  create?: Prisma.XOR<Prisma.RelationshipCreateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput> | Prisma.RelationshipCreateWithoutRelationshipTypeInput[] | Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput[]
-  connectOrCreate?: Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput | Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput[]
-  createMany?: Prisma.RelationshipCreateManyRelationshipTypeInputEnvelope
-  connect?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-}
-
-export type RelationshipUpdateManyWithoutRelationshipTypeNestedInput = {
-  create?: Prisma.XOR<Prisma.RelationshipCreateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput> | Prisma.RelationshipCreateWithoutRelationshipTypeInput[] | Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput[]
-  connectOrCreate?: Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput | Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput[]
-  upsert?: Prisma.RelationshipUpsertWithWhereUniqueWithoutRelationshipTypeInput | Prisma.RelationshipUpsertWithWhereUniqueWithoutRelationshipTypeInput[]
-  createMany?: Prisma.RelationshipCreateManyRelationshipTypeInputEnvelope
-  set?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  disconnect?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  delete?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  connect?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  update?: Prisma.RelationshipUpdateWithWhereUniqueWithoutRelationshipTypeInput | Prisma.RelationshipUpdateWithWhereUniqueWithoutRelationshipTypeInput[]
-  updateMany?: Prisma.RelationshipUpdateManyWithWhereWithoutRelationshipTypeInput | Prisma.RelationshipUpdateManyWithWhereWithoutRelationshipTypeInput[]
-  deleteMany?: Prisma.RelationshipScalarWhereInput | Prisma.RelationshipScalarWhereInput[]
-}
-
-export type RelationshipUncheckedUpdateManyWithoutRelationshipTypeNestedInput = {
-  create?: Prisma.XOR<Prisma.RelationshipCreateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput> | Prisma.RelationshipCreateWithoutRelationshipTypeInput[] | Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput[]
-  connectOrCreate?: Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput | Prisma.RelationshipCreateOrConnectWithoutRelationshipTypeInput[]
-  upsert?: Prisma.RelationshipUpsertWithWhereUniqueWithoutRelationshipTypeInput | Prisma.RelationshipUpsertWithWhereUniqueWithoutRelationshipTypeInput[]
-  createMany?: Prisma.RelationshipCreateManyRelationshipTypeInputEnvelope
-  set?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  disconnect?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  delete?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  connect?: Prisma.RelationshipWhereUniqueInput | Prisma.RelationshipWhereUniqueInput[]
-  update?: Prisma.RelationshipUpdateWithWhereUniqueWithoutRelationshipTypeInput | Prisma.RelationshipUpdateWithWhereUniqueWithoutRelationshipTypeInput[]
-  updateMany?: Prisma.RelationshipUpdateManyWithWhereWithoutRelationshipTypeInput | Prisma.RelationshipUpdateManyWithWhereWithoutRelationshipTypeInput[]
-  deleteMany?: Prisma.RelationshipScalarWhereInput | Prisma.RelationshipScalarWhereInput[]
-}
-
 export type RelationshipCreateWithoutBookInput = {
   id?: string
+  relationshipTypeCode: string
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
@@ -636,7 +593,6 @@ export type RelationshipCreateWithoutBookInput = {
   updatedAt?: Date | string
   source: Prisma.PersonaCreateNestedOneWithoutSourceRelsInput
   target: Prisma.PersonaCreateNestedOneWithoutTargetRelsInput
-  relationshipType: Prisma.RelationshipTypeDefinitionCreateNestedOneWithoutRelationshipsInput
   events?: Prisma.RelationshipEventCreateNestedManyWithoutRelationshipInput
 }
 
@@ -697,6 +653,7 @@ export type RelationshipScalarWhereInput = {
 
 export type RelationshipCreateWithoutSourceInput = {
   id?: string
+  relationshipTypeCode: string
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
@@ -704,7 +661,6 @@ export type RelationshipCreateWithoutSourceInput = {
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutRelationshipsInput
   target: Prisma.PersonaCreateNestedOneWithoutTargetRelsInput
-  relationshipType: Prisma.RelationshipTypeDefinitionCreateNestedOneWithoutRelationshipsInput
   events?: Prisma.RelationshipEventCreateNestedManyWithoutRelationshipInput
 }
 
@@ -733,6 +689,7 @@ export type RelationshipCreateManySourceInputEnvelope = {
 
 export type RelationshipCreateWithoutTargetInput = {
   id?: string
+  relationshipTypeCode: string
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
@@ -740,7 +697,6 @@ export type RelationshipCreateWithoutTargetInput = {
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutRelationshipsInput
   source: Prisma.PersonaCreateNestedOneWithoutSourceRelsInput
-  relationshipType: Prisma.RelationshipTypeDefinitionCreateNestedOneWithoutRelationshipsInput
   events?: Prisma.RelationshipEventCreateNestedManyWithoutRelationshipInput
 }
 
@@ -801,6 +757,7 @@ export type RelationshipUpdateManyWithWhereWithoutTargetInput = {
 
 export type RelationshipCreateWithoutEventsInput = {
   id?: string
+  relationshipTypeCode: string
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
@@ -809,7 +766,6 @@ export type RelationshipCreateWithoutEventsInput = {
   book: Prisma.BookCreateNestedOneWithoutRelationshipsInput
   source: Prisma.PersonaCreateNestedOneWithoutSourceRelsInput
   target: Prisma.PersonaCreateNestedOneWithoutTargetRelsInput
-  relationshipType: Prisma.RelationshipTypeDefinitionCreateNestedOneWithoutRelationshipsInput
 }
 
 export type RelationshipUncheckedCreateWithoutEventsInput = {
@@ -843,6 +799,7 @@ export type RelationshipUpdateToOneWithWhereWithoutEventsInput = {
 
 export type RelationshipUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -851,7 +808,6 @@ export type RelationshipUpdateWithoutEventsInput = {
   book?: Prisma.BookUpdateOneRequiredWithoutRelationshipsNestedInput
   source?: Prisma.PersonaUpdateOneRequiredWithoutSourceRelsNestedInput
   target?: Prisma.PersonaUpdateOneRequiredWithoutTargetRelsNestedInput
-  relationshipType?: Prisma.RelationshipTypeDefinitionUpdateOneRequiredWithoutRelationshipsNestedInput
 }
 
 export type RelationshipUncheckedUpdateWithoutEventsInput = {
@@ -865,58 +821,6 @@ export type RelationshipUncheckedUpdateWithoutEventsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type RelationshipCreateWithoutRelationshipTypeInput = {
-  id?: string
-  recordSource?: $Enums.RecordSource
-  status?: $Enums.ProcessingStatus
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  book: Prisma.BookCreateNestedOneWithoutRelationshipsInput
-  source: Prisma.PersonaCreateNestedOneWithoutSourceRelsInput
-  target: Prisma.PersonaCreateNestedOneWithoutTargetRelsInput
-  events?: Prisma.RelationshipEventCreateNestedManyWithoutRelationshipInput
-}
-
-export type RelationshipUncheckedCreateWithoutRelationshipTypeInput = {
-  id?: string
-  bookId: string
-  sourceId: string
-  targetId: string
-  recordSource?: $Enums.RecordSource
-  status?: $Enums.ProcessingStatus
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  events?: Prisma.RelationshipEventUncheckedCreateNestedManyWithoutRelationshipInput
-}
-
-export type RelationshipCreateOrConnectWithoutRelationshipTypeInput = {
-  where: Prisma.RelationshipWhereUniqueInput
-  create: Prisma.XOR<Prisma.RelationshipCreateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput>
-}
-
-export type RelationshipCreateManyRelationshipTypeInputEnvelope = {
-  data: Prisma.RelationshipCreateManyRelationshipTypeInput | Prisma.RelationshipCreateManyRelationshipTypeInput[]
-  skipDuplicates?: boolean
-}
-
-export type RelationshipUpsertWithWhereUniqueWithoutRelationshipTypeInput = {
-  where: Prisma.RelationshipWhereUniqueInput
-  update: Prisma.XOR<Prisma.RelationshipUpdateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedUpdateWithoutRelationshipTypeInput>
-  create: Prisma.XOR<Prisma.RelationshipCreateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedCreateWithoutRelationshipTypeInput>
-}
-
-export type RelationshipUpdateWithWhereUniqueWithoutRelationshipTypeInput = {
-  where: Prisma.RelationshipWhereUniqueInput
-  data: Prisma.XOR<Prisma.RelationshipUpdateWithoutRelationshipTypeInput, Prisma.RelationshipUncheckedUpdateWithoutRelationshipTypeInput>
-}
-
-export type RelationshipUpdateManyWithWhereWithoutRelationshipTypeInput = {
-  where: Prisma.RelationshipScalarWhereInput
-  data: Prisma.XOR<Prisma.RelationshipUpdateManyMutationInput, Prisma.RelationshipUncheckedUpdateManyWithoutRelationshipTypeInput>
 }
 
 export type RelationshipCreateManyBookInput = {
@@ -933,6 +837,7 @@ export type RelationshipCreateManyBookInput = {
 
 export type RelationshipUpdateWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -940,7 +845,6 @@ export type RelationshipUpdateWithoutBookInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   source?: Prisma.PersonaUpdateOneRequiredWithoutSourceRelsNestedInput
   target?: Prisma.PersonaUpdateOneRequiredWithoutTargetRelsNestedInput
-  relationshipType?: Prisma.RelationshipTypeDefinitionUpdateOneRequiredWithoutRelationshipsNestedInput
   events?: Prisma.RelationshipEventUpdateManyWithoutRelationshipNestedInput
 }
 
@@ -995,6 +899,7 @@ export type RelationshipCreateManyTargetInput = {
 
 export type RelationshipUpdateWithoutSourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1002,7 +907,6 @@ export type RelationshipUpdateWithoutSourceInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutRelationshipsNestedInput
   target?: Prisma.PersonaUpdateOneRequiredWithoutTargetRelsNestedInput
-  relationshipType?: Prisma.RelationshipTypeDefinitionUpdateOneRequiredWithoutRelationshipsNestedInput
   events?: Prisma.RelationshipEventUpdateManyWithoutRelationshipNestedInput
 }
 
@@ -1033,6 +937,7 @@ export type RelationshipUncheckedUpdateManyWithoutSourceInput = {
 
 export type RelationshipUpdateWithoutTargetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1040,7 +945,6 @@ export type RelationshipUpdateWithoutTargetInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutRelationshipsNestedInput
   source?: Prisma.PersonaUpdateOneRequiredWithoutSourceRelsNestedInput
-  relationshipType?: Prisma.RelationshipTypeDefinitionUpdateOneRequiredWithoutRelationshipsNestedInput
   events?: Prisma.RelationshipEventUpdateManyWithoutRelationshipNestedInput
 }
 
@@ -1062,56 +966,6 @@ export type RelationshipUncheckedUpdateManyWithoutTargetInput = {
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   sourceId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipTypeCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
-  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type RelationshipCreateManyRelationshipTypeInput = {
-  id?: string
-  bookId: string
-  sourceId: string
-  targetId: string
-  recordSource?: $Enums.RecordSource
-  status?: $Enums.ProcessingStatus
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type RelationshipUpdateWithoutRelationshipTypeInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
-  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  book?: Prisma.BookUpdateOneRequiredWithoutRelationshipsNestedInput
-  source?: Prisma.PersonaUpdateOneRequiredWithoutSourceRelsNestedInput
-  target?: Prisma.PersonaUpdateOneRequiredWithoutTargetRelsNestedInput
-  events?: Prisma.RelationshipEventUpdateManyWithoutRelationshipNestedInput
-}
-
-export type RelationshipUncheckedUpdateWithoutRelationshipTypeInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetId?: Prisma.StringFieldUpdateOperationsInput | string
-  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
-  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  events?: Prisma.RelationshipEventUncheckedUpdateManyWithoutRelationshipNestedInput
-}
-
-export type RelationshipUncheckedUpdateManyWithoutRelationshipTypeInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  sourceId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetId?: Prisma.StringFieldUpdateOperationsInput | string
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1164,7 +1018,6 @@ export type RelationshipSelect<ExtArgs extends runtime.Types.Extensions.Internal
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   target?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  relationshipType?: boolean | Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>
   events?: boolean | Prisma.Relationship$eventsArgs<ExtArgs>
   _count?: boolean | Prisma.RelationshipCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["relationship"]>
@@ -1183,7 +1036,6 @@ export type RelationshipSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   target?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  relationshipType?: boolean | Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["relationship"]>
 
 export type RelationshipSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1200,7 +1052,6 @@ export type RelationshipSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   target?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  relationshipType?: boolean | Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["relationship"]>
 
 export type RelationshipSelectScalar = {
@@ -1221,7 +1072,6 @@ export type RelationshipInclude<ExtArgs extends runtime.Types.Extensions.Interna
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   target?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  relationshipType?: boolean | Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>
   events?: boolean | Prisma.Relationship$eventsArgs<ExtArgs>
   _count?: boolean | Prisma.RelationshipCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1229,13 +1079,11 @@ export type RelationshipIncludeCreateManyAndReturn<ExtArgs extends runtime.Types
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   target?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  relationshipType?: boolean | Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>
 }
 export type RelationshipIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   source?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
   target?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  relationshipType?: boolean | Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>
 }
 
 export type $RelationshipPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1244,7 +1092,6 @@ export type $RelationshipPayload<ExtArgs extends runtime.Types.Extensions.Intern
     book: Prisma.$BookPayload<ExtArgs>
     source: Prisma.$PersonaPayload<ExtArgs>
     target: Prisma.$PersonaPayload<ExtArgs>
-    relationshipType: Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>
     events: Prisma.$RelationshipEventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1655,7 +1502,6 @@ export interface Prisma__RelationshipClient<T, Null = never, ExtArgs extends run
   book<T extends Prisma.BookDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookDefaultArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   source<T extends Prisma.PersonaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PersonaDefaultArgs<ExtArgs>>): Prisma.Prisma__PersonaClient<runtime.Types.Result.GetResult<Prisma.$PersonaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   target<T extends Prisma.PersonaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PersonaDefaultArgs<ExtArgs>>): Prisma.Prisma__PersonaClient<runtime.Types.Result.GetResult<Prisma.$PersonaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  relationshipType<T extends Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RelationshipTypeDefinitionDefaultArgs<ExtArgs>>): Prisma.Prisma__RelationshipTypeDefinitionClient<runtime.Types.Result.GetResult<Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   events<T extends Prisma.Relationship$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Relationship$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.

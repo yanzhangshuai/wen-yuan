@@ -401,7 +401,8 @@ model Relationship {
   book             Book                       @relation(fields: [bookId], references: [id], onDelete: Cascade) // 所属书籍
   source           Persona                    @relation("SourcePersona", fields: [sourceId], references: [id], onDelete: Restrict) // 关系发起方
   target           Persona                    @relation("TargetPersona", fields: [targetId], references: [id], onDelete: Restrict) // 关系接收方
-  relationshipType RelationshipTypeDefinition @relation(fields: [relationshipTypeCode], references: [code], onDelete: Restrict) // 标准关系类型定义
+  // relationshipTypeCode 为自由文本；RelationshipTypeDefinition 是可选参考层，不在 DB 层强制 FK 约束
+  // 查询时通过应用层批量加载 relationshipTypeDefinition 做 name fallback
   events           RelationshipEvent[] // 关系事件明细
 
   @@index([sourceId, targetId], map: "relationships_source_id_target_id_idx") // 双点关系查询索引
@@ -602,14 +603,12 @@ model BookType {
   isActive    Boolean @default(true) @map("is_active")
   sortOrder   Int     @default(0) @map("sort_order")
 
-  // presetConfig 废弃 — 配置已迁入 ner_lexicon_rules / prompt_extraction_rules
-  books                 Book[]
-  aliasPacks            AliasPack[]
-  surnameRules          SurnameRule[]
-  relationshipTypes     RelationshipTypeDefinition[]
-  nerLexiconRules       NerLexiconRule[]
-  promptExtractionRules PromptExtractionRule[]
-  promptVersions        PromptTemplateVersion[]
+  books             Book[]
+  aliasPacks        AliasPack[]
+  surnameRules      SurnameRule[]
+  relationshipTypes RelationshipTypeDefinition[]
+  extractionRules   ExtractionRule[]
+  promptVersions    PromptTemplateVersion[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -754,8 +753,8 @@ model RelationshipTypeDefinition {
   source           String   @default("MANUAL") @db.VarChar(30)
   bookTypeId       String?  @map("book_type_id") @db.Uuid
 
-  relationships Relationship[]
-  bookType      BookType?      @relation(fields: [bookTypeId], references: [id], onDelete: SetNull)
+  // relationships 字段已移除：relationshipTypeCode 降级为自由文本，不再通过 Prisma relation 级联
+  bookType BookType? @relation(fields: [bookTypeId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -823,11 +822,12 @@ model UnknownRelationshipTypeOccurrence {
   @@map("unknown_relationship_type_occurrences")
 }
 
-/// NER 算法配置：后缀惩罚规则与称号/职位词干
-/// 与 prompt_extraction_rules 的区别：本表配置评分算法，不注入 AI Prompt
-model NerLexiconRule {
+// ============================================================
+// 统一提取规则（合并 ner_lexicon_rules + prompt_extraction_rules）
+// ============================================================
+model ExtractionRule {
   id         String  @id @default(uuid()) @db.Uuid
-  /// HARD_BLOCK_SUFFIX | SOFT_BLOCK_SUFFIX | TITLE_STEM | POSITION_STEM
+  /// HARD_BLOCK_SUFFIX | SOFT_BLOCK_SUFFIX | TITLE_STEM | POSITION_STEM | ENTITY | RELATIONSHIP
   ruleType   String  @map("rule_type")
   content    String  @db.Text
   bookTypeId String? @map("book_type_id") @db.Uuid
@@ -843,56 +843,7 @@ model NerLexiconRule {
 
   @@index([ruleType, isActive, sortOrder])
   @@index([bookTypeId])
-  @@map("ner_lexicon_rules")
-}
-
-// ============================================================
-// 历史人物条目
-// ============================================================
-model HistoricalFigureEntry {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar(100)
-  aliases     String[] @default([])
-  dynasty     String?  @db.VarChar(50)
-  category    String   @db.VarChar(30)
-  description String?  @db.Text
-
-  source       String    @default("MANUAL")
-  reviewStatus String    @default("PENDING") @map("review_status")
-  reviewNote   String?   @map("review_note") @db.Text
-  reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
-  isActive     Boolean   @default(true) @map("is_active")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  @@index([name])
-  @@index([category, reviewStatus])
-  @@map("historical_figure_entries")
-}
-
-// RelationalTermEntry 已废弃 — 数据已迁入 GenericTitleRule（tier=RELATIONAL）
-
-// ============================================================
-// 名字模式规则
-// ============================================================
-model NamePatternRule {
-  id          String  @id @default(uuid()) @db.Uuid
-  ruleType    String  @map("rule_type") @db.VarChar(30)
-  pattern     String  @db.VarChar(200)
-  action      String  @db.VarChar(20)
-  description String? @db.Text
-
-  source       String  @default("MANUAL")
-  reviewStatus String  @default("PENDING") @map("review_status")
-  reviewNote   String? @map("review_note") @db.Text
-  isActive     Boolean @default(true) @map("is_active")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  @@index([ruleType, reviewStatus])
-  @@map("name_pattern_rules")
+  @@map("extraction_rules")
 }
 
 // ============================================================
@@ -941,29 +892,6 @@ model PromptTemplateVersion {
   @@index([templateId, isActive])
   @@index([templateId, bookTypeId])
   @@map("prompt_template_versions")
-}
-
-/// Prompt 注入规则：告诉 AI 如何提取实体和关系
-/// 与 ner_lexicon_rules 的区别：本表内容注入 AI Prompt，不配置评分算法
-model PromptExtractionRule {
-  id         String  @id @default(uuid()) @db.Uuid
-  /// ENTITY | RELATIONSHIP
-  ruleType   String  @map("rule_type")
-  content    String  @db.Text
-  bookTypeId String? @map("book_type_id") @db.Uuid
-  sortOrder  Int     @default(0) @map("sort_order")
-  isActive   Boolean @default(true) @map("is_active")
-  source     String  @default("MANUAL")
-  changeNote String? @map("change_note") @db.Text
-
-  bookType BookType? @relation(fields: [bookTypeId], references: [id])
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  @@index([ruleType, isActive, sortOrder])
-  @@index([bookTypeId])
-  @@map("prompt_extraction_rules")
 }
 
 // ============================================================

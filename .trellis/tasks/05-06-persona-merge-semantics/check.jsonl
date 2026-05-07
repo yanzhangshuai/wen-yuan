@@ -1,0 +1,2 @@
+{"file":".trellis/spec/backend/relationship-structure.md","reason":"Check mergePersonas still preserves relationship canonicalization, duplicate handling, and event endpoint consistency."}
+{"file":".trellis/spec/backend/role-workbench-character-events.md","reason":"Check role workbench persona/profile/biography behavior remains consistent after merge semantics change."}

@@ -15,6 +15,7 @@ import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
+import { lookupRelationshipTypeInfos } from "@/server/modules/knowledge/lookupTypeNames";
 import type {
   PersonaPairDirectionMode,
   PersonaPairRelationship,
@@ -85,15 +86,6 @@ export function createGetPersonaPairService(
         ]
       },
       include: {
-        relationshipType: {
-          select: {
-            code            : true,
-            name            : true,
-            group           : true,
-            directionMode   : true,
-            reverseEdgeLabel: true
-          }
-        },
         events: {
           where  : { deletedAt: null },
           orderBy: [{ chapterNo: "asc" }, { paraIndex: "asc" }, { createdAt: "asc" }],
@@ -104,6 +96,11 @@ export function createGetPersonaPairService(
       },
       orderBy: [{ relationshipTypeCode: "asc" }]
     });
+
+    const typeInfos = await lookupRelationshipTypeInfos(
+      relationships.map((r) => r.relationshipTypeCode),
+      prismaClient
+    );
 
     return {
       bookId  : input.bookId,
@@ -125,19 +122,28 @@ export function createGetPersonaPairService(
       ],
       relationships: relationships.map((relationship): PersonaPairRelationship => {
         const chapterNumbers = relationship.events.map((event) => event.chapterNo);
+        const typeInfo = typeInfos.get(relationship.relationshipTypeCode);
 
         return {
           id                  : relationship.id,
           sourceId            : relationship.sourceId,
           targetId            : relationship.targetId,
           relationshipTypeCode: relationship.relationshipTypeCode,
-          relationshipType    : {
-            code         : relationship.relationshipType.code,
-            name         : relationship.relationshipType.name,
-            group        : relationship.relationshipType.group,
-            directionMode: toDirectionMode(relationship.relationshipType.directionMode),
-            inverseLabel : relationship.relationshipType.reverseEdgeLabel
-          },
+          relationshipType    : typeInfo
+            ? {
+              code         : relationship.relationshipTypeCode,
+              name         : typeInfo.name,
+              group        : typeInfo.group,
+              directionMode: toDirectionMode(typeInfo.directionMode),
+              inverseLabel : typeInfo.sourceRoleLabel ?? typeInfo.name
+            }
+            : {
+              code         : relationship.relationshipTypeCode,
+              name         : relationship.relationshipTypeCode,
+              group        : "",
+              directionMode: "DIRECTED" as const,
+              inverseLabel : null
+            },
           recordSource  : relationship.recordSource,
           status        : relationship.status,
           firstChapterNo: chapterNumbers.length > 0 ? Math.min(...chapterNumbers) : null,

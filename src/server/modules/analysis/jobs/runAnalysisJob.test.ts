@@ -35,8 +35,6 @@ function createRuntimeKnowledge(overrides: Partial<FullRuntimeKnowledge> = {}): 
     relationshipTypeByCode        : new Map(),
     relationshipTypeDictionaryText: "",
     aliasLookup                   : new Map<string, string>(),
-    historicalFigures             : new Set<string>(),
-    historicalFigureMap           : new Map(),
     relationalTerms               : new Set<string>(),
     namePatternRules              : [],
     hardBlockSuffixes             : new Set<string>(),

@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import { lookupRelationshipTypeNames } from "@/server/modules/knowledge/lookupTypeNames";
 
 /**
  * ============================================================================
@@ -328,12 +329,14 @@ export function createGetBookGraphService(
       }
     }
 
-    // Step 7) 构建边结构并附带情感极性。
+    // Step 7) 批量加载 KB 类型名称，构建边结构并附带情感极性。
+    const typeCodes = [...new Set(relationships.map((r) => r.relationshipTypeCode))];
+    const nameByCode = await lookupRelationshipTypeNames(typeCodes, prismaClient);
     const edges: BookGraphEdge[] = relationships.map((relation) => ({
       id       : relation.id,
       source   : relation.sourceId,
       target   : relation.targetId,
-      type     : relation.relationshipTypeCode,
+      type     : nameByCode.get(relation.relationshipTypeCode) ?? relation.relationshipTypeCode,
       weight   : 1,
       sentiment: resolveSentiment(relation.relationshipTypeCode),
       status   : relation.status

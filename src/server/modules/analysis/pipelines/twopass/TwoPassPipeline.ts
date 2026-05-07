@@ -32,7 +32,7 @@ function filterPass1Candidates(
     for (const rule of runtimeKnowledge.namePatternRules) {
       if (rule.action === "BLOCK" && rule.compiled.test(raw)) return false;
     }
-    if (runtimeKnowledge.historicalFigures.has(raw))     return false;
+
     return true;
   });
 }

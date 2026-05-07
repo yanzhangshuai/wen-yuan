@@ -3,6 +3,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import {
   clearKnowledgeCache,
+  compileNamePatternRule,
   loadFullRuntimeKnowledge
 } from "@/server/modules/knowledge/load-book-knowledge";
 
@@ -24,10 +25,7 @@ function createPrismaMock() {
     surnameRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    nerLexiconRule: {
-      findMany: vi.fn().mockResolvedValue([])
-    },
-    promptExtractionRule: {
+    extractionRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
     bookAliasPack: {
@@ -39,13 +37,7 @@ function createPrismaMock() {
     aliasEntry: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    historicalFigureEntry: {
-      findMany: vi.fn().mockResolvedValue([])
-    },
     relationalTermEntry: {
-      findMany: vi.fn().mockResolvedValue([])
-    },
-    namePatternRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
     relationshipTypeDefinition: {
@@ -73,13 +65,11 @@ describe("load-book-knowledge", () => {
       { surname: "欧阳", isCompound: true },
       { surname: "赵", isCompound: false }
     ]);
-    prismaMock.nerLexiconRule.findMany.mockResolvedValueOnce([
+    prismaMock.extractionRule.findMany.mockResolvedValueOnce([
       { ruleType: "HARD_BLOCK_SUFFIX", content: "兄" },
       { ruleType: "SOFT_BLOCK_SUFFIX", content: "叔" },
       { ruleType: "TITLE_STEM", content: "老爷" },
-      { ruleType: "POSITION_STEM", content: "太守" }
-    ]);
-    prismaMock.promptExtractionRule.findMany.mockResolvedValueOnce([
+      { ruleType: "POSITION_STEM", content: "太守" },
       { ruleType: "ENTITY", content: "识别人名" },
       { ruleType: "RELATIONSHIP", content: "识别关系" }
     ]);
@@ -103,25 +93,6 @@ describe("load-book-knowledge", () => {
         confidence   : 0.9
       }
     ]);
-    prismaMock.historicalFigureEntry.findMany.mockResolvedValueOnce([
-      {
-        id         : "hf-1",
-        name       : "孔子",
-        aliases    : ["孔夫子"],
-        dynasty    : "春秋",
-        category   : "PHILOSOPHER",
-        description: "儒家学派创始人"
-      }
-    ]);
-    prismaMock.namePatternRule.findMany.mockResolvedValueOnce([
-      {
-        id         : "rule-1",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "^范[进举人]+$",
-        description: "过滤称谓混淆"
-      }
-    ]);
 
     const prisma = prismaMock as unknown as PrismaClient;
     prismaMock.book.findUnique.mockResolvedValueOnce({
@@ -137,20 +108,20 @@ describe("load-book-knowledge", () => {
     expect(knowledge.bookTypeKey).toBe("classic");
     expect(knowledge.aliasLookup.get("范老爷")).toBe("范进");
     expect(knowledge.aliasLookup.get("王太守")).toBe("王惠");
-    expect(knowledge.historicalFigures.has("孔子")).toBe(true);
-    expect(knowledge.historicalFigureMap.get("孔夫子")?.name).toBe("孔子");
     expect(knowledge.relationalTerms.has("兄长")).toBe(true);
-    expect(knowledge.namePatternRules).toHaveLength(1);
-    expect(knowledge.namePatternRules[0].compiled.test("范进")).toBe(true);
+    // 名字模式从静态常量加载（15 条规则），验证编译和匹配
+    expect(knowledge.namePatternRules.length).toBeGreaterThanOrEqual(1);
+    // "某公" 命中静态规则 ^某(公|君|氏|人)$
+    const blockPattern = knowledge.namePatternRules.find((r) => r.action === "BLOCK" && r.compiled.test("某公"));
+    expect(blockPattern).toBeDefined();
 
-    expect(knowledge.lexiconConfig).toMatchObject({
-      safetyGenericTitles        : ["老爷"],
-      defaultGenericTitles       : ["先生"],
-      surnameCompounds           : ["欧阳"],
-      surnameSingles             : ["赵"],
-      entityExtractionRules      : ["识别人名"],
-      relationshipExtractionRules: ["识别关系"]
-    });
+    // 姓氏以静态词库为基准，DB 仅提供追加；验证 DB 条目被合并入最终结果
+    expect(knowledge.lexiconConfig.safetyGenericTitles).toEqual(["老爷"]);
+    expect(knowledge.lexiconConfig.defaultGenericTitles).toEqual(["先生"]);
+    expect(knowledge.lexiconConfig.surnameCompounds).toEqual(expect.arrayContaining(["欧阳"]));
+    expect(knowledge.lexiconConfig.surnameSingles).toEqual(expect.arrayContaining(["赵"]));
+    expect(knowledge.lexiconConfig.entityExtractionRules).toEqual(["识别人名"]);
+    expect(knowledge.lexiconConfig.relationshipExtractionRules).toEqual(["识别关系"]);
     expect(Array.from(knowledge.hardBlockSuffixes)).toContain("兄");
     expect(Array.from(knowledge.softBlockSuffixes)).toContain("叔");
     expect(knowledge.titlePatterns.some((pattern) => pattern.test("范老爷"))).toBe(true);
@@ -159,15 +130,6 @@ describe("load-book-knowledge", () => {
 
   it("returns cached runtime knowledge for the same book and book type without extra DB reads", async () => {
     const prismaMock = createPrismaMock();
-    prismaMock.namePatternRule.findMany.mockResolvedValue([
-      {
-        id         : "rule-1",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "^范进$",
-        description: null
-      }
-    ]);
 
     const prisma = prismaMock as unknown as PrismaClient;
 
@@ -176,7 +138,6 @@ describe("load-book-knowledge", () => {
 
     expect(second).toBe(first);
     expect(prismaMock.book.findUnique).toHaveBeenCalledTimes(1);
-    expect(prismaMock.namePatternRule.findMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.bookAliasPack.findMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.genericTitleRule.findMany).toHaveBeenCalledTimes(1);
   });
@@ -190,7 +151,6 @@ describe("load-book-knowledge", () => {
     const second = await loadFullRuntimeKnowledge({ bookId: "book-refresh", prisma });
 
     expect(second).not.toBe(first);
-    expect(prismaMock.namePatternRule.findMany).toHaveBeenCalledTimes(2);
   });
 
   it("force refreshes cached runtime knowledge and filters relationship types by book type", async () => {
@@ -246,45 +206,30 @@ describe("load-book-knowledge", () => {
     expect(first.relationshipTypeDictionaryText).not.toContain("多余例子");
   });
 
-  it("applies D9 guards and only keeps valid name pattern rules", async () => {
-    const prismaMock = createPrismaMock();
+  it("applies D9 guards and only keeps valid name pattern rules", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
-    prismaMock.namePatternRule.findMany.mockResolvedValueOnce([
-      {
-        id         : "rule-too-long",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "a".repeat(201),
-        description: null
-      },
-      {
-        id         : "rule-nested-quantifier",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "(ab+)+",
-        description: null
-      },
-      {
-        id         : "rule-invalid-syntax",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "(",
-        description: null
-      },
-      {
-        id         : "rule-valid",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "^范进$",
-        description: "valid"
-      }
-    ]);
+    // 过长规则
+    expect(compileNamePatternRule({
+      id: "too-long", ruleType: "T", action: "BLOCK", pattern: "a".repeat(201), description: null
+    })).toBeNull();
 
-    const prisma = prismaMock as unknown as PrismaClient;
-    const knowledge = await loadFullRuntimeKnowledge({ bookId: "book-d9", prisma });
+    // 嵌套量词
+    expect(compileNamePatternRule({
+      id: "nested", ruleType: "T", action: "BLOCK", pattern: "(ab+)+", description: null
+    })).toBeNull();
 
-    expect(knowledge.namePatternRules.map((item) => item.id)).toEqual(["rule-valid"]);
+    // 非法正则
+    expect(compileNamePatternRule({
+      id: "syntax", ruleType: "T", action: "BLOCK", pattern: "(", description: null
+    })).toBeNull();
+
+    // 合法规则
+    const valid = compileNamePatternRule({
+      id: "valid", ruleType: "T", action: "BLOCK", pattern: "^范进$", description: "valid"
+    });
+    expect(valid).not.toBeNull();
+    expect(valid!.compiled.test("范进")).toBe(true);
 
     const warningTags = warnSpy.mock.calls.map((call) => String(call[0]));
     expect(warningTags).toContain("[knowledge.loader] name_pattern.skipped.length_exceeded");
@@ -292,8 +237,7 @@ describe("load-book-knowledge", () => {
     expect(warningTags).toContain("[knowledge.loader] name_pattern.skipped.syntax_error");
   });
 
-  it("skips rules that exceed compile-time guard threshold", async () => {
-    const prismaMock = createPrismaMock();
+  it("skips rules that exceed compile-time guard threshold", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const nowSpy = vi.spyOn(Date, "now");
 
@@ -301,20 +245,11 @@ describe("load-book-knowledge", () => {
     nowSpy.mockReturnValueOnce(0);
     nowSpy.mockReturnValueOnce(150);
 
-    prismaMock.namePatternRule.findMany.mockResolvedValueOnce([
-      {
-        id         : "rule-timeout",
-        ruleType   : "TITLE_ONLY",
-        action     : "BLOCK",
-        pattern    : "^范进$",
-        description: null
-      }
-    ]);
+    const result = compileNamePatternRule({
+      id: "timeout", ruleType: "T", action: "BLOCK", pattern: "^范进$", description: null
+    });
 
-    const prisma = prismaMock as unknown as PrismaClient;
-    const knowledge = await loadFullRuntimeKnowledge({ bookId: "book-timeout", prisma });
-
-    expect(knowledge.namePatternRules).toHaveLength(0);
+    expect(result).toBeNull();
     expect(
       warnSpy.mock.calls.some((call) => String(call[0]) === "[knowledge.loader] name_pattern.skipped.compile_timeout")
     ).toBe(true);

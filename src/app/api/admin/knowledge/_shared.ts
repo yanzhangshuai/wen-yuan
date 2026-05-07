@@ -255,16 +255,20 @@ export const generateRelationshipTypeCandidatesSchema = z.object({
 
 export const initializeCommonRelationshipTypesSchema = z.object({}).strict();
 
-// ─── NER 词典规则 ───────────────────────────────────────
-export const createNerLexiconRuleSchema = z.object({
-  ruleType  : z.enum(["HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM"]),
+// ─── 统一提取规则（extraction_rules）─────────────────────
+const extractionRuleTypeSchema = z.enum([
+  "HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM", "ENTITY", "RELATIONSHIP"
+]);
+
+export const createExtractionRuleSchema = z.object({
+  ruleType  : extractionRuleTypeSchema,
   content   : z.string().trim().min(1, "规则内容不能为空"),
   bookTypeId: z.string().uuid().optional(),
   sortOrder : z.number().int().optional(),
   changeNote: z.string().optional()
 });
 
-export const updateNerLexiconRuleSchema = z.object({
+export const updateExtractionRuleSchema = z.object({
   content   : z.string().trim().min(1).optional(),
   bookTypeId: z.string().uuid().nullable().optional(),
   sortOrder : z.number().int().optional(),
@@ -272,48 +276,11 @@ export const updateNerLexiconRuleSchema = z.object({
   changeNote: z.string().optional()
 }).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
 
-export const reorderNerLexiconRulesSchema = z.object({
+export const reorderExtractionRulesSchema = z.object({
   orderedIds: z.array(z.string().uuid()).min(1)
 });
 
-export const generateNerRulesSchema = z.object({
-  ruleType              : z.enum(["HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM"]),
-  targetCount           : z.number().int().min(1).max(200).default(30),
-  additionalInstructions: z.string().trim().max(2000).optional(),
-  modelId               : z.string().uuid().optional(),
-  bookTypeId            : z.string().uuid().optional()
-});
-
-// ─── Prompt 提取规则 ────────────────────────────────────
-export const createPromptExtractionRuleSchema = z.object({
-  ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]).default("ENTITY"),
-  content   : z.string().trim().min(1, "规则内容不能为空"),
-  bookTypeId: z.string().uuid().optional(),
-  sortOrder : z.number().int().optional(),
-  changeNote: z.string().optional()
-});
-
-export const updatePromptExtractionRuleSchema = z.object({
-  content   : z.string().trim().min(1).optional(),
-  bookTypeId: z.string().uuid().nullable().optional(),
-  sortOrder : z.number().int().optional(),
-  isActive  : z.boolean().optional(),
-  changeNote: z.string().optional()
-}).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
-
-export const reorderPromptExtractionRulesSchema = z.object({
-  orderedIds: z.array(z.string().uuid()).min(1)
-});
-
-export const previewPromptExtractionRulesSchema = z.object({
-  ruleType  : z.enum(["ENTITY", "RELATIONSHIP"]),
+export const previewExtractionRulesSchema = z.object({
+  ruleType  : extractionRuleTypeSchema,
   bookTypeId: z.string().uuid().optional()
-});
-
-export const generatePromptRulesSchema = z.object({
-  ruleType              : z.enum(["ENTITY", "RELATIONSHIP"]).default("ENTITY"),
-  targetCount           : z.number().int().min(1).max(200).default(30),
-  additionalInstructions: z.string().trim().max(2000).optional(),
-  modelId               : z.string().uuid().optional(),
-  bookTypeId            : z.string().uuid().optional()
 });

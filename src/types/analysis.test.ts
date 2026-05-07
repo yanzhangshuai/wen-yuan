@@ -203,6 +203,20 @@ describe("parseChapterAnalysisResponse", () => {
           proposedTargetRoleLabel: "晚辈",
           evidence               : "二人关系无法被现有字典表达"
         }
+      },
+      {
+        sourceName          : "张三",
+        targetName          : "李四",
+        relationshipTypeCode: "relationship_known",
+        evidence            : undefined,
+        unknownTypeProposal : {
+          proposedName           : "非法混用",
+          proposedGroup          : "其他",
+          proposedDirectionMode  : "SYMMETRIC",
+          proposedSourceRoleLabel: undefined,
+          proposedTargetRoleLabel: undefined,
+          evidence               : undefined
+        }
       }
     ]);
     expect(result.relationshipEvents).toEqual([

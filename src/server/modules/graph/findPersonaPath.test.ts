@@ -52,6 +52,12 @@ function createPrismaStub() {
           events              : [{ chapterId: "c2", chapterNo: 2 }]
         }
       ])
+    },
+    relationshipTypeDefinition: {
+      findMany: vi.fn().mockResolvedValue([
+        { code: "师生", name: "师生" },
+        { code: "同僚", name: "同僚" }
+      ])
     }
   };
 }

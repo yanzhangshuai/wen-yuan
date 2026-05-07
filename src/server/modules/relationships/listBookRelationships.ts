@@ -13,6 +13,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { type ProcessingStatus, type RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import { lookupRelationshipTypeNames } from "@/server/modules/knowledge/lookupTypeNames";
 
 export interface ListBookRelationshipsFilter {
   relationshipTypeCode?: string;
@@ -69,11 +70,8 @@ export function createListBookRelationshipsService(
         sourceId            : true,
         targetId            : true,
         relationshipTypeCode: true,
-        relationshipType    : {
-          select: { name: true }
-        },
-        recordSource: true,
-        status      : true
+        recordSource        : true,
+        status              : true
       }
     });
 
@@ -81,15 +79,19 @@ export function createListBookRelationshipsService(
       return [];
     }
 
-    const eventAggregates = await prismaClient.relationshipEvent.groupBy({
-      by   : ["relationshipId"] as const,
-      where: {
-        relationshipId: { in: relationships.map((relationship) => relationship.id) },
-        deletedAt     : null
-      },
-      _count: { _all: true },
-      _min  : { chapterNo: true }
-    });
+    const [eventAggregates, nameByCode] = await Promise.all([
+      prismaClient.relationshipEvent.groupBy({
+        by   : ["relationshipId"] as const,
+        where: {
+          relationshipId: { in: relationships.map((r) => r.id) },
+          deletedAt     : null
+        },
+        _count: { _all: true },
+        _min  : { chapterNo: true }
+      }),
+      lookupRelationshipTypeNames(relationships.map((r) => r.relationshipTypeCode), prismaClient)
+    ]);
+
     const aggregatesByRelationshipId = new Map(
       eventAggregates.map((aggregate) => [aggregate.relationshipId, aggregate])
     );
@@ -102,7 +104,7 @@ export function createListBookRelationshipsService(
         sourceId            : relationship.sourceId,
         targetId            : relationship.targetId,
         relationshipTypeCode: relationship.relationshipTypeCode,
-        relationshipTypeName: relationship.relationshipType.name,
+        relationshipTypeName: nameByCode.get(relationship.relationshipTypeCode) ?? relationship.relationshipTypeCode,
         recordSource        : relationship.recordSource,
         status              : relationship.status,
         eventCount          : aggregate?._count._all ?? 0,

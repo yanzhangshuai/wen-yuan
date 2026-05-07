@@ -212,7 +212,6 @@ interface ClassicalCharacterSeedData {
 }
 
 export interface KnowledgePhase7SeedSummary {
-  historicalFigures: number;
   namePatternRules : number;
   relationalTerms  : number;
   classicalPacks   : number;
@@ -223,58 +222,9 @@ export async function seedKnowledgePhase7(prisma: PrismaClient): Promise<Knowled
   console.log("Phase 7 种子数据导入开始...\n");
   const basePath = resolve(process.cwd(), "data/knowledge-base");
 
-  // 1. Historical Figures
-  let historicalFigureCount = 0;
-  const hfPath = resolve(basePath, "historical-figures.seed.json");
-  const hfData = JSON.parse(readFileSync(hfPath, "utf-8")) as HistoricalFigureSeedData;
-  console.log(`  历史人物: ${hfData.entries.length} 条 (${hfData.version})`);
-  for (const entry of hfData.entries) {
-    const existing = await prisma.historicalFigureEntry.findFirst({
-      where: { name: entry.name }
-    });
-    if (!existing) {
-      await prisma.historicalFigureEntry.create({
-        data: {
-          name        : entry.name,
-          aliases     : entry.aliases,
-          dynasty     : entry.dynasty ?? null,
-          category    : entry.category,
-          description : entry.description ?? null,
-          reviewStatus: "VERIFIED",
-          isActive    : true,
-          source      : "IMPORTED"
-        }
-      });
-      historicalFigureCount++;
-    }
-  }
-  console.log(`  ✅ 历史人物: ${historicalFigureCount} created, ${hfData.entries.length - historicalFigureCount} skipped`);
-
-  // 2. Name Pattern Rules
-  let namePatternCount = 0;
-  const npPath = resolve(basePath, "name-pattern-rules.seed.json");
-  const npData = JSON.parse(readFileSync(npPath, "utf-8")) as NamePatternRuleSeedData;
-  console.log(`  名字模式规则: ${npData.entries.length} 条 (${npData.version})`);
-  for (const rule of npData.entries) {
-    const existing = await prisma.namePatternRule.findFirst({
-      where: { ruleType: rule.ruleType, pattern: rule.pattern }
-    });
-    if (!existing) {
-      await prisma.namePatternRule.create({
-        data: {
-          ruleType    : rule.ruleType,
-          pattern     : rule.pattern,
-          action      : rule.action,
-          description : rule.description ?? null,
-          reviewStatus: "VERIFIED",
-          isActive    : true,
-          source      : "IMPORTED"
-        }
-      });
-      namePatternCount++;
-    }
-  }
-  console.log(`  ✅ 名字模式规则: ${namePatternCount} created, ${npData.entries.length - namePatternCount} skipped`);
+  // 1. Name Pattern Rules — 已迁移至静态文件 src/server/modules/knowledge/data/name-patterns.ts
+  console.log("  ℹ️ 名字模式规则已由 STATIC_NAME_PATTERNS 静态加载，跳过 DB 种子。");
+  const namePatternCount = 0;
 
   // 3. Relational Terms → GenericTitleRule (tier=RELATIONAL)
   let relationalTermCount = 0;
@@ -341,14 +291,12 @@ export async function seedKnowledgePhase7(prisma: PrismaClient): Promise<Knowled
   }
 
   console.log("\n========== Phase 7 Summary ==========");
-  console.log(`历史人物:   ${historicalFigureCount} created`);
   console.log(`名字模式:   ${namePatternCount} created`);
   console.log(`关系词:     ${relationalTermCount} upserted`);
   console.log(`古典人物包: ${classicalPackCount} created (${classicalEntryCount} entries)`);
   console.log("======================================");
 
   return {
-    historicalFigures: historicalFigureCount,
     namePatternRules : namePatternCount,
     relationalTerms  : relationalTermCount,
     classicalPacks   : classicalPackCount,

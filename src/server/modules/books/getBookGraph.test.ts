@@ -30,6 +30,11 @@ describe("getBookGraph service", () => {
           }
         ])
       },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([
+          { code: "师生", name: "师生" }
+        ])
+      },
       mention: {
         findMany: vi.fn().mockResolvedValue([{ personaId: "persona-2" }])
       },
@@ -96,6 +101,9 @@ describe("getBookGraph service", () => {
     const service = createGetBookGraphService({
       book: {
         findFirst: vi.fn().mockResolvedValue(null)
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     } as never);
 
@@ -160,6 +168,12 @@ describe("getBookGraph service", () => {
       },
       persona: {
         findMany: personaFindMany
+      },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([
+          { code: "敌对", name: "敌对" },
+          { code: "陌生", name: "陌生" }
+        ])
       }
     } as never);
 

@@ -4,6 +4,8 @@ import {
   formatRelationshipTypeDictionary,
   type RelationshipTypeDictionaryPromptEntry
 } from "@/server/modules/analysis/services/prompts";
+import { getStaticSurnames } from "./data/surnames";
+import { STATIC_NAME_PATTERNS } from "./data/name-patterns";
 
 /**
  * 解析流水线集成：从数据库加载书籍知识配置。
@@ -16,7 +18,6 @@ const NESTED_QUANTIFIER_PATTERN = /(\([^)]*[+*][^)]*\))[+*{]/;
 
 interface RuntimeLexiconPayload {
   genericTitles  : Array<{ title: string; tier: string }>;
-  surnames       : Array<{ surname: string; isCompound: boolean }>;
   nerLexiconRules: Array<{ ruleType: string; content: string }>;
   promptRules    : Array<{ ruleType: string; content: string }>;
 }
@@ -50,24 +51,15 @@ export interface FullRuntimeKnowledge {
   relationshipTypeByCode        : Map<string, RelationshipTypeDictionaryPromptEntry>;
   relationshipTypeDictionaryText: string;
   aliasLookup                   : Map<string, string>;
-  historicalFigures             : Set<string>;
-  historicalFigureMap: Map<string, {
-    id         : string;
-    name       : string;
-    aliases    : string[];
-    dynasty    : string | null;
-    category   : string;
-    description: string | null;
-  }>;
-  relationalTerms     : Set<string>;
-  namePatternRules    : CompiledNamePatternRule[];
-  hardBlockSuffixes   : Set<string>;
-  softBlockSuffixes   : Set<string>;
-  safetyGenericTitles : Set<string>;
-  defaultGenericTitles: Set<string>;
-  titlePatterns       : RegExp[];
-  positionPatterns    : RegExp[];
-  loadedAt            : Date;
+  relationalTerms               : Set<string>;
+  namePatternRules              : CompiledNamePatternRule[];
+  hardBlockSuffixes             : Set<string>;
+  softBlockSuffixes             : Set<string>;
+  safetyGenericTitles           : Set<string>;
+  defaultGenericTitles          : Set<string>;
+  titlePatterns                 : RegExp[];
+  positionPatterns              : RegExp[];
+  loadedAt                      : Date;
 }
 
 const runtimeKnowledgeCache = new Map<string, FullRuntimeKnowledge>();
@@ -98,7 +90,7 @@ function compileStemPatterns(stems: Iterable<string>): RegExp[] {
   return toUniqueList(stems).map((stem) => new RegExp(`${escapeRegexLiteral(stem)}$`, "u"));
 }
 
-function compileNamePatternRule(input: {
+export function compileNamePatternRule(input: {
   id         : string;
   ruleType   : string;
   action     : string;
@@ -157,35 +149,13 @@ async function loadRuntimeLexiconPayload(
   bookTypeKey: string | null,
   prisma: PrismaClient
 ): Promise<RuntimeLexiconPayload> {
-  const [genericTitles, surnames, nerLexiconRules, promptRules] = await Promise.all([
+  const [genericTitles, allExtractionRules] = await Promise.all([
     prisma.genericTitleRule.findMany({
       where  : { isActive: true },
       orderBy: [{ tier: "asc" }, { title: "asc" }],
       select : { title: true, tier: true }
     }),
-    prisma.surnameRule.findMany({
-      where: {
-        isActive: true,
-        OR      : [
-          { bookTypeId: null },
-          ...(bookTypeKey ? [{ bookType: { key: bookTypeKey } }] : [])
-        ]
-      },
-      orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
-      select : { surname: true, isCompound: true }
-    }),
-    prisma.nerLexiconRule.findMany({
-      where: {
-        isActive: true,
-        OR      : [
-          { bookTypeId: null },
-          ...(bookTypeKey ? [{ bookType: { key: bookTypeKey } }] : [])
-        ]
-      },
-      orderBy: [{ ruleType: "asc" }, { sortOrder: "asc" }],
-      select : { ruleType: true, content: true }
-    }),
-    prisma.promptExtractionRule.findMany({
+    prisma.extractionRule.findMany({
       where: {
         isActive: true,
         OR      : [
@@ -198,9 +168,16 @@ async function loadRuntimeLexiconPayload(
     })
   ]);
 
+  // 从统一 extraction_rules 表按 ruleType 拆分
+  const nerLexiconRules = allExtractionRules.filter((r) =>
+    ["HARD_BLOCK_SUFFIX", "SOFT_BLOCK_SUFFIX", "TITLE_STEM", "POSITION_STEM"].includes(r.ruleType)
+  );
+  const promptRules = allExtractionRules.filter((r) =>
+    ["ENTITY", "RELATIONSHIP"].includes(r.ruleType)
+  );
+
   return {
     genericTitles,
-    surnames,
     nerLexiconRules,
     promptRules
   };
@@ -220,13 +197,10 @@ function buildRuntimeLexiconConfig(payload: RuntimeLexiconPayload): RuntimeLexic
     .filter((item) => item.tier === "RELATIONAL")
     .map((item) => item.title));
 
-  const surnameCompounds = toUniqueList(payload.surnames
-    .filter((item) => item.isCompound)
-    .map((item) => item.surname));
-
-  const surnameSingles = toUniqueList(payload.surnames
-    .filter((item) => !item.isCompound)
-    .map((item) => item.surname));
+  // 姓氏完全使用静态文件，不再查询 DB
+  const staticSurnames = getStaticSurnames();
+  const surnameCompounds = toUniqueList(staticSurnames.compounds);
+  const surnameSingles = toUniqueList(staticSurnames.singles.filter((s) => !staticSurnames.compounds.includes(s)));
 
   const entityExtractionRules = toUniqueList(payload.promptRules
     .filter((item) => item.ruleType === "ENTITY")
@@ -421,21 +395,10 @@ export async function loadFullRuntimeKnowledge({
   const [
     runtimeLexiconPayload,
     aliasLookup,
-    historicalFigureEntries,
-    namePatternRuleEntries,
     relationshipTypeEntries
   ] = await Promise.all([
     loadRuntimeLexiconPayload(normalizedBookTypeKey, prisma),
     buildAliasLookupFromDb(bookId, normalizedBookTypeKey, prisma),
-    prisma.historicalFigureEntry.findMany({
-      where : { reviewStatus: "VERIFIED", isActive: true },
-      select: { id: true, name: true, aliases: true, dynasty: true, category: true, description: true }
-    }),
-    prisma.namePatternRule.findMany({
-      where  : { reviewStatus: "VERIFIED", isActive: true },
-      orderBy: [{ ruleType: "asc" }, { createdAt: "asc" }],
-      select : { id: true, ruleType: true, action: true, pattern: true, description: true }
-    }),
     prisma.relationshipTypeDefinition.findMany({
       where  : relationshipTypeWhere,
       orderBy: [
@@ -456,45 +419,20 @@ export async function loadFullRuntimeKnowledge({
     })
   ]);
 
+  // 名字模式规则：从静态常量加载，不再查询 DB
+  const namePatternRuleEntries = STATIC_NAME_PATTERNS.map((p, i) => ({
+    id         : `np-static-${i}`,
+    ruleType   : p.ruleType,
+    action     : p.action,
+    pattern    : p.pattern,
+    description: p.description
+  }));
+
   const runtimeLexicon = buildRuntimeLexiconConfig(runtimeLexiconPayload);
 
   const relationalTerms = new Set(toUniqueList(
     runtimeLexicon.relationalTermTitles.map(normalizeLookupValue)
   ));
-
-  const historicalFigures = new Set<string>();
-  const historicalFigureMap = new Map<string, {
-    id         : string;
-    name       : string;
-    aliases    : string[];
-    dynasty    : string | null;
-    category   : string;
-    description: string | null;
-  }>();
-  for (const item of historicalFigureEntries) {
-    const entry = {
-      id         : item.id,
-      name       : item.name.trim(),
-      aliases    : toUniqueList(item.aliases),
-      dynasty    : item.dynasty,
-      category   : item.category,
-      description: item.description
-    };
-    if (!entry.name) continue;
-
-    const canonicalKey = normalizeLookupValue(entry.name);
-    historicalFigures.add(canonicalKey);
-    historicalFigureMap.set(canonicalKey, entry);
-
-    for (const alias of entry.aliases) {
-      const aliasKey = normalizeLookupValue(alias);
-      if (!aliasKey) continue;
-      historicalFigures.add(aliasKey);
-      if (!historicalFigureMap.has(aliasKey)) {
-        historicalFigureMap.set(aliasKey, entry);
-      }
-    }
-  }
 
   const namePatternRules = namePatternRuleEntries
     .map((rule) => compileNamePatternRule(rule))
@@ -520,8 +458,6 @@ export async function loadFullRuntimeKnowledge({
     relationshipTypeByCode,
     relationshipTypeDictionaryText: formatRelationshipTypeDictionary(relationshipTypes),
     aliasLookup,
-    historicalFigures,
-    historicalFigureMap,
     relationalTerms,
     namePatternRules,
     hardBlockSuffixes             : new Set(runtimeLexicon.hardBlockSuffixes),

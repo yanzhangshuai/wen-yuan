@@ -1,0 +1,2 @@
+{"file":".trellis/spec/backend/relationship-structure.md","reason":"Defines mergePersonas relationship and RelationshipEvent migration invariants that must remain intact while unifying merge paths."}
+{"file":".trellis/spec/backend/role-workbench-character-events.md","reason":"Defines role workbench data contracts for Profile, BiographyRecord, Mention, and persona management semantics."}

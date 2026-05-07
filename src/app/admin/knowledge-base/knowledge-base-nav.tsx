@@ -6,7 +6,6 @@ import {
   FileClock,
   Filter,
   GitMerge,
-  History,
   Network,
   Regex,
   ScrollText,
@@ -26,13 +25,10 @@ export type KnowledgeBaseNavIconKey =
   | "surname"
   | "title-filter"
   | "prompt-template"
-  | "ner-rule"
-  | "prompt-extraction-rule"
+  | "extraction-rule"
   | "change-log"
-  | "historical-figure"
   | "relationship-type"
-  | "unknown-relationship-type"
-  | "name-pattern";
+  | "unknown-relationship-type";
 
 export interface KnowledgeBaseNavLink {
   href   : string;
@@ -51,12 +47,9 @@ const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
   surname                    : UserRoundSearch,
   "title-filter"             : Filter,
   "prompt-template"          : ScrollText,
-  "ner-rule"                 : BookMarked,
-  "prompt-extraction-rule"   : ScrollText,
-  "historical-figure"        : History,
+  "extraction-rule"          : Regex,
   "relationship-type"        : Network,
   "unknown-relationship-type": GitMerge,
-  "name-pattern"             : Regex,
   "change-log"               : FileClock
 };
 

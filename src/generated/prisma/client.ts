@@ -172,21 +172,10 @@ export type UnknownRelationshipTypeDraft = Prisma.UnknownRelationshipTypeDraftMo
  */
 export type UnknownRelationshipTypeOccurrence = Prisma.UnknownRelationshipTypeOccurrenceModel
 /**
- * Model NerLexiconRule
- * NER 算法配置：后缀惩罚规则与称号/职位词干
- * 与 prompt_extraction_rules 的区别：本表配置评分算法，不注入 AI Prompt
- */
-export type NerLexiconRule = Prisma.NerLexiconRuleModel
-/**
- * Model HistoricalFigureEntry
+ * Model ExtractionRule
  * 
  */
-export type HistoricalFigureEntry = Prisma.HistoricalFigureEntryModel
-/**
- * Model NamePatternRule
- * 
- */
-export type NamePatternRule = Prisma.NamePatternRuleModel
+export type ExtractionRule = Prisma.ExtractionRuleModel
 /**
  * Model PromptTemplate
  * 
@@ -197,12 +186,6 @@ export type PromptTemplate = Prisma.PromptTemplateModel
  * 
  */
 export type PromptTemplateVersion = Prisma.PromptTemplateVersionModel
-/**
- * Model PromptExtractionRule
- * Prompt 注入规则：告诉 AI 如何提取实体和关系
- * 与 ner_lexicon_rules 的区别：本表内容注入 AI Prompt，不配置评分算法
- */
-export type PromptExtractionRule = Prisma.PromptExtractionRuleModel
 /**
  * Model KnowledgeAuditLog
  * @db.remark: 所有知识库对象的变更日志。

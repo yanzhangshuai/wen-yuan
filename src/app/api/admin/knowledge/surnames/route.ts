@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<Response> {
     const compound = url.searchParams.get("compound");
     const q = url.searchParams.get("q") ?? undefined;
 
-    const data = await listSurnames({
+    const data = listSurnames({
       compound: compound === "true" ? true : compound === "false" ? false : undefined,
       q
     });

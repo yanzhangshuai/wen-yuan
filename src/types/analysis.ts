@@ -72,11 +72,7 @@ export const aiRelationshipSchema = z.object({
   relationshipTypeCode: z.string().min(1).nullable().optional(),
   evidence            : z.string().optional(),
   unknownTypeProposal : unknownRelationshipTypeProposalSchema.optional()
-}).refine((value) => {
-  const hasCode = typeof value.relationshipTypeCode === "string" && value.relationshipTypeCode.trim().length > 0;
-  const hasProposal = Boolean(value.unknownTypeProposal);
-  return hasCode !== hasProposal;
-}, { message: "relationshipTypeCode 与 unknownTypeProposal 必须二选一" });
+});
 
 export const aiRelationshipEventSchema = z.object({
   sourceName          : z.string().min(1),
@@ -91,8 +87,8 @@ export const aiRelationshipEventSchema = z.object({
 }).refine((value) => {
   const hasCode = typeof value.relationshipTypeCode === "string" && value.relationshipTypeCode.trim().length > 0;
   const hasProposal = Boolean(value.unknownTypeProposal);
-  return hasCode !== hasProposal;
-}, { message: "relationshipTypeCode 与 unknownTypeProposal 必须二选一" });
+  return hasCode || hasProposal;
+}, { message: "relationshipTypeCode 与 unknownTypeProposal 最少填写一个" });
 
 export const chapterAnalysisResponseSchema = z.object({
   biographies       : z.array(aiBiographySchema).default([]),
@@ -337,13 +333,7 @@ function normalizeAiRelationshipRecord(item: Record<string, unknown>): AiRelatio
   }
 
   const relationshipTypeCode = getRelationshipTypeCode(item.relationshipTypeCode);
-  const hasProposalField = item.unknownTypeProposal !== undefined;
   const unknownTypeProposal = normalizeUnknownRelationshipTypeProposal(item);
-
-  if (relationshipTypeCode && hasProposalField) {
-    warnInvalidRelationshipRecord("relationship_code_and_proposal_conflict", item);
-    return null;
-  }
 
   if (!relationshipTypeCode && !unknownTypeProposal) {
     warnInvalidRelationshipRecord("missing_relationship_code_or_proposal", item);
@@ -377,13 +367,7 @@ function normalizeAiRelationshipEventRecord(item: Record<string, unknown>): AiRe
   }
 
   const relationshipTypeCode = getRelationshipTypeCode(item.relationshipTypeCode);
-  const hasProposalField = item.unknownTypeProposal !== undefined;
   const unknownTypeProposal = normalizeUnknownRelationshipTypeProposal(item);
-
-  if (relationshipTypeCode && hasProposalField) {
-    warnInvalidRelationshipRecord("relationship_code_and_proposal_conflict", item);
-    return null;
-  }
 
   if (!relationshipTypeCode && !unknownTypeProposal) {
     warnInvalidRelationshipRecord("missing_relationship_code_or_proposal", item);

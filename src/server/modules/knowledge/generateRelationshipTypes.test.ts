@@ -186,13 +186,13 @@ describe("generateRelationshipTypes", () => {
       const payload = {
         relationshipTypes: [
           {
-            name           : "同年",
-            group          : "社会身份",
-            directionMode  : "SYMMETRIC",
-            edgeLabel      : "同年",
-            aliases        : ["科举同年"],
-            examples       : [],
-            confidence     : 0.86
+            name         : "同年",
+            group        : "社会身份",
+            directionMode: "SYMMETRIC",
+            edgeLabel    : "同年",
+            aliases      : ["科举同年"],
+            examples     : [],
+            confidence   : 0.86
           }
         ]
       };

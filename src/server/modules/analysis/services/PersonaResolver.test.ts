@@ -80,8 +80,6 @@ function createPrismaMock() {
 function createMockRuntimeKnowledge(overrides?: Partial<{
   relationalTerms     : Set<string>;
   namePatternRules    : Array<{ action: string; compiled: RegExp; id: string; ruleType: string; pattern: string; description: string | null }>;
-  historicalFigures   : Set<string>;
-  historicalFigureMap : Map<string, unknown>;
   safetyGenericTitles : Set<string>;
   defaultGenericTitles: Set<string>;
 }>): FullRuntimeKnowledge {
@@ -94,8 +92,6 @@ function createMockRuntimeKnowledge(overrides?: Partial<{
     relationshipTypeByCode        : new Map(),
     relationshipTypeDictionaryText: "",
     aliasLookup                   : new Map(),
-    historicalFigures             : overrides?.historicalFigures ?? new Set(),
-    historicalFigureMap           : (overrides?.historicalFigureMap ?? new Map()) as never,
     relationalTerms               : overrides?.relationalTerms ?? new Set(),
     namePatternRules              : overrides?.namePatternRules ?? [],
     hardBlockSuffixes             : new Set(),
@@ -1475,44 +1471,6 @@ describe("persona resolver", () => {
 
     // WARN 不拦截，应进入后续流程（created）
     expect(result.status).toBe("created");
-  });
-
-  it("filters historical figure mention-only (D13: not in chapter text)", async () => {
-    const { prisma } = createPrismaMock();
-    const resolver = createPersonaResolver(prisma);
-    const result = await resolver.resolve({
-      bookId          : "book-1",
-      extractedName   : "孔子",
-      chapterContent  : "众人在堂上议论纷纷。",
-      runtimeKnowledge: createMockRuntimeKnowledge({
-        historicalFigures: new Set(["孔子", "孟子"])
-      })
-    });
-
-    // "孔子"不在章节原文中 → 纯提及 → 幻觉
-    expect(result.status).toBe("hallucinated");
-    expect(result.reason).toBe("historical_figure_mention_only");
-    expect(result.confidence).toBe(0.9);
-  });
-
-  it("allows historical figures that actively appear in chapter text (D13)", async () => {
-    const { prisma, personaFindMany, personaCreate } = createPrismaMock();
-    personaFindMany.mockResolvedValue([]);
-    personaCreate.mockResolvedValueOnce({ id: "new-kongzi", name: "孔子" });
-
-    const resolver = createPersonaResolver(prisma);
-    const result = await resolver.resolve({
-      bookId          : "book-1",
-      extractedName   : "孔子",
-      chapterContent  : "孔子曰：\u201C学而时习之，不亦说乎？\u201D",
-      runtimeKnowledge: createMockRuntimeKnowledge({
-        historicalFigures: new Set(["孔子"])
-      })
-    });
-
-    // "孔子"在原文中有实际出现 → 放行 → 进入后续创建流程
-    expect(result.status).toBe("created");
-    expect(result.personaId).toBe("new-kongzi");
   });
 
   it("uses runtimeKnowledge safetyGenericTitles when available", async () => {

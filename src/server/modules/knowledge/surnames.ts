@@ -1,21 +1,73 @@
-import { type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { getStaticSurnames } from "./data/surnames";
 
 /**
- * 姓氏库 CRUD 服务。
+ * 姓氏服务。
+ * 词库完全由静态文件 `data/surnames.ts` 提供，不再查询 DB。
+ * CRUD 函数保留用于管理后台维护 DB 条目（不影响运行时提取）。
  */
 
-export async function listSurnames(params?: { compound?: boolean; q?: string; active?: boolean }) {
-  const where: Prisma.SurnameRuleWhereInput = {};
-  if (params?.compound !== undefined) where.isCompound = params.compound;
-  if (params?.active !== undefined) where.isActive = params.active;
-  if (params?.q) where.surname = { contains: params.q };
+export interface SurnameViewModel {
+  surname     : string;
+  isCompound  : boolean;
+  priority    : number;
+  description : string | null;
+  bookTypeId  : string | null;
+  bookTypeName: string | null;
+  isActive    : boolean;
+  source      : string;
+}
 
-  return prisma.surnameRule.findMany({
-    where,
-    orderBy: [{ isCompound: "desc" }, { priority: "desc" }, { surname: "asc" }],
-    include: { bookType: { select: { id: true, key: true, name: true } } }
+function buildStaticViewModels(): SurnameViewModel[] {
+  const data = getStaticSurnames();
+  return [
+    ...data.compounds.map((s) => ({
+      surname     : s, isCompound  : true, priority    : 10, description : null,
+      bookTypeId  : null, bookTypeName: null, isActive    : true, source      : "STATIC"
+    })),
+    ...data.singles.map((s) => ({
+      surname     : s, isCompound  : false, priority    : 0, description : null,
+      bookTypeId  : null, bookTypeName: null, isActive    : true, source      : "STATIC"
+    }))
+  ];
+}
+
+export function listSurnames(params?: { compound?: boolean; q?: string }) {
+  let items = buildStaticViewModels();
+
+  if (params?.compound !== undefined) {
+    items = items.filter((s) => s.isCompound === params.compound);
+  }
+  if (params?.q) {
+    const q = params.q;
+    items = items.filter((s) => s.surname.includes(q));
+  }
+
+  items.sort((a, b) => {
+    if (a.isCompound !== b.isCompound) return a.isCompound ? -1 : 1;
+    if (a.priority !== b.priority) return b.priority - a.priority;
+    return a.surname.localeCompare(b.surname, "zh-CN");
   });
+
+  return items;
+}
+
+export function testSurnameExtraction(name: string) {
+  const data = getStaticSurnames();
+
+  if (name.length >= 2) {
+    const twoChar = name.slice(0, 2);
+    if (data.compounds.includes(twoChar)) {
+      return { input: name, extractedSurname: twoChar, matchType: "compound" as const, priority: 10 };
+    }
+  }
+  if (name.length >= 1) {
+    const oneChar = name.slice(0, 1);
+    if (data.singles.includes(oneChar)) {
+      return { input: name, extractedSurname: oneChar, matchType: "single" as const, priority: 0 };
+    }
+  }
+  return { input: name, extractedSurname: null, matchType: "not_found" as const, priority: 0 };
 }
 
 export async function createSurname(data: {
@@ -40,22 +92,9 @@ export async function createSurname(data: {
 
 export async function updateSurname(
   id: string,
-  data: {
-    priority?   : number;
-    description?: string;
-    bookTypeId? : string | null;
-    isActive?   : boolean;
-  }
+  data: { priority?: number; description?: string; bookTypeId?: string | null; isActive?: boolean }
 ) {
-  return prisma.surnameRule.update({
-    where: { id },
-    data : {
-      ...(data.priority !== undefined && { priority: data.priority }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.bookTypeId !== undefined && { bookTypeId: data.bookTypeId }),
-      ...(data.isActive !== undefined && { isActive: data.isActive })
-    }
-  });
+  return prisma.surnameRule.update({ where: { id }, data });
 }
 
 export async function deleteSurname(id: string) {
@@ -71,12 +110,7 @@ export async function batchDeleteSurnames(ids: string[]) {
 
 export async function batchToggleSurnames(ids: string[], isActive: boolean) {
   const result = await prisma.$transaction(
-    ids.map((id) =>
-      prisma.surnameRule.update({
-        where: { id },
-        data : { isActive }
-      })
-    )
+    ids.map((id) => prisma.surnameRule.update({ where: { id }, data: { isActive } }))
   );
   return { count: result.length };
 }
@@ -84,10 +118,7 @@ export async function batchToggleSurnames(ids: string[], isActive: boolean) {
 export async function batchChangeBookTypeSurnames(ids: string[], bookTypeId: string | null) {
   const result = await prisma.$transaction(
     ids.map((id) =>
-      prisma.surnameRule.update({
-        where: { id },
-        data : { bookTypeId }
-      })
+      prisma.surnameRule.update({ where: { id }, data: { bookTypeId } })
     )
   );
   return { count: result.length };
@@ -114,32 +145,4 @@ export async function importSurnames(text: string) {
   }
 
   return { total: unique.length, created, skipped: unique.length - created };
-}
-
-export async function testSurnameExtraction(name: string) {
-  const entries = await prisma.surnameRule.findMany({
-    where  : { isActive: true },
-    orderBy: [{ priority: "desc" }, { surname: "asc" }],
-    select : { surname: true, isCompound: true, priority: true }
-  });
-
-  // 优先匹配复姓
-  if (name.length >= 2) {
-    const twoChar = name.slice(0, 2);
-    const match = entries.find(e => e.surname === twoChar && e.isCompound);
-    if (match) {
-      return { input: name, extractedSurname: match.surname, matchType: "compound", priority: match.priority };
-    }
-  }
-
-  // 单姓匹配
-  if (name.length >= 1) {
-    const oneChar = name.slice(0, 1);
-    const match = entries.find(e => e.surname === oneChar && !e.isCompound);
-    if (match) {
-      return { input: name, extractedSurname: match.surname, matchType: "single", priority: match.priority };
-    }
-  }
-
-  return { input: name, extractedSurname: null, matchType: "not_found", priority: 0 };
 }

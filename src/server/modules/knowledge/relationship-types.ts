@@ -371,18 +371,32 @@ export async function listRelationshipTypes(params?: RelationshipTypeListParams)
     ];
   }
 
-  return prisma.relationshipTypeDefinition.findMany({
+  const types = await prisma.relationshipTypeDefinition.findMany({
     where,
     orderBy: [{ group: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
     include: {
       bookType: {
         select: { id: true, key: true, name: true }
-      },
-      _count: {
-        select: { relationships: true }
       }
     }
   });
+
+  if (types.length === 0) {
+    return [];
+  }
+
+  const codes = types.map((t) => t.code);
+  const countResults = await prisma.relationship.groupBy({
+    by    : ["relationshipTypeCode"],
+    where : { relationshipTypeCode: { in: codes }, deletedAt: null },
+    _count: { _all: true }
+  });
+  const countByCode = new Map(countResults.map((r) => [r.relationshipTypeCode, r._count._all]));
+
+  return types.map((t) => ({
+    ...t,
+    _count: { relationships: countByCode.get(t.code) ?? 0 }
+  })) as (typeof types[number] & { _count: { relationships: number } })[];
 }
 
 export async function createRelationshipType(input: RelationshipTypeInput) {
@@ -508,13 +522,17 @@ export async function updateRelationshipType(id: string, input: Partial<Relation
 
 export async function deleteRelationshipType(id: string) {
   const entry = await prisma.relationshipTypeDefinition.findUnique({
-    where  : { id },
-    include: { _count: { select: { relationships: true } } }
+    where : { id },
+    select: { id: true, code: true, name: true }
   });
   if (!entry) {
     throw new Error("关系类型不存在");
   }
-  if (entry._count.relationships > 0) {
+
+  const usageCount = await prisma.relationship.count({
+    where: { relationshipTypeCode: entry.code, deletedAt: null }
+  });
+  if (usageCount > 0) {
     throw new Error("该关系类型已被角色关系引用，只能停用，不能删除");
   }
 
@@ -551,17 +569,25 @@ export async function batchChangeRelationshipTypeGroup(ids: string[], group: str
 
 export async function batchDeleteRelationshipTypes(ids: string[]) {
   const entries = await prisma.relationshipTypeDefinition.findMany({
-    where  : { id: { in: ids } },
-    include: { _count: { select: { relationships: true } } }
+    where : { id: { in: ids } },
+    select: { id: true, code: true, name: true }
   });
   const entryById = new Map(entries.map((entry) => [entry.id, entry]));
+
+  const codes = entries.map((e) => e.code);
+  const countResults = await prisma.relationship.groupBy({
+    by    : ["relationshipTypeCode"],
+    where : { relationshipTypeCode: { in: codes }, deletedAt: null },
+    _count: { _all: true }
+  });
+  const countByCode = new Map(countResults.map((r) => [r.relationshipTypeCode, r._count._all]));
 
   for (const id of ids) {
     const entry = entryById.get(id);
     if (!entry) {
       throw new Error("关系类型不存在");
     }
-    if (entry._count.relationships > 0) {
+    if ((countByCode.get(entry.code) ?? 0) > 0) {
       throw new Error(`关系类型“${entry.name}”已被角色关系引用，只能停用，不能删除`);
     }
   }
