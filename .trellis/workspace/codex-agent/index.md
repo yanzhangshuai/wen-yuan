@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
-- **Last Active**: 2026-05-04
+- **Total Sessions**: 15
+- **Last Active**: 2026-05-08
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~711 | Active |
+| `journal-1.md` | ~744 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-05-08 | 统一人物合并语义与 Profile 合并 | `a951364` | `dev_4` |
 | 14 | 2026-05-04 | 知识库新建/模型生成内联面板重构 | `83953c7`, `25850bf` | `dev_4` |
 | 13 | 2026-05-01 | relation merge and reanalyze | `b757524`, `432beba` | `dev_3` |
 | 12 | 2026-05-01 | 完成 AI 关系事件写入协议 | `59829ae`, `4942b89` | `dev_3` |

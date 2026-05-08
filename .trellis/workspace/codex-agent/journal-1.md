@@ -709,3 +709,36 @@ Implemented relation merge cleanup and full reanalysis cleanup, then archived th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: 统一人物合并语义与 Profile 合并
+
+**Date**: 2026-05-08
+**Task**: 统一人物合并语义与 Profile 合并
+**Branch**: `dev_4`
+
+### Summary
+
+从 mergePersonas.ts 抽出 mergePersonasInTransaction 作为权威合并核心，acceptMergeSuggestion 复用同一核心函数。补上 Profile 合并（同书无冲突改绑，冲突时 target 优先合并后软删 source）。listMergeSuggestions 过滤已删人物的 PENDING 建议。更新 spec 和测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a951364` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
