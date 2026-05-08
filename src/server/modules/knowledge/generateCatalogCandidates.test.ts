@@ -4,18 +4,11 @@ import {
   previewGenericTitleGenerationPrompt,
   reviewGeneratedGenericTitles
 } from "@/server/modules/knowledge/generateGenericTitles";
-import {
-  previewSurnameGenerationPrompt,
-  reviewGeneratedSurnames
-} from "@/server/modules/knowledge/generateSurnames";
 
 const hoisted = vi.hoisted(() => ({
   prisma: {
     bookType: {
       findUnique: vi.fn()
-    },
-    surnameRule: {
-      findMany: vi.fn()
     },
     genericTitleRule: {
       findMany: vi.fn()
@@ -54,124 +47,6 @@ describe("knowledge catalog generation", () => {
     });
     hoisted.decryptValue.mockImplementation((value: string) => `plain:${value}`);
     hoisted.repairJson.mockImplementation((value: string) => value);
-  });
-
-  it("builds surname preview prompts with reference book type context", async () => {
-    hoisted.prisma.bookType.findUnique.mockResolvedValueOnce({
-      id  : "bt-1",
-      key : "classic",
-      name: "章回小说"
-    });
-    hoisted.prisma.surnameRule.findMany.mockResolvedValueOnce([
-      {
-        surname    : "欧阳",
-        isCompound : true,
-        priority   : 10,
-        description: "古典小说常见复姓",
-        bookType   : { key: "classic", name: "章回小说" }
-      }
-    ]);
-
-    const preview = await previewSurnameGenerationPrompt({
-      targetCount           : 12,
-      additionalInstructions: "优先补充复姓",
-      referenceBookTypeId   : "bt-1"
-    });
-
-    expect(preview).toMatchObject({
-      targetCount      : 12,
-      referenceBookType: {
-        id  : "bt-1",
-        key : "classic",
-        name: "章回小说"
-      }
-    });
-    expect(preview.systemPrompt).toContain("surname、isCompound、priority、confidence");
-    expect(preview.userPrompt).toContain("参考题材：章回小说");
-    expect(preview.userPrompt).toContain("欧阳");
-    expect(preview.userPrompt).toContain("补充要求：优先补充复姓");
-  });
-
-  it("reviews generated surnames with deduplication, overlap detection and low-confidence rejection", async () => {
-    hoisted.prisma.surnameRule.findMany
-      .mockResolvedValueOnce([
-        {
-          surname    : "欧阳",
-          isCompound : true,
-          priority   : 10,
-          description: "古典小说常见复姓",
-          bookType   : { key: "classic", name: "章回小说" }
-        }
-      ])
-      .mockResolvedValueOnce([
-        { surname: "欧阳" }
-      ]);
-    hoisted.prisma.aiModel.findFirst.mockResolvedValueOnce({
-      id      : "model-1",
-      provider: "DEEPSEEK",
-      protocol: "openai-compatible",
-      modelId : "deepseek-chat",
-      apiKey  : "encrypted-key",
-      baseUrl : "https://api.example.com"
-    });
-    hoisted.generateJson.mockResolvedValueOnce({
-      content: JSON.stringify([
-        { surname: "欧阳", isCompound: true, priority: 10, confidence: 0.95 },
-        { surname: "赵", priority: 2, confidence: 0.82 },
-        { surname: "赵", priority: 5, confidence: 0.91 },
-        { surname: "司马", confidence: 0.88 },
-        { surname: "阿甲", confidence: 0.4 },
-        { surname: "abc", confidence: 0.7 }
-      ]),
-      usage: null
-    });
-
-    const result = await reviewGeneratedSurnames({
-      targetCount: 20,
-      modelId    : "model-1"
-    });
-
-    expect(result.model).toEqual({
-      id       : "model-1",
-      provider : "DEEPSEEK",
-      protocol : "openai-compatible",
-      modelName: "deepseek-chat"
-    });
-    expect(result.skipped).toBe(3);
-    expect(result.skippedExisting).toBe(1);
-    expect(result.candidates).toEqual([
-      expect.objectContaining({
-        surname          : "赵",
-        isCompound       : false,
-        priority         : 5,
-        confidence       : 0.91,
-        defaultSelected  : true,
-        recommendedAction: "SELECT"
-      }),
-      expect.objectContaining({
-        surname          : "司马",
-        isCompound       : true,
-        priority         : 10,
-        confidence       : 0.88,
-        defaultSelected  : true,
-        recommendedAction: "SELECT"
-      }),
-      expect.objectContaining({
-        surname          : "阿甲",
-        confidence       : 0.4,
-        defaultSelected  : false,
-        recommendedAction: "REJECT",
-        rejectionReason  : "置信度低于 0.5，默认不保存"
-      })
-    ]);
-    expect(result.candidates.map((candidate) => candidate.surname)).not.toContain("欧阳");
-    expect(hoisted.createAiProviderClient).toHaveBeenCalledWith({
-      provider : "DEEPSEEK",
-      protocol : "openai-compatible",
-      apiKey   : "plain:encrypted-key",
-      baseUrl  : "https://api.example.com",
-      modelName: "deepseek-chat"
-    });
   });
 
   it("builds generic title preview prompts with reference book type context", async () => {

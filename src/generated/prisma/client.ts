@@ -142,11 +142,6 @@ export type AliasEntry = Prisma.AliasEntryModel
  */
 export type BookAliasPack = Prisma.BookAliasPackModel
 /**
- * Model SurnameRule
- * 
- */
-export type SurnameRule = Prisma.SurnameRuleModel
-/**
  * Model GenericTitleRule
  * 
  */

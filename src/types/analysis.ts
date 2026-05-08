@@ -57,38 +57,23 @@ export const aiBiographySchema = z.object({
   ironyNote  : z.string().optional()
 });
 
-export const unknownRelationshipTypeProposalSchema = z.object({
-  proposedName           : z.string().min(1).max(80),
-  proposedGroup          : z.string().min(1).max(40),
-  proposedDirectionMode  : z.enum(["SYMMETRIC", "INVERSE", "DIRECTED"]),
-  proposedSourceRoleLabel: z.string().max(80).optional(),
-  proposedTargetRoleLabel: z.string().max(80).optional(),
-  evidence               : z.string().optional()
-});
-
 export const aiRelationshipSchema = z.object({
   sourceName          : z.string().min(1),
   targetName          : z.string().min(1),
-  relationshipTypeCode: z.string().min(1).nullable().optional(),
-  evidence            : z.string().optional(),
-  unknownTypeProposal : unknownRelationshipTypeProposalSchema.optional()
+  relationshipTypeCode: z.string().min(1),
+  evidence            : z.string().optional()
 });
 
 export const aiRelationshipEventSchema = z.object({
   sourceName          : z.string().min(1),
   targetName          : z.string().min(1),
-  relationshipTypeCode: z.string().min(1).nullable().optional(),
+  relationshipTypeCode: z.string().min(1),
   summary             : z.string().min(1),
   evidence            : z.string().optional(),
-  unknownTypeProposal : unknownRelationshipTypeProposalSchema.optional(),
   attitudeTags        : z.array(z.string()).max(3).default([]),
   paraIndex           : z.number().int().nonnegative().optional(),
   confidence          : z.number().min(0).max(1).default(0.8)
-}).refine((value) => {
-  const hasCode = typeof value.relationshipTypeCode === "string" && value.relationshipTypeCode.trim().length > 0;
-  const hasProposal = Boolean(value.unknownTypeProposal);
-  return hasCode || hasProposal;
-}, { message: "relationshipTypeCode 与 unknownTypeProposal 最少填写一个" });
+});
 
 export const chapterAnalysisResponseSchema = z.object({
   biographies       : z.array(aiBiographySchema).default([]),
@@ -149,7 +134,6 @@ export type AiBiographyRecord = z.infer<typeof aiBiographySchema>;
 export type AiRelationship = z.infer<typeof aiRelationshipSchema>;
 
 export type AiRelationshipEvent = z.infer<typeof aiRelationshipEventSchema>;
-export type UnknownRelationshipTypeProposal = z.infer<typeof unknownRelationshipTypeProposalSchema>;
 
 /**
  * 功能：定义 AI 章节分析标准输出结构。
@@ -280,21 +264,6 @@ function getRelationshipTypeCode(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function isProposalSemanticallyValid(proposal: UnknownRelationshipTypeProposal): boolean {
-  const sourceRole = proposal.proposedSourceRoleLabel?.trim();
-  const targetRole = proposal.proposedTargetRoleLabel?.trim();
-
-  if (proposal.proposedDirectionMode === "INVERSE") {
-    return Boolean(sourceRole && targetRole);
-  }
-
-  if (proposal.proposedDirectionMode === "DIRECTED") {
-    return Boolean(sourceRole);
-  }
-
-  return true;
-}
-
 function warnInvalidRelationshipRecord(reason: string, item: Record<string, unknown>): void {
   console.warn(
     "[analysis.schema] relationship_record.dropped",
@@ -306,49 +275,24 @@ function warnInvalidRelationshipRecord(reason: string, item: Record<string, unkn
   );
 }
 
-function normalizeUnknownRelationshipTypeProposal(
-  item: Record<string, unknown>
-): UnknownRelationshipTypeProposal | undefined {
-  if (item.unknownTypeProposal === undefined) {
-    return undefined;
-  }
-
-  const parsedProposal = unknownRelationshipTypeProposalSchema.safeParse(item.unknownTypeProposal);
-  if (!parsedProposal.success) {
-    warnInvalidRelationshipRecord("invalid_unknown_type_proposal", item);
-    return undefined;
-  }
-
-  if (!isProposalSemanticallyValid(parsedProposal.data)) {
-    warnInvalidRelationshipRecord("invalid_unknown_type_proposal_roles", item);
-    return undefined;
-  }
-
-  return parsedProposal.data;
-}
-
 function normalizeAiRelationshipRecord(item: Record<string, unknown>): AiRelationship | null {
   if (typeof item.sourceName !== "string" || typeof item.targetName !== "string") {
     return null;
   }
 
   const relationshipTypeCode = getRelationshipTypeCode(item.relationshipTypeCode);
-  const unknownTypeProposal = normalizeUnknownRelationshipTypeProposal(item);
-
-  if (!relationshipTypeCode && !unknownTypeProposal) {
-    warnInvalidRelationshipRecord("missing_relationship_code_or_proposal", item);
+  if (!relationshipTypeCode) {
+    warnInvalidRelationshipRecord("missing_relationship_code", item);
     return null;
   }
 
-  const normalized = {
+  const parsed = aiRelationshipSchema.safeParse({
     sourceName          : item.sourceName,
     targetName          : item.targetName,
-    relationshipTypeCode: relationshipTypeCode ?? null,
-    evidence            : typeof item.evidence === "string" ? item.evidence : undefined,
-    unknownTypeProposal
-  };
+    relationshipTypeCode,
+    evidence            : typeof item.evidence === "string" ? item.evidence : undefined
+  });
 
-  const parsed = aiRelationshipSchema.safeParse(normalized);
   if (!parsed.success) {
     warnInvalidRelationshipRecord("invalid_relationship_schema", item);
     return null;
@@ -367,20 +311,17 @@ function normalizeAiRelationshipEventRecord(item: Record<string, unknown>): AiRe
   }
 
   const relationshipTypeCode = getRelationshipTypeCode(item.relationshipTypeCode);
-  const unknownTypeProposal = normalizeUnknownRelationshipTypeProposal(item);
-
-  if (!relationshipTypeCode && !unknownTypeProposal) {
-    warnInvalidRelationshipRecord("missing_relationship_code_or_proposal", item);
+  if (!relationshipTypeCode) {
+    warnInvalidRelationshipRecord("missing_relationship_code", item);
     return null;
   }
 
   const parsed = aiRelationshipEventSchema.safeParse({
     sourceName          : item.sourceName,
     targetName          : item.targetName,
-    relationshipTypeCode: relationshipTypeCode ?? null,
+    relationshipTypeCode,
     summary             : item.summary,
     evidence            : typeof item.evidence === "string" ? item.evidence : undefined,
-    unknownTypeProposal,
     attitudeTags        : Array.isArray(item.attitudeTags) ? item.attitudeTags : [],
     paraIndex           : typeof item.paraIndex === "number" ? item.paraIndex : undefined,
     confidence          : typeof item.confidence === "number" ? item.confidence : undefined
@@ -442,7 +383,7 @@ export function parseChapterAnalysisResponse(raw: string): ChapterAnalysisRespon
       paraIndex  : typeof item.paraIndex === "number" ? item.paraIndex : undefined
     }));
 
-  // Step 5: relationships 支持“字典 code”或“未知类型提案”二选一。
+  // Step 5: relationships 要求必填中文关系 code。
   const normalizedRelationships: AiRelationship[] = relationships
     .filter(isRecord)
     .map((item) => normalizeAiRelationshipRecord(item))

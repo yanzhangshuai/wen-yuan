@@ -26,11 +26,6 @@ const knowledgeBaseLinks = [
     iconKey: "alias-pack"
   },
   {
-    href   : "/admin/knowledge-base/surnames",
-    label  : "姓氏词库",
-    iconKey: "surname"
-  },
-  {
     href   : "/admin/knowledge-base/title-filters",
     label  : "泛化称谓",
     iconKey: "title-filter"

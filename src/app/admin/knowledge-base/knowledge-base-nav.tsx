@@ -5,12 +5,10 @@ import {
   BookOpenText,
   FileClock,
   Filter,
-  GitMerge,
   Network,
   Regex,
   ScrollText,
   Sparkles,
-  UserRoundSearch,
   type LucideIcon
 } from "lucide-react";
 import Link from "next/link";
@@ -22,13 +20,11 @@ export type KnowledgeBaseNavIconKey =
   | "overview"
   | "book-type"
   | "alias-pack"
-  | "surname"
   | "title-filter"
   | "prompt-template"
   | "extraction-rule"
   | "change-log"
-  | "relationship-type"
-  | "unknown-relationship-type";
+  | "relationship-type";
 
 export interface KnowledgeBaseNavLink {
   href   : string;
@@ -44,12 +40,10 @@ const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
   overview                   : BookMarked,
   "book-type"                : BookOpenText,
   "alias-pack"               : Sparkles,
-  surname                    : UserRoundSearch,
   "title-filter"             : Filter,
   "prompt-template"          : ScrollText,
   "extraction-rule"          : Regex,
   "relationship-type"        : Network,
-  "unknown-relationship-type": GitMerge,
   "change-log"               : FileClock
 };
 

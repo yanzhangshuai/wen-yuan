@@ -43,31 +43,31 @@ describe("KnowledgeBaseNav", () => {
       <KnowledgeBaseNav
         links={[
           { href: "/admin/knowledge-base", label: "总览", iconKey: "overview" },
-          { href: "/admin/knowledge-base/surnames", label: "姓氏词库", iconKey: "surname" }
+          { href: "/admin/knowledge-base/book-types", label: "书籍类型", iconKey: "book-type" }
         ]}
       />
     );
 
     // Assert: 总览页精确命中时应标记为当前页，其他入口保持未选中。
     expect(screen.getByRole("link", { name: "总览" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "姓氏词库" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "书籍类型" })).not.toHaveAttribute("aria-current");
   });
 
   it("marks the matching child route active without activating overview", () => {
     // Arrange: 子路由命中时，只有对应模块高亮，不能把总览一起标成当前页。
-    usePathnameMock.mockReturnValue("/admin/knowledge-base/surnames");
+    usePathnameMock.mockReturnValue("/admin/knowledge-base/book-types");
 
     render(
       <KnowledgeBaseNav
         links={[
           { href: "/admin/knowledge-base", label: "总览", iconKey: "overview" },
-          { href: "/admin/knowledge-base/surnames", label: "姓氏词库", iconKey: "surname" }
+          { href: "/admin/knowledge-base/book-types", label: "书籍类型", iconKey: "book-type" }
         ]}
       />
     );
 
     // Assert: 子路由使用前缀匹配，且总览必须保持未激活。
     expect(screen.getByRole("link", { name: "总览" })).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("link", { name: "姓氏词库" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "书籍类型" })).toHaveAttribute("aria-current", "page");
   });
 });

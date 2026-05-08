@@ -38,16 +38,6 @@ export interface RelationshipTypeListParams {
   bookTypeId?   : string | null;
 }
 
-export interface InitializeCommonRelationshipTypesResult {
-  total          : number;
-  created        : number;
-  skipped        : number;
-  skippedExisting: number;
-  skippedConflict: number;
-}
-
-export const COMMON_RELATIONSHIP_TYPES: RelationshipTypeInput[] = [];
-
 function normalizeToken(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -231,53 +221,6 @@ export async function createRelationshipType(input: RelationshipTypeInput) {
   });
   clearKnowledgeCache();
   return created;
-}
-
-function collectRelationshipTypeTokens(input: Pick<RelationshipTypeInput, "name" | "aliases">): string[] {
-  return [input.name, ...compactUnique(input.aliases)].map(normalizeToken).filter(Boolean);
-}
-
-export async function initializeCommonRelationshipTypes(): Promise<InitializeCommonRelationshipTypesResult> {
-  const existing = await prisma.relationshipTypeDefinition.findMany({
-    select: { name: true, aliases: true }
-  });
-  const existingTokens = new Set<string>();
-  for (const item of existing) {
-    for (const token of collectRelationshipTypeTokens(item)) {
-      existingTokens.add(token);
-    }
-  }
-
-  const result: InitializeCommonRelationshipTypesResult = {
-    total          : COMMON_RELATIONSHIP_TYPES.length,
-    created        : 0,
-    skipped        : 0,
-    skippedExisting: 0,
-    skippedConflict: 0
-  };
-
-  for (const preset of COMMON_RELATIONSHIP_TYPES) {
-    const tokens = collectRelationshipTypeTokens(preset);
-    const nameToken = normalizeToken(preset.name);
-    const hasConflict = tokens.some((token) => existingTokens.has(token));
-    if (hasConflict) {
-      result.skipped += 1;
-      if (existingTokens.has(nameToken)) {
-        result.skippedExisting += 1;
-      } else {
-        result.skippedConflict += 1;
-      }
-      continue;
-    }
-
-    await createRelationshipType({ ...preset, source: "SEED", status: "ACTIVE" });
-    for (const token of tokens) {
-      existingTokens.add(token);
-    }
-    result.created += 1;
-  }
-
-  return result;
 }
 
 export async function updateRelationshipType(id: string, input: Partial<RelationshipTypeInput>) {

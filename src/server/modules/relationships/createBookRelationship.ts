@@ -10,7 +10,7 @@
  *
  * 业务语义：
  * - 人工写入默认升级为 `MANUAL + VERIFIED`；
- * - 关系证据不再写入主表，章节级证据由 `RelationshipEvent` 承载。
+ * - 关系证据、章节互动摘要与态度标签统一写入 relationships 主表。
  * =============================================================================
  */
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";

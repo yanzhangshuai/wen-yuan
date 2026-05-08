@@ -71,7 +71,6 @@ export const ModelName = {
   AliasPack: 'AliasPack',
   AliasEntry: 'AliasEntry',
   BookAliasPack: 'BookAliasPack',
-  SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
   RelationshipTypeDefinition: 'RelationshipTypeDefinition',
   ExtractionRule: 'ExtractionRule',
@@ -452,22 +451,6 @@ export const BookAliasPackScalarFieldEnum = {
 } as const
 
 export type BookAliasPackScalarFieldEnum = (typeof BookAliasPackScalarFieldEnum)[keyof typeof BookAliasPackScalarFieldEnum]
-
-
-export const SurnameRuleScalarFieldEnum = {
-  id: 'id',
-  surname: 'surname',
-  isCompound: 'isCompound',
-  priority: 'priority',
-  bookTypeId: 'bookTypeId',
-  description: 'description',
-  isActive: 'isActive',
-  source: 'source',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SurnameRuleScalarFieldEnum = (typeof SurnameRuleScalarFieldEnum)[keyof typeof SurnameRuleScalarFieldEnum]
 
 
 export const GenericTitleRuleScalarFieldEnum = {

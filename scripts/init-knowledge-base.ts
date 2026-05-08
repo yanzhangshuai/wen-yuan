@@ -164,28 +164,6 @@ export async function seedKnowledgeBaseFromFile(prisma: PrismaClient, filePath: 
 
 // --- Phase 7 种子类型定义 ---
 
-interface HistoricalFigureSeedData {
-  version    : string;
-  description: string;
-  entries    : Array<{
-    name        : string;
-    aliases     : string[];
-    dynasty?    : string;
-    category    : string;
-    description?: string;
-  }>;
-}
-
-interface NamePatternRuleSeedData {
-  version    : string;
-  description: string;
-  entries    : Array<{
-    ruleType    : string;
-    pattern     : string;
-    action      : string;
-    description?: string;
-  }>;
-}
 
 interface RelationalTermSeedData {
   version    : string;
@@ -212,10 +190,10 @@ interface ClassicalCharacterSeedData {
 }
 
 export interface KnowledgePhase7SeedSummary {
-  namePatternRules : number;
-  relationalTerms  : number;
-  classicalPacks   : number;
-  classicalEntries : number;
+  namePatternRules: number;
+  relationalTerms : number;
+  classicalPacks  : number;
+  classicalEntries: number;
 }
 
 export async function seedKnowledgePhase7(prisma: PrismaClient): Promise<KnowledgePhase7SeedSummary> {
@@ -297,10 +275,10 @@ export async function seedKnowledgePhase7(prisma: PrismaClient): Promise<Knowled
   console.log("======================================");
 
   return {
-    namePatternRules : namePatternCount,
-    relationalTerms  : relationalTermCount,
-    classicalPacks   : classicalPackCount,
-    classicalEntries : classicalEntryCount
+    namePatternRules: namePatternCount,
+    relationalTerms : relationalTermCount,
+    classicalPacks  : classicalPackCount,
+    classicalEntries: classicalEntryCount
   };
 }
 

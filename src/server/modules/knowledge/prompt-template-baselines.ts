@@ -133,13 +133,13 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
         systemPrompt: [
           "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。",
           "重点 1：优先将称谓映射到已知人物，避免重复创建同一角色。",
-          "重点 2：关系分两层。结构关系（relationships）描述身份事实（父子/师生/同僚），全书唯一；关系事件（relationshipEvents）描述本章互动（资助/背叛/赔礼），可多次发生。",
+          "重点 2：relationships 声明身份关系（如父子/师生），relationshipEvents 声明本章互动事件（如资助/背叛），两者均需填写 relationshipTypeCode 中文关系名。",
           "重点 3：relationshipTypeCode 使用简洁的中文关系名（如 父子、师生、同僚），不使用英文 code。",
           "重点 4：relationshipTypeCode 必须填写非空值，禁止置为 null。如不确定关系类型，使用最贴切的中文描述。"
         ].join("\n"),
         userPrompt: [
           "## Task",
-          "分析《{bookTitle}》第{chapterNo}回（{chapterTitle}）片段（{chunkIndex}/{chunkCount}），提取 biographies/mentions/relationships/relationshipEvents。",
+          "分析《{bookTitle}》第{chapterNo}回（{chapterTitle}）片段（{chunkIndex}/{chunkCount}），提取 biographies/mentions/relationships/relationshipEvents，所有关系 code 使用中文。",
           "",
           "## Rules",
           "{analysisRules}",
@@ -161,9 +161,9 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
             biographies  : [{ personaName: "标准名", category: "枚举", event: "行为", title: "头衔", location: "地点", virtualYear: "时间", ironyNote: "可选" }],
             mentions     : [{ personaName: "标准名", rawText: "原文", summary: "状态", paraIndex: 0 }],
             relationships: [
-              { sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "FATHER_SON", evidence: "可选，原文片段" }
+              { sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "父子", evidence: "可选，原文片段" }
             ],
-            relationshipEvents: [{ sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "FATHER_SON", summary: "本章互动事件摘要", evidence: "原文证据片段", attitudeTags: ["感激", "资助"], paraIndex: 12, confidence: 0.85 }]
+            relationshipEvents: [{ sourceName: "标准名", targetName: "标准名", relationshipTypeCode: "师生", summary: "本章互动事件摘要", evidence: "原文证据片段", attitudeTags: ["感激", "资助"], paraIndex: 12, confidence: 0.85 }]
           }, null, 2),
           "",
           "## Source Text",

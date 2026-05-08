@@ -404,7 +404,6 @@ export const ModelName = {
   AliasPack: 'AliasPack',
   AliasEntry: 'AliasEntry',
   BookAliasPack: 'BookAliasPack',
-  SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
   RelationshipTypeDefinition: 'RelationshipTypeDefinition',
   ExtractionRule: 'ExtractionRule',
@@ -426,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "surnameRule" | "genericTitleRule" | "relationshipTypeDefinition" | "extractionRule" | "promptTemplate" | "promptTemplateVersion" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "persona" | "profile" | "biographyRecord" | "mention" | "relationship" | "analysisJob" | "modelStrategyConfig" | "analysisPhaseLog" | "aliasMapping" | "validationReport" | "mergeSuggestion" | "bookType" | "aliasPack" | "aliasEntry" | "bookAliasPack" | "genericTitleRule" | "relationshipTypeDefinition" | "extractionRule" | "promptTemplate" | "promptTemplateVersion" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1910,80 +1909,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    SurnameRule: {
-      payload: Prisma.$SurnameRulePayload<ExtArgs>
-      fields: Prisma.SurnameRuleFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.SurnameRuleFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.SurnameRuleFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>
-        }
-        findFirst: {
-          args: Prisma.SurnameRuleFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.SurnameRuleFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>
-        }
-        findMany: {
-          args: Prisma.SurnameRuleFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>[]
-        }
-        create: {
-          args: Prisma.SurnameRuleCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>
-        }
-        createMany: {
-          args: Prisma.SurnameRuleCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.SurnameRuleCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>[]
-        }
-        delete: {
-          args: Prisma.SurnameRuleDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>
-        }
-        update: {
-          args: Prisma.SurnameRuleUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>
-        }
-        deleteMany: {
-          args: Prisma.SurnameRuleDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.SurnameRuleUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.SurnameRuleUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>[]
-        }
-        upsert: {
-          args: Prisma.SurnameRuleUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SurnameRulePayload>
-        }
-        aggregate: {
-          args: Prisma.SurnameRuleAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateSurnameRule>
-        }
-        groupBy: {
-          args: Prisma.SurnameRuleGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SurnameRuleGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.SurnameRuleCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SurnameRuleCountAggregateOutputType> | number
-        }
-      }
-    }
     GenericTitleRule: {
       payload: Prisma.$GenericTitleRulePayload<ExtArgs>
       fields: Prisma.GenericTitleRuleFieldRefs
@@ -2825,22 +2750,6 @@ export const BookAliasPackScalarFieldEnum = {
 export type BookAliasPackScalarFieldEnum = (typeof BookAliasPackScalarFieldEnum)[keyof typeof BookAliasPackScalarFieldEnum]
 
 
-export const SurnameRuleScalarFieldEnum = {
-  id: 'id',
-  surname: 'surname',
-  isCompound: 'isCompound',
-  priority: 'priority',
-  bookTypeId: 'bookTypeId',
-  description: 'description',
-  isActive: 'isActive',
-  source: 'source',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SurnameRuleScalarFieldEnum = (typeof SurnameRuleScalarFieldEnum)[keyof typeof SurnameRuleScalarFieldEnum]
-
-
 export const GenericTitleRuleScalarFieldEnum = {
   id: 'id',
   title: 'title',
@@ -3362,7 +3271,6 @@ export type GlobalOmitConfig = {
   aliasPack?: Prisma.AliasPackOmit
   aliasEntry?: Prisma.AliasEntryOmit
   bookAliasPack?: Prisma.BookAliasPackOmit
-  surnameRule?: Prisma.SurnameRuleOmit
   genericTitleRule?: Prisma.GenericTitleRuleOmit
   relationshipTypeDefinition?: Prisma.RelationshipTypeDefinitionOmit
   extractionRule?: Prisma.ExtractionRuleOmit

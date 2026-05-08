@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenText, FileClock, Filter, Regex, ScrollText, Sparkles, UserRoundSearch } from "lucide-react";
+import { BookOpenText, FileClock, Filter, Regex, ScrollText, Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,12 +20,6 @@ const knowledgeModules = [
     title      : "别名知识包",
     description: "管理人物标准名、别名与 AI 生成导入。",
     icon       : Sparkles
-  },
-  {
-    href       : "/admin/knowledge-base/surnames",
-    title      : "姓氏词库",
-    description: "维护单姓/复姓识别所需的运行时词表。",
-    icon       : UserRoundSearch
   },
   {
     href       : "/admin/knowledge-base/title-filters",

@@ -126,107 +126,60 @@ describe("parseChapterAnalysisResponse", () => {
     });
   });
 
-  it("accepts unknown relationship type proposals and rejects mixed code plus proposal records", () => {
+  it("drops records without relationshipTypeCode and accepts those with valid code", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     const result = parseChapterAnalysisResponse(JSON.stringify({
       relationships: [
         {
-          sourceName         : "范进",
-          targetName         : "胡屠户",
-          unknownTypeProposal: {
-            proposedName           : "岳婿以外的姻亲",
-            proposedGroup          : "姻亲",
-            proposedDirectionMode  : "INVERSE",
-            proposedSourceRoleLabel: "长辈",
-            proposedTargetRoleLabel: "晚辈",
-            evidence               : "二人关系无法被现有字典表达"
-          }
+          sourceName : "范进",
+          targetName : "胡屠户",
+          evidence   : "二人关系无法被现有字典表达"
+          // 缺少 relationshipTypeCode → 丢弃
         },
         {
           sourceName          : "张三",
           targetName          : "李四",
-          relationshipTypeCode: "relationship_known",
-          unknownTypeProposal : {
-            proposedName         : "非法混用",
-            proposedGroup        : "其他",
-            proposedDirectionMode: "SYMMETRIC"
-          }
-        },
-        {
-          sourceName         : "王五",
-          targetName         : "赵六",
-          unknownTypeProposal: {
-            proposedName         : "缺少角色标签的互逆关系",
-            proposedGroup        : "其他",
-            proposedDirectionMode: "INVERSE"
-          }
+          relationshipTypeCode: "关系已知",
+          evidence            : "原文证据"
         }
       ],
       relationshipEvents: [
         {
-          sourceName         : "范进",
-          targetName         : "胡屠户",
-          summary            : "关系提案事件",
-          unknownTypeProposal: {
-            proposedName           : "岳婿以外的姻亲",
-            proposedGroup          : "姻亲",
-            proposedDirectionMode  : "INVERSE",
-            proposedSourceRoleLabel: "长辈",
-            proposedTargetRoleLabel: "晚辈"
-          }
+          sourceName          : "范进",
+          targetName          : "胡屠户",
+          relationshipTypeCode: "岳婿",
+          summary             : "本章互动事件",
+          evidence            : "原文证据片段"
         },
         {
-          sourceName         : "周进",
-          targetName         : "范进",
-          summary            : "单向缺 source label 应丢弃",
-          unknownTypeProposal: {
-            proposedName         : "单向提案",
-            proposedGroup        : "其他",
-            proposedDirectionMode: "DIRECTED"
-          }
+          sourceName: "周进",
+          targetName: "范进",
+          summary   : "只有摘要缺code应丢弃"
+          // 缺少 relationshipTypeCode → 丢弃
         }
       ]
     }));
 
     expect(result.relationships).toEqual([
       {
-        sourceName          : "范进",
-        targetName          : "胡屠户",
-        relationshipTypeCode: null,
-        evidence            : undefined,
-        unknownTypeProposal : {
-          proposedName           : "岳婿以外的姻亲",
-          proposedGroup          : "姻亲",
-          proposedDirectionMode  : "INVERSE",
-          proposedSourceRoleLabel: "长辈",
-          proposedTargetRoleLabel: "晚辈",
-          evidence               : "二人关系无法被现有字典表达"
-        }
-      },
-      {
         sourceName          : "张三",
         targetName          : "李四",
-        relationshipTypeCode: "relationship_known",
-        evidence            : undefined,
-        unknownTypeProposal : {
-          proposedName           : "非法混用",
-          proposedGroup          : "其他",
-          proposedDirectionMode  : "SYMMETRIC",
-          proposedSourceRoleLabel: undefined,
-          proposedTargetRoleLabel: undefined,
-          evidence               : undefined
-        }
+        relationshipTypeCode: "关系已知",
+        evidence            : "原文证据"
       }
     ]);
     expect(result.relationshipEvents).toEqual([
-      expect.objectContaining({
+      {
         sourceName          : "范进",
         targetName          : "胡屠户",
-        relationshipTypeCode: null,
-        summary             : "关系提案事件",
-        unknownTypeProposal : expect.objectContaining({ proposedName: "岳婿以外的姻亲" })
-      })
+        relationshipTypeCode: "岳婿",
+        summary             : "本章互动事件",
+        evidence            : "原文证据片段",
+        attitudeTags        : [],
+        paraIndex           : undefined,
+        confidence          : 0.8
+      }
     ]);
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();

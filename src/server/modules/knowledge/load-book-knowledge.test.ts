@@ -22,9 +22,6 @@ function createPrismaMock() {
     genericTitleRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
-    surnameRule: {
-      findMany: vi.fn().mockResolvedValue([])
-    },
     extractionRule: {
       findMany: vi.fn().mockResolvedValue([])
     },
@@ -60,10 +57,6 @@ describe("load-book-knowledge", () => {
       { title: "先生", tier: "DEFAULT" },
       { title: "兄长", tier: "RELATIONAL" },
       { title: "世叔", tier: "RELATIONAL" }
-    ]);
-    prismaMock.surnameRule.findMany.mockResolvedValueOnce([
-      { surname: "欧阳", isCompound: true },
-      { surname: "赵", isCompound: false }
     ]);
     prismaMock.extractionRule.findMany.mockResolvedValueOnce([
       { ruleType: "HARD_BLOCK_SUFFIX", content: "兄" },

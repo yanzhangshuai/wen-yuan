@@ -4,10 +4,8 @@ import {
   batchChangeRelationshipTypeGroup,
   batchDeleteRelationshipTypes,
   batchUpdateRelationshipTypeStatus,
-  COMMON_RELATIONSHIP_TYPES,
   createRelationshipType,
   deleteRelationshipType,
-  initializeCommonRelationshipTypes,
   inferRelationshipTypeLabels,
   listRelationshipTypes
 } from "@/server/modules/knowledge/relationship-types";
@@ -182,20 +180,5 @@ describe("relationship-types", () => {
       graphEdgeLabel       : "岳婿",
       reverseGraphEdgeLabel: "岳婿"
     });
-  });
-
-  it("initializes the built-in common relationship types when the list is empty", async () => {
-    hoisted.prisma.relationshipTypeDefinition.findMany.mockResolvedValue([]);
-
-    const result = await initializeCommonRelationshipTypes();
-
-    expect(result).toEqual({
-      total          : 0,
-      created        : 0,
-      skipped        : 0,
-      skippedExisting: 0,
-      skippedConflict: 0
-    });
-    expect(hoisted.prisma.relationshipTypeDefinition.create).not.toHaveBeenCalled();
   });
 });

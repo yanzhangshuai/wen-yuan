@@ -139,23 +139,6 @@ export function notFoundJson(
   );
 }
 
-// ─── 姓氏 ──────────────────────────────────────────────
-export const createSurnameSchema = z.object({
-  surname    : z.string().trim().min(1, "姓氏不能为空"),
-  isCompound : z.boolean().optional(),
-  priority   : z.number().int().optional(),
-  description: z.string().optional(),
-  bookTypeId : z.string().uuid().optional(),
-  source     : z.enum(["MANUAL", "LLM_SUGGESTED", "IMPORTED"]).optional()
-});
-
-export const updateSurnameSchema = z.object({
-  priority   : z.number().int().optional(),
-  description: z.string().optional(),
-  bookTypeId : z.string().uuid().nullable().optional(),
-  isActive   : z.boolean().optional()
-}).refine((v) => Object.keys(v).length > 0, { message: "至少提供一个可更新字段" });
-
 // ─── 泛化称谓 ──────────────────────────────────────────
 export const createGenericTitleSchema = z.object({
   title         : z.string().trim().min(1, "称谓不能为空"),
@@ -252,8 +235,6 @@ export const generateRelationshipTypeCandidatesSchema = z.object({
   additionalInstructions: z.string().trim().max(2000).optional(),
   modelId               : z.string().uuid().optional()
 });
-
-export const initializeCommonRelationshipTypesSchema = z.object({}).strict();
 
 // ─── 统一提取规则（extraction_rules）─────────────────────
 const extractionRuleTypeSchema = z.enum([

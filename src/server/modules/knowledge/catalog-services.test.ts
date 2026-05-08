@@ -40,18 +40,6 @@ import {
   testGenericTitle,
   updateGenericTitle
 } from "@/server/modules/knowledge/generic-titles";
-import {
-  batchChangeBookTypeSurnames,
-  batchDeleteSurnames,
-  batchToggleSurnames,
-  createSurname,
-  deleteSurname,
-  importSurnames,
-  listSurnames,
-  testSurnameExtraction,
-  updateSurname
-} from "@/server/modules/knowledge/surnames";
-
 const hoisted = vi.hoisted(() => {
   const prisma = {
     bookType: {
@@ -83,13 +71,6 @@ const hoisted = vi.hoisted(() => {
       delete  : vi.fn()
     },
     genericTitleRule: {
-      findMany  : vi.fn(),
-      create    : vi.fn(),
-      update    : vi.fn(),
-      findUnique: vi.fn(),
-      delete    : vi.fn()
-    },
-    surnameRule: {
       findMany  : vi.fn(),
       create    : vi.fn(),
       update    : vi.fn(),
@@ -647,117 +628,6 @@ describe("knowledge catalog services", () => {
 
       expect(hoisted.prisma.genericTitleRule.delete).not.toHaveBeenCalled();
       expect(hoisted.prisma.$transaction).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("surnames", () => {
-    it("supports list/create/update/delete/import and extraction helpers", async () => {
-      hoisted.prisma.surnameRule.create
-        .mockResolvedValueOnce({ id: "surname-new" })
-        .mockResolvedValueOnce({ id: "created-1" })
-        .mockResolvedValueOnce({ id: "created-2" });
-      hoisted.prisma.surnameRule.update.mockResolvedValueOnce({ id: "surname-1" });
-      hoisted.prisma.surnameRule.delete.mockResolvedValueOnce({ id: "surname-1" });
-      hoisted.prisma.surnameRule.findUnique
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: "existing-zhao" })
-        .mockResolvedValueOnce(null);
-
-      // listSurnames 现在纯静态，不再查询 DB；"欧阳"存在于静态复姓中
-      const listResult = listSurnames({ compound: true, q: "欧" });
-      expect(listResult.some((s) => s.surname === "欧阳" && s.isCompound)).toBe(true);
-      await expect(createSurname({
-        surname    : "欧阳",
-        description: "复姓示例",
-        bookTypeId : "bt-1"
-      })).resolves.toEqual({ id: "surname-new" });
-      await expect(updateSurname("surname-1", {
-        priority   : 12,
-        description: "权重更高",
-        bookTypeId : null,
-        isActive   : false
-      })).resolves.toEqual({ id: "surname-1" });
-      await expect(deleteSurname("surname-1")).resolves.toEqual({ id: "surname-1" });
-      await expect(importSurnames("欧阳 赵\n司马，赵")).resolves.toEqual({
-        total  : 3,
-        created: 2,
-        skipped: 1
-      });
-      // testSurnameExtraction 现在纯静态
-      expect(testSurnameExtraction("欧阳修")).toEqual({
-        input           : "欧阳修",
-        extractedSurname: "欧阳",
-        matchType       : "compound",
-        priority        : 10
-      });
-      expect(testSurnameExtraction("赵云")).toEqual({
-        input           : "赵云",
-        extractedSurname: "赵",
-        matchType       : "single",
-        priority        : 0
-      });
-      expect(testSurnameExtraction("洋光")).toEqual({
-        input           : "洋光",
-        extractedSurname: null,
-        matchType       : "not_found",
-        priority        : 0
-      });
-      expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(1, {
-        data: {
-          surname    : "欧阳",
-          isCompound : true,
-          priority   : 10,
-          description: "复姓示例",
-          bookTypeId : "bt-1",
-          source     : "MANUAL"
-        }
-      });
-      expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(2, {
-        data: {
-          surname   : "欧阳",
-          isCompound: true,
-          priority  : 10,
-          source    : "IMPORTED"
-        }
-      });
-      expect(hoisted.prisma.surnameRule.create).toHaveBeenNthCalledWith(3, {
-        data: {
-          surname   : "司马",
-          isCompound: true,
-          priority  : 10,
-          source    : "IMPORTED"
-        }
-      });
-    });
-
-    it("performs batch delete toggle and book type changes for surnames", async () => {
-      hoisted.prisma.$transaction
-        .mockResolvedValueOnce([{ id: "surname-a" }, { id: "surname-b" }])
-        .mockResolvedValueOnce([{ id: "surname-a" }, { id: "surname-b" }])
-        .mockResolvedValueOnce([{ id: "surname-a" }, { id: "surname-b" }]);
-
-      await expect(batchDeleteSurnames(["surname-a", "surname-b"])).resolves.toEqual({ count: 2 });
-      await expect(batchToggleSurnames(["surname-a", "surname-b"], true)).resolves.toEqual({ count: 2 });
-      await expect(batchChangeBookTypeSurnames(["surname-a", "surname-b"], null)).resolves.toEqual({ count: 2 });
-
-      expect(hoisted.prisma.surnameRule.delete).toHaveBeenNthCalledWith(1, { where: { id: "surname-a" } });
-      expect(hoisted.prisma.surnameRule.delete).toHaveBeenNthCalledWith(2, { where: { id: "surname-b" } });
-      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(1, {
-        where: { id: "surname-a" },
-        data : { isActive: true }
-      });
-      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(2, {
-        where: { id: "surname-b" },
-        data : { isActive: true }
-      });
-      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(3, {
-        where: { id: "surname-a" },
-        data : { bookTypeId: null }
-      });
-      expect(hoisted.prisma.surnameRule.update).toHaveBeenNthCalledWith(4, {
-        where: { id: "surname-b" },
-        data : { bookTypeId: null }
-      });
     });
   });
 });

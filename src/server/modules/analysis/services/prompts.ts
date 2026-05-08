@@ -208,10 +208,8 @@ export function buildChapterAnalysisRulesText(input: Pick<BuildPromptInput, "gen
   const genericTitlesExample = input.genericTitlesExample ?? "";
   const analysisPreRules: readonly string[] = [
     "仅输出原始 JSON，禁止 markdown 代码块。",
-    "relationships 只声明全书唯一的结构身份关系，字段使用 relationshipTypeCode，不写章节互动摘要。",
-    "relationshipEvents 只写本章互动事件；每条事件必须能通过 sourceName + targetName + relationshipTypeCode 对应到 relationships 中一条。",
-    "relationshipTypeCode 必须整段复制已知关系类型字典里的 code；绝不允许自创 relationshipTypeCode。",
-    "字典无法表达但证据明确的关系，省略 relationshipTypeCode 或填 null，并返回 unknownTypeProposal；非空 relationshipTypeCode 与 unknownTypeProposal 必须二选一。",
+    "relationships 声明身份关系（如父子/师生）；relationshipEvents 声明本章互动事件（如资助/背叛），两者均需填写 sourceName、targetName、relationshipTypeCode。",
+    "relationshipTypeCode 使用简洁的中文关系名（如 父子、师生、同僚）；若字典无法匹配，用最贴切的中文描述，禁止置空。",
     "attitudeTags 每条最多 3 个；信号不足时输出 []。"
   ];
   const analysisPostRules: readonly string[] = [

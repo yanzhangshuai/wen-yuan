@@ -27,11 +27,6 @@ export {
 } from "./generateEntries";
 
 export {
-  previewSurnameGenerationPrompt,
-  reviewGeneratedSurnames
-} from "./generateSurnames";
-
-export {
   previewGenericTitleGenerationPrompt,
   reviewGeneratedGenericTitles
 } from "./generateGenericTitles";
@@ -70,18 +65,6 @@ export {
 export type { FullRuntimeKnowledge, CompiledNamePatternRule } from "./load-book-knowledge";
 
 export { auditLog } from "./audit";
-
-export {
-  listSurnames,
-  createSurname,
-  updateSurname,
-  deleteSurname,
-  batchDeleteSurnames,
-  batchToggleSurnames,
-  batchChangeBookTypeSurnames,
-  importSurnames,
-  testSurnameExtraction
-} from "./surnames";
 
 export {
   listGenericTitles,

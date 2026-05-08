@@ -45,11 +45,3 @@ export class RelationshipInputError extends Error {
   }
 }
 
-export class RelationshipEventNotFoundError extends Error {
-  readonly eventId: string;
-
-  constructor(eventId: string) {
-    super(`Relationship event not found: ${eventId}`);
-    this.eventId = eventId;
-  }
-}

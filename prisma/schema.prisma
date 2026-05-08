@@ -566,7 +566,6 @@ model BookType {
 
   books             Book[]
   aliasPacks        AliasPack[]
-  surnameRules      SurnameRule[]
   relationshipTypes RelationshipTypeDefinition[]
   extractionRules   ExtractionRule[]
   promptVersions    PromptTemplateVersion[]
@@ -638,29 +637,6 @@ model BookAliasPack {
   @@unique([bookId, packId])
   @@index([bookId])
   @@map("book_alias_packs")
-}
-
-// ============================================================
-// 姓氏规则：支持单姓/复姓，复姓优先匹配
-// ============================================================
-model SurnameRule {
-  id          String  @id @default(uuid()) @db.Uuid
-  surname     String  @unique
-  isCompound  Boolean @default(false) @map("is_compound")
-  priority    Int     @default(0)
-  bookTypeId  String? @map("book_type_id") @db.Uuid
-  description String? @db.Text
-  isActive    Boolean @default(true) @map("is_active")
-  source      String  @default("MANUAL")
-
-  bookType BookType? @relation(fields: [bookTypeId], references: [id])
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  @@index([isCompound, priority])
-  @@index([isActive])
-  @@map("surname_rules")
 }
 
 // ============================================================
