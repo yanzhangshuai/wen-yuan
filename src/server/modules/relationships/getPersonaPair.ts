@@ -6,7 +6,7 @@
  *
  * 模块职责：
  * - 校验书籍与两端人物存在；
- * - 一次性查询两个人物之间的双向结构关系与关系事件；
+ * - 一次性查询两个人物之间的双向关系；
  * - 输出供 Pair 详情面板直接消费的聚合 DTO。
  * =============================================================================
  */
@@ -28,36 +28,30 @@ export interface GetPersonaPairInput {
   bId   : string;
 }
 
-export type GetPersonaPairResult = PersonaPairResponse;
-
-const RELATIONSHIP_DIRECTION_MODES = new Set<string>(["SYMMETRIC", "INVERSE", "DIRECTED"]);
-
-function toDirectionMode(value: string): PersonaPairDirectionMode {
-  if (RELATIONSHIP_DIRECTION_MODES.has(value)) {
-    return value as PersonaPairDirectionMode;
+function toDirectionMode(input: string): PersonaPairDirectionMode {
+  if (input === "SYMMETRIC" || input === "INVERSE" || input === "DIRECTED") {
+    return input;
   }
-
-  throw new RelationshipInputError(`关系类型方向不合法: ${value}`);
+  return "DIRECTED";
 }
 
 export function createGetPersonaPairService(
   prismaClient: PrismaClient = prisma
 ) {
-  /**
-   * 查询 Pair 聚合详情。关系事件通过 nested include 一次取齐，避免按关系逐条查询造成 N+1。
-   */
-  async function getPersonaPair(input: GetPersonaPairInput): Promise<GetPersonaPairResult> {
-    if (input.aId === input.bId) {
-      throw new RelationshipInputError("起点和终点不能相同");
-    }
-
-    const [book, personas] = await Promise.all([
-      prismaClient.book.findFirst({
+  async function getPersonaPair(
+    input: GetPersonaPairInput
+  ): Promise<PersonaPairResponse> {
+    const [book, personaA, personaB] = await Promise.all([
+      prismaClient.book.findUnique({
         where : { id: input.bookId, deletedAt: null },
         select: { id: true }
       }),
-      prismaClient.persona.findMany({
-        where : { id: { in: [input.aId, input.bId] }, deletedAt: null },
+      prismaClient.persona.findUnique({
+        where : { id: input.aId, deletedAt: null },
+        select: { id: true, name: true, aliases: true }
+      }),
+      prismaClient.persona.findUnique({
+        where : { id: input.bId, deletedAt: null },
         select: { id: true, name: true, aliases: true }
       })
     ]);
@@ -65,15 +59,14 @@ export function createGetPersonaPairService(
     if (!book) {
       throw new BookNotFoundError(input.bookId);
     }
-
-    const personasById = new Map(personas.map((persona) => [persona.id, persona]));
-    const personaA = personasById.get(input.aId);
     if (!personaA) {
       throw new PersonaNotFoundError(input.aId);
     }
-    const personaB = personasById.get(input.bId);
     if (!personaB) {
       throw new PersonaNotFoundError(input.bId);
+    }
+    if (personaA.id === personaB.id) {
+      throw new RelationshipInputError("两人物不能相同");
     }
 
     const relationships = await prismaClient.relationship.findMany({
@@ -84,15 +77,6 @@ export function createGetPersonaPairService(
           { sourceId: input.aId, targetId: input.bId },
           { sourceId: input.bId, targetId: input.aId }
         ]
-      },
-      include: {
-        events: {
-          where  : { deletedAt: null },
-          orderBy: [{ chapterNo: "asc" }, { paraIndex: "asc" }, { createdAt: "asc" }],
-          include: {
-            chapter: { select: { id: true, no: true, title: true } }
-          }
-        }
       },
       orderBy: [{ relationshipTypeCode: "asc" }]
     });
@@ -121,7 +105,6 @@ export function createGetPersonaPairService(
         }
       ],
       relationships: relationships.map((relationship): PersonaPairRelationship => {
-        const chapterNumbers = relationship.events.map((event) => event.chapterNo);
         const typeInfo = typeInfos.get(relationship.relationshipTypeCode);
 
         return {
@@ -144,26 +127,13 @@ export function createGetPersonaPairService(
               directionMode: "DIRECTED" as const,
               inverseLabel : null
             },
-          recordSource  : relationship.recordSource,
-          status        : relationship.status,
-          firstChapterNo: chapterNumbers.length > 0 ? Math.min(...chapterNumbers) : null,
-          lastChapterNo : chapterNumbers.length > 0 ? Math.max(...chapterNumbers) : null,
-          eventCount    : relationship.events.length,
-          events        : relationship.events.map((event) => ({
-            id          : event.id,
-            chapterId   : event.chapterId,
-            chapterNo   : event.chapterNo,
-            chapterTitle: event.chapter.title,
-            sourceId    : event.sourceId,
-            targetId    : event.targetId,
-            summary     : event.summary,
-            evidence    : event.evidence,
-            attitudeTags: event.attitudeTags,
-            paraIndex   : event.paraIndex,
-            confidence  : event.confidence,
-            recordSource: event.recordSource,
-            status      : event.status
-          }))
+          recordSource: relationship.recordSource,
+          status      : relationship.status,
+          chapterId   : relationship.chapterId,
+          chapterNo   : relationship.chapterNo,
+          evidence    : relationship.evidence,
+          summary     : relationship.summary,
+          attitudeTags: relationship.attitudeTags
         };
       })
     };

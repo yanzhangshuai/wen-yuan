@@ -29,8 +29,7 @@ export interface BookRelationshipListItem {
   relationshipTypeName: string;
   recordSource        : RecordSource;
   status              : ProcessingStatus;
-  eventCount          : number;
-  firstChapterNo      : number | null;
+  chapterNo           : number | null;
 }
 
 export function createListBookRelationshipsService(
@@ -71,7 +70,8 @@ export function createListBookRelationshipsService(
         targetId            : true,
         relationshipTypeCode: true,
         recordSource        : true,
-        status              : true
+        status              : true,
+        chapterNo           : true
       }
     });
 
@@ -79,26 +79,11 @@ export function createListBookRelationshipsService(
       return [];
     }
 
-    const [eventAggregates, nameByCode] = await Promise.all([
-      prismaClient.relationshipEvent.groupBy({
-        by   : ["relationshipId"] as const,
-        where: {
-          relationshipId: { in: relationships.map((r) => r.id) },
-          deletedAt     : null
-        },
-        _count: { _all: true },
-        _min  : { chapterNo: true }
-      }),
+    const [nameByCode] = await Promise.all([
       lookupRelationshipTypeNames(relationships.map((r) => r.relationshipTypeCode), prismaClient)
     ]);
 
-    const aggregatesByRelationshipId = new Map(
-      eventAggregates.map((aggregate) => [aggregate.relationshipId, aggregate])
-    );
-
     return relationships.map((relationship) => {
-      const aggregate = aggregatesByRelationshipId.get(relationship.id);
-
       return {
         id                  : relationship.id,
         sourceId            : relationship.sourceId,
@@ -107,8 +92,7 @@ export function createListBookRelationshipsService(
         relationshipTypeName: nameByCode.get(relationship.relationshipTypeCode) ?? relationship.relationshipTypeCode,
         recordSource        : relationship.recordSource,
         status              : relationship.status,
-        eventCount          : aggregate?._count._all ?? 0,
-        firstChapterNo      : aggregate?._min.chapterNo ?? null
+        chapterNo           : relationship.chapterNo
       };
     });
   }

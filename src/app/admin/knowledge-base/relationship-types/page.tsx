@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   CheckCircle2,
   Clock3,
-  Database,
   PauseCircle,
   Pencil,
   Plus,
@@ -29,8 +28,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,7 +56,6 @@ import {
   batchRelationshipTypeAction,
   deleteRelationshipType,
   fetchRelationshipTypes,
-  initializeCommonRelationshipTypes,
   RELATIONSHIP_DIRECTION_MODES,
   RELATIONSHIP_TYPE_GROUPS,
   RELATIONSHIP_TYPE_STATUSES,
@@ -112,8 +109,6 @@ export default function RelationshipTypesPage() {
   const [directionMode, setDirectionMode]       = useState(ALL_VALUE);
   const [status, setStatus]                     = useState(ALL_VALUE);
   const [bookTypes, setBookTypes]               = useState<BookTypeOption[]>([]);
-  const [initializeCommonOpen, setInitializeCommonOpen] = useState(false);
-  const [initializingCommon, setInitializingCommon]     = useState(false);
   const [deleteTarget, setDeleteTarget]                 = useState<RelationshipTypeItem | null>(null);
   const [deleting, setDeleting]                         = useState(false);
   const [selected, setSelected]                         = useState<Set<string>>(new Set());
@@ -232,25 +227,6 @@ export default function RelationshipTypesPage() {
     if (ok) setBatchGroupPanelOpen(false);
   }
 
-  async function handleInitializeCommon() {
-    setInitializingCommon(true);
-    try {
-      const result = await initializeCommonRelationshipTypes();
-      toast.success(`初始化完成：新增 ${result.created} 条，跳过 ${result.skipped} 条`);
-      await load();
-      setInitializeCommonOpen(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "常用关系类型初始化失败");
-    } finally {
-      setInitializingCommon(false);
-    }
-  }
-
-  function handleConfirmInitializeCommon(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    if (!initializingCommon) void handleInitializeCommon();
-  }
-
   function handleConfirmDelete(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     if (deleteTarget && !deleting) void handleDelete(deleteTarget);
@@ -267,26 +243,6 @@ export default function RelationshipTypesPage() {
           { label: "关系类型" }
         ]}
       >
-        <AlertDialog open={initializeCommonOpen} onOpenChange={(open) => { if (!initializingCommon) setInitializeCommonOpen(open); }}>
-          <AlertDialogTrigger asChild>
-            <Button type="button" variant="outline" size="sm" disabled={initializingCommon}>
-              <Database className="h-4 w-4" />
-              {initializingCommon ? "初始化中..." : "初始化常用"}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>确认初始化常用关系类型？</AlertDialogTitle>
-              <AlertDialogDescription>系统会跳过已有同名或别名冲突的数据，不会覆盖现有关系类型。</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={initializingCommon}>取消</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmInitializeCommon} disabled={initializingCommon}>
-                {initializingCommon ? "初始化中..." : "确认初始化"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
         <Button type="button" variant="outline" size="sm" onClick={() => setGenerating(true)} disabled={generating}>
           <Sparkles className="h-4 w-4" />
           模型生成

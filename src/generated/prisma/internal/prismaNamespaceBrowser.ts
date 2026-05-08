@@ -61,7 +61,6 @@ export const ModelName = {
   BiographyRecord: 'BiographyRecord',
   Mention: 'Mention',
   Relationship: 'Relationship',
-  RelationshipEvent: 'RelationshipEvent',
   AnalysisJob: 'AnalysisJob',
   ModelStrategyConfig: 'ModelStrategyConfig',
   AnalysisPhaseLog: 'AnalysisPhaseLog',
@@ -75,8 +74,6 @@ export const ModelName = {
   SurnameRule: 'SurnameRule',
   GenericTitleRule: 'GenericTitleRule',
   RelationshipTypeDefinition: 'RelationshipTypeDefinition',
-  UnknownRelationshipTypeDraft: 'UnknownRelationshipTypeDraft',
-  UnknownRelationshipTypeOccurrence: 'UnknownRelationshipTypeOccurrence',
   ExtractionRule: 'ExtractionRule',
   PromptTemplate: 'PromptTemplate',
   PromptTemplateVersion: 'PromptTemplateVersion',
@@ -276,6 +273,11 @@ export const RelationshipScalarFieldEnum = {
   sourceId: 'sourceId',
   targetId: 'targetId',
   relationshipTypeCode: 'relationshipTypeCode',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  evidence: 'evidence',
+  summary: 'summary',
+  attitudeTags: 'attitudeTags',
   recordSource: 'recordSource',
   status: 'status',
   deletedAt: 'deletedAt',
@@ -284,29 +286,6 @@ export const RelationshipScalarFieldEnum = {
 } as const
 
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
-
-
-export const RelationshipEventScalarFieldEnum = {
-  id: 'id',
-  relationshipId: 'relationshipId',
-  bookId: 'bookId',
-  chapterId: 'chapterId',
-  chapterNo: 'chapterNo',
-  sourceId: 'sourceId',
-  targetId: 'targetId',
-  summary: 'summary',
-  evidence: 'evidence',
-  attitudeTags: 'attitudeTags',
-  paraIndex: 'paraIndex',
-  confidence: 'confidence',
-  recordSource: 'recordSource',
-  status: 'status',
-  deletedAt: 'deletedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type RelationshipEventScalarFieldEnum = (typeof RelationshipEventScalarFieldEnum)[keyof typeof RelationshipEventScalarFieldEnum]
 
 
 export const AnalysisJobScalarFieldEnum = {
@@ -532,46 +511,6 @@ export const RelationshipTypeDefinitionScalarFieldEnum = {
 } as const
 
 export type RelationshipTypeDefinitionScalarFieldEnum = (typeof RelationshipTypeDefinitionScalarFieldEnum)[keyof typeof RelationshipTypeDefinitionScalarFieldEnum]
-
-
-export const UnknownRelationshipTypeDraftScalarFieldEnum = {
-  id: 'id',
-  bookId: 'bookId',
-  firstChapterId: 'firstChapterId',
-  firstJobId: 'firstJobId',
-  signature: 'signature',
-  proposedName: 'proposedName',
-  proposedGroup: 'proposedGroup',
-  proposedDirectionMode: 'proposedDirectionMode',
-  proposedSourceRoleLabel: 'proposedSourceRoleLabel',
-  proposedTargetRoleLabel: 'proposedTargetRoleLabel',
-  occurrenceCount: 'occurrenceCount',
-  status: 'status',
-  rejectionReason: 'rejectionReason',
-  approvedTypeCode: 'approvedTypeCode',
-  mergedIntoDraftId: 'mergedIntoDraftId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type UnknownRelationshipTypeDraftScalarFieldEnum = (typeof UnknownRelationshipTypeDraftScalarFieldEnum)[keyof typeof UnknownRelationshipTypeDraftScalarFieldEnum]
-
-
-export const UnknownRelationshipTypeOccurrenceScalarFieldEnum = {
-  id: 'id',
-  draftId: 'draftId',
-  bookId: 'bookId',
-  chapterId: 'chapterId',
-  jobId: 'jobId',
-  sourceName: 'sourceName',
-  targetName: 'targetName',
-  sourcePersonaId: 'sourcePersonaId',
-  targetPersonaId: 'targetPersonaId',
-  evidence: 'evidence',
-  createdAt: 'createdAt'
-} as const
-
-export type UnknownRelationshipTypeOccurrenceScalarFieldEnum = (typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum)[keyof typeof UnknownRelationshipTypeOccurrenceScalarFieldEnum]
 
 
 export const ExtractionRuleScalarFieldEnum = {

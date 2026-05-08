@@ -120,7 +120,6 @@ export function RelationshipFields({
       <ChapterSelect value={form.chapterId} chapters={chapters} onChange={(value) => onChange({ ...form, chapterId: value })} />
       <FormInput label="关系类型" value={form.type} onChange={(value) => onChange({ ...form, type: value })} />
       <FormInput label="权重" type="number" value={form.weight} onChange={(value) => onChange({ ...form, weight: value })} />
-      <FormInput label="置信度 (%)" type="number" value={form.confidence} onChange={(value) => onChange({ ...form, confidence: value })} />
       <label className="block text-sm">
         <span className="mb-1 block text-muted-foreground">证据</span>
         <Textarea value={form.evidence} onChange={(event) => onChange({ ...form, evidence: event.target.value })} />

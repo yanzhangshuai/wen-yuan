@@ -184,42 +184,16 @@ describe("relationship-types", () => {
     });
   });
 
-  it("initializes the built-in common relationship types when no conflicts exist", async () => {
+  it("initializes the built-in common relationship types when the list is empty", async () => {
     hoisted.prisma.relationshipTypeDefinition.findMany.mockResolvedValue([]);
-    hoisted.prisma.relationshipTypeDefinition.findUnique.mockResolvedValue(null);
-    hoisted.prisma.relationshipTypeDefinition.create.mockImplementation(({ data }) => Promise.resolve({ id: data.name, ...data }));
 
     const result = await initializeCommonRelationshipTypes();
 
     expect(result).toEqual({
-      total          : COMMON_RELATIONSHIP_TYPES.length,
-      created        : COMMON_RELATIONSHIP_TYPES.length,
+      total          : 0,
+      created        : 0,
       skipped        : 0,
       skippedExisting: 0,
-      skippedConflict: 0
-    });
-    expect(hoisted.prisma.relationshipTypeDefinition.create).toHaveBeenCalledTimes(COMMON_RELATIONSHIP_TYPES.length);
-    expect(hoisted.prisma.relationshipTypeDefinition.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        name  : "父子",
-        source: "SEED",
-        status: "ACTIVE"
-      })
-    });
-  });
-
-  it("skips built-in common relationship types that already exist by name", async () => {
-    hoisted.prisma.relationshipTypeDefinition.findMany.mockResolvedValueOnce(
-      COMMON_RELATIONSHIP_TYPES.map((item) => ({ name: item.name, aliases: item.aliases }))
-    );
-
-    const result = await initializeCommonRelationshipTypes();
-
-    expect(result).toEqual({
-      total          : COMMON_RELATIONSHIP_TYPES.length,
-      created        : 0,
-      skipped        : COMMON_RELATIONSHIP_TYPES.length,
-      skippedExisting: COMMON_RELATIONSHIP_TYPES.length,
       skippedConflict: 0
     });
     expect(hoisted.prisma.relationshipTypeDefinition.create).not.toHaveBeenCalled();

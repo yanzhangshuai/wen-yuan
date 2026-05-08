@@ -5,23 +5,16 @@ import { BookNotFoundError } from "@/server/modules/books/errors";
 import { createListBookRelationshipsService } from "@/server/modules/relationships/listBookRelationships";
 
 describe("listBookRelationships service", () => {
-  it("counts only active events and uses the minimum active chapter number", async () => {
+  it("returns relationships with direct chapterNo from the row", async () => {
     const relationshipFindMany = vi.fn().mockResolvedValue([
       {
         id                  : "rel-1",
         sourceId            : "persona-a",
         targetId            : "persona-b",
         relationshipTypeCode: "teacher_student",
-        relationshipType    : { name: "师生" },
         recordSource        : RecordSource.MANUAL,
-        status              : ProcessingStatus.VERIFIED
-      }
-    ]);
-    const relationshipEventGroupBy = vi.fn().mockResolvedValue([
-      {
-        relationshipId: "rel-1",
-        _count        : { _all: 2 },
-        _min          : { chapterNo: 3 }
+        status              : ProcessingStatus.VERIFIED,
+        chapterNo           : 3
       }
     ]);
     const service = createListBookRelationshipsService({
@@ -30,9 +23,6 @@ describe("listBookRelationships service", () => {
       },
       relationship: {
         findMany: relationshipFindMany
-      },
-      relationshipEvent: {
-        groupBy: relationshipEventGroupBy
       },
       relationshipTypeDefinition: {
         findMany: vi.fn().mockResolvedValue([{ code: "teacher_student", name: "师生" }])
@@ -49,15 +39,6 @@ describe("listBookRelationships service", () => {
         target   : { deletedAt: null }
       })
     }));
-    expect(relationshipEventGroupBy).toHaveBeenCalledWith({
-      by   : ["relationshipId"],
-      where: {
-        relationshipId: { in: ["rel-1"] },
-        deletedAt     : null
-      },
-      _count: { _all: true },
-      _min  : { chapterNo: true }
-    });
     expect(result).toEqual([
       {
         id                  : "rel-1",
@@ -67,13 +48,12 @@ describe("listBookRelationships service", () => {
         relationshipTypeName: "师生",
         recordSource        : RecordSource.MANUAL,
         status              : ProcessingStatus.VERIFIED,
-        eventCount          : 2,
-        firstChapterNo      : 3
+        chapterNo           : 3
       }
     ]);
   });
 
-  it("returns zero eventCount and null firstChapterNo when no active events exist", async () => {
+  it("returns null chapterNo when the relationship has no chapter set", async () => {
     const service = createListBookRelationshipsService({
       book: {
         findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
@@ -86,12 +66,10 @@ describe("listBookRelationships service", () => {
             targetId            : "persona-b",
             relationshipTypeCode: "teacher_student",
             recordSource        : RecordSource.DRAFT_AI,
-            status              : ProcessingStatus.DRAFT
+            status              : ProcessingStatus.DRAFT,
+            chapterNo           : null
           }
         ])
-      },
-      relationshipEvent: {
-        groupBy: vi.fn().mockResolvedValue([])
       },
       relationshipTypeDefinition: {
         findMany: vi.fn().mockResolvedValue([{ code: "teacher_student", name: "师生" }])
@@ -101,8 +79,7 @@ describe("listBookRelationships service", () => {
     const result = await service.listBookRelationships("book-1");
 
     expect(result[0]).toEqual(expect.objectContaining({
-      eventCount    : 0,
-      firstChapterNo: null
+      chapterNo: null
     }));
   });
 
@@ -114,9 +91,6 @@ describe("listBookRelationships service", () => {
       },
       relationship: {
         findMany: relationshipFindMany
-      },
-      relationshipEvent: {
-        groupBy: vi.fn()
       },
       relationshipTypeDefinition: {
         findMany: vi.fn().mockResolvedValue([])
@@ -146,9 +120,6 @@ describe("listBookRelationships service", () => {
       },
       relationship: {
         findMany: vi.fn()
-      },
-      relationshipEvent: {
-        groupBy: vi.fn()
       },
       relationshipTypeDefinition: {
         findMany: vi.fn()

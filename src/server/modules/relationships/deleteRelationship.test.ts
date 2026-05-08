@@ -9,8 +9,7 @@ function createTransactionMock(tx: unknown) {
 }
 
 describe("deleteRelationship service", () => {
-  it("soft deletes relationship events before soft deleting the relationship", async () => {
-    const relationshipEventUpdateMany = vi.fn().mockResolvedValue({ count: 2 });
+  it("soft deletes relationship", async () => {
     const relationshipUpdate = vi.fn().mockResolvedValue({
       id       : "rel-1",
       status   : ProcessingStatus.REJECTED,
@@ -21,19 +20,12 @@ describe("deleteRelationship service", () => {
         relationship: {
           findUnique: vi.fn().mockResolvedValue({ id: "rel-1", deletedAt: null }),
           update    : relationshipUpdate
-        },
-        relationshipEvent: {
-          updateMany: relationshipEventUpdateMany
         }
       })
     } as never);
 
     const result = await service.deleteRelationship("rel-1");
 
-    expect(relationshipEventUpdateMany).toHaveBeenCalledWith({
-      where: { relationshipId: "rel-1", deletedAt: null },
-      data : { deletedAt: expect.any(Date) }
-    });
     expect(relationshipUpdate).toHaveBeenCalledWith({
       where: { id: "rel-1" },
       data : {
@@ -47,15 +39,13 @@ describe("deleteRelationship service", () => {
       }
     });
     expect(result).toEqual({
-      id                   : "rel-1",
-      status               : ProcessingStatus.REJECTED,
-      deletedAt            : "2026-03-25T00:00:00.000Z",
-      softDeletedEventCount: 2
+      id       : "rel-1",
+      status   : ProcessingStatus.REJECTED,
+      deletedAt: "2026-03-25T00:00:00.000Z"
     });
   });
 
   it("returns an already soft-deleted relationship idempotently", async () => {
-    const relationshipEventUpdateMany = vi.fn();
     const relationshipUpdate = vi.fn();
     const service = createDeleteRelationshipService({
       $transaction: createTransactionMock({
@@ -66,22 +56,17 @@ describe("deleteRelationship service", () => {
             deletedAt: new Date("2026-03-24T00:00:00.000Z")
           }),
           update: relationshipUpdate
-        },
-        relationshipEvent: {
-          updateMany: relationshipEventUpdateMany
         }
       })
     } as never);
 
     const result = await service.deleteRelationship("rel-1");
 
-    expect(relationshipEventUpdateMany).not.toHaveBeenCalled();
     expect(relationshipUpdate).not.toHaveBeenCalled();
     expect(result).toEqual({
-      id                   : "rel-1",
-      status               : ProcessingStatus.REJECTED,
-      deletedAt            : "2026-03-24T00:00:00.000Z",
-      softDeletedEventCount: 0
+      id       : "rel-1",
+      status   : ProcessingStatus.REJECTED,
+      deletedAt: "2026-03-24T00:00:00.000Z"
     });
   });
 
@@ -90,9 +75,6 @@ describe("deleteRelationship service", () => {
       $transaction: createTransactionMock({
         relationship: {
           findUnique: vi.fn().mockResolvedValue(null)
-        },
-        relationshipEvent: {
-          updateMany: vi.fn()
         }
       })
     } as never);

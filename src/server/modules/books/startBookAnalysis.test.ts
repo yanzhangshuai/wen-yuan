@@ -33,7 +33,6 @@ function createMockPrisma() {
     analysisJob        : { create: vi.fn() },
     modelStrategyConfig: { create: vi.fn() },
     book               : { update: bookUpdate },
-    relationshipEvent  : { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
     relationship       : { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) }
   };
 
@@ -43,7 +42,6 @@ function createMockPrisma() {
     $transaction       : vi.fn(async (callback: (input: typeof tx) => Promise<unknown>) => callback(tx)),
     analysisJob        : { create: tx.analysisJob.create, findFirst: analysisJobFindFirst },
     modelStrategyConfig: tx.modelStrategyConfig,
-    relationshipEvent  : tx.relationshipEvent,
     relationship       : tx.relationship
   };
 
@@ -106,12 +104,6 @@ describe("startBookAnalysis", () => {
         keepHistory     : false
       })
     }));
-    expect(tx.relationshipEvent.deleteMany).toHaveBeenCalledWith({
-      where: {
-        bookId      : "book-1",
-        recordSource: RecordSource.DRAFT_AI
-      }
-    });
     expect(tx.relationship.deleteMany).toHaveBeenCalledWith({
       where: {
         bookId      : "book-1",
@@ -320,7 +312,6 @@ describe("startBookAnalysis", () => {
     }));
     expect(result.chapterIndices).toEqual([1, 3, 5]);
     expect(result.scope).toBe("CHAPTER_LIST");
-    expect(tx.relationshipEvent.deleteMany).not.toHaveBeenCalled();
     expect(tx.relationship.deleteMany).not.toHaveBeenCalled();
   });
 
@@ -371,7 +362,6 @@ describe("startBookAnalysis", () => {
       overrideStrategy: "ALL_DRAFTS",
       keepHistory     : true
     }));
-    expect(tx.relationshipEvent.deleteMany).not.toHaveBeenCalled();
     expect(tx.relationship.deleteMany).not.toHaveBeenCalled();
   });
 
@@ -395,12 +385,11 @@ describe("startBookAnalysis", () => {
       parseProgress: 0,
       parseStage   : "文本清洗"
     });
-    tx.relationshipEvent.deleteMany.mockRejectedValue(new Error("cleanup failed"));
+    tx.relationship.deleteMany.mockRejectedValue(new Error("cleanup failed"));
 
     const service = createStartBookAnalysisService(prisma as never);
 
     await expect(service.startBookAnalysis("book-1")).rejects.toThrow("cleanup failed");
-    expect(tx.relationship.deleteMany).not.toHaveBeenCalled();
     expect(tx.analysisJob.create).not.toHaveBeenCalled();
     expect(tx.book.update).not.toHaveBeenCalled();
   });

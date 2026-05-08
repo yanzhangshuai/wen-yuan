@@ -5,14 +5,12 @@ import { RelationshipNotFoundError } from "@/server/modules/relationships/errors
 
 /**
  * 文件定位（服务端业务模块 / relationships）：
- * - 负责执行人物关系记录的软删除；
- * - 关系事件由 `RelationshipEvent` 保留章节证据，因此删除关系时必须同步软删事件。
+ * - 负责执行人物关系记录的软删除。
  */
 export interface DeleteRelationshipResult {
-  id                   : string;
-  status               : ProcessingStatus;
-  deletedAt            : string;
-  softDeletedEventCount: number;
+  id       : string;
+  status   : ProcessingStatus;
+  deletedAt: string;
 }
 
 export function createDeleteRelationshipService(
@@ -39,21 +37,13 @@ export function createDeleteRelationshipService(
 
       if (current.deletedAt) {
         return {
-          id                   : current.id,
-          status               : current.status,
-          deletedAt            : current.deletedAt.toISOString(),
-          softDeletedEventCount: 0
+          id       : current.id,
+          status   : current.status,
+          deletedAt: current.deletedAt.toISOString()
         };
       }
 
       const deletedAt = new Date();
-      const eventUpdate = await tx.relationshipEvent.updateMany({
-        where: {
-          relationshipId,
-          deletedAt: null
-        },
-        data: { deletedAt }
-      });
       const updated = await tx.relationship.update({
         where: { id: relationshipId },
         data : {
@@ -68,10 +58,9 @@ export function createDeleteRelationshipService(
       });
 
       return {
-        id                   : updated.id,
-        status               : updated.status,
-        deletedAt            : (updated.deletedAt ?? deletedAt).toISOString(),
-        softDeletedEventCount: eventUpdate.count
+        id       : updated.id,
+        status   : updated.status,
+        deletedAt: (updated.deletedAt ?? deletedAt).toISOString()
       };
     });
   }

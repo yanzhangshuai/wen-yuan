@@ -92,8 +92,6 @@ export interface RelationshipDraftItem {
   type           : string;
   /** 关系权重（关系强度）。 */
   weight         : number;
-  /** AI 抽取置信度（0~1）。 */
-  confidence     : number;
   /** 证据文本片段，可空。 */
   evidence       : string | null;
   /** 数据来源（AI / MANUAL）。 */

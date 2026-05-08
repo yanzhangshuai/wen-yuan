@@ -109,8 +109,6 @@ export interface RelationshipDraftItem {
   type           : string;
   /** 关系权重。 */
   weight         : number;
-  /** AI 置信度（0~1）。 */
-  confidence     : number;
   /** 原文证据片段（可空）。 */
   evidence       : string | null;
   /** 记录来源：AI 或 MANUAL。 */
@@ -294,6 +292,9 @@ export function createListDraftsService(
             bookId              : true,
             relationshipTypeCode: true,
             recordSource        : true,
+            chapterId           : true,
+            chapterNo           : true,
+            evidence            : true,
             book                : {
               select: {
                 title: true
@@ -309,17 +310,6 @@ export function createListDraftsService(
               select: {
                 id  : true,
                 name: true
-              }
-            },
-            events: {
-              where  : { deletedAt: null },
-              orderBy: [{ chapterNo: "asc" }],
-              take   : 1,
-              select : {
-                chapterId : true,
-                chapterNo : true,
-                confidence: true,
-                evidence  : true
               }
             }
           }
@@ -385,16 +375,15 @@ export function createListDraftsService(
         id             : item.id,
         bookId         : item.bookId,
         bookTitle      : item.book.title,
-        chapterId      : item.events[0]?.chapterId ?? "",
-        chapterNo      : item.events[0]?.chapterNo ?? 0,
+        chapterId      : item.chapterId ?? "",
+        chapterNo      : item.chapterNo ?? 0,
         sourcePersonaId: item.source.id,
         sourceName     : item.source.name,
         targetPersonaId: item.target.id,
         targetName     : item.target.name,
         type           : item.relationshipTypeCode,
         weight         : 1,
-        confidence     : item.events[0]?.confidence ?? 1,
-        evidence       : item.events[0]?.evidence ?? null,
+        evidence       : item.evidence ?? null,
         recordSource   : item.recordSource,
         status         : ProcessingStatus.DRAFT
       })),

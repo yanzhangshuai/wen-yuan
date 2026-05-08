@@ -37,19 +37,17 @@ export interface MergePersonasInput {
  */
 export interface MergePersonasResult {
   /** 源人物 ID。 */
-  sourceId                    : string;
+  sourceId                : string;
   /** 目标人物 ID。 */
-  targetId                    : string;
+  targetId                : string;
   /** 被重定向的关系数量。 */
-  redirectedRelationships     : number;
+  redirectedRelationships : number;
   /** 因冲突被拒绝的关系数量。 */
-  rejectedRelationships       : number;
-  /** 被重定向的关系事件数量。 */
-  redirectedRelationshipEvents: number;
+  rejectedRelationships   : number;
   /** 被重定向的传记事件数量。 */
-  redirectedBiographyCount    : number;
+  redirectedBiographyCount: number;
   /** 被重定向的 mention 数量。 */
-  redirectedMentionCount      : number;
+  redirectedMentionCount  : number;
 }
 
 /**
@@ -205,7 +203,6 @@ export function createMergePersonasService(
 
       let redirectedRelationships = 0;
       let rejectedRelationships = 0;
-      let redirectedRelationshipEvents = 0;
 
       for (const relation of relations) {
         let nextSourceId = relation.sourceId === sourcePersona.id ? targetPersona.id : relation.sourceId;
@@ -218,10 +215,6 @@ export function createMergePersonasService(
               status   : ProcessingStatus.REJECTED,
               deletedAt: now
             }
-          });
-          await tx.relationshipEvent.updateMany({
-            where: { relationshipId: relation.id, deletedAt: null },
-            data : { deletedAt: now }
           });
           rejectedRelationships += 1;
           continue;
@@ -248,18 +241,7 @@ export function createMergePersonasService(
 
         if (duplicated) {
           const keepCurrentRelation = shouldKeepFirstRelationship(relation, duplicated);
-          const keptRelationshipId = keepCurrentRelation ? relation.id : duplicated.id;
           const rejectedRelationshipId = keepCurrentRelation ? duplicated.id : relation.id;
-
-          const movedEvents = await tx.relationshipEvent.updateMany({
-            where: { relationshipId: rejectedRelationshipId, deletedAt: null },
-            data : {
-              relationshipId: keptRelationshipId,
-              sourceId      : nextSourceId,
-              targetId      : nextTargetId
-            }
-          });
-          redirectedRelationshipEvents += movedEvents.count;
 
           await tx.relationship.update({
             where: { id: rejectedRelationshipId },
@@ -277,14 +259,6 @@ export function createMergePersonasService(
                 targetId: nextTargetId
               }
             });
-            const redirectedEvents = await tx.relationshipEvent.updateMany({
-              where: { relationshipId: relation.id, deletedAt: null },
-              data : {
-                sourceId: nextSourceId,
-                targetId: nextTargetId
-              }
-            });
-            redirectedRelationshipEvents += redirectedEvents.count;
             redirectedRelationships += 1;
           }
 
@@ -300,27 +274,9 @@ export function createMergePersonasService(
               targetId: nextTargetId
             }
           });
-          const redirectedEvents = await tx.relationshipEvent.updateMany({
-            where: { relationshipId: relation.id, deletedAt: null },
-            data : {
-              sourceId: nextSourceId,
-              targetId: nextTargetId
-            }
-          });
-          redirectedRelationshipEvents += redirectedEvents.count;
           redirectedRelationships += 1;
         }
       }
-
-      const redirectedSourceEvents = await tx.relationshipEvent.updateMany({
-        where: { sourceId: sourcePersona.id, deletedAt: null },
-        data : { sourceId: targetPersona.id }
-      });
-      const redirectedTargetEvents = await tx.relationshipEvent.updateMany({
-        where: { targetId: sourcePersona.id, deletedAt: null },
-        data : { targetId: targetPersona.id }
-      });
-      redirectedRelationshipEvents += redirectedSourceEvents.count + redirectedTargetEvents.count;
 
       await tx.persona.update({
         where: { id: targetPersona.id },
@@ -344,7 +300,6 @@ export function createMergePersonasService(
         targetId                : targetPersona.id,
         redirectedRelationships,
         rejectedRelationships,
-        redirectedRelationshipEvents,
         redirectedBiographyCount: biographyUpdated.count,
         redirectedMentionCount  : mentionUpdated.count
       };

@@ -120,8 +120,6 @@ function createPrismaMock(chapter = buildChapter()) {
   const mentionCreateMany = vi.fn().mockResolvedValue({ count: 0 });
   const biographyDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const biographyCreateMany = vi.fn().mockResolvedValue({ count: 0 });
-  const relationshipEventDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
-  const relationshipEventCreateMany = vi.fn().mockResolvedValue({ count: 0 });
   const relationshipTypeFindMany = vi.fn().mockResolvedValue([
     {
       code         : "ALLY",
@@ -142,12 +140,6 @@ function createPrismaMock(chapter = buildChapter()) {
   const relationshipCreate = vi.fn().mockImplementation(({ data }) => Promise.resolve({
     id: `rel-${data.sourceId}-${data.targetId}-${data.relationshipTypeCode}`
   }));
-  const unknownDraftFindFirst = vi.fn().mockResolvedValue(null);
-  const unknownDraftCreate = vi.fn().mockResolvedValue({ id: "unknown-draft-1" });
-  const unknownDraftUpdate = vi.fn().mockResolvedValue({ id: "unknown-draft-1" });
-  const unknownOccurrenceFindFirst = vi.fn().mockResolvedValue(null);
-  const unknownOccurrenceCreate = vi.fn().mockResolvedValue({ id: "unknown-occurrence-1" });
-
   const tx = {
     mention: {
       deleteMany: mentionDeleteMany,
@@ -163,19 +155,6 @@ function createPrismaMock(chapter = buildChapter()) {
     relationship: {
       findFirst: relationshipFindFirst,
       create   : relationshipCreate
-    },
-    relationshipEvent: {
-      deleteMany: relationshipEventDeleteMany,
-      createMany: relationshipEventCreateMany
-    },
-    unknownRelationshipTypeDraft: {
-      findFirst: unknownDraftFindFirst,
-      create   : unknownDraftCreate,
-      update   : unknownDraftUpdate
-    },
-    unknownRelationshipTypeOccurrence: {
-      findFirst: unknownOccurrenceFindFirst,
-      create   : unknownOccurrenceCreate
     }
   };
 
@@ -215,16 +194,9 @@ function createPrismaMock(chapter = buildChapter()) {
     mentionCreateMany,
     biographyDeleteMany,
     biographyCreateMany,
-    relationshipEventDeleteMany,
-    relationshipEventCreateMany,
     relationshipTypeFindMany,
     relationshipFindFirst,
-    relationshipCreate,
-    unknownDraftFindFirst,
-    unknownDraftCreate,
-    unknownDraftUpdate,
-    unknownOccurrenceFindFirst,
-    unknownOccurrenceCreate
+    relationshipCreate
   };
 }
 
@@ -355,10 +327,8 @@ describe("chapter analysis service", () => {
       prismaMock,
       mentionCreateMany,
       biographyCreateMany,
-      relationshipEventCreateMany,
       mentionDeleteMany,
       biographyDeleteMany,
-      relationshipEventDeleteMany,
       relationshipFindFirst,
       relationshipCreate,
       relationshipTypeFindMany
@@ -454,20 +424,16 @@ describe("chapter analysis service", () => {
     expect(result.chunkCount).toBe(1);
     expect(result.hallucinationCount).toBe(3);
     expect(result.created).toEqual({
-      personas          : 1,
-      mentions          : 1,
-      biographies       : 2,
-      relationships     : 1,
-      relationshipEvents: 1
+      personas     : 1,
+      mentions     : 1,
+      biographies  : 2,
+      relationships: 2
     });
 
     expect(mentionDeleteMany).toHaveBeenCalledWith({
       where: { chapterId: "chapter-1" }
     });
     expect(biographyDeleteMany).toHaveBeenCalledWith({
-      where: { chapterId: "chapter-1", status: ProcessingStatus.DRAFT }
-    });
-    expect(relationshipEventDeleteMany).toHaveBeenCalledWith({
       where: { chapterId: "chapter-1", status: ProcessingStatus.DRAFT }
     });
 
@@ -510,12 +476,18 @@ describe("chapter analysis service", () => {
         id: true
       }
     });
+    expect(relationshipCreate).toHaveBeenCalledTimes(2);
     expect(relationshipCreate).toHaveBeenCalledWith({
       data: {
         bookId              : "book-1",
         sourceId            : "persona-zhang",
         targetId            : "persona-li",
         relationshipTypeCode: "ALLY",
+        chapterId           : "chapter-1",
+        chapterNo           : 1,
+        evidence            : "证据",
+        summary             : null,
+        attitudeTags        : [],
         recordSource        : RecordSource.DRAFT_AI,
         status              : ProcessingStatus.DRAFT
       },
@@ -523,147 +495,36 @@ describe("chapter analysis service", () => {
         id: true
       }
     });
-    expect(relationshipEventCreateMany).toHaveBeenCalledWith({
-      data: [{
-        relationshipId: "rel-persona-zhang-persona-li-ALLY",
-        bookId        : "book-1",
-        chapterId     : "chapter-1",
-        chapterNo     : 1,
-        sourceId      : "persona-zhang",
-        targetId      : "persona-li",
-        summary       : "张三帮助李四",
-        evidence      : "证据",
-        attitudeTags  : ["资助", "感激"],
-        paraIndex     : 2,
-        confidence    : 0.86,
-        recordSource  : RecordSource.DRAFT_AI,
-        status        : ProcessingStatus.DRAFT
-      }]
-    });
-    expect(relationshipTypeFindMany).not.toHaveBeenCalled();
-  });
-
-  it("records unknown relationship type proposals without creating formal relationships", async () => {
-    const {
-      prismaMock,
-      relationshipCreate,
-      relationshipEventCreateMany,
-      unknownDraftFindFirst,
-      unknownDraftCreate,
-      unknownDraftUpdate,
-      unknownOccurrenceFindFirst,
-      unknownOccurrenceCreate
-    } = createPrismaMock();
-    unknownOccurrenceFindFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "unknown-occurrence-1" });
-    const resolveMock = vi.fn(async ({ extractedName }: { extractedName: string }) => ({
-      status    : "resolved",
-      personaId : extractedName === "张三" ? "persona-zhang" : "persona-li",
-      confidence: 1
-    }));
-    mockedCreatePersonaResolver.mockReturnValue({ resolve: resolveMock } as never);
-
-    const mockExecutor = createMockExecutor({
-      [PipelineStage.CHUNK_EXTRACTION]: () => ({
-        mentions     : [],
-        biographies  : [],
-        relationships: [{
-          sourceName          : "张三",
-          targetName          : "李四",
-          relationshipTypeCode: null,
-          unknownTypeProposal : {
-            proposedName           : "师徒",
-            proposedGroup          : "身份",
-            proposedDirectionMode  : "INVERSE",
-            proposedSourceRoleLabel: "师父",
-            proposedTargetRoleLabel: "徒弟",
-            evidence               : "张三收李四为徒"
-          },
-          evidence: "张三收李四为徒"
-        }],
-        relationshipEvents: [{
-          sourceName          : "张三",
-          targetName          : "李四",
-          relationshipTypeCode: null,
-          unknownTypeProposal : {
-            proposedName           : "师徒",
-            proposedGroup          : "身份",
-            proposedDirectionMode  : "INVERSE",
-            proposedSourceRoleLabel: "师父",
-            proposedTargetRoleLabel: "徒弟",
-            evidence               : "张三收李四为徒"
-          },
-          summary : "张三收李四为徒",
-          evidence: "张三收李四为徒"
-        }]
-      })
-    });
-    const service = createChapterAnalysisService(prismaMock as never, undefined, mockExecutor as never);
-
-    const result = await service.analyzeChapter("chapter-1", {
-      jobId           : "job-unknown",
-      runtimeKnowledge: buildRuntimeKnowledge()
-    });
-
-    expect(result.unknownRelationshipDrafts).toBe(1);
-    expect(relationshipCreate).not.toHaveBeenCalled();
-    expect(relationshipEventCreateMany).not.toHaveBeenCalled();
-    expect(unknownDraftFindFirst).toHaveBeenCalledWith({
-      where : { bookId: "book-1", signature: "师徒|INVERSE|师父|徒弟" },
-      select: { id: true }
-    });
-    expect(unknownDraftCreate).toHaveBeenCalledWith({
+    expect(relationshipCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        bookId                 : "book-1",
-        firstChapterId         : "chapter-1",
-        firstJobId             : "job-unknown",
-        proposedName           : "师徒",
-        proposedGroup          : "身份",
-        proposedDirectionMode  : "INVERSE",
-        proposedSourceRoleLabel: "师父",
-        proposedTargetRoleLabel: "徒弟",
-        occurrenceCount        : 1
+        bookId              : "book-1",
+        sourceId            : "persona-zhang",
+        targetId            : "persona-li",
+        relationshipTypeCode: "UNKNOWN",
+        evidence            : "x",
+        summary             : "字典 miss 应跳过"
       }),
       select: { id: true }
     });
-    expect(unknownOccurrenceFindFirst).toHaveBeenCalledTimes(2);
-    expect(unknownOccurrenceCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        draftId        : "unknown-draft-1",
-        bookId         : "book-1",
-        chapterId      : "chapter-1",
-        jobId          : "job-unknown",
-        sourceName     : "张三",
-        targetName     : "李四",
-        sourcePersonaId: "persona-zhang",
-        targetPersonaId: "persona-li",
-        evidence       : "张三收李四为徒"
-      })
-    });
-    expect(unknownOccurrenceCreate).toHaveBeenCalledTimes(1);
-    expect(unknownDraftUpdate).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("skips createMany calls when ai extraction is empty", async () => {
-    const { prismaMock, mentionCreateMany, biographyCreateMany, relationshipCreate, relationshipEventCreateMany } = createPrismaMock();
+    const { prismaMock, mentionCreateMany, biographyCreateMany, relationshipCreate } = createPrismaMock();
 
     const service = createChapterAnalysisService(prismaMock as never, undefined, createMockExecutor() as never);
 
     const result = await service.analyzeChapter("chapter-1", { jobId: "test-job" });
 
     expect(result.created).toEqual({
-      personas          : 0,
-      mentions          : 0,
-      biographies       : 0,
-      relationships     : 0,
-      relationshipEvents: 0
+      personas     : 0,
+      mentions     : 0,
+      biographies  : 0,
+      relationships: 0
     });
     expect(mentionCreateMany).not.toHaveBeenCalled();
     expect(biographyCreateMany).not.toHaveBeenCalled();
     expect(relationshipCreate).not.toHaveBeenCalled();
-    expect(relationshipEventCreateMany).not.toHaveBeenCalled();
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。

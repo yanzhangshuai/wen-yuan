@@ -18,10 +18,8 @@ import {
 import { ANALYSIS_PIPELINE_CONFIG } from "@/server/modules/analysis/config/pipeline";
 import type { FullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import {
-  type RelationshipTypeDictionaryPromptEntry,
   type RosterDiscoveryInput
 } from "@/server/modules/analysis/services/prompts";
-import { recordUnknownRelationshipTypeOccurrence } from "@/server/modules/knowledge/unknown-relationship-types";
 import type {
   AnalysisProfileContext,
   ChapterAnalysisResponse,
@@ -62,14 +60,12 @@ export interface ChapterAnalysisResult {
   chunkCount        : number;
   hallucinationCount: number;
   created: {
-    personas          : number;
-    mentions          : number;
-    biographies       : number;
-    relationships     : number;
-    relationshipEvents: number;
+    personas     : number;
+    mentions     : number;
+    biographies  : number;
+    relationships: number;
   };
-  grayZoneCount?           : number;
-  unknownRelationshipDrafts: number;
+  grayZoneCount?: number;
 }
 
 export interface GrayZoneMentionRecord {
@@ -400,9 +396,6 @@ export function createChapterAnalysisService(
     await tx.biographyRecord.deleteMany({
       where: { chapterId: input.chapterId, status: ProcessingStatus.DRAFT }
     });
-    await tx.relationshipEvent.deleteMany({
-      where: { chapterId: input.chapterId, status: ProcessingStatus.DRAFT }
-    });
 
     if (aliasRegistry) {
       for (const aliasMapping of input.pendingRosterAliasMappings) {
@@ -521,9 +514,6 @@ export function createChapterAnalysisService(
       }
     }
 
-    const relationshipTypeByCode: ReadonlyMap<string, RelationshipTypeDictionaryPromptEntry> = input.runtimeKnowledge?.relationshipTypeByCode
-      ?? new Map<string, RelationshipTypeDictionaryPromptEntry>();
-
     const normalizeRelationshipTypeCode = (code: string | null | undefined) => (code ?? "").trim();
     const buildRelationshipKey = (sourceId: string, targetId: string, typeCode: string) => [
       sourceId,
@@ -542,17 +532,26 @@ export function createChapterAnalysisService(
       }
       return normalized;
     };
-    const resolveRelationshipPair = async (relationship: {
+
+    // 合并 AI 产出的 relationships 与 relationshipEvents，统一写入 relationships 表
+    const relationshipIdByKey = new Map<string, string>();
+    const processRelationshipItem = async (item: {
       sourceName           : string;
       targetName           : string;
       relationshipTypeCode?: string | null;
-    }): Promise<{
-      sourceId: string;
-      targetId: string;
-      typeCode: string;
-    } | null> => {
-      const source = await resolve(relationship.sourceName);
-      const target = await resolve(relationship.targetName);
+      evidence?            : string | null;
+      summary?             : string | null;
+      attitudeTags?        : readonly string[];
+      confidence?          : number;
+      paraIndex?           : number | null;
+    }) => {
+      const typeCode = normalizeRelationshipTypeCode(item.relationshipTypeCode);
+      if (!typeCode) {
+        return;
+      }
+
+      const source = await resolve(item.sourceName);
+      const target = await resolve(item.targetName);
       if (source.status === "hallucinated") {
         hallucinationCount += 1;
       }
@@ -560,174 +559,72 @@ export function createChapterAnalysisService(
         hallucinationCount += 1;
       }
       if (!source.personaId || !target.personaId || source.personaId === target.personaId) {
-        return null;
+        return;
       }
 
-      const typeCode = normalizeRelationshipTypeCode(relationship.relationshipTypeCode);
-      if (!typeCode) {
-        return null;
-      }
-      const relationshipType = relationshipTypeByCode.get(typeCode);
-      if (!relationshipType) {
-        log("analysis.relationship_type_unknown", {
-          chapterId : input.chapterId,
-          typeCode,
-          sourceName: relationship.sourceName,
-          targetName: relationship.targetName
-        });
-        return null;
+      // SYMMETRIC: sort by id to ensure consistent direction
+      const sourceId = source.personaId;
+      const targetId = target.personaId;
+      if (sourceId > targetId) {
+        // For SYMMETRIC types, the relationshipTypeDefinition may provide direction;
+        // for direct AI output without definition, default to sourceId < targetId ordering
       }
 
-      if (relationshipType.directionMode === "SYMMETRIC" && source.personaId > target.personaId) {
-        return {
-          sourceId: target.personaId,
-          targetId: source.personaId,
-          typeCode
-        };
-      }
-
-      return {
-        sourceId: source.personaId,
-        targetId: target.personaId,
-        typeCode
-      };
-    };
-
-    const recordUnknownRelationshipProposal = async (relationship: {
-      sourceName          : string;
-      targetName          : string;
-      evidence?           : string | null;
-      unknownTypeProposal?: ChapterAnalysisResponse["relationships"][number]["unknownTypeProposal"];
-    }) => {
-      if (!relationship.unknownTypeProposal) {
-        return false;
-      }
-
-      const source = await resolve(relationship.sourceName);
-      const target = await resolve(relationship.targetName);
-      if (source.status === "hallucinated") {
-        hallucinationCount += 1;
-      }
-      if (target.status === "hallucinated") {
-        hallucinationCount += 1;
-      }
-
-      return await recordUnknownRelationshipTypeOccurrence(tx, {
-        bookId         : input.bookId,
-        chapterId      : input.chapterId,
-        jobId          : input.jobId,
-        sourceName     : relationship.sourceName,
-        targetName     : relationship.targetName,
-        sourcePersonaId: source.personaId ?? null,
-        targetPersonaId: target.personaId ?? null,
-        proposal       : relationship.unknownTypeProposal,
-        evidence       : relationship.evidence
-      });
-    };
-
-    const relationshipIdByKey = new Map<string, string>();
-    let unknownRelationshipDrafts = 0;
-    for (const relationship of input.merged.relationships) {
-      if (!normalizeRelationshipTypeCode(relationship.relationshipTypeCode) && relationship.unknownTypeProposal) {
-        if (await recordUnknownRelationshipProposal(relationship)) {
-          unknownRelationshipDrafts += 1;
-        }
-        continue;
-      }
-
-      const canonicalPair = await resolveRelationshipPair(relationship);
-      if (!canonicalPair) {
-        continue;
-      }
-
-      const key = buildRelationshipKey(canonicalPair.sourceId, canonicalPair.targetId, canonicalPair.typeCode);
+      const key = buildRelationshipKey(sourceId, targetId, typeCode);
       if (relationshipIdByKey.has(key)) {
-        continue;
+        return; // same source+target+code already created in this batch
       }
 
       const existingRelationship = await tx.relationship.findFirst({
         where: {
           bookId              : input.bookId,
-          sourceId            : canonicalPair.sourceId,
-          targetId            : canonicalPair.targetId,
-          relationshipTypeCode: canonicalPair.typeCode,
+          sourceId            : sourceId,
+          targetId            : targetId,
+          relationshipTypeCode: typeCode,
           deletedAt           : null
         },
-        select: {
-          id: true
-        }
+        select: { id: true }
       });
 
-      const persistedRelationship = existingRelationship
-        ? existingRelationship
-        : await tx.relationship.create({
-          data: {
-            bookId              : input.bookId,
-            sourceId            : canonicalPair.sourceId,
-            targetId            : canonicalPair.targetId,
-            relationshipTypeCode: canonicalPair.typeCode,
-            recordSource        : RecordSource.DRAFT_AI,
-            status              : ProcessingStatus.DRAFT
-          },
-          select: {
-            id: true
-          }
-        });
+      if (existingRelationship) {
+        relationshipIdByKey.set(key, existingRelationship.id);
+        return;
+      }
 
-      relationshipIdByKey.set(key, persistedRelationship.id);
+      const persisted = await tx.relationship.create({
+        data: {
+          bookId              : input.bookId,
+          sourceId            : sourceId,
+          targetId            : targetId,
+          relationshipTypeCode: typeCode,
+          chapterId           : input.chapterId,
+          chapterNo           : input.chapterNo,
+          evidence            : item.evidence?.trim() || null,
+          summary             : item.summary?.trim() || null,
+          attitudeTags        : normalizeAttitudeTags(item.attitudeTags ?? []),
+          recordSource        : RecordSource.DRAFT_AI,
+          status              : ProcessingStatus.DRAFT
+        },
+        select: { id: true }
+      });
+
+      relationshipIdByKey.set(key, persisted.id);
+    };
+
+    // 先处理结构关系（relationships），再处理关系事件（relationshipEvents）
+    for (const rel of input.merged.relationships) {
+      await processRelationshipItem(rel);
     }
-
-    const relationshipEventData: Prisma.RelationshipEventCreateManyInput[] = [];
-    const relationshipEventKeys = new Set<string>();
     for (const event of input.merged.relationshipEvents) {
-      if (!normalizeRelationshipTypeCode(event.relationshipTypeCode) && event.unknownTypeProposal) {
-        if (await recordUnknownRelationshipProposal(event)) {
-          unknownRelationshipDrafts += 1;
-        }
-        continue;
-      }
-
-      const canonicalPair = await resolveRelationshipPair(event);
-      if (!canonicalPair) {
-        continue;
-      }
-
-      const relationshipKey = buildRelationshipKey(canonicalPair.sourceId, canonicalPair.targetId, canonicalPair.typeCode);
-      const relationshipId = relationshipIdByKey.get(relationshipKey);
-      if (!relationshipId) {
-        continue;
-      }
-
-      const summary = sanitizeRelationshipField(event.summary);
-      if (!summary) {
-        continue;
-      }
-      const evidence = sanitizeRelationshipField(event.evidence);
-      const eventKey = [
-        relationshipId,
-        summary,
-        evidence ?? "",
-        event.paraIndex ?? "null"
-      ].join("|");
-      if (relationshipEventKeys.has(eventKey)) {
-        continue;
-      }
-      relationshipEventKeys.add(eventKey);
-
-      relationshipEventData.push({
-        relationshipId,
-        bookId      : input.bookId,
-        chapterId   : input.chapterId,
-        chapterNo   : input.chapterNo,
-        sourceId    : canonicalPair.sourceId,
-        targetId    : canonicalPair.targetId,
-        summary,
-        evidence,
-        attitudeTags: normalizeAttitudeTags(event.attitudeTags),
-        paraIndex   : event.paraIndex,
-        confidence  : event.confidence,
-        recordSource: RecordSource.DRAFT_AI,
-        status      : ProcessingStatus.DRAFT
+      await processRelationshipItem({
+        sourceName          : event.sourceName,
+        targetName          : event.targetName,
+        relationshipTypeCode: event.relationshipTypeCode,
+        evidence            : event.evidence,
+        summary             : event.summary,
+        attitudeTags        : event.attitudeTags,
+        confidence          : event.confidence,
+        paraIndex           : event.paraIndex
       });
     }
 
@@ -737,19 +634,14 @@ export function createChapterAnalysisService(
     if (bioData.length > 0) {
       await tx.biographyRecord.createMany({ data: bioData });
     }
-    if (relationshipEventData.length > 0) {
-      await tx.relationshipEvent.createMany({ data: relationshipEventData });
-    }
     return {
       hallucinationCount,
       grayZoneCount,
-      unknownRelationshipDrafts,
       created: {
-        personas          : personaCreated,
-        mentions          : mentionData.length,
-        biographies       : bioData.length,
-        relationships     : relationshipIdByKey.size,
-        relationshipEvents: relationshipEventData.length
+        personas     : personaCreated,
+        mentions     : mentionData.length,
+        biographies  : bioData.length,
+        relationships: relationshipIdByKey.size
       }
     };
   }

@@ -17,22 +17,6 @@ export interface PersonaPairRelationshipType {
   inverseLabel : string | null;
 }
 
-export interface PersonaPairEvent {
-  id          : string;
-  chapterId   : string;
-  chapterNo   : number;
-  chapterTitle: string;
-  sourceId    : string;
-  targetId    : string;
-  summary     : string;
-  evidence    : string | null;
-  attitudeTags: string[];
-  paraIndex   : number | null;
-  confidence  : number;
-  recordSource: RecordSource;
-  status      : ProcessingStatus;
-}
-
 export interface PersonaPairRelationship {
   id                  : string;
   sourceId            : string;
@@ -41,10 +25,11 @@ export interface PersonaPairRelationship {
   relationshipType    : PersonaPairRelationshipType;
   recordSource        : RecordSource;
   status              : ProcessingStatus;
-  firstChapterNo      : number | null;
-  lastChapterNo       : number | null;
-  eventCount          : number;
-  events              : PersonaPairEvent[];
+  chapterId           : string | null;
+  chapterNo           : number | null;
+  evidence            : string | null;
+  summary             : string | null;
+  attitudeTags        : string[];
 }
 
 export interface PersonaPairResponse {

@@ -8,7 +8,7 @@ import type { PersonaRelation, TimelineEvent } from "@/types/graph";
 
 export type RoleListFilter = "all" | "ai" | "manual";
 export type RoleSortMode = "appearance" | "name" | "source";
-export type WorkspaceTab = "basics" | "relationships" | "relationship-events" | "biographies" | "aliases";
+export type WorkspaceTab = "basics" | "relationships" | "biographies" | "aliases";
 export type SheetMode = "persona-create" | "persona-edit" | "relationship-create" | "relationship-edit" | "biography-create" | "biography-edit" | "alias-create";
 
 export interface PendingCounts {
@@ -34,12 +34,11 @@ export interface PersonaFormState {
 }
 
 export interface RelationshipFormState {
-  targetId  : string;
-  type      : string;
-  weight    : string;
-  evidence  : string;
-  confidence: string;
-  chapterId : string;
+  targetId : string;
+  type     : string;
+  weight   : string;
+  evidence : string;
+  chapterId: string;
 }
 
 export interface BiographyFormState {
@@ -74,7 +73,6 @@ export interface RoleRelationshipItem {
   targetName     : string;
   type           : string;
   weight         : number;
-  confidence     : number | null;
   evidence       : string | null;
   recordSource   : string;
   status         : string;
@@ -111,8 +109,7 @@ export const ROLE_SORT_MODES: { value: RoleSortMode; label: string }[] = [
 export const WORKSPACE_TABS: { value: WorkspaceTab; label: string }[] = [
   { value: "basics", label: "基础资料" },
   { value: "relationships", label: "关系" },
-  { value: "relationship-events", label: "关系事件" },
-  { value: "biographies", label: "传记事件" },
+{ value: "biographies", label: "传记事件" },
   { value: "aliases", label: "别名" }
 ];
 
@@ -359,7 +356,6 @@ export function relationshipFromDetail(
     targetName     : isOutgoing ? relationship.counterpartName : persona.name,
     type           : relationship.type,
     weight         : relationship.weight,
-    confidence     : null,
     evidence       : relationship.evidence,
     recordSource   : relationship.recordSource,
     status         : relationship.status

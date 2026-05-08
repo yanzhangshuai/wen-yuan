@@ -287,13 +287,7 @@ export function createStartBookAnalysisService(
 
     const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
       if (scope === "FULL_BOOK") {
-        await tx.relationshipEvent.deleteMany({
-          where: {
-            bookId      : book.id,
-            recordSource: RecordSource.DRAFT_AI
-          }
-        });
-        await tx.relationship.deleteMany({
+await tx.relationship.deleteMany({
           where: {
             bookId      : book.id,
             recordSource: RecordSource.DRAFT_AI

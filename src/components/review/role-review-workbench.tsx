@@ -58,7 +58,6 @@ import type { PersonaDetail } from "@/types/graph";
 
 import { PersonaPairDrawer } from "@/components/relations/persona-pair-drawer";
 import { RoleReviewSidebar } from "./role-review-sidebar";
-import { RelationshipEventsTab } from "./relationship-events-tab";
 import {
   ImpactCount,
   ImpactDetails,
@@ -139,12 +138,11 @@ export function RoleReviewWorkbench({
   const [editingBiography, setEditingBiography] = useState<RoleBiographyItem | null>(null);
   const [personaForm, setPersonaForm] = useState<PersonaFormState>(emptyPersonaForm);
   const [relationshipForm, setRelationshipForm] = useState<RelationshipFormState>({
-    targetId  : "",
-    type      : "",
-    weight    : "1",
-    evidence  : "",
-    confidence: "100",
-    chapterId : ""
+    targetId : "",
+    type     : "",
+    weight   : "1",
+    evidence : "",
+    chapterId: ""
   });
   const [biographyForm, setBiographyForm] = useState<BiographyFormState>(emptyBiographyForm);
   const [aliasForm, setAliasForm] = useState<AliasFormState>(emptyAliasForm);
@@ -374,12 +372,11 @@ export function RoleReviewWorkbench({
     if (!selectedPersona) return;
     const target = personas.find(persona => persona.id !== selectedPersona.id);
     setRelationshipForm({
-      targetId  : target?.id ?? "",
-      type      : "",
-      weight    : "1",
-      evidence  : "",
-      confidence: "100",
-      chapterId : defaultChapterId
+      targetId : target?.id ?? "",
+      type     : "",
+      weight   : "1",
+      evidence : "",
+      chapterId: defaultChapterId
     });
     setEditingRelationship(null);
     setSheetDirty(false);
@@ -388,12 +385,11 @@ export function RoleReviewWorkbench({
 
   function openRelationshipEdit(relationship: RoleRelationshipItem) {
     setRelationshipForm({
-      targetId  : relationship.targetPersonaId,
-      type      : relationship.type,
-      weight    : String(relationship.weight),
-      evidence  : relationship.evidence ?? "",
-      confidence: String(Math.round((relationship.confidence ?? 1) * 100)),
-      chapterId : relationship.chapterId
+      targetId : relationship.targetPersonaId,
+      type     : relationship.type,
+      weight   : String(relationship.weight),
+      evidence : relationship.evidence ?? "",
+      chapterId: relationship.chapterId
     });
     setEditingRelationship(relationship);
     setSheetDirty(false);
@@ -427,10 +423,6 @@ export function RoleReviewWorkbench({
     });
     setSheetDirty(false);
     setSheetMode("alias-create");
-  }
-
-  function openPersonaPair(aId: string, bId: string) {
-    setPairDrawer({ aId, bId });
   }
 
   function validateSheetForm(): string | null {
@@ -733,14 +725,7 @@ export function RoleReviewWorkbench({
                   onReject={(id) => { void updateRelationshipStatus(id, "REJECTED"); }}
                 />
               )}
-              {activeTab === "relationship-events" && (
-                <RelationshipEventsTab
-                  persona={selectedPersona}
-                  relationships={selectedRelationships}
-                  onOpenPersonaPair={openPersonaPair}
-                />
-              )}
-              {activeTab === "biographies" && (
+{activeTab === "biographies" && (
                 <RoleBiographiesSection
                   biographies={selectedBiographies}
                   onCreate={openBiographyCreate}

@@ -35,43 +35,13 @@ function buildPair(overrides: Partial<PersonaPairResponse> = {}): PersonaPairRes
           directionMode: "DIRECTED",
           inverseLabel : "学生"
         },
-        recordSource  : "DRAFT_AI",
-        status        : "DRAFT",
-        firstChapterNo: 3,
-        lastChapterNo : 7,
-        eventCount    : 2,
-        events        : [
-          {
-            id          : "event-1",
-            chapterId   : "chapter-3",
-            chapterNo   : 3,
-            chapterTitle: "第三回",
-            sourceId    : "persona-a",
-            targetId    : "persona-b",
-            summary     : "张三提携李四",
-            evidence    : "张三把李四引荐给众人。",
-            attitudeTags: [" 资助 ", "提携", "资助"],
-            paraIndex   : 12,
-            confidence  : 0.91,
-            recordSource: "AI",
-            status      : "DRAFT"
-          },
-          {
-            id          : "event-2",
-            chapterId   : "chapter-7",
-            chapterNo   : 7,
-            chapterTitle: "第七回",
-            sourceId    : "persona-b",
-            targetId    : "persona-a",
-            summary     : "李四公开感激张三",
-            evidence    : null,
-            attitudeTags: ["公开", "资助"],
-            paraIndex   : null,
-            confidence  : 0.8,
-            recordSource: "MANUAL",
-            status      : "VERIFIED"
-          }
-        ]
+        recordSource: "DRAFT_AI",
+        status      : "DRAFT",
+        chapterId   : "chapter-3",
+        chapterNo   : 3,
+        summary     : "张三提携李四",
+        evidence    : "张三把李四引荐给众人。",
+        attitudeTags: [" 资助 ", "提携", "资助"]
       }
     ],
     ...overrides
@@ -131,11 +101,10 @@ describe("PersonaPairDrawer", () => {
             directionMode: "SYMMETRIC",
             inverseLabel : null
           },
-          events: [{
-            ...buildPair().relationships[0].events[0],
-            id     : "event-rival",
-            summary: "二人同场竞争"
-          }]
+          chapterNo   : 5,
+          summary     : "二人同场竞争",
+          evidence    : null,
+          attitudeTags: []
         }
       ]
     }));
@@ -160,9 +129,8 @@ describe("PersonaPairDrawer", () => {
 
     await screen.findByText("张三 与 李四 的关系");
 
-    expect(screen.getByText("资助 ×3")).toBeInTheDocument();
+    expect(screen.getByText("资助 ×2")).toBeInTheDocument();
     expect(screen.getByText("提携 ×1")).toBeInTheDocument();
-    expect(screen.getByText("公开 ×1")).toBeInTheDocument();
   });
 
   it("hides edit actions for viewers and shows them for admins", async () => {
@@ -180,7 +148,6 @@ describe("PersonaPairDrawer", () => {
 
     await screen.findByText("张三 与 李四 的关系");
     expect(screen.queryByRole("button", { name: "编辑关系" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "+ 录入新事件" })).toBeNull();
 
     rerender(
       <PersonaPairDrawer
@@ -194,21 +161,21 @@ describe("PersonaPairDrawer", () => {
     );
 
     expect(await screen.findByRole("button", { name: "编辑关系" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "+ 录入新事件" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "+ 新增结构关系" })).toBeInTheDocument();
   });
 
-  it("marks relationships that have no events", async () => {
+  it("marks relationships that have no summary", async () => {
     fetchPersonaPairMock.mockResolvedValue(buildPair({
       relationships: [{
         ...buildPair().relationships[0],
-        eventCount: 0,
-        events    : []
+        summary     : null,
+        evidence    : null,
+        attitudeTags: []
       }]
     }));
 
     renderDrawer("admin");
 
-    expect(await screen.findByText("待补充事件")).toBeInTheDocument();
+    expect(await screen.findByText("待补充摘要")).toBeInTheDocument();
   });
 });

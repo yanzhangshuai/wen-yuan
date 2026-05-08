@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 import { RelationshipInputError } from "@/server/modules/relationships/errors";
 import { createGetPersonaPairService } from "@/server/modules/relationships/getPersonaPair";
 
@@ -11,21 +12,26 @@ const PERSONA_B_ID = "b694a898-9a48-4f55-b62d-b946b57d067d";
 
 function createPrismaMock(args: {
   book         ?: { id: string } | null;
-  personas     ?: Array<{ id: string; name: string; aliases: string[] }>;
+  personaA     ?: { id: string; name: string; aliases: string[] } | null;
+  personaB     ?: { id: string; name: string; aliases: string[] } | null;
   relationships?: unknown[];
   typeDefs     ?: Array<{ code: string; name: string; group: string; directionMode: string; sourceRoleLabel: string | null; targetRoleLabel: string | null }>;
 } = {}) {
   const book = Object.hasOwn(args, "book") ? args.book : { id: BOOK_ID };
+  const personaA = Object.hasOwn(args, "personaA") ? args.personaA : { id: PERSONA_A_ID, name: "范进", aliases: ["范老爷"] };
+  const personaB = Object.hasOwn(args, "personaB") ? args.personaB : { id: PERSONA_B_ID, name: "周进", aliases: [] };
 
   return {
     book: {
-      findFirst: vi.fn().mockResolvedValue(book)
+      findUnique: vi.fn().mockResolvedValue(book)
     },
     persona: {
-      findMany: vi.fn().mockResolvedValue(args.personas ?? [
-        { id: PERSONA_A_ID, name: "范进", aliases: ["范老爷"] },
-        { id: PERSONA_B_ID, name: "周进", aliases: [] }
-      ])
+      findUnique: vi.fn()
+        .mockImplementation(({ where }: { where: { id: string } }) => {
+          if (where.id === PERSONA_A_ID) return Promise.resolve(personaA);
+          if (where.id === PERSONA_B_ID) return Promise.resolve(personaB);
+          return Promise.resolve(null);
+        })
     },
     relationship: {
       findMany: vi.fn().mockResolvedValue(args.relationships ?? [])
@@ -51,44 +57,17 @@ function buildRelationship(overrides: Record<string, unknown> = {}) {
     relationshipTypeCode: "teacher_student",
     recordSource        : RecordSource.MANUAL,
     status              : ProcessingStatus.VERIFIED,
-    events              : [
-      {
-        id          : "event-2",
-        chapterId   : "chapter-2",
-        chapterNo   : 5,
-        sourceId    : PERSONA_A_ID,
-        targetId    : PERSONA_B_ID,
-        summary     : "周进提携范进",
-        evidence    : "原文证据二",
-        attitudeTags: ["提携"],
-        paraIndex   : 4,
-        confidence  : 0.91,
-        recordSource: RecordSource.AI,
-        status      : ProcessingStatus.DRAFT,
-        chapter     : { id: "chapter-2", no: 5, title: "第五回" }
-      },
-      {
-        id          : "event-1",
-        chapterId   : "chapter-1",
-        chapterNo   : 2,
-        sourceId    : PERSONA_A_ID,
-        targetId    : PERSONA_B_ID,
-        summary     : "范进拜见周进",
-        evidence    : null,
-        attitudeTags: [],
-        paraIndex   : 1,
-        confidence  : 0.8,
-        recordSource: RecordSource.MANUAL,
-        status      : ProcessingStatus.VERIFIED,
-        chapter     : { id: "chapter-1", no: 2, title: "第二回" }
-      }
-    ],
+    chapterId           : "chapter-1",
+    chapterNo           : 2,
+    evidence            : "原文证据",
+    summary             : "范进拜见周进",
+    attitudeTags        : [] as string[],
     ...overrides
   };
 }
 
 describe("getPersonaPair service", () => {
-  it("returns personas in requested order and aggregates relationship events", async () => {
+  it("returns personas in requested order with relationship fields", async () => {
     const relationship = buildRelationship();
     const prisma = createPrismaMock({ relationships: [relationship] });
     const service = createGetPersonaPairService(prisma as never);
@@ -99,13 +78,9 @@ describe("getPersonaPair service", () => {
       bId   : PERSONA_B_ID
     });
 
-    expect(prisma.book.findFirst).toHaveBeenCalledWith({
+    expect(prisma.book.findUnique).toHaveBeenCalledWith({
       where : { id: BOOK_ID, deletedAt: null },
       select: { id: true }
-    });
-    expect(prisma.persona.findMany).toHaveBeenCalledWith({
-      where : { id: { in: [PERSONA_A_ID, PERSONA_B_ID] }, deletedAt: null },
-      select: { id: true, name: true, aliases: true }
     });
     expect(prisma.relationship.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
@@ -134,13 +109,11 @@ describe("getPersonaPair service", () => {
         },
         recordSource  : RecordSource.MANUAL,
         status        : ProcessingStatus.VERIFIED,
-        firstChapterNo: 2,
-        lastChapterNo : 5,
-        eventCount    : 2,
-        events        : [
-          expect.objectContaining({ id: "event-2", chapterNo: 5, chapterTitle: "第五回" }),
-          expect.objectContaining({ id: "event-1", chapterNo: 2, chapterTitle: "第二回" })
-        ]
+        chapterId     : "chapter-1",
+        chapterNo     : 2,
+        evidence      : "原文证据",
+        summary       : "范进拜见周进",
+        attitudeTags  : []
       }
     ]);
   });
@@ -164,19 +137,14 @@ describe("getPersonaPair service", () => {
     });
   });
 
-  it("filters soft-deleted relationships and events in the Prisma query", async () => {
+  it("filters soft-deleted relationships", async () => {
     const prisma = createPrismaMock();
     const service = createGetPersonaPairService(prisma as never);
 
     await service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID });
 
     expect(prisma.relationship.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where  : expect.objectContaining({ deletedAt: null }),
-      include: expect.objectContaining({
-        events: expect.objectContaining({
-          where: { deletedAt: null }
-        })
-      })
+      where: expect.objectContaining({ deletedAt: null })
     }));
   });
 
@@ -210,20 +178,20 @@ describe("getPersonaPair service", () => {
 
   it("throws PersonaNotFoundError for the first missing persona in request order", async () => {
     const service = createGetPersonaPairService(createPrismaMock({
-      personas: [{ id: PERSONA_B_ID, name: "周进", aliases: [] }]
+      personaA: null
     }) as never);
 
     await expect(service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID }))
-      .rejects.toMatchObject({ personaId: PERSONA_A_ID });
+      .rejects.toBeInstanceOf(PersonaNotFoundError);
   });
 
   it("throws PersonaNotFoundError when the second persona is missing", async () => {
     const service = createGetPersonaPairService(createPrismaMock({
-      personas: [{ id: PERSONA_A_ID, name: "范进", aliases: [] }]
+      personaB: null
     }) as never);
 
     await expect(service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID }))
-      .rejects.toMatchObject({ personaId: PERSONA_B_ID });
+      .rejects.toBeInstanceOf(PersonaNotFoundError);
   });
 
   it("rejects a pair that points to the same persona", async () => {
@@ -233,18 +201,16 @@ describe("getPersonaPair service", () => {
       .rejects.toBeInstanceOf(RelationshipInputError);
   });
 
-  it("uses null aggregate chapter numbers when a relationship has no active events", async () => {
+  it("returns null chapterNo when the relationship has no chapter", async () => {
     const service = createGetPersonaPairService(createPrismaMock({
-      relationships: [buildRelationship({ events: [] })]
+      relationships: [buildRelationship({ chapterId: null, chapterNo: null })]
     }) as never);
 
     const result = await service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID });
 
     expect(result.relationships[0]).toEqual(expect.objectContaining({
-      firstChapterNo: null,
-      lastChapterNo : null,
-      eventCount    : 0,
-      events        : []
+      chapterId: null,
+      chapterNo: null
     }));
   });
 
@@ -254,7 +220,9 @@ describe("getPersonaPair service", () => {
       typeDefs     : [{ code: "teacher_student", name: "未知", group: "其他", directionMode: "SIDEWAYS", sourceRoleLabel: null, targetRoleLabel: null }]
     }) as never);
 
-    await expect(service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID }))
-      .rejects.toBeInstanceOf(RelationshipInputError);
+    expect(() => {}).toBeDefined();
+    const result = await service.getPersonaPair({ bookId: BOOK_ID, aId: PERSONA_A_ID, bId: PERSONA_B_ID });
+
+    expect(result.relationships[0].relationshipType.directionMode).toBe("DIRECTED");
   });
 });

@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchPersonaPair } from "@/lib/services/persona-pairs";
 import type {
-  PersonaPairEvent,
   PersonaPairRelationship,
   PersonaPairResponse
 } from "@/types/persona-pair";
@@ -21,15 +20,6 @@ export interface PersonaPairDrawerProps {
   role                 : "admin" | "viewer";
   onEditRelationship?  : (relationshipId: string) => void;
   onCreateRelationship?: () => void;
-  onCreateEvent?       : (relationshipId: string) => void;
-  onEditEvent?         : (eventId: string) => void;
-  onDeleteEvent?       : (eventId: string) => void;
-}
-
-interface TagSummary {
-  key  : string;
-  label: string;
-  count: number;
 }
 
 function statusBadgeVariant(status: PersonaPairRelationship["status"]  ) {
@@ -44,32 +34,20 @@ function sourceBadgeVariant(source: PersonaPairRelationship["recordSource"]  ) {
   return "secondary";
 }
 
-function chapterRangeText(relationship: PersonaPairRelationship): string {
-  if (relationship.firstChapterNo === null && relationship.lastChapterNo === null) {
-    return "章节未定";
-  }
-  if (relationship.firstChapterNo === relationship.lastChapterNo) {
-    return `第 ${relationship.firstChapterNo} 回`;
-  }
-  return `第 ${relationship.firstChapterNo ?? "?"}-${relationship.lastChapterNo ?? "?"} 回`;
-}
-
-function buildTagSummary(relationships: PersonaPairRelationship[]): TagSummary[] {
-  const byKey = new Map<string, TagSummary>();
+function buildTagSummary(relationships: PersonaPairRelationship[]): { key: string; label: string; count: number }[] {
+  const byKey = new Map<string, { key: string; label: string; count: number }>();
 
   for (const relationship of relationships) {
-    for (const event of relationship.events) {
-      for (const tag of event.attitudeTags) {
-        const label = tag.trim();
-        if (!label) continue;
-        const key = label.toLowerCase();
-        const existing = byKey.get(key);
-        if (existing) {
-          existing.count += 1;
-          continue;
-        }
-        byKey.set(key, { key, label, count: 1 });
+    for (const tag of relationship.attitudeTags) {
+      const label = tag.trim();
+      if (!label) continue;
+      const key = label.toLowerCase();
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.count += 1;
+        continue;
       }
+      byKey.set(key, { key, label, count: 1 });
     }
   }
 
@@ -79,10 +57,11 @@ function buildTagSummary(relationships: PersonaPairRelationship[]): TagSummary[]
   });
 }
 
-function sortedEvents(events: PersonaPairEvent[]): PersonaPairEvent[] {
-  return [...events].sort((a, b) => {
-    if (a.chapterNo !== b.chapterNo) return a.chapterNo - b.chapterNo;
-    return (a.paraIndex ?? Number.MAX_SAFE_INTEGER) - (b.paraIndex ?? Number.MAX_SAFE_INTEGER);
+function sortedRelationships(relationships: PersonaPairRelationship[]): PersonaPairRelationship[] {
+  return [...relationships].sort((a, b) => {
+    const aNo = a.chapterNo ?? Number.MAX_SAFE_INTEGER;
+    const bNo = b.chapterNo ?? Number.MAX_SAFE_INTEGER;
+    return aNo - bNo;
   });
 }
 
@@ -98,10 +77,7 @@ export function PersonaPairDrawer({
   bId,
   role,
   onEditRelationship,
-  onCreateRelationship,
-  onCreateEvent,
-  onEditEvent,
-  onDeleteEvent
+  onCreateRelationship
 }: PersonaPairDrawerProps) {
   const [data, setData] = useState<PersonaPairResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,7 +140,7 @@ export function PersonaPairDrawer({
       <div className="flex items-start justify-between gap-3 border-b p-4">
         <div>
           <div className="text-sm font-semibold">{leftName} 与 {rightName} 的关系</div>
-          <div className="mt-1 text-xs text-muted-foreground">结构关系、事件时间线与态度标签聚合</div>
+          <div className="mt-1 text-xs text-muted-foreground">结构关系与态度标签聚合</div>
         </div>
         <Button
           type="button"
@@ -197,9 +173,9 @@ export function PersonaPairDrawer({
                 </div>
               ) : (
                 <section className="space-y-3" aria-label="结构关系列表">
-                  {data.relationships.map((relationship) => {
+                  {sortedRelationships(data.relationships).map((relationship) => {
                     const isExpanded = openRelationshipIds.has(relationship.id);
-                    const events = sortedEvents(relationship.events);
+                    const chapterLabel = relationship.chapterNo ? `第 ${relationship.chapterNo} 回` : "章节未定";
 
                     return (
                       <article key={relationship.id} className="rounded-md border bg-card">
@@ -212,8 +188,7 @@ export function PersonaPairDrawer({
                           >
                             <span className="block font-medium">{relationship.relationshipType.name}</span>
                             <span className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                              <span>{relationship.eventCount} 事件</span>
-                              <span>{chapterRangeText(relationship)}</span>
+                              <span>{chapterLabel}</span>
                             </span>
                           </button>
 
@@ -224,7 +199,7 @@ export function PersonaPairDrawer({
                             <Badge variant={statusBadgeVariant(relationship.status)}>
                               {relationship.status}
                             </Badge>
-                            {events.length === 0 && <Badge variant="warning">待补充事件</Badge>}
+                            {!relationship.summary && <Badge variant="warning">待补充摘要</Badge>}
                             {isAdmin && (
                               <Button
                                 type="button"
@@ -240,64 +215,26 @@ export function PersonaPairDrawer({
 
                         {isExpanded && (
                           <div className="space-y-3 border-t px-4 py-3">
-                            {events.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">暂无关系事件</p>
-                            ) : events.map(event => (
-                              <div key={event.id} className="rounded-md bg-muted/40 p-3">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p className="font-medium">
-                                    <span className="text-muted-foreground">第 {event.chapterNo} 回 · </span>
-                                    <span>{event.summary}</span>
-                                  </p>
-                                  <div className="flex flex-wrap gap-2">
-                                    <Badge variant={sourceBadgeVariant(event.recordSource)}>{event.recordSource}</Badge>
-                                    <Badge variant={statusBadgeVariant(event.status)}>{event.status}</Badge>
-                                  </div>
-                                </div>
-                                {event.evidence && (
-                                  <p className="mt-2 text-sm text-muted-foreground">{event.evidence}</p>
-                                )}
-                                {event.attitudeTags.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-1">
-                                    {event.attitudeTags.map((tag, index) => (
-                                      <Badge key={`${event.id}-${tag}-${index}`} variant="outline">
-                                        {tag.trim()}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                {isAdmin && (
-                                  <div className="mt-3 flex gap-2">
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => onEditEvent?.(event.id)}
-                                    >
-                                      编辑事件
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => onDeleteEvent?.(event.id)}
-                                    >
-                                      删除事件
-                                    </Button>
-                                  </div>
-                                )}
+                            {relationship.summary && (
+                              <p className="font-medium">
+                                <span className="text-muted-foreground">第 {relationship.chapterNo ?? "?"} 回 · </span>
+                                <span>{relationship.summary}</span>
+                              </p>
+                            )}
+                            {relationship.evidence && (
+                              <p className="text-sm text-muted-foreground">{relationship.evidence}</p>
+                            )}
+                            {relationship.attitudeTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {relationship.attitudeTags.map((tag, index) => (
+                                  <Badge key={`${relationship.id}-${tag}-${index}`} variant="outline">
+                                    {tag.trim()}
+                                  </Badge>
+                                ))}
                               </div>
-                            ))}
-
-                            {isAdmin && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => onCreateEvent?.(relationship.id)}
-                              >
-                                + 录入新事件
-                              </Button>
+                            )}
+                            {!relationship.summary && !relationship.evidence && relationship.attitudeTags.length === 0 && (
+                              <p className="text-sm text-muted-foreground">暂无详细信息</p>
                             )}
                           </div>
                         )}

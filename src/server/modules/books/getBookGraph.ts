@@ -197,7 +197,7 @@ export function createGetBookGraphService(
         deletedAt: null,
         bookId   : input.bookId,
         ...(typeof input.chapter === "number"
-          ? { events: { some: { chapterNo: { lte: input.chapter }, deletedAt: null } } }
+          ? { chapterNo: { lte: input.chapter } }
           : {}),
         source: { deletedAt: null },
         target: { deletedAt: null }

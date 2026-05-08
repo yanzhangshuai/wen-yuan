@@ -412,13 +412,6 @@ export function createMergeSuggestionsService(
               targetId: nextTargetId
             }
           });
-          await tx.relationshipEvent.updateMany({
-            where: { relationshipId: relation.id, deletedAt: null },
-            data : {
-              sourceId: nextSourceId,
-              targetId: nextTargetId
-            }
-          });
         }
       }
 

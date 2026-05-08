@@ -315,15 +315,8 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
         sourceId            : true,
         targetId            : true,
         relationshipTypeCode: true,
-        events              : {
-          where  : { deletedAt: null },
-          orderBy: [{ chapterNo: "asc" }],
-          take   : 1,
-          select : {
-            chapterId: true,
-            chapterNo: true
-          }
-        }
+        chapterId           : true,
+        chapterNo           : true
       }
     }),
     prismaClient.profile.findMany({
@@ -353,8 +346,8 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     targetId : item.targetId,
     type     : nameByCode.get(item.relationshipTypeCode) ?? item.relationshipTypeCode,
     weight   : 1,
-    chapterId: item.events[0]?.chapterId ?? "",
-    chapterNo: item.events[0]?.chapterNo ?? 0
+    chapterId: item.chapterId ?? "",
+    chapterNo: item.chapterNo ?? 0
   }));
 
   // 先用 profile 作为人物主体集合。

@@ -219,7 +219,7 @@ export function createSplitPersonaService(
       const relations = await tx.relationship.findMany({
         where: {
           deletedAt: null,
-          events   : { some: { chapterId: { in: chapterIds }, deletedAt: null } },
+          chapterId: { in: chapterIds },
           OR       : [
             { sourceId: sourcePersona.id },
             { targetId: sourcePersona.id }
@@ -279,13 +279,6 @@ export function createSplitPersonaService(
 
         await tx.relationship.update({
           where: { id: relation.id },
-          data : {
-            sourceId: nextSourceId,
-            targetId: nextTargetId
-          }
-        });
-        await tx.relationshipEvent.updateMany({
-          where: { relationshipId: relation.id, deletedAt: null },
           data : {
             sourceId: nextSourceId,
             targetId: nextTargetId

@@ -240,6 +240,11 @@ export function createGetPersonaByIdService(
           id                  : true,
           bookId              : true,
           relationshipTypeCode: true,
+          chapterId           : true,
+          chapterNo           : true,
+          evidence            : true,
+          summary             : true,
+          attitudeTags        : true,
           recordSource        : true,
           status              : true,
           sourceId            : true,
@@ -259,16 +264,6 @@ export function createGetPersonaByIdService(
             select: {
               id  : true,
               name: true
-            }
-          },
-          events: {
-            where  : { deletedAt: null },
-            orderBy: [{ chapterNo: "asc" }],
-            take   : 1,
-            select : {
-              chapterId: true,
-              chapterNo: true,
-              evidence : true
             }
           }
         }
@@ -322,14 +317,14 @@ export function createGetPersonaByIdService(
           id             : item.id,
           bookId         : item.bookId,
           bookTitle      : item.book.title,
-          chapterId      : item.events[0]?.chapterId ?? "",
-          chapterNo      : item.events[0]?.chapterNo ?? 0,
+          chapterId      : item.chapterId ?? "",
+          chapterNo      : item.chapterNo ?? 0,
           direction      : isOutgoing ? "outgoing" : "incoming",
           counterpartId  : counterpart.id,
           counterpartName: counterpart.name,
           type           : nameByCode.get(item.relationshipTypeCode) ?? item.relationshipTypeCode,
           weight         : 1,
-          evidence       : item.events[0]?.evidence ?? null,
+          evidence       : item.evidence ?? null,
           recordSource   : item.recordSource,
           status         : item.status
         };

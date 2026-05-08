@@ -85,7 +85,6 @@ export function RoleRelationshipsSection({
                 )}
                 <p className="mt-1 text-xs text-muted-foreground">
                   第{relationship.chapterNo}回 · 权重 {relationship.weight}
-                  {relationship.confidence === null ? "" : ` · 置信度 ${Math.round(relationship.confidence * 100)}%`}
                 </p>
                 {relationship.evidence && <p className="mt-2 text-sm text-muted-foreground">{relationship.evidence}</p>}
               </div>

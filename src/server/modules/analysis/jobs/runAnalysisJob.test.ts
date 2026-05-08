@@ -118,6 +118,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
   const profileFindMany = vi.fn().mockResolvedValue([]);
   const mentionGroupBy = vi.fn().mockResolvedValue([]);
   const mentionFindMany = vi.fn().mockResolvedValue([]);
+  const relationshipFindMany = vi.fn().mockResolvedValue([]);
   const relationshipEventFindMany = vi.fn().mockResolvedValue([]);
   const relationshipTypeDefinitionFindMany = vi.fn().mockResolvedValue([]);
   const personaFindMany = vi.fn().mockResolvedValue([]);
@@ -142,6 +143,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
     book                      : { findUnique: bookFindUnique, update: bookUpdate, updateMany: bookUpdateMany },
     profile                   : { findMany: profileFindMany },
     mention                   : { groupBy: mentionGroupBy, findMany: mentionFindMany },
+    relationship              : { findMany: relationshipFindMany },
     relationshipEvent         : { findMany: relationshipEventFindMany },
     relationshipTypeDefinition: { findMany: relationshipTypeDefinitionFindMany },
     persona                   : { findMany: personaFindMany, updateMany: personaUpdateMany },
@@ -174,6 +176,7 @@ function createRunnerContext(options: { withValidation?: boolean; withTwoPass?: 
     profileFindMany,
     mentionGroupBy,
     mentionFindMany,
+    relationshipFindMany,
     relationshipEventFindMany,
     personaFindMany,
     personaUpdateMany
@@ -911,7 +914,7 @@ describe("analysis job runner", () => {
       validateChapterResult,
       personaFindMany,
       mentionFindMany,
-      relationshipEventFindMany,
+      relationshipFindMany,
       profileFindMany
     } = createRunnerContext({ withValidation: true });
 
@@ -958,11 +961,11 @@ describe("analysis job runner", () => {
     mentionFindMany.mockResolvedValueOnce([
       { personaId: "persona-missing", rawText: "陌生人" }
     ]);
-    relationshipEventFindMany.mockResolvedValueOnce([
+    relationshipFindMany.mockResolvedValueOnce([
       {
-        sourceId    : "persona-related",
-        targetId    : "persona-missing",
-        relationship: { relationshipTypeCode: "RIVAL" }
+        sourceId            : "persona-related",
+        targetId            : "persona-missing",
+        relationshipTypeCode: "RIVAL"
       }
     ]);
     profileFindMany.mockResolvedValueOnce([

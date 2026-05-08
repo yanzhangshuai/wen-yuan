@@ -61,14 +61,6 @@ export type RelationshipTypeBatchActionInput =
   | { action: "delete" | "enable" | "disable" | "markPendingReview"; ids: string[] }
   | { action: "changeGroup"; ids: string[]; group: RelationshipTypeGroup };
 
-export interface InitializeCommonRelationshipTypesResult {
-  total          : number;
-  created        : number;
-  skipped        : number;
-  skippedExisting: number;
-  skippedConflict: number;
-}
-
 export interface RelationshipTypeGenerationPreview {
   targetCount : number;
   targetGroup : string | null;
@@ -149,14 +141,6 @@ export async function batchRelationshipTypeAction(body: RelationshipTypeBatchAct
     method : "POST",
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(body)
-  });
-}
-
-export async function initializeCommonRelationshipTypes(): Promise<InitializeCommonRelationshipTypesResult> {
-  return clientFetch<InitializeCommonRelationshipTypesResult>("/api/admin/knowledge/relationship-types/initialize-common", {
-    method : "POST",
-    headers: { "Content-Type": "application/json" },
-    body   : JSON.stringify({})
   });
 }
 

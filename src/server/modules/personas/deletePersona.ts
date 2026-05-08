@@ -158,17 +158,11 @@ export function createDeletePersonaService(
         select : {
           id                  : true,
           relationshipTypeCode: true,
+          chapterId           : true,
+          chapterNo           : true,
+          summary             : true,
           source              : { select: { name: true } },
-          target              : { select: { name: true } },
-          events              : {
-            where  : { deletedAt: null },
-            orderBy: [{ chapterNo: "asc" }],
-            take   : 1,
-            select : {
-              summary: true,
-              chapter: { select: { no: true, title: true } }
-            }
-          }
+          target              : { select: { name: true } }
         }
       }),
       prismaClient.biographyRecord.findMany({
@@ -222,8 +216,8 @@ export function createDeletePersonaService(
         type       : item.relationshipTypeCode,
         sourceName : item.source.name,
         targetName : item.target.name,
-        description: item.events[0]?.summary ?? null,
-        chapter    : chapterLabel(item.events[0]?.chapter)
+        description: item.summary ?? null,
+        chapter    : item.chapterNo ? `第${item.chapterNo}回` : ""
       })),
       mentions: mentions.map(item => ({
         id     : item.id,

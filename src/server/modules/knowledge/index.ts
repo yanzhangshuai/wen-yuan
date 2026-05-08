@@ -98,7 +98,6 @@ export {
   RELATIONSHIP_DIRECTION_MODES,
   RELATIONSHIP_TYPE_GROUPS,
   RELATIONSHIP_TYPE_STATUSES,
-  COMMON_RELATIONSHIP_TYPES,
   listRelationshipTypes,
   createRelationshipType,
   updateRelationshipType,
@@ -106,19 +105,8 @@ export {
   batchDeleteRelationshipTypes,
   batchUpdateRelationshipTypeStatus,
   batchChangeRelationshipTypeGroup,
-  initializeCommonRelationshipTypes,
   inferRelationshipTypeLabels
 } from "./relationship-types";
-
-export {
-  UNKNOWN_RELATIONSHIP_TYPE_DRAFT_STATUSES,
-  approveUnknownRelationshipTypeDraft,
-  buildUnknownRelationshipTypeSignature,
-  listUnknownRelationshipTypeDrafts,
-  mergeUnknownRelationshipTypeDraft,
-  recordUnknownRelationshipTypeOccurrence,
-  rejectUnknownRelationshipTypeDraft
-} from "./unknown-relationship-types";
 
 export {
   listPromptTemplates,

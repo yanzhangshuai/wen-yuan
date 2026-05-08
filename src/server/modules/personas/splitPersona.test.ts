@@ -313,7 +313,7 @@ describe("splitPersona", () => {
     }));
     expect(relationshipFindMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
-        events: { some: { chapterId: { in: ["chapter-1", "chapter-3"] }, deletedAt: null } }
+        chapterId: { in: ["chapter-1", "chapter-3"] }
       })
     }));
   });

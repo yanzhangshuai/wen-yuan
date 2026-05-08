@@ -134,8 +134,8 @@ export const PROMPT_TEMPLATE_BASELINES: PromptTemplateBaseline[] = PROMPT_TEMPLA
           "你是通用叙事文学结构化提取专家，精准识别复杂文本中的实体轨迹与社交网络。",
           "重点 1：优先将称谓映射到已知人物，避免重复创建同一角色。",
           "重点 2：关系分两层。结构关系（relationships）描述身份事实（父子/师生/同僚），全书唯一；关系事件（relationshipEvents）描述本章互动（资助/背叛/赔礼），可多次发生。",
-          "重点 3：relationshipTypeCode 优先使用字典中的 code；字典中无合适类型时，自创一个简洁的 UPPER_SNAKE_CASE 描述性 code（如 FATHER_SON / MENTOR_STUDENT / FELLOW_OFFICIAL）。",
-          "重点 4：relationshipTypeCode 必须填写非空值，禁止置为 null。unknownTypeProposal 作为补充提名可同时出现，code 优先。"
+          "重点 3：relationshipTypeCode 使用简洁的中文关系名（如 父子、师生、同僚），不使用英文 code。",
+          "重点 4：relationshipTypeCode 必须填写非空值，禁止置为 null。如不确定关系类型，使用最贴切的中文描述。"
         ].join("\n"),
         userPrompt: [
           "## Task",
