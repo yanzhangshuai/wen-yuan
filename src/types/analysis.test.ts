@@ -132,9 +132,9 @@ describe("parseChapterAnalysisResponse", () => {
     const result = parseChapterAnalysisResponse(JSON.stringify({
       relationships: [
         {
-          sourceName : "范进",
-          targetName : "胡屠户",
-          evidence   : "二人关系无法被现有字典表达"
+          sourceName: "范进",
+          targetName: "胡屠户",
+          evidence  : "二人关系无法被现有字典表达"
           // 缺少 relationshipTypeCode → 丢弃
         },
         {

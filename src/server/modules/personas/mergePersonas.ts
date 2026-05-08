@@ -18,7 +18,7 @@
  * =============================================================================
  */
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { PersonaNotFoundError } from "@/server/modules/personas/errors";
 
@@ -111,6 +111,230 @@ function shouldKeepFirstRelationship(
   return first.id < second.id;
 }
 
+/**
+ * 核心合并逻辑：在已有事务中执行源人物到目标人物的完整合并。
+ * 包括传记重定向、提及重定向、关系处理、Profile 合并、别名合并和源人物软删除。
+ *
+ * 提取为独立函数以支持：
+ * - 主动合并 (mergePersonas)
+ * - 审核建议合并 (acceptMergeSuggestion)
+ *
+ * @param tx - 事务客户端 (PrismaClient)
+ * @param input - 合并输入参数
+ * @returns 合并结果统计
+ */
+export async function mergePersonasInTransaction(
+  tx: Prisma.TransactionClient,
+  input: MergePersonasInput
+): Promise<MergePersonasResult> {
+  const personas = await tx.persona.findMany({
+    where: {
+      id       : { in: [input.sourceId, input.targetId] },
+      deletedAt: null
+    },
+    select: {
+      id     : true,
+      name   : true,
+      aliases: true
+    }
+  });
+
+  const sourcePersona = personas.find((item) => item.id === input.sourceId);
+  if (!sourcePersona) {
+    throw new PersonaNotFoundError(input.sourceId);
+  }
+
+  const targetPersona = personas.find((item) => item.id === input.targetId);
+  if (!targetPersona) {
+    throw new PersonaNotFoundError(input.targetId);
+  }
+
+  const now = new Date();
+  const biographyUpdated = await tx.biographyRecord.updateMany({
+    where: {
+      personaId: sourcePersona.id,
+      deletedAt: null
+    },
+    data: {
+      personaId: targetPersona.id
+    }
+  });
+  const mentionUpdated = await tx.mention.updateMany({
+    where: {
+      personaId: sourcePersona.id,
+      deletedAt: null
+    },
+    data: {
+      personaId: targetPersona.id
+    }
+  });
+
+  const relations = await tx.relationship.findMany({
+    where: {
+      deletedAt: null,
+      OR       : [
+        { sourceId: sourcePersona.id },
+        { targetId: sourcePersona.id }
+      ]
+    },
+    select: {
+      id                  : true,
+      bookId              : true,
+      sourceId            : true,
+      targetId            : true,
+      relationshipTypeCode: true,
+      recordSource        : true
+    }
+  });
+  const symmetricRelationshipTypes = await tx.relationshipTypeDefinition.findMany({
+    where: {
+      directionMode: "SYMMETRIC",
+      status       : "ACTIVE"
+    },
+    select: { code: true }
+  });
+  const symmetricTypeCodes = new Set(symmetricRelationshipTypes.map((item) => item.code));
+
+  let redirectedRelationships = 0;
+  let rejectedRelationships = 0;
+
+  for (const relation of relations) {
+    let nextSourceId = relation.sourceId === sourcePersona.id ? targetPersona.id : relation.sourceId;
+    let nextTargetId = relation.targetId === sourcePersona.id ? targetPersona.id : relation.targetId;
+
+    if (nextSourceId === nextTargetId) {
+      await tx.relationship.update({
+        where: { id: relation.id },
+        data : {
+          status   : ProcessingStatus.REJECTED,
+          deletedAt: now
+        }
+      });
+      rejectedRelationships += 1;
+      continue;
+    }
+
+    if (symmetricTypeCodes.has(relation.relationshipTypeCode) && nextSourceId > nextTargetId) {
+      [nextSourceId, nextTargetId] = [nextTargetId, nextSourceId];
+    }
+
+    const duplicated = await tx.relationship.findFirst({
+      where: {
+        id                  : { not: relation.id },
+        deletedAt           : null,
+        bookId              : relation.bookId,
+        sourceId            : nextSourceId,
+        targetId            : nextTargetId,
+        relationshipTypeCode: relation.relationshipTypeCode
+      },
+      select: {
+        id          : true,
+        recordSource: true
+      }
+    });
+
+    if (duplicated) {
+      const keepCurrentRelation = shouldKeepFirstRelationship(relation, duplicated);
+      const rejectedRelationshipId = keepCurrentRelation ? duplicated.id : relation.id;
+
+      await tx.relationship.update({
+        where: { id: rejectedRelationshipId },
+        data : {
+          status   : ProcessingStatus.REJECTED,
+          deletedAt: now
+        }
+      });
+
+      if (keepCurrentRelation) {
+        await tx.relationship.update({
+          where: { id: relation.id },
+          data : {
+            sourceId: nextSourceId,
+            targetId: nextTargetId
+          }
+        });
+        redirectedRelationships += 1;
+      }
+
+      rejectedRelationships += 1;
+      continue;
+    }
+
+    if (relation.sourceId !== nextSourceId || relation.targetId !== nextTargetId) {
+      await tx.relationship.update({
+        where: { id: relation.id },
+        data : {
+          sourceId: nextSourceId,
+          targetId: nextTargetId
+        }
+      });
+      redirectedRelationships += 1;
+    }
+  }
+
+  // Profile 合并
+  const sourceProfiles = await tx.profile.findMany({
+    where: { personaId: sourcePersona.id, deletedAt: null }
+  });
+  const targetProfiles = await tx.profile.findMany({
+    where: { personaId: targetPersona.id, deletedAt: null }
+  });
+  const targetProfileByBook = new Map(targetProfiles.map((p) => [p.bookId, p]));
+
+  for (const sp of sourceProfiles) {
+    const tp = targetProfileByBook.get(sp.bookId);
+    if (!tp) {
+      await tx.profile.update({
+        where: { id: sp.id },
+        data : { personaId: targetPersona.id }
+      });
+    } else {
+      await tx.profile.update({
+        where: { id: tp.id },
+        data : {
+          localTags               : [...new Set([...tp.localTags, ...sp.localTags])],
+          ironyIndex              : Math.max(tp.ironyIndex, sp.ironyIndex),
+          localSummary            : tp.localSummary ?? sp.localSummary,
+          officialTitle           : tp.officialTitle ?? sp.officialTitle,
+          moralTier               : tp.moralTier ?? sp.moralTier,
+          firstAppearanceChapterId: tp.firstAppearanceChapterId ?? sp.firstAppearanceChapterId,
+          visualConfig            : (tp.visualConfig ?? sp.visualConfig ?? undefined)
+        }
+      });
+      await tx.profile.update({
+        where: { id: sp.id },
+        data : { deletedAt: now }
+      });
+    }
+  }
+
+  await tx.persona.update({
+    where: { id: targetPersona.id },
+    data : {
+      aliases: normalizeAliases([
+        ...targetPersona.aliases,
+        ...sourcePersona.aliases,
+        sourcePersona.name
+      ])
+    }
+  });
+  await tx.persona.update({
+    where: { id: sourcePersona.id },
+    data : {
+      deletedAt: now
+    }
+  });
+
+  return {
+    sourceId                : sourcePersona.id,
+    targetId                : targetPersona.id,
+    redirectedRelationships,
+    rejectedRelationships,
+    redirectedBiographyCount: biographyUpdated.count,
+    redirectedMentionCount  : mentionUpdated.count
+  };
+}
+
 export function createMergePersonasService(
   prismaClient: PrismaClient = prisma
 ) {
@@ -133,176 +357,7 @@ export function createMergePersonasService(
     }
 
     return prismaClient.$transaction(async (tx) => {
-      const personas = await tx.persona.findMany({
-        where: {
-          id       : { in: [input.sourceId, input.targetId] },
-          deletedAt: null
-        },
-        select: {
-          id     : true,
-          name   : true,
-          aliases: true
-        }
-      });
-
-      const sourcePersona = personas.find((item) => item.id === input.sourceId);
-      if (!sourcePersona) {
-        throw new PersonaNotFoundError(input.sourceId);
-      }
-
-      const targetPersona = personas.find((item) => item.id === input.targetId);
-      if (!targetPersona) {
-        throw new PersonaNotFoundError(input.targetId);
-      }
-
-      const now = new Date();
-      const biographyUpdated = await tx.biographyRecord.updateMany({
-        where: {
-          personaId: sourcePersona.id,
-          deletedAt: null
-        },
-        data: {
-          personaId: targetPersona.id
-        }
-      });
-      const mentionUpdated = await tx.mention.updateMany({
-        where: {
-          personaId: sourcePersona.id,
-          deletedAt: null
-        },
-        data: {
-          personaId: targetPersona.id
-        }
-      });
-
-      const relations = await tx.relationship.findMany({
-        where: {
-          deletedAt: null,
-          OR       : [
-            { sourceId: sourcePersona.id },
-            { targetId: sourcePersona.id }
-          ]
-        },
-        select: {
-          id                  : true,
-          bookId              : true,
-          sourceId            : true,
-          targetId            : true,
-          relationshipTypeCode: true,
-          recordSource        : true
-        }
-      });
-      const symmetricRelationshipTypes = await tx.relationshipTypeDefinition.findMany({
-        where: {
-          directionMode: "SYMMETRIC",
-          status       : "ACTIVE"
-        },
-        select: { code: true }
-      });
-      const symmetricTypeCodes = new Set(symmetricRelationshipTypes.map((item) => item.code));
-
-      let redirectedRelationships = 0;
-      let rejectedRelationships = 0;
-
-      for (const relation of relations) {
-        let nextSourceId = relation.sourceId === sourcePersona.id ? targetPersona.id : relation.sourceId;
-        let nextTargetId = relation.targetId === sourcePersona.id ? targetPersona.id : relation.targetId;
-
-        if (nextSourceId === nextTargetId) {
-          await tx.relationship.update({
-            where: { id: relation.id },
-            data : {
-              status   : ProcessingStatus.REJECTED,
-              deletedAt: now
-            }
-          });
-          rejectedRelationships += 1;
-          continue;
-        }
-
-        if (symmetricTypeCodes.has(relation.relationshipTypeCode) && nextSourceId > nextTargetId) {
-          [nextSourceId, nextTargetId] = [nextTargetId, nextSourceId];
-        }
-
-        const duplicated = await tx.relationship.findFirst({
-          where: {
-            id                  : { not: relation.id },
-            deletedAt           : null,
-            bookId              : relation.bookId,
-            sourceId            : nextSourceId,
-            targetId            : nextTargetId,
-            relationshipTypeCode: relation.relationshipTypeCode
-          },
-          select: {
-            id          : true,
-            recordSource: true
-          }
-        });
-
-        if (duplicated) {
-          const keepCurrentRelation = shouldKeepFirstRelationship(relation, duplicated);
-          const rejectedRelationshipId = keepCurrentRelation ? duplicated.id : relation.id;
-
-          await tx.relationship.update({
-            where: { id: rejectedRelationshipId },
-            data : {
-              status   : ProcessingStatus.REJECTED,
-              deletedAt: now
-            }
-          });
-
-          if (keepCurrentRelation) {
-            await tx.relationship.update({
-              where: { id: relation.id },
-              data : {
-                sourceId: nextSourceId,
-                targetId: nextTargetId
-              }
-            });
-            redirectedRelationships += 1;
-          }
-
-          rejectedRelationships += 1;
-          continue;
-        }
-
-        if (relation.sourceId !== nextSourceId || relation.targetId !== nextTargetId) {
-          await tx.relationship.update({
-            where: { id: relation.id },
-            data : {
-              sourceId: nextSourceId,
-              targetId: nextTargetId
-            }
-          });
-          redirectedRelationships += 1;
-        }
-      }
-
-      await tx.persona.update({
-        where: { id: targetPersona.id },
-        data : {
-          aliases: normalizeAliases([
-            ...targetPersona.aliases,
-            ...sourcePersona.aliases,
-            sourcePersona.name
-          ])
-        }
-      });
-      await tx.persona.update({
-        where: { id: sourcePersona.id },
-        data : {
-          deletedAt: now
-        }
-      });
-
-      return {
-        sourceId                : sourcePersona.id,
-        targetId                : targetPersona.id,
-        redirectedRelationships,
-        rejectedRelationships,
-        redirectedBiographyCount: biographyUpdated.count,
-        redirectedMentionCount  : mentionUpdated.count
-      };
+      return mergePersonasInTransaction(tx, input);
     });
   }
 

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { ProcessingStatus } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { mergePersonasInTransaction } from "@/server/modules/personas/mergePersonas";
 
 /**
  * =============================================================================
@@ -167,32 +167,6 @@ function mapSuggestionRow(item: {
   };
 }
 
-/**
- * 功能：标准化并去重别名数组。
- * 输入：原始 alias 列表。
- * 输出：trim + 去重 + 去空后的 alias 列表。
- *
- * 设计原因：
- * - 合并后别名来源多，必须去重避免冗余污染；
- * - 去空值是防御措施，避免脏字符串进入人物主档。
- */
-function normalizeAliases(input: string[]): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-
-  for (const item of input) {
-    const normalized = item.trim();
-    if (!normalized || seen.has(normalized)) {
-      continue;
-    }
-
-    seen.add(normalized);
-    result.push(normalized);
-  }
-
-  return result;
-}
-
 export function createMergeSuggestionsService(
   prismaClient: PrismaClient = prisma
 ) {
@@ -210,7 +184,9 @@ export function createMergeSuggestionsService(
     const suggestions = await prismaClient.mergeSuggestion.findMany({
       where: {
         ...(parsedFilter.bookId ? { bookId: parsedFilter.bookId } : {}),
-        ...(parsedFilter.status ? { status: parsedFilter.status } : {})
+        ...(parsedFilter.status ? { status: parsedFilter.status } : {}),
+        sourcePersona: { deletedAt: null },
+        targetPersona: { deletedAt: null }
       },
       orderBy: [{ createdAt: "desc" }],
       select : {
@@ -265,7 +241,6 @@ export function createMergeSuggestionsService(
    */
   async function acceptMergeSuggestion(suggestionId: string): Promise<MergeSuggestionItem> {
     return prismaClient.$transaction(async (tx) => {
-      // 第一步：读取建议与 source/target 最小必要信息，校验可处理性。
       const suggestion = await tx.mergeSuggestion.findUnique({
         where : { id: suggestionId },
         select: {
@@ -279,26 +254,12 @@ export function createMergeSuggestionsService(
           status         : true,
           createdAt      : true,
           resolvedAt     : true,
-          book           : {
-            select: {
-              title: true
-            }
-          },
-          sourcePersona: {
-            select: {
-              id       : true,
-              name     : true,
-              aliases  : true,
-              deletedAt: true
-            }
+          book           : { select: { title: true } },
+          sourcePersona  : {
+            select: { id: true, name: true, aliases: true, deletedAt: true }
           },
           targetPersona: {
-            select: {
-              id       : true,
-              name     : true,
-              aliases  : true,
-              deletedAt: true
-            }
+            select: { id: true, name: true, aliases: true, deletedAt: true }
           }
         }
       });
@@ -307,142 +268,25 @@ export function createMergeSuggestionsService(
         throw new MergeSuggestionNotFoundError(suggestionId);
       }
 
-      // 仅允许从 PENDING 进入 ACCEPTED，这是工作台确认流程状态机业务规则。
       if (suggestion.status !== "PENDING") {
         throw new MergeSuggestionStateError(suggestion.id, suggestion.status);
       }
 
-      // 防御并发场景：若人物已被删除，本次合并必须终止。
       if (suggestion.sourcePersona.deletedAt || suggestion.targetPersona.deletedAt) {
         throw new PersonaMergeConflictError(suggestion.id, "源人物或目标人物已被删除，无法执行合并");
       }
 
+      // 调用权威合并核心
+      await mergePersonasInTransaction(tx, {
+        sourceId: suggestion.sourcePersonaId,
+        targetId: suggestion.targetPersonaId
+      });
+
+      // 回写建议状态
       const now = new Date();
-      const sourcePersonaId = suggestion.sourcePersonaId;
-      const targetPersonaId = suggestion.targetPersonaId;
-
-      // 第二步：先迁移“单向归属型数据”，把 source 归并到 target。
-      await tx.biographyRecord.updateMany({
-        where: {
-          personaId: sourcePersonaId,
-          deletedAt: null
-        },
-        data: {
-          personaId: targetPersonaId
-        }
-      });
-
-      await tx.mention.updateMany({
-        where: {
-          personaId: sourcePersonaId,
-          deletedAt: null
-        },
-        data: {
-          personaId: targetPersonaId
-        }
-      });
-
-      // 第三步：处理关系边迁移。
-      // 关系比 biography/mention 更复杂，因为替换 sourceId/targetId 后可能出现：
-      // 1) 自环边（source===target）；
-      // 2) 重复边（同 book/source/target/relationshipTypeCode 重复）。
-      const affectedRelations = await tx.relationship.findMany({
-        where: {
-          deletedAt: null,
-          OR       : [
-            { sourceId: sourcePersonaId },
-            { targetId: sourcePersonaId }
-          ]
-        },
-        select: {
-          id                  : true,
-          bookId              : true,
-          sourceId            : true,
-          targetId            : true,
-          relationshipTypeCode: true
-        }
-      });
-
-      for (const relation of affectedRelations) {
-        const nextSourceId = relation.sourceId === sourcePersonaId ? targetPersonaId : relation.sourceId;
-        const nextTargetId = relation.targetId === sourcePersonaId ? targetPersonaId : relation.targetId;
-
-        // 分支 A：替换后形成自环边，按业务规则直接作废（REJECTED + 软删除）。
-        if (nextSourceId === nextTargetId) {
-          await tx.relationship.update({
-            where: { id: relation.id },
-            data : {
-              status   : ProcessingStatus.REJECTED,
-              deletedAt: now
-            }
-          });
-          continue;
-        }
-
-        // 分支 B：替换后与现存边重复，也作废当前边，避免图数据重复。
-        const duplicated = await tx.relationship.findFirst({
-          where: {
-            id                  : { not: relation.id },
-            deletedAt           : null,
-            bookId              : relation.bookId,
-            sourceId            : nextSourceId,
-            targetId            : nextTargetId,
-            relationshipTypeCode: relation.relationshipTypeCode
-          },
-          select: { id: true }
-        });
-
-        if (duplicated) {
-          await tx.relationship.update({
-            where: { id: relation.id },
-            data : {
-              status   : ProcessingStatus.REJECTED,
-              deletedAt: now
-            }
-          });
-          continue;
-        }
-
-        // 分支 C：合法迁移，更新 sourceId/targetId。
-        if (nextSourceId !== relation.sourceId || nextTargetId !== relation.targetId) {
-          await tx.relationship.update({
-            where: { id: relation.id },
-            data : {
-              sourceId: nextSourceId,
-              targetId: nextTargetId
-            }
-          });
-        }
-      }
-
-      // 第四步：把 source 的名字与别名并入 target，构建统一人物画像。
-      await tx.persona.update({
-        where: { id: targetPersonaId },
-        data : {
-          aliases: normalizeAliases([
-            ...suggestion.targetPersona.aliases,
-            ...suggestion.sourcePersona.aliases,
-            suggestion.sourcePersona.name
-          ])
-        }
-      });
-
-      // 第五步：软删除 source 人物。
-      // 说明：软删除而不是硬删除，是为了保留审计与追溯能力。
-      await tx.persona.update({
-        where: { id: sourcePersonaId },
-        data : {
-          deletedAt: now
-        }
-      });
-
-      // 第六步：回写建议状态，标记本次建议已处理完成。
       const updatedSuggestion = await tx.mergeSuggestion.update({
-        where: { id: suggestion.id },
-        data : {
-          status    : "ACCEPTED",
-          resolvedAt: now
-        },
+        where : { id: suggestion.id },
+        data  : { status: "ACCEPTED", resolvedAt: now },
         select: {
           id             : true,
           bookId         : true,
@@ -454,21 +298,9 @@ export function createMergeSuggestionsService(
           status         : true,
           createdAt      : true,
           resolvedAt     : true,
-          book           : {
-            select: {
-              title: true
-            }
-          },
-          sourcePersona: {
-            select: {
-              name: true
-            }
-          },
-          targetPersona: {
-            select: {
-              name: true
-            }
-          }
+          book           : { select: { title: true } },
+          sourcePersona  : { select: { name: true } },
+          targetPersona  : { select: { name: true } }
         }
       });
 

@@ -107,13 +107,13 @@ describe("getPersonaPair service", () => {
           directionMode: "INVERSE",
           inverseLabel : "老师"
         },
-        recordSource  : RecordSource.MANUAL,
-        status        : ProcessingStatus.VERIFIED,
-        chapterId     : "chapter-1",
-        chapterNo     : 2,
-        evidence      : "原文证据",
-        summary       : "范进拜见周进",
-        attitudeTags  : []
+        recordSource: RecordSource.MANUAL,
+        status      : ProcessingStatus.VERIFIED,
+        chapterId   : "chapter-1",
+        chapterNo   : 2,
+        evidence    : "原文证据",
+        summary     : "范进拜见周进",
+        attitudeTags: []
       }
     ]);
   });

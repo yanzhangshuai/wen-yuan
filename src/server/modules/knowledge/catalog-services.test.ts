@@ -40,6 +40,7 @@ import {
   testGenericTitle,
   updateGenericTitle
 } from "@/server/modules/knowledge/generic-titles";
+
 const hoisted = vi.hoisted(() => {
   const prisma = {
     bookType: {

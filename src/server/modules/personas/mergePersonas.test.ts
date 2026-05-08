@@ -41,6 +41,10 @@ describe("mergePersonas", () => {
             aliases: []
           }
         ])
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
     const service = createMergePersonasService({
@@ -116,6 +120,10 @@ describe("mergePersonas", () => {
         ]),
         findFirst: relationFindFirst,
         update   : relationUpdate
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
 
@@ -215,6 +223,10 @@ describe("mergePersonas", () => {
         ]),
         findFirst: vi.fn().mockResolvedValue(null),
         update   : relationUpdate
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
 
@@ -266,6 +278,10 @@ describe("mergePersonas", () => {
           recordSource: RecordSource.MANUAL
         }),
         update: relationUpdate
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
 
@@ -320,6 +336,10 @@ describe("mergePersonas", () => {
           recordSource: RecordSource.DRAFT_AI
         }),
         update: relationUpdate
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
 
@@ -372,6 +392,10 @@ describe("mergePersonas", () => {
           recordSource: RecordSource.DRAFT_AI
         }),
         update: relationUpdate
+      },
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
 
@@ -396,6 +420,42 @@ describe("mergePersonas", () => {
         sourceId: "a-winner",
         targetId: "z-other"
       }
+    });
+  });
+
+  it("redirects source profile to target when target has no same-book profile", async () => {
+    const profileUpdate = vi.fn().mockResolvedValue({});
+
+    const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
+      persona: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "source-persona", name: "周进", aliases: [] },
+          { id: "target-persona", name: "周学道", aliases: [] }
+        ]),
+        update: vi.fn().mockResolvedValue({})
+      },
+      biographyRecord           : { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      mention                   : { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      relationshipTypeDefinition: { findMany: vi.fn().mockResolvedValue([]) },
+      relationship              : {
+        findMany : vi.fn().mockResolvedValue([]),
+        findFirst: vi.fn().mockResolvedValue(null),
+        update   : vi.fn().mockResolvedValue({})
+      },
+      profile: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce([{ id: "prof-1", bookId: "book-1", personaId: "source-persona", localTags: [], ironyIndex: 5, localSummary: null, officialTitle: null, moralTier: null, firstAppearanceChapterId: null, visualConfig: null }])
+          .mockResolvedValueOnce([]),
+        update: profileUpdate
+      }
+    }));
+
+    const service = createMergePersonasService({ $transaction: transaction } as never);
+    await service.mergePersonas({ sourceId: "source-persona", targetId: "target-persona" });
+
+    expect(profileUpdate).toHaveBeenCalledWith({
+      where: { id: "prof-1" },
+      data : { personaId: "target-persona" }
     });
   });
 });

@@ -251,31 +251,54 @@ await tx.relationship.upsert({
 
 ## Scenario: Persona Merge and Full Reanalysis Cleanup
 
+> **变更记录 (2026-05-08)**：提取 `mergePersonasInTransaction(tx, input)` 作为权威合并核心，`mergePersonas` 和 `acceptMergeSuggestion` 共用。补上 `Profile` 合并：同书无冲突改绑，冲突时 target 优先合并后软删 source profile。`listMergeSuggestions` 过滤 source/target 已软删的建议。
+
 ### 1. Scope / Trigger
 
-- Trigger: `mergePersonas(targetId, sourceId)` 需要把 loser 相关的关系重定向到 winner；`startBookAnalysis(bookId, options)` 在全量重跑前需要清理旧草稿关系。
-- 涉及层级：`src/server/modules/personas/mergePersonas.ts`、`src/server/modules/books/startBookAnalysis.ts`、对应单测。
+- Trigger: `mergePersonas(targetId, sourceId)` 需要把 loser 相关的关系重定向到 winner，并合并 Profile 档案；`acceptMergeSuggestion(suggestionId)` 通过同一核心函数执行合并；`startBookAnalysis(bookId, options)` 在全量重跑前需要清理旧草稿关系。
+- 涉及层级：`src/server/modules/personas/mergePersonas.ts`、`src/server/modules/roleWorkbench/mergeSuggestions.ts`、`src/server/modules/books/startBookAnalysis.ts`、对应单测。
 
 ### 2. Signatures
 
 ```ts
-mergePersonas({ targetId, sourceId }): {
-  sourceId: string;
-  targetId: string;
-  redirectedRelationships: number;
-  rejectedRelationships: number;
+// 事务内权威合并核心（供手动合并和建议接受共用）
+mergePersonasInTransaction(
+  tx: Prisma.TransactionClient,
+  input: MergePersonasInput
+): Promise<MergePersonasResult>
+
+// 手动合并入口：校验 + 开事务 + 调核心
+mergePersonas({ targetId, sourceId }): Promise<MergePersonasResult>
+
+// 返回类型
+MergePersonasResult: {
+  sourceId                : string;
+  targetId                : string;
+  redirectedRelationships : number;
+  rejectedRelationships   : number;
   redirectedBiographyCount: number;
-  redirectedMentionCount: number;
+  redirectedMentionCount  : number;
 }
+
+// 合并建议接受：读建议 + 校验状态 + 调 mergePersonasInTransaction + 回写 ACCEPTED
+acceptMergeSuggestion(suggestionId: string): Promise<MergeSuggestionItem>
+
+// 合并建议列表：排除 source/target 已软删的 PENDING 建议
+listMergeSuggestions(filter?): Promise<MergeSuggestionItem[]>
 
 startBookAnalysis(bookId, input?): Promise<StartBookAnalysisResult>
 ```
 
 ### 3. Contracts
 
+- `mergePersonasInTransaction` 是唯一权威合并实现，承载完整语义：BiographyRecord、Mention、Relationship、Profile、别名合并、源人物软删除。
+- `mergePersonas` 只做入口校验（`sourceId !== targetId`）和开启事务，委托核心函数。
+- `acceptMergeSuggestion` 在同一事务中完成：读建议 → 校验 PENDING → 校验人物未删 → 调 `mergePersonasInTransaction` → 回写 ACCEPTED。
 - `Relationship` 以 `(bookId, sourceId, targetId, relationshipTypeCode)` 作为 active 唯一键语义。
 - `RecordSource` 只允许单调升级：`DRAFT_AI -> AI -> MANUAL`。
-- `mergePersonas` 合并同名边时，优先保留更高 `recordSource`；同级时保留 `id` 字典序更小者。
+- 合并同名边时，优先保留更高 `recordSource`；同级时保留 `id` 字典序更小者。
+- **Profile 合并**：source profile 迁移到 target。同书无冲突时改绑 `personaId`；同书冲突时 target 优先（字段空则补 source），`localTags` 去重合并，`ironyIndex` 取 max，source profile 软删。
+- **合并建议过滤**：`listMergeSuggestions` 不返回 source 或 target 已软删的建议；`acceptMergeSuggestion` 遇到已删人物返回 `PersonaMergeConflictError`。
 - `startBookAnalysis` 只在全量重跑时硬删除该书的 `DRAFT_AI` Relationship，且必须与创建 `AnalysisJob` 处于同一事务。
 - 不再需要级联处理 `RelationshipEvent` 表（已删除）。
 
@@ -287,14 +310,19 @@ startBookAnalysis(bookId, input?): Promise<StartBookAnalysisResult>
 | 合并后 source/target 相同 | 软删关系 |
 | `directionMode === "SYMMETRIC"` | 合并后按 UUID 字符串顺序 canonicalize |
 | 唯一键冲突 | 按 `recordSource` 与 `id` 规则决定保留者 |
+| source/target 已软删 (accept) | Throw `PersonaMergeConflictError` |
+| 建议非 PENDING (accept) | Throw `MergeSuggestionStateError` |
 | 全量重跑 | 先清 `DRAFT_AI` 草稿，再创建 `AnalysisJob` |
 | 章节子集重跑 | 不清草稿 |
 
 ### 5. Good/Base/Bad Cases
 
-- Good: loser 的关系全部迁到 winner，端点与关系端点一致。
+- Good: loser 的关系全部迁到 winner，Profile 档案正确合并，前端可见完整角色资料。
+- Good: 手动合并和建议接受产生完全一致的数据结果。
 - Base: 对称关系在重定向后仍保持"小者在前"的 canonical 顺序。
-- Bad: 在部分重跑时误删非草稿关系；或仍尝试操作不存在的 `RelationshipEvent` 表。
+- Bad: 接受合并建议与手动合并走不同代码路径，导致关系边处理结果不一致。
+- Bad: 合并后 source profile 丢失，用户看到"已合并但角色资料不完整"。
+- Bad: 合并建议列表展示指向已删人物的僵尸建议，用户点击接受后报错。
 
 ### 6. Tests Required
 
@@ -303,7 +331,13 @@ startBookAnalysis(bookId, input?): Promise<StartBookAnalysisResult>
   - 自环软删。
   - 对称关系重新 canonicalize。
   - 冲突按 `recordSource` 和 `id` 合并。
+  - Profile 无冲突时改绑到 target。
+  - Profile 同书冲突时合并字段、source profile 软删。
   - 不再 mock `relationshipEvent` 相关方法。
+- `mergeSuggestions.test.ts`
+  - 接受建议时调用 `mergePersonasInTransaction`（验证 biography/mention/relationship/profile 均被处理）。
+  - mock tx 包含 `persona.findMany`、`relationshipTypeDefinition.findMany`、`profile.findMany/update`。
+  - 已删人物建议拒绝接受。
 - `startBookAnalysis.test.ts`
   - 全量重跑清理 `DRAFT_AI` 关系。
   - 章节子集不清理。
@@ -311,23 +345,41 @@ startBookAnalysis(bookId, input?): Promise<StartBookAnalysisResult>
 
 ### 7. Wrong vs Correct
 
-#### Wrong
+#### Wrong (旧模式：两套合并逻辑 + 无 Profile 合并)
+
+```ts
+// mergeSuggestions.ts 内联合并逻辑，与 mergePersonas.ts 行为不一致
+await tx.biographyRecord.updateMany({ ... });
+await tx.mention.updateMany({ ... });
+// 缺少对称类型处理、RecordSource 优先级
+for (const relation of affectedRelations) { ... }
+// 缺少 Profile 合并
+```
+
+#### Wrong (仍尝试操作已删除的 RelationshipEvent 表)
 
 ```ts
 await tx.relationshipEvent.deleteMany({ where: { bookId, recordSource: RecordSource.DRAFT_AI } });
-await tx.relationship.deleteMany({ where: { bookId, recordSource: RecordSource.DRAFT_AI } });
-await tx.analysisJob.create(...);
 ```
 
-#### Correct
+#### Correct (统一核心 + Profile 合并)
 
 ```ts
-await tx.$transaction(async (tx) => {
-  await tx.relationship.deleteMany({
-    where: { bookId, recordSource: RecordSource.DRAFT_AI }
-  });
-  await tx.analysisJob.create(...);
-});
+// mergePersonas.ts — 权威核心
+export async function mergePersonasInTransaction(
+  tx: Prisma.TransactionClient,
+  input: MergePersonasInput
+): Promise<MergePersonasResult> {
+  // BiographyRecord、Mention、Relationship（对称 + 优先级）、Profile 合并、别名、软删
+}
+
+// mergePersonas — 薄封装
+async function mergePersonas(input: MergePersonasInput) {
+  return prismaClient.$transaction(tx => mergePersonasInTransaction(tx, input));
+}
+
+// mergeSuggestions.ts — 委托核心
+await mergePersonasInTransaction(tx, { sourceId, targetId });
 ```
 
 ---

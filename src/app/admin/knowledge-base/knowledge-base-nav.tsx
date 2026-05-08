@@ -37,14 +37,14 @@ export interface KnowledgeBaseNavProps {
 }
 
 const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
-  overview                   : BookMarked,
-  "book-type"                : BookOpenText,
-  "alias-pack"               : Sparkles,
-  "title-filter"             : Filter,
-  "prompt-template"          : ScrollText,
-  "extraction-rule"          : Regex,
-  "relationship-type"        : Network,
-  "change-log"               : FileClock
+  overview           : BookMarked,
+  "book-type"        : BookOpenText,
+  "alias-pack"       : Sparkles,
+  "title-filter"     : Filter,
+  "prompt-template"  : ScrollText,
+  "extraction-rule"  : Regex,
+  "relationship-type": Network,
+  "change-log"       : FileClock
 };
 
 /**

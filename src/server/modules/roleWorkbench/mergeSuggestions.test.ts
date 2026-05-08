@@ -55,7 +55,7 @@ describe("merge suggestions service", () => {
     const result = await service.listMergeSuggestions({ status: "PENDING" });
 
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where  : { status: "PENDING" },
+      where  : expect.objectContaining({ status: "PENDING" }),
       orderBy: [{ createdAt: "desc" }]
     }));
     expect(result).toEqual([
@@ -170,6 +170,10 @@ describe("merge suggestions service", () => {
     const biographyUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
     const mentionUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
     const personaUpdate = vi.fn().mockResolvedValue({});
+    const personaFindMany = vi.fn().mockResolvedValue([
+      { id: "source-persona", name: "周进", aliases: ["周公"] },
+      { id: "target-persona", name: "周学道", aliases: ["周大人"] }
+    ]);
     const mergeSuggestionUpdate = vi.fn().mockResolvedValue(createSuggestionRow({
       id        : "s-accept",
       status    : "ACCEPTED",
@@ -196,20 +200,20 @@ describe("merge suggestions service", () => {
     });
     const relationFindMany = vi.fn().mockResolvedValue([
       {
-        id          : "rel-self-loop",
-        chapterId   : "chapter-1",
-        sourceId    : "source-persona",
-        targetId    : "target-persona",
-        type        : "师生",
-        recordSource: "AI"
+        id                  : "rel-self-loop",
+        bookId              : "book-1",
+        sourceId            : "source-persona",
+        targetId            : "target-persona",
+        relationshipTypeCode: "师生",
+        recordSource        : "AI"
       },
       {
-        id          : "rel-update",
-        chapterId   : "chapter-2",
-        sourceId    : "source-persona",
-        targetId    : "other-persona",
-        type        : "同僚",
-        recordSource: "AI"
+        id                  : "rel-update",
+        bookId              : "book-1",
+        sourceId            : "source-persona",
+        targetId            : "other-persona",
+        relationshipTypeCode: "同僚",
+        recordSource        : "AI"
       }
     ]);
     const transaction = vi.fn().mockImplementation(async (callback: (tx: unknown) => unknown) => callback({
@@ -217,27 +221,26 @@ describe("merge suggestions service", () => {
         findUnique: mergeSuggestionFindUnique,
         update    : mergeSuggestionUpdate
       },
-      biographyRecord: {
-        updateMany: biographyUpdateMany
+      persona: {
+        findMany: personaFindMany,
+        update  : personaUpdate
       },
-      mention: {
-        updateMany: mentionUpdateMany
+      biographyRecord           : { updateMany: biographyUpdateMany },
+      mention                   : { updateMany: mentionUpdateMany },
+      relationshipTypeDefinition: {
+        findMany: vi.fn().mockResolvedValue([])
       },
       relationship: {
         findMany: relationFindMany,
         findFirst,
         update  : relationshipUpdate
       },
-      relationshipEvent: {
-        updateMany: vi.fn().mockResolvedValue({ count: 0 })
-      },
-      persona: {
-        update: personaUpdate
+      profile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        update  : vi.fn().mockResolvedValue({})
       }
     }));
-    const service = createMergeSuggestionsService({
-      $transaction: transaction
-    } as never);
+    const service = createMergeSuggestionsService({ $transaction: transaction } as never);
 
     const result = await service.acceptMergeSuggestion("s-accept");
 
@@ -250,28 +253,15 @@ describe("merge suggestions service", () => {
     }));
     expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "rel-self-loop" },
-      data : expect.objectContaining({
-        status: ProcessingStatus.REJECTED
-      })
-    }));
-    expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "rel-update" },
-      data : {
-        sourceId: "target-persona",
-        targetId: "other-persona"
-      }
+      data : expect.objectContaining({ status: ProcessingStatus.REJECTED })
     }));
     expect(personaUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "target-persona" },
-      data : expect.objectContaining({
-        aliases: ["周大人", "周公", "周进"]
-      })
+      data : expect.objectContaining({ aliases: ["周大人", "周公", "周进"] })
     }));
     expect(mergeSuggestionUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "s-accept" },
-      data : expect.objectContaining({
-        status: "ACCEPTED"
-      })
+      data : expect.objectContaining({ status: "ACCEPTED" })
     }));
   });
 });

@@ -287,10 +287,10 @@ function normalizeAiRelationshipRecord(item: Record<string, unknown>): AiRelatio
   }
 
   const parsed = aiRelationshipSchema.safeParse({
-    sourceName          : item.sourceName,
-    targetName          : item.targetName,
+    sourceName: item.sourceName,
+    targetName: item.targetName,
     relationshipTypeCode,
-    evidence            : typeof item.evidence === "string" ? item.evidence : undefined
+    evidence  : typeof item.evidence === "string" ? item.evidence : undefined
   });
 
   if (!parsed.success) {
@@ -317,14 +317,14 @@ function normalizeAiRelationshipEventRecord(item: Record<string, unknown>): AiRe
   }
 
   const parsed = aiRelationshipEventSchema.safeParse({
-    sourceName          : item.sourceName,
-    targetName          : item.targetName,
+    sourceName  : item.sourceName,
+    targetName  : item.targetName,
     relationshipTypeCode,
-    summary             : item.summary,
-    evidence            : typeof item.evidence === "string" ? item.evidence : undefined,
-    attitudeTags        : Array.isArray(item.attitudeTags) ? item.attitudeTags : [],
-    paraIndex           : typeof item.paraIndex === "number" ? item.paraIndex : undefined,
-    confidence          : typeof item.confidence === "number" ? item.confidence : undefined
+    summary     : item.summary,
+    evidence    : typeof item.evidence === "string" ? item.evidence : undefined,
+    attitudeTags: Array.isArray(item.attitudeTags) ? item.attitudeTags : [],
+    paraIndex   : typeof item.paraIndex === "number" ? item.paraIndex : undefined,
+    confidence  : typeof item.confidence === "number" ? item.confidence : undefined
   });
 
   if (!parsed.success) {
