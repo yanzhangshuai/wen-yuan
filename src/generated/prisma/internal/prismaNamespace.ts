@@ -396,12 +396,12 @@ export const ModelName = {
   Fact: 'Fact',
   FactEvidence: 'FactEvidence',
   Relationship: 'Relationship',
+  RelationshipType: 'RelationshipType',
   Skill: 'Skill',
   SkillVersion: 'SkillVersion',
   BookTypeSkill: 'BookTypeSkill',
   AnalysisJob: 'AnalysisJob',
   AgentRun: 'AgentRun',
-  AgentStep: 'AgentStep',
   AgentWriteAudit: 'AgentWriteAudit',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
@@ -425,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "factEvidence" | "relationship" | "skill" | "skillVersion" | "bookTypeSkill" | "analysisJob" | "agentRun" | "agentStep" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "textChunk" | "bookType" | "modelStrategyConfig" | "analysisPhaseLog" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "factEvidence" | "relationship" | "relationshipType" | "skill" | "skillVersion" | "bookTypeSkill" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "textChunk" | "bookType" | "modelStrategyConfig" | "analysisPhaseLog" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1317,6 +1317,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RelationshipType: {
+      payload: Prisma.$RelationshipTypePayload<ExtArgs>
+      fields: Prisma.RelationshipTypeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RelationshipTypeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RelationshipTypeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
+        }
+        findFirst: {
+          args: Prisma.RelationshipTypeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RelationshipTypeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
+        }
+        findMany: {
+          args: Prisma.RelationshipTypeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>[]
+        }
+        create: {
+          args: Prisma.RelationshipTypeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
+        }
+        createMany: {
+          args: Prisma.RelationshipTypeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RelationshipTypeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>[]
+        }
+        delete: {
+          args: Prisma.RelationshipTypeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
+        }
+        update: {
+          args: Prisma.RelationshipTypeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
+        }
+        deleteMany: {
+          args: Prisma.RelationshipTypeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RelationshipTypeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RelationshipTypeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>[]
+        }
+        upsert: {
+          args: Prisma.RelationshipTypeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
+        }
+        aggregate: {
+          args: Prisma.RelationshipTypeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRelationshipType>
+        }
+        groupBy: {
+          args: Prisma.RelationshipTypeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationshipTypeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RelationshipTypeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RelationshipTypeCountAggregateOutputType> | number
+        }
+      }
+    }
     Skill: {
       payload: Prisma.$SkillPayload<ExtArgs>
       fields: Prisma.SkillFieldRefs
@@ -1684,80 +1758,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AgentRunCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AgentRunCountAggregateOutputType> | number
-        }
-      }
-    }
-    AgentStep: {
-      payload: Prisma.$AgentStepPayload<ExtArgs>
-      fields: Prisma.AgentStepFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.AgentStepFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.AgentStepFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>
-        }
-        findFirst: {
-          args: Prisma.AgentStepFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.AgentStepFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>
-        }
-        findMany: {
-          args: Prisma.AgentStepFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>[]
-        }
-        create: {
-          args: Prisma.AgentStepCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>
-        }
-        createMany: {
-          args: Prisma.AgentStepCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.AgentStepCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>[]
-        }
-        delete: {
-          args: Prisma.AgentStepDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>
-        }
-        update: {
-          args: Prisma.AgentStepUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>
-        }
-        deleteMany: {
-          args: Prisma.AgentStepDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.AgentStepUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.AgentStepUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>[]
-        }
-        upsert: {
-          args: Prisma.AgentStepUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentStepPayload>
-        }
-        aggregate: {
-          args: Prisma.AgentStepAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateAgentStep>
-        }
-        groupBy: {
-          args: Prisma.AgentStepGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AgentStepGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.AgentStepCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AgentStepCountAggregateOutputType> | number
         }
       }
     }
@@ -2641,6 +2641,23 @@ export const RelationshipScalarFieldEnum = {
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
 
 
+export const RelationshipTypeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  direction: 'direction',
+  category: 'category',
+  aliases: 'aliases',
+  bookTypeId: 'bookTypeId',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipTypeScalarFieldEnum = (typeof RelationshipTypeScalarFieldEnum)[keyof typeof RelationshipTypeScalarFieldEnum]
+
+
 export const SkillScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
@@ -2705,6 +2722,7 @@ export const AnalysisJobScalarFieldEnum = {
   overrideStrategy: 'overrideStrategy',
   keepHistory: 'keepHistory',
   skillsSnapshot: 'skillsSnapshot',
+  relationshipTypesSnapshot: 'relationshipTypesSnapshot',
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   createdAt: 'createdAt',
@@ -2731,24 +2749,6 @@ export const AgentRunScalarFieldEnum = {
 } as const
 
 export type AgentRunScalarFieldEnum = (typeof AgentRunScalarFieldEnum)[keyof typeof AgentRunScalarFieldEnum]
-
-
-export const AgentStepScalarFieldEnum = {
-  id: 'id',
-  agentRunId: 'agentRunId',
-  stepIndex: 'stepIndex',
-  kind: 'kind',
-  messageText: 'messageText',
-  toolName: 'toolName',
-  toolArgs: 'toolArgs',
-  toolResult: 'toolResult',
-  usage: 'usage',
-  durationMs: 'durationMs',
-  error: 'error',
-  createdAt: 'createdAt'
-} as const
-
-export type AgentStepScalarFieldEnum = (typeof AgentStepScalarFieldEnum)[keyof typeof AgentStepScalarFieldEnum]
 
 
 export const AgentWriteAuditScalarFieldEnum = {
@@ -3150,6 +3150,20 @@ export type ListEnumEventCategoryFieldRefInput<$PrismaModel> = FieldRefInputType
 
 
 /**
+ * Reference to a field of type 'RelationDirection'
+ */
+export type EnumRelationDirectionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RelationDirection'>
+    
+
+
+/**
+ * Reference to a field of type 'RelationDirection[]'
+ */
+export type ListEnumRelationDirectionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RelationDirection[]'>
+    
+
+
+/**
  * Reference to a field of type 'SkillCategory'
  */
 export type EnumSkillCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillCategory'>
@@ -3216,20 +3230,6 @@ export type EnumAgentRunTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'AgentRunType[]'
  */
 export type ListEnumAgentRunTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AgentRunType[]'>
-    
-
-
-/**
- * Reference to a field of type 'AgentStepKind'
- */
-export type EnumAgentStepKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AgentStepKind'>
-    
-
-
-/**
- * Reference to a field of type 'AgentStepKind[]'
- */
-export type ListEnumAgentStepKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AgentStepKind[]'>
     
 
 
@@ -3353,12 +3353,12 @@ export type GlobalOmitConfig = {
   fact?: Prisma.FactOmit
   factEvidence?: Prisma.FactEvidenceOmit
   relationship?: Prisma.RelationshipOmit
+  relationshipType?: Prisma.RelationshipTypeOmit
   skill?: Prisma.SkillOmit
   skillVersion?: Prisma.SkillVersionOmit
   bookTypeSkill?: Prisma.BookTypeSkillOmit
   analysisJob?: Prisma.AnalysisJobOmit
   agentRun?: Prisma.AgentRunOmit
-  agentStep?: Prisma.AgentStepOmit
   agentWriteAudit?: Prisma.AgentWriteAuditOmit
   validationReport?: Prisma.ValidationReportOmit
   mergeSuggestion?: Prisma.MergeSuggestionOmit

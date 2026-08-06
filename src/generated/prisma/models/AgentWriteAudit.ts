@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model AgentWriteAudit
- * @db.remark: 治理层写操作审计。所有 agent 发起的实体/事实/关系写操作留痕（权限判定 + before/after）。
+ * @db.remark: 写操作审计。提取落库 / 审核 / 合并的写操作留痕（evidence 校验通过记录 + before/after）。
  */
 export type AgentWriteAuditModel = runtime.Types.Result.DefaultSelection<Prisma.$AgentWriteAuditPayload>
 

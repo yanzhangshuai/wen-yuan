@@ -20,7 +20,8 @@ export type NameType = (typeof NameType)[keyof typeof NameType]
 export const RecordSource = {
   AI: 'AI',
   MANUAL: 'MANUAL',
-  DRAFT_AI: 'DRAFT_AI'
+  DRAFT_AI: 'DRAFT_AI',
+  AUTO_VERIFIED: 'AUTO_VERIFIED'
 } as const
 
 export type RecordSource = (typeof RecordSource)[keyof typeof RecordSource]
@@ -161,25 +162,21 @@ export type SkillStatus = (typeof SkillStatus)[keyof typeof SkillStatus]
 
 
 export const AgentRunType = {
-  JOB_PIPELINE: 'JOB_PIPELINE',
-  ENTITY_PRESCAN: 'ENTITY_PRESCAN',
-  CHAPTER_ANALYSIS: 'CHAPTER_ANALYSIS',
-  GLOBAL_RESOLUTION: 'GLOBAL_RESOLUTION',
-  TITLE_RESOLUTION: 'TITLE_RESOLUTION',
+  PRESCAN: 'PRESCAN',
+  IDENTITY: 'IDENTITY',
+  EXTRACTION: 'EXTRACTION',
+  RECONCILE: 'RECONCILE',
   VALIDATION: 'VALIDATION',
+  CROSS_VALIDATION: 'CROSS_VALIDATION',
   SKILL_GENERATION: 'SKILL_GENERATION'
 } as const
 
 export type AgentRunType = (typeof AgentRunType)[keyof typeof AgentRunType]
 
 
-export const AgentStepKind = {
-  LLM_CALL: 'LLM_CALL',
-  TOOL_CALL: 'TOOL_CALL',
-  SKILL_LOAD: 'SKILL_LOAD',
-  RULE_APPLY: 'RULE_APPLY',
-  ARBITRATION: 'ARBITRATION',
-  MANUAL: 'MANUAL'
+export const RelationDirection = {
+  INVERSE: 'INVERSE',
+  SYMMETRIC: 'SYMMETRIC'
 } as const
 
-export type AgentStepKind = (typeof AgentStepKind)[keyof typeof AgentStepKind]
+export type RelationDirection = (typeof RelationDirection)[keyof typeof RelationDirection]

@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model AgentRun
- * @db.remark: Agent 运行。一次 runType 的 agent 执行（管线总控/逐章/全局消歧/称号/校验/skill 生成）。
+ * @db.remark: Agent 运行。v5 一次 run = 管线一个确定性阶段（身份/提取/校验等），记录 usage/成本/进度。
  */
 export type AgentRunModel = runtime.Types.Result.DefaultSelection<Prisma.$AgentRunPayload>
 
@@ -241,7 +241,6 @@ export type AgentRunWhereInput = {
   job?: Prisma.XOR<Prisma.AnalysisJobNullableScalarRelationFilter, Prisma.AnalysisJobWhereInput> | null
   book?: Prisma.XOR<Prisma.BookNullableScalarRelationFilter, Prisma.BookWhereInput> | null
   model?: Prisma.XOR<Prisma.AiModelNullableScalarRelationFilter, Prisma.AiModelWhereInput> | null
-  steps?: Prisma.AgentStepListRelationFilter
   facts?: Prisma.FactListRelationFilter
   writeAudits?: Prisma.AgentWriteAuditListRelationFilter
 }
@@ -263,7 +262,6 @@ export type AgentRunOrderByWithRelationInput = {
   job?: Prisma.AnalysisJobOrderByWithRelationInput
   book?: Prisma.BookOrderByWithRelationInput
   model?: Prisma.AiModelOrderByWithRelationInput
-  steps?: Prisma.AgentStepOrderByRelationAggregateInput
   facts?: Prisma.FactOrderByRelationAggregateInput
   writeAudits?: Prisma.AgentWriteAuditOrderByRelationAggregateInput
 }
@@ -288,7 +286,6 @@ export type AgentRunWhereUniqueInput = Prisma.AtLeast<{
   job?: Prisma.XOR<Prisma.AnalysisJobNullableScalarRelationFilter, Prisma.AnalysisJobWhereInput> | null
   book?: Prisma.XOR<Prisma.BookNullableScalarRelationFilter, Prisma.BookWhereInput> | null
   model?: Prisma.XOR<Prisma.AiModelNullableScalarRelationFilter, Prisma.AiModelWhereInput> | null
-  steps?: Prisma.AgentStepListRelationFilter
   facts?: Prisma.FactListRelationFilter
   writeAudits?: Prisma.AgentWriteAuditListRelationFilter
 }, "id">
@@ -345,7 +342,6 @@ export type AgentRunCreateInput = {
   job?: Prisma.AnalysisJobCreateNestedOneWithoutAgentRunsInput
   book?: Prisma.BookCreateNestedOneWithoutAgentRunsInput
   model?: Prisma.AiModelCreateNestedOneWithoutAgentRunsInput
-  steps?: Prisma.AgentStepCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditCreateNestedManyWithoutAgentRunInput
 }
@@ -364,7 +360,6 @@ export type AgentRunUncheckedCreateInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  steps?: Prisma.AgentStepUncheckedCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactUncheckedCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedCreateNestedManyWithoutAgentRunInput
 }
@@ -383,7 +378,6 @@ export type AgentRunUpdateInput = {
   job?: Prisma.AnalysisJobUpdateOneWithoutAgentRunsNestedInput
   book?: Prisma.BookUpdateOneWithoutAgentRunsNestedInput
   model?: Prisma.AiModelUpdateOneWithoutAgentRunsNestedInput
-  steps?: Prisma.AgentStepUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUpdateManyWithoutAgentRunNestedInput
 }
@@ -402,7 +396,6 @@ export type AgentRunUncheckedUpdateInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  steps?: Prisma.AgentStepUncheckedUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUncheckedUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedUpdateManyWithoutAgentRunNestedInput
 }
@@ -662,20 +655,6 @@ export type EnumAgentRunTypeFieldUpdateOperationsInput = {
   set?: $Enums.AgentRunType
 }
 
-export type AgentRunCreateNestedOneWithoutStepsInput = {
-  create?: Prisma.XOR<Prisma.AgentRunCreateWithoutStepsInput, Prisma.AgentRunUncheckedCreateWithoutStepsInput>
-  connectOrCreate?: Prisma.AgentRunCreateOrConnectWithoutStepsInput
-  connect?: Prisma.AgentRunWhereUniqueInput
-}
-
-export type AgentRunUpdateOneRequiredWithoutStepsNestedInput = {
-  create?: Prisma.XOR<Prisma.AgentRunCreateWithoutStepsInput, Prisma.AgentRunUncheckedCreateWithoutStepsInput>
-  connectOrCreate?: Prisma.AgentRunCreateOrConnectWithoutStepsInput
-  upsert?: Prisma.AgentRunUpsertWithoutStepsInput
-  connect?: Prisma.AgentRunWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.AgentRunUpdateToOneWithWhereWithoutStepsInput, Prisma.AgentRunUpdateWithoutStepsInput>, Prisma.AgentRunUncheckedUpdateWithoutStepsInput>
-}
-
 export type AgentRunCreateNestedOneWithoutWriteAuditsInput = {
   create?: Prisma.XOR<Prisma.AgentRunCreateWithoutWriteAuditsInput, Prisma.AgentRunUncheckedCreateWithoutWriteAuditsInput>
   connectOrCreate?: Prisma.AgentRunCreateOrConnectWithoutWriteAuditsInput
@@ -703,7 +682,6 @@ export type AgentRunCreateWithoutModelInput = {
   updatedAt?: Date | string
   job?: Prisma.AnalysisJobCreateNestedOneWithoutAgentRunsInput
   book?: Prisma.BookCreateNestedOneWithoutAgentRunsInput
-  steps?: Prisma.AgentStepCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditCreateNestedManyWithoutAgentRunInput
 }
@@ -721,7 +699,6 @@ export type AgentRunUncheckedCreateWithoutModelInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  steps?: Prisma.AgentStepUncheckedCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactUncheckedCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedCreateNestedManyWithoutAgentRunInput
 }
@@ -784,7 +761,6 @@ export type AgentRunCreateWithoutBookInput = {
   updatedAt?: Date | string
   job?: Prisma.AnalysisJobCreateNestedOneWithoutAgentRunsInput
   model?: Prisma.AiModelCreateNestedOneWithoutAgentRunsInput
-  steps?: Prisma.AgentStepCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditCreateNestedManyWithoutAgentRunInput
 }
@@ -802,7 +778,6 @@ export type AgentRunUncheckedCreateWithoutBookInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  steps?: Prisma.AgentStepUncheckedCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactUncheckedCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedCreateNestedManyWithoutAgentRunInput
 }
@@ -847,7 +822,6 @@ export type AgentRunCreateWithoutFactsInput = {
   job?: Prisma.AnalysisJobCreateNestedOneWithoutAgentRunsInput
   book?: Prisma.BookCreateNestedOneWithoutAgentRunsInput
   model?: Prisma.AiModelCreateNestedOneWithoutAgentRunsInput
-  steps?: Prisma.AgentStepCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditCreateNestedManyWithoutAgentRunInput
 }
 
@@ -865,7 +839,6 @@ export type AgentRunUncheckedCreateWithoutFactsInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  steps?: Prisma.AgentStepUncheckedCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedCreateNestedManyWithoutAgentRunInput
 }
 
@@ -899,7 +872,6 @@ export type AgentRunUpdateWithoutFactsInput = {
   job?: Prisma.AnalysisJobUpdateOneWithoutAgentRunsNestedInput
   book?: Prisma.BookUpdateOneWithoutAgentRunsNestedInput
   model?: Prisma.AiModelUpdateOneWithoutAgentRunsNestedInput
-  steps?: Prisma.AgentStepUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUpdateManyWithoutAgentRunNestedInput
 }
 
@@ -917,7 +889,6 @@ export type AgentRunUncheckedUpdateWithoutFactsInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  steps?: Prisma.AgentStepUncheckedUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedUpdateManyWithoutAgentRunNestedInput
 }
 
@@ -934,7 +905,6 @@ export type AgentRunCreateWithoutJobInput = {
   updatedAt?: Date | string
   book?: Prisma.BookCreateNestedOneWithoutAgentRunsInput
   model?: Prisma.AiModelCreateNestedOneWithoutAgentRunsInput
-  steps?: Prisma.AgentStepCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditCreateNestedManyWithoutAgentRunInput
 }
@@ -952,7 +922,6 @@ export type AgentRunUncheckedCreateWithoutJobInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  steps?: Prisma.AgentStepUncheckedCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactUncheckedCreateNestedManyWithoutAgentRunInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedCreateNestedManyWithoutAgentRunInput
 }
@@ -983,94 +952,6 @@ export type AgentRunUpdateManyWithWhereWithoutJobInput = {
   data: Prisma.XOR<Prisma.AgentRunUpdateManyMutationInput, Prisma.AgentRunUncheckedUpdateManyWithoutJobInput>
 }
 
-export type AgentRunCreateWithoutStepsInput = {
-  id?: string
-  runType: $Enums.AgentRunType
-  status?: string
-  usage?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  skillsLoaded?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  errorLog?: string | null
-  startedAt?: Date | string | null
-  finishedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  job?: Prisma.AnalysisJobCreateNestedOneWithoutAgentRunsInput
-  book?: Prisma.BookCreateNestedOneWithoutAgentRunsInput
-  model?: Prisma.AiModelCreateNestedOneWithoutAgentRunsInput
-  facts?: Prisma.FactCreateNestedManyWithoutAgentRunInput
-  writeAudits?: Prisma.AgentWriteAuditCreateNestedManyWithoutAgentRunInput
-}
-
-export type AgentRunUncheckedCreateWithoutStepsInput = {
-  id?: string
-  jobId?: string | null
-  bookId?: string | null
-  runType: $Enums.AgentRunType
-  modelId?: string | null
-  status?: string
-  usage?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  skillsLoaded?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  errorLog?: string | null
-  startedAt?: Date | string | null
-  finishedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  facts?: Prisma.FactUncheckedCreateNestedManyWithoutAgentRunInput
-  writeAudits?: Prisma.AgentWriteAuditUncheckedCreateNestedManyWithoutAgentRunInput
-}
-
-export type AgentRunCreateOrConnectWithoutStepsInput = {
-  where: Prisma.AgentRunWhereUniqueInput
-  create: Prisma.XOR<Prisma.AgentRunCreateWithoutStepsInput, Prisma.AgentRunUncheckedCreateWithoutStepsInput>
-}
-
-export type AgentRunUpsertWithoutStepsInput = {
-  update: Prisma.XOR<Prisma.AgentRunUpdateWithoutStepsInput, Prisma.AgentRunUncheckedUpdateWithoutStepsInput>
-  create: Prisma.XOR<Prisma.AgentRunCreateWithoutStepsInput, Prisma.AgentRunUncheckedCreateWithoutStepsInput>
-  where?: Prisma.AgentRunWhereInput
-}
-
-export type AgentRunUpdateToOneWithWhereWithoutStepsInput = {
-  where?: Prisma.AgentRunWhereInput
-  data: Prisma.XOR<Prisma.AgentRunUpdateWithoutStepsInput, Prisma.AgentRunUncheckedUpdateWithoutStepsInput>
-}
-
-export type AgentRunUpdateWithoutStepsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  runType?: Prisma.EnumAgentRunTypeFieldUpdateOperationsInput | $Enums.AgentRunType
-  status?: Prisma.StringFieldUpdateOperationsInput | string
-  usage?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  skillsLoaded?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  job?: Prisma.AnalysisJobUpdateOneWithoutAgentRunsNestedInput
-  book?: Prisma.BookUpdateOneWithoutAgentRunsNestedInput
-  model?: Prisma.AiModelUpdateOneWithoutAgentRunsNestedInput
-  facts?: Prisma.FactUpdateManyWithoutAgentRunNestedInput
-  writeAudits?: Prisma.AgentWriteAuditUpdateManyWithoutAgentRunNestedInput
-}
-
-export type AgentRunUncheckedUpdateWithoutStepsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  jobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  bookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  runType?: Prisma.EnumAgentRunTypeFieldUpdateOperationsInput | $Enums.AgentRunType
-  modelId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
-  usage?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  skillsLoaded?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  errorLog?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  facts?: Prisma.FactUncheckedUpdateManyWithoutAgentRunNestedInput
-  writeAudits?: Prisma.AgentWriteAuditUncheckedUpdateManyWithoutAgentRunNestedInput
-}
-
 export type AgentRunCreateWithoutWriteAuditsInput = {
   id?: string
   runType: $Enums.AgentRunType
@@ -1085,7 +966,6 @@ export type AgentRunCreateWithoutWriteAuditsInput = {
   job?: Prisma.AnalysisJobCreateNestedOneWithoutAgentRunsInput
   book?: Prisma.BookCreateNestedOneWithoutAgentRunsInput
   model?: Prisma.AiModelCreateNestedOneWithoutAgentRunsInput
-  steps?: Prisma.AgentStepCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactCreateNestedManyWithoutAgentRunInput
 }
 
@@ -1103,7 +983,6 @@ export type AgentRunUncheckedCreateWithoutWriteAuditsInput = {
   finishedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  steps?: Prisma.AgentStepUncheckedCreateNestedManyWithoutAgentRunInput
   facts?: Prisma.FactUncheckedCreateNestedManyWithoutAgentRunInput
 }
 
@@ -1137,7 +1016,6 @@ export type AgentRunUpdateWithoutWriteAuditsInput = {
   job?: Prisma.AnalysisJobUpdateOneWithoutAgentRunsNestedInput
   book?: Prisma.BookUpdateOneWithoutAgentRunsNestedInput
   model?: Prisma.AiModelUpdateOneWithoutAgentRunsNestedInput
-  steps?: Prisma.AgentStepUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUpdateManyWithoutAgentRunNestedInput
 }
 
@@ -1155,7 +1033,6 @@ export type AgentRunUncheckedUpdateWithoutWriteAuditsInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  steps?: Prisma.AgentStepUncheckedUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUncheckedUpdateManyWithoutAgentRunNestedInput
 }
 
@@ -1187,7 +1064,6 @@ export type AgentRunUpdateWithoutModelInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   job?: Prisma.AnalysisJobUpdateOneWithoutAgentRunsNestedInput
   book?: Prisma.BookUpdateOneWithoutAgentRunsNestedInput
-  steps?: Prisma.AgentStepUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUpdateManyWithoutAgentRunNestedInput
 }
@@ -1205,7 +1081,6 @@ export type AgentRunUncheckedUpdateWithoutModelInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  steps?: Prisma.AgentStepUncheckedUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUncheckedUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedUpdateManyWithoutAgentRunNestedInput
 }
@@ -1253,7 +1128,6 @@ export type AgentRunUpdateWithoutBookInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   job?: Prisma.AnalysisJobUpdateOneWithoutAgentRunsNestedInput
   model?: Prisma.AiModelUpdateOneWithoutAgentRunsNestedInput
-  steps?: Prisma.AgentStepUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUpdateManyWithoutAgentRunNestedInput
 }
@@ -1271,7 +1145,6 @@ export type AgentRunUncheckedUpdateWithoutBookInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  steps?: Prisma.AgentStepUncheckedUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUncheckedUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedUpdateManyWithoutAgentRunNestedInput
 }
@@ -1319,7 +1192,6 @@ export type AgentRunUpdateWithoutJobInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneWithoutAgentRunsNestedInput
   model?: Prisma.AiModelUpdateOneWithoutAgentRunsNestedInput
-  steps?: Prisma.AgentStepUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUpdateManyWithoutAgentRunNestedInput
 }
@@ -1337,7 +1209,6 @@ export type AgentRunUncheckedUpdateWithoutJobInput = {
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  steps?: Prisma.AgentStepUncheckedUpdateManyWithoutAgentRunNestedInput
   facts?: Prisma.FactUncheckedUpdateManyWithoutAgentRunNestedInput
   writeAudits?: Prisma.AgentWriteAuditUncheckedUpdateManyWithoutAgentRunNestedInput
 }
@@ -1363,13 +1234,11 @@ export type AgentRunUncheckedUpdateManyWithoutJobInput = {
  */
 
 export type AgentRunCountOutputType = {
-  steps: number
   facts: number
   writeAudits: number
 }
 
 export type AgentRunCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  steps?: boolean | AgentRunCountOutputTypeCountStepsArgs
   facts?: boolean | AgentRunCountOutputTypeCountFactsArgs
   writeAudits?: boolean | AgentRunCountOutputTypeCountWriteAuditsArgs
 }
@@ -1382,13 +1251,6 @@ export type AgentRunCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
    * Select specific fields to fetch from the AgentRunCountOutputType
    */
   select?: Prisma.AgentRunCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * AgentRunCountOutputType without action
- */
-export type AgentRunCountOutputTypeCountStepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AgentStepWhereInput
 }
 
 /**
@@ -1423,7 +1285,6 @@ export type AgentRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   job?: boolean | Prisma.AgentRun$jobArgs<ExtArgs>
   book?: boolean | Prisma.AgentRun$bookArgs<ExtArgs>
   model?: boolean | Prisma.AgentRun$modelArgs<ExtArgs>
-  steps?: boolean | Prisma.AgentRun$stepsArgs<ExtArgs>
   facts?: boolean | Prisma.AgentRun$factsArgs<ExtArgs>
   writeAudits?: boolean | Prisma.AgentRun$writeAuditsArgs<ExtArgs>
   _count?: boolean | Prisma.AgentRunCountOutputTypeDefaultArgs<ExtArgs>
@@ -1488,7 +1349,6 @@ export type AgentRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   job?: boolean | Prisma.AgentRun$jobArgs<ExtArgs>
   book?: boolean | Prisma.AgentRun$bookArgs<ExtArgs>
   model?: boolean | Prisma.AgentRun$modelArgs<ExtArgs>
-  steps?: boolean | Prisma.AgentRun$stepsArgs<ExtArgs>
   facts?: boolean | Prisma.AgentRun$factsArgs<ExtArgs>
   writeAudits?: boolean | Prisma.AgentRun$writeAuditsArgs<ExtArgs>
   _count?: boolean | Prisma.AgentRunCountOutputTypeDefaultArgs<ExtArgs>
@@ -1510,7 +1370,6 @@ export type $AgentRunPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     job: Prisma.$AnalysisJobPayload<ExtArgs> | null
     book: Prisma.$BookPayload<ExtArgs> | null
     model: Prisma.$AiModelPayload<ExtArgs> | null
-    steps: Prisma.$AgentStepPayload<ExtArgs>[]
     facts: Prisma.$FactPayload<ExtArgs>[]
     writeAudits: Prisma.$AgentWriteAuditPayload<ExtArgs>[]
   }
@@ -1925,7 +1784,6 @@ export interface Prisma__AgentRunClient<T, Null = never, ExtArgs extends runtime
   job<T extends Prisma.AgentRun$jobArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AgentRun$jobArgs<ExtArgs>>): Prisma.Prisma__AnalysisJobClient<runtime.Types.Result.GetResult<Prisma.$AnalysisJobPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   book<T extends Prisma.AgentRun$bookArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AgentRun$bookArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   model<T extends Prisma.AgentRun$modelArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AgentRun$modelArgs<ExtArgs>>): Prisma.Prisma__AiModelClient<runtime.Types.Result.GetResult<Prisma.$AiModelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  steps<T extends Prisma.AgentRun$stepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AgentRun$stepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AgentStepPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   facts<T extends Prisma.AgentRun$factsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AgentRun$factsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   writeAudits<T extends Prisma.AgentRun$writeAuditsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AgentRun$writeAuditsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AgentWriteAuditPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -2420,30 +2278,6 @@ export type AgentRun$modelArgs<ExtArgs extends runtime.Types.Extensions.Internal
    */
   include?: Prisma.AiModelInclude<ExtArgs> | null
   where?: Prisma.AiModelWhereInput
-}
-
-/**
- * AgentRun.steps
- */
-export type AgentRun$stepsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the AgentStep
-   */
-  select?: Prisma.AgentStepSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the AgentStep
-   */
-  omit?: Prisma.AgentStepOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.AgentStepInclude<ExtArgs> | null
-  where?: Prisma.AgentStepWhereInput
-  orderBy?: Prisma.AgentStepOrderByWithRelationInput | Prisma.AgentStepOrderByWithRelationInput[]
-  cursor?: Prisma.AgentStepWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.AgentStepScalarFieldEnum | Prisma.AgentStepScalarFieldEnum[]
 }
 
 /**

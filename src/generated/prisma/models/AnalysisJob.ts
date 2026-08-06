@@ -93,6 +93,7 @@ export type AnalysisJobCountAggregateOutputType = {
   overrideStrategy: number
   keepHistory: number
   skillsSnapshot: number
+  relationshipTypesSnapshot: number
   startedAt: number
   finishedAt: number
   createdAt: number
@@ -168,6 +169,7 @@ export type AnalysisJobCountAggregateInputType = {
   overrideStrategy?: true
   keepHistory?: true
   skillsSnapshot?: true
+  relationshipTypesSnapshot?: true
   startedAt?: true
   finishedAt?: true
   createdAt?: true
@@ -276,6 +278,7 @@ export type AnalysisJobGroupByOutputType = {
   overrideStrategy: string | null
   keepHistory: boolean
   skillsSnapshot: runtime.JsonValue | null
+  relationshipTypesSnapshot: runtime.JsonValue | null
   startedAt: Date | null
   finishedAt: Date | null
   createdAt: Date
@@ -320,6 +323,7 @@ export type AnalysisJobWhereInput = {
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   skillsSnapshot?: Prisma.JsonNullableFilter<"AnalysisJob">
+  relationshipTypesSnapshot?: Prisma.JsonNullableFilter<"AnalysisJob">
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
@@ -347,6 +351,7 @@ export type AnalysisJobOrderByWithRelationInput = {
   overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   skillsSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
+  relationshipTypesSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -377,6 +382,7 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   skillsSnapshot?: Prisma.JsonNullableFilter<"AnalysisJob">
+  relationshipTypesSnapshot?: Prisma.JsonNullableFilter<"AnalysisJob">
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
@@ -404,6 +410,7 @@ export type AnalysisJobOrderByWithAggregationInput = {
   overrideStrategy?: Prisma.SortOrderInput | Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   skillsSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
+  relationshipTypesSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   finishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -433,6 +440,7 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
   overrideStrategy?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolWithAggregatesFilter<"AnalysisJob"> | boolean
   skillsSnapshot?: Prisma.JsonNullableWithAggregatesFilter<"AnalysisJob">
+  relationshipTypesSnapshot?: Prisma.JsonNullableWithAggregatesFilter<"AnalysisJob">
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisJob"> | Date | string
@@ -453,6 +461,7 @@ export type AnalysisJobCreateInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -480,6 +489,7 @@ export type AnalysisJobUncheckedCreateInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -505,6 +515,7 @@ export type AnalysisJobUpdateInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -532,6 +543,7 @@ export type AnalysisJobUncheckedUpdateInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -558,6 +570,7 @@ export type AnalysisJobCreateManyInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -578,6 +591,7 @@ export type AnalysisJobUpdateManyMutationInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -599,6 +613,7 @@ export type AnalysisJobUncheckedUpdateManyInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -643,6 +658,7 @@ export type AnalysisJobCountOrderByAggregateInput = {
   overrideStrategy?: Prisma.SortOrder
   keepHistory?: Prisma.SortOrder
   skillsSnapshot?: Prisma.SortOrder
+  relationshipTypesSnapshot?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   finishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -853,6 +869,7 @@ export type AnalysisJobCreateWithoutBookInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -878,6 +895,7 @@ export type AnalysisJobUncheckedCreateWithoutBookInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -933,6 +951,7 @@ export type AnalysisJobScalarWhereInput = {
   overrideStrategy?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   keepHistory?: Prisma.BoolFilter<"AnalysisJob"> | boolean
   skillsSnapshot?: Prisma.JsonNullableFilter<"AnalysisJob">
+  relationshipTypesSnapshot?: Prisma.JsonNullableFilter<"AnalysisJob">
   startedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   finishedAt?: Prisma.DateTimeNullableFilter<"AnalysisJob"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AnalysisJob"> | Date | string
@@ -953,6 +972,7 @@ export type AnalysisJobCreateWithoutFactsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -979,6 +999,7 @@ export type AnalysisJobUncheckedCreateWithoutFactsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1019,6 +1040,7 @@ export type AnalysisJobUpdateWithoutFactsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1045,6 +1067,7 @@ export type AnalysisJobUncheckedUpdateWithoutFactsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1069,6 +1092,7 @@ export type AnalysisJobCreateWithoutAgentRunsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1095,6 +1119,7 @@ export type AnalysisJobUncheckedCreateWithoutAgentRunsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1135,6 +1160,7 @@ export type AnalysisJobUpdateWithoutAgentRunsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1161,6 +1187,7 @@ export type AnalysisJobUncheckedUpdateWithoutAgentRunsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1185,6 +1212,7 @@ export type AnalysisJobCreateWithoutValidationReportsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1211,6 +1239,7 @@ export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1251,6 +1280,7 @@ export type AnalysisJobUpdateWithoutValidationReportsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1277,6 +1307,7 @@ export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1301,6 +1332,7 @@ export type AnalysisJobCreateWithoutModelStrategiesInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1327,6 +1359,7 @@ export type AnalysisJobUncheckedCreateWithoutModelStrategiesInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1367,6 +1400,7 @@ export type AnalysisJobUpdateWithoutModelStrategiesInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1393,6 +1427,7 @@ export type AnalysisJobUncheckedUpdateWithoutModelStrategiesInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1417,6 +1452,7 @@ export type AnalysisJobCreateWithoutPhaseLogsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1443,6 +1479,7 @@ export type AnalysisJobUncheckedCreateWithoutPhaseLogsInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1483,6 +1520,7 @@ export type AnalysisJobUpdateWithoutPhaseLogsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1509,6 +1547,7 @@ export type AnalysisJobUncheckedUpdateWithoutPhaseLogsInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1533,6 +1572,7 @@ export type AnalysisJobCreateManyBookInput = {
   overrideStrategy?: string | null
   keepHistory?: boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Date | string | null
   finishedAt?: Date | string | null
   createdAt?: Date | string
@@ -1553,6 +1593,7 @@ export type AnalysisJobUpdateWithoutBookInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1578,6 +1619,7 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1603,6 +1645,7 @@ export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
   overrideStrategy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   keepHistory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillsSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  relationshipTypesSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   finishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1691,6 +1734,7 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   overrideStrategy?: boolean
   keepHistory?: boolean
   skillsSnapshot?: boolean
+  relationshipTypesSnapshot?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -1719,6 +1763,7 @@ export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   overrideStrategy?: boolean
   keepHistory?: boolean
   skillsSnapshot?: boolean
+  relationshipTypesSnapshot?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -1741,6 +1786,7 @@ export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   overrideStrategy?: boolean
   keepHistory?: boolean
   skillsSnapshot?: boolean
+  relationshipTypesSnapshot?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
@@ -1763,13 +1809,14 @@ export type AnalysisJobSelectScalar = {
   overrideStrategy?: boolean
   keepHistory?: boolean
   skillsSnapshot?: boolean
+  relationshipTypesSnapshot?: boolean
   startedAt?: boolean
   finishedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "status" | "architecture" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "experimentTag" | "overrideStrategy" | "keepHistory" | "skillsSnapshot" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
+export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "status" | "architecture" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "experimentTag" | "overrideStrategy" | "keepHistory" | "skillsSnapshot" | "relationshipTypesSnapshot" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
 export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   modelStrategies?: boolean | Prisma.AnalysisJob$modelStrategiesArgs<ExtArgs>
@@ -1814,6 +1861,10 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
      * 任务启动时解析装载的 skills [{slug, versionNo}]，用于审计与复跑
      */
     skillsSnapshot: runtime.JsonValue | null
+    /**
+     * 任务启动时快照的关系码 [{code,direction,category}]（同 skillsSnapshot 模式，防跑批中途改表片间漂移）
+     */
+    relationshipTypesSnapshot: runtime.JsonValue | null
     startedAt: Date | null
     finishedAt: Date | null
     createdAt: Date
@@ -2261,6 +2312,7 @@ export interface AnalysisJobFieldRefs {
   readonly overrideStrategy: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly keepHistory: Prisma.FieldRef<"AnalysisJob", 'Boolean'>
   readonly skillsSnapshot: Prisma.FieldRef<"AnalysisJob", 'Json'>
+  readonly relationshipTypesSnapshot: Prisma.FieldRef<"AnalysisJob", 'Json'>
   readonly startedAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>
   readonly finishedAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"AnalysisJob", 'DateTime'>

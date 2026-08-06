@@ -555,6 +555,23 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
 }
 
+export type EnumRelationDirectionFilter<$PrismaModel = never> = {
+  equals?: $Enums.RelationDirection | Prisma.EnumRelationDirectionFieldRefInput<$PrismaModel>
+  in?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRelationDirectionFilter<$PrismaModel> | $Enums.RelationDirection
+}
+
+export type EnumRelationDirectionWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RelationDirection | Prisma.EnumRelationDirectionFieldRefInput<$PrismaModel>
+  in?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRelationDirectionWithAggregatesFilter<$PrismaModel> | $Enums.RelationDirection
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRelationDirectionFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRelationDirectionFilter<$PrismaModel>
+}
+
 export type EnumSkillCategoryFilter<$PrismaModel = never> = {
   equals?: $Enums.SkillCategory | Prisma.EnumSkillCategoryFieldRefInput<$PrismaModel>
   in?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
@@ -638,23 +655,6 @@ export type EnumAgentRunTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAgentRunTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAgentRunTypeFilter<$PrismaModel>
-}
-
-export type EnumAgentStepKindFilter<$PrismaModel = never> = {
-  equals?: $Enums.AgentStepKind | Prisma.EnumAgentStepKindFieldRefInput<$PrismaModel>
-  in?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  notIn?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumAgentStepKindFilter<$PrismaModel> | $Enums.AgentStepKind
-}
-
-export type EnumAgentStepKindWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.AgentStepKind | Prisma.EnumAgentStepKindFieldRefInput<$PrismaModel>
-  in?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  notIn?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumAgentStepKindWithAggregatesFilter<$PrismaModel> | $Enums.AgentStepKind
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumAgentStepKindFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumAgentStepKindFilter<$PrismaModel>
 }
 
 export type EnumModelStrategyScopeFilter<$PrismaModel = never> = {
@@ -1159,6 +1159,23 @@ export type NestedJsonFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
+export type NestedEnumRelationDirectionFilter<$PrismaModel = never> = {
+  equals?: $Enums.RelationDirection | Prisma.EnumRelationDirectionFieldRefInput<$PrismaModel>
+  in?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRelationDirectionFilter<$PrismaModel> | $Enums.RelationDirection
+}
+
+export type NestedEnumRelationDirectionWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RelationDirection | Prisma.EnumRelationDirectionFieldRefInput<$PrismaModel>
+  in?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RelationDirection[] | Prisma.ListEnumRelationDirectionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRelationDirectionWithAggregatesFilter<$PrismaModel> | $Enums.RelationDirection
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRelationDirectionFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRelationDirectionFilter<$PrismaModel>
+}
+
 export type NestedEnumSkillCategoryFilter<$PrismaModel = never> = {
   equals?: $Enums.SkillCategory | Prisma.EnumSkillCategoryFieldRefInput<$PrismaModel>
   in?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
@@ -1242,23 +1259,6 @@ export type NestedEnumAgentRunTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAgentRunTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAgentRunTypeFilter<$PrismaModel>
-}
-
-export type NestedEnumAgentStepKindFilter<$PrismaModel = never> = {
-  equals?: $Enums.AgentStepKind | Prisma.EnumAgentStepKindFieldRefInput<$PrismaModel>
-  in?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  notIn?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumAgentStepKindFilter<$PrismaModel> | $Enums.AgentStepKind
-}
-
-export type NestedEnumAgentStepKindWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.AgentStepKind | Prisma.EnumAgentStepKindFieldRefInput<$PrismaModel>
-  in?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  notIn?: $Enums.AgentStepKind[] | Prisma.ListEnumAgentStepKindFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumAgentStepKindWithAggregatesFilter<$PrismaModel> | $Enums.AgentStepKind
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumAgentStepKindFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumAgentStepKindFilter<$PrismaModel>
 }
 
 export type NestedEnumModelStrategyScopeFilter<$PrismaModel = never> = {

@@ -30,6 +30,7 @@ enum RecordSource {
   AI // AI 解析产出（默认）
   MANUAL // 用户手动录入
   DRAFT_AI // AI 待审稿，需通过审核才能升级为 AI 或 MANUAL
+  AUTO_VERIFIED // 自动接受栈落库（机器验收通过），区别于 MANUAL 人工确认
 
   @@map("record_source")
 }
@@ -169,29 +170,17 @@ enum SkillStatus {
   @@map("skill_status")
 }
 
-/// Agent 运行类型（一次 runType 的 agent 执行）
+/// Agent 运行类型（v5：无工具循环，一次 run 对应管线一个确定性阶段）
 enum AgentRunType {
-  JOB_PIPELINE // 管线总控
-  ENTITY_PRESCAN // 实体预扫描
-  CHAPTER_ANALYSIS // 章节分析
-  GLOBAL_RESOLUTION // 全局消歧
-  TITLE_RESOLUTION // 称号/别名
-  VALIDATION // 校验自修复
-  SKILL_GENERATION // 技能生成
+  PRESCAN // 确定性预扫描
+  IDENTITY // 身份解析（Tier1/Tier2 + reconcile）
+  EXTRACTION // 分片事实提取
+  RECONCILE // 漏网高频补判
+  VALIDATION // 确定性校验（零 LLM）
+  CROSS_VALIDATION // 跨模型复核
+  SKILL_GENERATION // 技能候选生成
 
   @@map("agent_run_type")
-}
-
-/// Agent 步骤类型
-enum AgentStepKind {
-  LLM_CALL // LLM 调用
-  TOOL_CALL // 工具调用
-  SKILL_LOAD // 技能装载
-  RULE_APPLY // 规则应用
-  ARBITRATION // 仲裁
-  MANUAL // 人工
-
-  @@map("agent_step_kind")
 }
 
 // --- 核心模型 ---
@@ -378,6 +367,10 @@ model Entity {
   @@index([name], map: "entities_name_idx")
   @@index([entityType, deletedAt], map: "entities_type_deleted_idx")
   @@index([deletedAt], map: "entities_deleted_at_idx")
+  // 非 btree 索引（基线原生 SQL 建立，声明进 schema 防止被 Prisma 误删）
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "entities_name_trgm_idx")
+  @@index([aliases], type: Gin, map: "entities_aliases_idx")
+  @@index([globalTags], type: Gin, map: "entities_global_tags_idx")
   @@map("entities")
 }
 
@@ -525,6 +518,8 @@ model Fact {
   @@index([bookId, relationshipTypeCode], map: "facts_book_reltype_idx")
   @@index([bookId, eventCategory, virtualYear], map: "facts_book_category_year_idx")
   @@index([status, recordSource, chapterId], map: "facts_review_query_idx")
+  // 非 btree 索引（基线原生 SQL 建立，声明进 schema 防止被 Prisma 误删）
+  @@index([payload], type: Gin, map: "facts_payload_idx")
   @@map("facts")
 }
 
@@ -587,6 +582,40 @@ model Relationship {
   @@index([sourceEntityId, targetEntityId], map: "relationships_src_tgt_idx")
   @@index([relationshipTypeCode], map: "relationships_reltype_idx")
   @@map("relationships")
+}
+
+// =============================================================================
+// 关系码域：relationship_types（唯一权威，DB 表驱动）
+// =============================================================================
+
+enum RelationDirection {
+  INVERSE // 方向性：A→B（父子/母子/师生/主仆）
+  SYMMETRIC // 对称性：双向（兄弟/夫妻/同年/同僚/朋友/仇敌）
+
+  @@map("relation_direction")
+}
+
+/// @db.remark: 关系码唯一权威（DB 表驱动，新增码 = 插行，无代码改动）。
+/// bookTypeId=null 为全局码；非空为书型专属码（不污染其他书型）。
+/// schema 生成按书型 = 全局行 + 本书型行；skill 中的关系类型定义仅作教学参考，非运行时权威。
+model RelationshipType {
+  id         String           @id @default(uuid()) @db.Uuid
+  code       String           @map("code") @db.VarChar(60) // 规范码：父子/师生/同年...
+  name       String           @map("name") @db.VarChar(60) // 展示名
+  direction  RelationDirection @map("direction")
+  category   String           @map("category") @db.VarChar(30) // 六大分类（家庭/亲密/等级/社交/敌对/其他）
+  aliases    String[]         @default([]) @map("aliases") // 口语叫法（父与子/父子关系...）
+  bookTypeId String?          @map("book_type_id") @db.Uuid // null=全局；非空=书型专属
+  sortOrder  Int              @default(0) @map("sort_order")
+  isActive   Boolean          @default(true) @map("is_active")
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  bookType BookType? @relation(fields: [bookTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([code, bookTypeId], map: "relationship_types_code_booktype_key")
+  @@index([bookTypeId, isActive], map: "relationship_types_booktype_active_idx")
+  @@map("relationship_types")
 }
 
 // =============================================================================
@@ -682,6 +711,8 @@ model AnalysisJob {
   keepHistory      Boolean           @default(false) @map("keep_history") // 是否保留历史草稿版本
   /// 任务启动时解析装载的 skills [{slug, versionNo}]，用于审计与复跑
   skillsSnapshot   Json?             @map("skills_snapshot") @db.JsonB
+  /// 任务启动时快照的关系码 [{code,direction,category}]（同 skillsSnapshot 模式，防跑批中途改表片间漂移）
+  relationshipTypesSnapshot Json?    @map("relationship_types_snapshot") @db.JsonB
   startedAt        DateTime?         @map("started_at") @db.Timestamptz(6) // 开始时间
   finishedAt       DateTime?         @map("finished_at") @db.Timestamptz(6) // 完成时间
   createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6) // 创建时间
@@ -699,7 +730,7 @@ model AnalysisJob {
   @@map("analysis_jobs")
 }
 
-/// @db.remark: Agent 运行。一次 runType 的 agent 执行（管线总控/逐章/全局消歧/称号/校验/skill 生成）。
+/// @db.remark: Agent 运行。v5 一次 run = 管线一个确定性阶段（身份/提取/校验等），记录 usage/成本/进度。
 model AgentRun {
   id           String       @id @default(uuid()) @db.Uuid
   jobId        String?      @map("job_id") @db.Uuid
@@ -718,7 +749,6 @@ model AgentRun {
   job         AnalysisJob?      @relation(fields: [jobId], references: [id], onDelete: Cascade)
   book        Book?             @relation(fields: [bookId], references: [id], onDelete: SetNull)
   model       AiModel?          @relation(fields: [modelId], references: [id], onDelete: SetNull)
-  steps       AgentStep[]
   facts       Fact[]
   writeAudits AgentWriteAudit[]
 
@@ -727,29 +757,7 @@ model AgentRun {
   @@map("agent_runs")
 }
 
-/// @db.remark: Agent 步骤。四层 Tool-Use Loop 的逐步留痕：LLM 调用/工具调用/技能装载/规则应用/仲裁。
-model AgentStep {
-  id          String        @id @default(uuid()) @db.Uuid
-  agentRunId  String        @map("agent_run_id") @db.Uuid
-  stepIndex   Int           @map("step_index")
-  kind        AgentStepKind
-  messageText String?       @map("message_text") @db.Text
-  toolName    String?       @map("tool_name")
-  toolArgs    Json?         @map("tool_args") @db.JsonB
-  toolResult  Json?         @map("tool_result") @db.JsonB
-  usage       Json?         @db.JsonB
-  durationMs  Int?          @map("duration_ms")
-  error       String?       @db.Text
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
-
-  @@index([agentRunId, stepIndex], map: "agent_steps_run_step_idx")
-  @@index([agentRunId, kind], map: "agent_steps_run_kind_idx")
-  @@map("agent_steps")
-}
-
-/// @db.remark: 治理层写操作审计。所有 agent 发起的实体/事实/关系写操作留痕（权限判定 + before/after）。
+/// @db.remark: 写操作审计。提取落库 / 审核 / 合并的写操作留痕（evidence 校验通过记录 + before/after）。
 model AgentWriteAudit {
   id         String   @id @default(uuid()) @db.Uuid
   agentRunId String   @map("agent_run_id") @db.Uuid
@@ -842,6 +850,9 @@ model TextChunk {
   @@unique([chapterId, chunkIndex], map: "text_chunks_chapter_chunk_key")
   @@index([bookId], map: "text_chunks_book_idx")
   @@index([bookId, chapterId], map: "text_chunks_book_chapter_idx")
+  // 非 btree 索引（基线原生 SQL 建立，声明进 schema 防止被 Prisma 误删）
+  // 注：embedding 的 HNSW 索引 Prisma 无法建模，保留在迁移原生 SQL 中管理（v5_data_model 重建）
+  @@index([content(ops: raw("gin_trgm_ops"))], type: Gin, map: "text_chunks_content_trgm_idx")
   @@map("text_chunks")
 }
 
@@ -857,9 +868,10 @@ model BookType {
   isActive    Boolean @default(true) @map("is_active")
   sortOrder   Int     @default(0) @map("sort_order")
 
-  books          Book[]
-  bookTypeSkills BookTypeSkill[]
-  skillVersions  SkillVersion[]
+  books             Book[]
+  bookTypeSkills    BookTypeSkill[]
+  skillVersions     SkillVersion[]
+  relationshipTypes RelationshipType[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)

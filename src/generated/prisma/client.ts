@@ -105,6 +105,13 @@ export type FactEvidence = Prisma.FactEvidenceModel
  */
 export type Relationship = Prisma.RelationshipModel
 /**
+ * Model RelationshipType
+ * @db.remark: 关系码唯一权威（DB 表驱动，新增码 = 插行，无代码改动）。
+ * bookTypeId=null 为全局码；非空为书型专属码（不污染其他书型）。
+ * schema 生成按书型 = 全局行 + 本书型行；skill 中的关系类型定义仅作教学参考，非运行时权威。
+ */
+export type RelationshipType = Prisma.RelationshipTypeModel
+/**
  * Model Skill
  * @db.remark: 技能包。承载姓氏/泛称/名字模式/关系类型/历史人物/任务指令等一切扩展知识。
  */
@@ -126,17 +133,12 @@ export type BookTypeSkill = Prisma.BookTypeSkillModel
 export type AnalysisJob = Prisma.AnalysisJobModel
 /**
  * Model AgentRun
- * @db.remark: Agent 运行。一次 runType 的 agent 执行（管线总控/逐章/全局消歧/称号/校验/skill 生成）。
+ * @db.remark: Agent 运行。v5 一次 run = 管线一个确定性阶段（身份/提取/校验等），记录 usage/成本/进度。
  */
 export type AgentRun = Prisma.AgentRunModel
 /**
- * Model AgentStep
- * @db.remark: Agent 步骤。四层 Tool-Use Loop 的逐步留痕：LLM 调用/工具调用/技能装载/规则应用/仲裁。
- */
-export type AgentStep = Prisma.AgentStepModel
-/**
  * Model AgentWriteAudit
- * @db.remark: 治理层写操作审计。所有 agent 发起的实体/事实/关系写操作留痕（权限判定 + before/after）。
+ * @db.remark: 写操作审计。提取落库 / 审核 / 合并的写操作留痕（evidence 校验通过记录 + before/after）。
  */
 export type AgentWriteAudit = Prisma.AgentWriteAuditModel
 /**

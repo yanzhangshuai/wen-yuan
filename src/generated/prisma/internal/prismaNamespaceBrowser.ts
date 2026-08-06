@@ -63,12 +63,12 @@ export const ModelName = {
   Fact: 'Fact',
   FactEvidence: 'FactEvidence',
   Relationship: 'Relationship',
+  RelationshipType: 'RelationshipType',
   Skill: 'Skill',
   SkillVersion: 'SkillVersion',
   BookTypeSkill: 'BookTypeSkill',
   AnalysisJob: 'AnalysisJob',
   AgentRun: 'AgentRun',
-  AgentStep: 'AgentStep',
   AgentWriteAudit: 'AgentWriteAudit',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
@@ -344,6 +344,23 @@ export const RelationshipScalarFieldEnum = {
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
 
 
+export const RelationshipTypeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  direction: 'direction',
+  category: 'category',
+  aliases: 'aliases',
+  bookTypeId: 'bookTypeId',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RelationshipTypeScalarFieldEnum = (typeof RelationshipTypeScalarFieldEnum)[keyof typeof RelationshipTypeScalarFieldEnum]
+
+
 export const SkillScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
@@ -408,6 +425,7 @@ export const AnalysisJobScalarFieldEnum = {
   overrideStrategy: 'overrideStrategy',
   keepHistory: 'keepHistory',
   skillsSnapshot: 'skillsSnapshot',
+  relationshipTypesSnapshot: 'relationshipTypesSnapshot',
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   createdAt: 'createdAt',
@@ -434,24 +452,6 @@ export const AgentRunScalarFieldEnum = {
 } as const
 
 export type AgentRunScalarFieldEnum = (typeof AgentRunScalarFieldEnum)[keyof typeof AgentRunScalarFieldEnum]
-
-
-export const AgentStepScalarFieldEnum = {
-  id: 'id',
-  agentRunId: 'agentRunId',
-  stepIndex: 'stepIndex',
-  kind: 'kind',
-  messageText: 'messageText',
-  toolName: 'toolName',
-  toolArgs: 'toolArgs',
-  toolResult: 'toolResult',
-  usage: 'usage',
-  durationMs: 'durationMs',
-  error: 'error',
-  createdAt: 'createdAt'
-} as const
-
-export type AgentStepScalarFieldEnum = (typeof AgentStepScalarFieldEnum)[keyof typeof AgentStepScalarFieldEnum]
 
 
 export const AgentWriteAuditScalarFieldEnum = {
