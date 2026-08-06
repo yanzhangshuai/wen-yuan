@@ -1,0 +1,151 @@
+{
+  "book": "儒林外史",
+  "chapterNo": 2,
+  "entities": [
+    {
+      "canonical": "周进",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["周先生", "周长兄", "周客人"],
+      "firstAppearancePara": 4,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "申祥甫",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["申老爷"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "荀老爷",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["荀老翁", "封翁太老爷"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2],
+      "note": "荀玫之父"
+    },
+    {
+      "canonical": "夏总甲",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["夏老爷"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "梅玖",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["梅三相", "梅相公", "梅朋友"],
+      "firstAppearancePara": 5,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "王举人",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["王大爷"],
+      "firstAppearancePara": 13,
+      "activeChapters": [2],
+      "note": "前科新中举人，未给出名字"
+    },
+    {
+      "canonical": "荀玫",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["荀进士", "荀家孩子"],
+      "firstAppearancePara": 15,
+      "activeChapters": [2],
+      "note": "荀老爷之子，七岁开蒙；'荀进士'为众人玩笑称呼"
+    },
+    {
+      "canonical": "金有余",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 18,
+      "activeChapters": [2],
+      "note": "周进姊丈"
+    },
+    {
+      "canonical": "顾老相公",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["顾二哥", "顾东家"],
+      "firstAppearancePara": 4,
+      "activeChapters": [2],
+      "note": "提及型，周进旧东家，县门口户总科提空"
+    },
+    {
+      "canonical": "薛家集",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 1,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "汶上县",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 1,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "观音庵",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 1,
+      "activeChapters": [2]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "父子",
+      "sourceCanonical": "荀老爷",
+      "targetCanonical": "荀玫",
+      "evidence": "开蒙的时候，他父亲请求集上新进梅朋友替他起名",
+      "chapterNo": 2,
+      "paraIndex": 15
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "CAREER",
+      "subjectCanonical": "周进",
+      "summary": "周进在薛家集观音庵设馆教书",
+      "evidence": "直到开馆那日，申祥甫陪著众人，领了学生来……周进上位教书",
+      "chapterNo": 2,
+      "paraIndex": 10
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "周进",
+      "summary": "因荀玫'进士同年'传闻，周进在薛家集失馆，家计艰难",
+      "evidence": "由著众人把周进辞了。来家那年，却失了馆，在家日食艰难",
+      "chapterNo": 2,
+      "paraIndex": 18
+    },
+    {
+      "category": "CAREER",
+      "subjectCanonical": "周进",
+      "summary": "周进随姊丈金有余到省城杂货行做记帐",
+      "evidence": "我如今同了几个大本钱的人到省城去买卖，差一个记帐的人",
+      "chapterNo": 2,
+      "paraIndex": 18
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "周进",
+      "summary": "周进看贡院，触景伤心，撞号板昏倒",
+      "evidence": "长叹一声，一头撞在号板上，直僵僵的不醒人事",
+      "chapterNo": 2,
+      "paraIndex": 19
+    }
+  ]
+}

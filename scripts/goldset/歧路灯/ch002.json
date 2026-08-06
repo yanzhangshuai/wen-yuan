@@ -1,0 +1,199 @@
+{
+  "book": "歧路灯",
+  "chapterNo": 2,
+  "entities": [
+    {
+      "canonical": "譚孝移",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["譚忠弼", "孝移", "介軒"],
+      "firstAppearancePara": 1,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "譚紹聞",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["端福兒", "端福", "紹聞"],
+      "firstAppearancePara": 26,
+      "activeChapters": [2],
+      "note": "端福兒此回拜師取學名譚紹聞（依丹徒紹衣排行）"
+    },
+    {
+      "canonical": "婁昭",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["婁潛齋", "潛齋", "潛老"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "婁樸",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["潛齋小兒", "二相公"],
+      "firstAppearancePara": 13,
+      "activeChapters": [2],
+      "note": "婁昭之子，九歲"
+    },
+    {
+      "canonical": "婁潛齋兄",
+      "type": "PERSON",
+      "nameType": "TITLE_ONLY",
+      "aliases": ["老者", "大兄"],
+      "firstAppearancePara": 21,
+      "activeChapters": [2],
+      "note": "婁昭之兄，莊農老者，未具名；婁樗之父"
+    },
+    {
+      "canonical": "孔述經",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["孔耘軒", "耘軒"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "程希明",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["程嵩淑", "嵩淑"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "蘇霈",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["蘇霖臣"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "張維城",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["張類村"],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "王中",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 2,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "德喜兒",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["德喜"],
+      "firstAppearancePara": 3,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "閻相公",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 7,
+      "activeChapters": [2],
+      "note": "譚家賬房"
+    },
+    {
+      "canonical": "宋祿",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 7,
+      "activeChapters": [2],
+      "note": "譚家車夫"
+    },
+    {
+      "canonical": "王氏",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 28,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "李文靖公祠",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": ["李公祠"],
+      "firstAppearancePara": 16,
+      "activeChapters": [2]
+    },
+    {
+      "canonical": "碧草軒",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 26,
+      "activeChapters": [2]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "父子",
+      "sourceCanonical": "婁昭",
+      "targetCanonical": "婁樸",
+      "evidence": "家兄取捨姪名婁樗，小兒名婁樸",
+      "chapterNo": 2,
+      "paraIndex": 26
+    },
+    {
+      "typeCode": "父子",
+      "sourceCanonical": "譚孝移",
+      "targetCanonical": "譚紹聞",
+      "evidence": "因命端福兒行了拜師之禮。取學名叫紹聞",
+      "chapterNo": 2,
+      "paraIndex": 26
+    },
+    {
+      "typeCode": "师生",
+      "sourceCanonical": "譚紹聞",
+      "targetCanonical": "婁昭",
+      "evidence": "因命端福兒行了拜師之禮。取學名叫紹聞",
+      "chapterNo": 2,
+      "paraIndex": 26
+    },
+    {
+      "typeCode": "兄弟",
+      "sourceCanonical": "婁潛齋兄",
+      "targetCanonical": "婁昭",
+      "evidence": "我老了，他是我親手撫養的兄弟，我離不得他",
+      "chapterNo": 2,
+      "paraIndex": 21
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "EVENT",
+      "subjectCanonical": "譚孝移",
+      "summary": "譚孝移誠聘婁潛齋為子延師，束金四十兩",
+      "evidence": "謹具束金四十兩，節儀八兩，奉申聘敬",
+      "chapterNo": 2,
+      "paraIndex": 23
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "譚紹聞",
+      "summary": "端福兒拜婁潛齋為師入學，取學名譚紹聞",
+      "evidence": "因命端福兒行了拜師之禮。取學名叫紹聞",
+      "chapterNo": 2,
+      "paraIndex": 26
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "譚紹聞",
+      "summary": "譚紹聞與婁樸同窗苦讀，學業精進",
+      "evidence": "這婁樸、譚紹聞兩人，一來是百工居肆……一日所讀之書，加倍平素三日",
+      "chapterNo": 2,
+      "paraIndex": 27
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "book": "儒林外史",
+  "chapterNo": 32,
+  "entities": [
+    {
+      "canonical": "杜少卿",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["杜少爷", "大相公", "世兄"],
+      "firstAppearancePara": 1,
+      "activeChapters": [32]
+    },
+    {
+      "canonical": "娄焕文",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["娄太爷", "娄老爹"],
+      "firstAppearancePara": 1,
+      "activeChapters": [32],
+      "note": "杜家老家人，杜少卿父的知心朋友"
+    },
+    {
+      "canonical": "王胡子",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["胡子", "胡子老官"],
+      "firstAppearancePara": 2,
+      "activeChapters": [32],
+      "note": "杜少卿管家"
+    },
+    {
+      "canonical": "韦四太爷",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["韦老伯"],
+      "firstAppearancePara": 1,
+      "activeChapters": [32],
+      "note": "杜少卿先父拜盟兄弟"
+    },
+    {
+      "canonical": "鲍廷玺",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["鲍师父"],
+      "firstAppearancePara": 1,
+      "activeChapters": [32],
+      "note": "教戏班子的"
+    },
+    {
+      "canonical": "臧蓼斋",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["臧三爷", "臧三哥", "臧寥斋"],
+      "firstAppearancePara": 5,
+      "activeChapters": [32]
+    },
+    {
+      "canonical": "张俊民",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["张二爷"],
+      "firstAppearancePara": 7,
+      "activeChapters": [32]
+    },
+    {
+      "canonical": "黄大",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 4,
+      "activeChapters": [32],
+      "note": "看祠堂的"
+    },
+    {
+      "canonical": "王知县",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["王公", "王老爷"],
+      "firstAppearancePara": 9,
+      "activeChapters": [32],
+      "note": "本县知县，因事落职"
+    },
+    {
+      "canonical": "南京",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 14,
+      "activeChapters": [32]
+    },
+    {
+      "canonical": "陶红镇",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 14,
+      "activeChapters": [32]
+    },
+    {
+      "canonical": "凤阳府",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 7,
+      "activeChapters": [32]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "主仆",
+      "sourceCanonical": "杜少卿",
+      "targetCanonical": "娄焕文",
+      "evidence": "我在你家三十年，是你令先尊一个知心的朋友",
+      "chapterNo": 32,
+      "paraIndex": 14
+    },
+    {
+      "typeCode": "主仆",
+      "sourceCanonical": "杜少卿",
+      "targetCanonical": "王胡子",
+      "evidence": "杜少卿应了，心里想着没有钱用，叫王胡子来商议",
+      "chapterNo": 32,
+      "paraIndex": 2
+    },
+    {
+      "typeCode": "朋友",
+      "sourceCanonical": "杜少卿",
+      "targetCanonical": "臧蓼斋",
+      "evidence": "臧三爷斟了一杯酒，高高奉着，走过席来……老哥，我有一句话奉求",
+      "chapterNo": 32,
+      "paraIndex": 5
+    },
+    {
+      "typeCode": "朋友",
+      "sourceCanonical": "杜少卿",
+      "targetCanonical": "张俊民",
+      "evidence": "张俊民道：'就是小儿要考的事，蒙少爷的恩典'",
+      "chapterNo": 32,
+      "paraIndex": 10
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "EVENT",
+      "subjectCanonical": "杜少卿",
+      "summary": "杜少卿卖圩里田产筹银",
+      "evidence": "我圩里那一宗田，你替我卖给那人罢了",
+      "chapterNo": 32,
+      "paraIndex": 2
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "杜少卿",
+      "summary": "杜少卿借三百两银子给臧蓼斋补廪",
+      "evidence": "把你的田价借三百与我打发了这件",
+      "chapterNo": 32,
+      "paraIndex": 5
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "杜少卿",
+      "summary": "杜少卿借自家花园给落职的王知县居住",
+      "evidence": "王老爷没有住处，请来我家花园里住",
+      "chapterNo": 32,
+      "paraIndex": 9
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "杜少卿",
+      "summary": "杜少卿赠鲍廷玺一百两银子教戏班子",
+      "evidence": "我竟给你一百两银子，你拿过去教班子",
+      "chapterNo": 32,
+      "paraIndex": 13
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "娄焕文",
+      "summary": "娄焕文病重辞归，临去留遗言规劝杜少卿",
+      "evidence": "病是不得好了，你要送我回家去……你听信我言，我死也瞑目",
+      "chapterNo": 32,
+      "paraIndex": 14
+    }
+  ]
+}

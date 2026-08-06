@@ -1,0 +1,254 @@
+{
+  "book": "歧路灯",
+  "chapterNo": 1,
+  "entities": [
+    {
+      "canonical": "譚孝移",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["譚忠弼", "孝移", "介軒"],
+      "firstAppearancePara": 5,
+      "activeChapters": [1],
+      "note": "名譚忠弼，表字孝移，別號介軒；正文以字行文"
+    },
+    {
+      "canonical": "譚紹衣",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["紹衣"],
+      "firstAppearancePara": 15,
+      "activeChapters": [1],
+      "note": "丹徒本族大宗姪子"
+    },
+    {
+      "canonical": "端福兒",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["端福"],
+      "firstAppearancePara": 10,
+      "activeChapters": [1],
+      "note": "譚孝移之子乳名，後名譚紹聞"
+    },
+    {
+      "canonical": "王氏",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 10,
+      "activeChapters": [1],
+      "note": "譚孝移續弦妻"
+    },
+    {
+      "canonical": "婁昭",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["婁潛齋", "潛齋"],
+      "firstAppearancePara": 6,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "孔述經",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["孔耘軒", "耘軒"],
+      "firstAppearancePara": 6,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "程希明",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["程嵩淑", "嵩淑"],
+      "firstAppearancePara": 6,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "蘇霈",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["蘇霖臣"],
+      "firstAppearancePara": 6,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "張維城",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["張類村"],
+      "firstAppearancePara": 6,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "譚永言",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["靈寶公"],
+      "firstAppearancePara": 3,
+      "activeChapters": [1],
+      "note": "先祖，宣德年間進士，曾任河南靈寶知縣"
+    },
+    {
+      "canonical": "蘇簠簋",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["蘇鬆亭"],
+      "firstAppearancePara": 4,
+      "activeChapters": [1],
+      "note": "幕友，浙江紹興山陰人"
+    },
+    {
+      "canonical": "王中",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 13,
+      "activeChapters": [1],
+      "note": "譚家家人"
+    },
+    {
+      "canonical": "蔡湘",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 12,
+      "activeChapters": [1],
+      "note": "譚家園丁"
+    },
+    {
+      "canonical": "德喜兒",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["德喜"],
+      "firstAppearancePara": 20,
+      "activeChapters": [1],
+      "note": "譚家小廝"
+    },
+    {
+      "canonical": "趙大兒",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 20,
+      "activeChapters": [1],
+      "note": "譚家僕婦"
+    },
+    {
+      "canonical": "閻相公",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 19,
+      "activeChapters": [1],
+      "note": "譚家賬房，無全名"
+    },
+    {
+      "canonical": "梅克仁",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["克仁"],
+      "firstAppearancePara": 13,
+      "activeChapters": [1],
+      "note": "丹徒譚家下人"
+    },
+    {
+      "canonical": "鄭太爺",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["鄭家老者", "東院鄭太爺"],
+      "firstAppearancePara": 40,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "祥符縣",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": ["開封府"],
+      "firstAppearancePara": 3,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "蕭牆街",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 3,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "丹徒縣",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": ["丹徒"],
+      "firstAppearancePara": 3,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "碧草軒",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 11,
+      "activeChapters": [1]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "父子",
+      "sourceCanonical": "譚孝移",
+      "targetCanonical": "端福兒",
+      "evidence": "這孝移每日在內看書……端福兒也時常跟來玩耍，或認幾行字，或讀幾首詩",
+      "chapterNo": 1,
+      "paraIndex": 12
+    },
+    {
+      "typeCode": "母子",
+      "sourceCanonical": "王氏",
+      "targetCanonical": "端福兒",
+      "evidence": "到了四十歲上，王氏又生一子，乳名叫端福兒",
+      "chapterNo": 1,
+      "paraIndex": 10
+    },
+    {
+      "typeCode": "夫妻",
+      "sourceCanonical": "譚孝移",
+      "targetCanonical": "王氏",
+      "evidence": "後又續弦於王秀才家。這王氏比孝移少五歲",
+      "chapterNo": 1,
+      "paraIndex": 10
+    },
+    {
+      "typeCode": "朋友",
+      "sourceCanonical": "譚孝移",
+      "targetCanonical": "婁昭",
+      "evidence": "相處了幾個朋友，一個叫婁昭字潛齋，府學秀才",
+      "chapterNo": 1,
+      "paraIndex": 6
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "TRAVEL",
+      "subjectCanonical": "譚孝移",
+      "summary": "譚孝移接丹徒族譜修撰之書，南歸丹徒拜祖修譜",
+      "evidence": "方曉得丹徒謀修族譜，不勝歡喜……擇吉起程",
+      "chapterNo": 1,
+      "paraIndex": 19
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "端福兒",
+      "summary": "端福兒趁父外出貪玩晚歸，被父責打",
+      "evidence": "多出後門外，與鄰家小兒女玩耍……孝移看見……照端福頭上便是一掌",
+      "chapterNo": 1,
+      "paraIndex": 37
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "譚孝移",
+      "summary": "譚孝移歸家訓子，責王氏約束不嚴、悔己延師不早，決意延師教子",
+      "evidence": "一來惱王氏約束不嚴，二來悔自己延師不早……便打算這延師教子的一段事體",
+      "chapterNo": 1,
+      "paraIndex": 41
+    }
+  ]
+}

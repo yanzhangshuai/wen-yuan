@@ -1,0 +1,217 @@
+{
+  "book": "儒林外史",
+  "chapterNo": 46,
+  "entities": [
+    {
+      "canonical": "余有达",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["余大先生", "余大表兄", "大先生"],
+      "firstAppearancePara": 1,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "杜少卿",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["少卿先生"],
+      "firstAppearancePara": 1,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "汤镇台",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["汤大老爷", "汤老先生"],
+      "firstAppearancePara": 2,
+      "activeChapters": [46],
+      "note": "仪征人，曾任镇台"
+    },
+    {
+      "canonical": "虞博士",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["虞老先生", "虞老叔", "虞博士"],
+      "firstAppearancePara": 3,
+      "activeChapters": [46],
+      "note": "南京国子监博士，本回离任"
+    },
+    {
+      "canonical": "庄征君",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["庄征君"],
+      "firstAppearancePara": 3,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "庄濯江",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["庄沁江", "庄飞熊"],
+      "firstAppearancePara": 3,
+      "activeChapters": [46],
+      "note": "文本存在沁江/飞熊等异写，判断为同一人，登高会东道主"
+    },
+    {
+      "canonical": "迟衡山",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 3,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "武正字",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["武书"],
+      "firstAppearancePara": 3,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "萧云仙",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["萧守府", "萧老先生"],
+      "firstAppearancePara": 4,
+      "activeChapters": [46],
+      "note": "青枫城守备"
+    },
+    {
+      "canonical": "虞华轩",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["虞梁", "华轩"],
+      "firstAppearancePara": 8,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "唐二棒椎",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 11,
+      "activeChapters": [46],
+      "note": "前科文举人，与虞华轩同案"
+    },
+    {
+      "canonical": "姚五爷",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["姚老五"],
+      "firstAppearancePara": 13,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "季苇萧",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["季萑"],
+      "firstAppearancePara": 17,
+      "activeChapters": [46],
+      "note": "定梨园榜的名士"
+    },
+    {
+      "canonical": "成老爹",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 19,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "杜慎卿",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["慎卿先生", "杜慎老"],
+      "firstAppearancePara": 6,
+      "activeChapters": [46],
+      "note": "提及型，杜少卿族兄，定梨园榜者"
+    },
+    {
+      "canonical": "南京",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 1,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "承恩寺",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 2,
+      "activeChapters": [46]
+    },
+    {
+      "canonical": "水西门",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 7,
+      "activeChapters": [46]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "兄弟",
+      "sourceCanonical": "杜少卿",
+      "targetCanonical": "余有达",
+      "evidence": "这便是家表兄余有达，老伯去岁曾要相约做馆的",
+      "chapterNo": 46,
+      "paraIndex": 2
+    },
+    {
+      "typeCode": "兄弟",
+      "sourceCanonical": "虞华轩",
+      "targetCanonical": "余有达",
+      "evidence": "愚表弟虞梁，敬请余大表兄先生在舍教训小儿，每年修金四十两",
+      "chapterNo": 46,
+      "paraIndex": 10
+    },
+    {
+      "typeCode": "同年",
+      "sourceCanonical": "唐二棒椎",
+      "targetCanonical": "虞华轩",
+      "evidence": "是前科中的文举人，却与虞华轩是同案进的学",
+      "chapterNo": 46,
+      "paraIndex": 11
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "EVENT",
+      "subjectCanonical": "虞博士",
+      "summary": "虞博士离任南京，群贤饯别，杜少卿独送水西门",
+      "evidence": "南京饯别虞博士的也不下千余家……只有杜少卿送在舡上",
+      "chapterNo": 46,
+      "paraIndex": 7
+    },
+    {
+      "category": "SOCIAL",
+      "subjectCanonical": "庄濯江",
+      "summary": "庄征君倡议、庄濯江设登高会饯别虞博士，南京群贤齐集",
+      "evidence": "我们何不相约作一个登高会？就此便奉饯虞老先生……庄濯江收拾了一个大敞榭，四面都插了菊花",
+      "chapterNo": 46,
+      "paraIndex": 3
+    },
+    {
+      "category": "CAREER",
+      "subjectCanonical": "余有达",
+      "summary": "余有达受聘虞华轩家教书，年修四十两",
+      "evidence": "愚表弟虞梁，敬请余大表兄先生在舍教训小儿，每年修金四十两",
+      "chapterNo": 46,
+      "paraIndex": 10
+    },
+    {
+      "category": "CAREER",
+      "subjectCanonical": "季苇萧",
+      "summary": "季苇萧奉厉太尊之命下县查当铺重戥之弊",
+      "evidence": "厉太尊因贵县当铺戥子太重，剥削小民，所以托弟下来查一查",
+      "chapterNo": 46,
+      "paraIndex": 17
+    }
+  ]
+}

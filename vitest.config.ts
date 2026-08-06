@@ -30,7 +30,8 @@ export default defineConfig({
     // 每个测试文件执行前先加载统一初始化脚本（mock、全局变量、清理策略等）。
     setupFiles : ["./vitest.setup.ts"],
     // 仅收集约定命名的测试文件，避免误跑业务源码。
-    include    : ["src/**/*.{test,spec}.{ts,tsx}"],
+    // scripts/ 承载 goldset 校验与 eval gate 等质量工具，其测试一并纳入。
+    include    : ["src/**/*.{test,spec}.{ts,tsx}", "scripts/**/*.{test,spec}.{ts,tsx}"],
     coverage   : {
       // 使用 V8 原生覆盖率引擎，性能与稳定性更适配 Node 场景。
       provider        : "v8",
@@ -51,7 +52,9 @@ export default defineConfig({
         "vitest.setup.ts",
         // provider 多为第三方适配层，覆盖率收益低且易受外部依赖噪声影响。
         // 风险提示：若后续该层承载更多业务逻辑，建议移除此排除并补测试。
-        "src/server/providers/**"
+        "src/server/providers/**",
+        // scripts/ 为质量工具（goldset 校验 / eval gate），测试纳入但不计入业务覆盖率门槛。
+        "scripts/**"
       ],
       thresholds: {
         // 覆盖率阈值是团队质量门槛，属于工程规则，不是技术限制。

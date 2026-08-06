@@ -1,0 +1,240 @@
+{
+  "book": "儒林外史",
+  "chapterNo": 1,
+  "entities": [
+    {
+      "canonical": "王冕",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["王相公", "王大叔", "王老大", "王参军"],
+      "firstAppearancePara": 1,
+      "activeChapters": [1],
+      "note": "史实人物；末段'王参军'为时人误称，非其本名"
+    },
+    {
+      "canonical": "王冕母",
+      "type": "PERSON",
+      "nameType": "TITLE_ONLY",
+      "aliases": ["母亲"],
+      "firstAppearancePara": 1,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "秦老",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["秦老爹"],
+      "firstAppearancePara": 2,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "危素",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["危老先生", "危老爷"],
+      "firstAppearancePara": 5,
+      "activeChapters": [1],
+      "note": "史实人物"
+    },
+    {
+      "canonical": "时仁",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["时知县", "知县"],
+      "firstAppearancePara": 7,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "翟买办",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["翟头役", "头翁", "翟家这奴才"],
+      "firstAppearancePara": 7,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "秦大汉",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["秦小二汉", "小二"],
+      "firstAppearancePara": 7,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "吴王",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["吴王", "滁阳王"],
+      "firstAppearancePara": 18,
+      "activeChapters": [1],
+      "note": "史实为朱元璋；书中自称'号滁阳王'、'据有金陵，称为吴王'"
+    },
+    {
+      "canonical": "方国珍",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 17,
+      "activeChapters": [1],
+      "note": "提及型历史人物"
+    },
+    {
+      "canonical": "张士诚",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 17,
+      "activeChapters": [1],
+      "note": "提及型历史人物"
+    },
+    {
+      "canonical": "陈友谅",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 17,
+      "activeChapters": [1],
+      "note": "提及型历史人物"
+    },
+    {
+      "canonical": "诸暨县",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 1,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "七柳湖",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 2,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "济南府",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 13,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "金陵",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 19,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "和州",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 20,
+      "activeChapters": [1]
+    },
+    {
+      "canonical": "会稽山",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 22,
+      "activeChapters": [1]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "母子",
+      "sourceCanonical": "王冕母",
+      "targetCanonical": "王冕",
+      "evidence": "母亲同他到隔壁秦老家，秦老留著他母子两个吃了早饭",
+      "chapterNo": 1,
+      "paraIndex": 2
+    },
+    {
+      "typeCode": "师生",
+      "sourceCanonical": "时仁",
+      "targetCanonical": "危素",
+      "evidence": "县尊是壬午举人，乃危老先生门生，这是该来贺的",
+      "chapterNo": 1,
+      "paraIndex": 6
+    },
+    {
+      "typeCode": "朋友",
+      "sourceCanonical": "秦老",
+      "targetCanonical": "王冕",
+      "evidence": "时常和他亲热地邀在草堂里坐著说话儿",
+      "chapterNo": 1,
+      "paraIndex": 7
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "EVENT",
+      "subjectCanonical": "王冕",
+      "summary": "王冕看雨后荷花，萌生自学画荷花念头",
+      "evidence": "王冕看了一回，心里想道……我何不自画他几枝",
+      "chapterNo": 1,
+      "paraIndex": 4
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "王冕",
+      "summary": "王冕学画没骨花卉成名，诸暨一县争相购买",
+      "evidence": "诸暨一县都晓得是一个画没骨花卉的名笔，争著来买",
+      "chapterNo": 1,
+      "paraIndex": 7
+    },
+    {
+      "category": "TRAVEL",
+      "subjectCanonical": "王冕",
+      "summary": "王冕因不愿结交时知县，离家避祸赴山东济南府",
+      "evidence": "我如今辞别老爹，收拾行李，到别处去躲避几时",
+      "chapterNo": 1,
+      "paraIndex": 11
+    },
+    {
+      "category": "DEATH",
+      "subjectCanonical": "王冕母",
+      "summary": "王冕母病故，遗言劝王冕不要作官",
+      "evidence": "他母亲奄奄一息，归天去了",
+      "chapterNo": 1,
+      "paraIndex": 16
+    },
+    {
+      "category": "CAREER",
+      "subjectCanonical": "危素",
+      "summary": "危素归降后妄自尊大，获罪发往和州守余阙墓",
+      "evidence": "太祖大怒，发往和州守余阙墓去了",
+      "chapterNo": 1,
+      "paraIndex": 20
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "王冕",
+      "summary": "吴王亲访王冕，求教治浙之道",
+      "evidence": "今来拜访，要先生指示：浙人久反之后，何以能服其心",
+      "chapterNo": 1,
+      "paraIndex": 19
+    },
+    {
+      "category": "TRAVEL",
+      "subjectCanonical": "王冕",
+      "summary": "朝廷征聘，王冕连夜逃往会稽山隐居",
+      "evidence": "王冕并不通知秦老，私自收拾，连夜逃往会稽山中",
+      "chapterNo": 1,
+      "paraIndex": 22
+    },
+    {
+      "category": "DEATH",
+      "subjectCanonical": "王冕",
+      "summary": "王冕隐居会稽山，后得病去世，葬于会稽山下",
+      "evidence": "后来得病去世，葬于会稽山下",
+      "chapterNo": 1,
+      "paraIndex": 24
+    }
+  ]
+}

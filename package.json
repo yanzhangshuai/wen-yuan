@@ -12,6 +12,7 @@
     "lint:fix": "eslint src --fix",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
+    "eval:gate": "node scripts/eval/run-eval.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts"

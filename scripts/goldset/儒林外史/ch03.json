@@ -1,0 +1,223 @@
+{
+  "book": "儒林外史",
+  "chapterNo": 3,
+  "entities": [
+    {
+      "canonical": "周进",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["周学道", "周相公", "周相父", "周客人"],
+      "firstAppearancePara": 1,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "范进",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["范老爷", "范相公", "范举人"],
+      "firstAppearancePara": 8,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "胡屠户",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["胡老爹", "胡老爷", "丈人"],
+      "firstAppearancePara": 11,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "范进母",
+      "type": "PERSON",
+      "nameType": "TITLE_ONLY",
+      "aliases": ["老太太", "亲家母"],
+      "firstAppearancePara": 11,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "胡氏",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["娘子", "范进妻"],
+      "firstAppearancePara": 11,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "金有余",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["金老客"],
+      "firstAppearancePara": 1,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "行主人",
+      "type": "PERSON",
+      "nameType": "TITLE_ONLY",
+      "aliases": [],
+      "firstAppearancePara": 1,
+      "activeChapters": [3],
+      "note": "客栈主人，无名字"
+    },
+    {
+      "canonical": "魏好古",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 10,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "姚驼子",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["外科郎中"],
+      "firstAppearancePara": 20,
+      "activeChapters": [3],
+      "note": "庙门口外科郎中"
+    },
+    {
+      "canonical": "张静斋",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["张乡绅", "张老爷"],
+      "firstAppearancePara": 22,
+      "activeChapters": [3],
+      "note": "做过一任知县，别号静斋"
+    },
+    {
+      "canonical": "申祥甫",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 5,
+      "activeChapters": [3],
+      "note": "提及型（薛家集前回人物）"
+    },
+    {
+      "canonical": "汤公",
+      "type": "PERSON",
+      "nameType": "NAMED",
+      "aliases": ["高要县汤公"],
+      "firstAppearancePara": 23,
+      "activeChapters": [3],
+      "note": "提及型，范进房师，高要县知县"
+    },
+    {
+      "canonical": "汶上县",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 5,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "广州",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 6,
+      "activeChapters": [3]
+    },
+    {
+      "canonical": "高要县",
+      "type": "LOCATION",
+      "nameType": "NAMED",
+      "aliases": [],
+      "firstAppearancePara": 23,
+      "activeChapters": [3]
+    }
+  ],
+  "relations": [
+    {
+      "typeCode": "师生",
+      "sourceCanonical": "范进",
+      "targetCanonical": "周进",
+      "evidence": "周学道将范进卷子用心用意看了一遍……卷面上加了三圈，即填了第一名",
+      "chapterNo": 3,
+      "paraIndex": 10
+    },
+    {
+      "typeCode": "母子",
+      "sourceCanonical": "范进母",
+      "targetCanonical": "范进",
+      "evidence": "正屋是母亲住著，妻子住在披房里",
+      "chapterNo": 3,
+      "paraIndex": 11
+    },
+    {
+      "typeCode": "夫妻",
+      "sourceCanonical": "范进",
+      "targetCanonical": "胡氏",
+      "evidence": "他妻子乃是集上胡屠户的女儿",
+      "chapterNo": 3,
+      "paraIndex": 11
+    },
+    {
+      "typeCode": "同年",
+      "sourceCanonical": "范进",
+      "targetCanonical": "魏好古",
+      "evidence": "魏好古又约了一个同案的朋友，彼此来往",
+      "chapterNo": 3,
+      "paraIndex": 12
+    }
+  ],
+  "bioFacts": [
+    {
+      "category": "EVENT",
+      "subjectCanonical": "周进",
+      "summary": "周进游贡院，触景伤心，撞号板痛哭",
+      "evidence": "才到'天'字号，就撞死在地下……放声大哭起来",
+      "chapterNo": 3,
+      "paraIndex": 1
+    },
+    {
+      "category": "EXAM",
+      "subjectCanonical": "周进",
+      "summary": "周进纳监进场，中举人，会试中进士，授部属",
+      "evidence": "周进就录了个贡监首卷……巍然中了……到京会试，又中了进士，殿试三甲，授了部属",
+      "chapterNo": 3,
+      "paraIndex": 5
+    },
+    {
+      "category": "CAREER",
+      "subjectCanonical": "周进",
+      "summary": "周进升御史，钦点广东学道",
+      "evidence": "荏苒三年，升了御史，钦点广东学道",
+      "chapterNo": 3,
+      "paraIndex": 6
+    },
+    {
+      "category": "EXAM",
+      "subjectCanonical": "范进",
+      "summary": "范进五十四岁进学（考中秀才），名列第一",
+      "evidence": "卷面上加了三圈，即填了第一名",
+      "chapterNo": 3,
+      "paraIndex": 10
+    },
+    {
+      "category": "EXAM",
+      "subjectCanonical": "范进",
+      "summary": "范进高中广东乡试第七名举人",
+      "evidence": "高中广东乡试第七名'亚元'，京报连登黄甲",
+      "chapterNo": 3,
+      "paraIndex": 14
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "范进",
+      "summary": "范进中举后喜极发疯，被胡屠户一巴掌打醒",
+      "evidence": "往后一跤跌倒，牙关咬紧，不醒人事……胡屠户……一个嘴巴打过去",
+      "chapterNo": 3,
+      "paraIndex": 14
+    },
+    {
+      "category": "EVENT",
+      "subjectCanonical": "范进母",
+      "summary": "范进母迁入新宅后，中风痰涌跌倒",
+      "evidence": "大笑一声，往后便跌倒；忽然痰涌上来，不省一事",
+      "chapterNo": 3,
+      "paraIndex": 27
+    }
+  ]
+}
