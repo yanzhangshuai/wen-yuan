@@ -9,7 +9,7 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "name_type" AS ENUM ('NAMED', 'TITLE_ONLY');
 
 -- CreateEnum
-CREATE TYPE "record_source" AS ENUM ('AI', 'MANUAL', 'DRAFT_AI');
+CREATE TYPE "record_source" AS ENUM ('AI', 'MANUAL', 'DRAFT_AI', 'AUTO_VERIFIED');
 
 -- CreateEnum
 CREATE TYPE "app_role" AS ENUM ('ADMIN', 'VIEWER');
@@ -51,10 +51,10 @@ CREATE TYPE "skill_source" AS ENUM ('MANUAL', 'GENERATED', 'AI');
 CREATE TYPE "skill_status" AS ENUM ('DRAFT', 'ACTIVE', 'DISABLED', 'ARCHIVED');
 
 -- CreateEnum
-CREATE TYPE "agent_run_type" AS ENUM ('JOB_PIPELINE', 'ENTITY_PRESCAN', 'CHAPTER_ANALYSIS', 'GLOBAL_RESOLUTION', 'TITLE_RESOLUTION', 'VALIDATION', 'SKILL_GENERATION');
+CREATE TYPE "agent_run_type" AS ENUM ('PRESCAN', 'IDENTITY', 'EXTRACTION', 'RECONCILE', 'VALIDATION', 'CROSS_VALIDATION', 'SKILL_GENERATION');
 
 -- CreateEnum
-CREATE TYPE "agent_step_kind" AS ENUM ('LLM_CALL', 'TOOL_CALL', 'SKILL_LOAD', 'RULE_APPLY', 'ARBITRATION', 'MANUAL');
+CREATE TYPE "relation_direction" AS ENUM ('INVERSE', 'SYMMETRIC');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -306,6 +306,23 @@ CREATE TABLE "relationships" (
 );
 
 -- CreateTable
+CREATE TABLE "relationship_types" (
+    "id" UUID NOT NULL,
+    "code" VARCHAR(60) NOT NULL,
+    "name" VARCHAR(60) NOT NULL,
+    "direction" "relation_direction" NOT NULL,
+    "category" VARCHAR(30) NOT NULL,
+    "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "book_type_id" UUID,
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "relationship_types_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "skills" (
     "id" UUID NOT NULL,
     "slug" VARCHAR(120) NOT NULL,
@@ -370,6 +387,7 @@ CREATE TABLE "analysis_jobs" (
     "override_strategy" TEXT,
     "keep_history" BOOLEAN NOT NULL DEFAULT false,
     "skills_snapshot" JSONB,
+    "relationship_types_snapshot" JSONB,
     "started_at" TIMESTAMPTZ(6),
     "finished_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -395,24 +413,6 @@ CREATE TABLE "agent_runs" (
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "agent_runs_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "agent_steps" (
-    "id" UUID NOT NULL,
-    "agent_run_id" UUID NOT NULL,
-    "step_index" INTEGER NOT NULL,
-    "kind" "agent_step_kind" NOT NULL,
-    "message_text" TEXT,
-    "tool_name" TEXT,
-    "tool_args" JSONB,
-    "tool_result" JSONB,
-    "usage" JSONB,
-    "duration_ms" INTEGER,
-    "error" TEXT,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "agent_steps_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -583,6 +583,15 @@ CREATE INDEX "entities_type_deleted_idx" ON "entities"("entity_type", "deleted_a
 CREATE INDEX "entities_deleted_at_idx" ON "entities"("deleted_at");
 
 -- CreateIndex
+CREATE INDEX "entities_name_trgm_idx" ON "entities" USING GIN ("name" gin_trgm_ops);
+
+-- CreateIndex
+CREATE INDEX "entities_aliases_idx" ON "entities" USING GIN ("aliases");
+
+-- CreateIndex
+CREATE INDEX "entities_global_tags_idx" ON "entities" USING GIN ("global_tags");
+
+-- CreateIndex
 CREATE INDEX "entity_profiles_book_deleted_idx" ON "entity_profiles"("book_id", "deleted_at");
 
 -- CreateIndex
@@ -631,6 +640,9 @@ CREATE INDEX "facts_book_category_year_idx" ON "facts"("book_id", "event_categor
 CREATE INDEX "facts_review_query_idx" ON "facts"("status", "record_source", "chapter_id");
 
 -- CreateIndex
+CREATE INDEX "facts_payload_idx" ON "facts" USING GIN ("payload");
+
+-- CreateIndex
 CREATE INDEX "fact_evidences_fact_idx" ON "fact_evidences"("fact_id");
 
 -- CreateIndex
@@ -644,6 +656,12 @@ CREATE INDEX "relationships_reltype_idx" ON "relationships"("relationship_type_c
 
 -- CreateIndex
 CREATE UNIQUE INDEX "relationships_book_src_tgt_type_key" ON "relationships"("book_id", "source_entity_id", "target_entity_id", "relationship_type_code");
+
+-- CreateIndex
+CREATE INDEX "relationship_types_booktype_active_idx" ON "relationship_types"("book_type_id", "is_active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "relationship_types_code_booktype_key" ON "relationship_types"("code", "book_type_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "skills_slug_key" ON "skills"("slug");
@@ -682,12 +700,6 @@ CREATE INDEX "agent_runs_book_created_idx" ON "agent_runs"("book_id", "created_a
 CREATE INDEX "agent_runs_job_idx" ON "agent_runs"("job_id");
 
 -- CreateIndex
-CREATE INDEX "agent_steps_run_step_idx" ON "agent_steps"("agent_run_id", "step_index");
-
--- CreateIndex
-CREATE INDEX "agent_steps_run_kind_idx" ON "agent_steps"("agent_run_id", "kind");
-
--- CreateIndex
 CREATE INDEX "agent_write_audits_run_idx" ON "agent_write_audits"("agent_run_id");
 
 -- CreateIndex
@@ -716,6 +728,9 @@ CREATE INDEX "text_chunks_book_idx" ON "text_chunks"("book_id");
 
 -- CreateIndex
 CREATE INDEX "text_chunks_book_chapter_idx" ON "text_chunks"("book_id", "chapter_id");
+
+-- CreateIndex
+CREATE INDEX "text_chunks_content_trgm_idx" ON "text_chunks" USING GIN ("content" gin_trgm_ops);
 
 -- CreateIndex
 CREATE UNIQUE INDEX "text_chunks_chapter_chunk_key" ON "text_chunks"("chapter_id", "chunk_index");
@@ -829,6 +844,9 @@ ALTER TABLE "relationships" ADD CONSTRAINT "relationships_first_chapter_id_fkey"
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_latest_chapter_id_fkey" FOREIGN KEY ("latest_chapter_id") REFERENCES "chapters"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "relationship_types" ADD CONSTRAINT "relationship_types_book_type_id_fkey" FOREIGN KEY ("book_type_id") REFERENCES "book_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "skill_versions" ADD CONSTRAINT "skill_versions_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "skills"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -851,9 +869,6 @@ ALTER TABLE "agent_runs" ADD CONSTRAINT "agent_runs_book_id_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "agent_runs" ADD CONSTRAINT "agent_runs_model_id_fkey" FOREIGN KEY ("model_id") REFERENCES "ai_models"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "agent_steps" ADD CONSTRAINT "agent_steps_agent_run_id_fkey" FOREIGN KEY ("agent_run_id") REFERENCES "agent_runs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "agent_write_audits" ADD CONSTRAINT "agent_write_audits_agent_run_id_fkey" FOREIGN KEY ("agent_run_id") REFERENCES "agent_runs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -895,10 +910,5 @@ ALTER TABLE "analysis_phase_logs" ADD CONSTRAINT "analysis_phase_logs_model_id_f
 ALTER TABLE "analysis_phase_logs" ADD CONSTRAINT "analysis_phase_logs_chapter_id_fkey" FOREIGN KEY ("chapter_id") REFERENCES "chapters"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 
--- CreateIndex (custom non-btree: trgm / gin / hnsw)
-CREATE INDEX "entities_name_trgm_idx" ON "entities" USING gin ("name" gin_trgm_ops);
-CREATE INDEX "entities_aliases_idx" ON "entities" USING gin ("aliases");
-CREATE INDEX "entities_global_tags_idx" ON "entities" USING gin ("global_tags");
-CREATE INDEX "facts_payload_idx" ON "facts" USING gin ("payload");
+-- Prisma 无法建模的 HNSW 索引（pgvector），原生 SQL 管理
 CREATE INDEX "text_chunks_embedding_idx" ON "text_chunks" USING hnsw ("embedding" vector_cosine_ops);
-CREATE INDEX "text_chunks_content_trgm_idx" ON "text_chunks" USING gin ("content" gin_trgm_ops);
