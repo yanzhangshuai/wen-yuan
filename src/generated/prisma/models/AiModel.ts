@@ -37,6 +37,7 @@ export type AiModelMinAggregateOutputType = {
   isDefault: boolean | null
   supportsThinking: boolean | null
   supportsWebSearch: boolean | null
+  supportsTools: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -54,6 +55,7 @@ export type AiModelMaxAggregateOutputType = {
   isDefault: boolean | null
   supportsThinking: boolean | null
   supportsWebSearch: boolean | null
+  supportsTools: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -71,6 +73,7 @@ export type AiModelCountAggregateOutputType = {
   isDefault: number
   supportsThinking: number
   supportsWebSearch: number
+  supportsTools: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -90,6 +93,7 @@ export type AiModelMinAggregateInputType = {
   isDefault?: true
   supportsThinking?: true
   supportsWebSearch?: true
+  supportsTools?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -107,6 +111,7 @@ export type AiModelMaxAggregateInputType = {
   isDefault?: true
   supportsThinking?: true
   supportsWebSearch?: true
+  supportsTools?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -124,6 +129,7 @@ export type AiModelCountAggregateInputType = {
   isDefault?: true
   supportsThinking?: true
   supportsWebSearch?: true
+  supportsTools?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -214,6 +220,7 @@ export type AiModelGroupByOutputType = {
   isDefault: boolean
   supportsThinking: boolean
   supportsWebSearch: boolean
+  supportsTools: boolean
   createdAt: Date
   updatedAt: Date
   _count: AiModelCountAggregateOutputType | null
@@ -221,7 +228,7 @@ export type AiModelGroupByOutputType = {
   _max: AiModelMaxAggregateOutputType | null
 }
 
-export type GetAiModelGroupByPayload<T extends AiModelGroupByArgs> = Prisma.PrismaPromise<
+type GetAiModelGroupByPayload<T extends AiModelGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AiModelGroupByOutputType, T['by']> &
       {
@@ -252,9 +259,11 @@ export type AiModelWhereInput = {
   isDefault?: Prisma.BoolFilter<"AiModel"> | boolean
   supportsThinking?: Prisma.BoolFilter<"AiModel"> | boolean
   supportsWebSearch?: Prisma.BoolFilter<"AiModel"> | boolean
+  supportsTools?: Prisma.BoolFilter<"AiModel"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
+  agentRuns?: Prisma.AgentRunListRelationFilter
 }
 
 export type AiModelOrderByWithRelationInput = {
@@ -270,9 +279,11 @@ export type AiModelOrderByWithRelationInput = {
   isDefault?: Prisma.SortOrder
   supportsThinking?: Prisma.SortOrder
   supportsWebSearch?: Prisma.SortOrder
+  supportsTools?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   phaseLogs?: Prisma.AnalysisPhaseLogOrderByRelationAggregateInput
+  agentRuns?: Prisma.AgentRunOrderByRelationAggregateInput
 }
 
 export type AiModelWhereUniqueInput = Prisma.AtLeast<{
@@ -292,9 +303,11 @@ export type AiModelWhereUniqueInput = Prisma.AtLeast<{
   isDefault?: Prisma.BoolFilter<"AiModel"> | boolean
   supportsThinking?: Prisma.BoolFilter<"AiModel"> | boolean
   supportsWebSearch?: Prisma.BoolFilter<"AiModel"> | boolean
+  supportsTools?: Prisma.BoolFilter<"AiModel"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiModel"> | Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogListRelationFilter
+  agentRuns?: Prisma.AgentRunListRelationFilter
 }, "id" | "provider_modelId_baseUrl" | "aliasKey">
 
 export type AiModelOrderByWithAggregationInput = {
@@ -310,6 +323,7 @@ export type AiModelOrderByWithAggregationInput = {
   isDefault?: Prisma.SortOrder
   supportsThinking?: Prisma.SortOrder
   supportsWebSearch?: Prisma.SortOrder
+  supportsTools?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AiModelCountOrderByAggregateInput
@@ -333,6 +347,7 @@ export type AiModelScalarWhereWithAggregatesInput = {
   isDefault?: Prisma.BoolWithAggregatesFilter<"AiModel"> | boolean
   supportsThinking?: Prisma.BoolWithAggregatesFilter<"AiModel"> | boolean
   supportsWebSearch?: Prisma.BoolWithAggregatesFilter<"AiModel"> | boolean
+  supportsTools?: Prisma.BoolWithAggregatesFilter<"AiModel"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AiModel"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AiModel"> | Date | string
 }
@@ -350,9 +365,11 @@ export type AiModelCreateInput = {
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutModelInput
+  agentRuns?: Prisma.AgentRunCreateNestedManyWithoutModelInput
 }
 
 export type AiModelUncheckedCreateInput = {
@@ -368,9 +385,11 @@ export type AiModelUncheckedCreateInput = {
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutModelInput
+  agentRuns?: Prisma.AgentRunUncheckedCreateNestedManyWithoutModelInput
 }
 
 export type AiModelUpdateInput = {
@@ -386,9 +405,11 @@ export type AiModelUpdateInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutModelNestedInput
+  agentRuns?: Prisma.AgentRunUpdateManyWithoutModelNestedInput
 }
 
 export type AiModelUncheckedUpdateInput = {
@@ -404,9 +425,11 @@ export type AiModelUncheckedUpdateInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutModelNestedInput
+  agentRuns?: Prisma.AgentRunUncheckedUpdateManyWithoutModelNestedInput
 }
 
 export type AiModelCreateManyInput = {
@@ -422,6 +445,7 @@ export type AiModelCreateManyInput = {
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -439,6 +463,7 @@ export type AiModelUpdateManyMutationInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -456,6 +481,7 @@ export type AiModelUncheckedUpdateManyInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -479,6 +505,7 @@ export type AiModelCountOrderByAggregateInput = {
   isDefault?: Prisma.SortOrder
   supportsThinking?: Prisma.SortOrder
   supportsWebSearch?: Prisma.SortOrder
+  supportsTools?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -496,6 +523,7 @@ export type AiModelMaxOrderByAggregateInput = {
   isDefault?: Prisma.SortOrder
   supportsThinking?: Prisma.SortOrder
   supportsWebSearch?: Prisma.SortOrder
+  supportsTools?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -513,6 +541,7 @@ export type AiModelMinOrderByAggregateInput = {
   isDefault?: Prisma.SortOrder
   supportsThinking?: Prisma.SortOrder
   supportsWebSearch?: Prisma.SortOrder
+  supportsTools?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -524,6 +553,22 @@ export type AiModelNullableScalarRelationFilter = {
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
+}
+
+export type AiModelCreateNestedOneWithoutAgentRunsInput = {
+  create?: Prisma.XOR<Prisma.AiModelCreateWithoutAgentRunsInput, Prisma.AiModelUncheckedCreateWithoutAgentRunsInput>
+  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutAgentRunsInput
+  connect?: Prisma.AiModelWhereUniqueInput
+}
+
+export type AiModelUpdateOneWithoutAgentRunsNestedInput = {
+  create?: Prisma.XOR<Prisma.AiModelCreateWithoutAgentRunsInput, Prisma.AiModelUncheckedCreateWithoutAgentRunsInput>
+  connectOrCreate?: Prisma.AiModelCreateOrConnectWithoutAgentRunsInput
+  upsert?: Prisma.AiModelUpsertWithoutAgentRunsInput
+  disconnect?: Prisma.AiModelWhereInput | boolean
+  delete?: Prisma.AiModelWhereInput | boolean
+  connect?: Prisma.AiModelWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AiModelUpdateToOneWithWhereWithoutAgentRunsInput, Prisma.AiModelUpdateWithoutAgentRunsInput>, Prisma.AiModelUncheckedUpdateWithoutAgentRunsInput>
 }
 
 export type AiModelCreateNestedOneWithoutPhaseLogsInput = {
@@ -542,6 +587,98 @@ export type AiModelUpdateOneWithoutPhaseLogsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AiModelUpdateToOneWithWhereWithoutPhaseLogsInput, Prisma.AiModelUpdateWithoutPhaseLogsInput>, Prisma.AiModelUncheckedUpdateWithoutPhaseLogsInput>
 }
 
+export type AiModelCreateWithoutAgentRunsInput = {
+  id?: string
+  provider: string
+  protocol?: string
+  name: string
+  modelId: string
+  aliasKey?: string | null
+  baseUrl: string
+  apiKey?: string | null
+  isEnabled?: boolean
+  isDefault?: boolean
+  supportsThinking?: boolean
+  supportsWebSearch?: boolean
+  supportsTools?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  phaseLogs?: Prisma.AnalysisPhaseLogCreateNestedManyWithoutModelInput
+}
+
+export type AiModelUncheckedCreateWithoutAgentRunsInput = {
+  id?: string
+  provider: string
+  protocol?: string
+  name: string
+  modelId: string
+  aliasKey?: string | null
+  baseUrl: string
+  apiKey?: string | null
+  isEnabled?: boolean
+  isDefault?: boolean
+  supportsThinking?: boolean
+  supportsWebSearch?: boolean
+  supportsTools?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedCreateNestedManyWithoutModelInput
+}
+
+export type AiModelCreateOrConnectWithoutAgentRunsInput = {
+  where: Prisma.AiModelWhereUniqueInput
+  create: Prisma.XOR<Prisma.AiModelCreateWithoutAgentRunsInput, Prisma.AiModelUncheckedCreateWithoutAgentRunsInput>
+}
+
+export type AiModelUpsertWithoutAgentRunsInput = {
+  update: Prisma.XOR<Prisma.AiModelUpdateWithoutAgentRunsInput, Prisma.AiModelUncheckedUpdateWithoutAgentRunsInput>
+  create: Prisma.XOR<Prisma.AiModelCreateWithoutAgentRunsInput, Prisma.AiModelUncheckedCreateWithoutAgentRunsInput>
+  where?: Prisma.AiModelWhereInput
+}
+
+export type AiModelUpdateToOneWithWhereWithoutAgentRunsInput = {
+  where?: Prisma.AiModelWhereInput
+  data: Prisma.XOR<Prisma.AiModelUpdateWithoutAgentRunsInput, Prisma.AiModelUncheckedUpdateWithoutAgentRunsInput>
+}
+
+export type AiModelUpdateWithoutAgentRunsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  modelId?: Prisma.StringFieldUpdateOperationsInput | string
+  aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phaseLogs?: Prisma.AnalysisPhaseLogUpdateManyWithoutModelNestedInput
+}
+
+export type AiModelUncheckedUpdateWithoutAgentRunsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  protocol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  modelId?: Prisma.StringFieldUpdateOperationsInput | string
+  aliasKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  baseUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phaseLogs?: Prisma.AnalysisPhaseLogUncheckedUpdateManyWithoutModelNestedInput
+}
+
 export type AiModelCreateWithoutPhaseLogsInput = {
   id?: string
   provider: string
@@ -555,8 +692,10 @@ export type AiModelCreateWithoutPhaseLogsInput = {
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  agentRuns?: Prisma.AgentRunCreateNestedManyWithoutModelInput
 }
 
 export type AiModelUncheckedCreateWithoutPhaseLogsInput = {
@@ -572,8 +711,10 @@ export type AiModelUncheckedCreateWithoutPhaseLogsInput = {
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  agentRuns?: Prisma.AgentRunUncheckedCreateNestedManyWithoutModelInput
 }
 
 export type AiModelCreateOrConnectWithoutPhaseLogsInput = {
@@ -605,8 +746,10 @@ export type AiModelUpdateWithoutPhaseLogsInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  agentRuns?: Prisma.AgentRunUpdateManyWithoutModelNestedInput
 }
 
 export type AiModelUncheckedUpdateWithoutPhaseLogsInput = {
@@ -622,8 +765,10 @@ export type AiModelUncheckedUpdateWithoutPhaseLogsInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsThinking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   supportsWebSearch?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  supportsTools?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  agentRuns?: Prisma.AgentRunUncheckedUpdateManyWithoutModelNestedInput
 }
 
 
@@ -633,10 +778,12 @@ export type AiModelUncheckedUpdateWithoutPhaseLogsInput = {
 
 export type AiModelCountOutputType = {
   phaseLogs: number
+  agentRuns: number
 }
 
 export type AiModelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   phaseLogs?: boolean | AiModelCountOutputTypeCountPhaseLogsArgs
+  agentRuns?: boolean | AiModelCountOutputTypeCountAgentRunsArgs
 }
 
 /**
@@ -656,6 +803,13 @@ export type AiModelCountOutputTypeCountPhaseLogsArgs<ExtArgs extends runtime.Typ
   where?: Prisma.AnalysisPhaseLogWhereInput
 }
 
+/**
+ * AiModelCountOutputType without action
+ */
+export type AiModelCountOutputTypeCountAgentRunsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AgentRunWhereInput
+}
+
 
 export type AiModelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -670,9 +824,11 @@ export type AiModelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   phaseLogs?: boolean | Prisma.AiModel$phaseLogsArgs<ExtArgs>
+  agentRuns?: boolean | Prisma.AiModel$agentRunsArgs<ExtArgs>
   _count?: boolean | Prisma.AiModelCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["aiModel"]>
 
@@ -689,6 +845,7 @@ export type AiModelSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["aiModel"]>
@@ -706,6 +863,7 @@ export type AiModelSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["aiModel"]>
@@ -723,13 +881,15 @@ export type AiModelSelectScalar = {
   isDefault?: boolean
   supportsThinking?: boolean
   supportsWebSearch?: boolean
+  supportsTools?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AiModelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "protocol" | "name" | "modelId" | "aliasKey" | "baseUrl" | "apiKey" | "isEnabled" | "isDefault" | "supportsThinking" | "supportsWebSearch" | "createdAt" | "updatedAt", ExtArgs["result"]["aiModel"]>
+export type AiModelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "protocol" | "name" | "modelId" | "aliasKey" | "baseUrl" | "apiKey" | "isEnabled" | "isDefault" | "supportsThinking" | "supportsWebSearch" | "supportsTools" | "createdAt" | "updatedAt", ExtArgs["result"]["aiModel"]>
 export type AiModelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   phaseLogs?: boolean | Prisma.AiModel$phaseLogsArgs<ExtArgs>
+  agentRuns?: boolean | Prisma.AiModel$agentRunsArgs<ExtArgs>
   _count?: boolean | Prisma.AiModelCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AiModelIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -739,6 +899,7 @@ export type $AiModelPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "AiModel"
   objects: {
     phaseLogs: Prisma.$AnalysisPhaseLogPayload<ExtArgs>[]
+    agentRuns: Prisma.$AgentRunPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -753,6 +914,10 @@ export type $AiModelPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     isDefault: boolean
     supportsThinking: boolean
     supportsWebSearch: boolean
+    /**
+     * 是否支持 function calling（工具调用）。false 时 agent 降级为单次结构化输出。
+     */
+    supportsTools: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["aiModel"]>
@@ -1150,6 +1315,7 @@ readonly fields: AiModelFieldRefs;
 export interface Prisma__AiModelClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   phaseLogs<T extends Prisma.AiModel$phaseLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiModel$phaseLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnalysisPhaseLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  agentRuns<T extends Prisma.AiModel$agentRunsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiModel$agentRunsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AgentRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1191,6 +1357,7 @@ export interface AiModelFieldRefs {
   readonly isDefault: Prisma.FieldRef<"AiModel", 'Boolean'>
   readonly supportsThinking: Prisma.FieldRef<"AiModel", 'Boolean'>
   readonly supportsWebSearch: Prisma.FieldRef<"AiModel", 'Boolean'>
+  readonly supportsTools: Prisma.FieldRef<"AiModel", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"AiModel", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AiModel", 'DateTime'>
 }
@@ -1389,11 +1556,6 @@ export type AiModelFindManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Skip the first `n` AiModels.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of AiModels.
-   */
   distinct?: Prisma.AiModelScalarFieldEnum | Prisma.AiModelScalarFieldEnum[]
 }
 
@@ -1607,6 +1769,30 @@ export type AiModel$phaseLogsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.AnalysisPhaseLogScalarFieldEnum | Prisma.AnalysisPhaseLogScalarFieldEnum[]
+}
+
+/**
+ * AiModel.agentRuns
+ */
+export type AiModel$agentRunsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AgentRun
+   */
+  select?: Prisma.AgentRunSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AgentRun
+   */
+  omit?: Prisma.AgentRunOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AgentRunInclude<ExtArgs> | null
+  where?: Prisma.AgentRunWhereInput
+  orderBy?: Prisma.AgentRunOrderByWithRelationInput | Prisma.AgentRunOrderByWithRelationInput[]
+  cursor?: Prisma.AgentRunWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AgentRunScalarFieldEnum | Prisma.AgentRunScalarFieldEnum[]
 }
 
 /**

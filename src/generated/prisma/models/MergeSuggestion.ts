@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model MergeSuggestion
- * @db.remark: 人物别名消歧建议。用于管理员审核同名/别名归并。
+ * @db.remark: 实体合并建议。用于管理员审核同名/别名归并。接受后执行 mergeEntitiesInTransaction。
  */
 export type MergeSuggestionModel = runtime.Types.Result.DefaultSelection<Prisma.$MergeSuggestionPayload>
 
@@ -37,8 +37,8 @@ export type MergeSuggestionSumAggregateOutputType = {
 export type MergeSuggestionMinAggregateOutputType = {
   id: string | null
   bookId: string | null
-  sourcePersonaId: string | null
-  targetPersonaId: string | null
+  sourceEntityId: string | null
+  targetEntityId: string | null
   reason: string | null
   confidence: number | null
   status: string | null
@@ -49,8 +49,8 @@ export type MergeSuggestionMinAggregateOutputType = {
 export type MergeSuggestionMaxAggregateOutputType = {
   id: string | null
   bookId: string | null
-  sourcePersonaId: string | null
-  targetPersonaId: string | null
+  sourceEntityId: string | null
+  targetEntityId: string | null
   reason: string | null
   confidence: number | null
   status: string | null
@@ -61,8 +61,8 @@ export type MergeSuggestionMaxAggregateOutputType = {
 export type MergeSuggestionCountAggregateOutputType = {
   id: number
   bookId: number
-  sourcePersonaId: number
-  targetPersonaId: number
+  sourceEntityId: number
+  targetEntityId: number
   reason: number
   confidence: number
   evidenceRefs: number
@@ -84,8 +84,8 @@ export type MergeSuggestionSumAggregateInputType = {
 export type MergeSuggestionMinAggregateInputType = {
   id?: true
   bookId?: true
-  sourcePersonaId?: true
-  targetPersonaId?: true
+  sourceEntityId?: true
+  targetEntityId?: true
   reason?: true
   confidence?: true
   status?: true
@@ -96,8 +96,8 @@ export type MergeSuggestionMinAggregateInputType = {
 export type MergeSuggestionMaxAggregateInputType = {
   id?: true
   bookId?: true
-  sourcePersonaId?: true
-  targetPersonaId?: true
+  sourceEntityId?: true
+  targetEntityId?: true
   reason?: true
   confidence?: true
   status?: true
@@ -108,8 +108,8 @@ export type MergeSuggestionMaxAggregateInputType = {
 export type MergeSuggestionCountAggregateInputType = {
   id?: true
   bookId?: true
-  sourcePersonaId?: true
-  targetPersonaId?: true
+  sourceEntityId?: true
+  targetEntityId?: true
   reason?: true
   confidence?: true
   evidenceRefs?: true
@@ -208,8 +208,8 @@ export type MergeSuggestionGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 export type MergeSuggestionGroupByOutputType = {
   id: string
   bookId: string
-  sourcePersonaId: string
-  targetPersonaId: string
+  sourceEntityId: string
+  targetEntityId: string
   reason: string
   confidence: number
   evidenceRefs: runtime.JsonValue | null
@@ -223,7 +223,7 @@ export type MergeSuggestionGroupByOutputType = {
   _max: MergeSuggestionMaxAggregateOutputType | null
 }
 
-export type GetMergeSuggestionGroupByPayload<T extends MergeSuggestionGroupByArgs> = Prisma.PrismaPromise<
+type GetMergeSuggestionGroupByPayload<T extends MergeSuggestionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<MergeSuggestionGroupByOutputType, T['by']> &
       {
@@ -244,8 +244,8 @@ export type MergeSuggestionWhereInput = {
   NOT?: Prisma.MergeSuggestionWhereInput | Prisma.MergeSuggestionWhereInput[]
   id?: Prisma.UuidFilter<"MergeSuggestion"> | string
   bookId?: Prisma.UuidFilter<"MergeSuggestion"> | string
-  sourcePersonaId?: Prisma.UuidFilter<"MergeSuggestion"> | string
-  targetPersonaId?: Prisma.UuidFilter<"MergeSuggestion"> | string
+  sourceEntityId?: Prisma.UuidFilter<"MergeSuggestion"> | string
+  targetEntityId?: Prisma.UuidFilter<"MergeSuggestion"> | string
   reason?: Prisma.StringFilter<"MergeSuggestion"> | string
   confidence?: Prisma.FloatFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableFilter<"MergeSuggestion">
@@ -253,15 +253,15 @@ export type MergeSuggestionWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"MergeSuggestion"> | Date | string
   resolvedAt?: Prisma.DateTimeNullableFilter<"MergeSuggestion"> | Date | string | null
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
-  sourcePersona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
-  targetPersona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
+  source?: Prisma.XOR<Prisma.EntityScalarRelationFilter, Prisma.EntityWhereInput>
+  target?: Prisma.XOR<Prisma.EntityScalarRelationFilter, Prisma.EntityWhereInput>
 }
 
 export type MergeSuggestionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  sourcePersonaId?: Prisma.SortOrder
-  targetPersonaId?: Prisma.SortOrder
+  sourceEntityId?: Prisma.SortOrder
+  targetEntityId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   evidenceRefs?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -269,8 +269,8 @@ export type MergeSuggestionOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   book?: Prisma.BookOrderByWithRelationInput
-  sourcePersona?: Prisma.PersonaOrderByWithRelationInput
-  targetPersona?: Prisma.PersonaOrderByWithRelationInput
+  source?: Prisma.EntityOrderByWithRelationInput
+  target?: Prisma.EntityOrderByWithRelationInput
 }
 
 export type MergeSuggestionWhereUniqueInput = Prisma.AtLeast<{
@@ -279,8 +279,8 @@ export type MergeSuggestionWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.MergeSuggestionWhereInput[]
   NOT?: Prisma.MergeSuggestionWhereInput | Prisma.MergeSuggestionWhereInput[]
   bookId?: Prisma.UuidFilter<"MergeSuggestion"> | string
-  sourcePersonaId?: Prisma.UuidFilter<"MergeSuggestion"> | string
-  targetPersonaId?: Prisma.UuidFilter<"MergeSuggestion"> | string
+  sourceEntityId?: Prisma.UuidFilter<"MergeSuggestion"> | string
+  targetEntityId?: Prisma.UuidFilter<"MergeSuggestion"> | string
   reason?: Prisma.StringFilter<"MergeSuggestion"> | string
   confidence?: Prisma.FloatFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableFilter<"MergeSuggestion">
@@ -288,15 +288,15 @@ export type MergeSuggestionWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"MergeSuggestion"> | Date | string
   resolvedAt?: Prisma.DateTimeNullableFilter<"MergeSuggestion"> | Date | string | null
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
-  sourcePersona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
-  targetPersona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
+  source?: Prisma.XOR<Prisma.EntityScalarRelationFilter, Prisma.EntityWhereInput>
+  target?: Prisma.XOR<Prisma.EntityScalarRelationFilter, Prisma.EntityWhereInput>
 }, "id">
 
 export type MergeSuggestionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  sourcePersonaId?: Prisma.SortOrder
-  targetPersonaId?: Prisma.SortOrder
+  sourceEntityId?: Prisma.SortOrder
+  targetEntityId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   evidenceRefs?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -316,8 +316,8 @@ export type MergeSuggestionScalarWhereWithAggregatesInput = {
   NOT?: Prisma.MergeSuggestionScalarWhereWithAggregatesInput | Prisma.MergeSuggestionScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"MergeSuggestion"> | string
   bookId?: Prisma.UuidWithAggregatesFilter<"MergeSuggestion"> | string
-  sourcePersonaId?: Prisma.UuidWithAggregatesFilter<"MergeSuggestion"> | string
-  targetPersonaId?: Prisma.UuidWithAggregatesFilter<"MergeSuggestion"> | string
+  sourceEntityId?: Prisma.UuidWithAggregatesFilter<"MergeSuggestion"> | string
+  targetEntityId?: Prisma.UuidWithAggregatesFilter<"MergeSuggestion"> | string
   reason?: Prisma.StringWithAggregatesFilter<"MergeSuggestion"> | string
   confidence?: Prisma.FloatWithAggregatesFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableWithAggregatesFilter<"MergeSuggestion">
@@ -335,15 +335,15 @@ export type MergeSuggestionCreateInput = {
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   book: Prisma.BookCreateNestedOneWithoutMergeSuggestionsInput
-  sourcePersona: Prisma.PersonaCreateNestedOneWithoutSourceMergeSuggestionsInput
-  targetPersona: Prisma.PersonaCreateNestedOneWithoutTargetMergeSuggestionsInput
+  source: Prisma.EntityCreateNestedOneWithoutSourceMergeSuggestionsInput
+  target: Prisma.EntityCreateNestedOneWithoutTargetMergeSuggestionsInput
 }
 
 export type MergeSuggestionUncheckedCreateInput = {
   id?: string
   bookId: string
-  sourcePersonaId: string
-  targetPersonaId: string
+  sourceEntityId: string
+  targetEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -361,15 +361,15 @@ export type MergeSuggestionUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   book?: Prisma.BookUpdateOneRequiredWithoutMergeSuggestionsNestedInput
-  sourcePersona?: Prisma.PersonaUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
-  targetPersona?: Prisma.PersonaUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput
+  source?: Prisma.EntityUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
+  target?: Prisma.EntityUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput
 }
 
 export type MergeSuggestionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  sourcePersonaId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetPersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceEntityId?: Prisma.StringFieldUpdateOperationsInput | string
+  targetEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -381,8 +381,8 @@ export type MergeSuggestionUncheckedUpdateInput = {
 export type MergeSuggestionCreateManyInput = {
   id?: string
   bookId: string
-  sourcePersonaId: string
-  targetPersonaId: string
+  sourceEntityId: string
+  targetEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -404,8 +404,8 @@ export type MergeSuggestionUpdateManyMutationInput = {
 export type MergeSuggestionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  sourcePersonaId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetPersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceEntityId?: Prisma.StringFieldUpdateOperationsInput | string
+  targetEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -427,8 +427,8 @@ export type MergeSuggestionOrderByRelationAggregateInput = {
 export type MergeSuggestionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  sourcePersonaId?: Prisma.SortOrder
-  targetPersonaId?: Prisma.SortOrder
+  sourceEntityId?: Prisma.SortOrder
+  targetEntityId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   evidenceRefs?: Prisma.SortOrder
@@ -444,8 +444,8 @@ export type MergeSuggestionAvgOrderByAggregateInput = {
 export type MergeSuggestionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  sourcePersonaId?: Prisma.SortOrder
-  targetPersonaId?: Prisma.SortOrder
+  sourceEntityId?: Prisma.SortOrder
+  targetEntityId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -456,8 +456,8 @@ export type MergeSuggestionMaxOrderByAggregateInput = {
 export type MergeSuggestionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
-  sourcePersonaId?: Prisma.SortOrder
-  targetPersonaId?: Prisma.SortOrder
+  sourceEntityId?: Prisma.SortOrder
+  targetEntityId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -511,87 +511,87 @@ export type MergeSuggestionUncheckedUpdateManyWithoutBookNestedInput = {
   deleteMany?: Prisma.MergeSuggestionScalarWhereInput | Prisma.MergeSuggestionScalarWhereInput[]
 }
 
-export type MergeSuggestionCreateNestedManyWithoutSourcePersonaInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput> | Prisma.MergeSuggestionCreateWithoutSourcePersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManySourcePersonaInputEnvelope
+export type MergeSuggestionCreateNestedManyWithoutSourceInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourceInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput> | Prisma.MergeSuggestionCreateWithoutSourceInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput[]
+  createMany?: Prisma.MergeSuggestionCreateManySourceInputEnvelope
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
 }
 
-export type MergeSuggestionCreateNestedManyWithoutTargetPersonaInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput> | Prisma.MergeSuggestionCreateWithoutTargetPersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManyTargetPersonaInputEnvelope
+export type MergeSuggestionCreateNestedManyWithoutTargetInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput> | Prisma.MergeSuggestionCreateWithoutTargetInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput[]
+  createMany?: Prisma.MergeSuggestionCreateManyTargetInputEnvelope
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
 }
 
-export type MergeSuggestionUncheckedCreateNestedManyWithoutSourcePersonaInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput> | Prisma.MergeSuggestionCreateWithoutSourcePersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManySourcePersonaInputEnvelope
+export type MergeSuggestionUncheckedCreateNestedManyWithoutSourceInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourceInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput> | Prisma.MergeSuggestionCreateWithoutSourceInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput[]
+  createMany?: Prisma.MergeSuggestionCreateManySourceInputEnvelope
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
 }
 
-export type MergeSuggestionUncheckedCreateNestedManyWithoutTargetPersonaInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput> | Prisma.MergeSuggestionCreateWithoutTargetPersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManyTargetPersonaInputEnvelope
+export type MergeSuggestionUncheckedCreateNestedManyWithoutTargetInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput> | Prisma.MergeSuggestionCreateWithoutTargetInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput[]
+  createMany?: Prisma.MergeSuggestionCreateManyTargetInputEnvelope
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
 }
 
-export type MergeSuggestionUpdateManyWithoutSourcePersonaNestedInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput> | Prisma.MergeSuggestionCreateWithoutSourcePersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput[]
-  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourcePersonaInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourcePersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManySourcePersonaInputEnvelope
+export type MergeSuggestionUpdateManyWithoutSourceNestedInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourceInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput> | Prisma.MergeSuggestionCreateWithoutSourceInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput[]
+  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourceInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourceInput[]
+  createMany?: Prisma.MergeSuggestionCreateManySourceInputEnvelope
   set?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   disconnect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   delete?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
-  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourcePersonaInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourcePersonaInput[]
-  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourcePersonaInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourcePersonaInput[]
+  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourceInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourceInput[]
+  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourceInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourceInput[]
   deleteMany?: Prisma.MergeSuggestionScalarWhereInput | Prisma.MergeSuggestionScalarWhereInput[]
 }
 
-export type MergeSuggestionUpdateManyWithoutTargetPersonaNestedInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput> | Prisma.MergeSuggestionCreateWithoutTargetPersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput[]
-  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetPersonaInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetPersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManyTargetPersonaInputEnvelope
+export type MergeSuggestionUpdateManyWithoutTargetNestedInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput> | Prisma.MergeSuggestionCreateWithoutTargetInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput[]
+  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetInput[]
+  createMany?: Prisma.MergeSuggestionCreateManyTargetInputEnvelope
   set?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   disconnect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   delete?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
-  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetPersonaInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetPersonaInput[]
-  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetPersonaInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetPersonaInput[]
+  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetInput[]
+  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetInput[]
   deleteMany?: Prisma.MergeSuggestionScalarWhereInput | Prisma.MergeSuggestionScalarWhereInput[]
 }
 
-export type MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaNestedInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput> | Prisma.MergeSuggestionCreateWithoutSourcePersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourcePersonaInput[]
-  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourcePersonaInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourcePersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManySourcePersonaInputEnvelope
+export type MergeSuggestionUncheckedUpdateManyWithoutSourceNestedInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourceInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput> | Prisma.MergeSuggestionCreateWithoutSourceInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput | Prisma.MergeSuggestionCreateOrConnectWithoutSourceInput[]
+  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourceInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutSourceInput[]
+  createMany?: Prisma.MergeSuggestionCreateManySourceInputEnvelope
   set?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   disconnect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   delete?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
-  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourcePersonaInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourcePersonaInput[]
-  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourcePersonaInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourcePersonaInput[]
+  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourceInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutSourceInput[]
+  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourceInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutSourceInput[]
   deleteMany?: Prisma.MergeSuggestionScalarWhereInput | Prisma.MergeSuggestionScalarWhereInput[]
 }
 
-export type MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaNestedInput = {
-  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput> | Prisma.MergeSuggestionCreateWithoutTargetPersonaInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput[]
-  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetPersonaInput[]
-  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetPersonaInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetPersonaInput[]
-  createMany?: Prisma.MergeSuggestionCreateManyTargetPersonaInputEnvelope
+export type MergeSuggestionUncheckedUpdateManyWithoutTargetNestedInput = {
+  create?: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput> | Prisma.MergeSuggestionCreateWithoutTargetInput[] | Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput[]
+  connectOrCreate?: Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput | Prisma.MergeSuggestionCreateOrConnectWithoutTargetInput[]
+  upsert?: Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetInput | Prisma.MergeSuggestionUpsertWithWhereUniqueWithoutTargetInput[]
+  createMany?: Prisma.MergeSuggestionCreateManyTargetInputEnvelope
   set?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   disconnect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   delete?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
   connect?: Prisma.MergeSuggestionWhereUniqueInput | Prisma.MergeSuggestionWhereUniqueInput[]
-  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetPersonaInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetPersonaInput[]
-  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetPersonaInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetPersonaInput[]
+  update?: Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetInput | Prisma.MergeSuggestionUpdateWithWhereUniqueWithoutTargetInput[]
+  updateMany?: Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetInput | Prisma.MergeSuggestionUpdateManyWithWhereWithoutTargetInput[]
   deleteMany?: Prisma.MergeSuggestionScalarWhereInput | Prisma.MergeSuggestionScalarWhereInput[]
 }
 
@@ -603,14 +603,14 @@ export type MergeSuggestionCreateWithoutBookInput = {
   status?: string
   createdAt?: Date | string
   resolvedAt?: Date | string | null
-  sourcePersona: Prisma.PersonaCreateNestedOneWithoutSourceMergeSuggestionsInput
-  targetPersona: Prisma.PersonaCreateNestedOneWithoutTargetMergeSuggestionsInput
+  source: Prisma.EntityCreateNestedOneWithoutSourceMergeSuggestionsInput
+  target: Prisma.EntityCreateNestedOneWithoutTargetMergeSuggestionsInput
 }
 
 export type MergeSuggestionUncheckedCreateWithoutBookInput = {
   id?: string
-  sourcePersonaId: string
-  targetPersonaId: string
+  sourceEntityId: string
+  targetEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -651,8 +651,8 @@ export type MergeSuggestionScalarWhereInput = {
   NOT?: Prisma.MergeSuggestionScalarWhereInput | Prisma.MergeSuggestionScalarWhereInput[]
   id?: Prisma.UuidFilter<"MergeSuggestion"> | string
   bookId?: Prisma.UuidFilter<"MergeSuggestion"> | string
-  sourcePersonaId?: Prisma.UuidFilter<"MergeSuggestion"> | string
-  targetPersonaId?: Prisma.UuidFilter<"MergeSuggestion"> | string
+  sourceEntityId?: Prisma.UuidFilter<"MergeSuggestion"> | string
+  targetEntityId?: Prisma.UuidFilter<"MergeSuggestion"> | string
   reason?: Prisma.StringFilter<"MergeSuggestion"> | string
   confidence?: Prisma.FloatFilter<"MergeSuggestion"> | number
   evidenceRefs?: Prisma.JsonNullableFilter<"MergeSuggestion">
@@ -661,7 +661,7 @@ export type MergeSuggestionScalarWhereInput = {
   resolvedAt?: Prisma.DateTimeNullableFilter<"MergeSuggestion"> | Date | string | null
 }
 
-export type MergeSuggestionCreateWithoutSourcePersonaInput = {
+export type MergeSuggestionCreateWithoutSourceInput = {
   id?: string
   reason: string
   confidence?: number
@@ -670,13 +670,13 @@ export type MergeSuggestionCreateWithoutSourcePersonaInput = {
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   book: Prisma.BookCreateNestedOneWithoutMergeSuggestionsInput
-  targetPersona: Prisma.PersonaCreateNestedOneWithoutTargetMergeSuggestionsInput
+  target: Prisma.EntityCreateNestedOneWithoutTargetMergeSuggestionsInput
 }
 
-export type MergeSuggestionUncheckedCreateWithoutSourcePersonaInput = {
+export type MergeSuggestionUncheckedCreateWithoutSourceInput = {
   id?: string
   bookId: string
-  targetPersonaId: string
+  targetEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -685,17 +685,17 @@ export type MergeSuggestionUncheckedCreateWithoutSourcePersonaInput = {
   resolvedAt?: Date | string | null
 }
 
-export type MergeSuggestionCreateOrConnectWithoutSourcePersonaInput = {
+export type MergeSuggestionCreateOrConnectWithoutSourceInput = {
   where: Prisma.MergeSuggestionWhereUniqueInput
-  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput>
+  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourceInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput>
 }
 
-export type MergeSuggestionCreateManySourcePersonaInputEnvelope = {
-  data: Prisma.MergeSuggestionCreateManySourcePersonaInput | Prisma.MergeSuggestionCreateManySourcePersonaInput[]
+export type MergeSuggestionCreateManySourceInputEnvelope = {
+  data: Prisma.MergeSuggestionCreateManySourceInput | Prisma.MergeSuggestionCreateManySourceInput[]
   skipDuplicates?: boolean
 }
 
-export type MergeSuggestionCreateWithoutTargetPersonaInput = {
+export type MergeSuggestionCreateWithoutTargetInput = {
   id?: string
   reason: string
   confidence?: number
@@ -704,13 +704,13 @@ export type MergeSuggestionCreateWithoutTargetPersonaInput = {
   createdAt?: Date | string
   resolvedAt?: Date | string | null
   book: Prisma.BookCreateNestedOneWithoutMergeSuggestionsInput
-  sourcePersona: Prisma.PersonaCreateNestedOneWithoutSourceMergeSuggestionsInput
+  source: Prisma.EntityCreateNestedOneWithoutSourceMergeSuggestionsInput
 }
 
-export type MergeSuggestionUncheckedCreateWithoutTargetPersonaInput = {
+export type MergeSuggestionUncheckedCreateWithoutTargetInput = {
   id?: string
   bookId: string
-  sourcePersonaId: string
+  sourceEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -719,52 +719,52 @@ export type MergeSuggestionUncheckedCreateWithoutTargetPersonaInput = {
   resolvedAt?: Date | string | null
 }
 
-export type MergeSuggestionCreateOrConnectWithoutTargetPersonaInput = {
+export type MergeSuggestionCreateOrConnectWithoutTargetInput = {
   where: Prisma.MergeSuggestionWhereUniqueInput
-  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput>
+  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput>
 }
 
-export type MergeSuggestionCreateManyTargetPersonaInputEnvelope = {
-  data: Prisma.MergeSuggestionCreateManyTargetPersonaInput | Prisma.MergeSuggestionCreateManyTargetPersonaInput[]
+export type MergeSuggestionCreateManyTargetInputEnvelope = {
+  data: Prisma.MergeSuggestionCreateManyTargetInput | Prisma.MergeSuggestionCreateManyTargetInput[]
   skipDuplicates?: boolean
 }
 
-export type MergeSuggestionUpsertWithWhereUniqueWithoutSourcePersonaInput = {
+export type MergeSuggestionUpsertWithWhereUniqueWithoutSourceInput = {
   where: Prisma.MergeSuggestionWhereUniqueInput
-  update: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedUpdateWithoutSourcePersonaInput>
-  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourcePersonaInput>
+  update: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutSourceInput, Prisma.MergeSuggestionUncheckedUpdateWithoutSourceInput>
+  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutSourceInput, Prisma.MergeSuggestionUncheckedCreateWithoutSourceInput>
 }
 
-export type MergeSuggestionUpdateWithWhereUniqueWithoutSourcePersonaInput = {
+export type MergeSuggestionUpdateWithWhereUniqueWithoutSourceInput = {
   where: Prisma.MergeSuggestionWhereUniqueInput
-  data: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutSourcePersonaInput, Prisma.MergeSuggestionUncheckedUpdateWithoutSourcePersonaInput>
+  data: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutSourceInput, Prisma.MergeSuggestionUncheckedUpdateWithoutSourceInput>
 }
 
-export type MergeSuggestionUpdateManyWithWhereWithoutSourcePersonaInput = {
+export type MergeSuggestionUpdateManyWithWhereWithoutSourceInput = {
   where: Prisma.MergeSuggestionScalarWhereInput
-  data: Prisma.XOR<Prisma.MergeSuggestionUpdateManyMutationInput, Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaInput>
+  data: Prisma.XOR<Prisma.MergeSuggestionUpdateManyMutationInput, Prisma.MergeSuggestionUncheckedUpdateManyWithoutSourceInput>
 }
 
-export type MergeSuggestionUpsertWithWhereUniqueWithoutTargetPersonaInput = {
+export type MergeSuggestionUpsertWithWhereUniqueWithoutTargetInput = {
   where: Prisma.MergeSuggestionWhereUniqueInput
-  update: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedUpdateWithoutTargetPersonaInput>
-  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetPersonaInput>
+  update: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutTargetInput, Prisma.MergeSuggestionUncheckedUpdateWithoutTargetInput>
+  create: Prisma.XOR<Prisma.MergeSuggestionCreateWithoutTargetInput, Prisma.MergeSuggestionUncheckedCreateWithoutTargetInput>
 }
 
-export type MergeSuggestionUpdateWithWhereUniqueWithoutTargetPersonaInput = {
+export type MergeSuggestionUpdateWithWhereUniqueWithoutTargetInput = {
   where: Prisma.MergeSuggestionWhereUniqueInput
-  data: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutTargetPersonaInput, Prisma.MergeSuggestionUncheckedUpdateWithoutTargetPersonaInput>
+  data: Prisma.XOR<Prisma.MergeSuggestionUpdateWithoutTargetInput, Prisma.MergeSuggestionUncheckedUpdateWithoutTargetInput>
 }
 
-export type MergeSuggestionUpdateManyWithWhereWithoutTargetPersonaInput = {
+export type MergeSuggestionUpdateManyWithWhereWithoutTargetInput = {
   where: Prisma.MergeSuggestionScalarWhereInput
-  data: Prisma.XOR<Prisma.MergeSuggestionUpdateManyMutationInput, Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaInput>
+  data: Prisma.XOR<Prisma.MergeSuggestionUpdateManyMutationInput, Prisma.MergeSuggestionUncheckedUpdateManyWithoutTargetInput>
 }
 
 export type MergeSuggestionCreateManyBookInput = {
   id?: string
-  sourcePersonaId: string
-  targetPersonaId: string
+  sourceEntityId: string
+  targetEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -781,14 +781,14 @@ export type MergeSuggestionUpdateWithoutBookInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  sourcePersona?: Prisma.PersonaUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
-  targetPersona?: Prisma.PersonaUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput
+  source?: Prisma.EntityUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
+  target?: Prisma.EntityUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput
 }
 
 export type MergeSuggestionUncheckedUpdateWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sourcePersonaId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetPersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceEntityId?: Prisma.StringFieldUpdateOperationsInput | string
+  targetEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -799,8 +799,8 @@ export type MergeSuggestionUncheckedUpdateWithoutBookInput = {
 
 export type MergeSuggestionUncheckedUpdateManyWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sourcePersonaId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetPersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceEntityId?: Prisma.StringFieldUpdateOperationsInput | string
+  targetEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -809,10 +809,10 @@ export type MergeSuggestionUncheckedUpdateManyWithoutBookInput = {
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-export type MergeSuggestionCreateManySourcePersonaInput = {
+export type MergeSuggestionCreateManySourceInput = {
   id?: string
   bookId: string
-  targetPersonaId: string
+  targetEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -821,10 +821,10 @@ export type MergeSuggestionCreateManySourcePersonaInput = {
   resolvedAt?: Date | string | null
 }
 
-export type MergeSuggestionCreateManyTargetPersonaInput = {
+export type MergeSuggestionCreateManyTargetInput = {
   id?: string
   bookId: string
-  sourcePersonaId: string
+  sourceEntityId: string
   reason: string
   confidence?: number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -833,7 +833,7 @@ export type MergeSuggestionCreateManyTargetPersonaInput = {
   resolvedAt?: Date | string | null
 }
 
-export type MergeSuggestionUpdateWithoutSourcePersonaInput = {
+export type MergeSuggestionUpdateWithoutSourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -842,13 +842,13 @@ export type MergeSuggestionUpdateWithoutSourcePersonaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   book?: Prisma.BookUpdateOneRequiredWithoutMergeSuggestionsNestedInput
-  targetPersona?: Prisma.PersonaUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput
+  target?: Prisma.EntityUpdateOneRequiredWithoutTargetMergeSuggestionsNestedInput
 }
 
-export type MergeSuggestionUncheckedUpdateWithoutSourcePersonaInput = {
+export type MergeSuggestionUncheckedUpdateWithoutSourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetPersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  targetEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -857,10 +857,10 @@ export type MergeSuggestionUncheckedUpdateWithoutSourcePersonaInput = {
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-export type MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaInput = {
+export type MergeSuggestionUncheckedUpdateManyWithoutSourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetPersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  targetEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -869,7 +869,7 @@ export type MergeSuggestionUncheckedUpdateManyWithoutSourcePersonaInput = {
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-export type MergeSuggestionUpdateWithoutTargetPersonaInput = {
+export type MergeSuggestionUpdateWithoutTargetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -878,13 +878,13 @@ export type MergeSuggestionUpdateWithoutTargetPersonaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   book?: Prisma.BookUpdateOneRequiredWithoutMergeSuggestionsNestedInput
-  sourcePersona?: Prisma.PersonaUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
+  source?: Prisma.EntityUpdateOneRequiredWithoutSourceMergeSuggestionsNestedInput
 }
 
-export type MergeSuggestionUncheckedUpdateWithoutTargetPersonaInput = {
+export type MergeSuggestionUncheckedUpdateWithoutTargetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  sourcePersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -893,10 +893,10 @@ export type MergeSuggestionUncheckedUpdateWithoutTargetPersonaInput = {
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-export type MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaInput = {
+export type MergeSuggestionUncheckedUpdateManyWithoutTargetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  sourcePersonaId?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceEntityId?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   evidenceRefs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -910,8 +910,8 @@ export type MergeSuggestionUncheckedUpdateManyWithoutTargetPersonaInput = {
 export type MergeSuggestionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
-  sourcePersonaId?: boolean
-  targetPersonaId?: boolean
+  sourceEntityId?: boolean
+  targetEntityId?: boolean
   reason?: boolean
   confidence?: boolean
   evidenceRefs?: boolean
@@ -919,15 +919,15 @@ export type MergeSuggestionSelect<ExtArgs extends runtime.Types.Extensions.Inter
   createdAt?: boolean
   resolvedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  targetPersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  source?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
+  target?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mergeSuggestion"]>
 
 export type MergeSuggestionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
-  sourcePersonaId?: boolean
-  targetPersonaId?: boolean
+  sourceEntityId?: boolean
+  targetEntityId?: boolean
   reason?: boolean
   confidence?: boolean
   evidenceRefs?: boolean
@@ -935,15 +935,15 @@ export type MergeSuggestionSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   createdAt?: boolean
   resolvedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  targetPersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  source?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
+  target?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mergeSuggestion"]>
 
 export type MergeSuggestionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookId?: boolean
-  sourcePersonaId?: boolean
-  targetPersonaId?: boolean
+  sourceEntityId?: boolean
+  targetEntityId?: boolean
   reason?: boolean
   confidence?: boolean
   evidenceRefs?: boolean
@@ -951,15 +951,15 @@ export type MergeSuggestionSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   createdAt?: boolean
   resolvedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  targetPersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  source?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
+  target?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mergeSuggestion"]>
 
 export type MergeSuggestionSelectScalar = {
   id?: boolean
   bookId?: boolean
-  sourcePersonaId?: boolean
-  targetPersonaId?: boolean
+  sourceEntityId?: boolean
+  targetEntityId?: boolean
   reason?: boolean
   confidence?: boolean
   evidenceRefs?: boolean
@@ -968,35 +968,35 @@ export type MergeSuggestionSelectScalar = {
   resolvedAt?: boolean
 }
 
-export type MergeSuggestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "sourcePersonaId" | "targetPersonaId" | "reason" | "confidence" | "evidenceRefs" | "status" | "createdAt" | "resolvedAt", ExtArgs["result"]["mergeSuggestion"]>
+export type MergeSuggestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "sourceEntityId" | "targetEntityId" | "reason" | "confidence" | "evidenceRefs" | "status" | "createdAt" | "resolvedAt", ExtArgs["result"]["mergeSuggestion"]>
 export type MergeSuggestionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  targetPersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  source?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
+  target?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
 }
 export type MergeSuggestionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  targetPersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  source?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
+  target?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
 }
 export type MergeSuggestionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
-  sourcePersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
-  targetPersona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  source?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
+  target?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
 }
 
 export type $MergeSuggestionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "MergeSuggestion"
   objects: {
     book: Prisma.$BookPayload<ExtArgs>
-    sourcePersona: Prisma.$PersonaPayload<ExtArgs>
-    targetPersona: Prisma.$PersonaPayload<ExtArgs>
+    source: Prisma.$EntityPayload<ExtArgs>
+    target: Prisma.$EntityPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     bookId: string
-    sourcePersonaId: string
-    targetPersonaId: string
+    sourceEntityId: string
+    targetEntityId: string
     reason: string
     confidence: number
     evidenceRefs: runtime.JsonValue | null
@@ -1398,8 +1398,8 @@ readonly fields: MergeSuggestionFieldRefs;
 export interface Prisma__MergeSuggestionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   book<T extends Prisma.BookDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookDefaultArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  sourcePersona<T extends Prisma.PersonaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PersonaDefaultArgs<ExtArgs>>): Prisma.Prisma__PersonaClient<runtime.Types.Result.GetResult<Prisma.$PersonaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  targetPersona<T extends Prisma.PersonaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PersonaDefaultArgs<ExtArgs>>): Prisma.Prisma__PersonaClient<runtime.Types.Result.GetResult<Prisma.$PersonaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  source<T extends Prisma.EntityDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EntityDefaultArgs<ExtArgs>>): Prisma.Prisma__EntityClient<runtime.Types.Result.GetResult<Prisma.$EntityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  target<T extends Prisma.EntityDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EntityDefaultArgs<ExtArgs>>): Prisma.Prisma__EntityClient<runtime.Types.Result.GetResult<Prisma.$EntityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1431,8 +1431,8 @@ export interface Prisma__MergeSuggestionClient<T, Null = never, ExtArgs extends 
 export interface MergeSuggestionFieldRefs {
   readonly id: Prisma.FieldRef<"MergeSuggestion", 'String'>
   readonly bookId: Prisma.FieldRef<"MergeSuggestion", 'String'>
-  readonly sourcePersonaId: Prisma.FieldRef<"MergeSuggestion", 'String'>
-  readonly targetPersonaId: Prisma.FieldRef<"MergeSuggestion", 'String'>
+  readonly sourceEntityId: Prisma.FieldRef<"MergeSuggestion", 'String'>
+  readonly targetEntityId: Prisma.FieldRef<"MergeSuggestion", 'String'>
   readonly reason: Prisma.FieldRef<"MergeSuggestion", 'String'>
   readonly confidence: Prisma.FieldRef<"MergeSuggestion", 'Float'>
   readonly evidenceRefs: Prisma.FieldRef<"MergeSuggestion", 'Json'>
@@ -1635,11 +1635,6 @@ export type MergeSuggestionFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` MergeSuggestions.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of MergeSuggestions.
-   */
   distinct?: Prisma.MergeSuggestionScalarFieldEnum | Prisma.MergeSuggestionScalarFieldEnum[]
 }
 

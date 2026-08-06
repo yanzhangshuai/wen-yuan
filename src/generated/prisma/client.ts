@@ -58,44 +58,107 @@ export type AiModel = Prisma.AiModelModel
 export type Book = Prisma.BookModel
 /**
  * Model Chapter
- * @db.remark: 章节/回目。时间轴的物理基石，所有事件必须挂载在回目上。
+ * @db.remark: 章节/回目。时间轴的物理基石，所有事实必须挂载在回目上。
  */
 export type Chapter = Prisma.ChapterModel
 /**
  * Model ChapterBiographyVerification
- * @db.remark: 章节角色事迹校验状态。只表示本章 BiographyRecord 已被人工核过。
+ * @db.remark: 章节事实校验状态。只表示本章 BIOGRAPHY 事实已被人工核过。
  */
 export type ChapterBiographyVerification = Prisma.ChapterBiographyVerificationModel
 /**
- * Model Persona
- * @db.remark: 全局角色本体。代表"这个人本身"，支持跨书籍关联（如林黛玉在多本书中的统一 ID）。
+ * Model Entity
+ * @db.remark: 统一实体表。PERSON/LOCATION/ORGANIZATION/CONCEPT 四类合一，跨书共享。软删除。
  */
-export type Persona = Prisma.PersonaModel
+export type Entity = Prisma.EntityModel
 /**
- * Model Profile
- * @db.remark: 角色书中档案。记录该 Persona 在特定书籍中的特有属性（如讽刺指数）。
+ * Model EntityProfile
+ * @db.remark: 书级实体档案（原 Profile）。entity+book 唯一，软删除。
  */
-export type Profile = Prisma.ProfileModel
+export type EntityProfile = Prisma.EntityProfileModel
 /**
- * Model BiographyRecord
- * @db.remark: 履历记录表。时间轴的核心，记录职位、地点、状态的每一次跳动。
+ * Model Alias
+ * @db.remark: 别名注册表（原 alias_mappings 升级）。带证据/章节窗口/审核状态。
  */
-export type BiographyRecord = Prisma.BiographyRecordModel
+export type Alias = Prisma.AliasModel
 /**
  * Model Mention
- * @db.remark: 原文提及记录。记录"谁在什么时候出场了"，支持精准定位原文段落。
+ * @db.remark: 原文提及。实体预扫描 + 章节分析产出，供出现时间线/孤儿检测/RAG 锚点。
  */
 export type Mention = Prisma.MentionModel
 /**
+ * Model Fact
+ * @db.remark: 泛型事实/事件表。sourceEntityId/targetEntityId 可空，factType 判别。
+ * 每条事实必带原文证据 evidence + 章节锚点 chapterId/chapterNo + 审核状态 status + recordSource。
+ */
+export type Fact = Prisma.FactModel
+/**
+ * Model FactEvidence
+ * @db.remark: 事实多条证据锚点（主证据在 facts.evidence，此表存精确 span/额外证据）。
+ */
+export type FactEvidence = Prisma.FactEvidenceModel
+/**
  * Model Relationship
- * @db.remark: 书级人物关系表，AI 直接输出中文关系码，同一书内一对人物每种关系类型仅保留一行。
+ * @db.remark: 关系物化聚合表。由 RELATION 事实聚合而来（facts 是数据权威源）。
+ * 唯一键 (bookId, sourceEntityId, targetEntityId, relationshipTypeCode)。
+ * SYMMETRIC 类型在聚合器内规范化 source<target；status 由底层事实推导。
  */
 export type Relationship = Prisma.RelationshipModel
 /**
+ * Model Skill
+ * @db.remark: 技能包。承载姓氏/泛称/名字模式/关系类型/历史人物/任务指令等一切扩展知识。
+ */
+export type Skill = Prisma.SkillModel
+/**
+ * Model SkillVersion
+ * @db.remark: 技能版本。content 为知识/指令/触发/工具 JSON，isActive 激活机制类比旧 prompt_template_versions。
+ */
+export type SkillVersion = Prisma.SkillVersionModel
+/**
+ * Model BookTypeSkill
+ * @db.remark: 书型 ↔ 技能关联（技能装载依据）。priority 高者先合并，isEnabled 控制按书型开关。
+ */
+export type BookTypeSkill = Prisma.BookTypeSkillModel
+/**
  * Model AnalysisJob
- * @db.remark: 解析任务审计表。记录每次全书/分章解析执行状态、重试与错误日志。
+ * @db.remark: 解析任务。保留原字段，新增技能快照与 agent 运行关联。
  */
 export type AnalysisJob = Prisma.AnalysisJobModel
+/**
+ * Model AgentRun
+ * @db.remark: Agent 运行。一次 runType 的 agent 执行（管线总控/逐章/全局消歧/称号/校验/skill 生成）。
+ */
+export type AgentRun = Prisma.AgentRunModel
+/**
+ * Model AgentStep
+ * @db.remark: Agent 步骤。四层 Tool-Use Loop 的逐步留痕：LLM 调用/工具调用/技能装载/规则应用/仲裁。
+ */
+export type AgentStep = Prisma.AgentStepModel
+/**
+ * Model AgentWriteAudit
+ * @db.remark: 治理层写操作审计。所有 agent 发起的实体/事实/关系写操作留痕（权限判定 + before/after）。
+ */
+export type AgentWriteAudit = Prisma.AgentWriteAuditModel
+/**
+ * Model ValidationReport
+ * @db.remark: 自检报告。记录章节/全书级别的结构化质量检查结果。issues 内每条可引用 entityId/factId。
+ */
+export type ValidationReport = Prisma.ValidationReportModel
+/**
+ * Model MergeSuggestion
+ * @db.remark: 实体合并建议。用于管理员审核同名/别名归并。接受后执行 mergeEntitiesInTransaction。
+ */
+export type MergeSuggestion = Prisma.MergeSuggestionModel
+/**
+ * Model TextChunk
+ * @db.remark: 原文分块。RAG 检索单元，按章切分，嵌入向量由服务层写入（Prisma client 不读写 embedding）。
+ */
+export type TextChunk = Prisma.TextChunkModel
+/**
+ * Model BookType
+ * 
+ */
+export type BookType = Prisma.BookTypeModel
 /**
  * Model ModelStrategyConfig
  * @db.remark: 混合模型策略配置。支持 GLOBAL/BOOK/JOB 三层覆盖。
@@ -107,67 +170,7 @@ export type ModelStrategyConfig = Prisma.ModelStrategyConfigModel
  */
 export type AnalysisPhaseLog = Prisma.AnalysisPhaseLogModel
 /**
- * Model AliasMapping
- * @db.remark: 别名映射表。记录章节上下文中的“称号/别名 -> 真实人物”映射。
- */
-export type AliasMapping = Prisma.AliasMappingModel
-/**
- * Model ValidationReport
- * @db.remark: 自检报告。记录章节/全书级别的结构化质量检查结果。
- */
-export type ValidationReport = Prisma.ValidationReportModel
-/**
- * Model MergeSuggestion
- * @db.remark: 人物别名消歧建议。用于管理员审核同名/别名归并。
- */
-export type MergeSuggestion = Prisma.MergeSuggestionModel
-/**
- * Model BookType
- * 
- */
-export type BookType = Prisma.BookTypeModel
-/**
- * Model AliasPack
- * 
- */
-export type AliasPack = Prisma.AliasPackModel
-/**
- * Model AliasEntry
- * 别名映射条目，仅存储人物（CHARACTER）别名
- */
-export type AliasEntry = Prisma.AliasEntryModel
-/**
- * Model BookAliasPack
- * 
- */
-export type BookAliasPack = Prisma.BookAliasPackModel
-/**
- * Model GenericTitleRule
- * 
- */
-export type GenericTitleRule = Prisma.GenericTitleRuleModel
-/**
- * Model RelationshipTypeDefinition
- * 
- */
-export type RelationshipTypeDefinition = Prisma.RelationshipTypeDefinitionModel
-/**
- * Model ExtractionRule
- * 
- */
-export type ExtractionRule = Prisma.ExtractionRuleModel
-/**
- * Model PromptTemplate
- * 
- */
-export type PromptTemplate = Prisma.PromptTemplateModel
-/**
- * Model PromptTemplateVersion
- * 
- */
-export type PromptTemplateVersion = Prisma.PromptTemplateVersionModel
-/**
  * Model KnowledgeAuditLog
- * @db.remark: 所有知识库对象的变更日志。
+ * @db.remark: 知识库变更审计日志。所有知识库对象的变更日志（含 skill 的 GENERATE/ACTIVATE）。
  */
 export type KnowledgeAuditLog = Prisma.KnowledgeAuditLogModel

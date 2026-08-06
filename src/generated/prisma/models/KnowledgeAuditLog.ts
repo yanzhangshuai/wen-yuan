@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model KnowledgeAuditLog
- * @db.remark: 所有知识库对象的变更日志。
+ * @db.remark: 知识库变更审计日志。所有知识库对象的变更日志（含 skill 的 GENERATE/ACTIVATE）。
  */
 export type KnowledgeAuditLogModel = runtime.Types.Result.DefaultSelection<Prisma.$KnowledgeAuditLogPayload>
 
@@ -192,7 +192,7 @@ export type KnowledgeAuditLogGroupByOutputType = {
   _max: KnowledgeAuditLogMaxAggregateOutputType | null
 }
 
-export type GetKnowledgeAuditLogGroupByPayload<T extends KnowledgeAuditLogGroupByArgs> = Prisma.PrismaPromise<
+type GetKnowledgeAuditLogGroupByPayload<T extends KnowledgeAuditLogGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<KnowledgeAuditLogGroupByOutputType, T['by']> &
       {
@@ -1125,11 +1125,6 @@ export type KnowledgeAuditLogFindManyArgs<ExtArgs extends runtime.Types.Extensio
    * Skip the first `n` KnowledgeAuditLogs.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of KnowledgeAuditLogs.
-   */
   distinct?: Prisma.KnowledgeAuditLogScalarFieldEnum | Prisma.KnowledgeAuditLogScalarFieldEnum[]
 }
 

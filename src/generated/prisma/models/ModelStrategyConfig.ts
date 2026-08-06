@@ -168,7 +168,7 @@ export type ModelStrategyConfigGroupByOutputType = {
   _max: ModelStrategyConfigMaxAggregateOutputType | null
 }
 
-export type GetModelStrategyConfigGroupByPayload<T extends ModelStrategyConfigGroupByArgs> = Prisma.PrismaPromise<
+type GetModelStrategyConfigGroupByPayload<T extends ModelStrategyConfigGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ModelStrategyConfigGroupByOutputType, T['by']> &
       {
@@ -1334,11 +1334,6 @@ export type ModelStrategyConfigFindManyArgs<ExtArgs extends runtime.Types.Extens
    * Skip the first `n` ModelStrategyConfigs.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of ModelStrategyConfigs.
-   */
   distinct?: Prisma.ModelStrategyConfigScalarFieldEnum | Prisma.ModelStrategyConfigScalarFieldEnum[]
 }
 

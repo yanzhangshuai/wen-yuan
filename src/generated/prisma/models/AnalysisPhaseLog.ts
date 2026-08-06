@@ -267,7 +267,7 @@ export type AnalysisPhaseLogGroupByOutputType = {
   _max: AnalysisPhaseLogMaxAggregateOutputType | null
 }
 
-export type GetAnalysisPhaseLogGroupByPayload<T extends AnalysisPhaseLogGroupByArgs> = Prisma.PrismaPromise<
+type GetAnalysisPhaseLogGroupByPayload<T extends AnalysisPhaseLogGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AnalysisPhaseLogGroupByOutputType, T['by']> &
       {
@@ -1847,11 +1847,6 @@ export type AnalysisPhaseLogFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` AnalysisPhaseLogs.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of AnalysisPhaseLogs.
-   */
   distinct?: Prisma.AnalysisPhaseLogScalarFieldEnum | Prisma.AnalysisPhaseLogScalarFieldEnum[]
 }
 

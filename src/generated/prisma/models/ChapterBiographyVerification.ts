@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model ChapterBiographyVerification
- * @db.remark: 章节角色事迹校验状态。只表示本章 BiographyRecord 已被人工核过。
+ * @db.remark: 章节事实校验状态。只表示本章 BIOGRAPHY 事实已被人工核过。
  */
 export type ChapterBiographyVerificationModel = runtime.Types.Result.DefaultSelection<Prisma.$ChapterBiographyVerificationPayload>
 
@@ -172,7 +172,7 @@ export type ChapterBiographyVerificationGroupByOutputType = {
   _max: ChapterBiographyVerificationMaxAggregateOutputType | null
 }
 
-export type GetChapterBiographyVerificationGroupByPayload<T extends ChapterBiographyVerificationGroupByArgs> = Prisma.PrismaPromise<
+type GetChapterBiographyVerificationGroupByPayload<T extends ChapterBiographyVerificationGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ChapterBiographyVerificationGroupByOutputType, T['by']> &
       {
@@ -1330,11 +1330,6 @@ export type ChapterBiographyVerificationFindManyArgs<ExtArgs extends runtime.Typ
    * Skip the first `n` ChapterBiographyVerifications.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of ChapterBiographyVerifications.
-   */
   distinct?: Prisma.ChapterBiographyVerificationScalarFieldEnum | Prisma.ChapterBiographyVerificationScalarFieldEnum[]
 }
 

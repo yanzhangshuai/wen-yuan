@@ -56,26 +56,26 @@ export const ModelName = {
   Book: 'Book',
   Chapter: 'Chapter',
   ChapterBiographyVerification: 'ChapterBiographyVerification',
-  Persona: 'Persona',
-  Profile: 'Profile',
-  BiographyRecord: 'BiographyRecord',
+  Entity: 'Entity',
+  EntityProfile: 'EntityProfile',
+  Alias: 'Alias',
   Mention: 'Mention',
+  Fact: 'Fact',
+  FactEvidence: 'FactEvidence',
   Relationship: 'Relationship',
+  Skill: 'Skill',
+  SkillVersion: 'SkillVersion',
+  BookTypeSkill: 'BookTypeSkill',
   AnalysisJob: 'AnalysisJob',
-  ModelStrategyConfig: 'ModelStrategyConfig',
-  AnalysisPhaseLog: 'AnalysisPhaseLog',
-  AliasMapping: 'AliasMapping',
+  AgentRun: 'AgentRun',
+  AgentStep: 'AgentStep',
+  AgentWriteAudit: 'AgentWriteAudit',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
+  TextChunk: 'TextChunk',
   BookType: 'BookType',
-  AliasPack: 'AliasPack',
-  AliasEntry: 'AliasEntry',
-  BookAliasPack: 'BookAliasPack',
-  GenericTitleRule: 'GenericTitleRule',
-  RelationshipTypeDefinition: 'RelationshipTypeDefinition',
-  ExtractionRule: 'ExtractionRule',
-  PromptTemplate: 'PromptTemplate',
-  PromptTemplateVersion: 'PromptTemplateVersion',
+  ModelStrategyConfig: 'ModelStrategyConfig',
+  AnalysisPhaseLog: 'AnalysisPhaseLog',
   KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
 
@@ -124,6 +124,7 @@ export const AiModelScalarFieldEnum = {
   isDefault: 'isDefault',
   supportsThinking: 'supportsThinking',
   supportsWebSearch: 'supportsWebSearch',
+  supportsTools: 'supportsTools',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -187,30 +188,32 @@ export const ChapterBiographyVerificationScalarFieldEnum = {
 export type ChapterBiographyVerificationScalarFieldEnum = (typeof ChapterBiographyVerificationScalarFieldEnum)[keyof typeof ChapterBiographyVerificationScalarFieldEnum]
 
 
-export const PersonaScalarFieldEnum = {
+export const EntityScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  type: 'type',
-  gender: 'gender',
+  entityType: 'entityType',
   nameType: 'nameType',
   recordSource: 'recordSource',
   confidence: 'confidence',
-  aliases: 'aliases',
+  gender: 'gender',
   hometown: 'hometown',
   birthYear: 'birthYear',
   deathYear: 'deathYear',
   globalTags: 'globalTags',
+  aliases: 'aliases',
+  summary: 'summary',
+  canonicalEntityId: 'canonicalEntityId',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type PersonaScalarFieldEnum = (typeof PersonaScalarFieldEnum)[keyof typeof PersonaScalarFieldEnum]
+export type EntityScalarFieldEnum = (typeof EntityScalarFieldEnum)[keyof typeof EntityScalarFieldEnum]
 
 
-export const ProfileScalarFieldEnum = {
+export const EntityProfileScalarFieldEnum = {
   id: 'id',
-  personaId: 'personaId',
+  entityId: 'entityId',
   bookId: 'bookId',
   localName: 'localName',
   localSummary: 'localSummary',
@@ -220,44 +223,47 @@ export const ProfileScalarFieldEnum = {
   moralTier: 'moralTier',
   firstAppearanceChapterId: 'firstAppearanceChapterId',
   visualConfig: 'visualConfig',
-  deletedAt: 'deletedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
-
-
-export const BiographyRecordScalarFieldEnum = {
-  id: 'id',
-  personaId: 'personaId',
-  chapterId: 'chapterId',
-  chapterNo: 'chapterNo',
-  category: 'category',
-  title: 'title',
-  location: 'location',
-  event: 'event',
-  virtualYear: 'virtualYear',
-  tags: 'tags',
-  ironyNote: 'ironyNote',
-  recordSource: 'recordSource',
   status: 'status',
+  recordSource: 'recordSource',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type BiographyRecordScalarFieldEnum = (typeof BiographyRecordScalarFieldEnum)[keyof typeof BiographyRecordScalarFieldEnum]
+export type EntityProfileScalarFieldEnum = (typeof EntityProfileScalarFieldEnum)[keyof typeof EntityProfileScalarFieldEnum]
+
+
+export const AliasScalarFieldEnum = {
+  id: 'id',
+  entityId: 'entityId',
+  bookId: 'bookId',
+  alias: 'alias',
+  aliasType: 'aliasType',
+  resolvedName: 'resolvedName',
+  evidence: 'evidence',
+  contextHash: 'contextHash',
+  chapterStart: 'chapterStart',
+  chapterEnd: 'chapterEnd',
+  confidence: 'confidence',
+  status: 'status',
+  recordSource: 'recordSource',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AliasScalarFieldEnum = (typeof AliasScalarFieldEnum)[keyof typeof AliasScalarFieldEnum]
 
 
 export const MentionScalarFieldEnum = {
   id: 'id',
-  personaId: 'personaId',
+  entityId: 'entityId',
   chapterId: 'chapterId',
   rawText: 'rawText',
   summary: 'summary',
   paraIndex: 'paraIndex',
   recordSource: 'recordSource',
+  status: 'status',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -266,25 +272,125 @@ export const MentionScalarFieldEnum = {
 export type MentionScalarFieldEnum = (typeof MentionScalarFieldEnum)[keyof typeof MentionScalarFieldEnum]
 
 
+export const FactScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  factType: 'factType',
+  sourceEntityId: 'sourceEntityId',
+  targetEntityId: 'targetEntityId',
+  relationshipTypeCode: 'relationshipTypeCode',
+  eventCategory: 'eventCategory',
+  virtualYear: 'virtualYear',
+  location: 'location',
+  title: 'title',
+  attitudeTags: 'attitudeTags',
+  evidence: 'evidence',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  paraIndex: 'paraIndex',
+  payload: 'payload',
+  confidence: 'confidence',
+  recordSource: 'recordSource',
+  status: 'status',
+  jobId: 'jobId',
+  agentRunId: 'agentRunId',
+  reviewedAt: 'reviewedAt',
+  reviewedBy: 'reviewedBy',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FactScalarFieldEnum = (typeof FactScalarFieldEnum)[keyof typeof FactScalarFieldEnum]
+
+
+export const FactEvidenceScalarFieldEnum = {
+  id: 'id',
+  factId: 'factId',
+  chapterId: 'chapterId',
+  chapterNo: 'chapterNo',
+  excerpt: 'excerpt',
+  paraIndex: 'paraIndex',
+  spanStart: 'spanStart',
+  spanEnd: 'spanEnd',
+  isPrimary: 'isPrimary',
+  createdAt: 'createdAt'
+} as const
+
+export type FactEvidenceScalarFieldEnum = (typeof FactEvidenceScalarFieldEnum)[keyof typeof FactEvidenceScalarFieldEnum]
+
+
 export const RelationshipScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
-  sourceId: 'sourceId',
-  targetId: 'targetId',
+  sourceEntityId: 'sourceEntityId',
+  targetEntityId: 'targetEntityId',
   relationshipTypeCode: 'relationshipTypeCode',
-  chapterId: 'chapterId',
-  chapterNo: 'chapterNo',
-  evidence: 'evidence',
-  summary: 'summary',
+  factCount: 'factCount',
+  weight: 'weight',
   attitudeTags: 'attitudeTags',
-  recordSource: 'recordSource',
+  summary: 'summary',
+  firstChapterId: 'firstChapterId',
+  firstChapterNo: 'firstChapterNo',
+  latestChapterId: 'latestChapterId',
+  latestChapterNo: 'latestChapterNo',
   status: 'status',
+  lastAggregatedAt: 'lastAggregatedAt',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
+
+
+export const SkillScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  description: 'description',
+  category: 'category',
+  scope: 'scope',
+  status: 'status',
+  source: 'source',
+  generatedFromJobId: 'generatedFromJobId',
+  generatedFromBookId: 'generatedFromBookId',
+  sortOrder: 'sortOrder',
+  isBuiltin: 'isBuiltin',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SkillScalarFieldEnum = (typeof SkillScalarFieldEnum)[keyof typeof SkillScalarFieldEnum]
+
+
+export const SkillVersionScalarFieldEnum = {
+  id: 'id',
+  skillId: 'skillId',
+  versionNo: 'versionNo',
+  content: 'content',
+  bookTypeId: 'bookTypeId',
+  isActive: 'isActive',
+  isBaseline: 'isBaseline',
+  changeNote: 'changeNote',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt'
+} as const
+
+export type SkillVersionScalarFieldEnum = (typeof SkillVersionScalarFieldEnum)[keyof typeof SkillVersionScalarFieldEnum]
+
+
+export const BookTypeSkillScalarFieldEnum = {
+  id: 'id',
+  bookTypeId: 'bookTypeId',
+  skillId: 'skillId',
+  priority: 'priority',
+  isEnabled: 'isEnabled',
+  createdAt: 'createdAt'
+} as const
+
+export type BookTypeSkillScalarFieldEnum = (typeof BookTypeSkillScalarFieldEnum)[keyof typeof BookTypeSkillScalarFieldEnum]
 
 
 export const AnalysisJobScalarFieldEnum = {
@@ -301,6 +407,7 @@ export const AnalysisJobScalarFieldEnum = {
   experimentTag: 'experimentTag',
   overrideStrategy: 'overrideStrategy',
   keepHistory: 'keepHistory',
+  skillsSnapshot: 'skillsSnapshot',
   startedAt: 'startedAt',
   finishedAt: 'finishedAt',
   createdAt: 'createdAt',
@@ -308,6 +415,120 @@ export const AnalysisJobScalarFieldEnum = {
 } as const
 
 export type AnalysisJobScalarFieldEnum = (typeof AnalysisJobScalarFieldEnum)[keyof typeof AnalysisJobScalarFieldEnum]
+
+
+export const AgentRunScalarFieldEnum = {
+  id: 'id',
+  jobId: 'jobId',
+  bookId: 'bookId',
+  runType: 'runType',
+  modelId: 'modelId',
+  status: 'status',
+  usage: 'usage',
+  skillsLoaded: 'skillsLoaded',
+  errorLog: 'errorLog',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AgentRunScalarFieldEnum = (typeof AgentRunScalarFieldEnum)[keyof typeof AgentRunScalarFieldEnum]
+
+
+export const AgentStepScalarFieldEnum = {
+  id: 'id',
+  agentRunId: 'agentRunId',
+  stepIndex: 'stepIndex',
+  kind: 'kind',
+  messageText: 'messageText',
+  toolName: 'toolName',
+  toolArgs: 'toolArgs',
+  toolResult: 'toolResult',
+  usage: 'usage',
+  durationMs: 'durationMs',
+  error: 'error',
+  createdAt: 'createdAt'
+} as const
+
+export type AgentStepScalarFieldEnum = (typeof AgentStepScalarFieldEnum)[keyof typeof AgentStepScalarFieldEnum]
+
+
+export const AgentWriteAuditScalarFieldEnum = {
+  id: 'id',
+  agentRunId: 'agentRunId',
+  stepIndex: 'stepIndex',
+  action: 'action',
+  objectType: 'objectType',
+  objectId: 'objectId',
+  before: 'before',
+  after: 'after',
+  allowed: 'allowed',
+  reason: 'reason',
+  createdAt: 'createdAt'
+} as const
+
+export type AgentWriteAuditScalarFieldEnum = (typeof AgentWriteAuditScalarFieldEnum)[keyof typeof AgentWriteAuditScalarFieldEnum]
+
+
+export const ValidationReportScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  jobId: 'jobId',
+  scope: 'scope',
+  chapterId: 'chapterId',
+  status: 'status',
+  issues: 'issues',
+  summary: 'summary',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ValidationReportScalarFieldEnum = (typeof ValidationReportScalarFieldEnum)[keyof typeof ValidationReportScalarFieldEnum]
+
+
+export const MergeSuggestionScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  sourceEntityId: 'sourceEntityId',
+  targetEntityId: 'targetEntityId',
+  reason: 'reason',
+  confidence: 'confidence',
+  evidenceRefs: 'evidenceRefs',
+  status: 'status',
+  createdAt: 'createdAt',
+  resolvedAt: 'resolvedAt'
+} as const
+
+export type MergeSuggestionScalarFieldEnum = (typeof MergeSuggestionScalarFieldEnum)[keyof typeof MergeSuggestionScalarFieldEnum]
+
+
+export const TextChunkScalarFieldEnum = {
+  id: 'id',
+  bookId: 'bookId',
+  chapterId: 'chapterId',
+  chunkIndex: 'chunkIndex',
+  content: 'content',
+  tokenCount: 'tokenCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TextChunkScalarFieldEnum = (typeof TextChunkScalarFieldEnum)[keyof typeof TextChunkScalarFieldEnum]
+
+
+export const BookTypeScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  name: 'name',
+  description: 'description',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookTypeScalarFieldEnum = (typeof BookTypeScalarFieldEnum)[keyof typeof BookTypeScalarFieldEnum]
 
 
 export const ModelStrategyConfigScalarFieldEnum = {
@@ -341,206 +562,6 @@ export const AnalysisPhaseLogScalarFieldEnum = {
 } as const
 
 export type AnalysisPhaseLogScalarFieldEnum = (typeof AnalysisPhaseLogScalarFieldEnum)[keyof typeof AnalysisPhaseLogScalarFieldEnum]
-
-
-export const AliasMappingScalarFieldEnum = {
-  id: 'id',
-  bookId: 'bookId',
-  personaId: 'personaId',
-  alias: 'alias',
-  resolvedName: 'resolvedName',
-  aliasType: 'aliasType',
-  confidence: 'confidence',
-  evidence: 'evidence',
-  status: 'status',
-  chapterStart: 'chapterStart',
-  chapterEnd: 'chapterEnd',
-  contextHash: 'contextHash',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type AliasMappingScalarFieldEnum = (typeof AliasMappingScalarFieldEnum)[keyof typeof AliasMappingScalarFieldEnum]
-
-
-export const ValidationReportScalarFieldEnum = {
-  id: 'id',
-  bookId: 'bookId',
-  jobId: 'jobId',
-  scope: 'scope',
-  chapterId: 'chapterId',
-  status: 'status',
-  issues: 'issues',
-  summary: 'summary',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type ValidationReportScalarFieldEnum = (typeof ValidationReportScalarFieldEnum)[keyof typeof ValidationReportScalarFieldEnum]
-
-
-export const MergeSuggestionScalarFieldEnum = {
-  id: 'id',
-  bookId: 'bookId',
-  sourcePersonaId: 'sourcePersonaId',
-  targetPersonaId: 'targetPersonaId',
-  reason: 'reason',
-  confidence: 'confidence',
-  evidenceRefs: 'evidenceRefs',
-  status: 'status',
-  createdAt: 'createdAt',
-  resolvedAt: 'resolvedAt'
-} as const
-
-export type MergeSuggestionScalarFieldEnum = (typeof MergeSuggestionScalarFieldEnum)[keyof typeof MergeSuggestionScalarFieldEnum]
-
-
-export const BookTypeScalarFieldEnum = {
-  id: 'id',
-  key: 'key',
-  name: 'name',
-  description: 'description',
-  isActive: 'isActive',
-  sortOrder: 'sortOrder',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BookTypeScalarFieldEnum = (typeof BookTypeScalarFieldEnum)[keyof typeof BookTypeScalarFieldEnum]
-
-
-export const AliasPackScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description',
-  scope: 'scope',
-  bookTypeId: 'bookTypeId',
-  version: 'version',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type AliasPackScalarFieldEnum = (typeof AliasPackScalarFieldEnum)[keyof typeof AliasPackScalarFieldEnum]
-
-
-export const AliasEntryScalarFieldEnum = {
-  id: 'id',
-  packId: 'packId',
-  canonicalName: 'canonicalName',
-  aliases: 'aliases',
-  confidence: 'confidence',
-  source: 'source',
-  reviewStatus: 'reviewStatus',
-  reviewNote: 'reviewNote',
-  reviewedAt: 'reviewedAt',
-  notes: 'notes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type AliasEntryScalarFieldEnum = (typeof AliasEntryScalarFieldEnum)[keyof typeof AliasEntryScalarFieldEnum]
-
-
-export const BookAliasPackScalarFieldEnum = {
-  id: 'id',
-  bookId: 'bookId',
-  packId: 'packId',
-  priority: 'priority',
-  createdAt: 'createdAt'
-} as const
-
-export type BookAliasPackScalarFieldEnum = (typeof BookAliasPackScalarFieldEnum)[keyof typeof BookAliasPackScalarFieldEnum]
-
-
-export const GenericTitleRuleScalarFieldEnum = {
-  id: 'id',
-  title: 'title',
-  tier: 'tier',
-  category: 'category',
-  exemptInBookTypeIds: 'exemptInBookTypeIds',
-  exemptInBooks: 'exemptInBooks',
-  description: 'description',
-  isActive: 'isActive',
-  source: 'source',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type GenericTitleRuleScalarFieldEnum = (typeof GenericTitleRuleScalarFieldEnum)[keyof typeof GenericTitleRuleScalarFieldEnum]
-
-
-export const RelationshipTypeDefinitionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  name: 'name',
-  group: 'group',
-  directionMode: 'directionMode',
-  sourceRoleLabel: 'sourceRoleLabel',
-  targetRoleLabel: 'targetRoleLabel',
-  edgeLabel: 'edgeLabel',
-  reverseEdgeLabel: 'reverseEdgeLabel',
-  aliases: 'aliases',
-  description: 'description',
-  usageNotes: 'usageNotes',
-  examples: 'examples',
-  color: 'color',
-  sortOrder: 'sortOrder',
-  status: 'status',
-  source: 'source',
-  bookTypeId: 'bookTypeId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type RelationshipTypeDefinitionScalarFieldEnum = (typeof RelationshipTypeDefinitionScalarFieldEnum)[keyof typeof RelationshipTypeDefinitionScalarFieldEnum]
-
-
-export const ExtractionRuleScalarFieldEnum = {
-  id: 'id',
-  ruleType: 'ruleType',
-  content: 'content',
-  bookTypeId: 'bookTypeId',
-  sortOrder: 'sortOrder',
-  isActive: 'isActive',
-  source: 'source',
-  changeNote: 'changeNote',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type ExtractionRuleScalarFieldEnum = (typeof ExtractionRuleScalarFieldEnum)[keyof typeof ExtractionRuleScalarFieldEnum]
-
-
-export const PromptTemplateScalarFieldEnum = {
-  id: 'id',
-  slug: 'slug',
-  name: 'name',
-  description: 'description',
-  codeRef: 'codeRef',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PromptTemplateScalarFieldEnum = (typeof PromptTemplateScalarFieldEnum)[keyof typeof PromptTemplateScalarFieldEnum]
-
-
-export const PromptTemplateVersionScalarFieldEnum = {
-  id: 'id',
-  templateId: 'templateId',
-  versionNo: 'versionNo',
-  systemPrompt: 'systemPrompt',
-  userPrompt: 'userPrompt',
-  bookTypeId: 'bookTypeId',
-  isActive: 'isActive',
-  isBaseline: 'isBaseline',
-  changeNote: 'changeNote',
-  createdBy: 'createdBy',
-  createdAt: 'createdAt'
-} as const
-
-export type PromptTemplateVersionScalarFieldEnum = (typeof PromptTemplateVersionScalarFieldEnum)[keyof typeof PromptTemplateVersionScalarFieldEnum]
 
 
 export const KnowledgeAuditLogScalarFieldEnum = {

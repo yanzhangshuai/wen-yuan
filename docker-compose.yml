@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector 扩展镜像（含 vector 类型，供 RAG 向量检索与 GIN/HNSW 索引）
+    image: pgvector/pgvector:pg16
     container_name: wen_yuan_postgres
     restart: unless-stopped
     ports:

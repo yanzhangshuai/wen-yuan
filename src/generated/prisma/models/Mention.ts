@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model Mention
- * @db.remark: 原文提及记录。记录"谁在什么时候出场了"，支持精准定位原文段落。
+ * @db.remark: 原文提及。实体预扫描 + 章节分析产出，供出现时间线/孤儿检测/RAG 锚点。
  */
 export type MentionModel = runtime.Types.Result.DefaultSelection<Prisma.$MentionPayload>
 
@@ -36,12 +36,13 @@ export type MentionSumAggregateOutputType = {
 
 export type MentionMinAggregateOutputType = {
   id: string | null
-  personaId: string | null
+  entityId: string | null
   chapterId: string | null
   rawText: string | null
   summary: string | null
   paraIndex: number | null
   recordSource: $Enums.RecordSource | null
+  status: $Enums.ProcessingStatus | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -49,12 +50,13 @@ export type MentionMinAggregateOutputType = {
 
 export type MentionMaxAggregateOutputType = {
   id: string | null
-  personaId: string | null
+  entityId: string | null
   chapterId: string | null
   rawText: string | null
   summary: string | null
   paraIndex: number | null
   recordSource: $Enums.RecordSource | null
+  status: $Enums.ProcessingStatus | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -62,12 +64,13 @@ export type MentionMaxAggregateOutputType = {
 
 export type MentionCountAggregateOutputType = {
   id: number
-  personaId: number
+  entityId: number
   chapterId: number
   rawText: number
   summary: number
   paraIndex: number
   recordSource: number
+  status: number
   deletedAt: number
   createdAt: number
   updatedAt: number
@@ -85,12 +88,13 @@ export type MentionSumAggregateInputType = {
 
 export type MentionMinAggregateInputType = {
   id?: true
-  personaId?: true
+  entityId?: true
   chapterId?: true
   rawText?: true
   summary?: true
   paraIndex?: true
   recordSource?: true
+  status?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -98,12 +102,13 @@ export type MentionMinAggregateInputType = {
 
 export type MentionMaxAggregateInputType = {
   id?: true
-  personaId?: true
+  entityId?: true
   chapterId?: true
   rawText?: true
   summary?: true
   paraIndex?: true
   recordSource?: true
+  status?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -111,12 +116,13 @@ export type MentionMaxAggregateInputType = {
 
 export type MentionCountAggregateInputType = {
   id?: true
-  personaId?: true
+  entityId?: true
   chapterId?: true
   rawText?: true
   summary?: true
   paraIndex?: true
   recordSource?: true
+  status?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -211,12 +217,13 @@ export type MentionGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type MentionGroupByOutputType = {
   id: string
-  personaId: string
+  entityId: string
   chapterId: string
   rawText: string
   summary: string | null
   paraIndex: number | null
   recordSource: $Enums.RecordSource
+  status: $Enums.ProcessingStatus
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -227,7 +234,7 @@ export type MentionGroupByOutputType = {
   _max: MentionMaxAggregateOutputType | null
 }
 
-export type GetMentionGroupByPayload<T extends MentionGroupByArgs> = Prisma.PrismaPromise<
+type GetMentionGroupByPayload<T extends MentionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<MentionGroupByOutputType, T['by']> &
       {
@@ -247,31 +254,33 @@ export type MentionWhereInput = {
   OR?: Prisma.MentionWhereInput[]
   NOT?: Prisma.MentionWhereInput | Prisma.MentionWhereInput[]
   id?: Prisma.UuidFilter<"Mention"> | string
-  personaId?: Prisma.UuidFilter<"Mention"> | string
+  entityId?: Prisma.UuidFilter<"Mention"> | string
   chapterId?: Prisma.UuidFilter<"Mention"> | string
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFilter<"Mention"> | $Enums.ProcessingStatus
   deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
-  persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
+  entity?: Prisma.XOR<Prisma.EntityScalarRelationFilter, Prisma.EntityWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
 }
 
 export type MentionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  personaId?: Prisma.SortOrder
+  entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSource?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  persona?: Prisma.PersonaOrderByWithRelationInput
+  entity?: Prisma.EntityOrderByWithRelationInput
   chapter?: Prisma.ChapterOrderByWithRelationInput
 }
 
@@ -280,27 +289,29 @@ export type MentionWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.MentionWhereInput | Prisma.MentionWhereInput[]
   OR?: Prisma.MentionWhereInput[]
   NOT?: Prisma.MentionWhereInput | Prisma.MentionWhereInput[]
-  personaId?: Prisma.UuidFilter<"Mention"> | string
+  entityId?: Prisma.UuidFilter<"Mention"> | string
   chapterId?: Prisma.UuidFilter<"Mention"> | string
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFilter<"Mention"> | $Enums.ProcessingStatus
   deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
-  persona?: Prisma.XOR<Prisma.PersonaScalarRelationFilter, Prisma.PersonaWhereInput>
+  entity?: Prisma.XOR<Prisma.EntityScalarRelationFilter, Prisma.EntityWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
 }, "id">
 
 export type MentionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  personaId?: Prisma.SortOrder
+  entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSource?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -316,12 +327,13 @@ export type MentionScalarWhereWithAggregatesInput = {
   OR?: Prisma.MentionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.MentionScalarWhereWithAggregatesInput | Prisma.MentionScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"Mention"> | string
-  personaId?: Prisma.UuidWithAggregatesFilter<"Mention"> | string
+  entityId?: Prisma.UuidWithAggregatesFilter<"Mention"> | string
   chapterId?: Prisma.UuidWithAggregatesFilter<"Mention"> | string
   rawText?: Prisma.StringWithAggregatesFilter<"Mention"> | string
   summary?: Prisma.StringNullableWithAggregatesFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableWithAggregatesFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"Mention"> | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusWithAggregatesFilter<"Mention"> | $Enums.ProcessingStatus
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Mention"> | Date | string
@@ -333,21 +345,23 @@ export type MentionCreateInput = {
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  persona: Prisma.PersonaCreateNestedOneWithoutMentionsInput
+  entity: Prisma.EntityCreateNestedOneWithoutMentionsInput
   chapter: Prisma.ChapterCreateNestedOneWithoutMentionsInput
 }
 
 export type MentionUncheckedCreateInput = {
   id?: string
-  personaId: string
+  entityId: string
   chapterId: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -359,21 +373,23 @@ export type MentionUpdateInput = {
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  persona?: Prisma.PersonaUpdateOneRequiredWithoutMentionsNestedInput
+  entity?: Prisma.EntityUpdateOneRequiredWithoutMentionsNestedInput
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutMentionsNestedInput
 }
 
 export type MentionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  personaId?: Prisma.StringFieldUpdateOperationsInput | string
+  entityId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -381,12 +397,13 @@ export type MentionUncheckedUpdateInput = {
 
 export type MentionCreateManyInput = {
   id?: string
-  personaId: string
+  entityId: string
   chapterId: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -398,6 +415,7 @@ export type MentionUpdateManyMutationInput = {
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -405,12 +423,13 @@ export type MentionUpdateManyMutationInput = {
 
 export type MentionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  personaId?: Prisma.StringFieldUpdateOperationsInput | string
+  entityId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -428,12 +447,13 @@ export type MentionOrderByRelationAggregateInput = {
 
 export type MentionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  personaId?: Prisma.SortOrder
+  entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -445,12 +465,13 @@ export type MentionAvgOrderByAggregateInput = {
 
 export type MentionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  personaId?: Prisma.SortOrder
+  entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -458,12 +479,13 @@ export type MentionMaxOrderByAggregateInput = {
 
 export type MentionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  personaId?: Prisma.SortOrder
+  entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -515,45 +537,45 @@ export type MentionUncheckedUpdateManyWithoutChapterNestedInput = {
   deleteMany?: Prisma.MentionScalarWhereInput | Prisma.MentionScalarWhereInput[]
 }
 
-export type MentionCreateNestedManyWithoutPersonaInput = {
-  create?: Prisma.XOR<Prisma.MentionCreateWithoutPersonaInput, Prisma.MentionUncheckedCreateWithoutPersonaInput> | Prisma.MentionCreateWithoutPersonaInput[] | Prisma.MentionUncheckedCreateWithoutPersonaInput[]
-  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutPersonaInput | Prisma.MentionCreateOrConnectWithoutPersonaInput[]
-  createMany?: Prisma.MentionCreateManyPersonaInputEnvelope
+export type MentionCreateNestedManyWithoutEntityInput = {
+  create?: Prisma.XOR<Prisma.MentionCreateWithoutEntityInput, Prisma.MentionUncheckedCreateWithoutEntityInput> | Prisma.MentionCreateWithoutEntityInput[] | Prisma.MentionUncheckedCreateWithoutEntityInput[]
+  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutEntityInput | Prisma.MentionCreateOrConnectWithoutEntityInput[]
+  createMany?: Prisma.MentionCreateManyEntityInputEnvelope
   connect?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
 }
 
-export type MentionUncheckedCreateNestedManyWithoutPersonaInput = {
-  create?: Prisma.XOR<Prisma.MentionCreateWithoutPersonaInput, Prisma.MentionUncheckedCreateWithoutPersonaInput> | Prisma.MentionCreateWithoutPersonaInput[] | Prisma.MentionUncheckedCreateWithoutPersonaInput[]
-  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutPersonaInput | Prisma.MentionCreateOrConnectWithoutPersonaInput[]
-  createMany?: Prisma.MentionCreateManyPersonaInputEnvelope
+export type MentionUncheckedCreateNestedManyWithoutEntityInput = {
+  create?: Prisma.XOR<Prisma.MentionCreateWithoutEntityInput, Prisma.MentionUncheckedCreateWithoutEntityInput> | Prisma.MentionCreateWithoutEntityInput[] | Prisma.MentionUncheckedCreateWithoutEntityInput[]
+  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutEntityInput | Prisma.MentionCreateOrConnectWithoutEntityInput[]
+  createMany?: Prisma.MentionCreateManyEntityInputEnvelope
   connect?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
 }
 
-export type MentionUpdateManyWithoutPersonaNestedInput = {
-  create?: Prisma.XOR<Prisma.MentionCreateWithoutPersonaInput, Prisma.MentionUncheckedCreateWithoutPersonaInput> | Prisma.MentionCreateWithoutPersonaInput[] | Prisma.MentionUncheckedCreateWithoutPersonaInput[]
-  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutPersonaInput | Prisma.MentionCreateOrConnectWithoutPersonaInput[]
-  upsert?: Prisma.MentionUpsertWithWhereUniqueWithoutPersonaInput | Prisma.MentionUpsertWithWhereUniqueWithoutPersonaInput[]
-  createMany?: Prisma.MentionCreateManyPersonaInputEnvelope
+export type MentionUpdateManyWithoutEntityNestedInput = {
+  create?: Prisma.XOR<Prisma.MentionCreateWithoutEntityInput, Prisma.MentionUncheckedCreateWithoutEntityInput> | Prisma.MentionCreateWithoutEntityInput[] | Prisma.MentionUncheckedCreateWithoutEntityInput[]
+  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutEntityInput | Prisma.MentionCreateOrConnectWithoutEntityInput[]
+  upsert?: Prisma.MentionUpsertWithWhereUniqueWithoutEntityInput | Prisma.MentionUpsertWithWhereUniqueWithoutEntityInput[]
+  createMany?: Prisma.MentionCreateManyEntityInputEnvelope
   set?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
   disconnect?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
   delete?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
   connect?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
-  update?: Prisma.MentionUpdateWithWhereUniqueWithoutPersonaInput | Prisma.MentionUpdateWithWhereUniqueWithoutPersonaInput[]
-  updateMany?: Prisma.MentionUpdateManyWithWhereWithoutPersonaInput | Prisma.MentionUpdateManyWithWhereWithoutPersonaInput[]
+  update?: Prisma.MentionUpdateWithWhereUniqueWithoutEntityInput | Prisma.MentionUpdateWithWhereUniqueWithoutEntityInput[]
+  updateMany?: Prisma.MentionUpdateManyWithWhereWithoutEntityInput | Prisma.MentionUpdateManyWithWhereWithoutEntityInput[]
   deleteMany?: Prisma.MentionScalarWhereInput | Prisma.MentionScalarWhereInput[]
 }
 
-export type MentionUncheckedUpdateManyWithoutPersonaNestedInput = {
-  create?: Prisma.XOR<Prisma.MentionCreateWithoutPersonaInput, Prisma.MentionUncheckedCreateWithoutPersonaInput> | Prisma.MentionCreateWithoutPersonaInput[] | Prisma.MentionUncheckedCreateWithoutPersonaInput[]
-  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutPersonaInput | Prisma.MentionCreateOrConnectWithoutPersonaInput[]
-  upsert?: Prisma.MentionUpsertWithWhereUniqueWithoutPersonaInput | Prisma.MentionUpsertWithWhereUniqueWithoutPersonaInput[]
-  createMany?: Prisma.MentionCreateManyPersonaInputEnvelope
+export type MentionUncheckedUpdateManyWithoutEntityNestedInput = {
+  create?: Prisma.XOR<Prisma.MentionCreateWithoutEntityInput, Prisma.MentionUncheckedCreateWithoutEntityInput> | Prisma.MentionCreateWithoutEntityInput[] | Prisma.MentionUncheckedCreateWithoutEntityInput[]
+  connectOrCreate?: Prisma.MentionCreateOrConnectWithoutEntityInput | Prisma.MentionCreateOrConnectWithoutEntityInput[]
+  upsert?: Prisma.MentionUpsertWithWhereUniqueWithoutEntityInput | Prisma.MentionUpsertWithWhereUniqueWithoutEntityInput[]
+  createMany?: Prisma.MentionCreateManyEntityInputEnvelope
   set?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
   disconnect?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
   delete?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
   connect?: Prisma.MentionWhereUniqueInput | Prisma.MentionWhereUniqueInput[]
-  update?: Prisma.MentionUpdateWithWhereUniqueWithoutPersonaInput | Prisma.MentionUpdateWithWhereUniqueWithoutPersonaInput[]
-  updateMany?: Prisma.MentionUpdateManyWithWhereWithoutPersonaInput | Prisma.MentionUpdateManyWithWhereWithoutPersonaInput[]
+  update?: Prisma.MentionUpdateWithWhereUniqueWithoutEntityInput | Prisma.MentionUpdateWithWhereUniqueWithoutEntityInput[]
+  updateMany?: Prisma.MentionUpdateManyWithWhereWithoutEntityInput | Prisma.MentionUpdateManyWithWhereWithoutEntityInput[]
   deleteMany?: Prisma.MentionScalarWhereInput | Prisma.MentionScalarWhereInput[]
 }
 
@@ -563,19 +585,21 @@ export type MentionCreateWithoutChapterInput = {
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  persona: Prisma.PersonaCreateNestedOneWithoutMentionsInput
+  entity: Prisma.EntityCreateNestedOneWithoutMentionsInput
 }
 
 export type MentionUncheckedCreateWithoutChapterInput = {
   id?: string
-  personaId: string
+  entityId: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -612,74 +636,78 @@ export type MentionScalarWhereInput = {
   OR?: Prisma.MentionScalarWhereInput[]
   NOT?: Prisma.MentionScalarWhereInput | Prisma.MentionScalarWhereInput[]
   id?: Prisma.UuidFilter<"Mention"> | string
-  personaId?: Prisma.UuidFilter<"Mention"> | string
+  entityId?: Prisma.UuidFilter<"Mention"> | string
   chapterId?: Prisma.UuidFilter<"Mention"> | string
   rawText?: Prisma.StringFilter<"Mention"> | string
   summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFilter<"Mention"> | $Enums.ProcessingStatus
   deletedAt?: Prisma.DateTimeNullableFilter<"Mention"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Mention"> | Date | string
 }
 
-export type MentionCreateWithoutPersonaInput = {
+export type MentionCreateWithoutEntityInput = {
   id?: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   chapter: Prisma.ChapterCreateNestedOneWithoutMentionsInput
 }
 
-export type MentionUncheckedCreateWithoutPersonaInput = {
+export type MentionUncheckedCreateWithoutEntityInput = {
   id?: string
   chapterId: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
-export type MentionCreateOrConnectWithoutPersonaInput = {
+export type MentionCreateOrConnectWithoutEntityInput = {
   where: Prisma.MentionWhereUniqueInput
-  create: Prisma.XOR<Prisma.MentionCreateWithoutPersonaInput, Prisma.MentionUncheckedCreateWithoutPersonaInput>
+  create: Prisma.XOR<Prisma.MentionCreateWithoutEntityInput, Prisma.MentionUncheckedCreateWithoutEntityInput>
 }
 
-export type MentionCreateManyPersonaInputEnvelope = {
-  data: Prisma.MentionCreateManyPersonaInput | Prisma.MentionCreateManyPersonaInput[]
+export type MentionCreateManyEntityInputEnvelope = {
+  data: Prisma.MentionCreateManyEntityInput | Prisma.MentionCreateManyEntityInput[]
   skipDuplicates?: boolean
 }
 
-export type MentionUpsertWithWhereUniqueWithoutPersonaInput = {
+export type MentionUpsertWithWhereUniqueWithoutEntityInput = {
   where: Prisma.MentionWhereUniqueInput
-  update: Prisma.XOR<Prisma.MentionUpdateWithoutPersonaInput, Prisma.MentionUncheckedUpdateWithoutPersonaInput>
-  create: Prisma.XOR<Prisma.MentionCreateWithoutPersonaInput, Prisma.MentionUncheckedCreateWithoutPersonaInput>
+  update: Prisma.XOR<Prisma.MentionUpdateWithoutEntityInput, Prisma.MentionUncheckedUpdateWithoutEntityInput>
+  create: Prisma.XOR<Prisma.MentionCreateWithoutEntityInput, Prisma.MentionUncheckedCreateWithoutEntityInput>
 }
 
-export type MentionUpdateWithWhereUniqueWithoutPersonaInput = {
+export type MentionUpdateWithWhereUniqueWithoutEntityInput = {
   where: Prisma.MentionWhereUniqueInput
-  data: Prisma.XOR<Prisma.MentionUpdateWithoutPersonaInput, Prisma.MentionUncheckedUpdateWithoutPersonaInput>
+  data: Prisma.XOR<Prisma.MentionUpdateWithoutEntityInput, Prisma.MentionUncheckedUpdateWithoutEntityInput>
 }
 
-export type MentionUpdateManyWithWhereWithoutPersonaInput = {
+export type MentionUpdateManyWithWhereWithoutEntityInput = {
   where: Prisma.MentionScalarWhereInput
-  data: Prisma.XOR<Prisma.MentionUpdateManyMutationInput, Prisma.MentionUncheckedUpdateManyWithoutPersonaInput>
+  data: Prisma.XOR<Prisma.MentionUpdateManyMutationInput, Prisma.MentionUncheckedUpdateManyWithoutEntityInput>
 }
 
 export type MentionCreateManyChapterInput = {
   id?: string
-  personaId: string
+  entityId: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -691,19 +719,21 @@ export type MentionUpdateWithoutChapterInput = {
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  persona?: Prisma.PersonaUpdateOneRequiredWithoutMentionsNestedInput
+  entity?: Prisma.EntityUpdateOneRequiredWithoutMentionsNestedInput
 }
 
 export type MentionUncheckedUpdateWithoutChapterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  personaId?: Prisma.StringFieldUpdateOperationsInput | string
+  entityId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -711,59 +741,64 @@ export type MentionUncheckedUpdateWithoutChapterInput = {
 
 export type MentionUncheckedUpdateManyWithoutChapterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  personaId?: Prisma.StringFieldUpdateOperationsInput | string
+  entityId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type MentionCreateManyPersonaInput = {
+export type MentionCreateManyEntityInput = {
   id?: string
   chapterId: string
   rawText: string
   summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
+  status?: $Enums.ProcessingStatus
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
-export type MentionUpdateWithoutPersonaInput = {
+export type MentionUpdateWithoutEntityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutMentionsNestedInput
 }
 
-export type MentionUncheckedUpdateWithoutPersonaInput = {
+export type MentionUncheckedUpdateWithoutEntityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type MentionUncheckedUpdateManyWithoutPersonaInput = {
+export type MentionUncheckedUpdateManyWithoutEntityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
+  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -773,90 +808,95 @@ export type MentionUncheckedUpdateManyWithoutPersonaInput = {
 
 export type MentionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  personaId?: boolean
+  entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
+  status?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mention"]>
 
 export type MentionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  personaId?: boolean
+  entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
+  status?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mention"]>
 
 export type MentionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  personaId?: boolean
+  entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
+  status?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mention"]>
 
 export type MentionSelectScalar = {
   id?: boolean
-  personaId?: boolean
+  entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
   summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
+  status?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "personaId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "recordSource" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
+export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
 export type MentionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }
 export type MentionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }
 export type MentionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  persona?: boolean | Prisma.PersonaDefaultArgs<ExtArgs>
+  entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
 }
 
 export type $MentionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Mention"
   objects: {
-    persona: Prisma.$PersonaPayload<ExtArgs>
+    entity: Prisma.$EntityPayload<ExtArgs>
     chapter: Prisma.$ChapterPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    personaId: string
+    entityId: string
     chapterId: string
     rawText: string
     summary: string | null
     paraIndex: number | null
     recordSource: $Enums.RecordSource
+    status: $Enums.ProcessingStatus
     deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1254,7 +1294,7 @@ readonly fields: MentionFieldRefs;
  */
 export interface Prisma__MentionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  persona<T extends Prisma.PersonaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PersonaDefaultArgs<ExtArgs>>): Prisma.Prisma__PersonaClient<runtime.Types.Result.GetResult<Prisma.$PersonaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  entity<T extends Prisma.EntityDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EntityDefaultArgs<ExtArgs>>): Prisma.Prisma__EntityClient<runtime.Types.Result.GetResult<Prisma.$EntityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chapter<T extends Prisma.ChapterDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChapterDefaultArgs<ExtArgs>>): Prisma.Prisma__ChapterClient<runtime.Types.Result.GetResult<Prisma.$ChapterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1286,12 +1326,13 @@ export interface Prisma__MentionClient<T, Null = never, ExtArgs extends runtime.
  */
 export interface MentionFieldRefs {
   readonly id: Prisma.FieldRef<"Mention", 'String'>
-  readonly personaId: Prisma.FieldRef<"Mention", 'String'>
+  readonly entityId: Prisma.FieldRef<"Mention", 'String'>
   readonly chapterId: Prisma.FieldRef<"Mention", 'String'>
   readonly rawText: Prisma.FieldRef<"Mention", 'String'>
   readonly summary: Prisma.FieldRef<"Mention", 'String'>
   readonly paraIndex: Prisma.FieldRef<"Mention", 'Int'>
   readonly recordSource: Prisma.FieldRef<"Mention", 'RecordSource'>
+  readonly status: Prisma.FieldRef<"Mention", 'ProcessingStatus'>
   readonly deletedAt: Prisma.FieldRef<"Mention", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Mention", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Mention", 'DateTime'>
@@ -1491,11 +1532,6 @@ export type MentionFindManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Skip the first `n` Mentions.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of Mentions.
-   */
   distinct?: Prisma.MentionScalarFieldEnum | Prisma.MentionScalarFieldEnum[]
 }
 

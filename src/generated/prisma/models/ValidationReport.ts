@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.ts"
 
 /**
  * Model ValidationReport
- * @db.remark: 自检报告。记录章节/全书级别的结构化质量检查结果。
+ * @db.remark: 自检报告。记录章节/全书级别的结构化质量检查结果。issues 内每条可引用 entityId/factId。
  */
 export type ValidationReportModel = runtime.Types.Result.DefaultSelection<Prisma.$ValidationReportPayload>
 
@@ -185,7 +185,7 @@ export type ValidationReportGroupByOutputType = {
   _max: ValidationReportMaxAggregateOutputType | null
 }
 
-export type GetValidationReportGroupByPayload<T extends ValidationReportGroupByArgs> = Prisma.PrismaPromise<
+type GetValidationReportGroupByPayload<T extends ValidationReportGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ValidationReportGroupByOutputType, T['by']> &
       {
@@ -1435,11 +1435,6 @@ export type ValidationReportFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` ValidationReports.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of ValidationReports.
-   */
   distinct?: Prisma.ValidationReportScalarFieldEnum | Prisma.ValidationReportScalarFieldEnum[]
 }
 

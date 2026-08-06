@@ -74,27 +74,38 @@ export const AliasType = {
 export type AliasType = (typeof AliasType)[keyof typeof AliasType]
 
 
-export const AliasMappingStatus = {
+export const AliasStatus = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   LLM_INFERRED: 'LLM_INFERRED',
   REJECTED: 'REJECTED'
 } as const
 
-export type AliasMappingStatus = (typeof AliasMappingStatus)[keyof typeof AliasMappingStatus]
+export type AliasStatus = (typeof AliasStatus)[keyof typeof AliasStatus]
 
 
-export const PersonaType = {
+export const EntityType = {
   PERSON: 'PERSON',
   LOCATION: 'LOCATION',
   ORGANIZATION: 'ORGANIZATION',
   CONCEPT: 'CONCEPT'
 } as const
 
-export type PersonaType = (typeof PersonaType)[keyof typeof PersonaType]
+export type EntityType = (typeof EntityType)[keyof typeof EntityType]
 
 
-export const BioCategory = {
+export const FactType = {
+  BIOGRAPHY: 'BIOGRAPHY',
+  RELATION: 'RELATION',
+  ITEM_TRANSFER: 'ITEM_TRANSFER',
+  ORGANIZATION_EVENT: 'ORGANIZATION_EVENT',
+  GENERIC: 'GENERIC'
+} as const
+
+export type FactType = (typeof FactType)[keyof typeof FactType]
+
+
+export const EventCategory = {
   BIRTH: 'BIRTH',
   EXAM: 'EXAM',
   CAREER: 'CAREER',
@@ -104,7 +115,7 @@ export const BioCategory = {
   EVENT: 'EVENT'
 } as const
 
-export type BioCategory = (typeof BioCategory)[keyof typeof BioCategory]
+export type EventCategory = (typeof EventCategory)[keyof typeof EventCategory]
 
 
 export const ChapterType = {
@@ -114,3 +125,61 @@ export const ChapterType = {
 } as const
 
 export type ChapterType = (typeof ChapterType)[keyof typeof ChapterType]
+
+
+export const SkillCategory = {
+  SURNAME: 'SURNAME',
+  GENERIC_TITLE: 'GENERIC_TITLE',
+  NAME_PATTERN: 'NAME_PATTERN',
+  RELATIONSHIP_TYPE: 'RELATIONSHIP_TYPE',
+  HISTORICAL_FIGURE: 'HISTORICAL_FIGURE',
+  TASK_INSTRUCTION: 'TASK_INSTRUCTION',
+  ALIAS_PACK: 'ALIAS_PACK',
+  HYBRID: 'HYBRID'
+} as const
+
+export type SkillCategory = (typeof SkillCategory)[keyof typeof SkillCategory]
+
+
+export const SkillSource = {
+  MANUAL: 'MANUAL',
+  GENERATED: 'GENERATED',
+  AI: 'AI'
+} as const
+
+export type SkillSource = (typeof SkillSource)[keyof typeof SkillSource]
+
+
+export const SkillStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  DISABLED: 'DISABLED',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type SkillStatus = (typeof SkillStatus)[keyof typeof SkillStatus]
+
+
+export const AgentRunType = {
+  JOB_PIPELINE: 'JOB_PIPELINE',
+  ENTITY_PRESCAN: 'ENTITY_PRESCAN',
+  CHAPTER_ANALYSIS: 'CHAPTER_ANALYSIS',
+  GLOBAL_RESOLUTION: 'GLOBAL_RESOLUTION',
+  TITLE_RESOLUTION: 'TITLE_RESOLUTION',
+  VALIDATION: 'VALIDATION',
+  SKILL_GENERATION: 'SKILL_GENERATION'
+} as const
+
+export type AgentRunType = (typeof AgentRunType)[keyof typeof AgentRunType]
+
+
+export const AgentStepKind = {
+  LLM_CALL: 'LLM_CALL',
+  TOOL_CALL: 'TOOL_CALL',
+  SKILL_LOAD: 'SKILL_LOAD',
+  RULE_APPLY: 'RULE_APPLY',
+  ARBITRATION: 'ARBITRATION',
+  MANUAL: 'MANUAL'
+} as const
+
+export type AgentStepKind = (typeof AgentStepKind)[keyof typeof AgentStepKind]

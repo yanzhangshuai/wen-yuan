@@ -3,28 +3,24 @@ import argon2 from "argon2";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
-import { seedKnowledgeBaseFromFile, seedKnowledgePhase7 } from "../scripts/init-knowledge-base.ts";
-import { seedKnowledgePhase6 } from "../scripts/init-knowledge-phase6.ts";
+import { seedBookTypeSkills } from "../scripts/seed-book-type-skills.ts";
+import { seedSkillBaselines } from "../scripts/seed-skill-baselines.ts";
 
 /**
  * 文件定位（数据初始化层 / 运维脚本层）：
- * - 本文件是 Prisma 官方约定的 seed 脚本入口，用于 `prisma db seed` 时写入“可运行的最小业务基础数据”。
- * - 它不属于 Next.js 的页面或路由文件，不参与请求渲染链路；运行时机是数据库初始化、重建、CI 环境准备阶段。
+ * - Prisma 官方约定的 seed 入口，用于 `prisma db seed` 时写入最小业务基础数据。
+ * - 版本 v3：旧知识表已删除，知识扩展改为 Skill 技能包。
  *
  * 核心业务职责：
- * 1. 初始化管理员账号（后台登录入口所依赖的首个账号）。
- * 2. 初始化知识库基础种子（书籍类型、种子知识包、姓氏、泛化称谓、NER 规则、提示词模板基线）。
+ * 1. 初始化管理员账号（后台登录入口所依赖的首个账号）；
+ * 2. 初始化书籍类型（book_types）；
+ * 3. 初始化 Skill 基线技能包（姓氏/名字模式/泛称/关系类型）。
  *
- * 上下游关系：
- * - 上游输入：`.env` 中的数据库连接与管理员账号配置。
- * - 下游消费：`/api/auth/login`、后台管理页、分析任务模型选择逻辑都会读取这里落库的数据。
- *
- * 重要约束（业务规则，不是技术限制）：
+ * 重要约束：
  * - 管理员账号必须可幂等重建（重复 seed 不产生重复管理员）。
- * - AI 模型配置由管理后台维护，seed 不再清空或重建模型表，避免覆盖管理员配置。
+ * - AI 模型配置由管理后台维护，seed 不修改 ai_models。
  */
 function loadEnvFromDotenv() {
-  // Prisma CLI 直跑脚本时通常不会自动加载 dotenv，这里手动兜底，确保本地与 CI 行为一致。
   const envPath = resolve(process.cwd(), ".env");
   if (!existsSync(envPath)) return;
 
@@ -41,7 +37,6 @@ function loadEnvFromDotenv() {
       value = value.slice(1, -1);
     }
 
-    // 仅在进程中不存在该变量时才写入，避免覆盖命令行/CI 显式注入的高优先级环境变量。
     if (!(key in process.env)) {
       process.env[key] = value;
     }
@@ -56,9 +51,6 @@ const adminEmail = process.env.ADMIN_EMAIL;
 const adminName = process.env.ADMIN_NAME ?? "管理员";
 const adminPassword = process.env.ADMIN_PASSWORD;
 
-// 这里采用“启动即失败”的防御策略：
-// - seed 阶段若关键配置缺失，继续执行只会写入不完整数据；
-// - 直接抛错可以尽早暴露部署/本地环境配置问题，减少后续排查成本。
 if (!connectionString) {
   throw new Error("Missing DATABASE_URL in .env");
 }
@@ -75,7 +67,6 @@ if (!adminPassword) {
   throw new Error("Missing ADMIN_PASSWORD in .env");
 }
 
-// 经过上面强校验后，再将可选类型收敛为确定值，避免后续业务逻辑出现 `undefined` 分支。
 const adminUsernameValue = adminUsername;
 const adminEmailValue = adminEmail;
 const adminPasswordValue = adminPassword;
@@ -84,12 +75,7 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 /**
- * 统一密码散列策略：
- * - 与服务端登录模块保持一致，统一使用 argon2id，保证 seed 账号与真实账号验证流程一致。
- * - 参数与线上一致可以避免“开发环境能登录、生产环境不兼容”的口令格式问题。
- *
- * @param password 管理员明文密码（仅在 seed 运行期间短暂存在于内存）
- * @returns 可安全入库的哈希值（不可逆）
+ * 统一密码散列策略：与服务端登录模块保持一致，统一使用 argon2id。
  */
 async function hashPassword(password: string): Promise<string> {
   return argon2.hash(password, {
@@ -101,20 +87,65 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * 种子主流程（事务化）：
- * 1. 先生成管理员密码哈希；
- * 2. 写入管理员账号；
- * 3. 输出可读日志，方便本地和 CI 诊断。
- *
- * 为什么初始化“管理员 + 知识库基础种子”：
- * - 后台知识库已成为解析链路的运行时依赖，仅有管理员与模型已不足以支撑完整验收；
- * - 这里仍只写入基础配置与可幂等知识种子，不注入书籍/章节解析结果等业务运行数据。
+ * 从 data/knowledge-base/book-types.init.json 读取书籍类型并 upsert。
+ * 仅取 bookTypes 数组的基础字段（旧 knowledgePacks 已被 Skill 替代，忽略）。
+ */
+async function seedBookTypes(): Promise<number> {
+  const initPath = resolve(process.cwd(), "data/knowledge-base/book-types.init.json");
+  if (!existsSync(initPath)) {
+    console.warn("⚠ 未找到 book-types.init.json，跳过书籍类型种子");
+    return 0;
+  }
+
+  const raw = JSON.parse(readFileSync(initPath, "utf8")) as {
+    bookTypes?: Array<{
+      key       : string;
+      name      : string;
+      description?: string;
+      sortOrder ?: number;
+      isActive  ?: boolean;
+    }>;
+  };
+
+  if (!Array.isArray(raw.bookTypes)) {
+    return 0;
+  }
+
+  let count = 0;
+  for (const item of raw.bookTypes) {
+    if (!item.key || !item.name) continue;
+    await prisma.bookType.upsert({
+      where : { key: item.key },
+      update: {
+        name       : item.name,
+        description: item.description ?? null,
+        sortOrder  : item.sortOrder ?? 0,
+        isActive   : item.isActive ?? true
+      },
+      create: {
+        key        : item.key,
+        name       : item.name,
+        description: item.description ?? null,
+        sortOrder  : item.sortOrder ?? 0,
+        isActive   : item.isActive ?? true
+      }
+    });
+    count += 1;
+  }
+
+  return count;
+}
+
+/**
+ * 种子主流程：
+ * 1. 管理员账号（幂等 upsert）；
+ * 2. 书籍类型；
+ * 3. Skill 基线技能包。
  */
 async function main() {
   console.log("🌱 开始录入种子数据...");
   const adminPasswordHash = await hashPassword(adminPasswordValue);
 
-  // upsert 保证幂等：重复执行 seed 时不会新增重复管理员，而是更新同邮箱账号的关键字段。
   const result = await prisma.user.upsert({
     where : { email: adminEmailValue },
     update: {
@@ -134,29 +165,23 @@ async function main() {
     select: { username: true }
   });
 
-  const knowledgeInitPath = resolve(process.cwd(), "data/knowledge-base/book-types.init.json");
-  console.log(`📚 导入知识库 JSON 种子: ${knowledgeInitPath}`);
-  await seedKnowledgeBaseFromFile(prisma, knowledgeInitPath);
-
-  console.log("🧩 导入知识库 Phase 6 基础词库与模板...");
-  await seedKnowledgePhase6(prisma);
-
-  console.log("🧩 导入知识库 Phase 7 种子数据（历史人物、名字模式、关系词、古典人物）...");
-  await seedKnowledgePhase7(prisma);
+  const bookTypeCount = await seedBookTypes();
+  const skillCount = await seedSkillBaselines(prisma);
+  const bookTypeSkillCount = await seedBookTypeSkills(prisma);
 
   console.log("✅ 种子数据录入成功！");
   console.log(`- 已初始化管理员: ${result.username}`);
+  console.log(`- 已初始化书籍类型: ${bookTypeCount} 个`);
+  console.log(`- 已初始化 Skill 基线: ${skillCount} 个`);
+  console.log(`- 已迁移书型知识包为 Skill: ${bookTypeSkillCount} 个`);
   console.log("- 模型配置由管理后台维护，seed 未修改 ai_models");
-  console.log("- 已完成知识库基础种子初始化");
 }
 
 main()
   .catch((e) => {
-    // seed 失败必须返回非零退出码，供 CI/CD 与运维脚本识别失败并中止后续步骤。
     console.error(e);
     process.exit(1);
   })
   .finally(async () => {
-    // 无论成功失败都主动断开连接，避免 Node 进程被连接池挂住无法退出。
     await prisma.$disconnect();
   });

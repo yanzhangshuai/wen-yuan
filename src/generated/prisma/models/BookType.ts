@@ -213,7 +213,7 @@ export type BookTypeGroupByOutputType = {
   _max: BookTypeMaxAggregateOutputType | null
 }
 
-export type GetBookTypeGroupByPayload<T extends BookTypeGroupByArgs> = Prisma.PrismaPromise<
+type GetBookTypeGroupByPayload<T extends BookTypeGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<BookTypeGroupByOutputType, T['by']> &
       {
@@ -241,10 +241,8 @@ export type BookTypeWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"BookType"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BookType"> | Date | string
   books?: Prisma.BookListRelationFilter
-  aliasPacks?: Prisma.AliasPackListRelationFilter
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionListRelationFilter
-  extractionRules?: Prisma.ExtractionRuleListRelationFilter
-  promptVersions?: Prisma.PromptTemplateVersionListRelationFilter
+  bookTypeSkills?: Prisma.BookTypeSkillListRelationFilter
+  skillVersions?: Prisma.SkillVersionListRelationFilter
 }
 
 export type BookTypeOrderByWithRelationInput = {
@@ -257,10 +255,8 @@ export type BookTypeOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   books?: Prisma.BookOrderByRelationAggregateInput
-  aliasPacks?: Prisma.AliasPackOrderByRelationAggregateInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionOrderByRelationAggregateInput
-  extractionRules?: Prisma.ExtractionRuleOrderByRelationAggregateInput
-  promptVersions?: Prisma.PromptTemplateVersionOrderByRelationAggregateInput
+  bookTypeSkills?: Prisma.BookTypeSkillOrderByRelationAggregateInput
+  skillVersions?: Prisma.SkillVersionOrderByRelationAggregateInput
 }
 
 export type BookTypeWhereUniqueInput = Prisma.AtLeast<{
@@ -276,10 +272,8 @@ export type BookTypeWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"BookType"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BookType"> | Date | string
   books?: Prisma.BookListRelationFilter
-  aliasPacks?: Prisma.AliasPackListRelationFilter
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionListRelationFilter
-  extractionRules?: Prisma.ExtractionRuleListRelationFilter
-  promptVersions?: Prisma.PromptTemplateVersionListRelationFilter
+  bookTypeSkills?: Prisma.BookTypeSkillListRelationFilter
+  skillVersions?: Prisma.SkillVersionListRelationFilter
 }, "id" | "key">
 
 export type BookTypeOrderByWithAggregationInput = {
@@ -322,10 +316,8 @@ export type BookTypeCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
+  bookTypeSkills?: Prisma.BookTypeSkillCreateNestedManyWithoutBookTypeInput
+  skillVersions?: Prisma.SkillVersionCreateNestedManyWithoutBookTypeInput
 }
 
 export type BookTypeUncheckedCreateInput = {
@@ -338,10 +330,8 @@ export type BookTypeUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
+  bookTypeSkills?: Prisma.BookTypeSkillUncheckedCreateNestedManyWithoutBookTypeInput
+  skillVersions?: Prisma.SkillVersionUncheckedCreateNestedManyWithoutBookTypeInput
 }
 
 export type BookTypeUpdateInput = {
@@ -354,10 +344,8 @@ export type BookTypeUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
+  bookTypeSkills?: Prisma.BookTypeSkillUpdateManyWithoutBookTypeNestedInput
+  skillVersions?: Prisma.SkillVersionUpdateManyWithoutBookTypeNestedInput
 }
 
 export type BookTypeUncheckedUpdateInput = {
@@ -370,10 +358,8 @@ export type BookTypeUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
+  bookTypeSkills?: Prisma.BookTypeSkillUncheckedUpdateManyWithoutBookTypeNestedInput
+  skillVersions?: Prisma.SkillVersionUncheckedUpdateManyWithoutBookTypeNestedInput
 }
 
 export type BookTypeCreateManyInput = {
@@ -412,6 +398,11 @@ export type BookTypeUncheckedUpdateManyInput = {
 export type BookTypeNullableScalarRelationFilter = {
   is?: Prisma.BookTypeWhereInput | null
   isNot?: Prisma.BookTypeWhereInput | null
+}
+
+export type BookTypeScalarRelationFilter = {
+  is?: Prisma.BookTypeWhereInput
+  isNot?: Prisma.BookTypeWhereInput
 }
 
 export type BookTypeCountOrderByAggregateInput = {
@@ -471,68 +462,34 @@ export type BookTypeUpdateOneWithoutBooksNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutBooksInput, Prisma.BookTypeUpdateWithoutBooksInput>, Prisma.BookTypeUncheckedUpdateWithoutBooksInput>
 }
 
-export type BookTypeCreateNestedOneWithoutAliasPacksInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutAliasPacksInput, Prisma.BookTypeUncheckedCreateWithoutAliasPacksInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutAliasPacksInput
+export type BookTypeCreateNestedOneWithoutSkillVersionsInput = {
+  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutSkillVersionsInput, Prisma.BookTypeUncheckedCreateWithoutSkillVersionsInput>
+  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutSkillVersionsInput
   connect?: Prisma.BookTypeWhereUniqueInput
 }
 
-export type BookTypeUpdateOneWithoutAliasPacksNestedInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutAliasPacksInput, Prisma.BookTypeUncheckedCreateWithoutAliasPacksInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutAliasPacksInput
-  upsert?: Prisma.BookTypeUpsertWithoutAliasPacksInput
+export type BookTypeUpdateOneWithoutSkillVersionsNestedInput = {
+  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutSkillVersionsInput, Prisma.BookTypeUncheckedCreateWithoutSkillVersionsInput>
+  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutSkillVersionsInput
+  upsert?: Prisma.BookTypeUpsertWithoutSkillVersionsInput
   disconnect?: Prisma.BookTypeWhereInput | boolean
   delete?: Prisma.BookTypeWhereInput | boolean
   connect?: Prisma.BookTypeWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutAliasPacksInput, Prisma.BookTypeUpdateWithoutAliasPacksInput>, Prisma.BookTypeUncheckedUpdateWithoutAliasPacksInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutSkillVersionsInput, Prisma.BookTypeUpdateWithoutSkillVersionsInput>, Prisma.BookTypeUncheckedUpdateWithoutSkillVersionsInput>
 }
 
-export type BookTypeCreateNestedOneWithoutRelationshipTypesInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutRelationshipTypesInput
+export type BookTypeCreateNestedOneWithoutBookTypeSkillsInput = {
+  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutBookTypeSkillsInput, Prisma.BookTypeUncheckedCreateWithoutBookTypeSkillsInput>
+  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutBookTypeSkillsInput
   connect?: Prisma.BookTypeWhereUniqueInput
 }
 
-export type BookTypeUpdateOneWithoutRelationshipTypesNestedInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutRelationshipTypesInput
-  upsert?: Prisma.BookTypeUpsertWithoutRelationshipTypesInput
-  disconnect?: Prisma.BookTypeWhereInput | boolean
-  delete?: Prisma.BookTypeWhereInput | boolean
+export type BookTypeUpdateOneRequiredWithoutBookTypeSkillsNestedInput = {
+  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutBookTypeSkillsInput, Prisma.BookTypeUncheckedCreateWithoutBookTypeSkillsInput>
+  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutBookTypeSkillsInput
+  upsert?: Prisma.BookTypeUpsertWithoutBookTypeSkillsInput
   connect?: Prisma.BookTypeWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutRelationshipTypesInput, Prisma.BookTypeUpdateWithoutRelationshipTypesInput>, Prisma.BookTypeUncheckedUpdateWithoutRelationshipTypesInput>
-}
-
-export type BookTypeCreateNestedOneWithoutExtractionRulesInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutExtractionRulesInput, Prisma.BookTypeUncheckedCreateWithoutExtractionRulesInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutExtractionRulesInput
-  connect?: Prisma.BookTypeWhereUniqueInput
-}
-
-export type BookTypeUpdateOneWithoutExtractionRulesNestedInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutExtractionRulesInput, Prisma.BookTypeUncheckedCreateWithoutExtractionRulesInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutExtractionRulesInput
-  upsert?: Prisma.BookTypeUpsertWithoutExtractionRulesInput
-  disconnect?: Prisma.BookTypeWhereInput | boolean
-  delete?: Prisma.BookTypeWhereInput | boolean
-  connect?: Prisma.BookTypeWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutExtractionRulesInput, Prisma.BookTypeUpdateWithoutExtractionRulesInput>, Prisma.BookTypeUncheckedUpdateWithoutExtractionRulesInput>
-}
-
-export type BookTypeCreateNestedOneWithoutPromptVersionsInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutPromptVersionsInput, Prisma.BookTypeUncheckedCreateWithoutPromptVersionsInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutPromptVersionsInput
-  connect?: Prisma.BookTypeWhereUniqueInput
-}
-
-export type BookTypeUpdateOneWithoutPromptVersionsNestedInput = {
-  create?: Prisma.XOR<Prisma.BookTypeCreateWithoutPromptVersionsInput, Prisma.BookTypeUncheckedCreateWithoutPromptVersionsInput>
-  connectOrCreate?: Prisma.BookTypeCreateOrConnectWithoutPromptVersionsInput
-  upsert?: Prisma.BookTypeUpsertWithoutPromptVersionsInput
-  disconnect?: Prisma.BookTypeWhereInput | boolean
-  delete?: Prisma.BookTypeWhereInput | boolean
-  connect?: Prisma.BookTypeWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutPromptVersionsInput, Prisma.BookTypeUpdateWithoutPromptVersionsInput>, Prisma.BookTypeUncheckedUpdateWithoutPromptVersionsInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BookTypeUpdateToOneWithWhereWithoutBookTypeSkillsInput, Prisma.BookTypeUpdateWithoutBookTypeSkillsInput>, Prisma.BookTypeUncheckedUpdateWithoutBookTypeSkillsInput>
 }
 
 export type BookTypeCreateWithoutBooksInput = {
@@ -544,10 +501,8 @@ export type BookTypeCreateWithoutBooksInput = {
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
+  bookTypeSkills?: Prisma.BookTypeSkillCreateNestedManyWithoutBookTypeInput
+  skillVersions?: Prisma.SkillVersionCreateNestedManyWithoutBookTypeInput
 }
 
 export type BookTypeUncheckedCreateWithoutBooksInput = {
@@ -559,10 +514,8 @@ export type BookTypeUncheckedCreateWithoutBooksInput = {
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
+  bookTypeSkills?: Prisma.BookTypeSkillUncheckedCreateNestedManyWithoutBookTypeInput
+  skillVersions?: Prisma.SkillVersionUncheckedCreateNestedManyWithoutBookTypeInput
 }
 
 export type BookTypeCreateOrConnectWithoutBooksInput = {
@@ -590,10 +543,8 @@ export type BookTypeUpdateWithoutBooksInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
+  bookTypeSkills?: Prisma.BookTypeSkillUpdateManyWithoutBookTypeNestedInput
+  skillVersions?: Prisma.SkillVersionUpdateManyWithoutBookTypeNestedInput
 }
 
 export type BookTypeUncheckedUpdateWithoutBooksInput = {
@@ -605,13 +556,11 @@ export type BookTypeUncheckedUpdateWithoutBooksInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
+  bookTypeSkills?: Prisma.BookTypeSkillUncheckedUpdateManyWithoutBookTypeNestedInput
+  skillVersions?: Prisma.SkillVersionUncheckedUpdateManyWithoutBookTypeNestedInput
 }
 
-export type BookTypeCreateWithoutAliasPacksInput = {
+export type BookTypeCreateWithoutSkillVersionsInput = {
   id?: string
   key: string
   name: string
@@ -621,12 +570,10 @@ export type BookTypeCreateWithoutAliasPacksInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
+  bookTypeSkills?: Prisma.BookTypeSkillCreateNestedManyWithoutBookTypeInput
 }
 
-export type BookTypeUncheckedCreateWithoutAliasPacksInput = {
+export type BookTypeUncheckedCreateWithoutSkillVersionsInput = {
   id?: string
   key: string
   name: string
@@ -636,28 +583,26 @@ export type BookTypeUncheckedCreateWithoutAliasPacksInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
+  bookTypeSkills?: Prisma.BookTypeSkillUncheckedCreateNestedManyWithoutBookTypeInput
 }
 
-export type BookTypeCreateOrConnectWithoutAliasPacksInput = {
+export type BookTypeCreateOrConnectWithoutSkillVersionsInput = {
   where: Prisma.BookTypeWhereUniqueInput
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutAliasPacksInput, Prisma.BookTypeUncheckedCreateWithoutAliasPacksInput>
+  create: Prisma.XOR<Prisma.BookTypeCreateWithoutSkillVersionsInput, Prisma.BookTypeUncheckedCreateWithoutSkillVersionsInput>
 }
 
-export type BookTypeUpsertWithoutAliasPacksInput = {
-  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutAliasPacksInput, Prisma.BookTypeUncheckedUpdateWithoutAliasPacksInput>
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutAliasPacksInput, Prisma.BookTypeUncheckedCreateWithoutAliasPacksInput>
+export type BookTypeUpsertWithoutSkillVersionsInput = {
+  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutSkillVersionsInput, Prisma.BookTypeUncheckedUpdateWithoutSkillVersionsInput>
+  create: Prisma.XOR<Prisma.BookTypeCreateWithoutSkillVersionsInput, Prisma.BookTypeUncheckedCreateWithoutSkillVersionsInput>
   where?: Prisma.BookTypeWhereInput
 }
 
-export type BookTypeUpdateToOneWithWhereWithoutAliasPacksInput = {
+export type BookTypeUpdateToOneWithWhereWithoutSkillVersionsInput = {
   where?: Prisma.BookTypeWhereInput
-  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutAliasPacksInput, Prisma.BookTypeUncheckedUpdateWithoutAliasPacksInput>
+  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutSkillVersionsInput, Prisma.BookTypeUncheckedUpdateWithoutSkillVersionsInput>
 }
 
-export type BookTypeUpdateWithoutAliasPacksInput = {
+export type BookTypeUpdateWithoutSkillVersionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -667,12 +612,10 @@ export type BookTypeUpdateWithoutAliasPacksInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
+  bookTypeSkills?: Prisma.BookTypeSkillUpdateManyWithoutBookTypeNestedInput
 }
 
-export type BookTypeUncheckedUpdateWithoutAliasPacksInput = {
+export type BookTypeUncheckedUpdateWithoutSkillVersionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -682,12 +625,10 @@ export type BookTypeUncheckedUpdateWithoutAliasPacksInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
+  bookTypeSkills?: Prisma.BookTypeSkillUncheckedUpdateManyWithoutBookTypeNestedInput
 }
 
-export type BookTypeCreateWithoutRelationshipTypesInput = {
+export type BookTypeCreateWithoutBookTypeSkillsInput = {
   id?: string
   key: string
   name: string
@@ -697,12 +638,10 @@ export type BookTypeCreateWithoutRelationshipTypesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
+  skillVersions?: Prisma.SkillVersionCreateNestedManyWithoutBookTypeInput
 }
 
-export type BookTypeUncheckedCreateWithoutRelationshipTypesInput = {
+export type BookTypeUncheckedCreateWithoutBookTypeSkillsInput = {
   id?: string
   key: string
   name: string
@@ -712,28 +651,26 @@ export type BookTypeUncheckedCreateWithoutRelationshipTypesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
+  skillVersions?: Prisma.SkillVersionUncheckedCreateNestedManyWithoutBookTypeInput
 }
 
-export type BookTypeCreateOrConnectWithoutRelationshipTypesInput = {
+export type BookTypeCreateOrConnectWithoutBookTypeSkillsInput = {
   where: Prisma.BookTypeWhereUniqueInput
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
+  create: Prisma.XOR<Prisma.BookTypeCreateWithoutBookTypeSkillsInput, Prisma.BookTypeUncheckedCreateWithoutBookTypeSkillsInput>
 }
 
-export type BookTypeUpsertWithoutRelationshipTypesInput = {
-  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedUpdateWithoutRelationshipTypesInput>
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedCreateWithoutRelationshipTypesInput>
+export type BookTypeUpsertWithoutBookTypeSkillsInput = {
+  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutBookTypeSkillsInput, Prisma.BookTypeUncheckedUpdateWithoutBookTypeSkillsInput>
+  create: Prisma.XOR<Prisma.BookTypeCreateWithoutBookTypeSkillsInput, Prisma.BookTypeUncheckedCreateWithoutBookTypeSkillsInput>
   where?: Prisma.BookTypeWhereInput
 }
 
-export type BookTypeUpdateToOneWithWhereWithoutRelationshipTypesInput = {
+export type BookTypeUpdateToOneWithWhereWithoutBookTypeSkillsInput = {
   where?: Prisma.BookTypeWhereInput
-  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutRelationshipTypesInput, Prisma.BookTypeUncheckedUpdateWithoutRelationshipTypesInput>
+  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutBookTypeSkillsInput, Prisma.BookTypeUncheckedUpdateWithoutBookTypeSkillsInput>
 }
 
-export type BookTypeUpdateWithoutRelationshipTypesInput = {
+export type BookTypeUpdateWithoutBookTypeSkillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -743,12 +680,10 @@ export type BookTypeUpdateWithoutRelationshipTypesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
+  skillVersions?: Prisma.SkillVersionUpdateManyWithoutBookTypeNestedInput
 }
 
-export type BookTypeUncheckedUpdateWithoutRelationshipTypesInput = {
+export type BookTypeUncheckedUpdateWithoutBookTypeSkillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -758,161 +693,7 @@ export type BookTypeUncheckedUpdateWithoutRelationshipTypesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
-}
-
-export type BookTypeCreateWithoutExtractionRulesInput = {
-  id?: string
-  key: string
-  name: string
-  description?: string | null
-  isActive?: boolean
-  sortOrder?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionCreateNestedManyWithoutBookTypeInput
-}
-
-export type BookTypeUncheckedCreateWithoutExtractionRulesInput = {
-  id?: string
-  key: string
-  name: string
-  description?: string | null
-  isActive?: boolean
-  sortOrder?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedCreateNestedManyWithoutBookTypeInput
-}
-
-export type BookTypeCreateOrConnectWithoutExtractionRulesInput = {
-  where: Prisma.BookTypeWhereUniqueInput
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutExtractionRulesInput, Prisma.BookTypeUncheckedCreateWithoutExtractionRulesInput>
-}
-
-export type BookTypeUpsertWithoutExtractionRulesInput = {
-  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutExtractionRulesInput, Prisma.BookTypeUncheckedUpdateWithoutExtractionRulesInput>
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutExtractionRulesInput, Prisma.BookTypeUncheckedCreateWithoutExtractionRulesInput>
-  where?: Prisma.BookTypeWhereInput
-}
-
-export type BookTypeUpdateToOneWithWhereWithoutExtractionRulesInput = {
-  where?: Prisma.BookTypeWhereInput
-  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutExtractionRulesInput, Prisma.BookTypeUncheckedUpdateWithoutExtractionRulesInput>
-}
-
-export type BookTypeUpdateWithoutExtractionRulesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUpdateManyWithoutBookTypeNestedInput
-}
-
-export type BookTypeUncheckedUpdateWithoutExtractionRulesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
-  promptVersions?: Prisma.PromptTemplateVersionUncheckedUpdateManyWithoutBookTypeNestedInput
-}
-
-export type BookTypeCreateWithoutPromptVersionsInput = {
-  id?: string
-  key: string
-  name: string
-  description?: string | null
-  isActive?: boolean
-  sortOrder?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  books?: Prisma.BookCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleCreateNestedManyWithoutBookTypeInput
-}
-
-export type BookTypeUncheckedCreateWithoutPromptVersionsInput = {
-  id?: string
-  key: string
-  name: string
-  description?: string | null
-  isActive?: boolean
-  sortOrder?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  books?: Prisma.BookUncheckedCreateNestedManyWithoutBookTypeInput
-  aliasPacks?: Prisma.AliasPackUncheckedCreateNestedManyWithoutBookTypeInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedCreateNestedManyWithoutBookTypeInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedCreateNestedManyWithoutBookTypeInput
-}
-
-export type BookTypeCreateOrConnectWithoutPromptVersionsInput = {
-  where: Prisma.BookTypeWhereUniqueInput
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutPromptVersionsInput, Prisma.BookTypeUncheckedCreateWithoutPromptVersionsInput>
-}
-
-export type BookTypeUpsertWithoutPromptVersionsInput = {
-  update: Prisma.XOR<Prisma.BookTypeUpdateWithoutPromptVersionsInput, Prisma.BookTypeUncheckedUpdateWithoutPromptVersionsInput>
-  create: Prisma.XOR<Prisma.BookTypeCreateWithoutPromptVersionsInput, Prisma.BookTypeUncheckedCreateWithoutPromptVersionsInput>
-  where?: Prisma.BookTypeWhereInput
-}
-
-export type BookTypeUpdateToOneWithWhereWithoutPromptVersionsInput = {
-  where?: Prisma.BookTypeWhereInput
-  data: Prisma.XOR<Prisma.BookTypeUpdateWithoutPromptVersionsInput, Prisma.BookTypeUncheckedUpdateWithoutPromptVersionsInput>
-}
-
-export type BookTypeUpdateWithoutPromptVersionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUpdateManyWithoutBookTypeNestedInput
-}
-
-export type BookTypeUncheckedUpdateWithoutPromptVersionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  books?: Prisma.BookUncheckedUpdateManyWithoutBookTypeNestedInput
-  aliasPacks?: Prisma.AliasPackUncheckedUpdateManyWithoutBookTypeNestedInput
-  relationshipTypes?: Prisma.RelationshipTypeDefinitionUncheckedUpdateManyWithoutBookTypeNestedInput
-  extractionRules?: Prisma.ExtractionRuleUncheckedUpdateManyWithoutBookTypeNestedInput
+  skillVersions?: Prisma.SkillVersionUncheckedUpdateManyWithoutBookTypeNestedInput
 }
 
 
@@ -922,18 +703,14 @@ export type BookTypeUncheckedUpdateWithoutPromptVersionsInput = {
 
 export type BookTypeCountOutputType = {
   books: number
-  aliasPacks: number
-  relationshipTypes: number
-  extractionRules: number
-  promptVersions: number
+  bookTypeSkills: number
+  skillVersions: number
 }
 
 export type BookTypeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   books?: boolean | BookTypeCountOutputTypeCountBooksArgs
-  aliasPacks?: boolean | BookTypeCountOutputTypeCountAliasPacksArgs
-  relationshipTypes?: boolean | BookTypeCountOutputTypeCountRelationshipTypesArgs
-  extractionRules?: boolean | BookTypeCountOutputTypeCountExtractionRulesArgs
-  promptVersions?: boolean | BookTypeCountOutputTypeCountPromptVersionsArgs
+  bookTypeSkills?: boolean | BookTypeCountOutputTypeCountBookTypeSkillsArgs
+  skillVersions?: boolean | BookTypeCountOutputTypeCountSkillVersionsArgs
 }
 
 /**
@@ -956,29 +733,15 @@ export type BookTypeCountOutputTypeCountBooksArgs<ExtArgs extends runtime.Types.
 /**
  * BookTypeCountOutputType without action
  */
-export type BookTypeCountOutputTypeCountAliasPacksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AliasPackWhereInput
+export type BookTypeCountOutputTypeCountBookTypeSkillsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookTypeSkillWhereInput
 }
 
 /**
  * BookTypeCountOutputType without action
  */
-export type BookTypeCountOutputTypeCountRelationshipTypesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.RelationshipTypeDefinitionWhereInput
-}
-
-/**
- * BookTypeCountOutputType without action
- */
-export type BookTypeCountOutputTypeCountExtractionRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ExtractionRuleWhereInput
-}
-
-/**
- * BookTypeCountOutputType without action
- */
-export type BookTypeCountOutputTypeCountPromptVersionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.PromptTemplateVersionWhereInput
+export type BookTypeCountOutputTypeCountSkillVersionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SkillVersionWhereInput
 }
 
 
@@ -992,10 +755,8 @@ export type BookTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   createdAt?: boolean
   updatedAt?: boolean
   books?: boolean | Prisma.BookType$booksArgs<ExtArgs>
-  aliasPacks?: boolean | Prisma.BookType$aliasPacksArgs<ExtArgs>
-  relationshipTypes?: boolean | Prisma.BookType$relationshipTypesArgs<ExtArgs>
-  extractionRules?: boolean | Prisma.BookType$extractionRulesArgs<ExtArgs>
-  promptVersions?: boolean | Prisma.BookType$promptVersionsArgs<ExtArgs>
+  bookTypeSkills?: boolean | Prisma.BookType$bookTypeSkillsArgs<ExtArgs>
+  skillVersions?: boolean | Prisma.BookType$skillVersionsArgs<ExtArgs>
   _count?: boolean | Prisma.BookTypeCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["bookType"]>
 
@@ -1035,10 +796,8 @@ export type BookTypeSelectScalar = {
 export type BookTypeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "name" | "description" | "isActive" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["bookType"]>
 export type BookTypeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   books?: boolean | Prisma.BookType$booksArgs<ExtArgs>
-  aliasPacks?: boolean | Prisma.BookType$aliasPacksArgs<ExtArgs>
-  relationshipTypes?: boolean | Prisma.BookType$relationshipTypesArgs<ExtArgs>
-  extractionRules?: boolean | Prisma.BookType$extractionRulesArgs<ExtArgs>
-  promptVersions?: boolean | Prisma.BookType$promptVersionsArgs<ExtArgs>
+  bookTypeSkills?: boolean | Prisma.BookType$bookTypeSkillsArgs<ExtArgs>
+  skillVersions?: boolean | Prisma.BookType$skillVersionsArgs<ExtArgs>
   _count?: boolean | Prisma.BookTypeCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type BookTypeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1048,10 +807,8 @@ export type $BookTypePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "BookType"
   objects: {
     books: Prisma.$BookPayload<ExtArgs>[]
-    aliasPacks: Prisma.$AliasPackPayload<ExtArgs>[]
-    relationshipTypes: Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>[]
-    extractionRules: Prisma.$ExtractionRulePayload<ExtArgs>[]
-    promptVersions: Prisma.$PromptTemplateVersionPayload<ExtArgs>[]
+    bookTypeSkills: Prisma.$BookTypeSkillPayload<ExtArgs>[]
+    skillVersions: Prisma.$SkillVersionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1457,10 +1214,8 @@ readonly fields: BookTypeFieldRefs;
 export interface Prisma__BookTypeClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   books<T extends Prisma.BookType$booksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$booksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  aliasPacks<T extends Prisma.BookType$aliasPacksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$aliasPacksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AliasPackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  relationshipTypes<T extends Prisma.BookType$relationshipTypesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$relationshipTypesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipTypeDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  extractionRules<T extends Prisma.BookType$extractionRulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$extractionRulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtractionRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  promptVersions<T extends Prisma.BookType$promptVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$promptVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PromptTemplateVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  bookTypeSkills<T extends Prisma.BookType$bookTypeSkillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$bookTypeSkillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookTypeSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  skillVersions<T extends Prisma.BookType$skillVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookType$skillVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SkillVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1694,11 +1449,6 @@ export type BookTypeFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Skip the first `n` BookTypes.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of BookTypes.
-   */
   distinct?: Prisma.BookTypeScalarFieldEnum | Prisma.BookTypeScalarFieldEnum[]
 }
 
@@ -1915,99 +1665,51 @@ export type BookType$booksArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
- * BookType.aliasPacks
+ * BookType.bookTypeSkills
  */
-export type BookType$aliasPacksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type BookType$bookTypeSkillsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the AliasPack
+   * Select specific fields to fetch from the BookTypeSkill
    */
-  select?: Prisma.AliasPackSelect<ExtArgs> | null
+  select?: Prisma.BookTypeSkillSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the AliasPack
+   * Omit specific fields from the BookTypeSkill
    */
-  omit?: Prisma.AliasPackOmit<ExtArgs> | null
+  omit?: Prisma.BookTypeSkillOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.AliasPackInclude<ExtArgs> | null
-  where?: Prisma.AliasPackWhereInput
-  orderBy?: Prisma.AliasPackOrderByWithRelationInput | Prisma.AliasPackOrderByWithRelationInput[]
-  cursor?: Prisma.AliasPackWhereUniqueInput
+  include?: Prisma.BookTypeSkillInclude<ExtArgs> | null
+  where?: Prisma.BookTypeSkillWhereInput
+  orderBy?: Prisma.BookTypeSkillOrderByWithRelationInput | Prisma.BookTypeSkillOrderByWithRelationInput[]
+  cursor?: Prisma.BookTypeSkillWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.AliasPackScalarFieldEnum | Prisma.AliasPackScalarFieldEnum[]
+  distinct?: Prisma.BookTypeSkillScalarFieldEnum | Prisma.BookTypeSkillScalarFieldEnum[]
 }
 
 /**
- * BookType.relationshipTypes
+ * BookType.skillVersions
  */
-export type BookType$relationshipTypesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type BookType$skillVersionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the RelationshipTypeDefinition
+   * Select specific fields to fetch from the SkillVersion
    */
-  select?: Prisma.RelationshipTypeDefinitionSelect<ExtArgs> | null
+  select?: Prisma.SkillVersionSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the RelationshipTypeDefinition
+   * Omit specific fields from the SkillVersion
    */
-  omit?: Prisma.RelationshipTypeDefinitionOmit<ExtArgs> | null
+  omit?: Prisma.SkillVersionOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.RelationshipTypeDefinitionInclude<ExtArgs> | null
-  where?: Prisma.RelationshipTypeDefinitionWhereInput
-  orderBy?: Prisma.RelationshipTypeDefinitionOrderByWithRelationInput | Prisma.RelationshipTypeDefinitionOrderByWithRelationInput[]
-  cursor?: Prisma.RelationshipTypeDefinitionWhereUniqueInput
+  include?: Prisma.SkillVersionInclude<ExtArgs> | null
+  where?: Prisma.SkillVersionWhereInput
+  orderBy?: Prisma.SkillVersionOrderByWithRelationInput | Prisma.SkillVersionOrderByWithRelationInput[]
+  cursor?: Prisma.SkillVersionWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.RelationshipTypeDefinitionScalarFieldEnum | Prisma.RelationshipTypeDefinitionScalarFieldEnum[]
-}
-
-/**
- * BookType.extractionRules
- */
-export type BookType$extractionRulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ExtractionRule
-   */
-  select?: Prisma.ExtractionRuleSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ExtractionRule
-   */
-  omit?: Prisma.ExtractionRuleOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ExtractionRuleInclude<ExtArgs> | null
-  where?: Prisma.ExtractionRuleWhereInput
-  orderBy?: Prisma.ExtractionRuleOrderByWithRelationInput | Prisma.ExtractionRuleOrderByWithRelationInput[]
-  cursor?: Prisma.ExtractionRuleWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ExtractionRuleScalarFieldEnum | Prisma.ExtractionRuleScalarFieldEnum[]
-}
-
-/**
- * BookType.promptVersions
- */
-export type BookType$promptVersionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the PromptTemplateVersion
-   */
-  select?: Prisma.PromptTemplateVersionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the PromptTemplateVersion
-   */
-  omit?: Prisma.PromptTemplateVersionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.PromptTemplateVersionInclude<ExtArgs> | null
-  where?: Prisma.PromptTemplateVersionWhereInput
-  orderBy?: Prisma.PromptTemplateVersionOrderByWithRelationInput | Prisma.PromptTemplateVersionOrderByWithRelationInput[]
-  cursor?: Prisma.PromptTemplateVersionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.PromptTemplateVersionScalarFieldEnum | Prisma.PromptTemplateVersionScalarFieldEnum[]
+  distinct?: Prisma.SkillVersionScalarFieldEnum | Prisma.SkillVersionScalarFieldEnum[]
 }
 
 /**
