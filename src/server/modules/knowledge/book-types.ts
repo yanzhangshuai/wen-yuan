@@ -19,7 +19,6 @@ export async function listBookTypes(params?: { active?: boolean }) {
       _count: {
         select: {
           books     : true,
-          aliasPacks: true
         }
       }
     }
@@ -43,7 +42,6 @@ export async function getBookType(id: string) {
       _count: {
         select: {
           books     : true,
-          aliasPacks: true
         }
       }
     }

@@ -22,7 +22,6 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
 import { AnalysisScopeInvalidError, BookNotFoundError, EmptyRelationshipKnowledgeError } from "@/server/modules/books/errors";
-import { loadFullRuntimeKnowledge } from "@/server/modules/knowledge/load-book-knowledge";
 import {
   ANALYSIS_ARCHITECTURE_VALUES,
   type AnalysisArchitecture
@@ -233,7 +232,8 @@ export function createStartBookAnalysisService(
         deletedAt: null
       },
       select: {
-        id: true
+        id        : true,
+        bookTypeId: true
       }
     });
 
@@ -276,23 +276,21 @@ export function createStartBookAnalysisService(
       throw new AnalysisScopeInvalidError("请先确认章节后再启动解析");
     }
 
-    const runtimeKnowledge = await loadFullRuntimeKnowledge({
-      bookId      : book.id,
-      prisma      : prismaClient,
-      forceRefresh: true
+    // v5：relationship_types 是关系码唯一权威（全局 + 本书型）
+    const relTypeCount = await prismaClient.relationshipType.count({
+      where: {
+        isActive: true,
+        OR: [{ bookTypeId: null }, { bookTypeId: book.bookTypeId ?? null }],
+      },
     });
-    if (runtimeKnowledge.relationshipTypes.length === 0) {
+    if (relTypeCount === 0) {
       throw new EmptyRelationshipKnowledgeError(book.id);
     }
 
     const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
       if (scope === "FULL_BOOK") {
-await tx.relationship.deleteMany({
-          where: {
-            bookId      : book.id,
-            recordSource: RecordSource.DRAFT_AI
-          }
-        });
+        // v5：relationships 为物化聚合表，全量重建时直接按书清空
+        await tx.relationship.deleteMany({ where: { bookId: book.id } });
       }
 
       const createdJob = await tx.analysisJob.create({
