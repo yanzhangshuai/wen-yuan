@@ -18,6 +18,8 @@ export interface IdentityLlmCallInput {
   user            : string;
   /** 必须为真实 AnalysisJob id（写 analysis_phase_logs）。 */
   jobId           : string;
+  /** 可选：跨模型复核时显式指定模型 id；缺省 = 系统默认模型。 */
+  modelId?        : string;
   temperature?    : number;
   maxOutputTokens?: number;
 }
@@ -34,10 +36,11 @@ export async function callIdentityLlm<TData>(input: IdentityLlmCallInput): Promi
   const prompt = { system: input.system, user: input.user };
 
   const result = await aiCallExecutor.execute<TData>({
-    stage : input.stage,
+    stage  : input.stage,
     prompt,
-    jobId : input.jobId,
-    callFn: async ({ model, prompt: p }) => callJsonLlm<TData>(model, p, {
+    jobId  : input.jobId,
+    modelId: input.modelId,
+    callFn : async ({ model, prompt: p }) => callJsonLlm<TData>(model, p, {
       temperature    : input.temperature,
       maxOutputTokens: input.maxOutputTokens,
       label          : "identity"
