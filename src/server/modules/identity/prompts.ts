@@ -27,7 +27,7 @@ export const IDENTITY_KNOWLEDGE_SKILL_SLUGS = [
 
 /** 身份判定 prompt（原语）。system = 任务契约；领域知识经 skills 注入 user。 */
 export const IDENTITY_RESOLUTION_SYSTEM_PROMPT = [
-  "完成古典文学实体消解：判断候选别名归属哪个已知实体，或判为新实体/不确定。",
+  "完成文学文本的实体消解：判断候选别名归属哪个已知实体，或判为新实体/不确定。",
   "",
   "输出 JSON：",
   '{ "verdict": "resolved" | "new_entity" | "ambiguous",',
