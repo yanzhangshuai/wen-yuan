@@ -7,3 +7,14 @@
 export { ReviewError, ReviewInputError, ReviewNotFoundError, EntityMergeConflictError } from "./errors";
 
 export { acceptFactsForJob, type AcceptResult } from "./autoAccept";
+
+export { listReviewQueue, type ReviewQueueItem, type ReviewQueueItemType, type ReviewQueueFilters } from "./reviewQueue";
+
+export { calibrateAutoAccept, sampleRatchetSize, type RatchetResult, type RatchetSample } from "./ratchet";
+
+export {
+  sampleRelationHallucination,
+  estimateNewEntityRate,
+  isHighNewEntityRate,
+  type HallucinationSample
+} from "./hallucinationSample";
