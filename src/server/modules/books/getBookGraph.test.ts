@@ -30,10 +30,9 @@ describe("getBookGraph service", () => {
           }
         ])
       },
-      relationshipTypeDefinition: {
-        findMany: vi.fn().mockResolvedValue([
-          { code: "师生", name: "师生" }
-        ])
+      // 关系码 → 展示名由 skill 契约并集提供（lookupTypeNames 从 active skill 激活版 frontmatter 取码）
+      skill: {
+        findMany: vi.fn().mockResolvedValue([])
       },
       mention: {
         findMany: vi.fn().mockResolvedValue([{ personaId: "persona-2" }])
@@ -102,7 +101,7 @@ describe("getBookGraph service", () => {
       book: {
         findFirst: vi.fn().mockResolvedValue(null)
       },
-      relationshipTypeDefinition: {
+      skill: {
         findMany: vi.fn().mockResolvedValue([])
       }
     } as never);
@@ -169,11 +168,8 @@ describe("getBookGraph service", () => {
       persona: {
         findMany: personaFindMany
       },
-      relationshipTypeDefinition: {
-        findMany: vi.fn().mockResolvedValue([
-          { code: "敌对", name: "敌对" },
-          { code: "陌生", name: "陌生" }
-        ])
+      skill: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     } as never);
 

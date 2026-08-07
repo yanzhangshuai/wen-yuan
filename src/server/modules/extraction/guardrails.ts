@@ -3,7 +3,7 @@
  *
  * 检查（防 v4 教训：6 类 337+ 垃圾 profile、关系碎片化）：
  * 1. 证据锚定：事实中出现的实体名必须在片正文可证（归一化子串匹配）
- * 2. 关系码校验：typeCode 必须在 relationship_types（全局 + 书型）
+ * 2. 关系码校验：typeCode 必须在装载 skill 契约 relationshipCodes 闭集（validCodes）
  * 3. 泛称过滤：safety level 0 泛称不作为实体落库
  *
  * 输出：通过的事实/提及 + 丢弃记录（审计用）。
@@ -54,12 +54,14 @@ export function isNameInText(name: string, text: string): boolean {
  *
  * @param slice 提取片
  * @param sliceText 片正文（证据锚定基准）
- * @param validCodes 有效关系码集合（relationship_types 全局+书型）
+ * @param validCodes 有效关系码集合（装载 skill 契约 relationshipCodes）
+ * @param junkList 虚指代词契约名单（可选；缺省用代码内默认名单）
  */
 export function runGuardrails(
   slice: ExtractionSlice,
   sliceText: string,
-  validCodes: Set<string>
+  validCodes: Set<string>,
+  junkList?: ReadonlySet<string>
 ): GuardrailResult {
   const facts: PersistableFact[] = [];
   const dropRecords: DropRecord[] = [];
@@ -85,7 +87,7 @@ export function runGuardrails(
       dropRecords.push({ kind: "relation", reason: "invalid_code", detail: `${rel.typeCode}:${rel.sourceCanonical}→${rel.targetCanonical}` });
       continue;
     }
-    if (isDeicticJunk(rel.sourceCanonical) || isDeicticJunk(rel.targetCanonical)) {
+    if (isDeicticJunk(rel.sourceCanonical, junkList) || isDeicticJunk(rel.targetCanonical, junkList)) {
       dropRecords.push({ kind: "relation", reason: "deictic_junk", detail: rel.typeCode });
       continue;
     }
@@ -111,7 +113,7 @@ export function runGuardrails(
 
   // 传记事实（检查顺序：指代兜底 → 无证据 → 锚定）
   for (const bio of slice.bioFacts) {
-    if (isDeicticJunk(bio.subjectCanonical)) {
+    if (isDeicticJunk(bio.subjectCanonical, junkList)) {
       dropRecords.push({ kind: "bioFact", reason: "deictic_junk", detail: bio.subjectCanonical });
       continue;
     }

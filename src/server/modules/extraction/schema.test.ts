@@ -1,11 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildExtractionSchema, relationshipCodesFromSnapshot, FACT_TYPES, EVENT_CATEGORIES } from "./schema.ts";
+
+import type { PrismaClient } from "@/generated/prisma/client";
+import {
+  buildExtractionSchema,
+  relationshipCodesFromSnapshot,
+  getRelationshipCodes,
+  getRelationshipCodesFromSkills,
+  type RelationshipCodeSource,
+  FACT_TYPES,
+  EVENT_CATEGORIES
+} from "./schema.ts";
 
 describe("buildExtractionSchema", () => {
   it("含全部 factType + 传入的关系码", () => {
     const schema = buildExtractionSchema([
       { code: "父子", direction: "INVERSE", category: "家庭" },
-      { code: "座师", direction: "INVERSE", category: "等级" },
+      { code: "座师", direction: "INVERSE", category: "等级" }
     ]);
     expect(schema.factTypes).toEqual([...FACT_TYPES]);
     expect(schema.relationshipTypeCodes).toContain("父子");
@@ -25,7 +35,7 @@ describe("relationshipCodesFromSnapshot", () => {
     const codes = relationshipCodesFromSnapshot([
       { code: "父子", direction: "INVERSE", category: "家庭" },
       { code: "bad", direction: "WEIRD" },
-      null,
+      null
     ]);
     expect(codes).toHaveLength(1);
     expect(codes[0].code).toBe("父子");
@@ -33,5 +43,60 @@ describe("relationshipCodesFromSnapshot", () => {
 
   it("非数组 → 空", () => {
     expect(relationshipCodesFromSnapshot(null)).toEqual([]);
+  });
+});
+
+describe("getRelationshipCodesFromSkills", () => {
+  /** 契约来源（direction 收紧为字面量，避免推断为 string）。 */
+  function source(codes: Array<{ code: string; direction: "INVERSE" | "SYMMETRIC"; category: string }>): RelationshipCodeSource {
+    return { metadata: { relationshipCodes: codes } };
+  }
+
+  it("并集各 skill 契约码，去重按 code（先到先得），丢弃 aliases", () => {
+    const skills = [
+      source([{ code: "父子", direction: "INVERSE", category: "家庭" }]),
+      source([{ code: "父子", direction: "INVERSE", category: "家庭" }, { code: "兄弟", direction: "SYMMETRIC", category: "家庭" }])
+    ];
+    expect(getRelationshipCodesFromSkills(skills)).toEqual([
+      { code: "父子", direction: "INVERSE", category: "家庭" },
+      { code: "兄弟", direction: "SYMMETRIC", category: "家庭" }
+    ]);
+  });
+
+  it("relationshipCodes 为 null/缺失时跳过", () => {
+    expect(getRelationshipCodesFromSkills([{ metadata: { relationshipCodes: null } }, { metadata: {} }])).toEqual([]);
+  });
+});
+
+describe("getRelationshipCodes", () => {
+  it("从最近任务快照取码", async () => {
+    const client = {
+      analysisJob: {
+        findFirst: vi.fn().mockResolvedValue({ relationshipTypesSnapshot: [{ code: "父子", direction: "INVERSE", category: "家庭" }] })
+      }
+    } as unknown as PrismaClient;
+
+    const codes = await getRelationshipCodes("book-1", client);
+    expect(codes).toEqual([{ code: "父子", direction: "INVERSE", category: "家庭" }]);
+  });
+
+  it("无分析任务 → 返回空并告警", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const client = { analysisJob: { findFirst: vi.fn().mockResolvedValue(null) } } as unknown as PrismaClient;
+
+    const codes = await getRelationshipCodes("book-1", client);
+    expect(codes).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("无分析任务"));
+    warnSpy.mockRestore();
+  });
+
+  it("快照为空 → 返回空并告警", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const client = { analysisJob: { findFirst: vi.fn().mockResolvedValue({ relationshipTypesSnapshot: [] }) } } as unknown as PrismaClient;
+
+    const codes = await getRelationshipCodes("book-1", client);
+    expect(codes).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("快照为空"));
+    warnSpy.mockRestore();
   });
 });

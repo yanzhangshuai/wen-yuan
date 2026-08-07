@@ -26,7 +26,10 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { SkillStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { aiCallExecutor } from "@/server/modules/analysis/services/AiCallExecutor";
-import type { RelationshipCodeInfo } from "@/server/modules/extraction/schema";
+import {
+  getRelationshipCodesFromSkills,
+  type RelationshipCodeInfo
+} from "@/server/modules/extraction/schema";
 import {
   parseSkillMetadata,
   type SkillDocument,
@@ -175,28 +178,10 @@ export function sampleBookText(
 }
 
 /**
- * 功能：并集各 skill frontmatter 的 relationshipCodes 契约。
- * 输入：装载的 SkillDocument 列表。
- * 输出：RelationshipCodeInfo[]（去重按 code，先到先得；aliases 不进入运行契约）。
- * 异常：无。
- * 副作用：无。
+ * 功能：并集各 skill frontmatter 的 relationshipCodes 契约（去重按 code，先到先得）。
+ * 权威实现在 schema.ts（getRelationshipCodesFromSkills），此处为兼容别名。
  */
-export function mergeRelationshipCodes(skills: SkillDocument[]): RelationshipCodeInfo[] {
-  const result: RelationshipCodeInfo[] = [];
-  const seen = new Set<string>();
-
-  for (const skill of skills) {
-    for (const rc of skill.metadata.relationshipCodes ?? []) {
-      if (seen.has(rc.code)) {
-        continue;
-      }
-      seen.add(rc.code);
-      result.push({ code: rc.code, direction: rc.direction, category: rc.category });
-    }
-  }
-
-  return result;
-}
+export const mergeRelationshipCodes = getRelationshipCodesFromSkills;
 
 /**
  * 功能：构建选择器 user prompt（书上下文 + 目录清单表格）。

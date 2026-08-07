@@ -53,11 +53,9 @@ function createPrismaStub() {
         }
       ])
     },
-    relationshipTypeDefinition: {
-      findMany: vi.fn().mockResolvedValue([
-        { code: "师生", name: "师生" },
-        { code: "同僚", name: "同僚" }
-      ])
+    // 关系码 → 展示名由 skill 契约并集提供（lookupTypeNames 从 active skill 激活版 frontmatter 取码）
+    skill: {
+      findMany: vi.fn().mockResolvedValue([])
     }
   };
 }

@@ -26,8 +26,10 @@ export interface ExtractSliceInput {
   registry             : BookRegistry;
   bookSummary          : string;
   skills               : string[];
-  /** 有效关系码（全局 + 书型，schema 生成） */
+  /** 有效关系码（装载 skill 契约，schema 生成） */
   relationshipTypeCodes: string[];
+  /** 虚指代词契约名单（装载上下文 GLOBAL skill deicticJunk）；缺省用代码内默认名单 */
+  deicticJunk?         : string[];
   /** 已有 entityId 查找（canonical → entityId），供落库时复用 */
   entityIdByName?      : Map<string, string>;
 }
@@ -94,7 +96,12 @@ export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSli
     .map((e: ExtractedEntity) => e.canonical)
     .filter((name) => !known.has(name));
 
-  const { facts, dropRecords } = runGuardrails(slice, input.sliceText, new Set(input.relationshipTypeCodes));
+  const { facts, dropRecords } = runGuardrails(
+    slice,
+    input.sliceText,
+    new Set(input.relationshipTypeCodes),
+    input.deicticJunk ? new Set(input.deicticJunk) : undefined
+  );
 
   return { slice, facts, dropRecords };
 }
