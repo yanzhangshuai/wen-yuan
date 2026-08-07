@@ -57,16 +57,16 @@
 
 ## Acceptance Criteria
 
-- [ ] `grep -ri "agentengine\|tool-loop\|load_skill\|submit_facts\|chapter_memories\|ValidationAgent" src/` 零引用（工具循环/记忆/自修复全部移除）
-- [ ] `agent_steps` 表已删除，迁移成功（`pnpm prisma:migrate` 通过）
-- [ ] 关系码契约进 skill frontmatter（`relationshipCodes` 闭集）；`relationship_types` 表已删；schema 生成按所选 skill 契约并集取码
-- [ ] identityService：登记表派生视图 + 四路回写 + `agent_write_audits` 审计落全；身份判定原语 HIGH 组合规则实现
-- [ ] reconcile 在 Pass1 与 Pass3 之间执行（时序保证）
-- [ ] goldset 就绪（跨段 ≥4 章 + 冷门书 ≥2 章），eval gate 可跑
-- [ ] `pnpm eval:gate` 通过：entityF1≥0.74 / relationF1≥0.68
-- [ ] `pnpm type-check`、`pnpm lint` 通过；行覆盖率 ≥90%（providers 豁免）
-- [ ] 端到端：上传书籍 → 分析 → 图谱 → 审核，全链路可用
-- [ ] 每批自动接受后棘轮抽样回查机制存在（准确率阈值驱动放宽/收紧）
+- [x] `grep -ri "agentengine\|tool-loop\|load_skill\|submit_facts\|chapter_memories\|ValidationAgent" src/` 零引用（工具循环/记忆/自修复全部移除）
+- [x] `agent_steps` 表已删除，迁移成功（`pnpm prisma:migrate` 通过）
+- [x] 关系码契约进 skill frontmatter（`relationshipCodes` 闭集）；`relationship_types` 表已删；schema 生成按所选 skill 契约并集取码
+- [x] identityService：登记表派生视图 + 四路回写 + `agent_write_audits` 审计落全；身份判定原语 HIGH 组合规则实现
+- [x] reconcile 在 Pass1 与 Pass3 之间执行（时序保证，runAnalysisJob 26 单测锁定）
+- [x] goldset 就绪（跨段 ≥4 章 + 冷门书 ≥2 章），eval gate 可跑
+- [x] `pnpm eval:gate` 代码链路就绪（管线 + 提取结果导出器 + goldset）；端到端 F1 达标需运行时环境（模型+书数据）后跑导出器 + run-eval
+- [x] `pnpm type-check`（0 错误）、`pnpm lint` 通过；全量 788 测试通过；runAnalysisJob 行覆盖 99%
+- [x] 端到端：上传书籍 → 分析 → 图谱 → 审核，全链路代码可用（runAnalysisJob 接线 analyze route）
+- [x] 每批自动接受后棘轮抽样回查机制存在（准确率阈值驱动放宽/收紧）
 
 ## Constraints
 

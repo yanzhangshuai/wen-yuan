@@ -16,7 +16,6 @@ import { parseSkillsSnapshot } from "@/server/modules/skills/skillSelector";
  * 模块职责：
  * - `resolveSkillsForJob(jobId)` 从任务快照（AnalysisJob.skillsSnapshot.allLoadedSlugs）
  *   装载技能，返回**完整 MD 文档列表**（AI 自主阅读与应用）；
- * - `loadSkill(skillId)` 按需加载单个技能的激活版全文（供 agent 的 load_skill 工具）；
  * - 不做知识字典抽取/合并——知识作为 MD 上下文交给 AI。
  *
  * 装载规则：

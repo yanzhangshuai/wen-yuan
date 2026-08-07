@@ -69,7 +69,7 @@ export interface SkillDocument {
   description: string | null;
   versionNo  : number;
   metadata   : SkillMetadata;
-  /** 完整 MD 文档（frontmatter + 正文），AI 阅读/load_skill 加载。 */
+  /** 完整 MD 文档（frontmatter + 正文），AI 阅读与装载。 */
   markdown   : string;
 }
 
