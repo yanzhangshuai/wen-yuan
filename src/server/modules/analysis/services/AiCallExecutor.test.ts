@@ -11,10 +11,11 @@ import {
   aiCallExecutorTesting,
   createAiCallExecutor
 } from "@/server/modules/analysis/services/AiCallExecutor";
-import { loadSystemDefaultModel } from "@/server/modules/models/defaultModel";
+import { loadModelById, loadSystemDefaultModel } from "@/server/modules/models/defaultModel";
 import type { ResolvedFeatureModel } from "@/server/modules/models/defaultModel";
 
 vi.mock("@/server/modules/models/defaultModel", () => ({
+  loadModelById         : vi.fn(),
   loadSystemDefaultModel: vi.fn()
 }));
 
@@ -32,7 +33,16 @@ const DEFAULT_MODEL: ResolvedFeatureModel = {
   }
 };
 
+const CROSS_MODEL: ResolvedFeatureModel = {
+  ...DEFAULT_MODEL,
+  modelId    : "22222222-2222-4222-8222-222222222222",
+  modelName  : "qwen-max",
+  displayName: "Cross",
+  apiKey     : "plain-cross"
+};
+
 const mockDefaultModel = vi.mocked(loadSystemDefaultModel);
+const mockLoadModelById = vi.mocked(loadModelById);
 
 describe("AiCallExecutor", () => {
   beforeEach(() => {
@@ -379,5 +389,65 @@ describe("AiCallExecutor", () => {
     })).rejects.toMatchObject({
       modelId: DEFAULT_MODEL.modelId
     });
+  });
+
+  it("uses the specified model when modelId is provided (cross-model review)", async () => {
+    // Arrange: 跨模型复核显式传 modelId，应调 loadModelById 并写 CROSS_MODEL 来源。
+    const phaseLogCreate = vi.fn().mockResolvedValue(undefined);
+    const prismaMock = {
+      analysisPhaseLog: {
+        create: phaseLogCreate
+      }
+    };
+    const executor = createAiCallExecutor(prismaMock as never);
+    mockLoadModelById.mockResolvedValue(CROSS_MODEL);
+
+    const callFn = vi.fn().mockResolvedValue({
+      data : { verdict: "resolved" },
+      usage: null
+    });
+
+    // Act
+    const result = await executor.execute({
+      stage  : "TITLE_RESOLUTION",
+      prompt : { system: "s", user: "u" },
+      jobId  : "job-1",
+      modelId: CROSS_MODEL.modelId,
+      callFn
+    });
+
+    // Assert
+    expect(mockDefaultModel).not.toHaveBeenCalled();
+    expect(mockLoadModelById).toHaveBeenCalledWith(CROSS_MODEL.modelId, prismaMock);
+    expect(callFn).toHaveBeenCalledWith(expect.objectContaining({ model: CROSS_MODEL }));
+    expect(result.data).toEqual({ verdict: "resolved" });
+    expect(phaseLogCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        modelSource: "CROSS_MODEL",
+        modelId    : CROSS_MODEL.modelId
+      })
+    }));
+  });
+
+  it("falls back to the default model when modelId is absent", async () => {
+    // Arrange
+    const prismaMock = {
+      analysisPhaseLog: {
+        create: vi.fn().mockResolvedValue(undefined)
+      }
+    };
+    const executor = createAiCallExecutor(prismaMock as never);
+
+    // Act
+    await executor.execute({
+      stage : "SKILL_SELECT",
+      prompt: { system: "s", user: "u" },
+      jobId : "job-1",
+      callFn: async () => ({ data: { ok: true }, usage: null })
+    });
+
+    // Assert
+    expect(mockDefaultModel).toHaveBeenCalledTimes(1);
+    expect(mockLoadModelById).not.toHaveBeenCalled();
   });
 });

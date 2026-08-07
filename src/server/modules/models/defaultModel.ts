@@ -143,3 +143,28 @@ export async function loadSystemDefaultModel(
 
   return toResolvedFeatureModel(model as AiModel);
 }
+
+/**
+ * 功能：按 id 解析可执行模型（跨模型复核用，显式指定目标模型）。
+ * 输入：模型 id、prisma 客户端。
+ * 输出：可执行模型配置。
+ * 异常：模型不存在 / 未启用 / API Key 缺失或非法时抛 `DefaultModelError`。
+ * 副作用：读取数据库。
+ */
+export async function loadModelById(
+  modelId: string,
+  prismaClient: PrismaClient = prisma
+): Promise<ResolvedFeatureModel> {
+  const model = await prismaClient.aiModel.findUnique({
+    where : { id: modelId },
+    select: runtimeModelSelect
+  });
+  if (!model) {
+    throw new DefaultModelError(`模型不存在: ${modelId}`);
+  }
+  if (!model.isEnabled) {
+    throw new DefaultModelError(`模型未启用: ${model.name}`);
+  }
+
+  return toResolvedFeatureModel(model as AiModel);
+}

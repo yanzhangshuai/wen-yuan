@@ -23,6 +23,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 import {
+  loadModelById,
   loadSystemDefaultModel,
   type ResolvedFeatureModel
 } from "@/server/modules/models/defaultModel";
@@ -214,13 +215,15 @@ export interface ExecuteAiCallInput<TData> {
   prompt     : PromptMessageInput;
   /** 分析任务 ID（日志与成本统计主键）。 */
   jobId      : string;
+  /** 可选：覆盖默认模型的指定模型 id（跨模型复核用）；缺省 = 系统默认模型。 */
+  modelId?   : string;
   /** 可选章节 ID；章节级调用会填写。 */
   chapterId? : string | null;
   /** 可选分片序号；分段分析场景会填写。 */
   chunkIndex?: number | null;
   /** 由调用方注入的实际 AI 调用函数。 */
   callFn: (input: {
-    /** 执行时使用的具体模型（恒为系统默认模型）。 */
+    /** 执行时使用的具体模型（默认模型或 modelId 覆盖）。 */
     model : ResolvedFeatureModel;
     /** 传入 Provider 的 Prompt。 */
     prompt: PromptMessageInput;
@@ -289,8 +292,9 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
     prompt     : PromptMessageInput;
     jobId      : string;
     chapterId? : string | null;
-    chunkIndex? : number | null;
+    chunkIndex?: number | null;
     model      : ResolvedFeatureModel;
+    modelSource: string;
     callFn     : ExecuteAiCallInput<TData>["callFn"];
   }): Promise<ExecuteAiCallResult<TData>> {
     const maxAttempts = input.model.params.maxRetries + 1;
@@ -308,7 +312,7 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
           chapterId       : input.chapterId,
           stage           : input.stage,
           modelId         : input.model.modelId,
-          modelSource     : "SYSTEM_DEFAULT",
+          modelSource     : input.modelSource,
           isFallback      : false,
           promptTokens    : result.usage?.promptTokens ?? null,
           completionTokens: result.usage?.completionTokens ?? null,
@@ -330,7 +334,7 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
             chapterId       : input.chapterId,
             stage           : input.stage,
             modelId         : input.model.modelId,
-            modelSource     : "SYSTEM_DEFAULT",
+            modelSource     : input.modelSource,
             isFallback      : false,
             promptTokens    : usageFromError?.promptTokens ?? null,
             completionTokens: usageFromError?.completionTokens ?? null,
@@ -349,7 +353,7 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
           chapterId       : input.chapterId,
           stage           : input.stage,
           modelId         : input.model.modelId,
-          modelSource     : "SYSTEM_DEFAULT",
+          modelSource     : input.modelSource,
           isFallback      : false,
           promptTokens    : usageFromError?.promptTokens ?? null,
           completionTokens: usageFromError?.completionTokens ?? null,
@@ -380,7 +384,10 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
    * 副作用：解析系统默认模型并写入阶段日志。
    */
   async function execute<TData>(input: ExecuteAiCallInput<TData>): Promise<ExecuteAiCallResult<TData>> {
-    const model = await loadSystemDefaultModel(prismaClient);
+    // modelId 覆盖：跨模型复核显式指定模型；缺省走系统默认。
+    const model = input.modelId
+      ? await loadModelById(input.modelId, prismaClient)
+      : await loadSystemDefaultModel(prismaClient);
 
     return executeWithModel({
       stage      : input.stage,
@@ -389,6 +396,7 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
       chapterId  : input.chapterId,
       chunkIndex : input.chunkIndex,
       model,
+      modelSource: input.modelId ? "CROSS_MODEL" : "SYSTEM_DEFAULT",
       callFn     : input.callFn
     });
   }
