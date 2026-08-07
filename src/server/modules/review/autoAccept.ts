@@ -13,6 +13,7 @@
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import type { MisattributionFlag } from "@/server/modules/identity/conflictScan";
 import { getRegistry, type BookRegistry } from "@/server/modules/identity/registry";
 import { isNameInText } from "@/server/modules/extraction/guardrails";
 import { relationshipCodesFromSnapshot, type RelationshipCodeInfo } from "@/server/modules/extraction/schema";
@@ -74,14 +75,15 @@ function passesRegistryHigh(fact: FactForReview, registry: BookRegistry): boolea
 
 /**
  * 功能：对某本书的一个分析任务的 DRAFT 事实执行自动接受栈判定。
- * 输入：jobId。
+ * 输入：jobId；可选：管线分布式冲突扫描结果（条件④真实信号）。
  * 输出：接受/拒绝的 fact id 及各自缺失条件（供人审队列分类）。
  * 异常：job 不存在时抛错。
  * 副作用：接受的事实更新 status=VERIFIED + recordSource=AUTO_VERIFIED + reviewedAt/reviewedBy；拒绝的事实保留 DRAFT。
  */
 export async function acceptFactsForJob(
   jobId: string,
-  prismaClient: PrismaClient = prisma
+  prismaClient: PrismaClient = prisma,
+  conflictScan: MisattributionFlag[] = []
 ): Promise<AcceptResult> {
   const job = await prismaClient.analysisJob.findUnique({
     where : { id: jobId },
@@ -128,7 +130,7 @@ export async function acceptFactsForJob(
     if (!(await passesMentionCount(fact, job.bookId, prismaClient))) {
       reasons.push("mention_lt_2");
     }
-    if (!passesConflictScan(fact, job.bookId, prismaClient)) {
+    if (!passesConflictScan(fact, conflictScan)) {
       reasons.push("conflict_dirty");
     }
     if (!passesContractCheck(fact, validCodes)) {
@@ -179,15 +181,18 @@ async function passesMentionCount(
   return mentionCount >= AUTO_ACCEPT_MIN_MENTIONS;
 }
 
-/** 条件④：分布式冲突扫描干净（涉及实体无误归属冲突）。 */
-function passesConflictScan(
-  _fact: FactForReview,
-  _bookId: string,
-  _client: PrismaClient
-): boolean {
-  // 冲突扫描是 identity 域职责，完整信号依赖管线分布式扫描结果（v5-pipeline 接入）。
-  // 当前恒过（占位），管线接入时替换为真实 conflictScan 结果。
-  return true;
+/**
+ * 条件④：分布式冲突扫描干净（涉及实体无误归属冲突）。
+ * - 管线在 Pass4 前跑全量 scanMisattribution，把结果传进来；
+ * - 无冲突扫描结果（老调用方/扫描无 flag）时保持宽松恒过。
+ */
+function passesConflictScan(fact: FactForReview, conflictScan: MisattributionFlag[]): boolean {
+  if (conflictScan.length === 0) {
+    return true;
+  }
+  const entityIds = [fact.sourceEntityId, fact.targetEntityId].filter(Boolean) as string[];
+  // 任一涉及实体被标记误归属 → 判定为冲突脏，不进自动接受。
+  return !conflictScan.some((flag) => entityIds.includes(flag.currentEntityId));
 }
 
 /** 条件⑤：确定性校验——关系码在 skill 契约闭集（任务快照）。 */
