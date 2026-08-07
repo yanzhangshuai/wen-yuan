@@ -2,30 +2,30 @@
  * aliasResolver：Union-Find 别名合并。
  *
  * - 合并同一实体的别名组（来自 entities.aliases + aliases 表 + 提取新别名）
- * - safety level 0 的泛称**不注册为 UF 节点**（防桥接无关实体簇）
- * - canonical 选择走 nameAuthority.pickCanonical
+ * - canonical 取模型输出中最常见的形式（不重新判称谓——模型能力强，判断交给模型）
+ * - 仅跳过纯指代/单字（isDeicticJunk 兜底），防无关实体被单字桥接
  *
- * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.3（name authority）
+ * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.3
  */
-import { aliasSafetyLevel, pickCanonical } from "./nameAuthority.ts";
+import { isDeicticJunk } from "./nameAuthority.ts";
 
-/** 一个实体候选：已有 ID（可为空）+ 别名集 + 出现频次。 */
+/** 一个实体候选：已有 ID（可为空）+ 模型给出的 canonical + 别名集。 */
 export interface AliasGroupCandidate {
   entityId: string | null;
+  /** 模型输出选定的 canonical（优先采用；组内多数决） */
+  canonical?: string;
   aliases: string[];
 }
 
 /**
  * Union-Find 别名合并。
- * @param groups 实体候选列表（每个含别名集）
- * @returns 合并后的组（每个组的实体 ID 集 + canonical + 全部别名）
+ * canonical 选择：优先取组内模型提供的 canonical（多数决），否则取频次最高表面形式。
  */
 export function mergeAliasGroups(groups: AliasGroupCandidate[]): Array<{
   entityIds: string[];
   canonical: string;
   aliases: string[];
 }> {
-  // 归一化后的别名 → 组索引（UF 父）
   const parent = Array.from({ length: groups.length }, (_, i) => i);
   const aliasToGroup = new Map<string, number>();
 
@@ -42,10 +42,10 @@ export function mergeAliasGroups(groups: AliasGroupCandidate[]): Array<{
     if (ra !== rb) parent[rb] = ra;
   }
 
-  // 注册安全别名到 UF
+  // 注册别名到 UF（跳过纯指代/单字，防无关实体被桥接）
   for (let i = 0; i < groups.length; i++) {
     for (const alias of groups[i].aliases) {
-      if (aliasSafetyLevel(alias) === 0) continue; // 泛称不注册节点
+      if (isDeicticJunk(alias)) continue;
       const key = alias.trim();
       const existing = aliasToGroup.get(key);
       if (existing !== undefined) {
@@ -57,24 +57,54 @@ export function mergeAliasGroups(groups: AliasGroupCandidate[]): Array<{
   }
 
   // 汇总合并组
-  const mergedMap = new Map<number, { entityIds: string[]; aliasSet: Set<string>; freq: Map<string, number> }>();
+  const mergedMap = new Map<number, { entityIds: string[]; aliasSet: Set<string>; freq: Map<string, number>; modelCanonicals: Map<string, number> }>();
   for (let i = 0; i < groups.length; i++) {
     const root = find(i);
     let entry = mergedMap.get(root);
     if (!entry) {
-      entry = { entityIds: [], aliasSet: new Set(), freq: new Map() };
+      entry = { entityIds: [], aliasSet: new Set(), freq: new Map(), modelCanonicals: new Map() };
       mergedMap.set(root, entry);
     }
     if (groups[i].entityId) entry.entityIds.push(groups[i].entityId!);
+    if (groups[i].canonical) {
+      const c = groups[i].canonical!.trim();
+      if (c) entry.modelCanonicals.set(c, (entry.modelCanonicals.get(c) ?? 0) + 1);
+    }
     for (const alias of groups[i].aliases) {
-      entry.aliasSet.add(alias.trim());
-      entry.freq.set(alias.trim(), (entry.freq.get(alias.trim()) ?? 0) + 1);
+      const key = alias.trim();
+      entry.aliasSet.add(key);
+      entry.freq.set(key, (entry.freq.get(key) ?? 0) + 1);
     }
   }
 
-  return Array.from(mergedMap.values()).map((entry) => ({
-    entityIds: entry.entityIds,
-    canonical: pickCanonical(Array.from(entry.aliasSet), entry.freq),
-    aliases: Array.from(entry.aliasSet).filter((a) => aliasSafetyLevel(a) !== 0),
-  }));
+  return Array.from(mergedMap.values()).map((entry) => {
+    const members = Array.from(entry.aliasSet).filter((a) => !isDeicticJunk(a));
+
+    // canonical：模型提供的 canonical 多数决优先
+    let canonical = "";
+    let maxVotes = 0;
+    for (const [c, votes] of entry.modelCanonicals) {
+      if (votes > maxVotes) {
+        maxVotes = votes;
+        canonical = c;
+      }
+    }
+    // 回退：组内频次最高表面形式
+    if (!canonical) {
+      let maxFreq = -1;
+      for (const m of members) {
+        const f = entry.freq.get(m) ?? 0;
+        if (f > maxFreq) {
+          maxFreq = f;
+          canonical = m;
+        }
+      }
+    }
+
+    return {
+      entityIds: entry.entityIds,
+      canonical: canonical || members[0] || "",
+      aliases: members,
+    };
+  });
 }

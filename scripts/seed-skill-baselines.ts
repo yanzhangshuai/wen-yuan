@@ -45,18 +45,16 @@ export const BASELINE_SKILLS = [
       schemaVersion: 1,
       kind         : "NAME_PATTERN",
       knowledge    : {
-        namePatterns: [
-          { ruleType: "FAMILY_HOUSE", pattern: "^.+氏$", action: "BLOCK", description: "氏族称呼不视为具体人名" },
-          { ruleType: "FAMILY_HOUSE", pattern: "^.+家$", action: "WARN", description: "家族统称需谨慎" },
-          { ruleType: "RELATIONAL_COMPOUND", pattern: "^.+之(父|母|兄|弟|妻|子|女)$", action: "BLOCK", description: "关系复合词不建实体" },
-          { ruleType: "RELATIONAL_COMPOUND", pattern: "^某(公|君|氏|人)$", action: "BLOCK", description: "某+称谓属不确定指代" },
-          { ruleType: "DESCRIPTIVE_PHRASE", pattern: "^.*(老者|老妇|少年|少女)$", action: "WARN", description: "描述性词组可能非实体" }
-        ],
-        relationalTerms  : ["父亲", "母亲", "兄长", "小弟", "妻", "子", "丈人", "内兄", "女婿", "姑老爷", "母舅", "叔父", "婶母"],
-        hardBlockSuffixes: ["之父", "之妻", "之子", "之母", "老爹", "老娘"],
-        softBlockSuffixes: ["大人", "将军", "老爷", "先生", "娘子", "太太", "夫人", "兄弟", "兄长"]
+        categories: [
+          { category: "全名", description: "姓 + 名（王冕/范进），复姓全名（诸葛亮/司马懿）", handling: "作为实体，canonical 取全名" },
+          { category: "称谓式", description: "姓/名 + 尊称或官职（范老爷/周学道），字/号（周进字推官）", handling: "同一实体的别称，作 alias" },
+          { category: "关系复合词", description: "X之父 / X之妻 / X之兄——描述关系，不指代具体某人", handling: "不建实体" },
+          { category: "描述性短语", description: "X老者 / 那少年 / 某公——泛指或不确定指代", handling: "不建实体，除非上下文明确指代某人" }
+        ]
       },
-      instructions: ["实体名优先使用有名有姓的全名；命中 BLOCK 规则不得新建实体；WARN 需结合上下文判断。"],
+      instructions: [
+        "提取时结合上下文判断：有名有姓取全名作 canonical；仅称谓/官职代称作为该实体的 alias；关系复合词与描述性短语不建实体。"
+      ],
       triggers     : { priority: 998 }
     }
   },
@@ -70,27 +68,15 @@ export const BASELINE_SKILLS = [
       schemaVersion: 1,
       kind         : "GENERIC_TITLE",
       knowledge    : {
-        genericTitles: [
-          { title: "老爷", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "先生", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "夫人", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "太太", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "大人", tier: "DEFAULT", category: "OFFICIAL" },
-          { title: "相公", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "公子", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "小姐", tier: "DEFAULT", category: "HONORIFIC" },
-          { title: "娘子", tier: "DEFAULT", category: "KINSHIP" },
-          { title: "哥哥", tier: "DEFAULT", category: "KINSHIP" },
-          { title: "兄弟", tier: "DEFAULT", category: "KINSHIP" },
-          { title: "父亲", tier: "RELATIONAL", category: "KINSHIP" },
-          { title: "母亲", tier: "RELATIONAL", category: "KINSHIP" },
-          { title: "兄长", tier: "RELATIONAL", category: "KINSHIP" },
-          { title: "岳父", tier: "RELATIONAL", category: "KINSHIP" },
-          { title: "皇上", tier: "DEFAULT", category: "OFFICIAL" },
-          { title: "太后", tier: "DEFAULT", category: "OFFICIAL" }
+        categories: [
+          { category: "尊称", description: "老爷/先生/夫人/太太/相公/公子/小姐/娘子——对人物的敬称", handling: "本书内特指某人时作为其 alias" },
+          { category: "官职", description: "大人/学道/知县/尚书/皇上/太后——以官职或身份代称", handling: "同 alias；不独立建实体" },
+          { category: "亲属", description: "母亲/父亲/兄长/岳父/兄弟——亲属称谓", handling: "指向关系对象，不独立建实体" }
         ]
       },
-      instructions: ["泛称默认不建实体；若在本书中特指某人，应作为该实体的 alias 而非独立实体。"],
+      instructions: [
+        "泛称/称谓不特指某人时 → 不提取为实体；本书内明确特指某人（如范老爷=范进）→ 作为该实体的 alias，不建新实体。"
+      ],
       triggers     : { priority: 997 }
     }
   },
@@ -154,48 +140,72 @@ function buildBaselineMarkdown(content: {
   return parts.join("\n");
 }
 
-/** 供 seed.ts 复用：幂等写入基线技能。 */
+/** 供 seed.ts 复用：幂等写入基线技能（存在则新增激活版本，应用最新语义内容）。 */
 export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> {
-  let createdCount = 0;
+  let touchedCount = 0;
   for (const baseline of BASELINE_SKILLS) {
+    const newContent = buildBaselineMarkdown(baseline.content as never);
     const existing = await prisma.skill.findUnique({
       where: { slug: baseline.slug },
-      select: { id: true }
+      select: { id: true, versions: { where: { isActive: true }, select: { id: true, content: true, versionNo: true }, take: 1 } }
     });
 
-    if (existing) {
-      console.log(`⏭ 技能已存在，跳过: ${baseline.slug}`);
+    if (!existing) {
+      await prisma.skill.create({
+        data: {
+          slug        : baseline.slug,
+          name        : baseline.name,
+          description : baseline.description,
+          category    : baseline.category,
+          scope       : baseline.scope,
+          status      : SkillStatus.ACTIVE,
+          source      : "MANUAL",
+          isBuiltin   : true,
+          versions    : {
+            create: {
+              versionNo : 1,
+              content   : newContent,
+              isActive  : true,
+              isBaseline: true
+            }
+          }
+        },
+        select: { id: true, slug: true }
+      });
+      console.log(`✅ 技能已创建: ${baseline.slug}`);
+      touchedCount += 1;
       continue;
     }
 
-    createdCount += 1;
+    // 已存在：内容相同则跳过；不同则新增激活版本（旧版失活，保留历史）
+    const active = existing.versions[0];
+    if (active && active.content === newContent) {
+      console.log(`⏭ 技能无变化，跳过: ${baseline.slug}`);
+      continue;
+    }
 
-    const created = await prisma.skill.create({
-      data: {
-        slug        : baseline.slug,
-        name        : baseline.name,
-        description : baseline.description,
-        category    : baseline.category,
-        scope       : baseline.scope,
-        status      : SkillStatus.ACTIVE,
-        source      : "MANUAL",
-        isBuiltin   : true,
-        versions    : {
-          create: {
-            versionNo : 1,
-            content   : buildBaselineMarkdown(baseline.content as never),
-            isActive  : true,
-            isBaseline: true
-          }
+    const nextVersion = (active?.versionNo ?? 0) + 1;
+    await prisma.$transaction(async (tx) => {
+      await tx.skillVersion.updateMany({
+        where: { skillId: existing.id, isActive: true },
+        data : { isActive: false }
+      });
+      await tx.skillVersion.create({
+        data: {
+          skillId  : existing.id,
+          versionNo: nextVersion,
+          content  : newContent,
+          isActive : true,
+          isBaseline: true,
+          changeNote: "v5 语义化重写：机械规则 → AI 阅读的语义知识"
         }
-      },
-      select: { id: true, slug: true }
+      });
     });
-
-    console.log(`✅ 技能已创建: ${created.slug}`);
+    console.log(`🔄 技能已更新: ${baseline.slug} → v${nextVersion}`);
+    touchedCount += 1;
   }
 
-  return createdCount;
+  return touchedCount;
 }
 
 /** 独立 CLI 入口（也可被 seed.ts 复用）。 */

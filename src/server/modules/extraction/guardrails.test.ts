@@ -57,13 +57,21 @@ describe("runGuardrails", () => {
     expect(facts[0].relationshipTypeCode).toBe("师生");
   });
 
-  it("泛称实体 → 丢弃", () => {
+  it("纯指代实体 → 丢弃（极简兜底）", () => {
     const slice = makeSlice({
-      relations: [{ typeCode: "师生", sourceCanonical: "老爷", targetCanonical: "周进", evidence: "x" }],
+      relations: [{ typeCode: "师生", sourceCanonical: "那人", targetCanonical: "周进", evidence: "x" }],
     });
     const { facts, dropRecords } = runGuardrails(slice, sliceText, validCodes);
     expect(facts).toHaveLength(0);
-    expect(dropRecords[0].reason).toBe("generic_name");
+    expect(dropRecords[0].reason).toBe("deictic_junk");
+  });
+
+  it("称谓（老爷）不再被规则拦截——交给模型判断", () => {
+    const slice = makeSlice({
+      relations: [{ typeCode: "师生", sourceCanonical: "范老爷", targetCanonical: "周进", evidence: "周学道拔范进中了秀才" }],
+    });
+    const { facts } = runGuardrails(slice, sliceText, validCodes);
+    expect(facts).toHaveLength(1); // 称谓式名字通过护栏（模型判断实体性）
   });
 
   it("无证据 → 丢弃", () => {

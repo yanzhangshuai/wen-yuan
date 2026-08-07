@@ -9,7 +9,7 @@
  * 输出：通过的事实/提及 + 丢弃记录（审计用）。
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.2/Pass2
  */
-import { isGenericJunk } from "./nameAuthority.ts";
+import { isDeicticJunk } from "./nameAuthority.ts";
 import type { ExtractionSlice } from "./types.ts";
 
 export type FactType = "BIOGRAPHY" | "RELATION" | "ITEM_TRANSFER" | "ORGANIZATION_EVENT" | "GENERIC";
@@ -29,7 +29,7 @@ export interface PersistableFact {
 
 export interface DropRecord {
   kind: "relation" | "bioFact";
-  reason: "name_not_in_text" | "invalid_code" | "generic_name" | "no_evidence";
+  reason: "name_not_in_text" | "invalid_code" | "deictic_junk" | "no_evidence";
   detail: string;
 }
 
@@ -65,30 +65,29 @@ export function runGuardrails(
   const facts: PersistableFact[] = [];
   const dropRecords: DropRecord[] = [];
 
-  // 实体名映射：canonical → 全部表面形式（canonical + aliases），供别名感知锚定
-  const nameMap = new Map<string, string[]>();
+  // 表面形式 → 实体全部名字（canonical + aliases）：让"范老爷"能解析到 范进/范老爷 任一出现
+  const surfaceMap = new Map<string, string[]>();
   for (const e of slice.entities) {
-    nameMap.set(e.canonical, [e.canonical, ...(e.aliases ?? [])]);
+    const allNames = [e.canonical, ...(e.aliases ?? [])];
+    for (const s of allNames) {
+      surfaceMap.set(s.trim(), allNames);
+    }
   }
 
-  /** 别名感知锚定：实体的 canonical 或任一 alias 出现在正文即通过。 */
+  /** 别名感知锚定：该表面形式对应实体的任一名字出现在正文即通过。 */
   function anchored(name: string): boolean {
-    const names = nameMap.get(name) ?? [name];
+    const names = surfaceMap.get(name.trim()) ?? [name];
     return names.some((n) => isNameInText(n, sliceText));
   }
 
-  function generic(name: string): boolean {
-    return isGenericJunk(name);
-  }
-
-  // 关系事实（检查顺序：非法码 → 泛称 → 无证据 → 锚定）
+  // 关系事实（检查顺序：非法码 → 指代兜底 → 无证据 → 锚定）
   for (const rel of slice.relations) {
     if (!validCodes.has(rel.typeCode)) {
       dropRecords.push({ kind: "relation", reason: "invalid_code", detail: `${rel.typeCode}:${rel.sourceCanonical}→${rel.targetCanonical}` });
       continue;
     }
-    if (generic(rel.sourceCanonical) || generic(rel.targetCanonical)) {
-      dropRecords.push({ kind: "relation", reason: "generic_name", detail: rel.typeCode });
+    if (isDeicticJunk(rel.sourceCanonical) || isDeicticJunk(rel.targetCanonical)) {
+      dropRecords.push({ kind: "relation", reason: "deictic_junk", detail: rel.typeCode });
       continue;
     }
     if (!rel.evidence?.trim()) {
@@ -112,10 +111,10 @@ export function runGuardrails(
     });
   }
 
-  // 传记事实（检查顺序：泛称 → 无证据 → 锚定）
+  // 传记事实（检查顺序：指代兜底 → 无证据 → 锚定）
   for (const bio of slice.bioFacts) {
-    if (generic(bio.subjectCanonical)) {
-      dropRecords.push({ kind: "bioFact", reason: "generic_name", detail: bio.subjectCanonical });
+    if (isDeicticJunk(bio.subjectCanonical)) {
+      dropRecords.push({ kind: "bioFact", reason: "deictic_junk", detail: bio.subjectCanonical });
       continue;
     }
     if (!bio.evidence?.trim()) {
