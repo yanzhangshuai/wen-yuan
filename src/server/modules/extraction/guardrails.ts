@@ -1,0 +1,143 @@
+/**
+ * Pass2 确定性护栏（guardrails.ts，零 LLM）
+ *
+ * 检查（防 v4 教训：6 类 337+ 垃圾 profile、关系碎片化）：
+ * 1. 证据锚定：事实中出现的实体名必须在片正文可证（归一化子串匹配）
+ * 2. 关系码校验：typeCode 必须在 relationship_types（全局 + 书型）
+ * 3. 泛称过滤：safety level 0 泛称不作为实体落库
+ *
+ * 输出：通过的事实/提及 + 丢弃记录（审计用）。
+ * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.2/Pass2
+ */
+import { isGenericJunk } from "./nameAuthority.ts";
+import type { ExtractionSlice } from "./types.ts";
+
+export type FactType = "BIOGRAPHY" | "RELATION" | "ITEM_TRANSFER" | "ORGANIZATION_EVENT" | "GENERIC";
+
+export interface PersistableFact {
+  factType: FactType;
+  sourceName: string | null;
+  targetName: string | null;
+  relationshipTypeCode?: string;
+  eventCategory?: string;
+  evidence: string;
+  chapterNo: number;
+  paraIndex: number | null;
+  payload: Record<string, unknown>;
+  confidence: number;
+}
+
+export interface DropRecord {
+  kind: "relation" | "bioFact";
+  reason: "name_not_in_text" | "invalid_code" | "generic_name" | "no_evidence";
+  detail: string;
+}
+
+export interface GuardrailResult {
+  facts: PersistableFact[];
+  dropRecords: DropRecord[];
+}
+
+/** 归一化（去空白/全角空格/转小写）用于子串匹配。 */
+export function normalizeForMatch(s: string): string {
+  return s.replace(/[\s　]+/g, "").toLowerCase();
+}
+
+/** 名字是否出现在文本中（归一化子串匹配）。 */
+export function isNameInText(name: string, text: string): boolean {
+  const n = normalizeForMatch(name);
+  if (n.length === 0) return false;
+  return normalizeForMatch(text).includes(n);
+}
+
+/**
+ * 运行护栏：对一片提取结果做证据锚定 + 关系码校验 + 泛称过滤。
+ *
+ * @param slice 提取片
+ * @param sliceText 片正文（证据锚定基准）
+ * @param validCodes 有效关系码集合（relationship_types 全局+书型）
+ */
+export function runGuardrails(
+  slice: ExtractionSlice,
+  sliceText: string,
+  validCodes: Set<string>,
+): GuardrailResult {
+  const facts: PersistableFact[] = [];
+  const dropRecords: DropRecord[] = [];
+
+  // 实体名映射：canonical → 全部表面形式（canonical + aliases），供别名感知锚定
+  const nameMap = new Map<string, string[]>();
+  for (const e of slice.entities) {
+    nameMap.set(e.canonical, [e.canonical, ...(e.aliases ?? [])]);
+  }
+
+  /** 别名感知锚定：实体的 canonical 或任一 alias 出现在正文即通过。 */
+  function anchored(name: string): boolean {
+    const names = nameMap.get(name) ?? [name];
+    return names.some((n) => isNameInText(n, sliceText));
+  }
+
+  function generic(name: string): boolean {
+    return isGenericJunk(name);
+  }
+
+  // 关系事实（检查顺序：非法码 → 泛称 → 无证据 → 锚定）
+  for (const rel of slice.relations) {
+    if (!validCodes.has(rel.typeCode)) {
+      dropRecords.push({ kind: "relation", reason: "invalid_code", detail: `${rel.typeCode}:${rel.sourceCanonical}→${rel.targetCanonical}` });
+      continue;
+    }
+    if (generic(rel.sourceCanonical) || generic(rel.targetCanonical)) {
+      dropRecords.push({ kind: "relation", reason: "generic_name", detail: rel.typeCode });
+      continue;
+    }
+    if (!rel.evidence?.trim()) {
+      dropRecords.push({ kind: "relation", reason: "no_evidence", detail: rel.typeCode });
+      continue;
+    }
+    if (!anchored(rel.sourceCanonical) || !anchored(rel.targetCanonical)) {
+      dropRecords.push({ kind: "relation", reason: "name_not_in_text", detail: rel.typeCode });
+      continue;
+    }
+    facts.push({
+      factType: "RELATION",
+      sourceName: rel.sourceCanonical,
+      targetName: rel.targetCanonical,
+      relationshipTypeCode: rel.typeCode,
+      evidence: rel.evidence,
+      chapterNo: slice.chapterNos[0] ?? 0,
+      paraIndex: null,
+      payload: {},
+      confidence: 0.7,
+    });
+  }
+
+  // 传记事实（检查顺序：泛称 → 无证据 → 锚定）
+  for (const bio of slice.bioFacts) {
+    if (generic(bio.subjectCanonical)) {
+      dropRecords.push({ kind: "bioFact", reason: "generic_name", detail: bio.subjectCanonical });
+      continue;
+    }
+    if (!bio.evidence?.trim()) {
+      dropRecords.push({ kind: "bioFact", reason: "no_evidence", detail: bio.subjectCanonical });
+      continue;
+    }
+    if (!anchored(bio.subjectCanonical)) {
+      dropRecords.push({ kind: "bioFact", reason: "name_not_in_text", detail: bio.subjectCanonical });
+      continue;
+    }
+    facts.push({
+      factType: "BIOGRAPHY",
+      sourceName: bio.subjectCanonical,
+      targetName: null,
+      eventCategory: bio.category,
+      evidence: bio.evidence,
+      chapterNo: slice.chapterNos[0] ?? 0,
+      paraIndex: null,
+      payload: { summary: bio.summary, ...(bio.location ? { location: bio.location } : {}) },
+      confidence: 0.7,
+    });
+  }
+
+  return { facts, dropRecords };
+}
