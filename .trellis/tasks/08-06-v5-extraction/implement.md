@@ -12,12 +12,12 @@
 
 ## Step 2 · schema 动态生成（schema.ts）
 
-- [ ] 按书型从 relationship_types 读关系码（全局 + 本书型）
+- [ ] 从装载 skill 契约 relationshipCodes 并集取码（`getRelationshipCodesFromSkills`，去重按 code）
 - [ ] factType 枚举 + payload 结构生成
-- [ ] `analysis_jobs.relationshipTypesSnapshot` 快照读写（任务启动固化）
+- [ ] `analysis_jobs.relationshipTypesSnapshot` 快照读写（任务启动由 `selectSkillsForJob` 固化）
 
-**验证**：单测断言 schema 含全局 + 书型码；快照中途改表不影响
-**门禁**：新关系码插表 → schema 自动含（无代码改动）
+**验证**：单测断言 schema 含装载 skill 全部关系码；快照中途改 skill 不影响
+**门禁**：skill 契约新增关系码 → schema 自动含（无代码改动）
 
 ## Step 3 · nameAuthority + aliasResolver（确定性聚合地基）
 
@@ -30,8 +30,8 @@
 ## Step 4 · guardrails（Pass2 确定性护栏）
 
 - [ ] 证据锚定：事实实体名在片正文可证（归一化子串匹配），不命中丢弃 + 审计
-- [ ] 关系码校验：typeCode 必须在 relationship_types
-- [ ] 泛称过滤：safety level 0 不落库
+- [ ] 关系码校验：typeCode 必须在装载 skill 契约关系码闭集
+- [ ] 泛称过滤：safety level 0 不落库；虚指名单（GLOBAL skill 契约 deicticJunk）
 
 **验证**：单测（幻觉过滤、非法码拦截、泛称丢弃）
 **门禁**：`name_not_in_chapter` 事实 0 入库；无非法关系码
