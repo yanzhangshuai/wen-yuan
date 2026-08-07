@@ -23,8 +23,8 @@ describe("getBookGraph service", () => {
         findMany: vi.fn().mockResolvedValue([
           {
             id                  : "rel-1",
-            sourceId            : "persona-1",
-            targetId            : "persona-2",
+            sourceEntityId      : "persona-1",
+            targetEntityId      : "persona-2",
             relationshipTypeCode: "师生",
             status              : ProcessingStatus.DRAFT
           }
@@ -35,32 +35,34 @@ describe("getBookGraph service", () => {
         findMany: vi.fn().mockResolvedValue([])
       },
       mention: {
-        findMany: vi.fn().mockResolvedValue([{ personaId: "persona-2" }])
+        findMany: vi.fn().mockResolvedValue([{ entityId: "persona-2" }])
       },
-      profile: {
+      entityProfile: {
         findMany: vi.fn().mockResolvedValue([
           {
-            personaId   : "persona-1",
+            entityId    : "persona-1",
             ironyIndex  : 4,
             visualConfig: {
               x: 120,
               y: 240
             },
-            persona: {
+            entity: {
               id          : "persona-1",
               name        : "周进",
               nameType    : "NAMED",
+              entityType  : "PERSON",
               recordSource: RecordSource.AI
             }
           }
         ])
       },
-      persona: {
+      entity: {
         findMany: vi.fn().mockResolvedValue([
           {
             id          : "persona-2",
             name        : "范进",
             nameType    : "NAMED",
+            entityType  : "PERSON",
             recordSource: RecordSource.MANUAL
           }
         ])
@@ -111,7 +113,7 @@ describe("getBookGraph service", () => {
 
   it("builds full-book graph without mention fallback and maps negative or unknown sentiments", async () => {
     const mentionFindMany = vi.fn();
-    const personaFindMany = vi.fn();
+    const entityFindMany = vi.fn();
     const service = createGetBookGraphService({
       book: {
         findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
@@ -120,15 +122,15 @@ describe("getBookGraph service", () => {
         findMany: vi.fn().mockResolvedValue([
           {
             id                  : "rel-neg",
-            sourceId            : "persona-1",
-            targetId            : "persona-2",
+            sourceEntityId      : "persona-1",
+            targetEntityId      : "persona-2",
             relationshipTypeCode: "敌对",
             status              : ProcessingStatus.VERIFIED
           },
           {
             id                  : "rel-neutral",
-            sourceId            : "persona-2",
-            targetId            : "persona-1",
+            sourceEntityId      : "persona-2",
+            targetEntityId      : "persona-1",
             relationshipTypeCode: "陌生",
             status              : ProcessingStatus.DRAFT
           }
@@ -137,36 +139,36 @@ describe("getBookGraph service", () => {
       mention: {
         findMany: mentionFindMany
       },
-      profile: {
+      entityProfile: {
         findMany: vi.fn().mockResolvedValue([
           {
-            personaId   : "persona-1",
+            entityId    : "persona-1",
             ironyIndex  : 1.25,
             visualConfig: { x: 18 },
-            persona     : {
+            entity      : {
               id          : "persona-1",
               name        : "周进",
               nameType    : "NAMED",
-              type        : "PERSON",
+              entityType  : "PERSON",
               recordSource: RecordSource.MANUAL
             }
           },
           {
-            personaId   : "persona-2",
+            entityId    : "persona-2",
             ironyIndex  : 0.5,
             visualConfig: [],
-            persona     : {
+            entity      : {
               id          : "persona-2",
               name        : "范进",
               nameType    : "NAMED",
-              type        : "PERSON",
+              entityType  : "PERSON",
               recordSource: RecordSource.AI
             }
           }
         ])
       },
-      persona: {
-        findMany: personaFindMany
+      entity: {
+        findMany: entityFindMany
       },
       skill: {
         findMany: vi.fn().mockResolvedValue([])
@@ -176,7 +178,7 @@ describe("getBookGraph service", () => {
     const result = await service.getBookGraph({ bookId: "book-1" });
 
     expect(mentionFindMany).not.toHaveBeenCalled();
-    expect(personaFindMany).not.toHaveBeenCalled();
+    expect(entityFindMany).not.toHaveBeenCalled();
     expect(result.edges).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id       : "rel-neg",

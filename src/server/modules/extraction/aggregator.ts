@@ -13,7 +13,7 @@
  *
  * Neo4j 惰性同步由管线层调用（本模块只输出 relationships 数据）。
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 
 /** SYMMETRIC 关系码兜底（方向规范化 source<target）。方向权威源为 skill 契约（relationshipCodes.direction），本静态集仅作缺契约时的兜底。 */
@@ -36,7 +36,7 @@ export interface RebuiltRelationship {
  */
 export async function refreshRelationshipsForBook(
   bookId: string,
-  txClient?: PrismaClient
+  txClient?: PrismaClient | Prisma.TransactionClient
 ): Promise<RebuiltRelationship[]> {
   const db = txClient ?? prisma;
 

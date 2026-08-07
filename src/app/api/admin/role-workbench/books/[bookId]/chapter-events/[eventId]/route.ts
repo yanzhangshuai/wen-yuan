@@ -2,15 +2,15 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { BioCategory, ProcessingStatus } from "@/generated/prisma/enums";
+import { EventCategory, ProcessingStatus } from "@/generated/prisma/enums";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import {
-  BiographyInputError,
-  BiographyRecordNotFoundError
-} from "@/server/modules/biography/errors";
+  ReviewInputError,
+  ReviewNotFoundError
+} from "@/server/modules/review/errors";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { deleteEvent, updateEvent } from "@/server/modules/roleWorkbench/chapterEvents";
 import { ERROR_CODES } from "@/types/api";
@@ -21,9 +21,9 @@ const paramsSchema = z.object({
 });
 
 const bodySchema = z.object({
-  personaId  : z.string().uuid("角色 ID 不合法").optional(),
-  chapterId  : z.string().uuid("章节 ID 不合法").optional(),
-  category   : z.nativeEnum(BioCategory).optional(),
+  sourceEntityId: z.string().uuid("实体 ID 不合法").optional(),
+  chapterId     : z.string().uuid("章节 ID 不合法").optional(),
+  category      : z.nativeEnum(EventCategory).optional(),
   title      : z.string().trim().nullable().optional(),
   location   : z.string().trim().nullable().optional(),
   event      : z.string().trim().min(1, "事件内容不能为空").optional(),
@@ -80,19 +80,19 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Re
       data
     });
   } catch (error) {
-    if (error instanceof BiographyRecordNotFoundError) {
+    if (error instanceof ReviewNotFoundError) {
       const meta = createApiMeta(path, requestId, startedAt);
       return toNextJson(
         errorResponse(
           ERROR_CODES.COMMON_NOT_FOUND,
-          "传记记录不存在",
-          { type: "NotFoundError", detail: `Biography record not found: ${error.biographyId}` },
+          "事迹记录不存在",
+          { type: "NotFoundError", detail: error.message },
           meta
         ),
         404
       );
     }
-    if (error instanceof BiographyInputError) {
+    if (error instanceof ReviewInputError) {
       return badRequestJson(path, requestId, startedAt, error.message);
     }
     if (error instanceof BookNotFoundError) {
@@ -142,19 +142,19 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
       data
     });
   } catch (error) {
-    if (error instanceof BiographyRecordNotFoundError) {
+    if (error instanceof ReviewNotFoundError) {
       const meta = createApiMeta(path, requestId, startedAt);
       return toNextJson(
         errorResponse(
           ERROR_CODES.COMMON_NOT_FOUND,
-          "传记记录不存在",
-          { type: "NotFoundError", detail: `Biography record not found: ${error.biographyId}` },
+          "事迹记录不存在",
+          { type: "NotFoundError", detail: error.message },
           meta
         ),
         404
       );
     }
-    if (error instanceof BiographyInputError) {
+    if (error instanceof ReviewInputError) {
       return badRequestJson(path, requestId, startedAt, error.message);
     }
     if (error instanceof BookNotFoundError) {

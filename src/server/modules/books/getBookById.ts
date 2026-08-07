@@ -61,8 +61,8 @@ interface BookDetailRow {
   sourceFileSize: number | null;
   /** 章节列表（这里只取 id，用于计数）。 */
   chapters      : Array<{ id: string }>;
-  /** 人物档案列表（这里只取 id，用于计数）。 */
-  profiles      : Array<{ id: string }>;
+  /** 本书实体档案列表（这里只取 id，用于计数）。 */
+  entityProfiles: Array<{ id: string }>;
   /** 最近分析任务快照（只取最新 1 条）。 */
   analysisJobs: Array<{
     updatedAt : Date;
@@ -113,7 +113,7 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
     coverUrl      : book.coverUrl,
     status,
     chapterCount  : book.chapters.length,
-    personaCount  : book.profiles.length,
+    personaCount  : book.entityProfiles.length,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastErrorSummary,
@@ -167,7 +167,7 @@ export function createGetBookByIdService(
             id: true
           }
         },
-        profiles: {
+        entityProfiles: {
           where : { deletedAt: null },
           select: {
             id: true

@@ -17,39 +17,33 @@ import { createListDraftsService } from "@/server/modules/roleWorkbench/listDraf
 describe("list drafts service", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("lists relationship drafts with summary counts", async () => {
-    const profileCount = vi.fn().mockResolvedValue(1);
+    const personaCount = vi.fn().mockResolvedValue(1);
     const relationshipCount = vi.fn().mockResolvedValue(2);
-    const biographyCount = vi.fn().mockResolvedValue(3);
+    const factCount = vi.fn().mockResolvedValue(3);
     const relationshipFindMany = vi.fn().mockResolvedValue([
       {
         id                  : "rel-1",
         bookId              : "book-1",
         relationshipTypeCode: "师生",
-        recordSource        : RecordSource.AI,
+        firstChapterId      : "chapter-1",
+        firstChapterNo      : 1,
+        weight              : 2,
         book                : { title: "儒林外史" },
         source              : { id: "p-1", name: "周进" },
-        target              : { id: "p-2", name: "范进" },
-        events              : [
-          {
-            chapterId : "chapter-1",
-            chapterNo : 1,
-            confidence: 0.88,
-            evidence  : "原文证据"
-          }
-        ]
+        target              : { id: "p-2", name: "范进" }
       }
     ]);
     const service = createListDraftsService({
-      profile: {
-        count   : profileCount,
+      entityProfile: {
+        count   : personaCount,
         findMany: vi.fn()
       },
       relationship: {
         count   : relationshipCount,
         findMany: relationshipFindMany
       },
-      biographyRecord: {
-        count   : biographyCount,
+      fact: {
+        count   : factCount,
         findMany: vi.fn()
       }
     } as never);
@@ -80,14 +74,14 @@ describe("list drafts service", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("lists all draft tabs when tab filter is absent", async () => {
     const service = createListDraftsService({
-      profile: {
+      entityProfile: {
         count   : vi.fn().mockResolvedValue(1),
         findMany: vi.fn().mockResolvedValue([
           {
-            id     : "profile-1",
-            bookId : "book-1",
-            book   : { title: "儒林外史" },
-            persona: {
+            id    : "profile-1",
+            bookId: "book-1",
+            book  : { title: "儒林外史" },
+            entity: {
               id          : "persona-1",
               name        : "周进",
               aliases     : ["周学道"],
@@ -103,23 +97,25 @@ describe("list drafts service", () => {
         count   : vi.fn().mockResolvedValue(0),
         findMany: vi.fn().mockResolvedValue([])
       },
-      biographyRecord: {
+      fact: {
         count   : vi.fn().mockResolvedValue(1),
         findMany: vi.fn().mockResolvedValue([
           {
-            id          : "bio-1",
-            chapterId   : "chapter-1",
-            chapterNo   : 1,
-            category    : "EVENT",
-            title       : null,
-            location    : null,
-            event       : "出场",
+            id           : "bio-1",
+            chapterId    : "chapter-1",
+            chapterNo    : 1,
+            eventCategory: "EVENT",
+            payload      : {
+              event   : "出场",
+              title   : null,
+              location: null
+            },
             recordSource: RecordSource.AI,
             chapter     : {
               bookId: "book-1",
               book  : { title: "儒林外史" }
             },
-            persona: {
+            sourceEntity: {
               id  : "persona-1",
               name: "周进"
             }
@@ -134,6 +130,14 @@ describe("list drafts service", () => {
 
     expect(result.summary.total).toBe(2);
     expect(result.personas).toHaveLength(1);
+    expect(result.personas[0]).toEqual(expect.objectContaining({
+      personaId: "persona-1",
+      name     : "周进"
+    }));
     expect(result.biographyRecords).toHaveLength(1);
+    expect(result.biographyRecords[0]).toEqual(expect.objectContaining({
+      personaName: "周进",
+      event      : "出场"
+    }));
   });
 });

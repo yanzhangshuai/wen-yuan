@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { BioCategory, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
+import { EventCategory, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { BiographyInputError } from "@/server/modules/biography/errors";
+import { ReviewInputError } from "@/server/modules/review/errors";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import {
   createManualEvent,
@@ -28,15 +28,15 @@ const querySchema = z.object({
 });
 
 const createEventSchema = z.object({
-  personaId  : z.string().uuid("角色 ID 不合法"),
-  chapterId  : z.string().uuid("章节 ID 不合法"),
-  category   : z.nativeEnum(BioCategory).optional(),
-  title      : z.string().trim().nullable().optional(),
-  location   : z.string().trim().nullable().optional(),
-  event      : z.string().trim().min(1, "事件内容不能为空"),
-  virtualYear: z.string().trim().nullable().optional(),
-  tags       : z.array(z.string().trim().min(1)).max(12).optional(),
-  ironyNote  : z.string().trim().nullable().optional()
+  sourceEntityId: z.string().uuid("实体 ID 不合法"),
+  chapterId     : z.string().uuid("章节 ID 不合法"),
+  category      : z.nativeEnum(EventCategory).optional(),
+  title         : z.string().trim().nullable().optional(),
+  location      : z.string().trim().nullable().optional(),
+  event         : z.string().trim().min(1, "事件内容不能为空"),
+  virtualYear   : z.string().trim().nullable().optional(),
+  tags          : z.array(z.string().trim().min(1)).max(12).optional(),
+  ironyNote     : z.string().trim().nullable().optional()
 });
 
 interface RouteContext {
@@ -117,7 +117,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     if (error instanceof BookNotFoundError) {
       return notFoundJson(path, requestId, startedAt, `Book not found: ${error.bookId}`);
     }
-    if (error instanceof BiographyInputError) {
+    if (error instanceof ReviewInputError) {
       return badRequestJson(path, requestId, startedAt, error.message);
     }
     return failJson({
@@ -164,7 +164,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     if (error instanceof BookNotFoundError) {
       return notFoundJson(path, requestId, startedAt, `Book not found: ${error.bookId}`);
     }
-    if (error instanceof BiographyInputError) {
+    if (error instanceof ReviewInputError) {
       return badRequestJson(path, requestId, startedAt, error.message);
     }
     return failJson({

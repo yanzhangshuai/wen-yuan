@@ -32,7 +32,7 @@ describe("getBookById", () => {
       sourceFileMime: "text/plain; charset=utf-8",
       sourceFileSize: 999,
       chapters      : [{ id: "chapter-1" }, { id: "chapter-2" }],
-      profiles      : [{ id: "profile-1" }],
+      entityProfiles: [{ id: "entity-profile-1" }],
       analysisJobs  : [
         {
           updatedAt : new Date("2026-03-24T10:09:00.000Z"),

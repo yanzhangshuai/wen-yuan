@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { BioCategory, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
-import { BiographyInputError } from "@/server/modules/biography/errors";
+import { EventCategory, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
+import { ReviewInputError } from "@/server/modules/review/errors";
 import {
   createChapterEventsWorkbenchService,
   type ChapterEventsWorkbenchPrisma
@@ -12,13 +12,13 @@ function createService(overrides: Partial<ChapterEventsWorkbenchPrisma> = {}) {
     bookFindFirst                     : vi.fn().mockResolvedValue({ id: "book-1" }),
     chapterFindMany                   : vi.fn(),
     chapterFindFirst                  : vi.fn(),
-    biographyGroupBy                  : vi.fn(),
-    biographyFindMany                 : vi.fn(),
-    biographyCount                    : vi.fn(),
-    biographyCreate                   : vi.fn(),
-    biographyFindFirst                : vi.fn(),
-    biographyUpdate                   : vi.fn(),
-    profileFindFirst                  : vi.fn(),
+    factGroupBy                       : vi.fn(),
+    factFindMany                      : vi.fn(),
+    factCount                         : vi.fn(),
+    factCreate                        : vi.fn(),
+    factFindFirst                     : vi.fn(),
+    factUpdate                        : vi.fn(),
+    entityProfileFindFirst            : vi.fn(),
     chapterBiographyVerificationFind  : vi.fn(),
     chapterBiographyVerificationUpsert: vi.fn()
   };
@@ -30,16 +30,16 @@ function createService(overrides: Partial<ChapterEventsWorkbenchPrisma> = {}) {
       findMany : mocks.chapterFindMany,
       findFirst: mocks.chapterFindFirst
     },
-    biographyRecord: {
-      groupBy  : mocks.biographyGroupBy,
-      findMany : mocks.biographyFindMany,
-      count    : mocks.biographyCount,
-      create   : mocks.biographyCreate,
-      findFirst: mocks.biographyFindFirst,
-      update   : mocks.biographyUpdate
+    fact: {
+      groupBy  : mocks.factGroupBy,
+      findMany : mocks.factFindMany,
+      count    : mocks.factCount,
+      create   : mocks.factCreate,
+      findFirst: mocks.factFindFirst,
+      update   : mocks.factUpdate
     },
-    profile: {
-      findFirst: mocks.profileFindFirst
+    entityProfile: {
+      findFirst: mocks.entityProfileFindFirst
     },
     chapterBiographyVerification: {
       findMany: mocks.chapterBiographyVerificationFind,
@@ -67,7 +67,7 @@ describe("chapterEvents workbench service", () => {
       { id: "chapter-1", no: 1, noText: "第一回", title: "楔子" },
       { id: "chapter-2", no: 2, noText: null, title: "正传" }
     ] as never);
-    mocks.biographyGroupBy
+    mocks.factGroupBy
       .mockResolvedValueOnce([
         { chapterId: "chapter-1", _count: { _all: 2 } },
         { chapterId: "chapter-2", _count: { _all: 1 } }
@@ -109,122 +109,134 @@ describe("chapterEvents workbench service", () => {
   it("blocks chapter verification while draft biography records remain", async () => {
     const { mocks, service } = createService();
     mocks.chapterFindFirst.mockResolvedValueOnce({ id: "chapter-1", bookId: "book-1" });
-    mocks.biographyCount.mockResolvedValueOnce(1);
+    mocks.factCount.mockResolvedValueOnce(1);
 
-    await expect(service.markChapterVerified("book-1", "chapter-1")).rejects.toThrow(BiographyInputError);
+    await expect(service.markChapterVerified("book-1", "chapter-1")).rejects.toThrow(ReviewInputError);
     expect(mocks.chapterBiographyVerificationUpsert).not.toHaveBeenCalled();
   });
 
-  it("creates manual chapter events as verified records and rejects cross-book personas", async () => {
+  it("creates manual chapter events as verified records and rejects cross-book entities", async () => {
     const { mocks, service } = createService();
-    mocks.profileFindFirst.mockResolvedValueOnce(null);
+    mocks.entityProfileFindFirst.mockResolvedValueOnce(null);
 
     await expect(service.createManualEvent("book-1", {
-      personaId: "persona-2",
-      chapterId: "chapter-1",
-      category : BioCategory.EVENT,
-      event    : "误入他书"
-    })).rejects.toThrow(BiographyInputError);
+      sourceEntityId: "entity-2",
+      chapterId     : "chapter-1",
+      eventCategory : EventCategory.EVENT,
+      event         : "误入他书"
+    })).rejects.toThrow(ReviewInputError);
 
-    mocks.profileFindFirst.mockResolvedValueOnce({ personaId: "persona-1" });
+    mocks.entityProfileFindFirst.mockResolvedValueOnce({ entityId: "entity-1" });
     mocks.chapterFindFirst.mockResolvedValueOnce({ id: "chapter-1", no: 7 });
-    mocks.biographyCreate.mockResolvedValueOnce({
-      id          : "bio-1",
-      personaId   : "persona-1",
-      chapterId   : "chapter-1",
-      chapterNo   : 7,
-      category    : BioCategory.EVENT,
-      title       : null,
-      location    : null,
-      event       : "人工补录",
-      virtualYear : null,
-      tags        : ["放牧", "谋生"],
-      ironyNote   : "备注",
+    mocks.factCreate.mockResolvedValueOnce({
+      id            : "bio-1",
+      sourceEntityId: "entity-1",
+      chapterId     : "chapter-1",
+      chapterNo     : 7,
+      eventCategory : EventCategory.EVENT,
+      virtualYear   : null,
+      payload       : {
+        event    : "人工补录",
+        title    : null,
+        location : null,
+        tags     : ["放牧", "谋生"],
+        ironyNote: "备注"
+      },
       recordSource: RecordSource.MANUAL,
       status      : ProcessingStatus.VERIFIED,
       createdAt   : new Date("2026-04-28T10:00:00.000Z"),
-      persona     : { name: "范进" }
+      sourceEntity: { name: "范进" }
     });
 
     const created = await service.createManualEvent("book-1", {
-      personaId: "persona-1",
-      chapterId: "chapter-1",
-      category : BioCategory.EVENT,
-      event    : "人工补录",
-      tags     : [" 放牧 ", "谋生", "", "放牧"],
-      ironyNote: "备注"
+      sourceEntityId: "entity-1",
+      chapterId     : "chapter-1",
+      eventCategory : EventCategory.EVENT,
+      event         : "人工补录",
+      tags          : [" 放牧 ", "谋生", "", "放牧"],
+      ironyNote     : "备注"
     });
 
-    expect(mocks.biographyCreate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.factCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
-        recordSource: RecordSource.MANUAL,
-        status      : ProcessingStatus.VERIFIED,
-        chapterNo   : 7,
-        tags        : ["放牧", "谋生"]
+        recordSource : RecordSource.MANUAL,
+        status       : ProcessingStatus.VERIFIED,
+        chapterNo    : 7,
+        eventCategory: EventCategory.EVENT,
+        payload      : expect.objectContaining({
+          event: "人工补录",
+          tags : ["放牧", "谋生"]
+        })
       })
     }));
     expect(created.status).toBe(ProcessingStatus.VERIFIED);
     expect(created.personaName).toBe("范进");
   });
 
-  it("updates event persona and chapter while maintaining redundant chapter number", async () => {
+  it("updates event entity and chapter while maintaining redundant chapter number", async () => {
     const { mocks, service } = createService();
-    mocks.biographyFindFirst.mockResolvedValueOnce({
+    mocks.factFindFirst.mockResolvedValueOnce({
       id     : "bio-1",
+      payload: {},
       chapter: { bookId: "book-1" }
     });
-    mocks.profileFindFirst.mockResolvedValueOnce({ personaId: "persona-2" });
+    mocks.entityProfileFindFirst.mockResolvedValueOnce({ entityId: "entity-2" });
     mocks.chapterFindFirst.mockResolvedValueOnce({ id: "chapter-2", no: 9 });
-    mocks.biographyUpdate.mockResolvedValueOnce({
-      id          : "bio-1",
-      personaId   : "persona-2",
-      chapterId   : "chapter-2",
-      chapterNo   : 9,
-      category    : BioCategory.CAREER,
-      title       : "知县",
-      location    : "南京",
-      event       : "调任",
-      virtualYear : "某年",
-      tags        : ["任职"],
-      ironyNote   : null,
+    mocks.factUpdate.mockResolvedValueOnce({
+      id            : "bio-1",
+      sourceEntityId: "entity-2",
+      chapterId     : "chapter-2",
+      chapterNo     : 9,
+      eventCategory : EventCategory.CAREER,
+      virtualYear   : "某年",
+      payload       : {
+        title    : "知县",
+        location : "南京",
+        event    : "调任",
+        tags     : ["任职", "调任"],
+        ironyNote: null
+      },
       recordSource: RecordSource.AI,
       status      : ProcessingStatus.VERIFIED,
       updatedAt   : new Date("2026-04-28T11:00:00.000Z"),
-      persona     : { name: "周进" }
+      sourceEntity: { name: "周进" }
     });
 
     await service.updateEvent("book-1", "bio-1", {
-      personaId: "persona-2",
-      chapterId: "chapter-2",
-      category : BioCategory.CAREER,
-      title    : "知县",
-      location : "南京",
-      event    : "调任",
-      tags     : ["任职", "任职", " 调任 "]
+      sourceEntityId: "entity-2",
+      chapterId     : "chapter-2",
+      eventCategory : EventCategory.CAREER,
+      title         : "知县",
+      location      : "南京",
+      event         : "调任",
+      tags          : ["任职", "任职", " 调任 "]
     });
 
-    expect(mocks.biographyUpdate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.factUpdate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
-        personaId: "persona-2",
-        chapterId: "chapter-2",
-        chapterNo: 9,
-        tags     : ["任职", "调任"]
+        sourceEntityId: "entity-2",
+        chapterId     : "chapter-2",
+        chapterNo     : 9,
+        payload       : expect.objectContaining({
+          title: "知县",
+          tags : ["任职", "调任"]
+        })
       })
     }));
   });
 
   it("soft-deletes chapter events as rejected records", async () => {
     const { mocks, service } = createService();
-    mocks.biographyFindFirst.mockResolvedValueOnce({
+    mocks.factFindFirst.mockResolvedValueOnce({
       id     : "bio-1",
       chapter: { bookId: "book-1" }
     });
-    mocks.biographyUpdate.mockResolvedValueOnce({ id: "bio-1" });
+    mocks.factUpdate.mockResolvedValueOnce({ id: "bio-1" });
 
     const result = await service.deleteEvent("book-1", "bio-1");
 
     expect(result).toEqual({ id: "bio-1" });
-    expect(mocks.biographyUpdate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.factUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "bio-1" },
       data : expect.objectContaining({
         status   : ProcessingStatus.REJECTED,

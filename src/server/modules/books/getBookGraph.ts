@@ -13,14 +13,14 @@ import { lookupRelationshipTypeNames } from "@/server/modules/skills";
  * 分层角色：
  * - server module（服务端逻辑层）；
  * - 被 `GET /api/books/:id/graph` 调用；
- * - 负责跨表聚合（relationship/profile/persona/mention）与前端友好字段计算。
+ * - 负责跨表聚合（relationship/entityProfile/entity/mention）与前端友好字段计算。
  *
  * 业务目标：
  * - 支持“全书视图”与“按章节回放视图”；
  * - 提供前端渲染直接可用的字段（sentiment/factionIndex/influence/x/y）。
  *
  * 关键约束：
- * - 图谱中节点不仅来自 profile，还可能来自 mention/relationship（历史数据兼容）；
+ * - 图谱中节点不仅来自实体档案，还可能来自 mention/relationship（历史数据兼容）；
  * - 章节过滤下若某人物仅在关系或提及中出现，也必须补节点，避免悬空边。
  * ============================================================================
  */
@@ -153,7 +153,7 @@ function hashFactionIndex(personaId: string): number {
 }
 
 /**
- * 从 profile.visualConfig 中安全提取坐标。
+ * 从实体档案的 visualConfig 中安全提取坐标。
  * 防御原因：历史数据或脏数据可能不是对象，必须先做运行时收窄。
  */
 function parseNodePosition(visualConfig: unknown): { x?: number; y?: number } {
@@ -197,7 +197,7 @@ export function createGetBookGraphService(
         deletedAt: null,
         bookId   : input.bookId,
         ...(typeof input.chapter === "number"
-          ? { chapterNo: { lte: input.chapter } }
+          ? { firstChapterNo: { lte: input.chapter } }
           : {}),
         source: { deletedAt: null },
         target: { deletedAt: null }
@@ -205,8 +205,8 @@ export function createGetBookGraphService(
       orderBy: [{ updatedAt: "desc" }],
       select : {
         id                  : true,
-        sourceId            : true,
-        targetId            : true,
+        sourceEntityId      : true,
+        targetEntityId      : true,
         relationshipTypeCode: true,
         status              : true
       }
@@ -220,12 +220,12 @@ export function createGetBookGraphService(
             bookId: input.bookId,
             no    : { lte: input.chapter }
           },
-          persona: { deletedAt: null }
+          entity: { deletedAt: null }
         },
         select: {
-          personaId: true
+          entityId: true
         },
-        distinct: ["personaId"]
+        distinct: ["entityId"]
       })
       : [];
 
@@ -234,38 +234,38 @@ export function createGetBookGraphService(
     // - 被提及人物（即使暂时无关系边，也应保留为孤立节点）。
     const relationshipPersonaIds = new Set<string>();
     for (const relation of relationships) {
-      relationshipPersonaIds.add(relation.sourceId);
-      relationshipPersonaIds.add(relation.targetId);
+      relationshipPersonaIds.add(relation.sourceEntityId);
+      relationshipPersonaIds.add(relation.targetEntityId);
     }
     for (const mention of mentionedPersonaIds) {
-      relationshipPersonaIds.add(mention.personaId);
+      relationshipPersonaIds.add(mention.entityId);
     }
 
     const personaIdFilter = typeof input.chapter === "number"
       ? Array.from(relationshipPersonaIds)
       : undefined;
 
-    // Step 4) 读取 profile 作为主节点来源（包含 ironyIndex 与 visualConfig）。
-    const profiles = await prismaClient.profile.findMany({
+    // Step 4) 读取实体档案作为主节点来源（包含 ironyIndex 与 visualConfig）。
+    const entityProfiles = await prismaClient.entityProfile.findMany({
       where: {
         bookId   : input.bookId,
         deletedAt: null,
-        persona  : {
+        entity   : {
           deletedAt: null
         },
-        ...(personaIdFilter ? { personaId: { in: personaIdFilter } } : {})
+        ...(personaIdFilter ? { entityId: { in: personaIdFilter } } : {})
       },
       orderBy: [{ updatedAt: "desc" }],
       select : {
-        personaId   : true,
+        entityId    : true,
         ironyIndex  : true,
         visualConfig: true,
-        persona     : {
+        entity      : {
           select: {
             id          : true,
             name        : true,
             nameType    : true,
-            type        : true,
+            entityType  : true,
             recordSource: true
           }
         }
@@ -274,34 +274,34 @@ export function createGetBookGraphService(
 
     const relationCountMap = new Map<string, number>();
     for (const relation of relationships) {
-      relationCountMap.set(relation.sourceId, (relationCountMap.get(relation.sourceId) ?? 0) + 1);
-      relationCountMap.set(relation.targetId, (relationCountMap.get(relation.targetId) ?? 0) + 1);
+      relationCountMap.set(relation.sourceEntityId, (relationCountMap.get(relation.sourceEntityId) ?? 0) + 1);
+      relationCountMap.set(relation.targetEntityId, (relationCountMap.get(relation.targetEntityId) ?? 0) + 1);
     }
 
-    // Step 5) 先从 profile 构建节点。
-    const nodes: BookGraphNode[] = profiles.map((profile) => {
-      const relationCount = relationCountMap.get(profile.personaId) ?? 0;
+    // Step 5) 先从实体档案构建节点。
+    const nodes: BookGraphNode[] = entityProfiles.map((entityProfile) => {
+      const relationCount = relationCountMap.get(entityProfile.entityId) ?? 0;
       // 影响力是前端展示指标，当前采用线性乘积并保留两位小数。
-      const influence = Number((relationCount * profile.ironyIndex).toFixed(2));
-      const position = parseNodePosition(profile.visualConfig);
+      const influence = Number((relationCount * entityProfile.ironyIndex).toFixed(2));
+      const position = parseNodePosition(entityProfile.visualConfig);
 
       return {
-        id          : profile.persona.id,
-        name        : profile.persona.name,
-        nameType    : profile.persona.nameType,
-        entityType  : profile.persona.type,
-        status      : resolveNodeStatus(profile.persona.recordSource),
-        factionIndex: hashFactionIndex(profile.persona.id),
+        id          : entityProfile.entity.id,
+        name        : entityProfile.entity.name,
+        nameType    : entityProfile.entity.nameType,
+        entityType  : entityProfile.entity.entityType,
+        status      : resolveNodeStatus(entityProfile.entity.recordSource),
+        factionIndex: hashFactionIndex(entityProfile.entity.id),
         influence,
         ...position
       };
     });
 
-    // Step 6) 补齐“只有关系/提及但无 profile”的缺失节点，避免出现边指向不存在节点。
+    // Step 6) 补齐“只有关系/提及但无档案”的缺失节点，避免出现边指向不存在节点。
     const existingNodeIds = new Set(nodes.map((item) => item.id));
     const missingPersonaIds = Array.from(relationshipPersonaIds).filter((item) => !existingNodeIds.has(item));
     if (missingPersonaIds.length > 0) {
-      const missingPersonas = await prismaClient.persona.findMany({
+      const missingEntities = await prismaClient.entity.findMany({
         where: {
           id       : { in: missingPersonaIds },
           deletedAt: null
@@ -310,21 +310,21 @@ export function createGetBookGraphService(
           id          : true,
           name        : true,
           nameType    : true,
-          type        : true,
+          entityType  : true,
           recordSource: true
         }
       });
 
-      for (const persona of missingPersonas) {
+      for (const entity of missingEntities) {
         nodes.push({
-          id          : persona.id,
-          name        : persona.name,
-          nameType    : persona.nameType,
-          entityType  : persona.type,
-          status      : resolveNodeStatus(persona.recordSource),
-          factionIndex: hashFactionIndex(persona.id),
-          // 缺失 profile 时没有 ironyIndex，退化为纯关系计数。
-          influence   : relationCountMap.get(persona.id) ?? 0
+          id          : entity.id,
+          name        : entity.name,
+          nameType    : entity.nameType,
+          entityType  : entity.entityType,
+          status      : resolveNodeStatus(entity.recordSource),
+          factionIndex: hashFactionIndex(entity.id),
+          // 缺失档案时没有 ironyIndex，退化为纯关系计数。
+          influence   : relationCountMap.get(entity.id) ?? 0
         });
       }
     }
@@ -334,8 +334,8 @@ export function createGetBookGraphService(
     const nameByCode = await lookupRelationshipTypeNames(typeCodes, prismaClient);
     const edges: BookGraphEdge[] = relationships.map((relation) => ({
       id       : relation.id,
-      source   : relation.sourceId,
-      target   : relation.targetId,
+      source   : relation.sourceEntityId,
+      target   : relation.targetEntityId,
       type     : nameByCode.get(relation.relationshipTypeCode) ?? relation.relationshipTypeCode,
       weight   : 1,
       sentiment: resolveSentiment(relation.relationshipTypeCode),

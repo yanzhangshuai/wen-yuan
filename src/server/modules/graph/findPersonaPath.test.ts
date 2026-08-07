@@ -21,35 +21,37 @@ function createPrismaStub() {
     book: {
       findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
     },
-    persona: {
+    entity: {
       findMany: vi.fn().mockResolvedValue([
         { id: "p1", name: "王冕" },
         { id: "p2", name: "周进" },
         { id: "p3", name: "范进" }
       ])
     },
-    profile: {
+    entityProfile: {
       findMany: vi.fn().mockResolvedValue([
-        { persona: { id: "p1", name: "王冕" } },
-        { persona: { id: "p2", name: "周进" } },
-        { persona: { id: "p3", name: "范进" } }
+        { entity: { id: "p1", name: "王冕" } },
+        { entity: { id: "p2", name: "周进" } },
+        { entity: { id: "p3", name: "范进" } }
       ])
     },
     relationship: {
       findMany: vi.fn().mockResolvedValue([
         {
           id                  : "r1",
-          sourceId            : "p1",
-          targetId            : "p2",
+          sourceEntityId      : "p1",
+          targetEntityId      : "p2",
           relationshipTypeCode: "师生",
-          events              : [{ chapterId: "c1", chapterNo: 1 }]
+          firstChapterId      : "c1",
+          firstChapterNo      : 1
         },
         {
           id                  : "r2",
-          sourceId            : "p2",
-          targetId            : "p3",
+          sourceEntityId      : "p2",
+          targetEntityId      : "p3",
           relationshipTypeCode: "同僚",
-          events              : [{ chapterId: "c2", chapterNo: 2 }]
+          firstChapterId      : "c2",
+          firstChapterNo      : 2
         }
       ])
     },
@@ -84,10 +86,11 @@ describe("findPersonaPath service", () => {
     prismaClient.relationship.findMany.mockResolvedValue([
       {
         id                  : "r1",
-        sourceId            : "p1",
-        targetId            : "p2",
+        sourceEntityId      : "p1",
+        targetEntityId      : "p2",
         relationshipTypeCode: "师生",
-        events              : [{ chapterId: "c1", chapterNo: 1 }]
+        firstChapterId      : "c1",
+        firstChapterNo      : 1
       }
     ]);
     const service = createFindPersonaPathService(prismaClient as never, null);
@@ -125,11 +128,11 @@ describe("findPersonaPath service", () => {
       book: {
         findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
       },
-      persona: {
+      entity: {
         findMany: vi.fn().mockResolvedValue([{ id: "p1", name: "王冕" }])
       },
-      profile: {
-        findMany: vi.fn().mockResolvedValue([{ persona: { id: "p1", name: "王冕" } }])
+      entityProfile: {
+        findMany: vi.fn().mockResolvedValue([{ entity: { id: "p1", name: "王冕" } }])
       },
       relationship: {
         findMany: vi.fn().mockResolvedValue([])
@@ -188,20 +191,21 @@ describe("findPersonaPath service", () => {
 
   it("returns zero-hop path when source and target are the same persona", async () => {
     const prismaClient = createPrismaStub();
-    prismaClient.profile.findMany.mockResolvedValueOnce([
-      { persona: { id: "p1", name: "王冕" } },
-      { persona: { id: "p2", name: "周进" } }
+    prismaClient.entityProfile.findMany.mockResolvedValueOnce([
+      { entity: { id: "p1", name: "王冕" } },
+      { entity: { id: "p2", name: "周进" } }
     ]);
     prismaClient.relationship.findMany.mockResolvedValueOnce([
       {
         id                  : "r-extra",
-        sourceId            : "p1",
-        targetId            : "p3",
+        sourceEntityId      : "p1",
+        targetEntityId      : "p3",
         relationshipTypeCode: "同乡",
-        events              : [{ chapterId: "c1", chapterNo: 1 }]
+        firstChapterId      : "c1",
+        firstChapterNo      : 1
       }
     ]);
-    prismaClient.persona.findMany
+    prismaClient.entity.findMany
       .mockResolvedValueOnce([{ id: "p3", name: "范进" }]);
 
     const service = createFindPersonaPathService(prismaClient as never, null);
@@ -215,13 +219,13 @@ describe("findPersonaPath service", () => {
     expect(result.hopCount).toBe(0);
     expect(result.nodes).toEqual([{ id: "p1", name: "王冕" }]);
     expect(result.edges).toEqual([]);
-    expect(prismaClient.persona.findMany).toHaveBeenCalledWith({
+    expect(prismaClient.entity.findMany).toHaveBeenCalledWith({
       where : { id: { in: ["p3"] }, deletedAt: null },
       select: { id: true, name: true }
     });
   });
 
-  it("skips extra persona lookup when profiles already cover every path endpoint", async () => {
+  it("skips extra entity lookup when profiles already cover every path endpoint", async () => {
     const prismaClient = createPrismaStub();
     const service = createFindPersonaPathService(prismaClient as never, null);
 
@@ -232,14 +236,14 @@ describe("findPersonaPath service", () => {
     });
 
     expect(result.found).toBe(true);
-    expect(prismaClient.persona.findMany).not.toHaveBeenCalled();
+    expect(prismaClient.entity.findMany).not.toHaveBeenCalled();
   });
 
   it("throws the missing source persona id when the source endpoint is absent", async () => {
     const prismaClient = createPrismaStub();
-    prismaClient.profile.findMany.mockResolvedValueOnce([
-      { persona: { id: "p2", name: "周进" } },
-      { persona: { id: "p3", name: "范进" } }
+    prismaClient.entityProfile.findMany.mockResolvedValueOnce([
+      { entity: { id: "p2", name: "周进" } },
+      { entity: { id: "p3", name: "范进" } }
     ]);
     prismaClient.relationship.findMany.mockResolvedValueOnce([]);
 

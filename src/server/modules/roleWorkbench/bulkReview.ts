@@ -1,6 +1,7 @@
-import { ProcessingStatus } from "@/generated/prisma/enums";
+import { FactType, ProcessingStatus } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { refreshRelationshipsForBook } from "@/server/modules/extraction/aggregator";
 
 /**
  * =============================================================================
@@ -15,7 +16,8 @@ import { prisma } from "@/server/db/prisma";
  * 业务职责：
  * 1) 标准化并校验 ID 列表（去空、去重）；
  * 2) 仅更新 `DRAFT` 且未软删除的数据，避免重复处理已确认/已拒绝记录；
- * 3) 同时覆盖关系草稿与传记草稿两张表，返回统一统计结果。
+ * 3) 同时覆盖关系草稿与传记事实草稿两张表，返回统一统计结果；
+ * 4) 事务内重建关系物化表（facts 状态变更后必须，facts 是关系唯一写入口）。
  *
  * 业务边界：
  * - 不处理人物草稿（人物资料当前走其它确认路径）；
@@ -24,22 +26,22 @@ import { prisma } from "@/server/db/prisma";
  *
  * 维护注意：
  * - `status` 只允许 VERIFIED/REJECTED，这是工作台确认流程业务规则；
- * - 事务更新能保证“关系/传记”两类草稿在同次操作中一致提交或回滚。
+ * - 事务更新能保证“关系/事实”两类草稿在同次操作中一致提交或回滚。
  * =============================================================================
  */
 
 /** 批量确认/拒绝操作结果。 */
 export interface BulkDraftStatusResult {
   /** 本次请求去重后的草稿 ID 列表。 */
-  ids                 : string[];
+  ids              : string[];
   /** 批量写入的目标状态：VERIFIED 或 REJECTED。 */
-  status              : typeof ProcessingStatus.VERIFIED | typeof ProcessingStatus.REJECTED;
+  status           : typeof ProcessingStatus.VERIFIED | typeof ProcessingStatus.REJECTED;
   /** 实际更新到的关系草稿数量。 */
-  relationshipCount   : number;
-  /** 实际更新到的传记草稿数量。 */
-  biographyRecordCount: number;
-  /** 总更新数（关系 + 传记）。 */
-  totalCount          : number;
+  relationshipCount: number;
+  /** 实际更新到的传记事实草稿数量。 */
+  factCount        : number;
+  /** 总更新数（关系 + 传记事实）。 */
+  totalCount       : number;
 }
 
 /** 批量确认/拒绝输入不合法时抛出的业务异常。 */
@@ -85,7 +87,7 @@ export function createBulkDraftStatusService(
    * 输入：`ids` 草稿 ID 列表，`status` 目标状态。
    * 输出：`BulkDraftStatusResult`，包含命中数量统计。
    * 异常：`ids` 为空时抛 `BulkDraftStatusInputError`。
-   * 副作用：事务内更新 `relationship` 与 `biographyRecord` 两张表。
+   * 副作用：事务内更新 `relationship` 与 `fact`（BIOGRAPHY）两张表，并重建关系物化表。
    */
   async function applyDraftStatus(
     ids: string[],
@@ -111,9 +113,10 @@ export function createBulkDraftStatusService(
       });
 
       // 与关系草稿同样的状态机约束，保证不同草稿类型的行为一致。
-      const biographyResult = await tx.biographyRecord.updateMany({
+      const factResult = await tx.fact.updateMany({
         where: {
           id       : { in: normalizedIds },
+          factType : FactType.BIOGRAPHY,
           status   : ProcessingStatus.DRAFT,
           deletedAt: null
         },
@@ -122,19 +125,30 @@ export function createBulkDraftStatusService(
         }
       });
 
+      // 传记事实状态变更后需重建该书关系物化表（facts 是关系的唯一数据权威源）。
+      const affectedFacts = await tx.fact.findMany({
+        where   : { id: { in: normalizedIds }, factType: FactType.BIOGRAPHY },
+        select  : { bookId: true },
+        distinct: ["bookId"]
+      });
+      const bookIds = Array.from(new Set(affectedFacts.map((fact) => fact.bookId)));
+      for (const bookId of bookIds) {
+        await refreshRelationshipsForBook(bookId, tx);
+      }
+
       return {
-        relationshipCount   : relationshipResult.count,
-        biographyRecordCount: biographyResult.count
+        relationshipCount: relationshipResult.count,
+        factCount        : factResult.count
       };
     });
 
     // 输出统一统计，供前端提示“本次批量操作实际命中条数”。
     return {
-      ids                 : normalizedIds,
+      ids              : normalizedIds,
       status,
-      relationshipCount   : result.relationshipCount,
-      biographyRecordCount: result.biographyRecordCount,
-      totalCount          : result.relationshipCount + result.biographyRecordCount
+      relationshipCount: result.relationshipCount,
+      factCount        : result.factCount,
+      totalCount       : result.relationshipCount + result.factCount
     };
   }
 

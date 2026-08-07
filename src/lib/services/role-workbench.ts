@@ -142,27 +142,27 @@ export interface BiographyDraftItem {
  */
 export interface MergeSuggestionItem {
   /** 合并建议 ID。 */
-  id             : string;
+  id            : string;
   /** 所属书籍 ID。 */
-  bookId         : string;
+  bookId        : string;
   /** 所属书籍标题。 */
-  bookTitle      : string;
-  /** 建议被合并的一侧人物 ID（source）。 */
-  sourcePersonaId: string;
-  /** source 人物名。 */
-  sourceName     : string;
-  /** 建议保留的一侧人物 ID（target）。 */
-  targetPersonaId: string;
-  /** target 人物名。 */
-  targetName     : string;
+  bookTitle     : string;
+  /** 建议被合并的一侧实体 ID（source）。 */
+  sourceEntityId: string;
+  /** source 实体名。 */
+  sourceName    : string;
+  /** 建议保留的一侧实体 ID（target）。 */
+  targetEntityId: string;
+  /** target 实体名。 */
+  targetName    : string;
   /** 建议理由（用于人工判断是否应合并）。 */
-  reason         : string;
+  reason        : string;
   /** 建议置信度（0~1）。 */
-  confidence     : number;
+  confidence    : number;
   /** 建议状态：PENDING/ACCEPTED/REJECTED/DEFERRED。 */
-  status         : string;
+  status        : string;
   /** 建议创建时间（ISO 字符串）。 */
-  createdAt      : string;
+  createdAt     : string;
 }
 
 /**

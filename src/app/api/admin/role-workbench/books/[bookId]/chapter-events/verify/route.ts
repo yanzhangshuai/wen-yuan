@@ -6,7 +6,7 @@ import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-resp
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { BiographyInputError } from "@/server/modules/biography/errors";
+import { ReviewInputError } from "@/server/modules/review/errors";
 import { BookNotFoundError } from "@/server/modules/books/errors";
 import { markChapterVerified } from "@/server/modules/roleWorkbench/chapterEvents";
 import { ERROR_CODES } from "@/types/api";
@@ -69,7 +69,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
       data
     });
   } catch (error) {
-    if (error instanceof BiographyInputError) {
+    if (error instanceof ReviewInputError) {
       return badRequestJson(path, requestId, startedAt, error.message);
     }
     if (error instanceof BookNotFoundError) {

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { NameType } from "@/generated/prisma/enums";
-import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
+import { FactType, ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 
 /**
@@ -19,13 +19,14 @@ import { prisma } from "@/server/db/prisma";
  *
  * 核心职责：
  * 1) 统一校验筛选参数（bookId/tab/source）；
- * 2) 从 `Profile/Relationship/BiographyRecord` 三条数据链路读取 DRAFT 数据；
+ * 2) 从 `EntityProfile+Entity / Relationship / Fact` 三条数据链路读取 DRAFT 数据；
  * 3) 汇总 summary + 列表结果，输出给角色资料工作台统一消费。
  *
  * 业务边界：
  * - 仅提供“读取待确认草稿”能力，不负责状态写入；
  * - 统一过滤软删除记录（`deletedAt: null`），这是数据可见性规则，不是技术限制；
- * - 人物草稿来源于 `Profile + Persona` 组合数据，关系与传记直接来自各自表。
+ * - 人物草稿来源于 `EntityProfile + Entity` 组合数据，关系来自物化 `Relationship`，
+ *   传记来自 `Fact`（factType=BIOGRAPHY）。
  *
  * 维护注意：
  * - 对外类型 `AdminDraftsResult` 是前后端契约，字段变更会直接影响 `RoleWorkbenchPanel`；
@@ -59,15 +60,15 @@ export interface ListDraftsFilter {
   source?: RecordSource;
 }
 
-/** 人物草稿行（来源 `Profile + Persona` 联合映射）。 */
+/** 人物草稿行（来源 `EntityProfile + Entity` 联合映射）。 */
 export interface PersonaDraftItem {
-  /** `Profile.id`，草稿项主键。 */
+  /** `EntityProfile.id`，草稿项主键。 */
   id          : string;
   /** 所属书籍 ID（UUID）。 */
   bookId      : string;
   /** 所属书名。 */
   bookTitle   : string;
-  /** `Persona.id`，人物主键。 */
+  /** `Entity.id`，人物主键。 */
   personaId   : string;
   /** 人物标准名。 */
   name        : string;
@@ -85,7 +86,7 @@ export interface PersonaDraftItem {
   status      : typeof ProcessingStatus.DRAFT;
 }
 
-/** 关系草稿行（来源 `Relationship`）。 */
+/** 关系草稿行（来源物化 `Relationship`）。 */
 export interface RelationshipDraftItem {
   /** `Relationship.id`，关系主键。 */
   id             : string;
@@ -97,29 +98,29 @@ export interface RelationshipDraftItem {
   chapterId      : string;
   /** 首次出现章节序号（从 1 开始）。 */
   chapterNo      : number;
-  /** 起点人物 ID。 */
+  /** 起点实体 ID。 */
   sourcePersonaId: string;
   /** 起点人物名称。 */
   sourceName     : string;
-  /** 终点人物 ID。 */
+  /** 终点实体 ID。 */
   targetPersonaId: string;
   /** 终点人物名称。 */
   targetName     : string;
   /** 关系类型（如师生/亲属/同僚）。 */
   type           : string;
-  /** 关系权重。 */
+  /** 关系权重（底层事实条数）。 */
   weight         : number;
-  /** 原文证据片段（可空）。 */
+  /** 证据文本片段（v5 Relationship 无该列，契约保留字段，前端子任务移除）。 */
   evidence       : string | null;
-  /** 记录来源：AI 或 MANUAL。 */
+  /** 数据来源（v5 Relationship 无该列，DRAFT 关系源自 AI，契约保留字段）。 */
   recordSource   : RecordSource;
   /** 草稿状态固定为 `DRAFT`。 */
   status         : typeof ProcessingStatus.DRAFT;
 }
 
-/** 传记事件草稿行（来源 `BiographyRecord`）。 */
+/** 传记事件草稿行（来源 `Fact`，factType=BIOGRAPHY）。 */
 export interface BiographyDraftItem {
-  /** `BiographyRecord.id`，事件主键。 */
+  /** `Fact.id`，事件主键。 */
   id          : string;
   /** 所属书籍 ID。 */
   bookId      : string;
@@ -129,17 +130,17 @@ export interface BiographyDraftItem {
   chapterId   : string;
   /** 所属章节序号。 */
   chapterNo   : number;
-  /** 关联人物 ID。 */
+  /** 关联实体 ID。 */
   personaId   : string;
   /** 关联人物名称。 */
   personaName : string;
-  /** 事件类别（`BioCategory`）。 */
+  /** 事件类别（`EventCategory`）。 */
   category    : string;
-  /** 事件标题（可空）。 */
+  /** 事件标题（可空，存于 payload）。 */
   title       : string | null;
-  /** 事件地点（可空）。 */
+  /** 事件地点（可空，存于 payload）。 */
   location    : string | null;
-  /** 事件正文。 */
+  /** 事件正文（存于 payload）。 */
   event       : string;
   /** 数据来源：AI 或 MANUAL。 */
   recordSource: RecordSource;
@@ -171,20 +172,20 @@ export interface AdminDraftsResult {
 /**
  * 功能：构造人物草稿查询条件。
  * 输入：`parsed filter`（经 Zod 校验后的筛选参数）。
- * 输出：Prisma `ProfileWhereInput` 兼容对象。
+ * 输出：Prisma `EntityProfileWhereInput` 兼容对象。
  * 异常：无。
  * 副作用：无。
  */
 function buildPersonaWhere(filter: z.infer<typeof listDraftsFilterSchema>) {
   return {
-    // 业务规则：软删除资料不进入待确认池，避免历史脏数据反复出现。
+    // 业务规则：软删除档案不进入待确认池，避免历史脏数据反复出现。
     deletedAt: null,
     // 可选按书过滤：用于单书角色资料工作台只看当前书数据。
     ...(filter.bookId ? { bookId: filter.bookId } : {}),
     book     : {
       deletedAt: null
     },
-    persona: {
+    entity: {
       deletedAt: null,
       // 仅在前端显式选择来源时才加条件；不选择表示“全部来源”。
       ...(filter.source ? { recordSource: filter.source } : {})
@@ -204,20 +205,21 @@ function buildRelationshipWhere(filter: z.infer<typeof listDraftsFilterSchema>) 
     // 这里只查询待确认草稿，已确认/已拒绝不会在工作台待处理池重复出现。
     status   : ProcessingStatus.DRAFT,
     deletedAt: null,
-    ...(filter.bookId ? { bookId: filter.bookId, book: { deletedAt: null } } : { book: { deletedAt: null } }),
-    ...(filter.source ? { recordSource: filter.source } : {})
+    ...(filter.bookId ? { bookId: filter.bookId, book: { deletedAt: null } } : { book: { deletedAt: null } })
+    // 注意：v5 Relationship 无 recordSource 字段（来源信号在底层 RELATION fact），故不再支持 source 过滤。
   };
 }
 
 /**
  * 功能：构造传记事件草稿查询条件。
  * 输入：`parsed filter`（经 Zod 校验后的筛选参数）。
- * 输出：Prisma `BiographyRecordWhereInput` 兼容对象。
+ * 输出：Prisma `FactWhereInput` 兼容对象。
  * 异常：无。
  * 副作用：无。
  */
 function buildBiographyWhere(filter: z.infer<typeof listDraftsFilterSchema>) {
   return {
+    factType : FactType.BIOGRAPHY,
     status   : ProcessingStatus.DRAFT,
     deletedAt: null,
     ...(filter.bookId ? { chapter: { bookId: filter.bookId, book: { deletedAt: null } } } : { chapter: { book: { deletedAt: null } } }),
@@ -245,9 +247,9 @@ export function createListDraftsService(
     // 第二步：先并发统计三类数量，summary 角标始终完整返回（不受 tab 过滤影响）。
     // 这是业务规则：即使用户只看某个 tab，也要看到全局待确认规模。
     const [personaCount, relationshipCount, biographyCount] = await Promise.all([
-      prismaClient.profile.count({ where: personaWhere }),
+      prismaClient.entityProfile.count({ where: personaWhere }),
       prismaClient.relationship.count({ where: relationshipWhere }),
-      prismaClient.biographyRecord.count({ where: biographyWhere })
+      prismaClient.fact.count({ where: biographyWhere })
     ]);
 
     // 第三步：按 tab 决定是否查询对应明细列表，避免无意义的大量明细 IO。
@@ -257,7 +259,7 @@ export function createListDraftsService(
 
     const [personas, relationships, biographyRecords] = await Promise.all([
       shouldListPersonas
-        ? prismaClient.profile.findMany({
+        ? prismaClient.entityProfile.findMany({
           where  : personaWhere,
           orderBy: [{ updatedAt: "desc" }],
           select : {
@@ -268,7 +270,7 @@ export function createListDraftsService(
                 title: true
               }
             },
-            persona: {
+            entity: {
               select: {
                 id          : true,
                 name        : true,
@@ -291,10 +293,9 @@ export function createListDraftsService(
             id                  : true,
             bookId              : true,
             relationshipTypeCode: true,
-            recordSource        : true,
-            chapterId           : true,
-            chapterNo           : true,
-            evidence            : true,
+            firstChapterId      : true,
+            firstChapterNo      : true,
+            weight              : true,
             book                : {
               select: {
                 title: true
@@ -316,19 +317,17 @@ export function createListDraftsService(
         })
         : Promise.resolve([]),
       shouldListBiography
-        ? prismaClient.biographyRecord.findMany({
+        ? prismaClient.fact.findMany({
           where  : biographyWhere,
           orderBy: [{ updatedAt: "desc" }],
           select : {
-            id          : true,
-            chapterId   : true,
-            chapterNo   : true,
-            category    : true,
-            title       : true,
-            location    : true,
-            event       : true,
-            recordSource: true,
-            chapter     : {
+            id           : true,
+            chapterId    : true,
+            chapterNo    : true,
+            eventCategory: true,
+            payload      : true,
+            recordSource : true,
+            chapter      : {
               select: {
                 bookId: true,
                 book  : {
@@ -338,7 +337,7 @@ export function createListDraftsService(
                 }
               }
             },
-            persona: {
+            sourceEntity: {
               select: {
                 id  : true,
                 name: true
@@ -362,46 +361,50 @@ export function createListDraftsService(
         id          : item.id,
         bookId      : item.bookId,
         bookTitle   : item.book.title,
-        personaId   : item.persona.id,
-        name        : item.persona.name,
-        aliases     : item.persona.aliases,
-        nameType    : item.persona.nameType,
-        recordSource: item.persona.recordSource,
-        confidence  : item.persona.confidence,
-        hometown    : item.persona.hometown,
+        personaId   : item.entity.id,
+        name        : item.entity.name,
+        aliases     : item.entity.aliases,
+        nameType    : item.entity.nameType,
+        recordSource: item.entity.recordSource,
+        confidence  : item.entity.confidence,
+        hometown    : item.entity.hometown,
         status      : ProcessingStatus.DRAFT
       })),
       relationships: relationships.map((item) => ({
         id             : item.id,
         bookId         : item.bookId,
         bookTitle      : item.book.title,
-        chapterId      : item.chapterId ?? "",
-        chapterNo      : item.chapterNo ?? 0,
+        chapterId      : item.firstChapterId ?? "",
+        chapterNo      : item.firstChapterNo ?? 0,
         sourcePersonaId: item.source.id,
         sourceName     : item.source.name,
         targetPersonaId: item.target.id,
         targetName     : item.target.name,
         type           : item.relationshipTypeCode,
-        weight         : 1,
-        evidence       : item.evidence ?? null,
-        recordSource   : item.recordSource,
+        weight         : item.weight,
+        // v5 Relationship 无 evidence/recordSource 列：evidence 置空、来源按 DRAFT 关系源自 AI 处理。
+        evidence       : null,
+        recordSource   : RecordSource.AI,
         status         : ProcessingStatus.DRAFT
       })),
-      biographyRecords: biographyRecords.map((item) => ({
-        id          : item.id,
-        bookId      : item.chapter.bookId,
-        bookTitle   : item.chapter.book.title,
-        chapterId   : item.chapterId,
-        chapterNo   : item.chapterNo,
-        personaId   : item.persona.id,
-        personaName : item.persona.name,
-        category    : item.category,
-        title       : item.title,
-        location    : item.location,
-        event       : item.event,
-        recordSource: item.recordSource,
-        status      : ProcessingStatus.DRAFT
-      }))
+      biographyRecords: biographyRecords.map((item) => {
+        const payload = (item.payload ?? {}) as Record<string, unknown>;
+        return {
+          id          : item.id,
+          bookId      : item.chapter.bookId,
+          bookTitle   : item.chapter.book.title,
+          chapterId   : item.chapterId,
+          chapterNo   : item.chapterNo,
+          personaId   : item.sourceEntity?.id ?? "",
+          personaName : item.sourceEntity?.name ?? "未知角色",
+          category    : item.eventCategory ?? "",
+          title       : typeof payload.title === "string" ? payload.title : null,
+          location    : typeof payload.location === "string" ? payload.location : null,
+          event       : typeof payload.event === "string" ? payload.event : "",
+          recordSource: item.recordSource,
+          status      : ProcessingStatus.DRAFT
+        };
+      })
     };
   }
 

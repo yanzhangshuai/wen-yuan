@@ -298,7 +298,7 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
   personas  : PersonaSnapshot[];
   graphEdges: GraphEdge[];
 }> {
-  const [relationships, profiles] = await Promise.all([
+  const [relationships, entityProfiles] = await Promise.all([
     prismaClient.relationship.findMany({
       where: {
         deletedAt: null,
@@ -312,23 +312,23 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
       ],
       select: {
         id                  : true,
-        sourceId            : true,
-        targetId            : true,
+        sourceEntityId      : true,
+        targetEntityId      : true,
         relationshipTypeCode: true,
-        chapterId           : true,
-        chapterNo           : true
+        firstChapterId      : true,
+        firstChapterNo      : true
       }
     }),
-    prismaClient.profile.findMany({
+    prismaClient.entityProfile.findMany({
       where: {
         bookId,
         deletedAt: null,
-        persona  : {
+        entity   : {
           deletedAt: null
         }
       },
       select: {
-        persona: {
+        entity: {
           select: {
             id  : true,
             name: true
@@ -342,16 +342,16 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
   const nameByCode = await lookupRelationshipTypeNames(typeCodes, prismaClient);
   const graphEdges: GraphEdge[] = relationships.map((item) => ({
     id       : item.id,
-    sourceId : item.sourceId,
-    targetId : item.targetId,
+    sourceId : item.sourceEntityId,
+    targetId : item.targetEntityId,
     type     : nameByCode.get(item.relationshipTypeCode) ?? item.relationshipTypeCode,
     weight   : 1,
-    chapterId: item.chapterId ?? "",
-    chapterNo: item.chapterNo ?? 0
+    chapterId: item.firstChapterId ?? "",
+    chapterNo: item.firstChapterNo ?? 0
   }));
 
-  // 先用 profile 作为人物主体集合。
-  const personas = profiles.map((item) => item.persona);
+  // 先用档案作为人物主体集合。
+  const personas = entityProfiles.map((item) => item.entity);
   const personaIdSet = new Set(personas.map((item) => item.id));
 
   for (const edge of graphEdges) {
@@ -359,10 +359,10 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
     personaIdSet.add(edge.targetId);
   }
 
-  // 关系边可能引用到尚未存在 profile 的人物，需补查避免路径节点缺名。
+  // 关系边可能引用到尚未存在档案的实体，需补查避免路径节点缺名。
   const missingPersonaIds = Array.from(personaIdSet).filter((personaId) => !personas.some((item) => item.id === personaId));
   if (missingPersonaIds.length > 0) {
-    const extraPersonas = await prismaClient.persona.findMany({
+    const extraEntities = await prismaClient.entity.findMany({
       where: {
         id       : { in: missingPersonaIds },
         deletedAt: null
@@ -372,7 +372,7 @@ async function loadBookGraphData(prismaClient: PrismaClient, bookId: string): Pr
         name: true
       }
     });
-    personas.push(...extraPersonas);
+    personas.push(...extraEntities);
   }
 
   return {

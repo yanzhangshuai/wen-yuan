@@ -17,20 +17,20 @@ describe("updateGraphLayout service", () => {
     // - persona-1：已有 profile，更新坐标时保留原 locked 等配置。
     // - persona-2：无 profile，按最小信息创建并写入坐标。
     // - persona-3：书内不存在，需忽略并返回 ignoredPersonaIds 供前端提示。
-    const profileUpsert = vi.fn().mockResolvedValue(null);
+    const entityProfileUpsert = vi.fn().mockResolvedValue(null);
     const txClient = {
-      profile: {
-        upsert: profileUpsert
+      entityProfile: {
+        upsert: entityProfileUpsert
       }
     };
     const service = createUpdateGraphLayoutService({
       book: {
         findFirst: vi.fn().mockResolvedValue({ id: "book-1" })
       },
-      profile: {
+      entityProfile: {
         findMany: vi.fn().mockResolvedValue([
           {
-            personaId   : "persona-1",
+            entityId    : "persona-1",
             visualConfig: {
               locked: true,
               x     : 1,
@@ -38,9 +38,9 @@ describe("updateGraphLayout service", () => {
             }
           }
         ]),
-        upsert: profileUpsert
+        upsert: entityProfileUpsert
       },
-      persona: {
+      entity: {
         findMany: vi.fn().mockResolvedValue([
           { id: "persona-1", name: "周进" },
           { id: "persona-2", name: "范进" }
@@ -62,11 +62,11 @@ describe("updateGraphLayout service", () => {
       ]
     });
 
-    expect(profileUpsert).toHaveBeenCalledTimes(2);
-    expect(profileUpsert).toHaveBeenNthCalledWith(
+    expect(entityProfileUpsert).toHaveBeenCalledTimes(2);
+    expect(entityProfileUpsert).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        where : { personaId_bookId: { personaId: "persona-1", bookId: "book-1" } },
+        where : { entityId_bookId: { entityId: "persona-1", bookId: "book-1" } },
         update: expect.objectContaining({
           visualConfig: {
             locked: true,
@@ -76,10 +76,10 @@ describe("updateGraphLayout service", () => {
         })
       })
     );
-    expect(profileUpsert).toHaveBeenNthCalledWith(
+    expect(entityProfileUpsert).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        where : { personaId_bookId: { personaId: "persona-2", bookId: "book-1" } },
+        where : { entityId_bookId: { entityId: "persona-2", bookId: "book-1" } },
         create: expect.objectContaining({
           localName   : "范进",
           visualConfig: {
