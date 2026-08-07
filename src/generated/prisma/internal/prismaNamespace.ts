@@ -402,8 +402,7 @@ export const ModelName = {
   AgentWriteAudit: 'AgentWriteAudit',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
-  AnalysisPhaseLog: 'AnalysisPhaseLog',
-  KnowledgeAuditLog: 'KnowledgeAuditLog'
+  AnalysisPhaseLog: 'AnalysisPhaseLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -419,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "skillVersion" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "skillVersion" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1829,80 +1828,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    KnowledgeAuditLog: {
-      payload: Prisma.$KnowledgeAuditLogPayload<ExtArgs>
-      fields: Prisma.KnowledgeAuditLogFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.KnowledgeAuditLogFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.KnowledgeAuditLogFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>
-        }
-        findFirst: {
-          args: Prisma.KnowledgeAuditLogFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.KnowledgeAuditLogFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>
-        }
-        findMany: {
-          args: Prisma.KnowledgeAuditLogFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>[]
-        }
-        create: {
-          args: Prisma.KnowledgeAuditLogCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>
-        }
-        createMany: {
-          args: Prisma.KnowledgeAuditLogCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.KnowledgeAuditLogCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>[]
-        }
-        delete: {
-          args: Prisma.KnowledgeAuditLogDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>
-        }
-        update: {
-          args: Prisma.KnowledgeAuditLogUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>
-        }
-        deleteMany: {
-          args: Prisma.KnowledgeAuditLogDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.KnowledgeAuditLogUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.KnowledgeAuditLogUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>[]
-        }
-        upsert: {
-          args: Prisma.KnowledgeAuditLogUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$KnowledgeAuditLogPayload>
-        }
-        aggregate: {
-          args: Prisma.KnowledgeAuditLogAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateKnowledgeAuditLog>
-        }
-        groupBy: {
-          args: Prisma.KnowledgeAuditLogGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.KnowledgeAuditLogGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.KnowledgeAuditLogCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.KnowledgeAuditLogCountAggregateOutputType> | number
-        }
-      }
-    }
   }
 } & {
   other: {
@@ -2310,23 +2235,6 @@ export const AnalysisPhaseLogScalarFieldEnum = {
 } as const
 
 export type AnalysisPhaseLogScalarFieldEnum = (typeof AnalysisPhaseLogScalarFieldEnum)[keyof typeof AnalysisPhaseLogScalarFieldEnum]
-
-
-export const KnowledgeAuditLogScalarFieldEnum = {
-  id: 'id',
-  objectType: 'objectType',
-  objectId: 'objectId',
-  objectName: 'objectName',
-  action: 'action',
-  before: 'before',
-  after: 'after',
-  operatorId: 'operatorId',
-  operatorNote: 'operatorNote',
-  relatedBookId: 'relatedBookId',
-  createdAt: 'createdAt'
-} as const
-
-export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2783,7 +2691,6 @@ export type GlobalOmitConfig = {
   validationReport?: Prisma.ValidationReportOmit
   mergeSuggestion?: Prisma.MergeSuggestionOmit
   analysisPhaseLog?: Prisma.AnalysisPhaseLogOmit
-  knowledgeAuditLog?: Prisma.KnowledgeAuditLogOmit
 }
 
 /* Types for Logging */

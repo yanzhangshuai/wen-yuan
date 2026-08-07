@@ -1,7 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { type SkillCategory, SkillStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
-import { auditLog } from "@/server/modules/knowledge/audit";
 import {
   parseSkillMetadata,
   type RelationshipCode
@@ -14,9 +13,9 @@ import {
  * 文件路径：`src/server/modules/skills/skillService.ts`
  *
  * 模块职责：
- * - Skill / SkillVersion / BookTypeSkill 三个模型的领域服务；
- * - 版本激活（全局激活 vs 书型激活，书型优先于全局）；
- * - 挂书型、启停、审计留痕（KnowledgeAuditLog）。
+ * - Skill / SkillVersion 的领域服务；
+ * - 版本激活（全局激活）；
+ * - 技能启停。
  *
  * 业务边界：
  * - 只负责技能包的"数据管理"，不负责装载合并（见 loader.ts）。
@@ -127,14 +126,6 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
           }
         },
         select: { id: true, slug: true, name: true }
-      });
-
-      await auditLog({
-        objectType: "SKILL",
-        objectId  : created.id,
-        objectName: created.name,
-        action    : "CREATE",
-        after     : { slug: created.slug }
       });
 
       return created;
@@ -312,14 +303,6 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
       select: { id: true, versionNo: true }
     });
 
-    await auditLog({
-      objectType: "SKILL",
-      objectId  : input.skillId,
-      objectName: skill.name,
-      action    : "UPDATE",
-      after     : { versionNo: version.versionNo }
-    });
-
     return version;
   }
 
@@ -355,65 +338,29 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
         data : { isActive: true }
       });
     });
-
-    const skill = await prismaClient.skill.findUnique({
-      where : { id: input.skillId },
-      select: { name: true }
-    });
-    await auditLog({
-      objectType: "SKILL",
-      objectId  : input.skillId,
-      objectName: skill?.name ?? input.skillId,
-      action    : "ACTIVATE",
-      after     : { versionId: input.versionId }
-    });
   }
 
   /**
    * 功能：设置技能包状态（DRAFT/ACTIVE/DISABLED/ARCHIVED）。
    * 输入：skillId、status。
-   * 副作用：写审计日志。
+   * 副作用：无。
    */
   async function setStatus(skillId: string, status: SkillStatus): Promise<void> {
     await prismaClient.skill.update({
       where: { id: skillId },
       data : { status }
     });
-
-    const skill = await prismaClient.skill.findUnique({
-      where : { id: skillId },
-      select: { name: true }
-    });
-    await auditLog({
-      objectType: "SKILL",
-      objectId  : skillId,
-      objectName: skill?.name ?? skillId,
-      action    : status === SkillStatus.ACTIVE ? "ACTIVATE" : "UPDATE",
-      after     : { status }
-    });
   }
 
   /**
    * 功能：切换技能独立启停开关（is_enabled，false=该 skill 全局不可用）。
    * 输入：skillId、isEnabled。
-   * 副作用：写审计日志。
+   * 副作用：无。
    */
   async function setSkillEnabled(skillId: string, isEnabled: boolean): Promise<void> {
     await prismaClient.skill.update({
       where: { id: skillId },
       data : { isEnabled }
-    });
-
-    const skill = await prismaClient.skill.findUnique({
-      where : { id: skillId },
-      select: { name: true }
-    });
-    await auditLog({
-      objectType: "SKILL",
-      objectId  : skillId,
-      objectName: skill?.name ?? skillId,
-      action    : isEnabled ? "ENABLE" : "DISABLE",
-      after     : { isEnabled }
     });
   }
 

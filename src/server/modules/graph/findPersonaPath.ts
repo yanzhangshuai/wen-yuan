@@ -3,7 +3,7 @@ import { ProcessingStatus } from "@/generated/prisma/enums";
 import { getNeo4jDriver } from "@/server/db/neo4j";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
-import { lookupRelationshipTypeNames } from "@/server/modules/knowledge/lookupTypeNames";
+import { lookupRelationshipTypeNames } from "@/server/modules/skills";
 
 /**
  * ============================================================================

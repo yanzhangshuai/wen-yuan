@@ -3,10 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createSkillGenerator } from "@/server/modules/skills/skillGenerator";
 
-vi.mock("@/server/modules/knowledge/audit", () => ({
-  auditLog: vi.fn()
-}));
-
 /**
  * SkillGenerator 骨架单测：
  * - buildContentFromSignals：信号 → SkillContent 的确定性组装；

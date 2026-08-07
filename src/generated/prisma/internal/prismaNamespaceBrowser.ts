@@ -69,8 +69,7 @@ export const ModelName = {
   AgentWriteAudit: 'AgentWriteAudit',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
-  AnalysisPhaseLog: 'AnalysisPhaseLog',
-  KnowledgeAuditLog: 'KnowledgeAuditLog'
+  AnalysisPhaseLog: 'AnalysisPhaseLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -457,23 +456,6 @@ export const AnalysisPhaseLogScalarFieldEnum = {
 } as const
 
 export type AnalysisPhaseLogScalarFieldEnum = (typeof AnalysisPhaseLogScalarFieldEnum)[keyof typeof AnalysisPhaseLogScalarFieldEnum]
-
-
-export const KnowledgeAuditLogScalarFieldEnum = {
-  id: 'id',
-  objectType: 'objectType',
-  objectId: 'objectId',
-  objectName: 'objectName',
-  action: 'action',
-  before: 'before',
-  after: 'after',
-  operatorId: 'operatorId',
-  operatorNote: 'operatorNote',
-  relatedBookId: 'relatedBookId',
-  createdAt: 'createdAt'
-} as const
-
-export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
 
 
 export const SortOrder = {

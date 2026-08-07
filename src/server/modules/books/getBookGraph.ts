@@ -2,7 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { ProcessingStatus, RecordSource } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
-import { lookupRelationshipTypeNames } from "@/server/modules/knowledge/lookupTypeNames";
+import { lookupRelationshipTypeNames } from "@/server/modules/skills";
 
 /**
  * ============================================================================

@@ -59,3 +59,7 @@ export {
   type SkillGenerationSignals,
   type GenerateSkillResult
 } from "./skillGenerator";
+
+export {
+  lookupRelationshipTypeNames
+} from "./lookupTypeNames";

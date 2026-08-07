@@ -139,8 +139,3 @@ export type MergeSuggestion = Prisma.MergeSuggestionModel
  * @db.remark: AI 阶段调用日志。记录每次调用模型、耗时、token 及 fallback 信息。
  */
 export type AnalysisPhaseLog = Prisma.AnalysisPhaseLogModel
-/**
- * Model KnowledgeAuditLog
- * @db.remark: 知识库变更审计日志。所有知识库对象的变更日志（含 skill 的 GENERATE/ACTIVATE）。
- */
-export type KnowledgeAuditLog = Prisma.KnowledgeAuditLogModel

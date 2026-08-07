@@ -751,34 +751,3 @@ model AnalysisPhaseLog {
   @@map("analysis_phase_logs")
 }
 
-/// @db.remark: 知识库变更审计日志。所有知识库对象的变更日志（含 skill 的 GENERATE/ACTIVATE）。
-model KnowledgeAuditLog {
-  id String @id @default(uuid()) @db.Uuid
-
-  /// 被操作对象类型
-  objectType String @map("object_type")
-  objectId   String @map("object_id")
-  objectName String @map("object_name") // 冗余名称
-
-  /// 操作类型：CREATE | UPDATE | DELETE | VERIFY | REJECT | ACTIVATE | DEACTIVATE | IMPORT | GENERATE
-  action String
-
-  /// 变更前/后快照
-  before Json? @db.JsonB
-  after  Json? @db.JsonB
-
-  /// 操作人
-  operatorId   String? @map("operator_id")
-  operatorNote String? @map("operator_note") @db.Text
-
-  /// 关联书籍
-  relatedBookId String? @map("related_book_id") @db.Uuid
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  @@index([objectType, objectId], map: "audit_log_object_idx")
-  @@index([createdAt(sort: Desc)], map: "audit_log_created_idx")
-  @@index([operatorId, createdAt(sort: Desc)], map: "audit_log_operator_idx")
-  @@map("knowledge_audit_logs")
-}
-

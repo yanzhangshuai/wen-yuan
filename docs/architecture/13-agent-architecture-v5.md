@@ -3,7 +3,7 @@
 > 本文档是分析域的**当前权威架构**，取代 v4（`12-agent-architecture-full.md`）与 00-11 中所有 Tool-Use Loop 相关描述。
 > 核心转向：**模型只做它擅长的提取，系统只做模型永远不会的验收。**
 >
-> 版本：2026-08-07 · v5.3（v5 经四轮评审收敛：双 tier 身份解析 + 身份判定原语 + 分布式冲突扫描 + 登记表派生视图 + 预算修正；skill 装载重构：AI 动态选 skill + 关系码契约入 skill；简化清理：AI 调用统一系统默认模型，移除 feature_models 功能点映射）
+> 版本：2026-08-07 · v5.4（v5 经四轮评审收敛：双 tier 身份解析 + 身份判定原语 + 分布式冲突扫描 + 登记表派生视图 + 预算修正；skill 装载重构：AI 动态选 skill + 关系码契约入 skill；简化清理：AI 调用统一系统默认模型，移除 feature_models 功能点映射；收尾清理：删知识库概念与技能变更审计 knowledge_audit_logs，关系码名查询迁入 skills 域）
 
 ---
 
@@ -235,7 +235,7 @@ reconcile（漏网高频，复用原语）
 
 ## 第六部分 · 数据模型调整
 
-基于现有 schema（已迁移的新库；skill 装载重构后：删 `book_types`/`book_type_skills`/`relationship_types`/`model_strategy_configs`/`text_chunks`/`fact_evidences`/`feature_models` 7 表），**运行域按"无工具循环"简化**：
+基于现有 schema（已迁移的新库；skill 装载重构后：删 `book_types`/`book_type_skills`/`relationship_types`/`model_strategy_configs`/`text_chunks`/`fact_evidences`/`feature_models`/`knowledge_audit_logs` 8 表），**运行域按"无工具循环"简化**：
 
 | 表 | 处置 | 理由 |
 |---|---|---|

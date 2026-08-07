@@ -13,14 +13,6 @@ import { type PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 
-/** 阶段展示顺序（用于成本明细稳定排序；未知 stage 排最后）。 */
-const STAGE_ORDER = new Map<string, number>([
-  ["SKILL_SELECT", 0],
-  ["ROSTER_DISCOVERY", 1],
-  ["TITLE_RESOLUTION", 2],
-  ["INDEPENDENT_EXTRACTION", 3]
-]);
-
 interface PhaseLogRow {
   stage           : string;
   chapterId       : string | null;
@@ -235,15 +227,8 @@ export async function getJobCostSummary(
     stageAggMap.set(finalLog.stage, existingStageAgg);
   }
 
+  // byStage 按阶段首次出现顺序展示（Map 保插入序，即日志出现顺序）。
   const byStage: JobCostSummaryStageItem[] = Array.from(stageAggMap.values())
-    .sort((a, b) => {
-      const orderA = STAGE_ORDER.get(a.stage) ?? Number.MAX_SAFE_INTEGER;
-      const orderB = STAGE_ORDER.get(b.stage) ?? Number.MAX_SAFE_INTEGER;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      return a.stage.localeCompare(b.stage);
-    })
     .map((stageAgg) => ({
       stage           : stageAgg.stage,
       calls           : stageAgg.calls,

@@ -3,10 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createSkillService } from "@/server/modules/skills/skillService";
 
-vi.mock("@/server/modules/knowledge/audit", () => ({
-  auditLog: vi.fn()
-}));
-
 /**
  * Skill CRUD + 版本管理单测：
  * - createSkill（合法 content 建包 + 版本；非法 content 拒绝）；
