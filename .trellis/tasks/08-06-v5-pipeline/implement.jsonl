@@ -1,1 +1,10 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/tasks/08-06-v5-pipeline/prd.md", "reason": "需求与验收标准（生命周期/Pass0-5/eval gate）"}
+{"file": ".trellis/tasks/08-06-v5-pipeline/design.md", "reason": "技术设计：runAnalysisJob 编排 + 5 自建能力 + 并发"}
+{"file": ".trellis/tasks/08-06-v5-pipeline/implement.md", "reason": "执行计划：5 阶段清单与审查门"}
+{"file": ".trellis/tasks/08-06-v5-pipeline/research/pipeline-orchestration.md", "reason": "调研：各 Pass 接口 + 编排顺序 + 5 个缺口"}
+{"file": ".trellis/spec/backend/analysis-pipeline.md", "reason": "管线架构规范（编排边界）"}
+{"file": ".trellis/spec/backend/ai-output-contract.md", "reason": "AI 输出契约（facts 落库校验）"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 事务（facts 落库 + 终态事务）"}
+{"file": ".trellis/spec/backend/neo4j-guidelines.md", "reason": "Neo4j 同步规范（Pass5）"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试规范（runAnalysisJob 高覆盖 + 集成测试）"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "KISS/DRY/最小修改/禁 any"}

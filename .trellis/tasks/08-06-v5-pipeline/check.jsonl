@@ -1,1 +1,7 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/tasks/08-06-v5-pipeline/prd.md", "reason": "验收标准：生命周期/时序/快照/eval gate 全绿"}
+{"file": ".trellis/tasks/08-06-v5-pipeline/design.md", "reason": "编排时序正确性（reconcile 在 Pass1 后 Pass3 前）+ 5 能力完整性"}
+{"file": ".trellis/tasks/08-06-v5-pipeline/research/pipeline-orchestration.md", "reason": "接口对照（runAnalysisJob 是否串对全部 Pass 组件）"}
+{"file": ".trellis/spec/backend/analysis-pipeline.md", "reason": "管线边界（facts 唯一写入口）"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "facts 落库事务、终态事务原子性"}
+{"file": ".trellis/spec/backend/neo4j-guidelines.md", "reason": "Neo4j 同步正确性"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "runAnalysisJob 覆盖完备性 + 集成测试"}

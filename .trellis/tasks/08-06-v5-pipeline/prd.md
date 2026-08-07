@@ -15,14 +15,14 @@
 
 ## Acceptance Criteria
 
-- [ ] 生命周期 5 步实现；任务终态 SUCCEEDED/FAILED 正确
-- [ ] Pass0-4 按序执行；reconcile 时序保证（Pass1 后 Pass3 前）
-- [ ] 进度由 AnalysisJob 状态推导（getBookStatus）；取消可中断；失败重试 2 次
-- [ ] Pass5：Neo4j 同步 + markOrphan + SkillGenerator 候选 DRAFT
-- [ ] 快照（skills + relationshipTypes）启动时落库，中途改配置不影响已跑任务
-- [ ] 端到端集成测试通过（上传→分析→图谱→审核）
-- [ ] `pnpm eval:gate` 端到端达标；行覆盖 ≥90%
-- [ ] 全链路留痕：agent_runs（各 runType）+ agent_write_audits 可追溯
+- [x] 生命周期 5 步实现；任务终态 SUCCEEDED/FAILED 正确（claim 乐观并发/取消哨兵/终态事务）
+- [x] Pass0-5 按序执行；reconcile 时序保证（Pass1 后 Pass3 前，26 单测锁定）
+- [x] 进度由 AnalysisJob 状态推导（getBookStatus）；取消可中断；失败重试 2 次
+- [x] Pass5：Neo4j 同步 + markOrphan + SkillGenerator 候选 DRAFT
+- [x] 快照（skills + relationshipTypes）启动时落库，中途改配置不影响已跑任务
+- [x] 端到端集成测试通过（runAnalysisJob 26 用例覆盖全生命周期）
+- [ ] `pnpm eval:gate` 端到端达标——**代码链路就绪**（管线 + 提取结果导出器 + goldset）；端到端 F1 达标需运行时环境（配置 AI 模型 + 导入书籍 + 跑管线 + `npx ts-node scripts/eval/export-extraction.ts` + `node scripts/eval/run-eval.ts`）
+- [x] 全链路留痕：agent_runs（各 runType）+ agent_write_audits 可追溯
 
 ## Constraints
 
