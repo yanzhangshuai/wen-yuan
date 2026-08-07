@@ -24,29 +24,23 @@ describe("createSkillGenerator", () => {
       updateMany: ReturnType<typeof vi.fn>;
       update    : ReturnType<typeof vi.fn>;
     };
-    bookTypeSkill: {
-      upsert     : ReturnType<typeof vi.fn>;
-      deleteMany : ReturnType<typeof vi.fn>;
-      updateMany : ReturnType<typeof vi.fn>;
-    };
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     prismaMock = {
-      $transaction : vi.fn(),
-      book         : { findUnique: vi.fn() },
-      skill        : { findMany: vi.fn(), create: vi.fn() },
-      skillVersion : { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
-      bookTypeSkill: { upsert: vi.fn(), deleteMany: vi.fn(), updateMany: vi.fn() }
+      $transaction: vi.fn(),
+      book        : { findUnique: vi.fn() },
+      skill       : { findMany: vi.fn(), create: vi.fn() },
+      skillVersion: { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn(), update: vi.fn() }
     };
   });
 
   it("buildMarkdownFromSignals 生成含高频称谓的 MD 文档", () => {
     const generator = createSkillGenerator(prismaMock as unknown as PrismaClient);
     const markdown = generator.buildMarkdownFromSignals({
-      bookId         : "book-1",
-      frequentTitles : ["老爷", "先生"]
+      bookId        : "book-1",
+      frequentTitles: ["老爷", "先生"]
     });
     expect(markdown).toContain("老爷");
     expect(markdown).toContain("先生");
@@ -56,7 +50,7 @@ describe("createSkillGenerator", () => {
   it("buildMarkdownFromSignals 生成含字典外关系码的 MD 文档", () => {
     const generator = createSkillGenerator(prismaMock as unknown as PrismaClient);
     const markdown = generator.buildMarkdownFromSignals({
-      bookId                   : "book-1",
+      bookId                  : "book-1",
       unknownRelationshipCodes: ["师叔", "义兄"]
     });
     expect(markdown).toContain("师叔");
@@ -71,28 +65,28 @@ describe("createSkillGenerator", () => {
   });
 
   it("书籍不存在拒绝生成", async () => {
-    (prismaMock.book.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (prismaMock.book.findUnique).mockResolvedValue(null);
     const generator = createSkillGenerator(prismaMock as unknown as PrismaClient);
     await expect(generator.generateSkillFromSignals({
-      bookId         : "missing",
-      frequentTitles : ["老爷"]
+      bookId        : "missing",
+      frequentTitles: ["老爷"]
     })).rejects.toThrow("书籍不存在");
   });
 
   it("成功创建 DRAFT 技能", async () => {
-    (prismaMock.book.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ id: "book-1", title: "儒林外史" });
-    (prismaMock.skill.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    (prismaMock.book.findUnique).mockResolvedValue({ id: "book-1", title: "儒林外史" });
+    (prismaMock.skill.findMany).mockResolvedValue([]);
     const txMock = {
       skill: {
         create: vi.fn().mockResolvedValue({ id: "skill-gen", slug: "gen-book1-1", name: "儒林外史 生成技能" })
       }
     };
-    (prismaMock.$transaction as ReturnType<typeof vi.fn>).mockImplementation((fn: (tx: unknown) => unknown) => fn(txMock));
+    (prismaMock.$transaction).mockImplementation((fn: (tx: unknown) => unknown) => fn(txMock));
 
     const generator = createSkillGenerator(prismaMock as unknown as PrismaClient);
     const result = await generator.generateSkillFromSignals({
-      bookId                   : "book-1",
-      frequentTitles           : ["老爷"],
+      bookId                  : "book-1",
+      frequentTitles          : ["老爷"],
       unknownRelationshipCodes: ["师叔"]
     });
 

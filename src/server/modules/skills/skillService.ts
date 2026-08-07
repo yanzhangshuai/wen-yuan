@@ -2,7 +2,10 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { type SkillCategory, SkillStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { auditLog } from "@/server/modules/knowledge/audit";
-import { parseSkillMetadata } from "@/server/modules/skills/content-schema";
+import {
+  parseSkillMetadata,
+  type RelationshipCode
+} from "@/server/modules/skills/content-schema";
 
 /**
  * =============================================================================
@@ -50,6 +53,8 @@ export interface SkillListItem {
   source     : string;
   sortOrder  : number;
   isBuiltin  : boolean;
+  /** 独立启停开关（v5：false=全局不可用，管理端列表展示/切换）。 */
+  isEnabled  : boolean;
   versionNo  : number | null;
   createdAt  : string;
   updatedAt  : string;
@@ -175,6 +180,7 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
       source     : row.source,
       sortOrder  : row.sortOrder,
       isBuiltin  : row.isBuiltin,
+      isEnabled  : row.isEnabled,
       versionNo  : row.versions[0]?.versionNo ?? null,
       createdAt  : row.createdAt.toISOString(),
       updatedAt  : row.updatedAt.toISOString()
@@ -220,6 +226,50 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
         createdAt : version.createdAt.toISOString()
       }))
     };
+  }
+
+  /**
+   * 功能：读取 skill 当前激活版本的 frontmatter 契约（关系码 / 虚指名单）。
+   * 输入：skillId。
+   * 输出：`{ versionNo, relationshipCodes, deicticJunk }`；skill 不存在返回 null，
+   *       无激活版或 frontmatter 解析失败时契约为空数组（管理端只读展示，不阻断）。
+   * 异常：无。
+   */
+  async function getSkillContract(skillId: string): Promise<{
+    versionNo        : number | null;
+    relationshipCodes: RelationshipCode[];
+    deicticJunk      : string[];
+  } | null> {
+    const skill = await prismaClient.skill.findUnique({
+      where  : { id: skillId },
+      include: {
+        versions: {
+          where  : { isActive: true },
+          orderBy: { versionNo: "desc" },
+          take   : 1
+        }
+      }
+    });
+    if (!skill) {
+      return null;
+    }
+
+    const active = skill.versions[0];
+    if (!active) {
+      return { versionNo: null, relationshipCodes: [], deicticJunk: [] };
+    }
+
+    try {
+      const metadata = parseSkillMetadata(active.content);
+      return {
+        versionNo        : active.versionNo,
+        relationshipCodes: metadata.relationshipCodes ?? [],
+        deicticJunk      : metadata.deicticJunk ?? []
+      };
+    } catch (error) {
+      console.warn("[skillService] 激活版 frontmatter 解析失败，契约按空展示:", error instanceof Error ? error.message : String(error));
+      return { versionNo: active.versionNo, relationshipCodes: [], deicticJunk: [] };
+    }
   }
 
   /**
@@ -384,6 +434,7 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     createSkill,
     listSkills,
     getSkill,
+    getSkillContract,
     createNewVersion,
     activateVersion,
     setStatus,

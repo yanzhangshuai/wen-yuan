@@ -9,41 +9,15 @@ export const metadata: Metadata = {
   title: "知识库管理"
 };
 
+/**
+ * v5（阶段 5）：v4 知识库页面已删，只保留总览与变更日志；
+ * 技能管理入口独立为 /admin/skills（见 admin-header）。
+ */
 const knowledgeBaseLinks = [
   {
     href   : "/admin/knowledge-base",
     label  : "总览",
     iconKey: "overview"
-  },
-  {
-    href   : "/admin/knowledge-base/book-types",
-    label  : "书籍类型",
-    iconKey: "book-type"
-  },
-  {
-    href   : "/admin/knowledge-base/alias-packs",
-    label  : "别名知识包",
-    iconKey: "alias-pack"
-  },
-  {
-    href   : "/admin/knowledge-base/title-filters",
-    label  : "泛化称谓",
-    iconKey: "title-filter"
-  },
-  {
-    href   : "/admin/knowledge-base/relationship-types",
-    label  : "关系类型",
-    iconKey: "relationship-type"
-  },
-  {
-    href   : "/admin/knowledge-base/prompt-templates",
-    label  : "提示词模板",
-    iconKey: "prompt-template"
-  },
-  {
-    href   : "/admin/knowledge-base/extraction-rules",
-    label  : "提取规则",
-    iconKey: "extraction-rule"
   },
   {
     href   : "/admin/knowledge-base/change-logs",

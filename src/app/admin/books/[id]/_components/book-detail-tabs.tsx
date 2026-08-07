@@ -4,12 +4,10 @@
  * ============================================================================
  * 文件定位：`src/app/admin/books/[id]/_components/book-detail-tabs.tsx`
  * ----------------------------------------------------------------------------
- * 这是书籍详情页的 Tab 容器组件，负责在客户端切换四个业务面板：
+ * 这是书籍详情页的 Tab 容器组件，负责在客户端切换三个业务面板：
  * - 解析进度
  * - 解析任务
  * - 人物
- * - 知识库
- * - 模型策略
  *
  * Next.js / React 语义：
  * - `"use client"` 必须保留：Tab 切换依赖 `useState` 与点击事件；
@@ -26,7 +24,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 import { AnalysisJobsPanel } from "./analysis-jobs-panel";
-import { BookKnowledgePanel } from "./book-knowledge-panel";
 import { ParseProgressPanel } from "./parse-progress-panel";
 import { PersonasPanel } from "./personas-panel";
 
@@ -44,18 +41,18 @@ interface BookDetailTabsProps {
  * Tab 标识。
  * 这是前端 UI 枚举，不直接等同后端字段。
  */
-type Tab = "overview" | "jobs" | "personas" | "knowledge";
+type Tab = "overview" | "jobs" | "personas";
 
 /**
  * Tab 配置列表。
  * 统一维护可见标签与顺序，避免在 JSX 中写死多个按钮导致维护分散。
- * v5：模型策略 Tab 已删除（模型改由模型页“功能点模型”统一管理）。
+ * v5：模型策略 Tab 已删除（模型改由模型页“功能点模型”统一管理）；
+ * 知识库 Tab 已删除（v4 知识包体系由 skill 契约取代）。
  */
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "解析进度" },
   { id: "jobs",     label: "解析任务" },
-  { id: "personas", label: "人物"     },
-  { id: "knowledge", label: "知识库"  }
+  { id: "personas", label: "人物"     }
 ];
 
 /**
@@ -111,10 +108,6 @@ export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
 
       {activeTab === "personas" && (
         <PersonasPanel bookId={bookId} />
-      )}
-
-      {activeTab === "knowledge" && (
-        <BookKnowledgePanel bookId={bookId} />
       )}
     </div>
   );

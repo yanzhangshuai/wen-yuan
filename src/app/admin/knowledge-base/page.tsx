@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenText, FileClock, Filter, Regex, ScrollText, Sparkles } from "lucide-react";
+import { FileClock } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,54 +8,30 @@ import {
   PageSection
 } from "@/components/layout/page-header";
 
+/**
+ * `/admin/knowledge-base` 知识库管理总览。
+ *
+ * v5（阶段 5）：v4 知识库模块（书籍类型/别名包/称谓/提示词/提取规则/关系类型）已由
+ * Skill 契约取代并删除，只保留变更日志审计入口；技能包管理在 `/admin/skills`。
+ */
 const knowledgeModules = [
-  {
-    href       : "/admin/knowledge-base/book-types",
-    title      : "书籍类型",
-    description: "维护书籍类型与 NER 调谐配置。",
-    icon       : BookOpenText
-  },
-  {
-    href       : "/admin/knowledge-base/alias-packs",
-    title      : "别名知识包",
-    description: "管理人物标准名、别名与 AI 生成导入。",
-    icon       : Sparkles
-  },
-  {
-    href       : "/admin/knowledge-base/title-filters",
-    title      : "泛化称谓",
-    description: "配置安全泛称、默认泛称及书籍类型豁免。",
-    icon       : Filter
-  },
-  {
-    href       : "/admin/knowledge-base/prompt-templates",
-    title      : "提示词模板",
-    description: "查看版本、激活模板并预览渲染结果。",
-    icon       : ScrollText
-  },
-  {
-    href       : "/admin/knowledge-base/extraction-rules",
-    title      : "提取规则",
-    description: "维护 NER 词典规则与实体/关系 Prompt 提取规则的统一词表。",
-    icon       : Regex
-  },
   {
     href       : "/admin/knowledge-base/change-logs",
     title      : "变更日志",
-    description: "审计知识库对象的创建、修改、激活与导入。",
+    description: "审计技能包等对象的创建、修改、激活与启停记录。",
     icon       : FileClock
   }
 ] as const;
 
 /**
- * `/admin/knowledge-base` 知识库管理总览。
+ * 知识库管理总览页。
  */
 export default function KnowledgeBasePage() {
   return (
     <PageContainer>
       <PageHeader
         title="知识库管理"
-        description="集中维护解析运行时依赖的知识数据、规则与模板。"
+        description="技能包（Skill）启停与契约见「技能管理」；此处保留变更日志审计。"
         breadcrumbs={[
           { label: "管理后台", href: "/admin" },
           { label: "知识库" }

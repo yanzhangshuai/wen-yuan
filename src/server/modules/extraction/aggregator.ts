@@ -15,7 +15,7 @@
  */
 import { prisma } from "@/server/db/prisma";
 
-/** SYMMETRIC 关系码（方向规范化 source<target）。临时静态表，待 DB relationship_types.direction 驱动。 */
+/** SYMMETRIC 关系码兜底（方向规范化 source<target）。v5：方向权威源为 skill 契约（relationshipCodes.direction），本静态集仅作缺契约时的兜底。 */
 const SYMMETRIC_CODES: ReadonlySet<string> = new Set(["兄弟", "夫妻", "同年", "同僚", "朋友", "仇敌"]);
 
 export interface RebuiltRelationship {

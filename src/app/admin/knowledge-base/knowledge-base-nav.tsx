@@ -2,13 +2,7 @@
 
 import {
   BookMarked,
-  BookOpenText,
   FileClock,
-  Filter,
-  Network,
-  Regex,
-  ScrollText,
-  Sparkles,
   type LucideIcon
 } from "lucide-react";
 import Link from "next/link";
@@ -18,13 +12,7 @@ import { cn } from "@/lib/utils";
 
 export type KnowledgeBaseNavIconKey =
   | "overview"
-  | "book-type"
-  | "alias-pack"
-  | "title-filter"
-  | "prompt-template"
-  | "extraction-rule"
-  | "change-log"
-  | "relationship-type";
+  | "change-log";
 
 export interface KnowledgeBaseNavLink {
   href   : string;
@@ -37,18 +25,14 @@ export interface KnowledgeBaseNavProps {
 }
 
 const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
-  overview           : BookMarked,
-  "book-type"        : BookOpenText,
-  "alias-pack"       : Sparkles,
-  "title-filter"     : Filter,
-  "prompt-template"  : ScrollText,
-  "extraction-rule"  : Regex,
-  "relationship-type": Network,
-  "change-log"       : FileClock
+  overview    : BookMarked,
+  "change-log": FileClock
 };
 
 /**
  * 知识库侧边导航需要在客户端读取 pathname，才能为当前模块提供稳定高亮。
+ * v5（阶段 5）：v4 知识库页面（书籍类型/别名包/称谓/提示词/提取规则/关系类型）已删，
+ * 只保留总览与变更日志。
  */
 export function KnowledgeBaseNav({ links }: KnowledgeBaseNavProps) {
   const pathname = usePathname();

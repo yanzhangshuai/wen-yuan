@@ -45,23 +45,19 @@ import {
   CheckCircle2,
   Loader2,
   UploadCloud,
-  X as XIcon,
   XCircle
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
-  SelectEmptyItem,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-  isSelectEmptyValue
+  SelectValue
 } from "@/components/ui/select";
 import {
   confirmBookChapters,
@@ -74,9 +70,7 @@ import {
   type CreatedBookData,
   type StartAnalysisBody
 } from "@/lib/services/books";
-import { fetchKnowledgePacks, mountPackToBook, type KnowledgePackItem } from "@/lib/services/knowledge";
 import { BookDetailTabs } from "@/app/admin/books/[id]/_components/book-detail-tabs";
-import { fetchActiveBookTypes, type BookTypeOption } from "@/lib/services/book-types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -160,26 +154,11 @@ export default function AdminImportPage() {
   const [fileError, setFileError] = useState<string | null>(null);
 
   // Step 1：基础元数据（可选，允许后端自动识别）
+  // v5：书型（bookTypeId）与知识包绑定已删除——skill 由解析前 AI 按书动态选择，不再书级持久化。
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [dynasty, setDynasty] = useState("");
-  const [bookTypeId, setBookTypeId] = useState("");
   const [description, setDescription] = useState("");
-
-  // 动态加载书籍类型列表（替代硬编码的书籍类型下拉）
-  const [bookTypes, setBookTypes] = useState<BookTypeOption[]>([]);
-  useEffect(() => {
-    fetchActiveBookTypes().then(setBookTypes).catch(() => {/* 静默降级 */});
-  }, []);
-
-  // 知识包列表 + 已选知识包 ID（step 1 可选绑定）
-  const [availablePacks, setAvailablePacks] = useState<KnowledgePackItem[]>([]);
-  const [selectedPackIds, setSelectedPackIds] = useState<string[]>([]);
-  useEffect(() => {
-    fetchKnowledgePacks()
-      .then((packs) => setAvailablePacks(packs.filter((pack) => pack.isActive)))
-      .catch(() => {/* 静默降级，知识包是可选绑定 */});
-  }, []);
 
   // Step 2：章节预览与确认所需状态
   /** 创建成功后的书籍主标识。后续所有步骤都依赖该 ID。 */
@@ -291,30 +270,12 @@ export default function AdminImportPage() {
       if (title) formData.set("title", title);
       if (author) formData.set("author", author);
       if (dynasty) formData.set("dynasty", dynasty);
-      if (bookTypeId) formData.set("bookTypeId", bookTypeId);
       if (description) formData.set("description", description);
 
       const data = await createBook(formData);
       setCreatedBook({ id: data.id, title: data.title });
 
-      // 绑定选中的知识包，并明确反馈成功/失败数量，避免静默丢失配置。
-      if (selectedPackIds.length > 0) {
-        const results = await Promise.allSettled(
-          selectedPackIds.map((packId) => mountPackToBook(data.id, packId))
-        );
-
-        const mountedCount = results.filter((result) => result.status === "fulfilled").length;
-        const failedCount = results.length - mountedCount;
-
-        if (failedCount > 0) {
-          toast.warning(`书籍已创建，成功绑定 ${mountedCount} 个知识包，另有 ${failedCount} 个绑定失败。`);
-        } else {
-          toast.success(`书籍已创建并绑定 ${mountedCount} 个知识包，正在加载章节预览...`);
-        }
-      } else {
-        toast.success("书籍已创建，正在加载章节预览...");
-      }
-
+      toast.success("书籍已创建，正在加载章节预览...");
       setStep(2);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "创建书籍失败");
@@ -555,74 +516,8 @@ export default function AdminImportPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="bookTypeId" className="text-sm font-medium">书籍类型</label>
-                  <Select
-                    value={bookTypeId}
-                    onValueChange={(value) => setBookTypeId(isSelectEmptyValue(value) ? "" : value)}
-                  >
-                    <SelectTrigger id="bookTypeId" className="w-full">
-                      <SelectValue placeholder="自动（可选）" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectEmptyItem>自动（可选）</SelectEmptyItem>
-                      {bookTypes.map(bt => (
-                        <SelectItem key={bt.id} value={bt.id}>{bt.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <label htmlFor="description" className="text-sm font-medium">简介</label>
                   <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="可选" />
-                </div>
-
-                {/* 知识库绑定（可选）：导入后解析可依赖所选知识包 */}
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-medium">绑定知识包 <span className="text-muted-foreground font-normal">（可选，解析时自动载入）</span></label>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedPackIds.map(pid => {
-                      const pack = availablePacks.find(p => p.id === pid);
-                      return pack ? (
-                        <Badge key={pid} variant="secondary" className="gap-1 pr-1">
-                          {pack.name}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPackIds(prev => prev.filter(id => id !== pid))}
-                            className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
-                            aria-label={`移除 ${pack.name}`}
-                          >
-                            <XIcon size={10} />
-                          </button>
-                        </Badge>
-                      ) : null;
-                    })}
-                    {availablePacks.filter(p => !selectedPackIds.includes(p.id)).length > 0 && (
-                      <Select
-                        value=""
-                        onValueChange={(value) => {
-                          if (value) setSelectedPackIds(prev => [...prev, value]);
-                        }}
-                      >
-                        <SelectTrigger className="h-7 text-xs w-auto min-w-30">
-                          <SelectValue placeholder="+ 添加知识包" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availablePacks
-                            .filter(p => !selectedPackIds.includes(p.id))
-                            .map(p => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.name}
-                                {p.bookType ? <span className="ml-1 text-muted-foreground">({p.bookType.name})</span> : null}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {availablePacks.length === 0 && selectedPackIds.length === 0 && (
-                      <p className="text-xs text-muted-foreground">暂无可用知识包</p>
-                    )}
-                  </div>
                 </div>
 
                 <div className="md:col-span-2 flex justify-end">

@@ -109,9 +109,10 @@ describe("createSkillService", () => {
         source     : "MANUAL",
         sortOrder  : 0,
         isBuiltin  : false,
+        isEnabled  : true,
         createdAt  : new Date("2026-08-06T00:00:00Z"),
         updatedAt  : new Date("2026-08-06T00:00:00Z"),
-        versions   : [{ versionNo: 3, bookTypeId: null }]
+        versions   : [{ versionNo: 3 }]
       }
     ]);
 
@@ -120,6 +121,43 @@ describe("createSkillService", () => {
 
     expect(list).toHaveLength(1);
     expect(list[0].versionNo).toBe(3);
+    expect(list[0].isEnabled).toBe(true);
+  });
+
+  it("getSkillContract 解析激活版 frontmatter 契约", async () => {
+    (prismaMock.skill.findUnique).mockResolvedValue({
+      id      : "skill-1",
+      versions: [{
+        versionNo: 3,
+        content  : `---
+kind: RELATIONSHIP_TYPE
+relationshipCodes:
+  - code: 父子
+    direction: INVERSE
+    category: 血缘
+    aliases: [父亲, 父]
+deicticJunk: [之, 其]
+---
+正文`
+      }]
+    });
+
+    const service = createSkillService(prismaMock as unknown as PrismaClient);
+    const contract = await service.getSkillContract("skill-1");
+
+    expect(contract).not.toBeNull();
+    expect(contract?.versionNo).toBe(3);
+    expect(contract?.relationshipCodes[0]).toMatchObject({ code: "父子", direction: "INVERSE" });
+    expect(contract?.deicticJunk).toEqual(["之", "其"]);
+  });
+
+  it("getSkillContract skill 不存在返回 null", async () => {
+    (prismaMock.skill.findUnique).mockResolvedValue(null);
+
+    const service = createSkillService(prismaMock as unknown as PrismaClient);
+    const contract = await service.getSkillContract("nope");
+
+    expect(contract).toBeNull();
   });
 
   it("activateVersion 停用同作用域激活版并激活目标版", async () => {
