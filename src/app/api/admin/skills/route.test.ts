@@ -1,7 +1,7 @@
 /**
  * 文件定位（Next.js Route Handler 单测）：
  * - 本文件对应 `src/app/api/admin/skills/route.ts`，验证技能包列表接口契约。
- * - v5（阶段 5）：管理端维护每个 skill 的独立启停开关；列表含 isEnabled 与激活版本号。
+ * - 管理端维护每个 skill 的独立启停开关；列表含 isEnabled 与激活版本号。
  *
  * 业务职责：
  * - 约束鉴权、服务层调用参数与统一响应包结构。

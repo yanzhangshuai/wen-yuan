@@ -6,8 +6,8 @@
 
 ## Requirements
 
-- **runAnalysisJob 生命周期**：claim（QUEUED→RUNNING）→ 重置章节状态 → 初始化 book 状态 → resolveSkillsForBook → 管线执行（Pass0-4 按序）→ SUCCEEDED/FAILED 落库。
-- **Pass0-4 编排**：Tier1→Tier2→分片提取→reconcile（Pass1 与 Pass3 之间）→护栏→聚合→审核流；进度写回 parseProgress（按段切分）。
+- **runAnalysisJob 生命周期**：claim（QUEUED→RUNNING）→ 重置章节状态 → 初始化 book 状态 → `selectSkillsForJob`（任务启动快照）→ `resolveSkillsForJob`（从快照装载）→ 管线执行（Pass0-4 按序）→ SUCCEEDED/FAILED 落库。
+- **Pass0-4 编排**：Tier1→Tier2→分片提取→reconcile（Pass1 与 Pass3 之间）→护栏→聚合→审核流；进度由 `getBookStatus` 从 AnalysisJob 状态推导（parseProgress 列已删）。
 - **Pass5**：refreshRelationshipsForBook → Neo4j 惰性全量重同步 → markOrphan → SkillGenerator 候选（全自动生成 + 人确认启用）→ 终态落库。
 - **并发/一致性**：分片提取并发控制；写审计；失败重试（章节重试 2 次）；任务取消贯穿（job 级 isCanceled）。
 - **端到端集成**：上传书籍 → 章节拆分 → 分析 → 图谱 → 审核全链路可用。
@@ -17,7 +17,7 @@
 
 - [ ] 生命周期 5 步实现；任务终态 SUCCEEDED/FAILED 正确
 - [ ] Pass0-4 按序执行；reconcile 时序保证（Pass1 后 Pass3 前）
-- [ ] 进度写回 parseProgress；取消可中断；失败重试 2 次
+- [ ] 进度由 AnalysisJob 状态推导（getBookStatus）；取消可中断；失败重试 2 次
 - [ ] Pass5：Neo4j 同步 + markOrphan + SkillGenerator 候选 DRAFT
 - [ ] 快照（skills + relationshipTypes）启动时落库，中途改配置不影响已跑任务
 - [ ] 端到端集成测试通过（上传→分析→图谱→审核）

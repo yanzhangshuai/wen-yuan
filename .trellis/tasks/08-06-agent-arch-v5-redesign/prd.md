@@ -26,7 +26,7 @@
 ### R3 · 分片单轮事实提取（Pass1）
 
 - 每片（5-8 章）一次 LLM 调用，上下文 = 片正文 + 登记表 + 全书摘要 + 相关 skill
-- 结构化输出走 JSON Schema / function calling（schema 运行时按书型从 relationship_types 表动态生成 + 任务级快照）
+- 结构化输出走 JSON Schema / function calling（schema 运行时从 skill 契约 relationshipCodes 并集动态生成 + 任务级快照）
 - 超长章分段 + 合并；失败重试、错误分类
 
 ### R4 · 确定性护栏 + 聚合（Pass2/3）
@@ -50,7 +50,7 @@
 
 ### R7 · 数据模型调整
 
-- 新增 `relationship_types`（bookTypeId? 可空=全局）+ `analysis_jobs.relationshipTypesSnapshot`
+- 关系码契约入 skill frontmatter（`relationshipCodes` 闭集；`relationship_types` 表已删）+ `analysis_jobs.relationshipTypesSnapshot`
 - `agent_runs.runType` 补全（PRESCAN/IDENTITY/EXTRACTION/RECONCILE/VALIDATION/CROSS_VALIDATION/SKILL_GENERATION）
 - 删除 `agent_steps`；`facts.recordSource` 加 `AUTO_VERIFIED`
 - 保留 facts → relationships → Neo4j 权威链、Skill 域、审核域
@@ -59,7 +59,7 @@
 
 - [ ] `grep -ri "agentengine\|tool-loop\|load_skill\|submit_facts\|chapter_memories\|ValidationAgent" src/` 零引用（工具循环/记忆/自修复全部移除）
 - [ ] `agent_steps` 表已删除，迁移成功（`pnpm prisma:migrate` 通过）
-- [ ] `relationship_types` 表存在且含 `bookTypeId` 列；schema 生成按书型过滤（全局行 + 本书型行）
+- [ ] 关系码契约进 skill frontmatter（`relationshipCodes` 闭集）；`relationship_types` 表已删；schema 生成按所选 skill 契约并集取码
 - [ ] identityService：登记表派生视图 + 四路回写 + `agent_write_audits` 审计落全；身份判定原语 HIGH 组合规则实现
 - [ ] reconcile 在 Pass1 与 Pass3 之间执行（时序保证）
 - [ ] goldset 就绪（跨段 ≥4 章 + 冷门书 ≥2 章），eval gate 可跑

@@ -31,8 +31,7 @@ const knowledgeBaseNavIcons: Record<KnowledgeBaseNavIconKey, LucideIcon> = {
 
 /**
  * 知识库侧边导航需要在客户端读取 pathname，才能为当前模块提供稳定高亮。
- * v5（阶段 5）：v4 知识库页面（书籍类型/别名包/称谓/提示词/提取规则/关系类型）已删，
- * 只保留总览与变更日志。
+ * 知识库只保留总览与变更日志。
  */
 export function KnowledgeBaseNav({ links }: KnowledgeBaseNavProps) {
   const pathname = usePathname();

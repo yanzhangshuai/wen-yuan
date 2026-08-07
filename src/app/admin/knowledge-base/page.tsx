@@ -11,8 +11,7 @@ import {
 /**
  * `/admin/knowledge-base` 知识库管理总览。
  *
- * v5（阶段 5）：v4 知识库模块（书籍类型/别名包/称谓/提示词/提取规则/关系类型）已由
- * Skill 契约取代并删除，只保留变更日志审计入口；技能包管理在 `/admin/skills`。
+ * 知识库仅保留变更日志审计入口；技能包管理在 `/admin/skills`。
  */
 const knowledgeModules = [
   {

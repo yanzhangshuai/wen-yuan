@@ -154,7 +154,7 @@ export default function AdminImportPage() {
   const [fileError, setFileError] = useState<string | null>(null);
 
   // Step 1：基础元数据（可选，允许后端自动识别）
-  // v5：书型（bookTypeId）与知识包绑定已删除——skill 由解析前 AI 按书动态选择，不再书级持久化。
+  // skill 由解析前 AI 按书动态选择，不做书级持久化。
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [dynasty, setDynasty] = useState("");
@@ -645,7 +645,7 @@ export default function AdminImportPage() {
           </Card>
         )}
 
-        {/* 第 3 步：解析范围配置（v5：模型改由模型页“功能点模型”统一管理，不再向导内配置） */}
+        {/* 第 3 步：解析范围配置（模型由模型页统一管理，不在向导内配置） */}
         {step === 3 && (
           <div className="space-y-6">
             <Card>

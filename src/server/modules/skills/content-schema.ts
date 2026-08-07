@@ -20,7 +20,7 @@ import { z } from "zod";
  */
 
 /**
- * 关系码契约（v5：relationship_types 表已删，关系码闭集进 skill frontmatter）。
+ * 关系码契约（关系码闭集进 skill frontmatter）。
  * direction 与 seed 教学码表一致：INVERSE=方向性（父子/师生/主仆），SYMMETRIC=对称（兄弟/夫妻）。
  */
 export const relationshipCodeSchema = z.object({

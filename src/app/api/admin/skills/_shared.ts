@@ -5,7 +5,7 @@ import { ERROR_CODES } from "@/types/api";
 
 /**
  * 技能管理接口族（GET 列表/详情 + PATCH 启停切换）的请求体校验与错误响应辅助。
- * v5（阶段 5）：skill 独立启停由管理端开关维护，关系码/虚指契约只读展示。
+ * skill 独立启停由管理端开关维护，关系码/虚指契约只读展示。
  */
 
 /** 启停切换请求体：isEnabled=false 表示该 skill 全局不可用。 */

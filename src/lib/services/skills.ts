@@ -4,7 +4,7 @@ import type { RelationshipCode } from "@/server/modules/skills/content-schema";
 /**
  * 技能管理前端服务层。
  * 对接 `/api/admin/skills` 与 `/api/admin/skills/:id` 路由族。
- * v5（阶段 5）：管理端维护每个 skill 的独立启停开关，并只读查看关系码/虚指契约。
+ * 管理端维护每个 skill 的独立启停开关，并只读查看关系码/虚指契约。
  */
 
 /** 技能包列表项（管理端列表展示）。 */
@@ -35,7 +35,7 @@ export interface AdminSkillContract {
 /** 技能包详情（含契约，供详情页展示）。 */
 export interface AdminSkillDetail
   extends Omit<AdminSkillListItem, "versionNo" | "createdAt" | "updatedAt"> {
-  /** 由书生成的 skill 会记录来源书（书型间接层已删，仅保留生成溯源）。 */
+  /** 由书生成的 skill 会记录来源书（仅用于生成溯源）。 */
   generatedFromBookId: string | null;
   versions: Array<{
     id        : string;

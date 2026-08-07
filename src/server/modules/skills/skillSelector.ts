@@ -9,7 +9,7 @@
  * - 目录 = 全部 active+enabled skill 的 frontmatter-only 摘要（slug/name/description/category），
  *   不读正文（对标 Claude Code 记忆系统"只扫前 30 行"）；
  * - 书上下文 = 元数据（书名/作者/朝代/简介）+ 章节正文（总字符超阈值时抽样首/中/末各 ~2K 字）；
- * - 一次 LLM 调用（featureKey=SKILL_SELECTOR，廉价模型）→ { skillSlugs, inferredType, reasons }
+ * - 一次 LLM 调用（走统一默认模型）→ { skillSlugs, inferredType, reasons }
  *   → zod 校验：skillSlugs 必须 ⊆ 目录（且 isEnabled=true），非法 slug 直接丢弃并告警；
  * - 装载集合 = scope=GLOBAL ∪ 选中的 skill；关系码契约从装载技能 frontmatter relationshipCodes 并集
  *   （去重按 code，先到先得），供 schema/guardrail 取码；
@@ -35,8 +35,7 @@ import {
   type SkillDocument,
   type SkillMetadata
 } from "@/server/modules/skills/content-schema";
-import { createAiProviderClient } from "@/server/providers/ai";
-import { FeatureKey } from "@/types/pipeline";
+import { callJsonLlm } from "@/server/providers/ai/callJsonLlm";
 import { z } from "zod";
 
 /** 书正文总字符 ≤ 该阈值时全量注入选择器，否则抽样首/中/末。 */
@@ -80,7 +79,6 @@ export interface SkillSelectorCallLlmInput {
   system: string;
   user  : string;
   jobId : string;
-  bookId: string;
 }
 
 /** 选择输入：必须携带真实 jobId（AiCallExecutor 写 analysis_phase_logs）。 */
@@ -132,7 +130,7 @@ interface CatalogSkill {
 export interface SkillSelectorDeps {
   /** prisma 客户端（缺省走全局单例）。 */
   prismaClient?: PrismaClient;
-  /** 选择 LLM 调用；测试注入 mock。缺省走 aiCallExecutor（featureKey=SKILL_SELECTOR）。 */
+  /** 选择 LLM 调用；测试注入 mock。缺省走 aiCallExecutor。 */
   callLlm?     : (input: SkillSelectorCallLlmInput) => Promise<unknown>;
 }
 
@@ -140,11 +138,40 @@ export interface SkillSelectorDeps {
  * 任务契约（减法原则，≤150 token）：目标 + 输出 JSON + 成功判据，不写角色渲染。
  * 领域知识（各技能 description/category）由调用方经 user prompt 目录清单注入。
  */
+
+/** 从 zod schema 推导的 JSON 类型名（覆盖本项目输出契约用到的 string/array/nullable）。 */
+function renderZodTypeName(schema: z.ZodTypeAny): string {
+  if (schema instanceof z.ZodNullable) {
+    return `${renderZodTypeName(schema.unwrap() as z.ZodTypeAny)} | null`;
+  }
+  if (schema instanceof z.ZodArray) {
+    return `${renderZodTypeName(schema.element as z.ZodTypeAny)}[]`;
+  }
+  if (schema instanceof z.ZodString) {
+    return "string";
+  }
+  return "unknown";
+}
+
+/**
+ * 功能：把 zod object schema 渲染为 JSON 类型描述，供 prompt 注入（单一来源，避免类型双份维护）。
+ * 输入：zod object schema。
+ * 输出：形如 `{ "skillSlugs": string[], "inferredType": string | null, "reasons": string }` 的字符串。
+ * 异常：无。
+ * 副作用：无。
+ */
+export function renderOutputShape(schema: z.ZodObject<z.ZodRawShape>): string {
+  const entries = Object.entries(schema.shape).map(
+    ([key, field]) => `"${key}": ${renderZodTypeName(field)}`
+  );
+  return `{ ${entries.join(", ")} }`;
+}
+
 export const SKILL_SELECTION_SYSTEM_PROMPT = [
   "为中文古典文学书籍解析选择最相关的内容技能包。",
   "",
   "输出 JSON：",
-  '{ "skillSlugs": string[], "inferredType": string | null, "reasons": string }',
+  renderOutputShape(skillSelectionOutputSchema),
   "",
   "成功判据：",
   "- skillSlugs 仅可取自下方目录，且与本书文体/主题/历史背景直接相关",
@@ -176,12 +203,6 @@ export function sampleBookText(
 
   return ["【开头】", first, "", "【中段】", middle, "", "【结尾】", last].join("\n");
 }
-
-/**
- * 功能：并集各 skill frontmatter 的 relationshipCodes 契约（去重按 code，先到先得）。
- * 权威实现在 schema.ts（getRelationshipCodesFromSkills），此处为兼容别名。
- */
-export const mergeRelationshipCodes = getRelationshipCodesFromSkills;
 
 /**
  * 功能：构建选择器 user prompt（书上下文 + 目录清单表格）。
@@ -219,27 +240,13 @@ export async function callSkillSelectorLlm(input: SkillSelectorCallLlmInput): Pr
   const prompt = { system: input.system, user: input.user };
 
   const result = await aiCallExecutor.execute<unknown>({
-    featureKey: FeatureKey.SKILL_SELECTOR,
-    stageLabel: "SKILL_SELECT",
+    stage : "SKILL_SELECT",
     prompt,
-    jobId     : input.jobId,
-    callFn    : async ({ model, prompt: p }) => {
-      const client = createAiProviderClient({
-        provider : model.provider,
-        protocol : model.protocol,
-        apiKey   : model.apiKey,
-        baseUrl  : model.baseUrl,
-        modelName: model.modelName
-      });
-      const gen = await client.generateJson(p, { temperature: 0 });
-      let data: unknown;
-      try {
-        data = JSON.parse(gen.content) as unknown;
-      } catch {
-        throw new Error(`skill 选择 LLM 输出非 JSON: ${gen.content.slice(0, 200)}`);
-      }
-      return { data, usage: gen.usage };
-    }
+    jobId : input.jobId,
+    callFn: async ({ model, prompt: p }) => callJsonLlm<unknown>(model, p, {
+      temperature: 0,
+      label      : "skill 选择"
+    })
   });
 
   return result.data;
@@ -385,8 +392,7 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
     const raw = await callLlm({
       system: SKILL_SELECTION_SYSTEM_PROMPT,
       user,
-      jobId : input.jobId,
-      bookId: input.bookId
+      jobId : input.jobId
     });
 
     const parsed = skillSelectionOutputSchema.safeParse(raw);
@@ -417,7 +423,7 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
       selectedSlugs,
       selectedSkills,
       allLoadedSlugs   : selectedSkills.map((skill) => skill.slug),
-      relationshipCodes: mergeRelationshipCodes(selectedSkills),
+      relationshipCodes: getRelationshipCodesFromSkills(selectedSkills),
       inferredType     : parsed.data.inferredType,
       reasons          : parsed.data.reasons
     };

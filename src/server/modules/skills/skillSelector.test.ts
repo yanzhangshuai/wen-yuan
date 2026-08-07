@@ -4,19 +4,20 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import {
   buildSkillSelectionUserPrompt,
   createSkillSelector,
-  mergeRelationshipCodes,
   parseSkillsSnapshot,
-  sampleBookText
+  renderOutputShape,
+  sampleBookText,
+  skillSelectionOutputSchema
 } from "@/server/modules/skills/skillSelector";
 import type { SkillSelectorCallLlmInput } from "@/server/modules/skills/skillSelector";
-import type { SkillDocument } from "@/server/modules/skills/content-schema";
 
 /**
- * AI 动态 skill 选择器单测（v5 阶段 2）：
+ * AI 动态 skill 选择器单测：
  * - 目录读取：仅 ACTIVE+isEnabled；name/description 取 frontmatter 覆盖；
  * - 书上下文：章节全文/抽样；
  * - zod 校验：非法 slug 丢弃并告警；装载集合 = GLOBAL ∪ 选中；
  * - relationshipCodes 并集（去重按 code，先到先得）；
+ * - renderOutputShape 从 zod schema 推导输出类型；
  * - selectSkillsForJob 快照写库。
  */
 
@@ -83,6 +84,13 @@ function makeBookRow(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+describe("renderOutputShape", () => {
+  it("从 zod schema 推导 JSON 类型描述（string/array/nullable）", () => {
+    expect(renderOutputShape(skillSelectionOutputSchema))
+      .toBe('{ "skillSlugs": string[], "inferredType": string | null, "reasons": string }');
+  });
+});
+
 describe("sampleBookText", () => {
   it("全文 ≤ 阈值时原样返回", () => {
     expect(sampleBookText("短文本", 6000, 2000)).toBe("短文本");
@@ -97,46 +105,6 @@ describe("sampleBookText", () => {
     // 首段取前 500 字符、尾段取最后 500 字符
     expect(result).toContain("a".repeat(500));
     expect(result).toContain("c".repeat(500));
-  });
-});
-
-describe("mergeRelationshipCodes", () => {
-  function doc(slug: string, codes: SkillDocument["metadata"]["relationshipCodes"]): SkillDocument {
-    return {
-      slug,
-      name       : slug,
-      description: null,
-      versionNo  : 1,
-      metadata   : {
-        kind             : "RELATIONSHIP_TYPE",
-        triggers         : { priority: 0 },
-        name             : null,
-        description      : null,
-        relationshipCodes: codes,
-        deicticJunk      : null
-      },
-      markdown: ""
-    };
-  }
-
-  it("并集各 skill 关系码，去重按 code（先到先得），丢弃 aliases", () => {
-    const skills = [
-      doc("a", [
-        { code: "父子", direction: "INVERSE", category: "家庭", aliases: ["父与子"] }
-      ]),
-      doc("b", [
-        { code: "父子", direction: "INVERSE", category: "家庭", aliases: [] },
-        { code: "兄弟", direction: "SYMMETRIC", category: "家庭", aliases: ["手足"] }
-      ])
-    ];
-    expect(mergeRelationshipCodes(skills)).toEqual([
-      { code: "父子", direction: "INVERSE", category: "家庭" },
-      { code: "兄弟", direction: "SYMMETRIC", category: "家庭" }
-    ]);
-  });
-
-  it("无关系码契约时返回空数组", () => {
-    expect(mergeRelationshipCodes([])).toEqual([]);
   });
 });
 

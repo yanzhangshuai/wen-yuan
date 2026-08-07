@@ -36,7 +36,7 @@ export interface CreateSkillInput {
   sortOrder  ?: number;
 }
 
-/** 技能独立启停开关（v5：is_enabled，false=全局不可用）。 */
+/** 技能独立启停开关（is_enabled，false=全局不可用）。 */
 export interface SetSkillEnabledInput {
   skillId  : string;
   isEnabled: boolean;
@@ -53,7 +53,7 @@ export interface SkillListItem {
   source     : string;
   sortOrder  : number;
   isBuiltin  : boolean;
-  /** 独立启停开关（v5：false=全局不可用，管理端列表展示/切换）。 */
+  /** 独立启停开关（false=全局不可用，管理端列表展示/切换）。 */
   isEnabled  : boolean;
   versionNo  : number | null;
   createdAt  : string;
@@ -324,7 +324,7 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
   }
 
   /**
-   * 功能：激活指定版本（v5：激活即全局激活，无书型专属激活版）。
+   * 功能：激活指定版本（激活即全局激活，无书型专属激活版）。
    * 输入：skillId、versionId。
    * 副作用：写审计日志。
    */
@@ -394,7 +394,7 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
   }
 
   /**
-   * 功能：切换技能独立启停开关（v5：is_enabled，false=该 skill 全局不可用）。
+   * 功能：切换技能独立启停开关（is_enabled，false=该 skill 全局不可用）。
    * 输入：skillId、isEnabled。
    * 副作用：写审计日志。
    */

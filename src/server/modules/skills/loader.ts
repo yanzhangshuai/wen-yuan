@@ -19,14 +19,13 @@ import { parseSkillsSnapshot } from "@/server/modules/skills/skillSelector";
  * - `loadSkill(skillId)` 按需加载单个技能的激活版全文（供 agent 的 load_skill 工具）；
  * - 不做知识字典抽取/合并——知识作为 MD 上下文交给 AI。
  *
- * 装载规则（v5）：
+ * 装载规则：
  * 1. 仅 status=ACTIVE 且 isEnabled=true（deletedAt=null）；
  * 2. 装载集合 = scope=GLOBAL（常驻兜底）∪ 任务快照选中的 skill（AI 动态选择结果）；
- * 3. 每个 skill 取全局激活版（v5：skill 版本激活即全局激活，无书型专属激活版）；
+ * 3. 每个 skill 取全局激活版（skill 版本激活即全局激活，无书型专属激活版）；
  * 4. 按 triggers.priority 降序 + skill.sortOrder 排序。
  *
- * v5 阶段 2（08-07-v5-skill-loading）：装载集合改由 AI 动态 skill 选择
- * （skillSelector → job.skillsSnapshot）决定，不再有 bookType 过滤。
+ * 装载集合由 AI 动态 skill 选择（skillSelector → job.skillsSnapshot）决定，无 bookType 过滤。
  * =============================================================================
  */
 
@@ -82,7 +81,7 @@ export function createSkillLoader(prismaClient: PrismaClient = prisma) {
     const categoryMap = new Map<string, string>();
 
     for (const skill of skills) {
-      // v5：版本激活即全局激活（无书型专属激活版）
+      // 版本激活即全局激活（无书型专属激活版）
       const version = skill.versions[0];
       if (!version) {
         continue;
@@ -138,34 +137,8 @@ export function createSkillLoader(prismaClient: PrismaClient = prisma) {
     };
   }
 
-  /**
-   * 功能：按 skillId 加载激活版全文（供 agent 的 load_skill 工具按需注入上下文）。
-   * 输入：skillId。
-   * 输出：完整 MD 文档；无激活版或不存在时返回 null。
-   */
-  async function loadSkill(skillId: string): Promise<string | null> {
-    const skill = await prismaClient.skill.findUnique({
-      where : { id: skillId, deletedAt: null },
-      select: {
-        slug    : true,
-        name    : true,
-        versions: {
-          where  : { isActive: true },
-          select : { content: true, versionNo: true },
-          orderBy: { versionNo: "desc" }
-        }
-      }
-    });
-    if (!skill) {
-      return null;
-    }
-
-    return skill.versions[0]?.content ?? null;
-  }
-
   return {
-    resolveSkillsForJob,
-    loadSkill
+    resolveSkillsForJob
   };
 }
 

@@ -50,8 +50,7 @@ import { ERROR_CODES } from "@/types/api";
  * 异常：无（校验失败由路由返回 400）。
  * 副作用：无。
  *
- * v5：`architecture`（v4 双架构）与 `modelStrategy`（v4 阶段模型策略）已删除；
- * 模型改由 feature_models 功能点映射管理（阶段 4）。
+ * 任务请求不携带模型配置；AI 调用统一使用系统默认模型（由模型页管理）。
  */
 const startAnalysisBodySchema = z.object({
   // 任务执行范围；默认由服务层回落到 FULL_BOOK。

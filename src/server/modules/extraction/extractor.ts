@@ -9,7 +9,6 @@
  * 复用：identity/llm.ts 调用模式、getRegistry 登记表、guardrails 护栏。
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.2/Pass1
  */
-import { FeatureKey } from "@/types/pipeline";
 import { callIdentityLlm } from "@/server/modules/identity/llm.ts";
 import type { BookRegistry } from "@/server/modules/identity/registry.ts";
 import { EXTRACTION_SYSTEM_PROMPT } from "./prompts.ts";
@@ -70,18 +69,16 @@ export function buildExtractionUserPrompt(input: {
  */
 export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSliceResult> {
   const { data } = await callIdentityLlm<ExtractionSlice>({
-    featureKey: FeatureKey.PIPELINE_MAIN,
-    stageLabel: "INDEPENDENT_EXTRACTION",
-    system    : EXTRACTION_SYSTEM_PROMPT,
-    user      : buildExtractionUserPrompt({
+    stage : "INDEPENDENT_EXTRACTION",
+    system: EXTRACTION_SYSTEM_PROMPT,
+    user  : buildExtractionUserPrompt({
       sliceText            : input.sliceText,
       registry             : input.registry,
       bookSummary          : input.bookSummary,
       skills               : input.skills,
       relationshipTypeCodes: input.relationshipTypeCodes
     }),
-    jobId : input.jobId,
-    bookId: input.bookId
+    jobId : input.jobId
   });
 
   const slice: ExtractionSlice = {

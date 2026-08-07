@@ -16,21 +16,21 @@ import { writeRegistry } from "./identityService.ts";
 
 export interface Tier2Candidate {
   surfaceForm: string;
-  windows: MentionWindow[];
+  windows    : MentionWindow[];
 }
 
 export interface Tier2Input {
-  bookId: string;
-  jobId: string;
+  bookId     : string;
+  jobId      : string;
   bookSummary: string;
-  skills: string[];
-  candidates: Tier2Candidate[];
+  skills     : string[];
+  candidates : Tier2Candidate[];
 }
 
 export interface Tier2Result {
-  resolved: number;
+  resolved   : number;
   newEntities: number;
-  ambiguous: number;
+  ambiguous  : number;
 }
 
 /**
@@ -52,21 +52,20 @@ export async function runTier2(input: Tier2Input, registry: BookRegistry): Promi
 
     const { output } = await runPrimitive({
       surfaceForm: candidate.surfaceForm,
-      windows: candidate.windows,
+      windows    : candidate.windows,
       registry,
       bookSummary: input.bookSummary,
-      skills: input.skills,
-      jobId: input.jobId,
-      bookId: input.bookId,
+      skills     : input.skills,
+      jobId      : input.jobId
     });
 
     if (output.verdict === "new_entity") {
       toCreate.push({
-        canonical: candidate.surfaceForm,
-        aliases: [candidate.surfaceForm],
-        type: "PERSON",
-        nameType: "TITLE_ONLY",
-        confidence: 0.5,
+        canonical : candidate.surfaceForm,
+        aliases   : [candidate.surfaceForm],
+        type      : "PERSON",
+        nameType  : "TITLE_ONLY",
+        confidence: 0.5
       });
       result.newEntities++;
     } else if (output.verdict === "ambiguous") {
@@ -78,10 +77,10 @@ export async function runTier2(input: Tier2Input, registry: BookRegistry): Promi
 
   if (toCreate.length > 0) {
     await writeRegistry({
-      bookId: input.bookId,
-      source: "tier2",
+      bookId    : input.bookId,
+      source    : "tier2",
       agentRunId: crypto.randomUUID(),
-      entries: toCreate,
+      entries   : toCreate
     });
   }
 
@@ -94,6 +93,6 @@ export function collectResidualCandidates(registry: BookRegistry): Tier2Candidat
     .filter((e) => e.confidenceTier === "LOW" || (e.confidenceTier === "MEDIUM" && e.nameType === "TITLE_ONLY"))
     .map((e: RegistryEntry) => ({
       surfaceForm: e.canonical,
-      windows: [],
+      windows    : []
     }));
 }

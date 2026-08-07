@@ -144,9 +144,3 @@ export type AnalysisPhaseLog = Prisma.AnalysisPhaseLogModel
  * @db.remark: 知识库变更审计日志。所有知识库对象的变更日志（含 skill 的 GENERATE/ACTIVATE）。
  */
 export type KnowledgeAuditLog = Prisma.KnowledgeAuditLogModel
-/**
- * Model FeatureModelConfig
- * @db.remark: 功能点模型映射。featureKey → modelId 全局映射（SKILL_SELECTOR / PIPELINE_MAIN / REVIEW）。
- * v5 模型策略：解析前的 skill 选择、主流程提取、Pass4 审核各用一个功能点槽位。
- */
-export type FeatureModelConfig = Prisma.FeatureModelConfigModel

@@ -403,8 +403,7 @@ export const ModelName = {
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
   AnalysisPhaseLog: 'AnalysisPhaseLog',
-  KnowledgeAuditLog: 'KnowledgeAuditLog',
-  FeatureModelConfig: 'FeatureModelConfig'
+  KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -420,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "skillVersion" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog" | "knowledgeAuditLog" | "featureModelConfig"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "skillVersion" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog" | "knowledgeAuditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1904,80 +1903,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    FeatureModelConfig: {
-      payload: Prisma.$FeatureModelConfigPayload<ExtArgs>
-      fields: Prisma.FeatureModelConfigFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.FeatureModelConfigFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.FeatureModelConfigFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
-        }
-        findFirst: {
-          args: Prisma.FeatureModelConfigFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.FeatureModelConfigFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
-        }
-        findMany: {
-          args: Prisma.FeatureModelConfigFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>[]
-        }
-        create: {
-          args: Prisma.FeatureModelConfigCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
-        }
-        createMany: {
-          args: Prisma.FeatureModelConfigCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.FeatureModelConfigCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>[]
-        }
-        delete: {
-          args: Prisma.FeatureModelConfigDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
-        }
-        update: {
-          args: Prisma.FeatureModelConfigUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
-        }
-        deleteMany: {
-          args: Prisma.FeatureModelConfigDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.FeatureModelConfigUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.FeatureModelConfigUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>[]
-        }
-        upsert: {
-          args: Prisma.FeatureModelConfigUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
-        }
-        aggregate: {
-          args: Prisma.FeatureModelConfigAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateFeatureModelConfig>
-        }
-        groupBy: {
-          args: Prisma.FeatureModelConfigGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.FeatureModelConfigGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.FeatureModelConfigCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.FeatureModelConfigCountAggregateOutputType> | number
-        }
-      }
-    }
   }
 } & {
   other: {
@@ -2402,15 +2327,6 @@ export const KnowledgeAuditLogScalarFieldEnum = {
 } as const
 
 export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
-
-
-export const FeatureModelConfigScalarFieldEnum = {
-  featureKey: 'featureKey',
-  modelId: 'modelId',
-  updatedAt: 'updatedAt'
-} as const
-
-export type FeatureModelConfigScalarFieldEnum = (typeof FeatureModelConfigScalarFieldEnum)[keyof typeof FeatureModelConfigScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2868,7 +2784,6 @@ export type GlobalOmitConfig = {
   mergeSuggestion?: Prisma.MergeSuggestionOmit
   analysisPhaseLog?: Prisma.AnalysisPhaseLogOmit
   knowledgeAuditLog?: Prisma.KnowledgeAuditLogOmit
-  featureModelConfig?: Prisma.FeatureModelConfigOmit
 }
 
 /* Types for Logging */

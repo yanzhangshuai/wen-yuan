@@ -47,7 +47,7 @@ type SucceededJobScope = Prisma.AnalysisJobGetPayload<{ select: typeof SUCCEEDED
 type BookChapterRow = Prisma.BookGetPayload<{ select: typeof BOOK_STATUS_SELECT }>["chapters"][number];
 
 /**
- * 由最新分析任务状态推导解析进度（v5：parseProgress/parseStage 列已删，进度从任务状态推导）。
+ * 由最新分析任务状态推导解析进度。
  * - QUEUED → 等待任务启动（0）；
  * - RUNNING → 解析中（50）；
  * - SUCCEEDED → 解析完成（100）；
@@ -153,7 +153,7 @@ export function createGetBookStatusService(
         : chapter.parseStatus
     }));
 
-    // v5：parseProgress/parseStage 列已删，进度从最新任务状态推导（前端读字段名不变）。
+    // 进度从最新任务状态推导（前端读字段名不变）。
     const { progress, stage } = deriveJobProgress(latestJob?.status ?? null);
 
     return {

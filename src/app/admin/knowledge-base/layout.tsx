@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * v5（阶段 5）：v4 知识库页面已删，只保留总览与变更日志；
+ * 知识库只保留总览与变更日志；
  * 技能管理入口独立为 /admin/skills（见 admin-header）。
  */
 const knowledgeBaseLinks = [

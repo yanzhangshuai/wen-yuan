@@ -3,8 +3,7 @@
  * 文件定位：`src/lib/services/job-cost-summary.ts`
  * ----------------------------------------------------------------------------
  * 这是“分析任务成本汇总”的前端服务层（Client-side Service）。
- * v5 阶段 4（08-07-v5-skill-loading）：原 `lib/services/model-strategy.ts` 随 v4 阶段模型策略
- * 删除，其中与模型策略无关的“任务成本汇总”能力迁移到本文件，供书籍详情任务面板消费。
+ * 供书籍详情任务面板消费。
  * ============================================================================
  */
 import { clientFetch } from "@/lib/client-api";
@@ -25,7 +24,7 @@ export interface JobCostSummaryModelItem {
 }
 
 export interface JobCostSummaryStageItem {
-  /** 阶段标识（featureKey/stageLabel，例如 SKILL_SELECTOR、PIPELINE_MAIN）。 */
+  /** 阶段标识（如 SKILL_SELECT、INDEPENDENT_EXTRACTION）。 */
   stage           : string;
   /** 该阶段总调用次数。 */
   calls           : number;

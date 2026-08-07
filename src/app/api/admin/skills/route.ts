@@ -10,7 +10,7 @@ import { ERROR_CODES } from "@/types/api";
 /**
  * GET `/api/admin/skills`
  * 管理端：技能包列表（含独立启停开关与当前激活版本号）。
- * v5（阶段 5）：skills 管理页列表数据源。
+ * skills 管理页列表数据源。
  */
 export async function GET(): Promise<Response> {
   const startedAt = Date.now();

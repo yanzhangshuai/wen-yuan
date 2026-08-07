@@ -1,7 +1,7 @@
 /**
  * 文件定位（Next.js Route Handler 单测）：
  * - 本文件对应 `src/app/api/admin/skills/[id]/route.ts`，验证技能包详情与启停切换接口契约。
- * - v5（阶段 5）：详情只读展示激活版 frontmatter 契约（relationshipCodes / deicticJunk），
+ * - 详情只读展示激活版 frontmatter 契约（relationshipCodes / deicticJunk），
  *   PATCH 切换独立启停开关（isEnabled）。
  *
  * 业务职责：

@@ -42,6 +42,21 @@
 **门禁**：entityF1/relationF1 有读数；护栏拦截非法码；refreshRelationshipsForBook 幂等
 **回滚**：git 回退；提取未接入管线不影响审核
 
+## Phase 3.5 · 简化与清理（v5-simplify）
+
+> 插入位置依据：v5-simplify 移除模型选择（删 featureKey 槽位），是 v5-review（REVIEW 槽）与 v5-pipeline（AiCallExecutor 调用）的**前置依赖**，须在 Phase 4/5 前完成。
+> 关联任务：`08-07-v5-simplify`（children 已登记）。
+
+- R3 删 `feature_models` 表/`FeatureKey`/featureKey/stageLabel/fallback 链；AiCallExecutor 单 `stage` + 统一默认模型
+- R1 死代码（lastArchitecture 链、getRelationshipCodes）+ 阶段标记注释清理（当前结构唯一真理）
+- R2 skill 选择器 prompt 输出类型从 zod 推导（renderOutputShape）
+- R5 分析域瘦身：删 ANALYSIS_PIPELINE_CONFIG 死配置 / loadSkill / mergeRelationshipCodes 别名；抽 callJsonLlm 统一重复调用
+- 更新 v5-review / v5-pipeline PRD 过期引用；架构文档升 v5.3
+
+**验证**：`pnpm type-check` / `pnpm lint` / `pnpm test`；goldset eval gate 不回退
+**门禁**：AC1-AC6 grep 零引用（lastArchitecture/FeatureKey/feature_models/stageLabel/ANALYSIS_PIPELINE_CONFIG 等）
+**回滚**：git 回退；简化不改变功能语义（纯重构 + 死代码删除）
+
 ## Phase 4 · 例外审核（v5-review）
 
 - 自动接受栈（C5）+ 人审队列 + 棘轮校准

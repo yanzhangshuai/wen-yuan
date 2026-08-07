@@ -84,8 +84,7 @@ export interface ConfirmChapterItem {
 export type AnalyzeScope = "FULL_BOOK" | "CHAPTER_RANGE" | "CHAPTER_LIST";
 
 interface StartAnalysisBase {
-  // v5：architecture（v4 双架构）与 modelStrategy（v4 阶段模型策略）已删除；
-  // 模型改由 feature_models 功能点映射管理，任务请求不再携带模型配置。
+  // 任务请求不携带模型配置；AI 调用统一使用系统默认模型。
 }
 
 /**

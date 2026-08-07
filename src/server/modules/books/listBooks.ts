@@ -182,8 +182,6 @@ function mapBook(book: BookListRow): BookLibraryListItem {
   // 当前模型展示策略：取“最近任务 -> 最近阶段日志”的模型名。
   // 原因：Book/AnalysisJob 已不直接维护 aiModel 关系，阶段日志才是实际执行来源。
   const currentModel = book.analysisJobs[0]?.phaseLogs?.[0]?.model?.name ?? null;
-  // v5：architecture 已随 v4 双架构删除，恒为 null（前端字段名不变）。
-  const lastArchitecture: "sequential" | "twopass" | null = null;
 
   // 错误摘要优先级：书级错误 > 最近任务错误。
   // 这样可以让列表优先显示更接近业务实体（书籍）的问题描述。
@@ -200,7 +198,6 @@ function mapBook(book: BookListRow): BookLibraryListItem {
     personaCount  : book._count.profiles,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
-    lastArchitecture,
     lastErrorSummary,
     createdAt     : book.createdAt.toISOString(),
     updatedAt     : book.updatedAt.toISOString(),

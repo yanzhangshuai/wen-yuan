@@ -16,11 +16,8 @@
  * - 解析范围决定下游清理/重跑范围，校验失败若放到执行期会造成资源浪费与状态污染；
  * - 因此“scope 与章节参数匹配关系”是业务规则，不是技术实现细节。
  *
- * v5 精简（08-06-v5-data-model 基线后）：
- * - 删除 bookTypeId / architecture / modelStrategy 入参：书型间接层与 v4 阶段模型策略已删，
- *   模型改由 feature_models 功能点映射（阶段 4）；
- * - 删除 parseProgress/parseStage：进度改从 AnalysisJob 状态 + analysis_phase_logs 推导；
- * - 删除 EmptyRelationshipKnowledgeError 检查：关系码改为 skill 契约（阶段 3 装载）。
+ * 任务只携带解析范围与覆盖策略；模型统一使用系统默认模型，
+ * 进度从 AnalysisJob 状态推导，关系码由 skill 契约装载。
  * =============================================================================
  */
 import { AnalysisJobStatus } from "@/generated/prisma/enums";
@@ -240,7 +237,7 @@ export function createStartBookAnalysisService(
 
     const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
       if (scope === "FULL_BOOK") {
-        // v5：relationships 为物化聚合表，全量重建时直接按书清空
+        // relationships 为物化聚合表，全量重建时直接按书清空
         await tx.relationship.deleteMany({ where: { bookId: book.id } });
       }
 

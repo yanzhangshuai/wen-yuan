@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { PrismaClient } from "@/generated/prisma/client";
 import {
   buildExtractionSchema,
   relationshipCodesFromSnapshot,
-  getRelationshipCodes,
   getRelationshipCodesFromSkills,
   type RelationshipCodeSource,
   FACT_TYPES,
@@ -68,35 +66,3 @@ describe("getRelationshipCodesFromSkills", () => {
   });
 });
 
-describe("getRelationshipCodes", () => {
-  it("从最近任务快照取码", async () => {
-    const client = {
-      analysisJob: {
-        findFirst: vi.fn().mockResolvedValue({ relationshipTypesSnapshot: [{ code: "父子", direction: "INVERSE", category: "家庭" }] })
-      }
-    } as unknown as PrismaClient;
-
-    const codes = await getRelationshipCodes("book-1", client);
-    expect(codes).toEqual([{ code: "父子", direction: "INVERSE", category: "家庭" }]);
-  });
-
-  it("无分析任务 → 返回空并告警", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const client = { analysisJob: { findFirst: vi.fn().mockResolvedValue(null) } } as unknown as PrismaClient;
-
-    const codes = await getRelationshipCodes("book-1", client);
-    expect(codes).toEqual([]);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("无分析任务"));
-    warnSpy.mockRestore();
-  });
-
-  it("快照为空 → 返回空并告警", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const client = { analysisJob: { findFirst: vi.fn().mockResolvedValue({ relationshipTypesSnapshot: [] }) } } as unknown as PrismaClient;
-
-    const codes = await getRelationshipCodes("book-1", client);
-    expect(codes).toEqual([]);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("快照为空"));
-    warnSpy.mockRestore();
-  });
-});

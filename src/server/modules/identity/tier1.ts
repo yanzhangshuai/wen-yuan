@@ -8,7 +8,6 @@
  *
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.3
  */
-import { FeatureKey } from "@/types/pipeline";
 import { callIdentityLlm } from "./llm.ts";
 import { TIER1_SYSTEM_PROMPT } from "./prompts.ts";
 import type { RegistryWriteEntry } from "./identityService.ts";
@@ -73,12 +72,10 @@ export async function runTier1(input: Tier1Input, modelId: string): Promise<{ cr
       ].join("\n");
 
       const { data } = await callIdentityLlm<Tier1DraftEntry[]>({
-        featureKey: FeatureKey.PIPELINE_MAIN,
-        stageLabel: "ROSTER_DISCOVERY",
-        system    : TIER1_SYSTEM_PROMPT,
+        stage : "ROSTER_DISCOVERY",
+        system: TIER1_SYSTEM_PROMPT,
         user,
-        jobId     : input.jobId,
-        bookId    : input.bookId
+        jobId : input.jobId
       });
       allDrafts.push(...data);
     }
@@ -91,12 +88,10 @@ export async function runTier1(input: Tier1Input, modelId: string): Promise<{ cr
       const end = Math.min(i + VOLUME_SIZE + OVERLAP, chapters.length);
       const volumeText = chapters.slice(i, end).join("\n");
       const { data } = await callIdentityLlm<Tier1DraftEntry[]>({
-        featureKey: FeatureKey.PIPELINE_MAIN,
-        stageLabel: "ROSTER_DISCOVERY",
-        system    : TIER1_SYSTEM_PROMPT,
-        user      : `卷 ${i / VOLUME_SIZE + 1}\n\n${volumeText}`,
-        jobId     : input.jobId,
-        bookId    : input.bookId
+        stage : "ROSTER_DISCOVERY",
+        system: TIER1_SYSTEM_PROMPT,
+        user  : `卷 ${i / VOLUME_SIZE + 1}\n\n${volumeText}`,
+        jobId : input.jobId
       });
       allDrafts.push(...data);
     }

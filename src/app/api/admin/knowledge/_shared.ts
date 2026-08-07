@@ -6,9 +6,7 @@ import { ERROR_CODES } from "@/types/api";
 /**
  * 知识库 API 路由族共享校验 Schema 与工具。
  *
- * v5（阶段 5）：v4 知识库 API（book-types/alias-packs/relationship-types/generic-titles/
- * extraction-rules/prompt-templates 等）已随页面删除，仅保留 change-logs 路由族仍使用的
- * UUID 参数校验与统一错误响应辅助。
+ * 仅保留 change-logs 路由族仍使用的 UUID 参数校验与统一错误响应辅助。
  */
 
 export const uuidParamSchema = z.object({

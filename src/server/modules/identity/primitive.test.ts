@@ -65,8 +65,6 @@ describe("runPrimitive HIGH 组合规则", () => {
         evidenceAnchors: [{ chapterNo: 3, paraIndex: 1 }],
         note: null,
       } as PrimitiveOutput,
-      modelId: "m1",
-      isFallback: false,
     });
     const { output, highConfidence } = await runPrimitive(baseInput);
     expect(output.verdict).toBe("resolved");
@@ -81,8 +79,6 @@ describe("runPrimitive HIGH 组合规则", () => {
         evidenceAnchors: [{ chapterNo: 3, paraIndex: 1 }],
         note: null,
       } as PrimitiveOutput,
-      modelId: "m1",
-      isFallback: false,
     });
     const { highConfidence } = await runPrimitive({ ...baseInput, windows: [window(3)] });
     expect(highConfidence).toBe(false);
@@ -91,8 +87,6 @@ describe("runPrimitive HIGH 组合规则", () => {
   it("ambiguous → 不高置信", async () => {
     mockCall.mockResolvedValue({
       data: { verdict: "ambiguous", resolvedEntityId: null, evidenceAnchors: [], note: "两可" } as PrimitiveOutput,
-      modelId: "m1",
-      isFallback: false,
     });
     const { highConfidence } = await runPrimitive(baseInput);
     expect(highConfidence).toBe(false);
@@ -101,8 +95,6 @@ describe("runPrimitive HIGH 组合规则", () => {
   it("resolved 但无证据锚点 → 不高置信", async () => {
     mockCall.mockResolvedValue({
       data: { verdict: "resolved", resolvedEntityId: "e1", evidenceAnchors: [], note: null } as PrimitiveOutput,
-      modelId: "m1",
-      isFallback: false,
     });
     const { highConfidence } = await runPrimitive(baseInput);
     expect(highConfidence).toBe(false);

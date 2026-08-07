@@ -17,19 +17,19 @@ import type { RegistryWriteEntry } from "./identityService.ts";
 import { writeRegistry } from "./identityService.ts";
 
 export interface ReconcileInput {
-  bookId: string;
-  jobId: string;
-  bookSummary: string;
-  skills: string[];
+  bookId      : string;
+  jobId       : string;
+  bookSummary : string;
+  skills      : string[];
   /** 提及数阈值（默认 2）。 */
   minMentions?: number;
 }
 
 export interface ReconcileResult {
-  scanned: number;
-  resolved: number;
+  scanned    : number;
+  resolved   : number;
   newEntities: number;
-  ambiguous: number;
+  ambiguous  : number;
 }
 
 /**
@@ -41,10 +41,10 @@ async function findMissingSurfaceForms(bookId: string, registry: BookRegistry, m
 
   // 按 rawText 分组统计 mentions（本书维度）
   const grouped = await prisma.mention.groupBy({
-    by: ["rawText"],
-    where: { entity: { profiles: { some: { bookId, deletedAt: null } } }, deletedAt: null, status: { not: "REJECTED" } },
+    by    : ["rawText"],
+    where : { entity: { profiles: { some: { bookId, deletedAt: null } } }, deletedAt: null, status: { not: "REJECTED" } },
     _count: { _all: true },
-    _min: { paraIndex: true },
+    _min  : { paraIndex: true }
   });
 
   for (const row of grouped) {
@@ -53,13 +53,13 @@ async function findMissingSurfaceForms(bookId: string, registry: BookRegistry, m
     if (findRegistryEntryByName(registry, surface)) continue; // 已在登记表
     // 取该表面形式的提及窗口（带章节号）
     const mentions = await prisma.mention.findMany({
-      where: { rawText: surface, deletedAt: null, status: { not: "REJECTED" } },
-      select: { paraIndex: true, chapter: { select: { no: true } }, rawText: true },
+      where : { rawText: surface, deletedAt: null, status: { not: "REJECTED" } },
+      select: { paraIndex: true, chapter: { select: { no: true } }, rawText: true }
     });
     const windows: MentionWindow[] = mentions.map((m) => ({
       chapterNo: m.chapter.no,
       paraIndex: m.paraIndex,
-      excerpt: m.rawText,
+      excerpt  : m.rawText
     }));
     missing.set(surface, windows);
   }
@@ -83,18 +83,17 @@ export async function runReconcile(input: ReconcileInput, registry: BookRegistry
       windows,
       registry,
       bookSummary: input.bookSummary,
-      skills: input.skills,
-      jobId: input.jobId,
-      bookId: input.bookId,
+      skills     : input.skills,
+      jobId      : input.jobId
     });
 
     if (output.verdict === "new_entity") {
       toCreate.push({
-        canonical: surfaceForm,
-        aliases: [surfaceForm],
-        type: "PERSON",
-        nameType: "TITLE_ONLY",
-        confidence: 0.5,
+        canonical : surfaceForm,
+        aliases   : [surfaceForm],
+        type      : "PERSON",
+        nameType  : "TITLE_ONLY",
+        confidence: 0.5
       });
       result.newEntities++;
     } else if (output.verdict === "ambiguous") {
@@ -106,10 +105,10 @@ export async function runReconcile(input: ReconcileInput, registry: BookRegistry
 
   if (toCreate.length > 0) {
     await writeRegistry({
-      bookId: input.bookId,
-      source: "reconcile",
+      bookId    : input.bookId,
+      source    : "reconcile",
       agentRunId: crypto.randomUUID(),
-      entries: toCreate,
+      entries   : toCreate
     });
   }
 

@@ -4,7 +4,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { createSkillLoader } from "@/server/modules/skills/loader";
 
 /**
- * resolveSkillsForJob 装载逻辑单测（MD 文档返回模式，v5 阶段 2）：
+ * resolveSkillsForJob 装载逻辑单测（MD 文档返回模式）：
  * - 从 AnalysisJob.skillsSnapshot.allLoadedSlugs 装载 GLOBAL ∪ 选中 skill；
  * - 仅装载 status=ACTIVE 且 isEnabled=true 的全局激活版；
  * - 按 priority 降序返回候选 MD 文档；
@@ -189,29 +189,4 @@ describe("createSkillLoader", () => {
     await expect(loader.resolveSkillsForJob("missing-job")).rejects.toThrow("分析任务不存在");
   });
 
-  it("loadSkill 按 id 返回激活版全文", async () => {
-    prismaMock.skill.findUnique.mockResolvedValue({
-      slug    : "keju",
-      name    : "科举",
-      versions: [makeVersion({ versionNo: 2, content: mdContent(5) })]
-    });
-
-    const loader = createSkillLoader(prismaMock as unknown as PrismaClient);
-    const markdown = await loader.loadSkill("skill-1");
-
-    expect(markdown).toContain("指令内容");
-  });
-
-  it("loadSkill 无激活版返回 null", async () => {
-    prismaMock.skill.findUnique.mockResolvedValue({
-      slug    : "keju",
-      name    : "科举",
-      versions: []
-    });
-
-    const loader = createSkillLoader(prismaMock as unknown as PrismaClient);
-    const markdown = await loader.loadSkill("skill-1");
-
-    expect(markdown).toBeNull();
-  });
 });

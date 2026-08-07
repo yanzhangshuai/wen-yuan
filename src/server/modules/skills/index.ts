@@ -29,7 +29,6 @@ export {
   skillSelectionOutputSchema,
   buildSkillSelectionUserPrompt,
   sampleBookText,
-  mergeRelationshipCodes,
   SKILL_SELECTION_SYSTEM_PROMPT,
   SKILL_SELECTION_TEXT_THRESHOLD,
   SKILL_SELECTION_SAMPLE_CHARS,

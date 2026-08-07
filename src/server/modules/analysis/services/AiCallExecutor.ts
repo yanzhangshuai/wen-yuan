@@ -5,21 +5,17 @@
  * 文件路径：`src/server/modules/analysis/services/AiCallExecutor.ts`
  *
  * 模块职责：
- * - 封装“单次 AI 功能点调用”的通用执行策略：模型解析、重试、回退模型、日志落库；
+ * - 封装"单次 AI 调用"的通用执行策略：统一默认模型解析、重试、日志落库；
  * - 统一不同 Provider 的 usage 结构，保证成本统计链路口径一致；
  * - 在失败路径上保留足够上下文，便于审计与问题追踪。
  *
  * 在分析链路中的位置：
  * - 上游：身份解析 / 提取 / skill 选择等业务通过 `callFn` 注入具体调用逻辑；
- * - 下游：`analysis_phase_logs`、功能点模型（feature_models）解析、Provider 客户端。
- *
- * v5 模型策略（阶段 4）：
- * - 模型解析按功能点 `FeatureKey` 走 `feature_models` 全局映射；未配置时回退系统默认模型；
- * - `analysis_phase_logs.stage` 列继续存 `stageLabel ?? featureKey` 字符串，无 schema 变更；
- * - `modelSource` 语义：FEATURE / SYSTEM_DEFAULT / FALLBACK。
+ * - 下游：`analysis_phase_logs`、默认模型解析（loadSystemDefaultModel）、Provider 客户端。
  *
  * 关键业务约束：
- * - 重试/回退策略直接影响成本与成功率，属于业务策略，不应随意改动；
+ * - 所有 AI 调用统一使用系统默认模型，不做 per-stage / per-feature 模型映射；
+ * - `analysis_phase_logs.stage` 存调用方传入的单一 stage 标识；
  * - 日志字段（stage/model/source/status）是运维可观测性主键，必须保持稳定。
  * =============================================================================
  */
@@ -27,14 +23,12 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 import {
-  getFeatureModel,
   loadSystemDefaultModel,
   type ResolvedFeatureModel
-} from "@/server/modules/models/featureModels";
+} from "@/server/modules/models/defaultModel";
 import {
   type AiUsage,
   type AiCallFnResult,
-  type FeatureKey,
   type PromptMessageInput
 } from "@/types/pipeline";
 
@@ -203,27 +197,19 @@ function extractUsageFromError(error: unknown): AiUsage | null {
 }
 
 export class AiCallExhaustedError extends Error {
-  /** 当前失败发生的功能点（用于上游决定是否中断流水线）。 */
-  readonly featureKey: FeatureKey;
   /** 失败时所使用的模型 ID（用于问题定位与告警聚类）。 */
-  readonly modelId   : string;
-  /** 是否已处于 fallback 模型路径（用于区分主模型失败与兜底失败）。 */
-  readonly isFallback: boolean;
+  readonly modelId: string;
 
-  constructor(message: string, featureKey: FeatureKey, modelId: string, isFallback: boolean) {
+  constructor(message: string, modelId: string) {
     super(message);
     this.name = "AiCallExhaustedError";
-    this.featureKey = featureKey;
     this.modelId = modelId;
-    this.isFallback = isFallback;
   }
 }
 
 export interface ExecuteAiCallInput<TData> {
-  /** 当前调用所属的功能点（模型解析主键）。 */
-  featureKey : FeatureKey;
-  /** 可选阶段展示名：写入 `analysis_phase_logs.stage`；缺省=featureKey。 */
-  stageLabel?: string;
+  /** 单一阶段标识：写入 `analysis_phase_logs.stage`（如 "SKILL_SELECT"、"INDEPENDENT_EXTRACTION"）。 */
+  stage      : string;
   /** 已构建好的 Prompt 消息。 */
   prompt     : PromptMessageInput;
   /** 分析任务 ID（日志与成本统计主键）。 */
@@ -234,51 +220,24 @@ export interface ExecuteAiCallInput<TData> {
   chunkIndex?: number | null;
   /** 由调用方注入的实际 AI 调用函数。 */
   callFn: (input: {
-    /** 执行时决定的具体模型（主模型或回退模型）。 */
+    /** 执行时使用的具体模型（恒为系统默认模型）。 */
     model : ResolvedFeatureModel;
     /** 传入 Provider 的 Prompt。 */
     prompt: PromptMessageInput;
   }) => Promise<AiCallFnResult<TData>>;
 }
 
-export interface ExecuteAiCallResult<TData> extends AiCallFnResult<TData> {
-  /** 实际成功返回所使用的模型 ID。 */
-  modelId   : string;
-  /** 是否由 fallback 模型完成。 */
-  isFallback: boolean;
-}
-
-/** 模型解析依赖（可注入便于单元测试）。 */
-export interface AiCallExecutorDeps {
-  /** 解析功能点主模型：未配置时回退系统默认模型。 */
-  resolvePrimaryModel : (featureKey: FeatureKey) => Promise<ResolvedFeatureModel>;
-  /** 解析兜底模型；无可用兜底时返回 null。 */
-  resolveFallbackModel: (featureKey: FeatureKey) => Promise<ResolvedFeatureModel | null>;
-}
-
-/** 生产默认解析：功能点映射优先，未配置回退系统默认。 */
-const defaultDeps: AiCallExecutorDeps = {
-  resolvePrimaryModel: async (featureKey) => {
-    const featureModel = await getFeatureModel(featureKey);
-    if (featureModel) {
-      return featureModel;
-    }
-    return loadSystemDefaultModel();
-  },
-  resolveFallbackModel: async () => loadSystemDefaultModel().catch(() => null)
-};
+/** 返回值不携带模型标识（调用方不消费）；phase log 已落 modelId。 */
+export type ExecuteAiCallResult<TData> = AiCallFnResult<TData>;
 
 /**
- * 功能：创建 AI 调用执行器，统一重试、fallback 与阶段日志写入。
- * 输入：prisma 客户端与模型解析依赖。
+ * 功能：创建 AI 调用执行器，统一默认模型解析、重试与阶段日志写入。
+ * 输入：prisma 客户端。
  * 输出：`AiCallExecutor` 实例。
  * 异常：底层数据库或模型解析异常向上抛出。
  * 副作用：写入 `analysis_phase_logs`。
  */
-export function createAiCallExecutor(
-  prismaClient: PrismaClient = prisma,
-  deps: AiCallExecutorDeps = defaultDeps
-) {
+export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
   /**
    * 功能：记录阶段调用日志（成功/重试/失败）。
    * 输入：阶段调用上下文与统计信息。
@@ -326,18 +285,14 @@ export function createAiCallExecutor(
    * 副作用：按尝试过程持续写入阶段日志。
    */
   async function executeWithModel<TData>(input: {
-    featureKey   : FeatureKey;
-    stageLabel?  : string;
-    prompt       : PromptMessageInput;
-    jobId        : string;
-    chapterId?   : string | null;
-    chunkIndex?  : number | null;
-    model        : ResolvedFeatureModel;
-    isFallback   : boolean;
-    allowFallback: boolean;
-    callFn       : ExecuteAiCallInput<TData>["callFn"];
+    stage      : string;
+    prompt     : PromptMessageInput;
+    jobId      : string;
+    chapterId? : string | null;
+    chunkIndex? : number | null;
+    model      : ResolvedFeatureModel;
+    callFn     : ExecuteAiCallInput<TData>["callFn"];
   }): Promise<ExecuteAiCallResult<TData>> {
-    const stageLabel = input.stageLabel ?? input.featureKey;
     const maxAttempts = input.model.params.maxRetries + 1;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -351,10 +306,10 @@ export function createAiCallExecutor(
         await writePhaseLog({
           jobId           : input.jobId,
           chapterId       : input.chapterId,
-          stage           : stageLabel,
+          stage           : input.stage,
           modelId         : input.model.modelId,
-          modelSource     : input.isFallback ? "FALLBACK" : input.model.source,
-          isFallback      : input.isFallback,
+          modelSource     : "SYSTEM_DEFAULT",
+          isFallback      : false,
           promptTokens    : result.usage?.promptTokens ?? null,
           completionTokens: result.usage?.completionTokens ?? null,
           durationMs      : Date.now() - startedAt,
@@ -362,11 +317,7 @@ export function createAiCallExecutor(
           chunkIndex      : input.chunkIndex
         });
 
-        return {
-          ...result,
-          modelId   : input.model.modelId,
-          isFallback: input.isFallback
-        };
+        return result;
       } catch (error) {
         const usageFromError = extractUsageFromError(error);
         const retryable = isRetryableError(error);
@@ -377,10 +328,10 @@ export function createAiCallExecutor(
           await writePhaseLog({
             jobId           : input.jobId,
             chapterId       : input.chapterId,
-            stage           : stageLabel,
+            stage           : input.stage,
             modelId         : input.model.modelId,
-            modelSource     : input.isFallback ? "FALLBACK" : input.model.source,
-            isFallback      : input.isFallback,
+            modelSource     : "SYSTEM_DEFAULT",
+            isFallback      : false,
             promptTokens    : usageFromError?.promptTokens ?? null,
             completionTokens: usageFromError?.completionTokens ?? null,
             durationMs      : Date.now() - startedAt,
@@ -396,10 +347,10 @@ export function createAiCallExecutor(
         await writePhaseLog({
           jobId           : input.jobId,
           chapterId       : input.chapterId,
-          stage           : stageLabel,
+          stage           : input.stage,
           modelId         : input.model.modelId,
-          modelSource     : input.isFallback ? "FALLBACK" : input.model.source,
-          isFallback      : input.isFallback,
+          modelSource     : "SYSTEM_DEFAULT",
+          isFallback      : false,
           promptTokens    : usageFromError?.promptTokens ?? null,
           completionTokens: usageFromError?.completionTokens ?? null,
           durationMs      : Date.now() - startedAt,
@@ -408,65 +359,37 @@ export function createAiCallExecutor(
           chunkIndex      : input.chunkIndex
         });
 
-        if (!input.isFallback && input.allowFallback) {
-          const fallbackModel = await deps.resolveFallbackModel(input.featureKey);
-
-          // 反自递归守卫：fallback 与主模型一致或不可用时，避免在同一失败路径无限递归。
-          if (!fallbackModel || fallbackModel.modelId === input.model.modelId) {
-            throw new AiCallExhaustedError(
-              `功能点 ${stageLabel} 调用失败，fallback 与主模型相同或不可用，已终止重试`,
-              input.featureKey,
-              input.model.modelId,
-              false
-            );
-          }
-
-          return await executeWithModel({
-            ...input,
-            model        : fallbackModel,
-            isFallback   : true,
-            allowFallback: false
-          });
-        }
-
         throw new AiCallExhaustedError(
-          `功能点 ${stageLabel} 调用失败，模型 ${input.model.displayName} 已耗尽重试`,
-          input.featureKey,
-          input.model.modelId,
-          input.isFallback
+          `阶段 ${input.stage} 调用失败，模型 ${input.model.displayName} 已耗尽重试`,
+          input.model.modelId
         );
       }
     }
 
     throw new AiCallExhaustedError(
-      `功能点 ${input.stageLabel ?? input.featureKey} 调用失败，模型 ${input.model.displayName} 已耗尽重试`,
-      input.featureKey,
-      input.model.modelId,
-      input.isFallback
+      `阶段 ${input.stage} 调用失败，模型 ${input.model.displayName} 已耗尽重试`,
+      input.model.modelId
     );
   }
 
   /**
-   * 功能：执行功能点 AI 调用入口。
-   * 输入：功能点、prompt 与业务调用函数。
-   * 输出：调用结果、usage、最终模型与 fallback 标记。
-   * 异常：主模型与 fallback 全部耗尽时抛 `AiCallExhaustedError`。
-   * 副作用：读取功能点模型配置并写入阶段日志。
+   * 功能：执行一次 AI 调用入口。
+   * 输入：stage、prompt 与业务调用函数。
+   * 输出：调用结果与 usage。
+   * 异常：重试全部耗尽时抛 `AiCallExhaustedError`。
+   * 副作用：解析系统默认模型并写入阶段日志。
    */
   async function execute<TData>(input: ExecuteAiCallInput<TData>): Promise<ExecuteAiCallResult<TData>> {
-    const primaryModel = await deps.resolvePrimaryModel(input.featureKey);
+    const model = await loadSystemDefaultModel(prismaClient);
 
     return executeWithModel({
-      featureKey   : input.featureKey,
-      stageLabel   : input.stageLabel,
-      prompt       : input.prompt,
-      jobId        : input.jobId,
-      chapterId    : input.chapterId,
-      chunkIndex   : input.chunkIndex,
-      model        : primaryModel,
-      isFallback   : false,
-      allowFallback: true,
-      callFn       : input.callFn
+      stage      : input.stage,
+      prompt     : input.prompt,
+      jobId      : input.jobId,
+      chapterId  : input.chapterId,
+      chunkIndex : input.chunkIndex,
+      model,
+      callFn     : input.callFn
     });
   }
 
@@ -476,7 +399,7 @@ export function createAiCallExecutor(
 }
 
 export type AiCallExecutor = ReturnType<typeof createAiCallExecutor>;
-export const aiCallExecutor = createAiCallExecutor(prisma, defaultDeps);
+export const aiCallExecutor = createAiCallExecutor(prisma);
 
 /**
  * 仅供单元测试使用：暴露纯帮助函数，便于稳定覆盖边界分支。

@@ -1751,8 +1751,7 @@ describe("models module", () => {
     })).rejects.toThrow("已存在相同 provider、modelId 与 baseUrl 的模型配置");
   });
 
-  it("deletes non-default models when no feature-model references exist", async () => {
-    // v5：模型删除保护改查 feature_models 功能点引用（model_strategy_configs 表已删）。
+  it("deletes non-default models", async () => {
     const deleteMock = vi.fn().mockResolvedValue(createAiModelRecord());
     const prismaClient = {
       aiModel: {
@@ -1761,9 +1760,6 @@ describe("models module", () => {
           isDefault: false
         })),
         delete: deleteMock
-      },
-      featureModelConfig: {
-        findMany: vi.fn().mockResolvedValue([])
       }
     } as never;
 
@@ -1771,28 +1767,6 @@ describe("models module", () => {
 
     expect(result).toEqual({ id: "model-1" });
     expect(deleteMock).toHaveBeenCalledWith({ where: { id: "model-1" } });
-  });
-
-  it("blocks deleting a model referenced by feature-models", async () => {
-    const deleteMock = vi.fn();
-    const prismaClient = {
-      aiModel: {
-        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
-          aliasKey : "deepseek-v3",
-          isDefault: false
-        })),
-        delete: deleteMock
-      },
-      featureModelConfig: {
-        findMany: vi.fn().mockResolvedValue([
-          { featureKey: "PIPELINE_MAIN" }
-        ])
-      }
-    } as never;
-
-    await expect(createModelsModule(prismaClient).deleteModel("model-1"))
-      .rejects.toThrow("模型正在被功能点引用：PIPELINE_MAIN");
-    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it("blocks deleting default model", async () => {

@@ -65,7 +65,6 @@ import {
   type ExportedModelConfig,
   type AdminModelItem
 } from "@/lib/services/models";
-import { FeatureModelsPanel } from "./feature-models-panel";
 import { ModelForm } from "./model-form";
 import { ModelCard } from "./model-card";
 
@@ -321,7 +320,6 @@ export function ModelManager({
     <Tabs defaultValue="model-config" className="space-y-6">
       <TabsList>
         <TabsTrigger value="model-config">模型配置</TabsTrigger>
-        <TabsTrigger value="feature-models">功能点模型</TabsTrigger>
       </TabsList>
 
       <TabsContent value="model-config" className="space-y-8">
@@ -496,15 +494,6 @@ export function ModelManager({
               </div>
             </CardContent>
           </Card>
-        </PageSection>
-      </TabsContent>
-
-      <TabsContent value="feature-models" className="space-y-8">
-        <PageSection
-          title="功能点模型"
-          description="配置各功能点（skill 选择 / 主流程 / 审核）使用的 AI 模型"
-        >
-          <FeatureModelsPanel enabledModels={enabledModels} />
         </PageSection>
       </TabsContent>
 

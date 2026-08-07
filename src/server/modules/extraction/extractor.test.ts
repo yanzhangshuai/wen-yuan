@@ -50,8 +50,6 @@ describe("extractSlice", () => {
         relations: [{ typeCode: "师生", sourceCanonical: "范进", targetCanonical: "周进", evidence: "周学道拔范进中了秀才" }],
         bioFacts: [{ category: "EXAM", subjectCanonical: "范进", summary: "中举", evidence: "范进中举" }],
       },
-      modelId: "m1",
-      isFallback: false,
     });
 
     const result = await extractSlice(baseInput);
@@ -67,8 +65,6 @@ describe("extractSlice", () => {
         relations: [],
         bioFacts: [],
       },
-      modelId: "m1",
-      isFallback: false,
     });
     const result = await extractSlice(baseInput);
     expect(result.slice.newEntityCandidates).toContain("杜少卿");
@@ -84,8 +80,6 @@ describe("extractSlice", () => {
         relations: [{ typeCode: "师徒", sourceCanonical: "范进", targetCanonical: "周进", evidence: "周学道拔范进中了秀才" }],
         bioFacts: [],
       },
-      modelId: "m1",
-      isFallback: false,
     });
     const result = await extractSlice(baseInput);
     expect(result.facts).toHaveLength(0);

@@ -6,7 +6,6 @@ import { parseSkillMetadata, type RelationshipCode } from "@/server/modules/skil
 /**
  * 关系码 → 展示名 映射（图谱 DTO 用）。
  *
- * v5：relationship_types 表已删，关系码契约入 skill frontmatter。
  * code→name 从所有 active+enabled skill 的 relationshipCodes 契约并集取（`name ?? code`），
  * 缺名回退 code；skill 停用后历史码名回退 code 可接受（契约即全局码表权威）。
  */

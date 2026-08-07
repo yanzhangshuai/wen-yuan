@@ -29,9 +29,9 @@
 - HIGH 组合规则（写死）：LLM 判定 resolved ∧ 提及数≥2 ∧ 分布式扫描干净 ∧ 采样窗口语义一致。置信只作弱输入。
 - 复用方：Tier2 / reconcile / 跨卷合并 / 跨模型复核（换模型）。
 
-### C3 · relationship_types（data-model 产出，extraction 消费）
-- 表驱动：`code / name / direction(INVERSE|SYMMETRIC) / category / aliases[] / bookTypeId?(可空=全局)`。
-- schema 生成：`WHERE bookTypeId IS NULL OR bookTypeId = :current`（全局行 + 本书型行）。
+### C3 · 关系码契约（skill frontmatter 产出，extraction 消费）
+- 契约驱动：`relationshipCodes: [{code, direction, category, aliases}]` 闭集进 relationship-type skill frontmatter（`relationship_types` 表已删）。
+- schema 生成：从所选 skill 契约并集取码（去重按 code，先到先得）。
 - 任务级快照：`analysis_jobs.relationshipTypesSnapshot`（同 skillsSnapshot 模式）。
 
 ### C4 · 分片提取输出（extraction 产出，review 消费）

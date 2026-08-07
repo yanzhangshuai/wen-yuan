@@ -67,7 +67,7 @@ describe("getBookStatus", () => {
         chapterIndices: true
       })
     });
-    // v5：进度从最新任务状态推导（RUNNING → 50 / “解析中”）。
+    // 进度从最新任务状态推导（RUNNING → 50 / “解析中”）。
     expect(result).toEqual({
       status  : "PROCESSING",
       progress: 50,

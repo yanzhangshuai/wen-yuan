@@ -70,8 +70,7 @@ export const ModelName = {
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
   AnalysisPhaseLog: 'AnalysisPhaseLog',
-  KnowledgeAuditLog: 'KnowledgeAuditLog',
-  FeatureModelConfig: 'FeatureModelConfig'
+  KnowledgeAuditLog: 'KnowledgeAuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -475,15 +474,6 @@ export const KnowledgeAuditLogScalarFieldEnum = {
 } as const
 
 export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
-
-
-export const FeatureModelConfigScalarFieldEnum = {
-  featureKey: 'featureKey',
-  modelId: 'modelId',
-  updatedAt: 'updatedAt'
-} as const
-
-export type FeatureModelConfigScalarFieldEnum = (typeof FeatureModelConfigScalarFieldEnum)[keyof typeof FeatureModelConfigScalarFieldEnum]
 
 
 export const SortOrder = {

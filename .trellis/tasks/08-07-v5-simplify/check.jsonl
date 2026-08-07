@@ -1,0 +1,9 @@
+{"file": ".trellis/tasks/08-07-v5-simplify/prd.md", "reason": "验收标准：AC1-AC5（零引用 grep、AiCallExecutor 单一 stage、feature_models 删除）"}
+{"file": ".trellis/tasks/08-07-v5-simplify/design.md", "reason": "技术设计边界：模型选择移除面、prompt 推导、死代码链、PRD 同步"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "最小修改、禁 any、可读性审查（注释清理误伤防护）"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 迁移正确性审查（feature_models drop）"}
+{"file": ".trellis/spec/backend/ai-model-config.md", "reason": "loadSystemDefaultModel 迁入 models 域的正确性"}
+{"file": ".trellis/spec/backend/comment-template.md", "reason": "阶段注释清理是否符合注释模板（只描述现状）"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试重构完备性（AiCallExecutor 用例迁移、死代码测试删除）"}
+{"file": ".trellis/spec/backend/analysis-pipeline.md", "reason": "ANALYSIS_PIPELINE_CONFIG 删除正确性（是否还有隐性依赖）"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "callJsonLlm 抽取是否消除重复且无行为变化"}

@@ -103,8 +103,6 @@ function resolveLastAnalyzedAt(
 function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
   const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
-  // v5：architecture 已随 v4 双架构删除，前端仍读 lastArchitecture 字段，统一返回 null。
-  const lastArchitecture: "sequential" | "twopass" | null = null;
   const lastErrorSummary = book.errorLog ?? book.analysisJobs[0]?.errorLog ?? null;
 
   return {
@@ -118,7 +116,6 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
     personaCount  : book.profiles.length,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
-    lastArchitecture,
     lastErrorSummary,
     createdAt     : book.createdAt.toISOString(),
     updatedAt     : book.updatedAt.toISOString(),

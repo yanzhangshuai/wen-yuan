@@ -217,7 +217,6 @@ model AiModel {
 
   phaseLogs    AnalysisPhaseLog[] // 阶段调用日志
   agentRuns    AgentRun[] // agent 运行记录
-  featureModel FeatureModelConfig[] // 功能点模型映射（feature_models）
 
   @@unique([provider, modelId, baseUrl], map: "ai_models_unique_endpoint")
   @@unique([aliasKey], map: "ai_models_alias_key_uniq")
@@ -783,15 +782,3 @@ model KnowledgeAuditLog {
   @@map("knowledge_audit_logs")
 }
 
-/// @db.remark: 功能点模型映射。featureKey → modelId 全局映射（SKILL_SELECTOR / PIPELINE_MAIN / REVIEW）。
-/// v5 模型策略：解析前的 skill 选择、主流程提取、Pass4 审核各用一个功能点槽位。
-model FeatureModelConfig {
-  featureKey String   @id @db.VarChar(60) // 功能点键：SKILL_SELECTOR | PIPELINE_MAIN | REVIEW
-  modelId    String   @map("model_id") @db.Uuid // 指向 ai_models 的模型配置主键
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6) // 更新时间
-
-  model AiModel @relation(fields: [modelId], references: [id], onDelete: Restrict)
-
-  @@index([modelId], map: "feature_models_model_idx")
-  @@map("feature_models")
-}

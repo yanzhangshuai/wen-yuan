@@ -3,7 +3,7 @@
 > 本文档是分析域的**当前权威架构**，取代 v4（`12-agent-architecture-full.md`）与 00-11 中所有 Tool-Use Loop 相关描述。
 > 核心转向：**模型只做它擅长的提取，系统只做模型永远不会的验收。**
 >
-> 版本：2026-08-07 · v5.2（v5 经四轮评审收敛：双 tier 身份解析 + 身份判定原语 + 分布式冲突扫描 + 登记表派生视图 + 预算修正；skill 装载重构：AI 动态选 skill + 关系码契约入 skill + 功能点模型）
+> 版本：2026-08-07 · v5.3（v5 经四轮评审收敛：双 tier 身份解析 + 身份判定原语 + 分布式冲突扫描 + 登记表派生视图 + 预算修正；skill 装载重构：AI 动态选 skill + 关系码契约入 skill；简化清理：AI 调用统一系统默认模型，移除 feature_models 功能点映射）
 
 ---
 
@@ -223,7 +223,7 @@ reconcile（漏网高频，复用原语）
 | 书型级别名模式（明清官场称谓规则） | 泛化的"古典文学常识"复述 |
 | 关系类型契约（relationshipCodes 闭集，schema/guardrail/图谱取码源） | 字典式穷举规则（代码不维护码表，码进 skill frontmatter） |
 
-**装载方式（v5：AI 动态选择，每次任务现选）**：解析前由 `selectSkillsForJob` 按"书 + skill 目录"动态选 skill——书上下文（书名/作者/朝代/简介 + 章节正文：全文 ≤ 阈值全量注入，超长抽样首/中/末各 ~2K 字）+ frontmatter-only 目录 `{slug, name, description, category}`（不读正文）→ 一次 SKILL_SELECTOR 廉价模型调用 → zod 校验 `skillSlugs ⊆ 目录`（目录外/未启用的 slug 丢弃告警）→ 装载集合 = `scope=GLOBAL ∪ 选中` → 结果快照进 `analysis_jobs.skillsSnapshot` / `relationshipTypesSnapshot`。任务内各阶段从任务快照装载，任务间互不干扰；**不做书级持久化**（同书多次解析每次现选）。skill 元数据（名字 + 描述 ~100 token）用于选择器目录与管理 UI 展示。
+**装载方式（AI 动态选择，每次任务现选）**：解析前由 `selectSkillsForJob` 按"书 + skill 目录"动态选 skill——书上下文（书名/作者/朝代/简介 + 章节正文：全文 ≤ 阈值全量注入，超长抽样首/中/末各 ~2K 字）+ frontmatter-only 目录 `{slug, name, description, category}`（不读正文）→ 一次 LLM 调用（统一使用系统默认模型）→ zod 校验 `skillSlugs ⊆ 目录`（目录外/未启用的 slug 丢弃告警）→ 装载集合 = `scope=GLOBAL ∪ 选中` → 结果快照进 `analysis_jobs.skillsSnapshot` / `relationshipTypesSnapshot`。任务内各阶段从任务快照装载，任务间互不干扰；**不做书级持久化**（同书多次解析每次现选）。skill 元数据（名字 + 描述 ~100 token）用于选择器目录与管理 UI 展示。
 
 **启停（`Skill.isEnabled`）**：每个 skill 独立开关（非总闸）；`false` = 该 skill 全局不可用（目录不可见 / AI 不可选 / 不装载）。内容源 = `scripts/skills/*.md`（frontmatter 契约 + 正文）+ seed，管理端只读展示契约 + 启停开关，不提供富文本编辑。
 
@@ -235,7 +235,7 @@ reconcile（漏网高频，复用原语）
 
 ## 第六部分 · 数据模型调整
 
-基于现有 schema（已迁移的新库；skill 装载重构后：删 `book_types`/`book_type_skills`/`relationship_types`/`model_strategy_configs`/`text_chunks`/`fact_evidences` 6 表，新增 `feature_models` 表），**运行域按"无工具循环"简化**：
+基于现有 schema（已迁移的新库；skill 装载重构后：删 `book_types`/`book_type_skills`/`relationship_types`/`model_strategy_configs`/`text_chunks`/`fact_evidences`/`feature_models` 7 表），**运行域按"无工具循环"简化**：
 
 | 表 | 处置 | 理由 |
 |---|---|---|
@@ -249,7 +249,7 @@ reconcile（漏网高频，复用原语）
 | `chapter_memories` | **不建** | 身份登记表就是记忆；无跨章记忆管线 |
 | `validation_reports` / `merge_suggestions` | **保留** | 只检测不修复；merge 人审 |
 | `text_chunks` / pgvector | **已删** | RAG 是 v4；v5 无检索问答路径 |
-| `feature_models` | **新增** | 功能点模型全局映射（featureKey → modelId；SKILL_SELECTOR / PIPELINE_MAIN / REVIEW），AiCallExecutor 按 featureKey 解析，未配置回退系统默认模型 |
+| `feature_models` | **已删** | 功能点模型映射表取消；所有 AI 调用统一使用系统默认模型（`loadSystemDefaultModel`：isDefault 优先，否则最近更新启用模型） |
 | `facts.status` / `recordSource` | **微调** | 加 `AUTO_VERIFIED` 来源，区分机器自动接受 vs 人工确认 |
 
 **进度推导**：`Book.parseProgress/parseStage` 列已删，解析进度由 `getBookStatus` 从最新 `AnalysisJob` 状态 + `analysis_phase_logs` 推导（前端读 API 字段名不变）；`Chapter.parseStatus` 保留（pipeline 写入、前端面板消费）。
@@ -336,7 +336,7 @@ AI-Reader-V2 最值得学的是把质量当工程做（498 pytest + golden stand
 - v5.1 是**结构性单轮**，预算就是上界，不存在穿的可能
 - 身份解析吃满上下文是**一次性**开销；分片调用上下文小且相互独立 → 可高并发，wall-clock 更快
 - 分层采样（≤15 窗口/候选）把 Tier2 压到下限，信号损失可控
-- 每次任务启动的 **SKILL_SELECTOR 动态选 skill** 为独立一次廉价调用（书上下文 + 目录，~2-4K token），全量装载技能进提取 prompt，不再按书型预注入
+- 每次任务启动的 **AI 动态选 skill** 为独立一次调用（书上下文 + 目录，~2-4K token，统一使用系统默认模型），全量装载技能进提取 prompt，不再按书型预注入
 
 ---
 

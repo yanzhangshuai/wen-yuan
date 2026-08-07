@@ -1,12 +1,11 @@
 /**
  * 文件定位（分析服务：任务成本汇总）
  * =============================================================================
- * v5 阶段 4（08-07-v5-skill-loading）：`modelStrategyAdminService` 随 v4 阶段模型策略删除，
- * 其中与模型策略无关的“任务成本汇总”职责迁移到此文件，供 `/api/admin/analysis-jobs/:jobId/cost-summary`
- * 消费。成本数据来自 `analysis_phase_logs`（stage 存 featureKey/stageLabel 字符串），不依赖任何策略表。
+ * 汇总分析任务阶段日志，供 `/api/admin/analysis-jobs/:jobId/cost-summary` 消费。
+ * 成本数据来自 `analysis_phase_logs`（stage 存调用方传入的阶段标识），不依赖任何策略表。
  *
  * 核心职责：
- * - 汇总分析任务阶段日志，输出按阶段/模型（含 fallback）聚合的 token 与耗时成本；
+ * - 汇总分析任务阶段日志，输出按阶段/模型聚合的 token 与耗时成本；
  * - 成本统计按“同一调用键最终结果”归并，避免重试日志重复计数。
  */
 
@@ -14,11 +13,12 @@ import { type PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 
-/** 功能点阶段展示顺序（用于成本明细稳定排序；未知 stage 排最后）。 */
+/** 阶段展示顺序（用于成本明细稳定排序；未知 stage 排最后）。 */
 const STAGE_ORDER = new Map<string, number>([
-  ["SKILL_SELECTOR", 0],
-  ["PIPELINE_MAIN", 1],
-  ["REVIEW", 2]
+  ["SKILL_SELECT", 0],
+  ["ROSTER_DISCOVERY", 1],
+  ["TITLE_RESOLUTION", 2],
+  ["INDEPENDENT_EXTRACTION", 3]
 ]);
 
 interface PhaseLogRow {

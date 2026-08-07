@@ -40,18 +40,12 @@ describe("runTier1", () => {
     mockCall
       .mockResolvedValueOnce({
         data: [{ canonical: "范进", type: "PERSON", aliases: ["范老爷"], evidenceAnchors: [{ chapterNo: 3, paraIndex: 1 }] }],
-        modelId: "m1",
-        isFallback: false,
       })
       .mockResolvedValueOnce({
         data: [{ canonical: "诸暨县", type: "LOCATION", aliases: [], evidenceAnchors: [{ chapterNo: 1, paraIndex: 1 }] }],
-        modelId: "m1",
-        isFallback: false,
       })
       .mockResolvedValueOnce({
         data: [],
-        modelId: "m1",
-        isFallback: false,
       });
 
     await runTier1(baseInput, "deepseek-v3");
@@ -65,8 +59,6 @@ describe("runTier1", () => {
   it("预扫描候选并入（LLM 漏项）", async () => {
     mockCall.mockResolvedValue({
       data: [{ canonical: "范进", type: "PERSON", aliases: [], evidenceAnchors: [] }],
-      modelId: "m1",
-      isFallback: false,
     });
     await runTier1({
       ...baseInput,
@@ -81,8 +73,6 @@ describe("runTier1", () => {
     const longText = Array.from({ length: 30 }, (_, i) => `　　第${i + 1}回　内容${i + 1}`).join("\n");
     mockCall.mockResolvedValue({
       data: [{ canonical: "范进", type: "PERSON", aliases: ["范老爷"], evidenceAnchors: [{ chapterNo: 3, paraIndex: 1 }] }],
-      modelId: "m1",
-      isFallback: false,
     });
     await runTier1({ ...baseInput, fullText: longText }, "deepseek-v3");
     // volume 分支：30 章 → 2 卷（每卷 25 + 重叠 3）

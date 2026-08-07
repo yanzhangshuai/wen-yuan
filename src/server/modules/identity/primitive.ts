@@ -9,7 +9,6 @@
  *   ∧ 分布式冲突扫描干净（caller 外置校验）
  *   ∧ 采样窗口语义一致（prompt 约束 + LLM 内部判定）
  */
-import { FeatureKey } from "@/types/pipeline";
 import type { BookRegistry } from "./registry.ts";
 import { IDENTITY_RESOLUTION_SYSTEM_PROMPT } from "./prompts.ts";
 import { callIdentityLlm } from "./llm.ts";
@@ -29,7 +28,6 @@ export interface PrimitiveInput {
   bookSummary: string;
   skills     : string[];
   jobId      : string;
-  bookId?    : string | null;
 }
 
 export interface PrimitiveOutput {
@@ -90,12 +88,10 @@ export async function runPrimitive(input: PrimitiveInput): Promise<PrimitiveResu
   ].join("\n");
 
   const { data } = await callIdentityLlm<PrimitiveOutput>({
-    featureKey: FeatureKey.PIPELINE_MAIN,
-    stageLabel: "TITLE_RESOLUTION",
-    system    : IDENTITY_RESOLUTION_SYSTEM_PROMPT,
+    stage : "TITLE_RESOLUTION",
+    system: IDENTITY_RESOLUTION_SYSTEM_PROMPT,
     user,
-    jobId     : input.jobId,
-    bookId    : input.bookId ?? null
+    jobId : input.jobId
   });
 
   const condition1 = data.verdict === "resolved" && data.evidenceAnchors.length > 0 && !!data.resolvedEntityId;

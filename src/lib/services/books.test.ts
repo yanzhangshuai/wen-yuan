@@ -95,8 +95,7 @@ describe("books service", () => {
   });
 
   it("startAnalysis sends scope payload without v4 model strategy fields", async () => {
-    // v5：architecture（v4 双架构）与 modelStrategy（v4 阶段模型策略）已删除，
-    // 任务请求只携带解析范围；模型改由 feature_models 功能点映射管理。
+    // 任务请求只携带解析范围；不携带模型配置（统一使用系统默认模型）。
     // Arrange
     clientMutateMock.mockResolvedValue(undefined);
     const { startAnalysis } = await import("@/lib/services/books");
