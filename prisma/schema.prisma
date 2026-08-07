@@ -1,12 +1,13 @@
 // -----------------------------------------------------------------------------
 // 《通用文学知识图谱系统》核心数据库定义
 // -----------------------------------------------------------------------------
-// 版本 v3（2026-08-05）：角色解析域彻底重写。
+// 版本 v5（2026-08-07）：分析架构重构，扩展知识统一 Skill 化。
 // - 通用实体 + 事实模型：entities 合表 + 单一 facts 表（证据锚定）+ relationships 物化聚合
-// - 所有扩展知识 Skill 化：skills / skill_versions / book_type_skills
-// - Agent 运行全留痕：agent_runs / agent_steps / agent_write_audits
-// - 旧分析模型（Persona/Profile/BiographyRecord/Relationship/AliasMapping/
-//   PromptTemplate/GenericTitleRule/ExtractionRule/RelationshipTypeDefinition/AliasPack 等）已删除
+// - 所有扩展知识 Skill 化：skills / skill_versions
+// - Agent 运行全留痕：agent_runs / agent_write_audits
+// - 旧分析模型（Persona/Profile/BiographyRecord/AliasMapping/
+//   PromptTemplate/GenericTitleRule/ExtractionRule/BookType/RelationshipType/
+//   KnowledgeAuditLog 等）已删除
 
 generator client {
   provider = "prisma-client"
@@ -721,7 +722,7 @@ model MergeSuggestion {
 }
 
 // =============================================================================
-// 知识库：阶段日志 + 审计日志 + 功能点模型
+// 运行域：AI 阶段调用日志
 // =============================================================================
 
 /// @db.remark: AI 阶段调用日志。记录每次调用模型、耗时、token 及 fallback 信息。

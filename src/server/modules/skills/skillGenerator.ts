@@ -21,13 +21,13 @@ import { createSkillService } from "@/server/modules/skills/skillService";
 
 /** 书籍分析信号（由分析管线 Pass0/Pass5 产出）。 */
 export interface SkillGenerationSignals {
-  bookId   : string;
+  bookId                   : string;
   /** 高频但未建档的称谓（如 TITLE_ONLY 高频词）。 */
-  frequentTitles?: string[];
+  frequentTitles?          : string[];
   /** 出现但不在关系类型字典内的关系码。 */
   unknownRelationshipCodes?: string[];
   /** 新出现的名字模式（正则或描述）。 */
-  newNamePatterns?: Array<{ ruleType: string; pattern: string; description?: string }>;
+  newNamePatterns?         : Array<{ ruleType: string; pattern: string; description?: string }>;
 }
 
 export interface GenerateSkillResult {
