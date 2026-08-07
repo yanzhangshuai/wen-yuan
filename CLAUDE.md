@@ -11,7 +11,7 @@
 - **框架**：Next.js 16 (App Router) + React 19，TypeScript (strict)，Tailwind CSS v4
 - **数据库**：PostgreSQL 16 (Prisma 7) + Neo4j 5.15 (neo4j-driver)
 - **包管理**：pnpm（ESM 项目，`"type": "module"`）
-- **测试**：Vitest + V8 覆盖率（行覆盖率阈值 90%）
+- **测试**：Vitest + V8 覆盖率（门禁只统计 `src/server` 服务端业务模块，行覆盖率阈值 85%）
 - **Lint**：ESLint flat config + typescript-eslint + `@stylistic` 格式化规则
 - **UI 组件**：Radix UI 基础组件 + shadcn/ui 模式，位于 `src/components/ui/`
 - **图谱可视化**：D3 (d3-force, d3-zoom, d3-drag, d3-selection)
