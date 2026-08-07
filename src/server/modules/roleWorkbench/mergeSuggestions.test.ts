@@ -8,7 +8,6 @@
  * - 降低重构时误改核心规则的风险。
  */
 
-import { ProcessingStatus } from "@/generated/prisma/enums";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -17,28 +16,35 @@ import {
   MergeSuggestionStateError,
   PersonaMergeConflictError
 } from "@/server/modules/roleWorkbench/mergeSuggestions";
+import { mergeEntitiesInTransaction } from "@/server/modules/review/mergeEntities";
+
+// 屏蔽实体合并事务（其内部逻辑由 mergeEntities.test.ts 单独覆盖）。
+vi.mock("@/server/modules/review/mergeEntities", () => ({
+  mergeEntitiesInTransaction: vi.fn()
+}));
+const mockMergeEntities = vi.mocked(mergeEntitiesInTransaction);
 
 function createSuggestionRow(overrides: Partial<{
-  id             : string;
-  status         : string;
-  resolvedAt     : Date | null;
-  sourcePersonaId: string;
-  targetPersonaId: string;
+  id            : string;
+  status        : string;
+  resolvedAt    : Date | null;
+  sourceEntityId: string;
+  targetEntityId: string;
 }> = {}) {
   return {
-    id             : "f8d2f35e-0fdf-4ef8-848b-77a06c4c1a7b",
-    bookId         : "21676f74-3dca-460d-a50c-8f5485704f6d",
-    sourcePersonaId: "5eaa808b-0f86-4d79-bb18-991639ca5ca8",
-    targetPersonaId: "9ef7ad4c-6800-4d99-a0c8-ff3fd5f4c111",
-    reason         : "名称相似且上下文一致",
-    confidence     : 0.92,
-    evidenceRefs   : [{ chapterId: "c-1", paraIndex: 3 }],
-    status         : "PENDING",
-    createdAt      : new Date("2026-03-25T08:00:00.000Z"),
-    resolvedAt     : null,
-    book           : { title: "儒林外史" },
-    sourcePersona  : { name: "周进" },
-    targetPersona  : { name: "周学道" },
+    id            : "f8d2f35e-0fdf-4ef8-848b-77a06c4c1a7b",
+    bookId        : "21676f74-3dca-460d-a50c-8f5485704f6d",
+    sourceEntityId: "5eaa808b-0f86-4d79-bb18-991639ca5ca8",
+    targetEntityId: "9ef7ad4c-6800-4d99-a0c8-ff3fd5f4c111",
+    reason        : "名称相似且上下文一致",
+    confidence    : 0.92,
+    evidenceRefs  : [{ chapterId: "c-1", paraIndex: 3 }],
+    status        : "PENDING",
+    createdAt     : new Date("2026-03-25T08:00:00.000Z"),
+    resolvedAt    : null,
+    book          : { title: "儒林外史" },
+    source        : { name: "周进" },
+    target        : { name: "周学道" },
     ...overrides
   };
 }
@@ -141,13 +147,13 @@ describe("merge suggestions service", () => {
       mergeSuggestion: {
         findUnique: vi.fn().mockResolvedValue({
           ...createSuggestionRow(),
-          sourcePersona: {
+          source: {
             id       : "source",
             name     : "周进",
             aliases  : [],
             deletedAt: new Date("2026-03-24T00:00:00.000Z")
           },
-          targetPersona: {
+          target: {
             id       : "target",
             name     : "周学道",
             aliases  : [],
@@ -181,17 +187,17 @@ describe("merge suggestions service", () => {
     }));
     const mergeSuggestionFindUnique = vi.fn().mockResolvedValue({
       ...createSuggestionRow({
-        id             : "s-accept",
-        sourcePersonaId: "source-persona",
-        targetPersonaId: "target-persona"
+        id            : "s-accept",
+        sourceEntityId: "source-persona",
+        targetEntityId: "target-persona"
       }),
-      sourcePersona: {
+      source: {
         id       : "source-persona",
         name     : "周进",
         aliases  : ["周公"],
         deletedAt: null
       },
-      targetPersona: {
+      target: {
         id       : "target-persona",
         name     : "周学道",
         aliases  : ["周大人"],
@@ -245,20 +251,11 @@ describe("merge suggestions service", () => {
     const result = await service.acceptMergeSuggestion("s-accept");
 
     expect(result.status).toBe("ACCEPTED");
-    expect(biographyUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
-      data: { personaId: "target-persona" }
-    }));
-    expect(mentionUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
-      data: { personaId: "target-persona" }
-    }));
-    expect(relationshipUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "rel-self-loop" },
-      data : expect.objectContaining({ status: ProcessingStatus.REJECTED })
-    }));
-    expect(personaUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "target-persona" },
-      data : expect.objectContaining({ aliases: ["周大人", "周公", "周进"] })
-    }));
+    // 合并细节收敛到 mergeEntitiesInTransaction（其内部逻辑单独覆盖），此处断言正确调用。
+    expect(mockMergeEntities).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sourceId: "source-persona", targetId: "target-persona" })
+    );
     expect(mergeSuggestionUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "s-accept" },
       data : expect.objectContaining({ status: "ACCEPTED" })

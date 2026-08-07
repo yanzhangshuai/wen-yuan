@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { mergePersonasInTransaction } from "@/server/modules/personas/mergePersonas";
+import { mergeEntitiesInTransaction } from "@/server/modules/review/mergeEntities";
 
 /**
  * =============================================================================
@@ -63,31 +63,31 @@ interface MergeSuggestionFilter {
 /** 管理端合并建议列表项。 */
 export interface MergeSuggestionItem {
   /** `MergeSuggestion.id`，建议主键。 */
-  id             : string;
+  id            : string;
   /** 所属书籍 ID。 */
-  bookId         : string;
+  bookId        : string;
   /** 所属书籍标题。 */
-  bookTitle      : string;
-  /** 建议被合并的一方（source）人物 ID。 */
-  sourcePersonaId: string;
-  /** source 人物名称。 */
-  sourceName     : string;
-  /** 建议保留的一方（target）人物 ID。 */
-  targetPersonaId: string;
-  /** target 人物名称。 */
-  targetName     : string;
+  bookTitle     : string;
+  /** 建议被合并的一方（source）实体 ID。 */
+  sourceEntityId: string;
+  /** source 实体名称。 */
+  sourceName    : string;
+  /** 建议保留的一方（target）实体 ID。 */
+  targetEntityId: string;
+  /** target 实体名称。 */
+  targetName    : string;
   /** 触发建议的解释文本。 */
-  reason         : string;
+  reason        : string;
   /** 建议置信度（0~1）。 */
-  confidence     : number;
+  confidence    : number;
   /** 证据引用（JSON 结构，按生成策略可能为数组或对象）。 */
-  evidenceRefs   : unknown;
+  evidenceRefs  : unknown;
   /** 建议状态。 */
-  status         : MergeSuggestionStatus;
+  status        : MergeSuggestionStatus;
   /** 创建时间（ISO 8601 字符串）。 */
-  createdAt      : string;
+  createdAt     : string;
   /** 处理完成时间（ISO 8601，可空）。 */
-  resolvedAt     : string | null;
+  resolvedAt    : string | null;
 }
 
 /** 指定合并建议不存在时抛出的异常。 */
@@ -136,34 +136,34 @@ export class PersonaMergeConflictError extends Error {
  * - 统一输出字段命名，降低路由层与前端耦合成本。
  */
 function mapSuggestionRow(item: {
-  id             : string;
-  bookId         : string;
-  reason         : string;
-  confidence     : number;
-  evidenceRefs   : unknown;
-  status         : string;
-  createdAt      : Date;
-  resolvedAt     : Date | null;
-  book           : { title: string };
-  sourcePersona  : { name: string };
-  targetPersona  : { name: string };
-  sourcePersonaId: string;
-  targetPersonaId: string;
+  id            : string;
+  bookId        : string;
+  reason        : string;
+  confidence    : number;
+  evidenceRefs  : unknown;
+  status        : string;
+  createdAt     : Date;
+  resolvedAt    : Date | null;
+  book          : { title: string };
+  source        : { name: string };
+  target        : { name: string };
+  sourceEntityId: string;
+  targetEntityId: string;
 }): MergeSuggestionItem {
   return {
-    id             : item.id,
-    bookId         : item.bookId,
-    bookTitle      : item.book.title,
-    sourcePersonaId: item.sourcePersonaId,
-    sourceName     : item.sourcePersona.name,
-    targetPersonaId: item.targetPersonaId,
-    targetName     : item.targetPersona.name,
-    reason         : item.reason,
-    confidence     : item.confidence,
-    evidenceRefs   : item.evidenceRefs,
-    status         : item.status as MergeSuggestionStatus,
-    createdAt      : item.createdAt.toISOString(),
-    resolvedAt     : item.resolvedAt?.toISOString() ?? null
+    id            : item.id,
+    bookId        : item.bookId,
+    bookTitle     : item.book.title,
+    sourceEntityId: item.sourceEntityId,
+    sourceName    : item.source.name,
+    targetEntityId: item.targetEntityId,
+    targetName    : item.target.name,
+    reason        : item.reason,
+    confidence    : item.confidence,
+    evidenceRefs  : item.evidenceRefs,
+    status        : item.status as MergeSuggestionStatus,
+    createdAt     : item.createdAt.toISOString(),
+    resolvedAt    : item.resolvedAt?.toISOString() ?? null
   };
 }
 
@@ -185,32 +185,32 @@ export function createMergeSuggestionsService(
       where: {
         ...(parsedFilter.bookId ? { bookId: parsedFilter.bookId } : {}),
         ...(parsedFilter.status ? { status: parsedFilter.status } : {}),
-        sourcePersona: { deletedAt: null },
-        targetPersona: { deletedAt: null }
+        source: { deletedAt: null },
+        target: { deletedAt: null }
       },
       orderBy: [{ createdAt: "desc" }],
       select : {
-        id             : true,
-        bookId         : true,
-        sourcePersonaId: true,
-        targetPersonaId: true,
-        reason         : true,
-        confidence     : true,
-        evidenceRefs   : true,
-        status         : true,
-        createdAt      : true,
-        resolvedAt     : true,
-        book           : {
+        id            : true,
+        bookId        : true,
+        sourceEntityId: true,
+        targetEntityId: true,
+        reason        : true,
+        confidence    : true,
+        evidenceRefs  : true,
+        status        : true,
+        createdAt     : true,
+        resolvedAt    : true,
+        book          : {
           select: {
             title: true
           }
         },
-        sourcePersona: {
+        source: {
           select: {
             name: true
           }
         },
-        targetPersona: {
+        target: {
           select: {
             name: true
           }
@@ -244,21 +244,21 @@ export function createMergeSuggestionsService(
       const suggestion = await tx.mergeSuggestion.findUnique({
         where : { id: suggestionId },
         select: {
-          id             : true,
-          bookId         : true,
-          sourcePersonaId: true,
-          targetPersonaId: true,
-          reason         : true,
-          confidence     : true,
-          evidenceRefs   : true,
-          status         : true,
-          createdAt      : true,
-          resolvedAt     : true,
-          book           : { select: { title: true } },
-          sourcePersona  : {
+          id            : true,
+          bookId        : true,
+          sourceEntityId: true,
+          targetEntityId: true,
+          reason        : true,
+          confidence    : true,
+          evidenceRefs  : true,
+          status        : true,
+          createdAt     : true,
+          resolvedAt    : true,
+          book          : { select: { title: true } },
+          source        : {
             select: { id: true, name: true, aliases: true, deletedAt: true }
           },
-          targetPersona: {
+          target: {
             select: { id: true, name: true, aliases: true, deletedAt: true }
           }
         }
@@ -272,14 +272,14 @@ export function createMergeSuggestionsService(
         throw new MergeSuggestionStateError(suggestion.id, suggestion.status);
       }
 
-      if (suggestion.sourcePersona.deletedAt || suggestion.targetPersona.deletedAt) {
-        throw new PersonaMergeConflictError(suggestion.id, "源人物或目标人物已被删除，无法执行合并");
+      if (suggestion.source.deletedAt || suggestion.target.deletedAt) {
+        throw new PersonaMergeConflictError(suggestion.id, "源实体或目标实体已被删除，无法执行合并");
       }
 
       // 调用权威合并核心
-      await mergePersonasInTransaction(tx, {
-        sourceId: suggestion.sourcePersonaId,
-        targetId: suggestion.targetPersonaId
+      await mergeEntitiesInTransaction(tx, {
+        sourceId: suggestion.sourceEntityId,
+        targetId: suggestion.targetEntityId
       });
 
       // 回写建议状态
@@ -288,19 +288,19 @@ export function createMergeSuggestionsService(
         where : { id: suggestion.id },
         data  : { status: "ACCEPTED", resolvedAt: now },
         select: {
-          id             : true,
-          bookId         : true,
-          sourcePersonaId: true,
-          targetPersonaId: true,
-          reason         : true,
-          confidence     : true,
-          evidenceRefs   : true,
-          status         : true,
-          createdAt      : true,
-          resolvedAt     : true,
-          book           : { select: { title: true } },
-          sourcePersona  : { select: { name: true } },
-          targetPersona  : { select: { name: true } }
+          id            : true,
+          bookId        : true,
+          sourceEntityId: true,
+          targetEntityId: true,
+          reason        : true,
+          confidence    : true,
+          evidenceRefs  : true,
+          status        : true,
+          createdAt     : true,
+          resolvedAt    : true,
+          book          : { select: { title: true } },
+          source        : { select: { name: true } },
+          target        : { select: { name: true } }
         }
       });
 
@@ -349,27 +349,27 @@ export function createMergeSuggestionsService(
           resolvedAt: new Date()
         },
         select: {
-          id             : true,
-          bookId         : true,
-          sourcePersonaId: true,
-          targetPersonaId: true,
-          reason         : true,
-          confidence     : true,
-          evidenceRefs   : true,
-          status         : true,
-          createdAt      : true,
-          resolvedAt     : true,
-          book           : {
+          id            : true,
+          bookId        : true,
+          sourceEntityId: true,
+          targetEntityId: true,
+          reason        : true,
+          confidence    : true,
+          evidenceRefs  : true,
+          status        : true,
+          createdAt     : true,
+          resolvedAt    : true,
+          book          : {
             select: {
               title: true
             }
           },
-          sourcePersona: {
+          source: {
             select: {
               name: true
             }
           },
-          targetPersona: {
+          target: {
             select: {
               name: true
             }
