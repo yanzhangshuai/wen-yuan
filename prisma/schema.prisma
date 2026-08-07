@@ -140,7 +140,6 @@ enum SkillCategory {
   RELATIONSHIP_TYPE // 关系类型
   HISTORICAL_FIGURE // 历史人物
   TASK_INSTRUCTION // 任务指令
-  ALIAS_PACK // 别名包
   HYBRID // 混合
 
   @@map("skill_category")
