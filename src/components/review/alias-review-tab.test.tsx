@@ -23,7 +23,7 @@ function buildMapping(overrides: Partial<AliasMappingItem> = {}): AliasMappingIt
     alias       : "太祖皇帝",
     resolvedName: "朱元璋",
     aliasType   : "TITLE",
-    personaId   : "persona-1",
+    entityId    : "entity-1",
     confidence  : 0.95,
     evidence    : "明朝开国皇帝",
     status      : "PENDING",

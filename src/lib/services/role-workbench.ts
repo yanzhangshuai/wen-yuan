@@ -216,34 +216,34 @@ export interface ChapterEventChapterData {
 }
 
 export interface ChapterEventItem {
-  id          : string;
-  personaId   : string;
-  personaName : string;
-  chapterId   : string;
-  chapterNo   : number;
-  category    : string;
-  title       : string | null;
-  location    : string | null;
-  event       : string;
-  virtualYear : string | null;
-  tags        : string[];
-  ironyNote   : string | null;
-  recordSource: string;
-  status      : string;
-  updatedAt   : string | null;
+  id            : string;
+  sourceEntityId: string;
+  personaName   : string;
+  chapterId     : string;
+  chapterNo     : number;
+  eventCategory : string;
+  title         : string | null;
+  location      : string | null;
+  event         : string;
+  virtualYear   : string | null;
+  tags          : string[];
+  ironyNote     : string | null;
+  recordSource  : string;
+  status        : string;
+  updatedAt     : string | null;
 }
 
 export interface ChapterEventMutationBody {
-  personaId?  : string;
-  chapterId?  : string;
-  category?   : string;
-  title?      : string | null;
-  location?   : string | null;
-  event?      : string;
-  virtualYear?: string | null;
-  tags?       : string[];
-  ironyNote?  : string | null;
-  status?     : string;
+  sourceEntityId?: string;
+  chapterId?     : string;
+  eventCategory? : string;
+  title?         : string | null;
+  location?      : string | null;
+  event?         : string;
+  virtualYear?   : string | null;
+  tags?          : string[];
+  ironyNote?     : string | null;
+  status?        : string;
 }
 
 /* ------------------------------------------------
@@ -289,7 +289,7 @@ export async function fetchChapterEvents(
 
 export async function createChapterEvent(
   bookId: string,
-  body: Required<Pick<ChapterEventMutationBody, "personaId" | "chapterId" | "event">> & ChapterEventMutationBody
+  body: Required<Pick<ChapterEventMutationBody, "sourceEntityId" | "chapterId" | "event">> & ChapterEventMutationBody
 ): Promise<ChapterEventItem> {
   return clientFetch<ChapterEventItem>(`/api/admin/role-workbench/books/${bookId}/chapter-events`, {
     method : "POST",

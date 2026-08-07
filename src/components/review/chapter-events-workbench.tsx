@@ -29,13 +29,14 @@ import {
   isSelectEmptyValue
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { fetchBookPersonas, fetchChapterContent, type BookPersonaListItem, type ChapterContent } from "@/lib/services/books";
+import { fetchChapterContent, type ChapterContent } from "@/lib/services/books";
 import { cn } from "@/lib/utils";
 import {
   createChapterEvent,
   deleteChapterEvent,
   fetchChapterEventChapters,
   fetchChapterEvents,
+  fetchDrafts,
   markChapterEventsVerified,
   updateChapterEvent,
   type ChapterEventChapterData,
@@ -48,17 +49,24 @@ interface ChapterEventsWorkbenchProps {
   onOpenRoles: () => void;
 }
 
+/** 实体下拉选项（源自 drafts.personas 的 EntityProfile+Entity 行）。 */
+interface EntityOption {
+  id     : string;
+  name   : string;
+  aliases: string[];
+}
+
 interface EventFormState {
-  personaId   : string;
-  chapterId   : string;
-  category    : string;
-  title       : string;
-  location    : string;
-  virtualYear : string;
-  tags        : string[];
-  mainCategory: MainCategoryValue;
-  event       : string;
-  ironyNote   : string;
+  sourceEntityId: string;
+  chapterId     : string;
+  eventCategory : string;
+  title         : string;
+  location      : string;
+  virtualYear   : string;
+  tags          : string[];
+  mainCategory  : MainCategoryValue;
+  event         : string;
+  ironyNote     : string;
 }
 
 type ViewMode = "grouped" | "source";
@@ -121,16 +129,16 @@ const STATUS_LABELS: Record<string, string> = {
 
 function emptyForm(chapterId: string): EventFormState {
   return {
-    personaId   : "",
+    sourceEntityId: "",
     chapterId,
-    category    : "EVENT",
-    title       : "",
-    location    : "",
-    virtualYear : "",
-    tags        : [],
-    mainCategory: "PLOT",
-    event       : "",
-    ironyNote   : ""
+    eventCategory : "EVENT",
+    title         : "",
+    location      : "",
+    virtualYear   : "",
+    tags          : [],
+    mainCategory  : "PLOT",
+    event         : "",
+    ironyNote     : ""
   };
 }
 
@@ -144,7 +152,7 @@ function inferMainCategory(category: string, tags: string[] = []): MainCategoryV
 }
 
 function getMainCategoryLabel(event: ChapterEventItem): string {
-  return MAIN_CATEGORY_BY_VALUE.get(inferMainCategory(event.category, event.tags))?.label ?? "情节事迹";
+  return MAIN_CATEGORY_BY_VALUE.get(inferMainCategory(event.eventCategory, event.tags))?.label ?? "情节事迹";
 }
 
 function getEventStateLabel(event: ChapterEventItem): string {
@@ -154,16 +162,16 @@ function getEventStateLabel(event: ChapterEventItem): string {
 
 function formFromEvent(event: ChapterEventItem): EventFormState {
   return {
-    personaId   : event.personaId,
-    chapterId   : event.chapterId,
-    category    : event.category,
-    title       : event.title ?? "",
-    location    : event.location ?? "",
-    virtualYear : event.virtualYear ?? "",
-    tags        : event.tags,
-    mainCategory: inferMainCategory(event.category, event.tags),
-    event       : event.event,
-    ironyNote   : event.ironyNote ?? ""
+    sourceEntityId: event.sourceEntityId,
+    chapterId     : event.chapterId,
+    eventCategory : event.eventCategory,
+    title         : event.title ?? "",
+    location      : event.location ?? "",
+    virtualYear   : event.virtualYear ?? "",
+    tags          : event.tags,
+    mainCategory  : inferMainCategory(event.eventCategory, event.tags),
+    event         : event.event,
+    ironyNote     : event.ironyNote ?? ""
   };
 }
 
@@ -176,22 +184,22 @@ function preserveMainCategoryTags(form: EventFormState): string[] {
 
 function toMutationBody(form: EventFormState): ChapterEventMutationBody {
   return {
-    personaId  : form.personaId,
-    chapterId  : form.chapterId,
-    category   : form.category,
-    title      : form.title.trim() || null,
-    location   : form.location.trim() || null,
-    event      : form.event.trim(),
-    virtualYear: form.virtualYear.trim() || null,
-    tags       : preserveMainCategoryTags(form),
-    ironyNote  : form.ironyNote.trim() || null
+    sourceEntityId: form.sourceEntityId,
+    chapterId     : form.chapterId,
+    eventCategory : form.eventCategory,
+    title         : form.title.trim() || null,
+    location      : form.location.trim() || null,
+    event         : form.event.trim(),
+    virtualYear   : form.virtualYear.trim() || null,
+    tags          : preserveMainCategoryTags(form),
+    ironyNote     : form.ironyNote.trim() || null
   };
 }
 
 function groupEventsByPersona(events: ChapterEventItem[]) {
   const groups = new Map<string, ChapterEventItem[]>();
   for (const event of events) {
-    const key = `${event.personaId}:${event.personaName}`;
+    const key = `${event.sourceEntityId}:${event.personaName}`;
     groups.set(key, [...(groups.get(key) ?? []), event]);
   }
   return Array.from(groups.entries()).map(([key, groupedEvents]) => ({
@@ -205,7 +213,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
   const [chapterData, setChapterData] = useState<ChapterEventChapterData | null>(null);
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [events, setEvents] = useState<ChapterEventItem[]>([]);
-  const [personas, setPersonas] = useState<BookPersonaListItem[]>([]);
+  const [entities, setEntities] = useState<EntityOption[]>([]);
   const [source, setSource] = useState<ChapterContent | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
@@ -228,16 +236,14 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
     [activeChapterId, chapterData]
   );
 
-  const filteredPersonas = useMemo(() => {
+  const filteredEntities = useMemo(() => {
     const query = personaQuery.trim().toLowerCase();
-    if (!query) return personas.slice(0, 8);
-    return personas.filter(persona => {
-      const aliases = persona.aliases.join(" ").toLowerCase();
-      return persona.name.toLowerCase().includes(query)
-        || persona.localName.toLowerCase().includes(query)
-        || aliases.includes(query);
+    if (!query) return entities.slice(0, 8);
+    return entities.filter(entity => {
+      const aliases = entity.aliases.join(" ").toLowerCase();
+      return entity.name.toLowerCase().includes(query) || aliases.includes(query);
     }).slice(0, 8);
-  }, [personaQuery, personas]);
+  }, [personaQuery, entities]);
 
   const groupedEvents = useMemo(() => groupEventsByPersona(events), [events]);
 
@@ -272,9 +278,15 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
     let ignore = false;
     setLoading(true);
     setError(null);
-    Promise.all([loadChapters(), fetchBookPersonas(bookId)])
-      .then(([, nextPersonas]) => {
-        if (!ignore) setPersonas(nextPersonas);
+    // 实体下拉数据源自草稿接口（drafts.personas），替代已删除的 /api/books/:id/personas。
+    Promise.all([loadChapters(), fetchDrafts(bookId)])
+      .then(([, drafts]) => {
+        if (ignore) return;
+        setEntities(drafts.personas.map(item => ({
+          id     : item.personaId,
+          name   : item.name,
+          aliases: item.aliases
+        })));
       })
       .catch(() => {
         if (!ignore) setError("章节事迹工作台初始化失败，请稍后重试。");
@@ -312,9 +324,9 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
     if (!option) return;
     setForm(prev => ({
       ...prev,
-      mainCategory: value,
-      category    : option.category,
-      tags        : value === "LIVELIHOOD" && !prev.tags.includes("生计财产")
+      mainCategory : value,
+      eventCategory: option.category,
+      tags         : value === "LIVELIHOOD" && !prev.tags.includes("生计财产")
         ? [...prev.tags, "生计财产"]
         : prev.tags
     }));
@@ -353,7 +365,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
   }
 
   async function saveEvent() {
-    if (!form.personaId || !form.chapterId || !form.event.trim()) {
+    if (!form.sourceEntityId || !form.chapterId || !form.event.trim()) {
       setVerifyError("请选择角色、章节，并填写事迹正文。");
       return;
     }
@@ -363,9 +375,9 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
         await updateChapterEvent(bookId, editingEvent.id, toMutationBody(form));
       } else {
         await createChapterEvent(bookId, {
-          personaId: form.personaId,
-          chapterId: form.chapterId,
-          event    : form.event,
+          sourceEntityId: form.sourceEntityId,
+          chapterId     : form.chapterId,
+          event         : form.event,
           ...toMutationBody(form)
         });
       }
@@ -663,29 +675,29 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                 value={personaQuery}
                 onChange={(event) => {
                   setPersonaQuery(event.target.value);
-                  setForm(prev => ({ ...prev, personaId: "" }));
+                  setForm(prev => ({ ...prev, sourceEntityId: "" }));
                 }}
                 placeholder="搜索角色名或别名"
               />
             </label>
             <div className="rounded-md border border-border">
-              {filteredPersonas.map(persona => (
+              {filteredEntities.map(entity => (
                 <button
-                  key={persona.id}
+                  key={entity.id}
                   type="button"
                   onClick={() => {
-                    setForm(prev => ({ ...prev, personaId: persona.id }));
-                    setPersonaQuery(persona.name);
+                    setForm(prev => ({ ...prev, sourceEntityId: entity.id }));
+                    setPersonaQuery(entity.name);
                   }}
                   className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted ${
-                    form.personaId === persona.id ? "bg-primary-subtle text-foreground" : "text-muted-foreground"
+                    form.sourceEntityId === entity.id ? "bg-primary-subtle text-foreground" : "text-muted-foreground"
                   }`}
                 >
-                  <span>{persona.name}</span>
-                  <span className="text-xs">{persona.localName}</span>
+                  <span>{entity.name}</span>
+                  <span className="truncate text-xs">{entity.aliases.join("、")}</span>
                 </button>
               ))}
-              {filteredPersonas.length === 0 && (
+              {filteredEntities.length === 0 && (
                 <div className="p-3 text-sm text-muted-foreground">
                   未找到角色。
                   <Button type="button" size="sm" variant="link" className="px-1" onClick={() => {
@@ -727,7 +739,7 @@ export function ChapterEventsWorkbench({ bookId, onOpenRoles }: ChapterEventsWor
                 </SelectContent>
               </Select>
               <span className="mt-1 block text-xs text-muted-foreground">
-                兼容分类：{BIO_CATEGORY_LEGACY_LABELS[form.category] ?? form.category}
+                兼容分类：{BIO_CATEGORY_LEGACY_LABELS[form.eventCategory] ?? form.eventCategory}
               </span>
             </label>
             <div className="space-y-2">
@@ -900,7 +912,7 @@ function EventCard({
         {event.virtualYear && <span>时间：{event.virtualYear}</span>}
         {event.ironyNote && <span>备注：{event.ironyNote}</span>}
         <span>来源：{event.recordSource === "MANUAL" ? "人工补全" : "AI 预填"}</span>
-        <span>兼容分类：{BIO_CATEGORY_LEGACY_LABELS[event.category] ?? event.category}</span>
+        <span>兼容分类：{BIO_CATEGORY_LEGACY_LABELS[event.eventCategory] ?? event.eventCategory}</span>
       </div>
     </article>
   );

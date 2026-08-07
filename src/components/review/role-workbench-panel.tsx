@@ -62,13 +62,10 @@ import {
   isSelectEmptyValue
 } from "@/components/ui/select";
 import { EntityMergeTool } from "@/components/review/entity-merge-tool";
-import { ManualEntityTool } from "@/components/review/manual-entity-tool";
 import { AliasReviewTab } from "@/components/review/alias-review-tab";
 import { ValidationReportTab } from "@/components/review/validation-report-tab";
 import { ChapterEventsWorkbench } from "@/components/review/chapter-events-workbench";
 import { RoleReviewWorkbench } from "@/components/review/role-review-workbench";
-import type { PersonaSummary } from "@/lib/services/personas";
-import { fetchPersonaSummary } from "@/lib/services/personas";
 import {
   fetchDrafts as apiFetchDrafts,
   fetchMergeSuggestions as apiFetchMergeSuggestions,
@@ -173,11 +170,12 @@ export function RoleWorkbenchPanel({
   const [loading, setLoading] = useState(false);
   // 通用加载错误提示文案，展示在面板顶部。
   const [loadError, setLoadError] = useState<string | null>(null);
-  // 合并预览上下文：点击“接受合并”后，切换到合并工具并传入 source/target 详情 Promise。
+  // 合并预览上下文：点击“接受合并”后，切换到合并工具并传入 source/target 实体名。
+  // v5 适配：合并建议已携带实体名，不再通过已删除的 `/api/personas` 拉取摘要 Promise。
   const [mergePreview, setMergePreview] = useState<{
-    suggestionId : string;
-    sourcePromise: Promise<PersonaSummary | null>;
-    targetPromise: Promise<PersonaSummary | null>;
+    suggestionId: string;
+    sourceName  : string;
+    targetName  : string;
   } | null>(null);
   useEffect(() => {
     /* 模块切换时重置本地状态，避免旧书籍的筛选/选中态遗留到新 bookId。 */
@@ -377,11 +375,8 @@ export function RoleWorkbenchPanel({
       {!loading && activeTab === "roleReview" && drafts && (
         <div className="min-h-0 flex-1 overflow-hidden">
           <RoleReviewWorkbench
-            bookId={bookId}
             drafts={drafts}
             aliasMappings={aliasMappings}
-            onRefreshDrafts={() => { void fetchDrafts(sourceFilter); }}
-            onRefreshAliases={() => { void fetchAliases(); }}
           />
         </div>
       )}
@@ -402,15 +397,6 @@ export function RoleWorkbenchPanel({
       {!loading && activeTab === "merge" && (
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="flex flex-col gap-2">
-            <ManualEntityTool
-              bookId={bookId}
-              onDone={() => {
-                setMergePreview(null);
-                void fetchMerge();
-                void fetchDrafts(sourceFilter);
-              }}
-            />
-
             {mergeSuggestions.length === 0 && (
               <EmptyState text="暂无合并建议" />
             )}
@@ -419,8 +405,8 @@ export function RoleWorkbenchPanel({
               mergePreview?.suggestionId === sug.id ? (
                 <EntityMergeTool
                   key={sug.id}
-                  sourcePromise={mergePreview.sourcePromise}
-                  targetPromise={mergePreview.targetPromise}
+                  sourceName={mergePreview.sourceName}
+                  targetName={mergePreview.targetName}
                   suggestionId={sug.id}
                   reason={sug.reason}
                   confidence={sug.confidence}
@@ -461,11 +447,11 @@ export function RoleWorkbenchPanel({
                         <Button
                           size="sm"
                           onClick={() => {
-                            // 点击“接受合并”先拉取双方人物摘要，交给合并工具做人工确认。
+                            // 点击“接受合并”把双方实体名交给合并工具做人工确认。
                             setMergePreview({
-                              suggestionId : sug.id,
-                              sourcePromise: fetchPersonaSummary(sug.sourcePersonaId),
-                              targetPromise: fetchPersonaSummary(sug.targetPersonaId)
+                              suggestionId: sug.id,
+                              sourceName  : sug.sourceName,
+                              targetName  : sug.targetName
                             });
                           }}
                         >

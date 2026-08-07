@@ -19,20 +19,6 @@ vi.mock("@/components/graph", () => ({
   TextReaderPanel: () => <div>原文面板</div>
 }));
 
-vi.mock("@/lib/services/books", () => ({
-  fetchChapterContent: vi.fn(),
-  fetchBookPersonas  : vi.fn().mockResolvedValue([]),
-  createBookPersona  : vi.fn()
-}));
-
-vi.mock("@/lib/services/personas", () => ({
-  fetchPersonaSummary      : vi.fn(),
-  deletePersona            : vi.fn(),
-  fetchPersonaDeletePreview: vi.fn(),
-  patchPersona             : vi.fn(),
-  updatePersonaStatus      : vi.fn()
-}));
-
 vi.mock("@/lib/services/role-workbench", () => ({
   fetchDrafts          : vi.fn(),
   fetchMergeSuggestions: vi.fn(),

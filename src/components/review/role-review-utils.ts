@@ -1,66 +1,55 @@
-import type {
-  BookPersonaListItem,
-  CreateBookPersonaBody
-} from "@/lib/services/books";
 import type { AliasMappingItem } from "@/lib/services/alias-mappings";
 import type { DraftsData } from "@/lib/services/role-workbench";
-import type { PersonaRelation, TimelineEvent } from "@/types/graph";
 
+/**
+ * =============================================================================
+ * 文件定位（角色资料工作台工具函数与共享类型）
+ * -----------------------------------------------------------------------------
+ * v5 适配说明：
+ * - v4 版基于 `BookPersonaListItem`（来自已删除的 `/api/books/:id/personas`）；
+ * - v5 角色资料工作台为“审核草稿”视角，实体列表直接取自 `/api/admin/drafts`
+ *   的 `personas`（EntityProfile + Entity 联合映射），因此统一收敛到 `RoleEntityItem`；
+ * - 表单相关类型与函数（sheet 编辑、关系/传记/别名表单）随手工编辑能力移除而删除。
+ * =============================================================================
+ */
+
+/** 角色列表筛选条件：全部 / AI 预填 / 人工补全。 */
 export type RoleListFilter = "all" | "ai" | "manual";
+/** 角色排序模式：按出场章节 / 名称 / 来源。 */
 export type RoleSortMode = "appearance" | "name" | "source";
+/** 只读档案视图的工作区页签。 */
 export type WorkspaceTab = "basics" | "relationships" | "biographies" | "aliases";
-export type SheetMode = "persona-create" | "persona-edit" | "relationship-create" | "relationship-edit" | "biography-create" | "biography-edit" | "alias-create";
 
+/** 侧栏每条角色的待确认计数（源自草稿数据）。 */
 export interface PendingCounts {
   relationships: number;
   biographies  : number;
   aliases      : number;
 }
 
-export interface PersonaFormState {
-  name                    : string;
-  aliases                 : string;
-  gender                  : string;
-  hometown                : string;
-  nameType                : string;
-  globalTags              : string;
-  localName               : string;
-  localSummary            : string;
-  officialTitle           : string;
-  firstAppearanceChapterId: string;
-  localTags               : string;
-  ironyIndex              : string;
-  confidence              : string;
+/**
+ * 只读角色档案条目。
+ * 数据来源：`drafts.personas`（后端 `/api/admin/drafts` 返回的 EntityProfile+Entity 行）。
+ * 这里的 `id` 是 `Entity.id`，与关系/传记/别名引用保持一致，便于跨列表联查。
+ */
+export interface RoleEntityItem {
+  /** 实体主键（Entity.id）。 */
+  id          : string;
+  /** 实体标准名。 */
+  name        : string;
+  /** 别名列表。 */
+  aliases     : string[];
+  /** 姓名类型：NAMED / TITLE_ONLY。 */
+  nameType    : string;
+  /** 数据来源：AI / MANUAL。 */
+  recordSource: string;
+  /** AI 置信度（0~1）。 */
+  confidence  : number;
+  /** 籍贯（可空）。 */
+  hometown    : string | null;
 }
 
-export interface RelationshipFormState {
-  targetId : string;
-  type     : string;
-  weight   : string;
-  evidence : string;
-  chapterId: string;
-}
-
-export interface BiographyFormState {
-  chapterId: string;
-  category : string;
-  title    : string;
-  location : string;
-  event    : string;
-}
-
-export interface AliasFormState {
-  alias       : string;
-  resolvedName: string;
-  aliasType   : string;
-}
-
-export interface ChapterOption {
-  id   : string;
-  no   : number;
-  title: string | null;
-}
-
+/** 关系草稿展示行（与后端 drafts.relationships 契约一致）。 */
 export interface RoleRelationshipItem {
   id             : string;
   bookId         : string;
@@ -78,6 +67,7 @@ export interface RoleRelationshipItem {
   status         : string;
 }
 
+/** 传记事件草稿展示行（与后端 drafts.biographyRecords 契约一致）。 */
 export interface RoleBiographyItem {
   id          : string;
   bookId      : string;
@@ -109,40 +99,11 @@ export const ROLE_SORT_MODES: { value: RoleSortMode; label: string }[] = [
 export const WORKSPACE_TABS: { value: WorkspaceTab; label: string }[] = [
   { value: "basics", label: "基础资料" },
   { value: "relationships", label: "关系" },
-{ value: "biographies", label: "传记事件" },
+  { value: "biographies", label: "传记事件" },
   { value: "aliases", label: "别名" }
 ];
 
-export const emptyPersonaForm: PersonaFormState = {
-  name                    : "",
-  aliases                 : "",
-  gender                  : "",
-  hometown                : "",
-  nameType                : "NAMED",
-  globalTags              : "",
-  localName               : "",
-  localSummary            : "",
-  officialTitle           : "",
-  firstAppearanceChapterId: "",
-  localTags               : "",
-  ironyIndex              : "0",
-  confidence              : "100"
-};
-
-export const emptyBiographyForm: BiographyFormState = {
-  chapterId: "",
-  category : "EVENT",
-  title    : "",
-  location : "",
-  event    : ""
-};
-
-export const emptyAliasForm: AliasFormState = {
-  alias       : "",
-  resolvedName: "",
-  aliasType   : "TITLE"
-};
-
+/** 传记事件类别的中文文案映射（用于列表展示）。 */
 export const BIO_CATEGORY_LABELS: Record<string, string> = {
   BIRTH : "出生",
   EXAM  : "科举",
@@ -153,92 +114,47 @@ export const BIO_CATEGORY_LABELS: Record<string, string> = {
   EVENT : "事件"
 };
 
+/** 数据来源（AI / MANUAL）的中文文案。 */
 export function sourceLabel(source: string): string {
   return source === "AI" ? "AI 预填" : "人工补全";
 }
 
-function joinItems(items: string[]): string {
-  return items.join("、");
-}
-
-function splitItems(value: string): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const item of value.split(/[、,，]/)) {
-    const trimmed = item.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    result.push(trimmed);
-  }
-  return result;
-}
-
-export function personaFormFromRow(persona: BookPersonaListItem): PersonaFormState {
-  return {
-    name                    : persona.name,
-    aliases                 : joinItems(persona.aliases),
-    gender                  : persona.gender ?? "",
-    hometown                : persona.hometown ?? "",
-    nameType                : persona.nameType,
-    globalTags              : joinItems(persona.globalTags),
-    localName               : persona.localName,
-    localSummary            : persona.localSummary ?? "",
-    officialTitle           : persona.officialTitle ?? "",
-    firstAppearanceChapterId: persona.firstAppearanceChapterId ?? "",
-    localTags               : joinItems(persona.localTags),
-    ironyIndex              : String(persona.ironyIndex),
-    confidence              : String(Math.round(persona.confidence * 100))
-  };
-}
-
-export function toPersonaBody(form: PersonaFormState): CreateBookPersonaBody {
-  return {
-    name                    : form.name.trim(),
-    aliases                 : splitItems(form.aliases),
-    gender                  : form.gender.trim() || null,
-    hometown                : form.hometown.trim() || null,
-    nameType                : form.nameType,
-    globalTags              : splitItems(form.globalTags),
-    localName               : form.localName.trim() || form.name.trim(),
-    localSummary            : form.localSummary.trim() || null,
-    officialTitle           : form.officialTitle.trim() || null,
-    firstAppearanceChapterId: form.firstAppearanceChapterId || null,
-    localTags               : splitItems(form.localTags),
-    ironyIndex              : Number(form.ironyIndex) || 0,
-    confidence              : Math.min(100, Math.max(0, Number(form.confidence) || 0)) / 100
-  };
-}
-
-export function roleMatchesFilter(persona: BookPersonaListItem, filter: RoleListFilter): boolean {
+/** 按来源筛选实体：all 返回全部，ai/manual 只看对应来源。 */
+export function roleMatchesFilter(entity: RoleEntityItem, filter: RoleListFilter): boolean {
   if (filter === "all") return true;
-  if (filter === "ai") return persona.recordSource === "AI";
-  return persona.recordSource !== "AI";
+  if (filter === "ai") return entity.recordSource === "AI";
+  return entity.recordSource !== "AI";
 }
 
-export function roleMatchesQuery(persona: BookPersonaListItem, query: string): boolean {
+/** 按关键词过滤实体：匹配标准名、别名、籍贯。 */
+export function roleMatchesQuery(entity: RoleEntityItem, query: string): boolean {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return true;
   const searchable = [
-    persona.name,
-    persona.localName,
-    persona.hometown ?? "",
-    persona.officialTitle ?? "",
-    persona.localSummary ?? "",
-    ...persona.aliases,
-    ...persona.globalTags,
-    ...persona.localTags
+    entity.name,
+    entity.hometown ?? "",
+    ...entity.aliases
   ].join(" ").toLowerCase();
   return searchable.includes(trimmed);
 }
 
-function rememberEarlierChapter(chapters: Map<string, number>, personaId: string | null | undefined, chapterNo: number | null | undefined) {
-  if (!personaId || typeof chapterNo !== "number") return;
-  const current = chapters.get(personaId);
+function rememberEarlierChapter(
+  chapters: Map<string, number>,
+  entityId: string | null | undefined,
+  chapterNo: number | null | undefined
+) {
+  if (!entityId || typeof chapterNo !== "number") return;
+  const current = chapters.get(entityId);
   if (current === undefined || chapterNo < current) {
-    chapters.set(personaId, chapterNo);
+    chapters.set(entityId, chapterNo);
   }
 }
 
+/**
+ * 收集每个实体的“首次出场章节号”。
+ * 数据源：关系草稿（source/target）、传记事件草稿、别名映射章节区间。
+ * 用于“按出场章节”排序时无显式 firstAppearanceChapterNo 的兜底。
+ */
 export function collectRoleFirstAppearanceChapters(
   drafts: DraftsData,
   aliasMappings: AliasMappingItem[]
@@ -253,22 +169,23 @@ export function collectRoleFirstAppearanceChapters(
     rememberEarlierChapter(chapters, biography.personaId, biography.chapterNo);
   }
   for (const mapping of aliasMappings) {
-    rememberEarlierChapter(chapters, mapping.personaId, mapping.chapterStart);
+    rememberEarlierChapter(chapters, mapping.entityId, mapping.chapterStart);
   }
 
   return chapters;
 }
 
+/** 按指定模式对实体列表排序；出场章节缺失时回退到首次出场章节收集表。 */
 export function sortRoles(
-  rows: BookPersonaListItem[],
+  rows: RoleEntityItem[],
   sortMode: RoleSortMode,
   firstAppearanceChapters: Map<string, number> = new Map()
-): BookPersonaListItem[] {
+): RoleEntityItem[] {
   const collator = new Intl.Collator("zh-Hans-CN");
   return [...rows].sort((left, right) => {
     if (sortMode === "appearance") {
-      const leftChapter = left.firstAppearanceChapterNo ?? firstAppearanceChapters.get(left.id) ?? Number.POSITIVE_INFINITY;
-      const rightChapter = right.firstAppearanceChapterNo ?? firstAppearanceChapters.get(right.id) ?? Number.POSITIVE_INFINITY;
+      const leftChapter = firstAppearanceChapters.get(left.id) ?? Number.POSITIVE_INFINITY;
+      const rightChapter = firstAppearanceChapters.get(right.id) ?? Number.POSITIVE_INFINITY;
       if (leftChapter !== rightChapter) return leftChapter - rightChapter;
     }
     if (sortMode === "source" && left.recordSource !== right.recordSource) {
@@ -276,106 +193,4 @@ export function sortRoles(
     }
     return collator.compare(left.name, right.name);
   });
-}
-
-function addChapterOption(options: Map<string, ChapterOption>, option: ChapterOption) {
-  if (!option.id) return;
-  const existing = options.get(option.id);
-  if (existing && existing.title) return;
-  options.set(option.id, option);
-}
-
-export function collectChapterOptions(
-  drafts: DraftsData,
-  relationships: RoleRelationshipItem[],
-  biographies: RoleBiographyItem[],
-  summaries: ChapterOption[]
-): ChapterOption[] {
-  const options = new Map<string, ChapterOption>();
-
-  for (const summary of summaries) {
-    addChapterOption(options, summary);
-  }
-  for (const relationship of drafts.relationships) {
-    addChapterOption(options, {
-      id   : relationship.chapterId,
-      no   : relationship.chapterNo,
-      title: null
-    });
-  }
-  for (const biography of drafts.biographyRecords) {
-    addChapterOption(options, {
-      id   : biography.chapterId,
-      no   : biography.chapterNo,
-      title: null
-    });
-  }
-  for (const relationship of relationships) {
-    addChapterOption(options, {
-      id   : relationship.chapterId,
-      no   : relationship.chapterNo,
-      title: null
-    });
-  }
-  for (const biography of biographies) {
-    addChapterOption(options, {
-      id   : biography.chapterId,
-      no   : biography.chapterNo,
-      title: null
-    });
-  }
-
-  return [...options.values()].sort((left, right) => {
-    if (left.no !== right.no) return left.no - right.no;
-    return left.id.localeCompare(right.id);
-  });
-}
-
-export function getDefaultChapterId(chapters: ChapterOption[]): string {
-  return chapters[0]?.id ?? "";
-}
-
-export function formatChapterOption(chapter: ChapterOption): string {
-  return chapter.title ? `第${chapter.no}回 · ${chapter.title}` : `第${chapter.no}回`;
-}
-
-export function relationshipFromDetail(
-  relationship: PersonaRelation,
-  persona: BookPersonaListItem
-): RoleRelationshipItem {
-  const isOutgoing = relationship.direction === "outgoing";
-  return {
-    id             : relationship.id,
-    bookId         : relationship.bookId,
-    bookTitle      : relationship.bookTitle,
-    chapterId      : relationship.chapterId,
-    chapterNo      : relationship.chapterNo,
-    sourcePersonaId: isOutgoing ? persona.id : relationship.counterpartId,
-    sourceName     : isOutgoing ? persona.name : relationship.counterpartName,
-    targetPersonaId: isOutgoing ? relationship.counterpartId : persona.id,
-    targetName     : isOutgoing ? relationship.counterpartName : persona.name,
-    type           : relationship.type,
-    weight         : relationship.weight,
-    evidence       : relationship.evidence,
-    recordSource   : relationship.recordSource,
-    status         : relationship.status
-  };
-}
-
-export function biographyFromTimeline(event: TimelineEvent, persona: BookPersonaListItem): RoleBiographyItem {
-  return {
-    id          : event.id,
-    bookId      : event.bookId,
-    bookTitle   : event.bookTitle,
-    chapterId   : event.chapterId,
-    chapterNo   : event.chapterNo,
-    personaId   : persona.id,
-    personaName : persona.name,
-    category    : event.category,
-    title       : event.title,
-    location    : event.location,
-    event       : event.event,
-    recordSource: event.recordSource,
-    status      : event.status
-  };
 }

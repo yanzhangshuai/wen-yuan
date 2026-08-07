@@ -35,9 +35,9 @@ describe("role workbench chapter event service", () => {
     await fetchChapterEventChapters("book-1");
     await fetchChapterEvents("book-1", "chapter-1", { status: "PENDING", source: "AI" });
     await createChapterEvent("book-1", {
-      personaId: "persona-1",
-      chapterId: "chapter-1",
-      event    : "初次登场"
+      sourceEntityId: "entity-1",
+      chapterId     : "chapter-1",
+      event         : "初次登场"
     });
     await updateChapterEvent("book-1", "event-1", { status: "VERIFIED" });
     await deleteChapterEvent("book-1", "event-1");

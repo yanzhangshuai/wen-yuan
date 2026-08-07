@@ -12,13 +12,12 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import type { BookPersonaListItem } from "@/lib/services/books";
-
 import {
   ROLE_FILTERS,
   ROLE_SORT_MODES,
   sourceLabel,
   type PendingCounts,
+  type RoleEntityItem,
   type RoleListFilter,
   type RoleSortMode
 } from "./role-review-utils";
@@ -28,7 +27,7 @@ interface RoleReviewSidebarProps {
   roleFilter       : RoleListFilter;
   sortMode         : RoleSortMode;
   loading          : boolean;
-  visibleRoles     : BookPersonaListItem[];
+  visibleRoles     : RoleEntityItem[];
   selectedPersonaId: string | null;
   pendingCounts    : Map<string, PendingCounts>;
   onQueryChange    : (query: string) => void;

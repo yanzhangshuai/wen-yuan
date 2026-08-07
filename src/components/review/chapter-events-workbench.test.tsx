@@ -3,11 +3,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ChapterEventsWorkbench } from "./chapter-events-workbench";
-import type { BookPersonaListItem, ChapterContent } from "@/lib/services/books";
-import type { ChapterEventChapterData, ChapterEventItem } from "@/lib/services/role-workbench";
+import type { ChapterContent } from "@/lib/services/books";
+import type { ChapterEventChapterData, ChapterEventItem, DraftsData } from "@/lib/services/role-workbench";
 
 const {
-  fetchBookPersonasMock,
+  fetchDraftsMock,
   fetchChapterContentMock,
   fetchChapterEventChaptersMock,
   fetchChapterEventsMock,
@@ -16,7 +16,7 @@ const {
   deleteChapterEventMock,
   markChapterEventsVerifiedMock
 } = vi.hoisted(() => ({
-  fetchBookPersonasMock        : vi.fn(),
+  fetchDraftsMock              : vi.fn(),
   fetchChapterContentMock      : vi.fn(),
   fetchChapterEventChaptersMock: vi.fn(),
   fetchChapterEventsMock       : vi.fn(),
@@ -27,11 +27,11 @@ const {
 }));
 
 vi.mock("@/lib/services/books", () => ({
-  fetchBookPersonas  : fetchBookPersonasMock,
   fetchChapterContent: fetchChapterContentMock
 }));
 
 vi.mock("@/lib/services/role-workbench", () => ({
+  fetchDrafts              : fetchDraftsMock,
   fetchChapterEventChapters: fetchChapterEventChaptersMock,
   fetchChapterEvents       : fetchChapterEventsMock,
   createChapterEvent       : createChapterEventMock,
@@ -72,48 +72,49 @@ function buildChapterData(): ChapterEventChapterData {
   };
 }
 
-function buildPersonas(): BookPersonaListItem[] {
-  return [{
-    id                         : "persona-1",
-    profileId                  : "profile-1",
-    bookId                     : "book-1",
-    name                       : "范进",
-    localName                  : "范进",
-    aliases                    : [],
-    gender                     : null,
-    hometown                   : null,
-    nameType                   : "NAMED",
-    globalTags                 : [],
-    localTags                  : [],
-    officialTitle              : null,
-    localSummary               : null,
-    firstAppearanceChapterId   : "chapter-1",
-    firstAppearanceChapterNo   : 1,
-    firstAppearanceChapterTitle: "说楔子敷陈大义",
-    ironyIndex                 : 0,
-    confidence                 : 0.9,
-    recordSource               : "AI",
-    status                     : "DRAFT"
-  }];
+function buildDrafts(): DraftsData {
+  return {
+    summary: {
+      persona     : 1,
+      relationship: 0,
+      biography   : 0,
+      total       : 1
+    },
+    personas: [{
+      id          : "profile-1",
+      bookId      : "book-1",
+      bookTitle   : "测试书",
+      personaId   : "entity-1",
+      name        : "范进",
+      aliases     : [],
+      nameType    : "NAMED",
+      recordSource: "AI",
+      confidence  : 0.9,
+      hometown    : null,
+      status      : "DRAFT"
+    }],
+    relationships   : [],
+    biographyRecords: []
+  };
 }
 
 function buildEvents(): ChapterEventItem[] {
   return [{
-    id          : "event-1",
-    personaId   : "persona-1",
-    personaName : "范进",
-    chapterId   : "chapter-1",
-    chapterNo   : 1,
-    category    : "EVENT",
-    title       : "赴试",
-    location    : null,
-    event       : "范进借盘缠应试。",
-    virtualYear : null,
-    tags        : ["情节"],
-    ironyNote   : null,
-    recordSource: "AI",
-    status      : "DRAFT",
-    updatedAt   : null
+    id            : "event-1",
+    sourceEntityId: "entity-1",
+    personaName   : "范进",
+    chapterId     : "chapter-1",
+    chapterNo     : 1,
+    eventCategory : "EVENT",
+    title         : "赴试",
+    location      : null,
+    event         : "范进借盘缠应试。",
+    virtualYear   : null,
+    tags          : ["情节"],
+    ironyNote     : null,
+    recordSource  : "AI",
+    status        : "DRAFT",
+    updatedAt     : null
   }];
 }
 
@@ -136,7 +137,7 @@ describe("ChapterEventsWorkbench", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchChapterEventChaptersMock.mockResolvedValue(buildChapterData());
-    fetchBookPersonasMock.mockResolvedValue(buildPersonas());
+    fetchDraftsMock.mockResolvedValue(buildDrafts());
     fetchChapterEventsMock.mockResolvedValue(buildEvents());
     fetchChapterContentMock.mockResolvedValue(buildSource());
   });

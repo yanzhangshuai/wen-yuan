@@ -34,8 +34,8 @@ export interface AliasMappingItem {
   resolvedName: string | null;
   /** 别名类型（TITLE/KINSHIP/NICKNAME 等）。 */
   aliasType   : string;
-  /** 关联人物 ID；未绑定时为空。 */
-  personaId   : string | null;
+  /** 关联实体 ID；未绑定时为空。 */
+  entityId    : string | null;
   /** 该映射建议置信度（0~1）。 */
   confidence  : number;
   /** 支撑该映射的证据文本，可空。 */
