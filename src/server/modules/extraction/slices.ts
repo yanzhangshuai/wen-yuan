@@ -6,15 +6,15 @@
  * - 片边界取章节边界
  */
 export interface ChapterRef {
-  id: string;
-  no: number;
-  title: string;
+  id     : string;
+  no     : number;
+  title  : string;
   content: string;
 }
 
 export interface Slice {
-  bookId: string;
-  chapters: ChapterRef[];
+  bookId    : string;
+  chapters  : ChapterRef[];
   /** 本片起始/结束章号（用于进度 + 检索） */
   chapterNos: number[];
 }
@@ -36,8 +36,8 @@ export function buildSlices(chapters: ChapterRef[], bookId: string, sliceSize = 
     const group = chapters.slice(i, i + sliceSize);
     slices.push({
       bookId,
-      chapters: group,
-      chapterNos: group.map((c) => c.no),
+      chapters  : group,
+      chapterNos: group.map((c) => c.no)
     });
   }
   return slices;

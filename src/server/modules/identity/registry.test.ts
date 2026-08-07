@@ -4,14 +4,14 @@ import type { BookRegistry, RegistryEntry } from "./registry.ts";
 
 function makeEntry(canonical: string, aliases: string[] = []): RegistryEntry {
   return {
-    entityId: `entity-${canonical}`,
+    entityId              : `entity-${canonical}`,
     canonical,
-    type: "PERSON",
+    type                  : "PERSON",
     aliases,
-    confidenceTier: "HIGH",
-    activeChapters: [1],
+    confidenceTier        : "HIGH",
+    activeChapters        : [1],
     firstAppearanceChapter: 1,
-    nameType: "NAMED",
+    nameType              : "NAMED"
   };
 }
 
@@ -29,7 +29,7 @@ describe("normalizeRegistryName", () => {
 describe("findRegistryEntryByName", () => {
   const registry = makeRegistry([
     makeEntry("范进", ["范老爷", "范举人"]),
-    makeEntry("周进", ["周学道"]),
+    makeEntry("周进", ["周学道"])
   ]);
 
   it("canonical 命中", () => {

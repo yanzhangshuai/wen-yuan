@@ -78,7 +78,7 @@ export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSli
       skills               : input.skills,
       relationshipTypeCodes: input.relationshipTypeCodes
     }),
-    jobId : input.jobId
+    jobId: input.jobId
   });
 
   const slice: ExtractionSlice = {

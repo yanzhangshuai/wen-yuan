@@ -15,13 +15,13 @@ import { prisma } from "@/server/db/prisma";
 import type { RegistryEntry } from "./registry.ts";
 
 export interface MisattributionFlag {
-  alias: string;
-  currentEntityId: string;
-  targetEntityId: string | null;
-  aliasActiveChapters: number[];
+  alias                : string;
+  currentEntityId      : string;
+  targetEntityId       : string | null;
+  aliasActiveChapters  : number[];
   currentEntityChapters: number[];
-  targetEntityChapters: number[] | null;
-  confidence: number;
+  targetEntityChapters : number[] | null;
+  confidence           : number;
 }
 
 /**
@@ -38,7 +38,7 @@ export async function scanMisattribution(
   bookId: string,
   aliasesMap: Map<string, string>,
   entities: RegistryEntry[],
-  txClient?: PrismaClient,
+  txClient?: PrismaClient
 ): Promise<MisattributionFlag[]> {
   const flags: MisattributionFlag[] = [];
   const client = txClient ?? prisma;
@@ -55,8 +55,8 @@ export async function scanMisattribution(
 
     // 查该别名在本书的实际活跃章区（mentions.rawText 命中）
     const mentionRows = await client.mention.findMany({
-      where: { rawText: { contains: alias } },
-      select: { chapter: { select: { no: true } } },
+      where : { rawText: { contains: alias } },
+      select: { chapter: { select: { no: true } } }
     });
     const aliasChapters = Array.from(new Set(mentionRows.map((r) => r.chapter.no))).sort((a, b) => a - b);
     if (aliasChapters.length === 0) continue;
@@ -74,11 +74,11 @@ export async function scanMisattribution(
         flags.push({
           alias,
           currentEntityId,
-          targetEntityId: other.entityId,
-          aliasActiveChapters: aliasChapters,
+          targetEntityId       : other.entityId,
+          aliasActiveChapters  : aliasChapters,
           currentEntityChapters: Array.from(currentChapters).sort(),
-          targetEntityChapters: Array.from(otherChapters).sort(),
-          confidence: 0.7 + Math.min(aliasChapters.length / 5, 0.2),
+          targetEntityChapters : Array.from(otherChapters).sort(),
+          confidence           : 0.7 + Math.min(aliasChapters.length / 5, 0.2)
         });
       }
     }
@@ -93,7 +93,7 @@ export async function scanCandidateMisattribution(
   candidateEntityId: string,
   candidateAliases: string[],
   entities: RegistryEntry[],
-  txClient?: PrismaClient,
+  txClient?: PrismaClient
 ): Promise<MisattributionFlag[]> {
   const aliasMap = new Map(candidateAliases.map((a) => [a, candidateEntityId]));
   return scanMisattribution(bookId, aliasMap, entities, txClient);

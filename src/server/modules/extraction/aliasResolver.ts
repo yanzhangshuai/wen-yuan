@@ -11,10 +11,10 @@ import { isDeicticJunk } from "./nameAuthority.ts";
 
 /** 一个实体候选：已有 ID（可为空）+ 模型给出的 canonical + 别名集。 */
 export interface AliasGroupCandidate {
-  entityId: string | null;
+  entityId  : string | null;
   /** 模型输出选定的 canonical（优先采用；组内多数决） */
   canonical?: string;
-  aliases: string[];
+  aliases   : string[];
 }
 
 /**
@@ -24,7 +24,7 @@ export interface AliasGroupCandidate {
 export function mergeAliasGroups(groups: AliasGroupCandidate[]): Array<{
   entityIds: string[];
   canonical: string;
-  aliases: string[];
+  aliases  : string[];
 }> {
   const parent = Array.from({ length: groups.length }, (_, i) => i);
   const aliasToGroup = new Map<string, number>();
@@ -104,7 +104,7 @@ export function mergeAliasGroups(groups: AliasGroupCandidate[]): Array<{
     return {
       entityIds: entry.entityIds,
       canonical: canonical || members[0] || "",
-      aliases: members,
+      aliases  : members
     };
   });
 }

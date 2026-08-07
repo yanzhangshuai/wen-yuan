@@ -8,37 +8,37 @@ export type EntityTypeStr = "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT";
 
 export interface ExtractedEntity {
   canonical: string;
-  type: EntityTypeStr;
-  aliases?: string[];
+  type     : EntityTypeStr;
+  aliases? : string[];
 }
 
 export interface ExtractedRelation {
-  typeCode: string;
+  typeCode       : string;
   sourceCanonical: string;
   targetCanonical: string;
-  attitudeTags?: string[];
+  attitudeTags?  : string[];
   /** 原文证据（落库 facts.evidence 必填，护栏校验） */
-  evidence?: string;
+  evidence?      : string;
 }
 
 export type BioFactCategory = "BIRTH" | "EXAM" | "CAREER" | "TRAVEL" | "SOCIAL" | "DEATH" | "EVENT";
 
 export interface ExtractedBioFact {
-  category: BioFactCategory;
+  category        : BioFactCategory;
   subjectCanonical: string;
-  summary: string;
-  location?: string;
+  summary         : string;
+  location?       : string;
   /** 原文证据（落库 facts.evidence 必填，护栏校验） */
-  evidence?: string;
+  evidence?       : string;
 }
 
 /** 一片（5-8 章）的提取输出。 */
 export interface ExtractionSlice {
-  book: string;
-  chapterNos: number[];
-  entities: ExtractedEntity[];
-  relations: ExtractedRelation[];
-  bioFacts: ExtractedBioFact[];
+  book               : string;
+  chapterNos         : number[];
+  entities           : ExtractedEntity[];
+  relations          : ExtractedRelation[];
+  bioFacts           : ExtractedBioFact[];
   /** 登记表中不存在、但本片出现的高频表面形式（交 reconcile） */
   newEntityCandidates: string[];
 }

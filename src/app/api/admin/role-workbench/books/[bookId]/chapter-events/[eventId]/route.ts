@@ -24,13 +24,13 @@ const bodySchema = z.object({
   sourceEntityId: z.string().uuid("实体 ID 不合法").optional(),
   chapterId     : z.string().uuid("章节 ID 不合法").optional(),
   category      : z.nativeEnum(EventCategory).optional(),
-  title      : z.string().trim().nullable().optional(),
-  location   : z.string().trim().nullable().optional(),
-  event      : z.string().trim().min(1, "事件内容不能为空").optional(),
-  virtualYear: z.string().trim().nullable().optional(),
-  tags       : z.array(z.string().trim().min(1)).max(12).optional(),
-  ironyNote  : z.string().trim().nullable().optional(),
-  status     : z.nativeEnum(ProcessingStatus).optional()
+  title         : z.string().trim().nullable().optional(),
+  location      : z.string().trim().nullable().optional(),
+  event         : z.string().trim().min(1, "事件内容不能为空").optional(),
+  virtualYear   : z.string().trim().nullable().optional(),
+  tags          : z.array(z.string().trim().min(1)).max(12).optional(),
+  ironyNote     : z.string().trim().nullable().optional(),
+  status        : z.nativeEnum(ProcessingStatus).optional()
 }).refine((data) => Object.keys(data).length > 0, {
   message: "至少需要一个可更新字段"
 });

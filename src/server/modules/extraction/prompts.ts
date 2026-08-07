@@ -20,5 +20,5 @@ export const EXTRACTION_SYSTEM_PROMPT = [
   "- 每条关系/事实必须基于原文，evidence 为可直接定位的原文句子",
   "- 实体 canonical 取正文中最常用名；TITLE_ONLY（仅称号）也列出",
   "- 关系 typeCode 只能从给定枚举中选择（relationshipTypeCodes）",
-  "- 禁止臆造：原文未出现的信息不得提取",
+  "- 禁止臆造：原文未出现的信息不得提取"
 ].join("\n");

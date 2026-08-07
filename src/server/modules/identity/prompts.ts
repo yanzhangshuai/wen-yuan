@@ -22,7 +22,7 @@
 export const IDENTITY_KNOWLEDGE_SKILL_SLUGS = [
   "chinese-name-pattern", // 中文命名模式（字/号/绰号/官职代称）
   "classical-generic-titles", // 古典泛称（老爷/先生/夫人…）
-  "classical-relationship-types", // 古典关系类型（含书型专属：座师/同年…）
+  "classical-relationship-types" // 古典关系类型（含书型专属：座师/同年…）
 ] as const;
 
 /** 身份判定 prompt（原语）。system = 任务契约；领域知识经 skills 注入 user。 */
@@ -39,7 +39,7 @@ export const IDENTITY_RESOLUTION_SYSTEM_PROMPT = [
   "- verdict 必须由提供的原文窗口证据支撑",
   "- evidenceAnchors 必须能定位到窗口内原文",
   "- 登记表有匹配实体且证据一致 → resolved；原文有明确指代但登记表无 → new_entity；无法确定 → ambiguous",
-  "- 禁止臆造：原文未出现的信息不得作为判定依据",
+  "- 禁止臆造：原文未出现的信息不得作为判定依据"
 ].join("\n");
 
 /** Tier1 全书一遍草稿登记表 prompt。保留"什么算一个实体"的验收判据。 */
@@ -60,5 +60,5 @@ export const TIER1_SYSTEM_PROMPT = [
   "- canonical 取最常用名（有名有姓取全名；仅称号取最通用形式）",
   "- 别名必须能在原文出现",
   "- 仅称号无名字（TITLE_ONLY）也列为实体，note 注明 TITLE_ONLY",
-  "- 禁止臆造：必须基于原文证据",
+  "- 禁止臆造：必须基于原文证据"
 ].join("\n");

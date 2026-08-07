@@ -14,18 +14,18 @@ import { invalidateRegistryCache } from "./registry.ts";
 export type WriteSource = "tier1" | "tier2" | "reconcile" | "cross_validation";
 
 export interface RegistryWriteEntry {
-  canonical: string;
-  aliases: string[];
-  type: "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT";
-  nameType?: "NAMED" | "TITLE_ONLY";
+  canonical  : string;
+  aliases    : string[];
+  type       : "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT";
+  nameType?  : "NAMED" | "TITLE_ONLY";
   confidence?: number;
 }
 
 export interface RegistryWriteRequest {
-  bookId: string;
-  source: WriteSource;
+  bookId    : string;
+  source    : WriteSource;
   agentRunId: string;
-  entries: RegistryWriteEntry[];
+  entries   : RegistryWriteEntry[];
 }
 
 /**
@@ -42,8 +42,8 @@ export async function writeRegistry(input: RegistryWriteRequest): Promise<{ crea
   await prisma.$transaction(async (tx) => {
     for (const entry of entries) {
       let entity = await tx.entity.findFirst({
-        where: { name: entry.canonical, deletedAt: null },
-        select: { id: true, aliases: true, confidence: true },
+        where : { name: entry.canonical, deletedAt: null },
+        select: { id: true, aliases: true, confidence: true }
       });
       const before = entity ? { id: entity.id, aliases: entity.aliases, confidence: entity.confidence } : null;
 
@@ -51,52 +51,52 @@ export async function writeRegistry(input: RegistryWriteRequest): Promise<{ crea
         const merged = Array.from(new Set([...entity.aliases, ...entry.aliases]));
         await tx.entity.update({
           where: { id: entity.id },
-          data: { aliases: merged, confidence: entry.confidence ?? entity.confidence },
+          data : { aliases: merged, confidence: entry.confidence ?? entity.confidence }
         });
         updated++;
       } else {
         entity = await tx.entity.create({
           data: {
-            name: entry.canonical,
-            entityType: entry.type,
-            nameType: entry.nameType ?? "NAMED",
+            name        : entry.canonical,
+            entityType  : entry.type,
+            nameType    : entry.nameType ?? "NAMED",
             recordSource: "AI",
-            confidence: entry.confidence ?? 0.7,
-            aliases: entry.aliases,
+            confidence  : entry.confidence ?? 0.7,
+            aliases     : entry.aliases
           },
-          select: { id: true, aliases: true, confidence: true },
+          select: { id: true, aliases: true, confidence: true }
         });
         created++;
       }
 
-      const current = entity!; // if/else 两分支均已赋值非空
+      const current = entity; // if/else 两分支均已赋值非空
 
       // 本书 profile（唯一键 entityId+bookId）
       const existingProfile = await tx.entityProfile.findFirst({
-        where: { entityId: current.id, bookId, deletedAt: null },
+        where: { entityId: current.id, bookId, deletedAt: null }
       });
       if (!existingProfile) {
         await tx.entityProfile.create({
-          data: { entityId: current.id, bookId, localName: entry.canonical, recordSource: "AI" },
+          data: { entityId: current.id, bookId, localName: entry.canonical, recordSource: "AI" }
         });
       }
 
       // aliases 表注册（幂等）
       for (const alias of entry.aliases) {
         const existingAlias = await tx.alias.findFirst({
-          where: { bookId, alias, deletedAt: null, entityId: entity.id },
+          where: { bookId, alias, deletedAt: null, entityId: entity.id }
         });
         if (!existingAlias) {
           await tx.alias.create({
             data: {
-              entityId: current.id,
+              entityId    : current.id,
               bookId,
               alias,
-              aliasType: "NICKNAME",
-              status: "CONFIRMED",
+              aliasType   : "NICKNAME",
+              status      : "CONFIRMED",
               recordSource: "DRAFT_AI",
-              confidence: entry.confidence ?? 0.7,
-            },
+              confidence  : entry.confidence ?? 0.7
+            }
           });
         }
       }
@@ -105,15 +105,15 @@ export async function writeRegistry(input: RegistryWriteRequest): Promise<{ crea
       await tx.agentWriteAudit.create({
         data: {
           agentRunId,
-          stepIndex: 0,
-          action: before ? "UPDATE" : "CREATE",
+          stepIndex : 0,
+          action    : before ? "UPDATE" : "CREATE",
           objectType: "entity",
-          objectId: current.id,
-          before: before as Prisma.InputJsonValue,
-          after: { id: current.id, aliases: current.aliases } as Prisma.InputJsonValue,
-          allowed: true,
-          reason: `source=${source}`,
-        },
+          objectId  : current.id,
+          before    : before as Prisma.InputJsonValue,
+          after     : { id: current.id, aliases: current.aliases } as Prisma.InputJsonValue,
+          allowed   : true,
+          reason    : `source=${source}`
+        }
       });
     }
   });

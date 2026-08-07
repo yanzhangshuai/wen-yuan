@@ -1,9 +1,8 @@
--- CreateExtension (pgvector + pg_trgm, required by text_chunks.embedding vector type)
-CREATE EXTENSION IF NOT EXISTS "vector";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
+
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- CreateEnum
 CREATE TYPE "name_type" AS ENUM ('NAMED', 'TITLE_ONLY');
@@ -19,9 +18,6 @@ CREATE TYPE "processing_status" AS ENUM ('DRAFT', 'VERIFIED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "analysis_job_status" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELED');
-
--- CreateEnum
-CREATE TYPE "model_strategy_scope" AS ENUM ('GLOBAL', 'BOOK', 'JOB');
 
 -- CreateEnum
 CREATE TYPE "alias_type" AS ENUM ('TITLE', 'POSITION', 'KINSHIP', 'NICKNAME', 'COURTESY_NAME');
@@ -42,7 +38,7 @@ CREATE TYPE "event_category" AS ENUM ('BIRTH', 'EXAM', 'CAREER', 'TRAVEL', 'SOCI
 CREATE TYPE "chapter_type" AS ENUM ('PRELUDE', 'CHAPTER', 'POSTLUDE');
 
 -- CreateEnum
-CREATE TYPE "skill_category" AS ENUM ('SURNAME', 'GENERIC_TITLE', 'NAME_PATTERN', 'RELATIONSHIP_TYPE', 'HISTORICAL_FIGURE', 'TASK_INSTRUCTION', 'ALIAS_PACK', 'HYBRID');
+CREATE TYPE "skill_category" AS ENUM ('SURNAME', 'GENERIC_TITLE', 'NAME_PATTERN', 'RELATIONSHIP_TYPE', 'HISTORICAL_FIGURE', 'TASK_INSTRUCTION', 'HYBRID');
 
 -- CreateEnum
 CREATE TYPE "skill_source" AS ENUM ('MANUAL', 'GENERATED', 'AI');
@@ -52,9 +48,6 @@ CREATE TYPE "skill_status" AS ENUM ('DRAFT', 'ACTIVE', 'DISABLED', 'ARCHIVED');
 
 -- CreateEnum
 CREATE TYPE "agent_run_type" AS ENUM ('PRESCAN', 'IDENTITY', 'EXTRACTION', 'RECONCILE', 'VALIDATION', 'CROSS_VALIDATION', 'SKILL_GENERATION');
-
--- CreateEnum
-CREATE TYPE "relation_direction" AS ENUM ('INVERSE', 'SYMMETRIC');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -86,7 +79,6 @@ CREATE TABLE "ai_models" (
     "is_default" BOOLEAN NOT NULL DEFAULT false,
     "supports_thinking" BOOLEAN NOT NULL DEFAULT false,
     "supports_web_search" BOOLEAN NOT NULL DEFAULT false,
-    "supports_tools" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -109,9 +101,6 @@ CREATE TABLE "books" (
     "deleted_at" TIMESTAMPTZ(6),
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "error_log" TEXT,
-    "parse_progress" INTEGER NOT NULL DEFAULT 0,
-    "parse_stage" TEXT,
-    "book_type_id" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -129,7 +118,6 @@ CREATE TABLE "chapters" (
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "parse_status" TEXT NOT NULL DEFAULT 'PENDING',
-    "is_abstract" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -159,8 +147,6 @@ CREATE TABLE "entities" (
     "confidence" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "gender" TEXT,
     "hometown" TEXT,
-    "birth_year" TEXT,
-    "death_year" TEXT,
     "global_tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "summary" TEXT,
@@ -182,7 +168,6 @@ CREATE TABLE "entity_profiles" (
     "official_title" TEXT,
     "local_tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "irony_index" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "moral_tier" TEXT,
     "first_appearance_chapter_id" UUID,
     "visual_config" JSONB,
     "status" "processing_status" NOT NULL DEFAULT 'DRAFT',
@@ -203,7 +188,6 @@ CREATE TABLE "aliases" (
     "alias_type" "alias_type" NOT NULL,
     "resolved_name" TEXT,
     "evidence" TEXT,
-    "context_hash" TEXT,
     "chapter_start" INTEGER,
     "chapter_end" INTEGER,
     "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -222,7 +206,6 @@ CREATE TABLE "mentions" (
     "entity_id" UUID NOT NULL,
     "chapter_id" UUID NOT NULL,
     "raw_text" TEXT NOT NULL,
-    "summary" TEXT,
     "para_index" INTEGER,
     "record_source" "record_source" NOT NULL DEFAULT 'AI',
     "status" "processing_status" NOT NULL DEFAULT 'DRAFT',
@@ -249,7 +232,6 @@ CREATE TABLE "facts" (
     "evidence" TEXT NOT NULL,
     "chapter_id" UUID NOT NULL,
     "chapter_no" INTEGER NOT NULL,
-    "para_index" INTEGER,
     "payload" JSONB NOT NULL,
     "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0.7,
     "record_source" "record_source" NOT NULL DEFAULT 'DRAFT_AI',
@@ -263,22 +245,6 @@ CREATE TABLE "facts" (
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "facts_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "fact_evidences" (
-    "id" UUID NOT NULL,
-    "fact_id" UUID NOT NULL,
-    "chapter_id" UUID NOT NULL,
-    "chapter_no" INTEGER NOT NULL,
-    "excerpt" TEXT NOT NULL,
-    "para_index" INTEGER,
-    "span_start" INTEGER,
-    "span_end" INTEGER,
-    "is_primary" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "fact_evidences_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -306,23 +272,6 @@ CREATE TABLE "relationships" (
 );
 
 -- CreateTable
-CREATE TABLE "relationship_types" (
-    "id" UUID NOT NULL,
-    "code" VARCHAR(60) NOT NULL,
-    "name" VARCHAR(60) NOT NULL,
-    "direction" "relation_direction" NOT NULL,
-    "category" VARCHAR(30) NOT NULL,
-    "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "book_type_id" UUID,
-    "sort_order" INTEGER NOT NULL DEFAULT 0,
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMPTZ(6) NOT NULL,
-
-    CONSTRAINT "relationship_types_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "skills" (
     "id" UUID NOT NULL,
     "slug" VARCHAR(120) NOT NULL,
@@ -336,6 +285,7 @@ CREATE TABLE "skills" (
     "generated_from_book_id" UUID,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "is_builtin" BOOLEAN NOT NULL DEFAULT false,
+    "is_enabled" BOOLEAN NOT NULL DEFAULT true,
     "deleted_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -349,7 +299,6 @@ CREATE TABLE "skill_versions" (
     "skill_id" UUID NOT NULL,
     "version_no" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
-    "book_type_id" UUID,
     "is_active" BOOLEAN NOT NULL DEFAULT false,
     "is_baseline" BOOLEAN NOT NULL DEFAULT false,
     "change_note" TEXT,
@@ -360,30 +309,16 @@ CREATE TABLE "skill_versions" (
 );
 
 -- CreateTable
-CREATE TABLE "book_type_skills" (
-    "id" UUID NOT NULL,
-    "book_type_id" UUID NOT NULL,
-    "skill_id" UUID NOT NULL,
-    "priority" INTEGER NOT NULL DEFAULT 0,
-    "is_enabled" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "book_type_skills_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "analysis_jobs" (
     "id" UUID NOT NULL,
     "book_id" UUID NOT NULL,
     "status" "analysis_job_status" NOT NULL DEFAULT 'QUEUED',
-    "architecture" TEXT NOT NULL DEFAULT 'agent',
     "scope" TEXT NOT NULL DEFAULT 'FULL_BOOK',
     "chapter_start" INTEGER,
     "chapter_end" INTEGER,
     "chapter_indices" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "attempt" INTEGER NOT NULL DEFAULT 1,
     "error_log" TEXT,
-    "experiment_tag" TEXT,
     "override_strategy" TEXT,
     "keep_history" BOOLEAN NOT NULL DEFAULT false,
     "skills_snapshot" JSONB,
@@ -465,48 +400,6 @@ CREATE TABLE "merge_suggestions" (
 );
 
 -- CreateTable
-CREATE TABLE "text_chunks" (
-    "id" UUID NOT NULL,
-    "book_id" UUID NOT NULL,
-    "chapter_id" UUID NOT NULL,
-    "chunk_index" INTEGER NOT NULL,
-    "content" TEXT NOT NULL,
-    "embedding" vector(1536),
-    "token_count" INTEGER,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMPTZ(6) NOT NULL,
-
-    CONSTRAINT "text_chunks_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "book_types" (
-    "id" UUID NOT NULL,
-    "key" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "sort_order" INTEGER NOT NULL DEFAULT 0,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMPTZ(6) NOT NULL,
-
-    CONSTRAINT "book_types_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "model_strategy_configs" (
-    "id" UUID NOT NULL,
-    "scope" "model_strategy_scope" NOT NULL,
-    "book_id" UUID,
-    "job_id" UUID,
-    "stages" JSONB NOT NULL,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMPTZ(6) NOT NULL,
-
-    CONSTRAINT "model_strategy_configs_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "analysis_phase_logs" (
     "id" UUID NOT NULL,
     "job_id" UUID NOT NULL,
@@ -524,23 +417,6 @@ CREATE TABLE "analysis_phase_logs" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "analysis_phase_logs_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "knowledge_audit_logs" (
-    "id" UUID NOT NULL,
-    "object_type" TEXT NOT NULL,
-    "object_id" TEXT NOT NULL,
-    "object_name" TEXT NOT NULL,
-    "action" TEXT NOT NULL,
-    "before" JSONB,
-    "after" JSONB,
-    "operator_id" TEXT,
-    "operator_note" TEXT,
-    "related_book_id" UUID,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "knowledge_audit_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -643,9 +519,6 @@ CREATE INDEX "facts_review_query_idx" ON "facts"("status", "record_source", "cha
 CREATE INDEX "facts_payload_idx" ON "facts" USING GIN ("payload");
 
 -- CreateIndex
-CREATE INDEX "fact_evidences_fact_idx" ON "fact_evidences"("fact_id");
-
--- CreateIndex
 CREATE INDEX "relationships_book_status_deleted_idx" ON "relationships"("book_id", "status", "deleted_at");
 
 -- CreateIndex
@@ -656,12 +529,6 @@ CREATE INDEX "relationships_reltype_idx" ON "relationships"("relationship_type_c
 
 -- CreateIndex
 CREATE UNIQUE INDEX "relationships_book_src_tgt_type_key" ON "relationships"("book_id", "source_entity_id", "target_entity_id", "relationship_type_code");
-
--- CreateIndex
-CREATE INDEX "relationship_types_booktype_active_idx" ON "relationship_types"("book_type_id", "is_active");
-
--- CreateIndex
-CREATE UNIQUE INDEX "relationship_types_code_booktype_key" ON "relationship_types"("code", "book_type_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "skills_slug_key" ON "skills"("slug");
@@ -676,16 +543,7 @@ CREATE INDEX "skills_status_sort_idx" ON "skills"("status", "sort_order");
 CREATE INDEX "skill_versions_active_idx" ON "skill_versions"("skill_id", "is_active");
 
 -- CreateIndex
-CREATE INDEX "skill_versions_book_type_idx" ON "skill_versions"("skill_id", "book_type_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "skill_versions_skill_version_key" ON "skill_versions"("skill_id", "version_no");
-
--- CreateIndex
-CREATE INDEX "book_type_skills_type_enabled_idx" ON "book_type_skills"("book_type_id", "is_enabled");
-
--- CreateIndex
-CREATE UNIQUE INDEX "book_type_skills_type_skill_key" ON "book_type_skills"("book_type_id", "skill_id");
 
 -- CreateIndex
 CREATE INDEX "analysis_jobs_book_created_idx" ON "analysis_jobs"("book_id", "created_at");
@@ -724,36 +582,6 @@ CREATE INDEX "merge_suggestions_source_idx" ON "merge_suggestions"("source_entit
 CREATE INDEX "merge_suggestions_target_idx" ON "merge_suggestions"("target_entity_id");
 
 -- CreateIndex
-CREATE INDEX "text_chunks_book_idx" ON "text_chunks"("book_id");
-
--- CreateIndex
-CREATE INDEX "text_chunks_book_chapter_idx" ON "text_chunks"("book_id", "chapter_id");
-
--- CreateIndex
-CREATE INDEX "text_chunks_content_trgm_idx" ON "text_chunks" USING GIN ("content" gin_trgm_ops);
-
--- CreateIndex
-CREATE UNIQUE INDEX "text_chunks_chapter_chunk_key" ON "text_chunks"("chapter_id", "chunk_index");
-
--- CreateIndex
-CREATE UNIQUE INDEX "book_types_key_key" ON "book_types"("key");
-
--- CreateIndex
-CREATE INDEX "book_types_key_idx" ON "book_types"("key");
-
--- CreateIndex
-CREATE INDEX "book_types_is_active_sort_order_idx" ON "book_types"("is_active", "sort_order");
-
--- CreateIndex
-CREATE INDEX "model_strategy_scope_idx" ON "model_strategy_configs"("scope");
-
--- CreateIndex
-CREATE UNIQUE INDEX "uq_strategy_book" ON "model_strategy_configs"("scope", "book_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "uq_strategy_job" ON "model_strategy_configs"("scope", "job_id");
-
--- CreateIndex
 CREATE INDEX "analysis_phase_logs_job_stage_idx" ON "analysis_phase_logs"("job_id", "stage");
 
 -- CreateIndex
@@ -761,18 +589,6 @@ CREATE INDEX "analysis_phase_logs_model_idx" ON "analysis_phase_logs"("model_id"
 
 -- CreateIndex
 CREATE INDEX "analysis_phase_logs_created_at_idx" ON "analysis_phase_logs"("created_at");
-
--- CreateIndex
-CREATE INDEX "audit_log_object_idx" ON "knowledge_audit_logs"("object_type", "object_id");
-
--- CreateIndex
-CREATE INDEX "audit_log_created_idx" ON "knowledge_audit_logs"("created_at" DESC);
-
--- CreateIndex
-CREATE INDEX "audit_log_operator_idx" ON "knowledge_audit_logs"("operator_id", "created_at" DESC);
-
--- AddForeignKey
-ALTER TABLE "books" ADD CONSTRAINT "books_book_type_id_fkey" FOREIGN KEY ("book_type_id") REFERENCES "book_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "chapters" ADD CONSTRAINT "chapters_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -823,12 +639,6 @@ ALTER TABLE "facts" ADD CONSTRAINT "facts_job_id_fkey" FOREIGN KEY ("job_id") RE
 ALTER TABLE "facts" ADD CONSTRAINT "facts_agent_run_id_fkey" FOREIGN KEY ("agent_run_id") REFERENCES "agent_runs"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "fact_evidences" ADD CONSTRAINT "fact_evidences_fact_id_fkey" FOREIGN KEY ("fact_id") REFERENCES "facts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "fact_evidences" ADD CONSTRAINT "fact_evidences_chapter_id_fkey" FOREIGN KEY ("chapter_id") REFERENCES "chapters"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -844,19 +654,7 @@ ALTER TABLE "relationships" ADD CONSTRAINT "relationships_first_chapter_id_fkey"
 ALTER TABLE "relationships" ADD CONSTRAINT "relationships_latest_chapter_id_fkey" FOREIGN KEY ("latest_chapter_id") REFERENCES "chapters"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "relationship_types" ADD CONSTRAINT "relationship_types_book_type_id_fkey" FOREIGN KEY ("book_type_id") REFERENCES "book_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "skill_versions" ADD CONSTRAINT "skill_versions_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "skills"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "skill_versions" ADD CONSTRAINT "skill_versions_book_type_id_fkey" FOREIGN KEY ("book_type_id") REFERENCES "book_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "book_type_skills" ADD CONSTRAINT "book_type_skills_book_type_id_fkey" FOREIGN KEY ("book_type_id") REFERENCES "book_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "book_type_skills" ADD CONSTRAINT "book_type_skills_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "skills"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "analysis_jobs" ADD CONSTRAINT "analysis_jobs_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -889,18 +687,6 @@ ALTER TABLE "merge_suggestions" ADD CONSTRAINT "merge_suggestions_source_entity_
 ALTER TABLE "merge_suggestions" ADD CONSTRAINT "merge_suggestions_target_entity_id_fkey" FOREIGN KEY ("target_entity_id") REFERENCES "entities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "text_chunks" ADD CONSTRAINT "text_chunks_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "text_chunks" ADD CONSTRAINT "text_chunks_chapter_id_fkey" FOREIGN KEY ("chapter_id") REFERENCES "chapters"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "model_strategy_configs" ADD CONSTRAINT "model_strategy_configs_book_id_fkey" FOREIGN KEY ("book_id") REFERENCES "books"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "model_strategy_configs" ADD CONSTRAINT "model_strategy_configs_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "analysis_jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "analysis_phase_logs" ADD CONSTRAINT "analysis_phase_logs_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "analysis_jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -909,6 +695,3 @@ ALTER TABLE "analysis_phase_logs" ADD CONSTRAINT "analysis_phase_logs_model_id_f
 -- AddForeignKey
 ALTER TABLE "analysis_phase_logs" ADD CONSTRAINT "analysis_phase_logs_chapter_id_fkey" FOREIGN KEY ("chapter_id") REFERENCES "chapters"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-
--- Prisma 无法建模的 HNSW 索引（pgvector），原生 SQL 管理
-CREATE INDEX "text_chunks_embedding_idx" ON "text_chunks" USING hnsw ("embedding" vector_cosine_ops);

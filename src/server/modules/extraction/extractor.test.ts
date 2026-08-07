@@ -1,29 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildExtractionUserPrompt, extractSlice } from "./extractor.ts";
 import type { BookRegistry } from "@/server/modules/identity/registry.ts";
+import { callIdentityLlm } from "@/server/modules/identity/llm.ts";
 
 vi.mock("@/server/modules/identity/llm.ts", () => ({ callIdentityLlm: vi.fn() }));
-import { callIdentityLlm } from "@/server/modules/identity/llm.ts";
 const mockCall = vi.mocked(callIdentityLlm);
 
 const registry: BookRegistry = {
-  bookId: "book-1",
+  bookId : "book-1",
   entries: [
     { entityId: "e1", canonical: "范进", type: "PERSON", aliases: ["范老爷"], confidenceTier: "HIGH", activeChapters: [3], firstAppearanceChapter: 3, nameType: "NAMED" },
-    { entityId: "e2", canonical: "周进", type: "PERSON", aliases: ["周学道"], confidenceTier: "HIGH", activeChapters: [3], firstAppearanceChapter: 3, nameType: "NAMED" },
+    { entityId: "e2", canonical: "周进", type: "PERSON", aliases: ["周学道"], confidenceTier: "HIGH", activeChapters: [3], firstAppearanceChapter: 3, nameType: "NAMED" }
   ],
-  loadedAt: new Date(),
+  loadedAt: new Date()
 };
 
 const baseInput = {
-  bookId: "book-1",
-  jobId: "job-1",
-  sliceText: "范进中举后高兴疯了，周学道拔范进中了秀才。",
-  chapterNos: [3],
+  bookId               : "book-1",
+  jobId                : "job-1",
+  sliceText            : "范进中举后高兴疯了，周学道拔范进中了秀才。",
+  chapterNos           : [3],
   registry,
-  bookSummary: "儒林外史摘要",
-  skills: [],
-  relationshipTypeCodes: ["师生", "父子"],
+  bookSummary          : "儒林外史摘要",
+  skills               : [],
+  relationshipTypeCodes: ["师生", "父子"]
 };
 
 beforeEach(() => {
@@ -45,11 +45,11 @@ describe("extractSlice", () => {
       data: {
         entities: [
           { canonical: "范进", type: "PERSON", aliases: ["范老爷"] },
-          { canonical: "周进", type: "PERSON", aliases: ["周学道"] },
+          { canonical: "周进", type: "PERSON", aliases: ["周学道"] }
         ],
         relations: [{ typeCode: "师生", sourceCanonical: "范进", targetCanonical: "周进", evidence: "周学道拔范进中了秀才" }],
-        bioFacts: [{ category: "EXAM", subjectCanonical: "范进", summary: "中举", evidence: "范进中举" }],
-      },
+        bioFacts : [{ category: "EXAM", subjectCanonical: "范进", summary: "中举", evidence: "范进中举" }]
+      }
     });
 
     const result = await extractSlice(baseInput);
@@ -61,10 +61,10 @@ describe("extractSlice", () => {
   it("新实体进 newEntityCandidates", async () => {
     mockCall.mockResolvedValue({
       data: {
-        entities: [{ canonical: "杜少卿", type: "PERSON", aliases: [] }],
+        entities : [{ canonical: "杜少卿", type: "PERSON", aliases: [] }],
         relations: [],
-        bioFacts: [],
-      },
+        bioFacts : []
+      }
     });
     const result = await extractSlice(baseInput);
     expect(result.slice.newEntityCandidates).toContain("杜少卿");
@@ -75,11 +75,11 @@ describe("extractSlice", () => {
       data: {
         entities: [
           { canonical: "范进", type: "PERSON" },
-          { canonical: "周进", type: "PERSON" },
+          { canonical: "周进", type: "PERSON" }
         ],
         relations: [{ typeCode: "师徒", sourceCanonical: "范进", targetCanonical: "周进", evidence: "周学道拔范进中了秀才" }],
-        bioFacts: [],
-      },
+        bioFacts : []
+      }
     });
     const result = await extractSlice(baseInput);
     expect(result.facts).toHaveLength(0);

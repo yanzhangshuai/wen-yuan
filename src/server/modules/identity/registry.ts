@@ -23,19 +23,19 @@ import { prisma } from "@/server/db/prisma";
 export type ConfidenceTier = "HIGH" | "MEDIUM" | "LOW";
 
 export interface RegistryEntry {
-  entityId: string;
-  canonical: string;
-  type: string; // PERSON | LOCATION | ORGANIZATION | CONCEPT
-  aliases: string[];
-  confidenceTier: ConfidenceTier;
-  activeChapters: number[];
+  entityId              : string;
+  canonical             : string;
+  type                  : string; // PERSON | LOCATION | ORGANIZATION | CONCEPT
+  aliases               : string[];
+  confidenceTier        : ConfidenceTier;
+  activeChapters        : number[];
   firstAppearanceChapter: number | null;
-  nameType: string; // NAMED | TITLE_ONLY
+  nameType              : string; // NAMED | TITLE_ONLY
 }
 
 export interface BookRegistry {
-  bookId: string;
-  entries: RegistryEntry[];
+  bookId  : string;
+  entries : RegistryEntry[];
   loadedAt: Date;
 }
 
@@ -62,24 +62,22 @@ export async function getRegistry(bookId: string, txClient?: PrismaClient): Prom
 
   const entities = await client.entity.findMany({
     where: {
-      profiles: { some: { bookId, deletedAt: null } },
-      deletedAt: null,
+      profiles : { some: { bookId, deletedAt: null } },
+      deletedAt: null
     },
     include: {
-      profiles: { where: { bookId, deletedAt: null }, take: 1 },
       aliasRecords: {
-        where: { bookId, deletedAt: null },
-        select: { status: true },
+        where : { bookId, deletedAt: null },
+        select: { status: true }
       },
       mentions: {
-        where: { status: { not: "REJECTED" }, deletedAt: null },
-        select: { chapter: { select: { no: true } } },
-      },
-    },
+        where : { status: { not: "REJECTED" }, deletedAt: null },
+        select: { chapter: { select: { no: true } } }
+      }
+    }
   });
 
   const entries: RegistryEntry[] = entities.map((entity) => {
-    const profile = entity.profiles[0];
     const chapterNos = Array.from(new Set(entity.mentions.map((m) => m.chapter.no))).sort((a, b) => a - b);
 
     const aliasStatuses = entity.aliasRecords.map((a) => a.status);
@@ -97,14 +95,14 @@ export async function getRegistry(bookId: string, txClient?: PrismaClient): Prom
     }
 
     return {
-      entityId: entity.id,
-      canonical: entity.name,
-      type: entity.entityType,
-      aliases: entity.aliases,
+      entityId              : entity.id,
+      canonical             : entity.name,
+      type                  : entity.entityType,
+      aliases               : entity.aliases,
       confidenceTier,
-      activeChapters: chapterNos,
+      activeChapters        : chapterNos,
       firstAppearanceChapter: chapterNos.length > 0 ? chapterNos[0] : null,
-      nameType: entity.nameType,
+      nameType              : entity.nameType
     };
   });
 

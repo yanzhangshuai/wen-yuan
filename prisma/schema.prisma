@@ -10,12 +10,15 @@
 //   KnowledgeAuditLog 等）已删除
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  // entities.name 使用 gin_trgm_ops 三元组索引，需 pg_trgm 扩展
+  extensions = [pg_trgm]
 }
 
 // --- 枚举定义 (业务逻辑分类) ---
