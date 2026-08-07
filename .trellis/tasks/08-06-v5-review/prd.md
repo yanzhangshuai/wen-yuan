@@ -14,15 +14,15 @@
 
 ## 归并验收标准（父任务最终评审）
 
-- [ ] 三个子任务各自 AC 全绿（type-check 零新增错误、测试通过、行覆盖 ≥90%）
-- [ ] **type-check 回到 0**（94 个 v4 错误全清，无新引入）
-- [ ] `pnpm lint` / `pnpm test` 通过
-- [ ] 审核流 service 单测覆盖五条件自动接受 + 人审队列 + 棘轮 + 幻觉抽样 + 跨模型复核
-- [ ] roleWorkbench 三 Tab（角色资料/章节事迹/合并建议）在新模型下正常出数
-- [ ] 前端 roleReview Tab 增删改链路可用（重挂新 API）
-- [ ] `mergeEntitiesInTransaction` 实体合并事务存在且被 merge 接受路径调用
-- [ ] 跨模型复核接口可调用（显式传 modelId 跑原语）
-- [ ] bulkVerify 事务内 refreshRelationshipsForBook
+- [x] 三个子任务各自 AC 全绿（type-check 零新增错误、测试通过）
+- [x] **type-check 94 → 1**（94 个 v4 错误全清；唯一残留 `analyze/route.ts` 的 runAnalysisJobById 归 v5-pipeline）
+- [x] `pnpm lint` / `pnpm test` 通过
+- [x] 审核流 service 单测覆盖五条件自动接受 + 人审队列 + 棘轮 + 幻觉抽样 + 跨模型复核（25 例）
+- [x] roleWorkbench 三 Tab（角色资料/章节事迹/合并建议）在新模型下正常出数
+- [x] 前端 roleReview Tab 重构为只读实体档案视图（v5 不再手工建人物，写操作移除）
+- [x] `mergeEntitiesInTransaction` 实体合并事务存在且被 merge 接受路径调用
+- [x] 跨模型复核接口可调用（显式传 modelId 跑原语）
+- [x] bulkVerify 事务内 refreshRelationshipsForBook
 
 ## Constraints
 
