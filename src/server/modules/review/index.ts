@@ -5,3 +5,5 @@
  * - 错误族（替代已删的 v4 biography/personas/relationships errors）。
  */
 export { ReviewError, ReviewInputError, ReviewNotFoundError, EntityMergeConflictError } from "./errors";
+
+export { acceptFactsForJob, type AcceptResult } from "./autoAccept";
