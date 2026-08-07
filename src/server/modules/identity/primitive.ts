@@ -28,6 +28,8 @@ export interface PrimitiveInput {
   bookSummary: string;
   skills     : string[];
   jobId      : string;
+  /** 可选：跨模型复核时显式指定模型 id；缺省 = 系统默认模型。 */
+  modelId?   : string;
 }
 
 export interface PrimitiveOutput {
@@ -88,10 +90,11 @@ export async function runPrimitive(input: PrimitiveInput): Promise<PrimitiveResu
   ].join("\n");
 
   const { data } = await callIdentityLlm<PrimitiveOutput>({
-    stage : "TITLE_RESOLUTION",
-    system: IDENTITY_RESOLUTION_SYSTEM_PROMPT,
+    stage  : "TITLE_RESOLUTION",
+    system : IDENTITY_RESOLUTION_SYSTEM_PROMPT,
     user,
-    jobId : input.jobId
+    jobId  : input.jobId,
+    modelId: input.modelId
   });
 
   const condition1 = data.verdict === "resolved" && data.evidenceAnchors.length > 0 && !!data.resolvedEntityId;

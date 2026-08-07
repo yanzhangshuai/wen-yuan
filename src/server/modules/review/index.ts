@@ -18,3 +18,9 @@ export {
   isHighNewEntityRate,
   type HallucinationSample
 } from "./hallucinationSample";
+
+export {
+  crossModelReview,
+  type CrossModelReviewInput,
+  type CrossModelReviewResult
+} from "./crossModel";
