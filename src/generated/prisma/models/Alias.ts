@@ -46,7 +46,6 @@ export type AliasMinAggregateOutputType = {
   aliasType: $Enums.AliasType | null
   resolvedName: string | null
   evidence: string | null
-  contextHash: string | null
   chapterStart: number | null
   chapterEnd: number | null
   confidence: number | null
@@ -65,7 +64,6 @@ export type AliasMaxAggregateOutputType = {
   aliasType: $Enums.AliasType | null
   resolvedName: string | null
   evidence: string | null
-  contextHash: string | null
   chapterStart: number | null
   chapterEnd: number | null
   confidence: number | null
@@ -84,7 +82,6 @@ export type AliasCountAggregateOutputType = {
   aliasType: number
   resolvedName: number
   evidence: number
-  contextHash: number
   chapterStart: number
   chapterEnd: number
   confidence: number
@@ -117,7 +114,6 @@ export type AliasMinAggregateInputType = {
   aliasType?: true
   resolvedName?: true
   evidence?: true
-  contextHash?: true
   chapterStart?: true
   chapterEnd?: true
   confidence?: true
@@ -136,7 +132,6 @@ export type AliasMaxAggregateInputType = {
   aliasType?: true
   resolvedName?: true
   evidence?: true
-  contextHash?: true
   chapterStart?: true
   chapterEnd?: true
   confidence?: true
@@ -155,7 +150,6 @@ export type AliasCountAggregateInputType = {
   aliasType?: true
   resolvedName?: true
   evidence?: true
-  contextHash?: true
   chapterStart?: true
   chapterEnd?: true
   confidence?: true
@@ -261,7 +255,6 @@ export type AliasGroupByOutputType = {
   aliasType: $Enums.AliasType
   resolvedName: string | null
   evidence: string | null
-  contextHash: string | null
   chapterStart: number | null
   chapterEnd: number | null
   confidence: number
@@ -303,7 +296,6 @@ export type AliasWhereInput = {
   aliasType?: Prisma.EnumAliasTypeFilter<"Alias"> | $Enums.AliasType
   resolvedName?: Prisma.StringNullableFilter<"Alias"> | string | null
   evidence?: Prisma.StringNullableFilter<"Alias"> | string | null
-  contextHash?: Prisma.StringNullableFilter<"Alias"> | string | null
   chapterStart?: Prisma.IntNullableFilter<"Alias"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"Alias"> | number | null
   confidence?: Prisma.FloatFilter<"Alias"> | number
@@ -324,7 +316,6 @@ export type AliasOrderByWithRelationInput = {
   aliasType?: Prisma.SortOrder
   resolvedName?: Prisma.SortOrderInput | Prisma.SortOrder
   evidence?: Prisma.SortOrderInput | Prisma.SortOrder
-  contextHash?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
   confidence?: Prisma.SortOrder
@@ -348,7 +339,6 @@ export type AliasWhereUniqueInput = Prisma.AtLeast<{
   aliasType?: Prisma.EnumAliasTypeFilter<"Alias"> | $Enums.AliasType
   resolvedName?: Prisma.StringNullableFilter<"Alias"> | string | null
   evidence?: Prisma.StringNullableFilter<"Alias"> | string | null
-  contextHash?: Prisma.StringNullableFilter<"Alias"> | string | null
   chapterStart?: Prisma.IntNullableFilter<"Alias"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"Alias"> | number | null
   confidence?: Prisma.FloatFilter<"Alias"> | number
@@ -369,7 +359,6 @@ export type AliasOrderByWithAggregationInput = {
   aliasType?: Prisma.SortOrder
   resolvedName?: Prisma.SortOrderInput | Prisma.SortOrder
   evidence?: Prisma.SortOrderInput | Prisma.SortOrder
-  contextHash?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
   confidence?: Prisma.SortOrder
@@ -396,7 +385,6 @@ export type AliasScalarWhereWithAggregatesInput = {
   aliasType?: Prisma.EnumAliasTypeWithAggregatesFilter<"Alias"> | $Enums.AliasType
   resolvedName?: Prisma.StringNullableWithAggregatesFilter<"Alias"> | string | null
   evidence?: Prisma.StringNullableWithAggregatesFilter<"Alias"> | string | null
-  contextHash?: Prisma.StringNullableWithAggregatesFilter<"Alias"> | string | null
   chapterStart?: Prisma.IntNullableWithAggregatesFilter<"Alias"> | number | null
   chapterEnd?: Prisma.IntNullableWithAggregatesFilter<"Alias"> | number | null
   confidence?: Prisma.FloatWithAggregatesFilter<"Alias"> | number
@@ -413,7 +401,6 @@ export type AliasCreateInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -434,7 +421,6 @@ export type AliasUncheckedCreateInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -451,7 +437,6 @@ export type AliasUpdateInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -472,7 +457,6 @@ export type AliasUncheckedUpdateInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -491,7 +475,6 @@ export type AliasCreateManyInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -508,7 +491,6 @@ export type AliasUpdateManyMutationInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -527,7 +509,6 @@ export type AliasUncheckedUpdateManyInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -556,7 +537,6 @@ export type AliasCountOrderByAggregateInput = {
   aliasType?: Prisma.SortOrder
   resolvedName?: Prisma.SortOrder
   evidence?: Prisma.SortOrder
-  contextHash?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
@@ -581,7 +561,6 @@ export type AliasMaxOrderByAggregateInput = {
   aliasType?: Prisma.SortOrder
   resolvedName?: Prisma.SortOrder
   evidence?: Prisma.SortOrder
-  contextHash?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
@@ -600,7 +579,6 @@ export type AliasMinOrderByAggregateInput = {
   aliasType?: Prisma.SortOrder
   resolvedName?: Prisma.SortOrder
   evidence?: Prisma.SortOrder
-  contextHash?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
@@ -715,7 +693,6 @@ export type AliasCreateWithoutBookInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -734,7 +711,6 @@ export type AliasUncheckedCreateWithoutBookInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -782,7 +758,6 @@ export type AliasScalarWhereInput = {
   aliasType?: Prisma.EnumAliasTypeFilter<"Alias"> | $Enums.AliasType
   resolvedName?: Prisma.StringNullableFilter<"Alias"> | string | null
   evidence?: Prisma.StringNullableFilter<"Alias"> | string | null
-  contextHash?: Prisma.StringNullableFilter<"Alias"> | string | null
   chapterStart?: Prisma.IntNullableFilter<"Alias"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"Alias"> | number | null
   confidence?: Prisma.FloatFilter<"Alias"> | number
@@ -799,7 +774,6 @@ export type AliasCreateWithoutEntityInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -818,7 +792,6 @@ export type AliasUncheckedCreateWithoutEntityInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -862,7 +835,6 @@ export type AliasCreateManyBookInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -879,7 +851,6 @@ export type AliasUpdateWithoutBookInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -898,7 +869,6 @@ export type AliasUncheckedUpdateWithoutBookInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -916,7 +886,6 @@ export type AliasUncheckedUpdateManyWithoutBookInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -934,7 +903,6 @@ export type AliasCreateManyEntityInput = {
   aliasType: $Enums.AliasType
   resolvedName?: string | null
   evidence?: string | null
-  contextHash?: string | null
   chapterStart?: number | null
   chapterEnd?: number | null
   confidence?: number
@@ -951,7 +919,6 @@ export type AliasUpdateWithoutEntityInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -970,7 +937,6 @@ export type AliasUncheckedUpdateWithoutEntityInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -988,7 +954,6 @@ export type AliasUncheckedUpdateManyWithoutEntityInput = {
   aliasType?: Prisma.EnumAliasTypeFieldUpdateOperationsInput | $Enums.AliasType
   resolvedName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   evidence?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -1009,7 +974,6 @@ export type AliasSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   aliasType?: boolean
   resolvedName?: boolean
   evidence?: boolean
-  contextHash?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
   confidence?: boolean
@@ -1030,7 +994,6 @@ export type AliasSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   aliasType?: boolean
   resolvedName?: boolean
   evidence?: boolean
-  contextHash?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
   confidence?: boolean
@@ -1051,7 +1014,6 @@ export type AliasSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   aliasType?: boolean
   resolvedName?: boolean
   evidence?: boolean
-  contextHash?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
   confidence?: boolean
@@ -1072,7 +1034,6 @@ export type AliasSelectScalar = {
   aliasType?: boolean
   resolvedName?: boolean
   evidence?: boolean
-  contextHash?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
   confidence?: boolean
@@ -1083,7 +1044,7 @@ export type AliasSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AliasOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "bookId" | "alias" | "aliasType" | "resolvedName" | "evidence" | "contextHash" | "chapterStart" | "chapterEnd" | "confidence" | "status" | "recordSource" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["alias"]>
+export type AliasOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "bookId" | "alias" | "aliasType" | "resolvedName" | "evidence" | "chapterStart" | "chapterEnd" | "confidence" | "status" | "recordSource" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["alias"]>
 export type AliasInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   entity?: boolean | Prisma.Alias$entityArgs<ExtArgs>
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -1111,7 +1072,6 @@ export type $AliasPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     aliasType: $Enums.AliasType
     resolvedName: string | null
     evidence: string | null
-    contextHash: string | null
     chapterStart: number | null
     chapterEnd: number | null
     confidence: number
@@ -1552,7 +1512,6 @@ export interface AliasFieldRefs {
   readonly aliasType: Prisma.FieldRef<"Alias", 'AliasType'>
   readonly resolvedName: Prisma.FieldRef<"Alias", 'String'>
   readonly evidence: Prisma.FieldRef<"Alias", 'String'>
-  readonly contextHash: Prisma.FieldRef<"Alias", 'String'>
   readonly chapterStart: Prisma.FieldRef<"Alias", 'Int'>
   readonly chapterEnd: Prisma.FieldRef<"Alias", 'Int'>
   readonly confidence: Prisma.FieldRef<"Alias", 'Float'>

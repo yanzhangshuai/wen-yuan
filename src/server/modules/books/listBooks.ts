@@ -67,13 +67,11 @@ interface BookListRow {
   /** 最近一次解析任务快照（按 updatedAt 倒序，取 1 条）。 */
   analysisJobs: Array<{
     /** 任务更新时间（任务级回退时间）。 */
-    updatedAt   : Date;
+    updatedAt : Date;
     /** 任务完成时间（优先用于最近解析时间展示）。 */
-    finishedAt  : Date | null;
+    finishedAt: Date | null;
     /** 任务错误摘要（书级错误缺失时的回退来源）。 */
-    errorLog    : string | null;
-    /** 任务解析架构（用于列表/详情回显最近一次策略）。 */
-    architecture: string;
+    errorLog  : string | null;
     /** 最近阶段日志（取 1 条，用于提取模型名）。 */
     phaseLogs   : Array<{
       model: {
@@ -124,11 +122,10 @@ const BOOK_LIST_SELECT = {
     take   : 1,
     orderBy: { updatedAt: "desc" },
     select : {
-      updatedAt   : true,
-      finishedAt  : true,
-      errorLog    : true,
-      architecture: true,
-      phaseLogs   : {
+      updatedAt : true,
+      finishedAt: true,
+      errorLog  : true,
+      phaseLogs : {
         take   : 1,
         orderBy: { createdAt: "desc" },
         select : {
@@ -185,12 +182,8 @@ function mapBook(book: BookListRow): BookLibraryListItem {
   // 当前模型展示策略：取“最近任务 -> 最近阶段日志”的模型名。
   // 原因：Book/AnalysisJob 已不直接维护 aiModel 关系，阶段日志才是实际执行来源。
   const currentModel = book.analysisJobs[0]?.phaseLogs?.[0]?.model?.name ?? null;
-  const rawArchitecture = book.analysisJobs[0]?.architecture ?? null;
-  const lastArchitecture = rawArchitecture === "twopass"
-    ? "twopass"
-    : rawArchitecture === "sequential"
-      ? "sequential"
-      : null;
+  // v5：architecture 已随 v4 双架构删除，恒为 null（前端字段名不变）。
+  const lastArchitecture: "sequential" | "twopass" | null = null;
 
   // 错误摘要优先级：书级错误 > 最近任务错误。
   // 这样可以让列表优先显示更接近业务实体（书籍）的问题描述。

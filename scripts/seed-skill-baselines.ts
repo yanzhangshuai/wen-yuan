@@ -16,15 +16,25 @@ import { PrismaClient, SkillCategory, SkillStatus } from "../src/generated/prism
 const connectionString = process.env.DATABASE_URL ?? "postgresql://plotweaver:plotweaver@127.0.0.1:5432/wen_yuan?schema=public";
 const SKILLS_DIR = resolve(process.cwd(), "scripts/skills");
 
+/** 关系码契约（与 content-schema.ts 的 relationshipCodeSchema 对齐）。 */
+const relationshipCodeSchema = z.object({
+  code     : z.string(),
+  direction: z.enum(["INVERSE", "SYMMETRIC"]),
+  category : z.string(),
+  aliases  : z.array(z.string()).default([])
+});
+
 /** .md frontmatter 元数据（seed 文件专用，比装载元数据更全）。 */
 const skillMdFrontmatterSchema = z.object({
-  slug       : z.string(),
-  name       : z.string(),
-  category   : z.nativeEnum(SkillCategory),
-  description: z.string(),
-  scope      : z.enum(["GLOBAL", "BOOK_TYPE"]).default("GLOBAL"),
-  kind       : z.string(),
-  triggers   : z.object({ priority: z.number().default(0), bookTypeKeys: z.array(z.string()).optional(), taskTypes: z.array(z.string()).optional() }).default({ priority: 0 }),
+  slug             : z.string(),
+  name             : z.string(),
+  category         : z.nativeEnum(SkillCategory),
+  description      : z.string(),
+  scope            : z.enum(["GLOBAL", "BOOK_TYPE"]).default("GLOBAL"),
+  kind             : z.string(),
+  triggers         : z.object({ priority: z.number().default(0), taskTypes: z.array(z.string()).optional() }).default({ priority: 0 }),
+  relationshipCodes: z.array(relationshipCodeSchema).optional(),
+  deicticJunk      : z.array(z.string()).optional()
 });
 
 interface ParsedSkillMd {
@@ -34,7 +44,7 @@ interface ParsedSkillMd {
   description: string;
   scope      : string;
   kind       : string;
-  triggers   : { priority: number; bookTypeKeys?: string[]; taskTypes?: string[] };
+  triggers   : { priority: number; taskTypes?: string[] };
   content    : string; // 完整 MD（frontmatter + 正文）
 }
 
@@ -48,7 +58,7 @@ function extractFrontmatter(md: string): { frontmatter: unknown; body: string } 
 }
 
 function readSkillMdFiles(): ParsedSkillMd[] {
-  const files = ["chinese-surname", "chinese-name-pattern", "classical-generic-titles", "classical-relationship-types"];
+  const files = ["chinese-surname", "chinese-name-pattern", "classical-generic-titles", "classical-relationship-types", "chinese-deictic-junk"];
   const parsed: ParsedSkillMd[] = [];
   for (const name of files) {
     const path = resolve(SKILLS_DIR, `${name}.md`);
@@ -70,31 +80,31 @@ export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> 
 
   for (const skill of skills) {
     const existing = await prisma.skill.findUnique({
-      where: { slug: skill.slug },
-      select: { id: true, versions: { where: { isActive: true }, select: { id: true, content: true, versionNo: true }, take: 1 } },
+      where : { slug: skill.slug },
+      select: { id: true, versions: { where: { isActive: true }, select: { id: true, content: true, versionNo: true }, take: 1 } }
     });
 
     if (!existing) {
       await prisma.skill.create({
         data: {
-          slug        : skill.slug,
-          name        : skill.name,
-          description : skill.description,
-          category    : skill.category,
-          scope       : skill.scope,
-          status      : SkillStatus.ACTIVE,
-          source      : "MANUAL",
-          isBuiltin   : true,
-          versions    : {
+          slug       : skill.slug,
+          name       : skill.name,
+          description: skill.description,
+          category   : skill.category,
+          scope      : skill.scope,
+          status     : SkillStatus.ACTIVE,
+          source     : "MANUAL",
+          isBuiltin  : true,
+          versions   : {
             create: {
               versionNo : 1,
               content   : skill.content,
               isActive  : true,
-              isBaseline: true,
-            },
-          },
+              isBaseline: true
+            }
+          }
         },
-        select: { id: true, slug: true },
+        select: { id: true, slug: true }
       });
       console.log(`✅ 技能已创建: ${skill.slug}`);
       touchedCount += 1;
@@ -117,8 +127,8 @@ export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> 
           content   : skill.content,
           isActive  : true,
           isBaseline: true,
-          changeNote: "skills 改为 MD 文件直接维护",
-        },
+          changeNote: "skills 改为 MD 文件直接维护"
+        }
       });
     });
     console.log(`🔄 技能已更新: ${skill.slug} → v${nextVersion}`);

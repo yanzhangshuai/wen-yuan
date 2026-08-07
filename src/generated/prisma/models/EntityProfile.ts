@@ -42,7 +42,6 @@ export type EntityProfileMinAggregateOutputType = {
   localSummary: string | null
   officialTitle: string | null
   ironyIndex: number | null
-  moralTier: string | null
   firstAppearanceChapterId: string | null
   status: $Enums.ProcessingStatus | null
   recordSource: $Enums.RecordSource | null
@@ -59,7 +58,6 @@ export type EntityProfileMaxAggregateOutputType = {
   localSummary: string | null
   officialTitle: string | null
   ironyIndex: number | null
-  moralTier: string | null
   firstAppearanceChapterId: string | null
   status: $Enums.ProcessingStatus | null
   recordSource: $Enums.RecordSource | null
@@ -77,7 +75,6 @@ export type EntityProfileCountAggregateOutputType = {
   officialTitle: number
   localTags: number
   ironyIndex: number
-  moralTier: number
   firstAppearanceChapterId: number
   visualConfig: number
   status: number
@@ -105,7 +102,6 @@ export type EntityProfileMinAggregateInputType = {
   localSummary?: true
   officialTitle?: true
   ironyIndex?: true
-  moralTier?: true
   firstAppearanceChapterId?: true
   status?: true
   recordSource?: true
@@ -122,7 +118,6 @@ export type EntityProfileMaxAggregateInputType = {
   localSummary?: true
   officialTitle?: true
   ironyIndex?: true
-  moralTier?: true
   firstAppearanceChapterId?: true
   status?: true
   recordSource?: true
@@ -140,7 +135,6 @@ export type EntityProfileCountAggregateInputType = {
   officialTitle?: true
   localTags?: true
   ironyIndex?: true
-  moralTier?: true
   firstAppearanceChapterId?: true
   visualConfig?: true
   status?: true
@@ -246,7 +240,6 @@ export type EntityProfileGroupByOutputType = {
   officialTitle: string | null
   localTags: string[]
   ironyIndex: number
-  moralTier: string | null
   firstAppearanceChapterId: string | null
   visualConfig: runtime.JsonValue | null
   status: $Enums.ProcessingStatus
@@ -288,7 +281,6 @@ export type EntityProfileWhereInput = {
   officialTitle?: Prisma.StringNullableFilter<"EntityProfile"> | string | null
   localTags?: Prisma.StringNullableListFilter<"EntityProfile">
   ironyIndex?: Prisma.FloatFilter<"EntityProfile"> | number
-  moralTier?: Prisma.StringNullableFilter<"EntityProfile"> | string | null
   firstAppearanceChapterId?: Prisma.UuidNullableFilter<"EntityProfile"> | string | null
   visualConfig?: Prisma.JsonNullableFilter<"EntityProfile">
   status?: Prisma.EnumProcessingStatusFilter<"EntityProfile"> | $Enums.ProcessingStatus
@@ -310,7 +302,6 @@ export type EntityProfileOrderByWithRelationInput = {
   officialTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   localTags?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
-  moralTier?: Prisma.SortOrderInput | Prisma.SortOrder
   firstAppearanceChapterId?: Prisma.SortOrderInput | Prisma.SortOrder
   visualConfig?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -336,7 +327,6 @@ export type EntityProfileWhereUniqueInput = Prisma.AtLeast<{
   officialTitle?: Prisma.StringNullableFilter<"EntityProfile"> | string | null
   localTags?: Prisma.StringNullableListFilter<"EntityProfile">
   ironyIndex?: Prisma.FloatFilter<"EntityProfile"> | number
-  moralTier?: Prisma.StringNullableFilter<"EntityProfile"> | string | null
   firstAppearanceChapterId?: Prisma.UuidNullableFilter<"EntityProfile"> | string | null
   visualConfig?: Prisma.JsonNullableFilter<"EntityProfile">
   status?: Prisma.EnumProcessingStatusFilter<"EntityProfile"> | $Enums.ProcessingStatus
@@ -358,7 +348,6 @@ export type EntityProfileOrderByWithAggregationInput = {
   officialTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   localTags?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
-  moralTier?: Prisma.SortOrderInput | Prisma.SortOrder
   firstAppearanceChapterId?: Prisma.SortOrderInput | Prisma.SortOrder
   visualConfig?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -385,7 +374,6 @@ export type EntityProfileScalarWhereWithAggregatesInput = {
   officialTitle?: Prisma.StringNullableWithAggregatesFilter<"EntityProfile"> | string | null
   localTags?: Prisma.StringNullableListFilter<"EntityProfile">
   ironyIndex?: Prisma.FloatWithAggregatesFilter<"EntityProfile"> | number
-  moralTier?: Prisma.StringNullableWithAggregatesFilter<"EntityProfile"> | string | null
   firstAppearanceChapterId?: Prisma.UuidNullableWithAggregatesFilter<"EntityProfile"> | string | null
   visualConfig?: Prisma.JsonNullableWithAggregatesFilter<"EntityProfile">
   status?: Prisma.EnumProcessingStatusWithAggregatesFilter<"EntityProfile"> | $Enums.ProcessingStatus
@@ -402,7 +390,6 @@ export type EntityProfileCreateInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
   recordSource?: $Enums.RecordSource
@@ -423,7 +410,6 @@ export type EntityProfileUncheckedCreateInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   firstAppearanceChapterId?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
@@ -440,7 +426,6 @@ export type EntityProfileUpdateInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -461,7 +446,6 @@ export type EntityProfileUncheckedUpdateInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstAppearanceChapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -480,7 +464,6 @@ export type EntityProfileCreateManyInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   firstAppearanceChapterId?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
@@ -497,7 +480,6 @@ export type EntityProfileUpdateManyMutationInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -515,7 +497,6 @@ export type EntityProfileUncheckedUpdateManyInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstAppearanceChapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -549,7 +530,6 @@ export type EntityProfileCountOrderByAggregateInput = {
   officialTitle?: Prisma.SortOrder
   localTags?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
-  moralTier?: Prisma.SortOrder
   firstAppearanceChapterId?: Prisma.SortOrder
   visualConfig?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -571,7 +551,6 @@ export type EntityProfileMaxOrderByAggregateInput = {
   localSummary?: Prisma.SortOrder
   officialTitle?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
-  moralTier?: Prisma.SortOrder
   firstAppearanceChapterId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
@@ -588,7 +567,6 @@ export type EntityProfileMinOrderByAggregateInput = {
   localSummary?: Prisma.SortOrder
   officialTitle?: Prisma.SortOrder
   ironyIndex?: Prisma.SortOrder
-  moralTier?: Prisma.SortOrder
   firstAppearanceChapterId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
@@ -747,7 +725,6 @@ export type EntityProfileCreateWithoutBookInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
   recordSource?: $Enums.RecordSource
@@ -766,7 +743,6 @@ export type EntityProfileUncheckedCreateWithoutBookInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   firstAppearanceChapterId?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
@@ -814,7 +790,6 @@ export type EntityProfileScalarWhereInput = {
   officialTitle?: Prisma.StringNullableFilter<"EntityProfile"> | string | null
   localTags?: Prisma.StringNullableListFilter<"EntityProfile">
   ironyIndex?: Prisma.FloatFilter<"EntityProfile"> | number
-  moralTier?: Prisma.StringNullableFilter<"EntityProfile"> | string | null
   firstAppearanceChapterId?: Prisma.UuidNullableFilter<"EntityProfile"> | string | null
   visualConfig?: Prisma.JsonNullableFilter<"EntityProfile">
   status?: Prisma.EnumProcessingStatusFilter<"EntityProfile"> | $Enums.ProcessingStatus
@@ -831,7 +806,6 @@ export type EntityProfileCreateWithoutFirstAppearanceChapterInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
   recordSource?: $Enums.RecordSource
@@ -851,7 +825,6 @@ export type EntityProfileUncheckedCreateWithoutFirstAppearanceChapterInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
   recordSource?: $Enums.RecordSource
@@ -893,7 +866,6 @@ export type EntityProfileCreateWithoutEntityInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
   recordSource?: $Enums.RecordSource
@@ -912,7 +884,6 @@ export type EntityProfileUncheckedCreateWithoutEntityInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   firstAppearanceChapterId?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
@@ -956,7 +927,6 @@ export type EntityProfileCreateManyBookInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   firstAppearanceChapterId?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
@@ -973,7 +943,6 @@ export type EntityProfileUpdateWithoutBookInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -992,7 +961,6 @@ export type EntityProfileUncheckedUpdateWithoutBookInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstAppearanceChapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -1010,7 +978,6 @@ export type EntityProfileUncheckedUpdateManyWithoutBookInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstAppearanceChapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -1029,7 +996,6 @@ export type EntityProfileCreateManyFirstAppearanceChapterInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
   recordSource?: $Enums.RecordSource
@@ -1045,7 +1011,6 @@ export type EntityProfileUpdateWithoutFirstAppearanceChapterInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1065,7 +1030,6 @@ export type EntityProfileUncheckedUpdateWithoutFirstAppearanceChapterInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1083,7 +1047,6 @@ export type EntityProfileUncheckedUpdateManyWithoutFirstAppearanceChapterInput =
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1100,7 +1063,6 @@ export type EntityProfileCreateManyEntityInput = {
   officialTitle?: string | null
   localTags?: Prisma.EntityProfileCreatelocalTagsInput | string[]
   ironyIndex?: number
-  moralTier?: string | null
   firstAppearanceChapterId?: string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.ProcessingStatus
@@ -1117,7 +1079,6 @@ export type EntityProfileUpdateWithoutEntityInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1136,7 +1097,6 @@ export type EntityProfileUncheckedUpdateWithoutEntityInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstAppearanceChapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -1154,7 +1114,6 @@ export type EntityProfileUncheckedUpdateManyWithoutEntityInput = {
   officialTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   localTags?: Prisma.EntityProfileUpdatelocalTagsInput | string[]
   ironyIndex?: Prisma.FloatFieldUpdateOperationsInput | number
-  moralTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firstAppearanceChapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visualConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -1175,7 +1134,6 @@ export type EntityProfileSelect<ExtArgs extends runtime.Types.Extensions.Interna
   officialTitle?: boolean
   localTags?: boolean
   ironyIndex?: boolean
-  moralTier?: boolean
   firstAppearanceChapterId?: boolean
   visualConfig?: boolean
   status?: boolean
@@ -1197,7 +1155,6 @@ export type EntityProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   officialTitle?: boolean
   localTags?: boolean
   ironyIndex?: boolean
-  moralTier?: boolean
   firstAppearanceChapterId?: boolean
   visualConfig?: boolean
   status?: boolean
@@ -1219,7 +1176,6 @@ export type EntityProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   officialTitle?: boolean
   localTags?: boolean
   ironyIndex?: boolean
-  moralTier?: boolean
   firstAppearanceChapterId?: boolean
   visualConfig?: boolean
   status?: boolean
@@ -1241,7 +1197,6 @@ export type EntityProfileSelectScalar = {
   officialTitle?: boolean
   localTags?: boolean
   ironyIndex?: boolean
-  moralTier?: boolean
   firstAppearanceChapterId?: boolean
   visualConfig?: boolean
   status?: boolean
@@ -1251,7 +1206,7 @@ export type EntityProfileSelectScalar = {
   updatedAt?: boolean
 }
 
-export type EntityProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "bookId" | "localName" | "localSummary" | "officialTitle" | "localTags" | "ironyIndex" | "moralTier" | "firstAppearanceChapterId" | "visualConfig" | "status" | "recordSource" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["entityProfile"]>
+export type EntityProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "bookId" | "localName" | "localSummary" | "officialTitle" | "localTags" | "ironyIndex" | "firstAppearanceChapterId" | "visualConfig" | "status" | "recordSource" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["entityProfile"]>
 export type EntityProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -1284,7 +1239,6 @@ export type $EntityProfilePayload<ExtArgs extends runtime.Types.Extensions.Inter
     officialTitle: string | null
     localTags: string[]
     ironyIndex: number
-    moralTier: string | null
     firstAppearanceChapterId: string | null
     visualConfig: runtime.JsonValue | null
     status: $Enums.ProcessingStatus
@@ -1726,7 +1680,6 @@ export interface EntityProfileFieldRefs {
   readonly officialTitle: Prisma.FieldRef<"EntityProfile", 'String'>
   readonly localTags: Prisma.FieldRef<"EntityProfile", 'String[]'>
   readonly ironyIndex: Prisma.FieldRef<"EntityProfile", 'Float'>
-  readonly moralTier: Prisma.FieldRef<"EntityProfile", 'String'>
   readonly firstAppearanceChapterId: Prisma.FieldRef<"EntityProfile", 'String'>
   readonly visualConfig: Prisma.FieldRef<"EntityProfile", 'Json'>
   readonly status: Prisma.FieldRef<"EntityProfile", 'ProcessingStatus'>

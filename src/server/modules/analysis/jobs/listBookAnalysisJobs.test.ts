@@ -31,7 +31,6 @@ describe("listBookAnalysisJobs", () => {
       {
         id            : "job-1",
         status        : AnalysisJobStatus.SUCCEEDED,
-        architecture  : "sequential",
         scope         : "FULL_BOOK",
         chapterStart  : null,
         chapterEnd    : null,
@@ -50,7 +49,6 @@ describe("listBookAnalysisJobs", () => {
       {
         id            : "job-2",
         status        : AnalysisJobStatus.FAILED,
-        architecture  : "twopass",
         scope         : "CHAPTER_RANGE",
         chapterStart  : 1,
         chapterEnd    : 5,
@@ -87,7 +85,6 @@ describe("listBookAnalysisJobs", () => {
     expect(first).toMatchObject({
       id          : "job-1",
       status      : AnalysisJobStatus.SUCCEEDED,
-      architecture: "sequential",
       scope       : "FULL_BOOK",
       chapterStart: null,
       chapterEnd  : null,
@@ -101,7 +98,6 @@ describe("listBookAnalysisJobs", () => {
     expect(second).toMatchObject({
       id          : "job-2",
       status      : AnalysisJobStatus.FAILED,
-      architecture: "twopass",
       scope       : "CHAPTER_RANGE",
       chapterStart: 1,
       chapterEnd  : 5,

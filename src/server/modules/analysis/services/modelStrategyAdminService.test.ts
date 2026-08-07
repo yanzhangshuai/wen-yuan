@@ -12,7 +12,6 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { Prisma } from "@/generated/prisma/client";
 
 import {
   AnalysisJobNotFoundError,
@@ -46,29 +45,6 @@ function createPrismaMock() {
 }
 
 const ENABLED_MODEL_ID = "11111111-1111-4111-8111-111111111111";
-
-function createStrategyRow(overrides: Partial<{
-  id       : string;
-  scope    : "GLOBAL" | "BOOK" | "JOB";
-  bookId   : string | null;
-  jobId    : string | null;
-  stages   : Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-}> = {}) {
-  const now = new Date("2026-04-03T00:00:00.000Z");
-
-  return {
-    id       : "strategy-1",
-    scope    : "GLOBAL" as const,
-    bookId   : null,
-    jobId    : null,
-    stages   : {},
-    createdAt: now,
-    updatedAt: now,
-    ...overrides
-  };
-}
 
 // 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
 describe("modelStrategyAdminService.getJobCostSummary", () => {
@@ -257,60 +233,17 @@ describe("modelStrategyAdminService.getJobCostSummary", () => {
   });
 });
 
-// 测试分组：围绕同一路由或同一模块的业务契约进行分支覆盖。
+// 测试分组：v5 阶段 1 —— model_strategy_configs 表已删，策略 CRUD 一律回退/抛错（阶段 4 功能点模型接管）。
 describe("modelStrategyAdminService.saveGlobalStrategy", () => {
-  // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("falls back to findFirst + update when create hits P2002", async () => {
-    // Arrange
+  it("v5：表已删，保存全局策略抛错", async () => {
     const prismaMock = createPrismaMock();
-    const now = new Date("2026-04-03T00:00:00.000Z");
-    const existingRow = {
-      id       : "strategy-global-1",
-      scope    : "GLOBAL" as const,
-      bookId   : null,
-      jobId    : null,
-      stages   : {},
-      createdAt: now,
-      updatedAt: now
-    };
-
-    prismaMock.modelStrategyConfig.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(existingRow);
-    prismaMock.modelStrategyConfig.create.mockRejectedValueOnce(
-      new Prisma.PrismaClientKnownRequestError(
-        "Unique constraint failed on the fields: (`scope`)",
-        {
-          code         : "P2002",
-          clientVersion: "test"
-        }
-      )
-    );
-    prismaMock.modelStrategyConfig.update.mockResolvedValueOnce(existingRow);
-
     const service = createModelStrategyAdminService(prismaMock as never);
 
-    // Act
-    const result = await service.saveGlobalStrategy({});
-
-    // Assert
-    // 并发写入下 create 命中 P2002 后，应回退到 findFirst + update，而非再次 create。
-    expect(prismaMock.modelStrategyConfig.findFirst).toHaveBeenCalledTimes(2);
-    expect(prismaMock.modelStrategyConfig.update).toHaveBeenCalledWith({
-      where : { id: "strategy-global-1" },
-      data  : { stages: {} },
-      select: expect.any(Object)
-    });
-    expect(result).toMatchObject({
-      id    : "strategy-global-1",
-      scope : "GLOBAL",
-      stages: {}
-    });
+    await expect(service.saveGlobalStrategy({})).rejects.toBeInstanceOf(ModelStrategyValidationError);
   });
 
-  it("rejects strategies that reference disabled or missing models", async () => {
+  it("v5：表已删，保存全局策略抛错（含引用模型也报同一错误）", async () => {
     const prismaMock = createPrismaMock();
-    prismaMock.aiModel.findMany.mockResolvedValue([]);
     const service = createModelStrategyAdminService(prismaMock as never);
 
     await expect(service.saveGlobalStrategy({
@@ -322,30 +255,18 @@ describe("modelStrategyAdminService.saveGlobalStrategy", () => {
 });
 
 describe("modelStrategyAdminService.strategy queries", () => {
-  it("returns null when the global strategy does not exist", async () => {
+  it("v5：表已删，读取全局策略返回 null", async () => {
     const prismaMock = createPrismaMock();
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(null);
     const service = createModelStrategyAdminService(prismaMock as never);
 
     await expect(service.getGlobalStrategy()).resolves.toBeNull();
   });
 
-  it("normalizes invalid stage json to an empty dto when reading global strategy", async () => {
+  it("v5：表已删，读取全局策略返回 null（不再读取任何行）", async () => {
     const prismaMock = createPrismaMock();
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(createStrategyRow({
-      stages: {
-        [PipelineStage.ROSTER_DISCOVERY]: {
-          modelId: "not-a-uuid"
-        }
-      }
-    }));
     const service = createModelStrategyAdminService(prismaMock as never);
 
-    await expect(service.getGlobalStrategy()).resolves.toMatchObject({
-      id    : "strategy-1",
-      scope : "GLOBAL",
-      stages: {}
-    });
+    await expect(service.getGlobalStrategy()).resolves.toBeNull();
   });
 
   it("throws when reading a book strategy for a missing book", async () => {
@@ -356,105 +277,30 @@ describe("modelStrategyAdminService.strategy queries", () => {
     await expect(service.getBookStrategy("missing-book")).rejects.toThrow("Book not found: missing-book");
   });
 
-  it("returns the book strategy dto when the book exists", async () => {
+  it("v5：表已删，书存在时读取书籍策略仍返回 null", async () => {
     const prismaMock = createPrismaMock();
     prismaMock.book.findFirst.mockResolvedValue({ id: "book-1" });
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(createStrategyRow({
-      id    : "strategy-book-1",
-      scope : "BOOK",
-      bookId: "book-1",
-      stages: {
-        [PipelineStage.ROSTER_DISCOVERY]: {
-          modelId: ENABLED_MODEL_ID
-        }
-      }
-    }));
     const service = createModelStrategyAdminService(prismaMock as never);
 
-    await expect(service.getBookStrategy("book-1")).resolves.toMatchObject({
-      id    : "strategy-book-1",
-      scope : "BOOK",
-      bookId: "book-1",
-      stages: {
-        [PipelineStage.ROSTER_DISCOVERY]: {
-          modelId: ENABLED_MODEL_ID
-        }
-      }
-    });
+    await expect(service.getBookStrategy("book-1")).resolves.toBeNull();
   });
 });
 
 describe("modelStrategyAdminService.saveBookStrategy", () => {
-  it("creates a new book strategy after validating the book and model ids", async () => {
+  it("v5：表已删，保存书籍策略抛错", async () => {
     const prismaMock = createPrismaMock();
-    const row = createStrategyRow({
-      id    : "strategy-book-1",
-      scope : "BOOK",
-      bookId: "book-1",
-      stages: {
-        [PipelineStage.ROSTER_DISCOVERY]: {
-          modelId: ENABLED_MODEL_ID
-        }
-      }
-    });
-
     prismaMock.book.findFirst.mockResolvedValue({ id: "book-1" });
-    prismaMock.aiModel.findMany.mockResolvedValue([{ id: ENABLED_MODEL_ID, name: "DeepSeek V3" }]);
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(null);
-    prismaMock.modelStrategyConfig.create.mockResolvedValue(row);
-
     const service = createModelStrategyAdminService(prismaMock as never);
-    const result = await service.saveBookStrategy("book-1", {
-      [PipelineStage.ROSTER_DISCOVERY]: {
-        modelId: ENABLED_MODEL_ID
-      }
-    });
 
-    expect(prismaMock.modelStrategyConfig.create).toHaveBeenCalledWith({
-      data: {
-        scope : "BOOK",
-        bookId: "book-1",
-        stages: {
-          [PipelineStage.ROSTER_DISCOVERY]: {
-            modelId: ENABLED_MODEL_ID
-          }
-        }
-      },
-      select: expect.any(Object)
-    });
-    expect(result).toMatchObject({
-      id    : "strategy-book-1",
-      scope : "BOOK",
-      bookId: "book-1"
-    });
+    await expect(service.saveBookStrategy("book-1", {})).rejects.toBeInstanceOf(ModelStrategyValidationError);
   });
 
-  it("updates an existing book strategy when one already exists", async () => {
+  it("v5：表已删，保存书籍策略抛错（不再写入）", async () => {
     const prismaMock = createPrismaMock();
-    const existing = createStrategyRow({
-      id    : "strategy-book-1",
-      scope : "BOOK",
-      bookId: "book-1"
-    });
-
     prismaMock.book.findFirst.mockResolvedValue({ id: "book-1" });
-    prismaMock.modelStrategyConfig.findFirst.mockResolvedValue(existing);
-    prismaMock.modelStrategyConfig.update.mockResolvedValue(existing);
-
     const service = createModelStrategyAdminService(prismaMock as never);
-    const result = await service.saveBookStrategy("book-1", {});
 
-    expect(prismaMock.aiModel.findMany).not.toHaveBeenCalled();
-    expect(prismaMock.modelStrategyConfig.update).toHaveBeenCalledWith({
-      where : { id: "strategy-book-1" },
-      data  : { stages: {} },
-      select: expect.any(Object)
-    });
-    expect(result).toMatchObject({
-      id    : "strategy-book-1",
-      scope : "BOOK",
-      bookId: "book-1"
-    });
+    await expect(service.saveBookStrategy("book-1", {})).rejects.toBeInstanceOf(ModelStrategyValidationError);
   });
 });
 

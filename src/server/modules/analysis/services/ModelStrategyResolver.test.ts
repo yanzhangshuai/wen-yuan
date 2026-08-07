@@ -61,54 +61,11 @@ describe("ModelStrategyResolver", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("resolves stage model with JOB > BOOK > GLOBAL > SYSTEM_DEFAULT priority and merges params", async () => {
-    // Arrange: 模拟三层策略与系统默认模型。
+  it("v5：model_strategy_configs 表已删，全部阶段回退系统默认模型", async () => {
+    // Arrange: 表已删除，resolver 不再读取任何策略层，全部阶段与 fallback 均回退系统默认。
     const prismaMock = {
-      modelStrategyConfig: {
-        findFirst: vi.fn(async ({ where }: { where: { scope: string } }) => {
-          if (where.scope === "JOB") {
-            return {
-              stages: {
-                [PipelineStage.CHUNK_EXTRACTION]: {
-                  modelId        : MODEL_IDS.jobChunk,
-                  temperature    : 0.61,
-                  maxRetries     : 4,
-                  enableThinking : false,
-                  reasoningEffort: "high"
-                }
-              }
-            };
-          }
-          if (where.scope === "BOOK") {
-            return {
-              stages: {
-                [PipelineStage.ROSTER_DISCOVERY]: {
-                  modelId        : MODEL_IDS.bookRoster,
-                  temperature    : 0.33,
-                  enableThinking : true,
-                  reasoningEffort: "medium"
-                }
-              }
-            };
-          }
-          return {
-              stages: {
-                [PipelineStage.FALLBACK]: {
-                  modelId        : MODEL_IDS.globalFallback,
-                  retryBaseMs    : 900,
-                  enableThinking : true,
-                  reasoningEffort: "low"
-                }
-              }
-            };
-        })
-      },
       aiModel: {
-        findMany: vi.fn(async () => ([
-          buildModel({ id: MODEL_IDS.jobChunk, name: "Job Chunk Model" }),
-          buildModel({ id: MODEL_IDS.bookRoster, name: "Book Roster Model" }),
-          buildModel({ id: MODEL_IDS.globalFallback, name: "Global Fallback Model" })
-        ])),
+        findMany : vi.fn(async () => []),
         findFirst: vi.fn(async () => buildModel({ id: MODEL_IDS.systemDefault, name: "System Default Model" }))
       }
     };
@@ -120,34 +77,24 @@ describe("ModelStrategyResolver", () => {
       jobId : "job-1",
       bookId: "book-1"
     });
-    expect(chunkModel.modelId).toBe(MODEL_IDS.jobChunk);
-    expect(chunkModel.source).toBe("JOB");
-    expect(chunkModel.params.temperature).toBe(0.61);
-    expect(chunkModel.params.maxRetries).toBe(4);
-    expect(chunkModel.params.enableThinking).toBe(false);
-    expect(chunkModel.params.reasoningEffort).toBe("high");
+    expect(chunkModel.modelId).toBe(MODEL_IDS.systemDefault);
+    expect(chunkModel.source).toBe("SYSTEM_DEFAULT");
 
     const rosterModel = await resolver.resolveForStage(PipelineStage.ROSTER_DISCOVERY, {
       jobId : "job-1",
       bookId: "book-1"
     });
-    expect(rosterModel.modelId).toBe(MODEL_IDS.bookRoster);
-    expect(rosterModel.source).toBe("BOOK");
-    expect(rosterModel.params.temperature).toBe(0.33);
-    expect(rosterModel.params.enableThinking).toBe(true);
-    expect(rosterModel.params.reasoningEffort).toBe("medium");
+    expect(rosterModel.modelId).toBe(MODEL_IDS.systemDefault);
+    expect(rosterModel.source).toBe("SYSTEM_DEFAULT");
 
     const fallbackModel = await resolver.resolveFallback({
       jobId : "job-1",
       bookId: "book-1"
     });
 
-    // Assert: 验证优先级命中来源与参数覆盖语义。
-    expect(fallbackModel.modelId).toBe(MODEL_IDS.globalFallback);
-    expect(fallbackModel.source).toBe("FALLBACK");
-    expect(fallbackModel.params.retryBaseMs).toBe(900);
-    expect(fallbackModel.params.enableThinking).toBe(true);
-    expect(fallbackModel.params.reasoningEffort).toBe("low");
+    // Assert: 全部回退系统默认模型（阶段 4 功能点模型 feature_models 接管）。
+    expect(fallbackModel.modelId).toBe(MODEL_IDS.systemDefault);
+    expect(fallbackModel.source).toBe("SYSTEM_DEFAULT");
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
@@ -213,40 +160,27 @@ describe("ModelStrategyResolver", () => {
   });
 
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
-  it("accepts glm provider in configured stage model", async () => {
+  it("accepts glm provider as system default model", async () => {
+    // v5：策略表已删，模型从系统默认（isDefault/first enabled）解析，provider 协议由模型记录决定。
     const prismaMock = {
-      modelStrategyConfig: {
-        findFirst: vi.fn(async ({ where }: { where: { scope: string } }) => {
-          if (where.scope === "GLOBAL") {
-            return {
-              stages: {
-                [PipelineStage.ROSTER_DISCOVERY]: {
-                  modelId: MODEL_IDS.bookRoster
-                }
-              }
-            };
-          }
-          return null;
-        })
-      },
       aiModel: {
-        findMany: vi.fn(async () => ([buildModel({
-          id      : MODEL_IDS.bookRoster,
+        findMany : vi.fn(async () => []),
+        findFirst: vi.fn(async () => buildModel({
+          id      : MODEL_IDS.systemDefault,
           provider: "glm",
           modelId : "glm-4.6",
           name    : "GLM 4.6"
-        })])),
-        findFirst: vi.fn(async () => buildModel({ id: MODEL_IDS.systemDefault, name: "System Default Model" }))
+        }))
       }
     };
 
     const resolver = createModelStrategyResolver(prismaMock as never);
     const resolved = await resolver.resolveForStage(PipelineStage.ROSTER_DISCOVERY, {});
 
-    expect(resolved.modelId).toBe(MODEL_IDS.bookRoster);
+    expect(resolved.modelId).toBe(MODEL_IDS.systemDefault);
     expect(resolved.provider).toBe("glm");
     expect(resolved.modelName).toBe("glm-4.6");
-    expect(resolved.source).toBe("GLOBAL");
+    expect(resolved.source).toBe("SYSTEM_DEFAULT");
     expect(resolved.params.enableThinking).toBe(false);
   });
 

@@ -14,7 +14,6 @@
 
 import { AnalysisJobStatus, AppRole } from "@/generated/prisma/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PipelineStage } from "@/types/pipeline";
 
 const startBookAnalysisMock = vi.fn();
 const runAnalysisJobByIdMock = vi.fn(async () => undefined);
@@ -30,23 +29,13 @@ vi.mock("@/server/modules/books/startBookAnalysis", () => {
   }
 
   class AnalysisScopeInvalidError extends Error {}
-  class EmptyRelationshipKnowledgeError extends Error {
-    readonly bookId: string;
-
-    constructor(bookId: string) {
-      super(`Relationship type knowledge is empty: ${bookId}`);
-      this.bookId = bookId;
-    }
-  }
 
   return {
-    ANALYSIS_ARCHITECTURE_VALUES     : ["sequential", "twopass"] as const,
     ANALYSIS_SCOPE_VALUES            : ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const,
     ANALYSIS_OVERRIDE_STRATEGY_VALUES: ["DRAFT_ONLY", "ALL_DRAFTS"] as const,
     startBookAnalysis                : startBookAnalysisMock,
     BookNotFoundError,
-    AnalysisScopeInvalidError,
-    EmptyRelationshipKnowledgeError
+    AnalysisScopeInvalidError
   };
 });
 
@@ -75,15 +64,12 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-1",
       status          : AnalysisJobStatus.QUEUED,
-      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false,
-      bookStatus      : "PROCESSING",
-      parseProgress   : 0,
-      parseStage      : "文本清洗"
+      bookStatus      : "PROCESSING"
     });
     const { POST } = await import("@/app/api/books/[id]/analyze/route");
 
@@ -130,40 +116,6 @@ describe("POST /api/books/:id/analyze", () => {
     expect(startBookAnalysisMock).not.toHaveBeenCalled();
   });
 
-  it("passes architecture through to startBookAnalysis when provided", async () => {
-    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
-    startBookAnalysisMock.mockResolvedValue({
-      bookId,
-      jobId           : "job-arch",
-      status          : AnalysisJobStatus.QUEUED,
-      architecture    : "twopass",
-      scope           : "FULL_BOOK",
-      chapterStart    : null,
-      chapterEnd      : null,
-      overrideStrategy: "DRAFT_ONLY",
-      keepHistory     : false,
-      bookStatus      : "PROCESSING",
-      parseProgress   : 0,
-      parseStage      : "文本清洗"
-    });
-    const { POST } = await import("@/app/api/books/[id]/analyze/route");
-
-    const response = await POST(
-      new Request(`http://localhost/api/books/${bookId}/analyze`, {
-        method : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-role" : AppRole.ADMIN
-        },
-        body: JSON.stringify({ architecture: "twopass" })
-      }),
-      { params: Promise.resolve({ id: bookId }) }
-    );
-
-    expect(response.status).toBe(202);
-    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, { architecture: "twopass" });
-  });
-
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns 400 for invalid request body", async () => {
     // Arrange
@@ -179,13 +131,7 @@ describe("POST /api/books/:id/analyze", () => {
           "x-auth-role" : AppRole.ADMIN
         },
         body: JSON.stringify({
-          modelStrategy: {
-            stages: {
-              ROSTER_DISCOVERY: {
-                modelId: "not-uuid"
-              }
-            }
-          }
+          scope: "NOT_A_SCOPE"
         })
       }),
       { params: Promise.resolve({ id: bookId }) }
@@ -219,127 +165,10 @@ describe("POST /api/books/:id/analyze", () => {
     expect(response.status).toBe(404);
   });
 
-  it("normalizes wrapped stage strategies before creating the job", async () => {
-    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
-    const modelId = "8ba43ac0-6f33-4d1a-a114-2509104d0786";
-    startBookAnalysisMock.mockResolvedValue({
-      bookId,
-      jobId           : "job-2",
-      status          : AnalysisJobStatus.QUEUED,
-      architecture    : "sequential",
-      scope           : "FULL_BOOK",
-      chapterStart    : null,
-      chapterEnd      : null,
-      overrideStrategy: "DRAFT_ONLY",
-      keepHistory     : false,
-      bookStatus      : "PROCESSING",
-      parseProgress   : 0,
-      parseStage      : "文本清洗"
-    });
-    const { POST } = await import("@/app/api/books/[id]/analyze/route");
-
-    const response = await POST(
-      new Request(`http://localhost/api/books/${bookId}/analyze`, {
-        method : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-role" : AppRole.ADMIN
-        },
-        body: JSON.stringify({
-          modelStrategy: {
-            stages: {
-              [PipelineStage.ROSTER_DISCOVERY]: {
-                modelId
-              }
-            }
-          }
-        })
-      }),
-      { params: Promise.resolve({ id: bookId }) }
-    );
-
-    expect(response.status).toBe(202);
-    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {
-      modelStrategy: {
-        [PipelineStage.ROSTER_DISCOVERY]: {
-          modelId
-        }
-      }
-    });
-  });
-
-  it("keeps direct stage strategies unchanged when creating the job", async () => {
-    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
-    const modelId = "271dc37f-8c56-4ef8-b786-f50c77345166";
-    startBookAnalysisMock.mockResolvedValue({
-      bookId,
-      jobId           : "job-3",
-      status          : AnalysisJobStatus.QUEUED,
-      architecture    : "sequential",
-      scope           : "FULL_BOOK",
-      chapterStart    : null,
-      chapterEnd      : null,
-      overrideStrategy: "DRAFT_ONLY",
-      keepHistory     : false,
-      bookStatus      : "PROCESSING",
-      parseProgress   : 0,
-      parseStage      : "文本清洗"
-    });
-    const { POST } = await import("@/app/api/books/[id]/analyze/route");
-
-    const response = await POST(
-      new Request(`http://localhost/api/books/${bookId}/analyze`, {
-        method : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-role" : AppRole.ADMIN
-        },
-        body: JSON.stringify({
-          modelStrategy: {
-            [PipelineStage.ROSTER_DISCOVERY]: {
-              modelId
-            }
-          }
-        })
-      }),
-      { params: Promise.resolve({ id: bookId }) }
-    );
-
-    expect(response.status).toBe(202);
-    expect(startBookAnalysisMock).toHaveBeenCalledWith(bookId, {
-      modelStrategy: {
-        [PipelineStage.ROSTER_DISCOVERY]: {
-          modelId
-        }
-      }
-    });
-  });
-
   it("returns 400 when the requested analysis scope is invalid", async () => {
     const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
     const { AnalysisScopeInvalidError } = await import("@/server/modules/books/startBookAnalysis");
     startBookAnalysisMock.mockRejectedValue(new AnalysisScopeInvalidError("chapter range invalid"));
-    const { POST } = await import("@/app/api/books/[id]/analyze/route");
-
-    const response = await POST(
-      new Request(`http://localhost/api/books/${bookId}/analyze`, {
-        method : "POST",
-        headers: {
-          "x-auth-role": AppRole.ADMIN
-        }
-      }),
-      { params: Promise.resolve({ id: bookId }) }
-    );
-
-    expect(response.status).toBe(400);
-    const payload = await response.json();
-    expect(payload.code).toBe("COMMON_BAD_REQUEST");
-  });
-
-  it("returns 400 when relationship type knowledge is empty", async () => {
-    const bookId = "3b80dad4-cb27-4ff8-a2fd-91a0f91cad39";
-    const { EmptyRelationshipKnowledgeError } = await import("@/server/modules/books/startBookAnalysis");
-    startBookAnalysisMock.mockRejectedValue(new EmptyRelationshipKnowledgeError(bookId));
     const { POST } = await import("@/app/api/books/[id]/analyze/route");
 
     const response = await POST(
@@ -383,15 +212,12 @@ describe("POST /api/books/:id/analyze", () => {
       bookId,
       jobId           : "job-4",
       status          : AnalysisJobStatus.QUEUED,
-      architecture    : "sequential",
       scope           : "FULL_BOOK",
       chapterStart    : null,
       chapterEnd      : null,
       overrideStrategy: "DRAFT_ONLY",
       keepHistory     : false,
-      bookStatus      : "PROCESSING",
-      parseProgress   : 0,
-      parseStage      : "文本清洗"
+      bookStatus      : "PROCESSING"
     });
     runAnalysisJobByIdMock.mockRejectedValue(new Error("runner offline"));
     const { POST } = await import("@/app/api/books/[id]/analyze/route");

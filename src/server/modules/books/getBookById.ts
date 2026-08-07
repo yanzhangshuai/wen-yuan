@@ -65,10 +65,9 @@ interface BookDetailRow {
   profiles      : Array<{ id: string }>;
   /** 最近分析任务快照（只取最新 1 条）。 */
   analysisJobs: Array<{
-    updatedAt   : Date;
-    finishedAt  : Date | null;
-    errorLog    : string | null;
-    architecture: string;
+    updatedAt : Date;
+    finishedAt: Date | null;
+    errorLog  : string | null;
     phaseLogs   : Array<{
       model: {
         name: string;
@@ -104,12 +103,8 @@ function resolveLastAnalyzedAt(
 function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
   const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
-  const rawArchitecture = book.analysisJobs?.[0]?.architecture ?? null;
-  const lastArchitecture = rawArchitecture === "twopass"
-    ? "twopass"
-    : rawArchitecture === "sequential"
-      ? "sequential"
-      : null;
+  // v5：architecture 已随 v4 双架构删除，前端仍读 lastArchitecture 字段，统一返回 null。
+  const lastArchitecture: "sequential" | "twopass" | null = null;
   const lastErrorSummary = book.errorLog ?? book.analysisJobs[0]?.errorLog ?? null;
 
   return {
@@ -186,11 +181,10 @@ export function createGetBookByIdService(
           take   : 1,
           orderBy: { updatedAt: "desc" },
           select : {
-            updatedAt   : true,
-            finishedAt  : true,
-            errorLog    : true,
-            architecture: true,
-            phaseLogs   : {
+            updatedAt : true,
+            finishedAt: true,
+            errorLog  : true,
+            phaseLogs : {
               take   : 1,
               orderBy: { createdAt: "desc" },
               select : {

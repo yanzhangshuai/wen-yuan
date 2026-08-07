@@ -15,14 +15,13 @@ import { BookNotFoundError } from "@/server/modules/books/errors";
  * 额外收益：字段白名单集中维护，可防止无意扩展查询导致性能抖动。
  */
 const BOOK_STATUS_SELECT = {
-  status       : true,
-  parseProgress: true,
-  parseStage   : true,
-  errorLog     : true,
-  analysisJobs : {
+  status      : true,
+  errorLog    : true,
+  analysisJobs: {
     take   : 1,
     orderBy: { updatedAt: "desc" as const },
     select : {
+      status  : true,
       errorLog: true
     }
   },
@@ -46,6 +45,26 @@ const SUCCEEDED_JOB_SCOPE_SELECT = {
 
 type SucceededJobScope = Prisma.AnalysisJobGetPayload<{ select: typeof SUCCEEDED_JOB_SCOPE_SELECT }>;
 type BookChapterRow = Prisma.BookGetPayload<{ select: typeof BOOK_STATUS_SELECT }>["chapters"][number];
+
+/**
+ * 由最新分析任务状态推导解析进度（v5：parseProgress/parseStage 列已删，进度从任务状态推导）。
+ * - QUEUED → 等待任务启动（0）；
+ * - RUNNING → 解析中（50）；
+ * - SUCCEEDED → 解析完成（100）；
+ * - FAILED / CANCELED / 无任务 → 0。
+ */
+function deriveJobProgress(status: AnalysisJobStatus | null): { progress: number; stage: string | undefined } {
+  switch (status) {
+    case AnalysisJobStatus.RUNNING:
+      return { progress: 50, stage: "解析中" };
+    case AnalysisJobStatus.SUCCEEDED:
+      return { progress: 100, stage: "解析完成" };
+    case AnalysisJobStatus.QUEUED:
+      return { progress: 0, stage: "等待任务启动" };
+    default:
+      return { progress: 0, stage: undefined };
+  }
+}
 
 function isChapterCoveredBySucceededJob(chapter: BookChapterRow, job: SucceededJobScope | null): boolean {
   if (!job || chapter.type !== "CHAPTER") {
@@ -134,13 +153,15 @@ export function createGetBookStatusService(
         : chapter.parseStatus
     }));
 
+    // v5：parseProgress/parseStage 列已删，进度从最新任务状态推导（前端读字段名不变）。
+    const { progress, stage } = deriveJobProgress(latestJob?.status ?? null);
+
     return {
       status  : book.status,
-      progress: book.parseProgress,
-      // parseStage 可能为 null，这里统一转为 undefined，保持前端可选字段语义一致。
-      stage   : book.parseStage ?? undefined,
       errorLog: book.errorLog ?? latestJobErrorLog,
-      chapters: normalizedChapters
+      chapters: normalizedChapters,
+      progress,
+      stage
     };
   }
 

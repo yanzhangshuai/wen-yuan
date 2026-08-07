@@ -21,7 +21,7 @@
  * - 事务写入顺序与幂等策略属于业务一致性要求，不应随意调整。
  * =============================================================================
  */
-import { ChapterType } from "@/generated/prisma/enums";
+import { type ChapterType } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { countWordLikeChars, splitRawContentToChapterDrafts } from "@/server/modules/books/chapterSplit";
@@ -176,15 +176,14 @@ export function createConfirmBookChaptersService(
       await tx.chapter.createMany({
         data: normalizedItems.map((item, index) => ({
           bookId,
-          type      : item.chapterType,
-          no        : item.index,
-          unit      : "回",
-          noText    : null,
-          title     : item.title.trim(),
-          content   : contents[index] ?? "",
-          isAbstract: item.chapterType === ChapterType.PRELUDE,
-          createdAt : now,
-          updatedAt : now
+          type     : item.chapterType,
+          no       : item.index,
+          unit     : "回",
+          noText   : null,
+          title    : item.title.trim(),
+          content  : contents[index] ?? "",
+          createdAt: now,
+          updatedAt: now
         }))
       });
     });

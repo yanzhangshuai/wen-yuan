@@ -19,38 +19,58 @@ import { z } from "zod";
  * =============================================================================
  */
 
-/** 触发条件：bookTypeKeys 空/["*"] = 全部书型；taskTypes 空 = 全部阶段。 */
+/**
+ * 关系码契约（v5：relationship_types 表已删，关系码闭集进 skill frontmatter）。
+ * direction 与 seed 教学码表一致：INVERSE=方向性（父子/师生/主仆），SYMMETRIC=对称（兄弟/夫妻）。
+ */
+export const relationshipCodeSchema = z.object({
+  code     : z.string().min(1),
+  direction: z.enum(["INVERSE", "SYMMETRIC"]),
+  category : z.string(),
+  aliases  : z.array(z.string()).default([])
+});
+
+/** 触发条件：taskTypes 空 = 全部阶段；priority 决定装载排序。 */
 export const skillTriggersSchema = z.object({
-  bookTypeKeys: z.array(z.string().min(1)).optional(),
-  taskTypes   : z.array(z.string().min(1)).optional(),
-  priority    : z.number().int().min(0).default(0)
+  taskTypes: z.array(z.string().min(1)).optional(),
+  priority : z.number().int().min(0).default(0)
 });
 
 /** frontmatter 元数据（装载/展示用，非知识内容）。 */
 export const skillFrontmatterSchema = z.object({
-  kind        : z.string().min(1).default("HYBRID"),
-  triggers    : skillTriggersSchema.default({ priority: 0 }),
-  name        : z.string().optional(),
-  description : z.string().optional()
+  kind             : z.string().min(1).default("HYBRID"),
+  triggers         : skillTriggersSchema.default({ priority: 0 }),
+  name             : z.string().optional(),
+  description      : z.string().optional(),
+  /** 关系码契约（relationship-type skill 携带；schema/guardrail/图谱从契约取码）。 */
+  relationshipCodes: z.array(relationshipCodeSchema).optional(),
+  /** 虚指代词名单（GLOBAL skill 契约；guardrail 读契约，代码留空兜底）。 */
+  deicticJunk      : z.array(z.string().min(1)).optional()
 });
 
 /** 解析后的 skill 元数据。 */
 export interface SkillMetadata {
-  kind        : string;
-  triggers    : SkillTriggers;
-  name        : string | null;
-  description : string | null;
+  kind             : string;
+  triggers         : SkillTriggers;
+  name             : string | null;
+  description      : string | null;
+  /** 关系码契约列表（可选，契约未携带时为 null）。 */
+  relationshipCodes: RelationshipCode[] | null;
+  /** 虚指代词名单（可选，契约未携带时为 null）。 */
+  deicticJunk      : string[] | null;
 }
+
+export type RelationshipCode = z.infer<typeof relationshipCodeSchema>;
 
 /** 装载候选（含全文 MD，供 AI 阅读）。 */
 export interface SkillDocument {
-  slug      : string;
-  name      : string;
+  slug       : string;
+  name       : string;
   description: string | null;
-  versionNo : number;
-  metadata  : SkillMetadata;
+  versionNo  : number;
+  metadata   : SkillMetadata;
   /** 完整 MD 文档（frontmatter + 正文），AI 阅读/load_skill 加载。 */
-  markdown  : string;
+  markdown   : string;
 }
 
 export type SkillTriggers = z.infer<typeof skillTriggersSchema>;
@@ -88,7 +108,7 @@ function extractFrontmatter(md: string): { frontmatter: string | null; body: str
 /**
  * 功能：解析 skill MD 的装载元数据（frontmatter）。
  * 输入：skill 的 MD 内容字符串。
- * 输出：SkillMetadata（kind/triggers/name/description）。
+ * 输出：SkillMetadata（kind/triggers/name/description/relationshipCodes/deicticJunk）。
  * 异常：frontmatter YAML 语法错误或字段非法时抛错。
  */
 export function parseSkillMetadata(md: string): SkillMetadata {
@@ -97,7 +117,7 @@ export function parseSkillMetadata(md: string): SkillMetadata {
   let frontmatterData: unknown = {};
   if (frontmatter !== null && frontmatter.trim().length > 0) {
     try {
-      frontmatterData = yamlLoad(frontmatter) as unknown;
+      frontmatterData = yamlLoad(frontmatter);
     } catch (error) {
       throw new Error(`skill MD frontmatter YAML 解析失败: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -110,10 +130,12 @@ export function parseSkillMetadata(md: string): SkillMetadata {
   }
 
   return {
-    kind        : parsed.data.kind,
-    triggers    : parsed.data.triggers,
-    name        : parsed.data.name ?? null,
-    description : parsed.data.description ?? null
+    kind             : parsed.data.kind,
+    triggers         : parsed.data.triggers,
+    name             : parsed.data.name ?? null,
+    description      : parsed.data.description ?? null,
+    relationshipCodes: parsed.data.relationshipCodes ?? null,
+    deicticJunk      : parsed.data.deicticJunk ?? null
   };
 }
 

@@ -504,8 +504,6 @@ export interface RegisterAliasInput {
   chapterEnd?  : number;
   /** 初始化状态。 */
   status?      : "PENDING" | "CONFIRMED" | "REJECTED" | "LLM_INFERRED";
-  /** 可选上下文哈希，用于去重和冲突检测。 */
-  contextHash? : string;
 }
 
 export interface TitleArbitrationTerm {

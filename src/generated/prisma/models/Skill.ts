@@ -47,6 +47,7 @@ export type SkillMinAggregateOutputType = {
   generatedFromBookId: string | null
   sortOrder: number | null
   isBuiltin: boolean | null
+  isEnabled: boolean | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -65,6 +66,7 @@ export type SkillMaxAggregateOutputType = {
   generatedFromBookId: string | null
   sortOrder: number | null
   isBuiltin: boolean | null
+  isEnabled: boolean | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -83,6 +85,7 @@ export type SkillCountAggregateOutputType = {
   generatedFromBookId: number
   sortOrder: number
   isBuiltin: number
+  isEnabled: number
   deletedAt: number
   createdAt: number
   updatedAt: number
@@ -111,6 +114,7 @@ export type SkillMinAggregateInputType = {
   generatedFromBookId?: true
   sortOrder?: true
   isBuiltin?: true
+  isEnabled?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -129,6 +133,7 @@ export type SkillMaxAggregateInputType = {
   generatedFromBookId?: true
   sortOrder?: true
   isBuiltin?: true
+  isEnabled?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -147,6 +152,7 @@ export type SkillCountAggregateInputType = {
   generatedFromBookId?: true
   sortOrder?: true
   isBuiltin?: true
+  isEnabled?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -252,6 +258,7 @@ export type SkillGroupByOutputType = {
   generatedFromBookId: string | null
   sortOrder: number
   isBuiltin: boolean
+  isEnabled: boolean
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -293,11 +300,11 @@ export type SkillWhereInput = {
   generatedFromBookId?: Prisma.UuidNullableFilter<"Skill"> | string | null
   sortOrder?: Prisma.IntFilter<"Skill"> | number
   isBuiltin?: Prisma.BoolFilter<"Skill"> | boolean
+  isEnabled?: Prisma.BoolFilter<"Skill"> | boolean
   deletedAt?: Prisma.DateTimeNullableFilter<"Skill"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Skill"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Skill"> | Date | string
   versions?: Prisma.SkillVersionListRelationFilter
-  bookTypeLinks?: Prisma.BookTypeSkillListRelationFilter
 }
 
 export type SkillOrderByWithRelationInput = {
@@ -313,11 +320,11 @@ export type SkillOrderByWithRelationInput = {
   generatedFromBookId?: Prisma.SortOrderInput | Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isBuiltin?: Prisma.SortOrder
+  isEnabled?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   versions?: Prisma.SkillVersionOrderByRelationAggregateInput
-  bookTypeLinks?: Prisma.BookTypeSkillOrderByRelationAggregateInput
 }
 
 export type SkillWhereUniqueInput = Prisma.AtLeast<{
@@ -336,11 +343,11 @@ export type SkillWhereUniqueInput = Prisma.AtLeast<{
   generatedFromBookId?: Prisma.UuidNullableFilter<"Skill"> | string | null
   sortOrder?: Prisma.IntFilter<"Skill"> | number
   isBuiltin?: Prisma.BoolFilter<"Skill"> | boolean
+  isEnabled?: Prisma.BoolFilter<"Skill"> | boolean
   deletedAt?: Prisma.DateTimeNullableFilter<"Skill"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Skill"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Skill"> | Date | string
   versions?: Prisma.SkillVersionListRelationFilter
-  bookTypeLinks?: Prisma.BookTypeSkillListRelationFilter
 }, "id" | "slug">
 
 export type SkillOrderByWithAggregationInput = {
@@ -356,6 +363,7 @@ export type SkillOrderByWithAggregationInput = {
   generatedFromBookId?: Prisma.SortOrderInput | Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isBuiltin?: Prisma.SortOrder
+  isEnabled?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -382,6 +390,7 @@ export type SkillScalarWhereWithAggregatesInput = {
   generatedFromBookId?: Prisma.UuidNullableWithAggregatesFilter<"Skill"> | string | null
   sortOrder?: Prisma.IntWithAggregatesFilter<"Skill"> | number
   isBuiltin?: Prisma.BoolWithAggregatesFilter<"Skill"> | boolean
+  isEnabled?: Prisma.BoolWithAggregatesFilter<"Skill"> | boolean
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Skill"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Skill"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Skill"> | Date | string
@@ -400,11 +409,11 @@ export type SkillCreateInput = {
   generatedFromBookId?: string | null
   sortOrder?: number
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   versions?: Prisma.SkillVersionCreateNestedManyWithoutSkillInput
-  bookTypeLinks?: Prisma.BookTypeSkillCreateNestedManyWithoutSkillInput
 }
 
 export type SkillUncheckedCreateInput = {
@@ -420,11 +429,11 @@ export type SkillUncheckedCreateInput = {
   generatedFromBookId?: string | null
   sortOrder?: number
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   versions?: Prisma.SkillVersionUncheckedCreateNestedManyWithoutSkillInput
-  bookTypeLinks?: Prisma.BookTypeSkillUncheckedCreateNestedManyWithoutSkillInput
 }
 
 export type SkillUpdateInput = {
@@ -440,11 +449,11 @@ export type SkillUpdateInput = {
   generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   versions?: Prisma.SkillVersionUpdateManyWithoutSkillNestedInput
-  bookTypeLinks?: Prisma.BookTypeSkillUpdateManyWithoutSkillNestedInput
 }
 
 export type SkillUncheckedUpdateInput = {
@@ -460,11 +469,11 @@ export type SkillUncheckedUpdateInput = {
   generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   versions?: Prisma.SkillVersionUncheckedUpdateManyWithoutSkillNestedInput
-  bookTypeLinks?: Prisma.BookTypeSkillUncheckedUpdateManyWithoutSkillNestedInput
 }
 
 export type SkillCreateManyInput = {
@@ -480,6 +489,7 @@ export type SkillCreateManyInput = {
   generatedFromBookId?: string | null
   sortOrder?: number
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -498,6 +508,7 @@ export type SkillUpdateManyMutationInput = {
   generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -516,6 +527,7 @@ export type SkillUncheckedUpdateManyInput = {
   generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -534,6 +546,7 @@ export type SkillCountOrderByAggregateInput = {
   generatedFromBookId?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isBuiltin?: Prisma.SortOrder
+  isEnabled?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -556,6 +569,7 @@ export type SkillMaxOrderByAggregateInput = {
   generatedFromBookId?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isBuiltin?: Prisma.SortOrder
+  isEnabled?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -574,6 +588,7 @@ export type SkillMinOrderByAggregateInput = {
   generatedFromBookId?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   isBuiltin?: Prisma.SortOrder
+  isEnabled?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -614,20 +629,6 @@ export type SkillUpdateOneRequiredWithoutVersionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SkillUpdateToOneWithWhereWithoutVersionsInput, Prisma.SkillUpdateWithoutVersionsInput>, Prisma.SkillUncheckedUpdateWithoutVersionsInput>
 }
 
-export type SkillCreateNestedOneWithoutBookTypeLinksInput = {
-  create?: Prisma.XOR<Prisma.SkillCreateWithoutBookTypeLinksInput, Prisma.SkillUncheckedCreateWithoutBookTypeLinksInput>
-  connectOrCreate?: Prisma.SkillCreateOrConnectWithoutBookTypeLinksInput
-  connect?: Prisma.SkillWhereUniqueInput
-}
-
-export type SkillUpdateOneRequiredWithoutBookTypeLinksNestedInput = {
-  create?: Prisma.XOR<Prisma.SkillCreateWithoutBookTypeLinksInput, Prisma.SkillUncheckedCreateWithoutBookTypeLinksInput>
-  connectOrCreate?: Prisma.SkillCreateOrConnectWithoutBookTypeLinksInput
-  upsert?: Prisma.SkillUpsertWithoutBookTypeLinksInput
-  connect?: Prisma.SkillWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.SkillUpdateToOneWithWhereWithoutBookTypeLinksInput, Prisma.SkillUpdateWithoutBookTypeLinksInput>, Prisma.SkillUncheckedUpdateWithoutBookTypeLinksInput>
-}
-
 export type SkillCreateWithoutVersionsInput = {
   id?: string
   slug: string
@@ -641,10 +642,10 @@ export type SkillCreateWithoutVersionsInput = {
   generatedFromBookId?: string | null
   sortOrder?: number
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookTypeLinks?: Prisma.BookTypeSkillCreateNestedManyWithoutSkillInput
 }
 
 export type SkillUncheckedCreateWithoutVersionsInput = {
@@ -660,10 +661,10 @@ export type SkillUncheckedCreateWithoutVersionsInput = {
   generatedFromBookId?: string | null
   sortOrder?: number
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  bookTypeLinks?: Prisma.BookTypeSkillUncheckedCreateNestedManyWithoutSkillInput
 }
 
 export type SkillCreateOrConnectWithoutVersionsInput = {
@@ -695,10 +696,10 @@ export type SkillUpdateWithoutVersionsInput = {
   generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookTypeLinks?: Prisma.BookTypeSkillUpdateManyWithoutSkillNestedInput
 }
 
 export type SkillUncheckedUpdateWithoutVersionsInput = {
@@ -714,102 +715,10 @@ export type SkillUncheckedUpdateWithoutVersionsInput = {
   generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  bookTypeLinks?: Prisma.BookTypeSkillUncheckedUpdateManyWithoutSkillNestedInput
-}
-
-export type SkillCreateWithoutBookTypeLinksInput = {
-  id?: string
-  slug: string
-  name: string
-  description?: string | null
-  category?: $Enums.SkillCategory
-  scope?: string
-  status?: $Enums.SkillStatus
-  source?: $Enums.SkillSource
-  generatedFromJobId?: string | null
-  generatedFromBookId?: string | null
-  sortOrder?: number
-  isBuiltin?: boolean
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  versions?: Prisma.SkillVersionCreateNestedManyWithoutSkillInput
-}
-
-export type SkillUncheckedCreateWithoutBookTypeLinksInput = {
-  id?: string
-  slug: string
-  name: string
-  description?: string | null
-  category?: $Enums.SkillCategory
-  scope?: string
-  status?: $Enums.SkillStatus
-  source?: $Enums.SkillSource
-  generatedFromJobId?: string | null
-  generatedFromBookId?: string | null
-  sortOrder?: number
-  isBuiltin?: boolean
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  versions?: Prisma.SkillVersionUncheckedCreateNestedManyWithoutSkillInput
-}
-
-export type SkillCreateOrConnectWithoutBookTypeLinksInput = {
-  where: Prisma.SkillWhereUniqueInput
-  create: Prisma.XOR<Prisma.SkillCreateWithoutBookTypeLinksInput, Prisma.SkillUncheckedCreateWithoutBookTypeLinksInput>
-}
-
-export type SkillUpsertWithoutBookTypeLinksInput = {
-  update: Prisma.XOR<Prisma.SkillUpdateWithoutBookTypeLinksInput, Prisma.SkillUncheckedUpdateWithoutBookTypeLinksInput>
-  create: Prisma.XOR<Prisma.SkillCreateWithoutBookTypeLinksInput, Prisma.SkillUncheckedCreateWithoutBookTypeLinksInput>
-  where?: Prisma.SkillWhereInput
-}
-
-export type SkillUpdateToOneWithWhereWithoutBookTypeLinksInput = {
-  where?: Prisma.SkillWhereInput
-  data: Prisma.XOR<Prisma.SkillUpdateWithoutBookTypeLinksInput, Prisma.SkillUncheckedUpdateWithoutBookTypeLinksInput>
-}
-
-export type SkillUpdateWithoutBookTypeLinksInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumSkillCategoryFieldUpdateOperationsInput | $Enums.SkillCategory
-  scope?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSkillStatusFieldUpdateOperationsInput | $Enums.SkillStatus
-  source?: Prisma.EnumSkillSourceFieldUpdateOperationsInput | $Enums.SkillSource
-  generatedFromJobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  versions?: Prisma.SkillVersionUpdateManyWithoutSkillNestedInput
-}
-
-export type SkillUncheckedUpdateWithoutBookTypeLinksInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  category?: Prisma.EnumSkillCategoryFieldUpdateOperationsInput | $Enums.SkillCategory
-  scope?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSkillStatusFieldUpdateOperationsInput | $Enums.SkillStatus
-  source?: Prisma.EnumSkillSourceFieldUpdateOperationsInput | $Enums.SkillSource
-  generatedFromJobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  generatedFromBookId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
-  isBuiltin?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  versions?: Prisma.SkillVersionUncheckedUpdateManyWithoutSkillNestedInput
 }
 
 
@@ -819,12 +728,10 @@ export type SkillUncheckedUpdateWithoutBookTypeLinksInput = {
 
 export type SkillCountOutputType = {
   versions: number
-  bookTypeLinks: number
 }
 
 export type SkillCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   versions?: boolean | SkillCountOutputTypeCountVersionsArgs
-  bookTypeLinks?: boolean | SkillCountOutputTypeCountBookTypeLinksArgs
 }
 
 /**
@@ -844,13 +751,6 @@ export type SkillCountOutputTypeCountVersionsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.SkillVersionWhereInput
 }
 
-/**
- * SkillCountOutputType without action
- */
-export type SkillCountOutputTypeCountBookTypeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.BookTypeSkillWhereInput
-}
-
 
 export type SkillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -865,11 +765,11 @@ export type SkillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   generatedFromBookId?: boolean
   sortOrder?: boolean
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   versions?: boolean | Prisma.Skill$versionsArgs<ExtArgs>
-  bookTypeLinks?: boolean | Prisma.Skill$bookTypeLinksArgs<ExtArgs>
   _count?: boolean | Prisma.SkillCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["skill"]>
 
@@ -886,6 +786,7 @@ export type SkillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   generatedFromBookId?: boolean
   sortOrder?: boolean
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -904,6 +805,7 @@ export type SkillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   generatedFromBookId?: boolean
   sortOrder?: boolean
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -922,15 +824,15 @@ export type SkillSelectScalar = {
   generatedFromBookId?: boolean
   sortOrder?: boolean
   isBuiltin?: boolean
+  isEnabled?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SkillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "category" | "scope" | "status" | "source" | "generatedFromJobId" | "generatedFromBookId" | "sortOrder" | "isBuiltin" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["skill"]>
+export type SkillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "category" | "scope" | "status" | "source" | "generatedFromJobId" | "generatedFromBookId" | "sortOrder" | "isBuiltin" | "isEnabled" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["skill"]>
 export type SkillInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   versions?: boolean | Prisma.Skill$versionsArgs<ExtArgs>
-  bookTypeLinks?: boolean | Prisma.Skill$bookTypeLinksArgs<ExtArgs>
   _count?: boolean | Prisma.SkillCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SkillIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -940,7 +842,6 @@ export type $SkillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name: "Skill"
   objects: {
     versions: Prisma.$SkillVersionPayload<ExtArgs>[]
-    bookTypeLinks: Prisma.$BookTypeSkillPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -958,6 +859,7 @@ export type $SkillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     generatedFromBookId: string | null
     sortOrder: number
     isBuiltin: boolean
+    isEnabled: boolean
     deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1356,7 +1258,6 @@ readonly fields: SkillFieldRefs;
 export interface Prisma__SkillClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   versions<T extends Prisma.Skill$versionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Skill$versionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SkillVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  bookTypeLinks<T extends Prisma.Skill$bookTypeLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Skill$bookTypeLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookTypeSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1398,6 +1299,7 @@ export interface SkillFieldRefs {
   readonly generatedFromBookId: Prisma.FieldRef<"Skill", 'String'>
   readonly sortOrder: Prisma.FieldRef<"Skill", 'Int'>
   readonly isBuiltin: Prisma.FieldRef<"Skill", 'Boolean'>
+  readonly isEnabled: Prisma.FieldRef<"Skill", 'Boolean'>
   readonly deletedAt: Prisma.FieldRef<"Skill", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Skill", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Skill", 'DateTime'>
@@ -1810,30 +1712,6 @@ export type Skill$versionsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.SkillVersionScalarFieldEnum | Prisma.SkillVersionScalarFieldEnum[]
-}
-
-/**
- * Skill.bookTypeLinks
- */
-export type Skill$bookTypeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the BookTypeSkill
-   */
-  select?: Prisma.BookTypeSkillSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the BookTypeSkill
-   */
-  omit?: Prisma.BookTypeSkillOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.BookTypeSkillInclude<ExtArgs> | null
-  where?: Prisma.BookTypeSkillWhereInput
-  orderBy?: Prisma.BookTypeSkillOrderByWithRelationInput | Prisma.BookTypeSkillOrderByWithRelationInput[]
-  cursor?: Prisma.BookTypeSkillWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.BookTypeSkillScalarFieldEnum | Prisma.BookTypeSkillScalarFieldEnum[]
 }
 
 /**

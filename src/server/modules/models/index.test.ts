@@ -1778,7 +1778,7 @@ describe("models module", () => {
     expect(deleteMock).toHaveBeenCalledWith({ where: { id: "model-1" } });
   });
 
-  it("blocks deleting default or strategy-referenced models", async () => {
+  it("blocks deleting default model; v5 策略引用检查已随表删除移除", async () => {
     const defaultPrisma = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({ isDefault: true })),
@@ -1789,32 +1789,19 @@ describe("models module", () => {
     await expect(createModelsModule(defaultPrisma).deleteModel("model-1"))
       .rejects.toThrow("请先切换默认模型后再删除");
 
+    // v5 阶段 1：model_strategy_configs 表已删，模型删除不再因策略引用被拦截。
     const referencedPrisma = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
           aliasKey : "deepseek-v3",
           isDefault: false
         })),
-        delete: vi.fn()
-      },
-      modelStrategyConfig: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            scope : "BOOK",
-            stages: { CHUNK_EXTRACTION: { modelId: "deepseek-v3" } },
-            book  : { title: "三国演义" }
-          },
-          {
-            scope : "GLOBAL",
-            stages: ["deepseek-chat"],
-            book  : null
-          }
-        ])
+        delete: vi.fn().mockResolvedValue({ id: "model-1" })
       }
     } as never;
 
     await expect(createModelsModule(referencedPrisma).deleteModel("model-1"))
-      .rejects.toThrow("模型正在被策略引用：三国演义、GLOBAL 策略");
+      .resolves.toEqual({ id: "model-1" });
   });
 
   it("exports model configs without api keys", async () => {

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { SkillCategory, SkillStatus } from "@/generated/prisma/enums";
+import { type SkillCategory, SkillStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { auditLog } from "@/server/modules/knowledge/audit";
 import { parseSkillMetadata } from "@/server/modules/skills/content-schema";
@@ -22,15 +22,21 @@ import { parseSkillMetadata } from "@/server/modules/skills/content-schema";
  */
 
 export interface CreateSkillInput {
-  slug       : string;
-  name       : string;
+  slug        : string;
+  name        : string;
   description?: string;
-  category   : SkillCategory;
-  scope      : "GLOBAL" | "BOOK_TYPE";
+  category    : SkillCategory;
+  scope       : "GLOBAL" | "BOOK_TYPE";
   /** skill 的 MD 文档内容（YAML frontmatter + 正文）。 */
-  content    : string;
+  content     : string;
   isBuiltin  ?: boolean;
   sortOrder  ?: number;
+}
+
+/** 技能独立启停开关（v5：is_enabled，false=全局不可用）。 */
+export interface SetSkillEnabledInput {
+  skillId  : string;
+  isEnabled: boolean;
 }
 
 export interface SkillListItem {
@@ -50,28 +56,27 @@ export interface SkillListItem {
 }
 
 export interface SkillDetail {
-  id         : string;
-  slug       : string;
-  name       : string;
-  description: string | null;
-  category   : SkillCategory;
-  scope      : string;
-  status     : SkillStatus;
-  source     : string;
-  sortOrder  : number;
-  isBuiltin  : boolean;
+  id                 : string;
+  slug               : string;
+  name               : string;
+  description        : string | null;
+  category           : SkillCategory;
+  scope              : string;
+  status             : SkillStatus;
+  source             : string;
+  sortOrder          : number;
+  isBuiltin          : boolean;
+  isEnabled          : boolean;
   generatedFromBookId: string | null;
   versions   : Array<{
     id        : string;
     versionNo : number;
     content   : string;
-    bookTypeId: string | null;
     isActive  : boolean;
     isBaseline: boolean;
     changeNote: string | null;
     createdAt : string;
   }>;
-  bookTypeLinks: Array<{ bookTypeId: string; priority: number; isEnabled: boolean }>;
 }
 
 export function createSkillService(prismaClient: PrismaClient = prisma) {
@@ -120,11 +125,11 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
       });
 
       await auditLog({
-        objectType : "SKILL",
-        objectId   : created.id,
-        objectName : created.name,
-        action     : "CREATE",
-        after      : { slug: created.slug }
+        objectType: "SKILL",
+        objectId  : created.id,
+        objectName: created.name,
+        action    : "CREATE",
+        after     : { slug: created.slug }
       });
 
       return created;
@@ -139,26 +144,22 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
    * 输出：技能包列表（含当前激活版本号）。
    */
   async function listSkills(filter?: {
-    category? : SkillCategory;
-    status?   : SkillStatus;
-    bookTypeId?: string;
+    category?: SkillCategory;
+    status?  : SkillStatus;
   }): Promise<SkillListItem[]> {
     const rows = await prismaClient.skill.findMany({
       where: {
         ...(filter?.category ? { category: filter.category } : {}),
         ...(filter?.status ? { status: filter.status } : {}),
-        ...(filter?.bookTypeId
-          ? { bookTypeLinks: { some: { bookTypeId: filter.bookTypeId } } }
-          : {}),
         deletedAt: null
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       include: {
         versions: {
-          where : { isActive: true },
-          select: { versionNo: true, bookTypeId: true },
+          where  : { isActive: true },
+          select : { versionNo: true },
           orderBy: { versionNo: "desc" },
-          take  : 1
+          take   : 1
         }
       }
     });
@@ -187,10 +188,9 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
    */
   async function getSkill(skillId: string): Promise<SkillDetail | null> {
     const row = await prismaClient.skill.findUnique({
-      where : { id: skillId },
+      where  : { id: skillId },
       include: {
-        versions    : { orderBy: { versionNo: "desc" } },
-        bookTypeLinks: true
+        versions: { orderBy: { versionNo: "desc" } }
       }
     });
     if (!row) {
@@ -198,31 +198,26 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     }
 
     return {
-      id         : row.id,
-      slug       : row.slug,
-      name       : row.name,
-      description: row.description,
-      category   : row.category,
-      scope      : row.scope,
-      status     : row.status,
-      source     : row.source,
-      sortOrder  : row.sortOrder,
-      isBuiltin  : row.isBuiltin,
+      id                 : row.id,
+      slug               : row.slug,
+      name               : row.name,
+      description        : row.description,
+      category           : row.category,
+      scope              : row.scope,
+      status             : row.status,
+      source             : row.source,
+      sortOrder          : row.sortOrder,
+      isBuiltin          : row.isBuiltin,
+      isEnabled          : row.isEnabled,
       generatedFromBookId: row.generatedFromBookId,
-      versions   : row.versions.map((version) => ({
+      versions           : row.versions.map((version) => ({
         id        : version.id,
         versionNo : version.versionNo,
         content   : version.content,
-        bookTypeId: version.bookTypeId,
         isActive  : version.isActive,
         isBaseline: version.isBaseline,
         changeNote: version.changeNote,
         createdAt : version.createdAt.toISOString()
-      })),
-      bookTypeLinks: row.bookTypeLinks.map((link) => ({
-        bookTypeId: link.bookTypeId,
-        priority  : link.priority,
-        isEnabled : link.isEnabled
       }))
     };
   }
@@ -234,10 +229,9 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
    * 异常：skill 不存在或 content 非法时抛错。
    */
   async function createNewVersion(input: {
-    skillId   : string;
-    content   : string;
+    skillId    : string;
+    content    : string;
     changeNote?: string;
-    bookTypeId?: string;
     createdBy ?: string;
   }): Promise<{ id: string; versionNo: number }> {
     validateContent(input.content);
@@ -251,9 +245,9 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     }
 
     const latest = await prismaClient.skillVersion.findFirst({
-      where   : { skillId: input.skillId },
-      orderBy : { versionNo: "desc" },
-      select  : { versionNo: true }
+      where  : { skillId: input.skillId },
+      orderBy: { versionNo: "desc" },
+      select : { versionNo: true }
     });
 
     const version = await prismaClient.skillVersion.create({
@@ -261,7 +255,6 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
         skillId   : input.skillId,
         versionNo : (latest?.versionNo ?? 0) + 1,
         content   : input.content,
-        bookTypeId: input.bookTypeId ?? null,
         isActive  : false,
         changeNote: input.changeNote,
         createdBy : input.createdBy
@@ -270,27 +263,24 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     });
 
     await auditLog({
-      objectType : "SKILL",
-      objectId   : input.skillId,
-      objectName : skill.name,
-      action     : "UPDATE",
-      after      : { versionNo: version.versionNo }
+      objectType: "SKILL",
+      objectId  : input.skillId,
+      objectName: skill.name,
+      action    : "UPDATE",
+      after     : { versionNo: version.versionNo }
     });
 
     return version;
   }
 
   /**
-   * 功能：激活指定版本。
-   * - bookTypeId=null：停用该 skill 全部全局激活版，激活目标版（全局）。
-   * - bookTypeId 非空：仅停用该书型的激活版，激活目标版（书型覆盖全局）。
-   * 输入：skillId、versionId、可选 bookTypeId。
+   * 功能：激活指定版本（v5：激活即全局激活，无书型专属激活版）。
+   * 输入：skillId、versionId。
    * 副作用：写审计日志。
    */
   async function activateVersion(input: {
-    skillId   : string;
-    versionId : string;
-    bookTypeId?: string;
+    skillId  : string;
+    versionId: string;
   }): Promise<void> {
     const version = await prismaClient.skillVersion.findFirst({
       where : { id: input.versionId, skillId: input.skillId },
@@ -301,19 +291,18 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     }
 
     await prismaClient.$transaction(async (tx) => {
-      // 停用同作用域其他激活版
+      // 停用同 skill 其他激活版
       await tx.skillVersion.updateMany({
         where: {
-          skillId  : input.skillId,
-          bookTypeId: input.bookTypeId ?? null,
-          isActive : true
+          skillId : input.skillId,
+          isActive: true
         },
         data: { isActive: false }
       });
       // 激活目标版
       await tx.skillVersion.update({
-        where : { id: input.versionId },
-        data  : { isActive: true, bookTypeId: input.bookTypeId ?? null }
+        where: { id: input.versionId },
+        data : { isActive: true }
       });
     });
 
@@ -322,11 +311,11 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
       select: { name: true }
     });
     await auditLog({
-      objectType : "SKILL",
-      objectId   : input.skillId,
-      objectName : skill?.name ?? input.skillId,
-      action     : "ACTIVATE",
-      after      : { versionId: input.versionId, bookTypeId: input.bookTypeId ?? null }
+      objectType: "SKILL",
+      objectId  : input.skillId,
+      objectName: skill?.name ?? input.skillId,
+      action    : "ACTIVATE",
+      after     : { versionId: input.versionId }
     });
   }
 
@@ -346,46 +335,35 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
       select: { name: true }
     });
     await auditLog({
-      objectType : "SKILL",
-      objectId   : skillId,
-      objectName : skill?.name ?? skillId,
-      action     : status === SkillStatus.ACTIVE ? "ACTIVATE" : "UPDATE",
-      after      : { status }
+      objectType: "SKILL",
+      objectId  : skillId,
+      objectName: skill?.name ?? skillId,
+      action    : status === SkillStatus.ACTIVE ? "ACTIVATE" : "UPDATE",
+      after     : { status }
     });
   }
 
   /**
-   * 功能：挂载书型关联。
-   * 输入：skillId、bookTypeId、可选 priority。
-   * 副作用：upsert book_type_skills。
+   * 功能：切换技能独立启停开关（v5：is_enabled，false=该 skill 全局不可用）。
+   * 输入：skillId、isEnabled。
+   * 副作用：写审计日志。
    */
-  async function linkBookType(skillId: string, bookTypeId: string, priority = 0): Promise<void> {
-    await prismaClient.bookTypeSkill.upsert({
-      where : { bookTypeId_skillId: { bookTypeId, skillId } },
-      update: { priority, isEnabled: true },
-      create: { bookTypeId, skillId, priority, isEnabled: true }
-    });
-  }
-
-  /**
-   * 功能：卸载书型关联。
-   * 输入：skillId、bookTypeId。
-   * 副作用：删除 book_type_skills 记录。
-   */
-  async function unlinkBookType(skillId: string, bookTypeId: string): Promise<void> {
-    await prismaClient.bookTypeSkill.deleteMany({
-      where: { bookTypeId, skillId }
-    });
-  }
-
-  /**
-   * 功能：启用/停用书型关联。
-   * 输入：skillId、bookTypeId、isEnabled。
-   */
-  async function setBookTypeEnabled(skillId: string, bookTypeId: string, isEnabled: boolean): Promise<void> {
-    await prismaClient.bookTypeSkill.updateMany({
-      where: { bookTypeId, skillId },
+  async function setSkillEnabled(skillId: string, isEnabled: boolean): Promise<void> {
+    await prismaClient.skill.update({
+      where: { id: skillId },
       data : { isEnabled }
+    });
+
+    const skill = await prismaClient.skill.findUnique({
+      where : { id: skillId },
+      select: { name: true }
+    });
+    await auditLog({
+      objectType: "SKILL",
+      objectId  : skillId,
+      objectName: skill?.name ?? skillId,
+      action    : isEnabled ? "ENABLE" : "DISABLE",
+      after     : { isEnabled }
     });
   }
 
@@ -396,8 +374,8 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
    */
   async function deleteSkill(skillId: string): Promise<void> {
     await prismaClient.skill.update({
-      where : { id: skillId },
-      data  : { deletedAt: new Date() }
+      where: { id: skillId },
+      data : { deletedAt: new Date() }
     });
   }
 
@@ -409,9 +387,7 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     createNewVersion,
     activateVersion,
     setStatus,
-    linkBookType,
-    unlinkBookType,
-    setBookTypeEnabled,
+    setSkillEnabled,
     deleteSkill
   };
 }

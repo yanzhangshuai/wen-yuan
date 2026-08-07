@@ -55,15 +55,6 @@ export const AnalysisJobStatus = {
 export type AnalysisJobStatus = (typeof AnalysisJobStatus)[keyof typeof AnalysisJobStatus]
 
 
-export const ModelStrategyScope = {
-  GLOBAL: 'GLOBAL',
-  BOOK: 'BOOK',
-  JOB: 'JOB'
-} as const
-
-export type ModelStrategyScope = (typeof ModelStrategyScope)[keyof typeof ModelStrategyScope]
-
-
 export const AliasType = {
   TITLE: 'TITLE',
   POSITION: 'POSITION',
@@ -172,11 +163,3 @@ export const AgentRunType = {
 } as const
 
 export type AgentRunType = (typeof AgentRunType)[keyof typeof AgentRunType]
-
-
-export const RelationDirection = {
-  INVERSE: 'INVERSE',
-  SYMMETRIC: 'SYMMETRIC'
-} as const
-
-export type RelationDirection = (typeof RelationDirection)[keyof typeof RelationDirection]

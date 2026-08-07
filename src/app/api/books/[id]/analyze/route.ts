@@ -28,42 +28,20 @@ import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-resp
 import { readJsonBody } from "@/server/http/read-json-body";
 import { failJson, okJson } from "@/server/http/route-utils";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
-import { strategyStagesSchema } from "@/server/modules/analysis/dto/modelStrategy";
 import {
-  ANALYSIS_ARCHITECTURE_VALUES,
   ANALYSIS_SCOPE_VALUES,
   ANALYSIS_OVERRIDE_STRATEGY_VALUES,
   AnalysisScopeInvalidError,
   BookNotFoundError,
-  EmptyRelationshipKnowledgeError,
   startBookAnalysis,
   type StartBookAnalysisResult
 } from "@/server/modules/books/startBookAnalysis";
 import { runAnalysisJobById } from "@/server/modules/analysis/jobs/runAnalysisJob";
 import { ERROR_CODES } from "@/types/api";
 
-const modelStrategyInputSchema = z.union([
-  z.object({
-    stages: strategyStagesSchema
-  }).strict(),
-  strategyStagesSchema.strict()
-]);
-
-function normalizeModelStrategyInput(
-  input: z.infer<typeof modelStrategyInputSchema> | null | undefined
-) {
-  if (!input) {
-    return undefined;
-  }
-
-  return "stages" in input ? input.stages : input;
-}
-
 /**
  * 功能：启动书籍解析任务请求体校验。
  * 输入字段：
- * - `modelStrategy` 任务级阶段模型策略，可传 `{ stages: ... }` 或直接传阶段映射对象。
- * - `architecture: "sequential" | "twopass" | undefined` 解析架构；省略时由服务层继承最近任务。
  * - `scope: "FULL_BOOK" | "CHAPTER_RANGE" | undefined` 解析范围。
  * - `chapterStart/chapterEnd: number | null | undefined` 当 `scope=CHAPTER_RANGE` 时生效。
  * - `overrideStrategy` 冲突覆盖策略（是否覆盖旧草稿/保留版本）。
@@ -71,12 +49,11 @@ function normalizeModelStrategyInput(
  * 输出：可直接传给 `startBookAnalysis` 的强类型 payload。
  * 异常：无（校验失败由路由返回 400）。
  * 副作用：无。
+ *
+ * v5：`architecture`（v4 双架构）与 `modelStrategy`（v4 阶段模型策略）已删除；
+ * 模型改由 feature_models 功能点映射管理（阶段 4）。
  */
 const startAnalysisBodySchema = z.object({
-  // 可选任务级阶段模型策略；为空时走 BOOK/GLOBAL/SYSTEM_DEFAULT 解析链路。
-  modelStrategy   : modelStrategyInputSchema.nullable().optional(),
-  // 解析架构；缺省时交由服务层继承最近一次任务或回退默认顺序架构。
-  architecture    : z.enum(ANALYSIS_ARCHITECTURE_VALUES).optional(),
   // 任务执行范围；默认由服务层回落到 FULL_BOOK。
   scope           : z.enum(ANALYSIS_SCOPE_VALUES).optional(),
   // 范围任务起始章节号（仅 CHAPTER_RANGE 有效）。
@@ -180,11 +157,7 @@ export async function POST(
       );
     }
 
-    const normalizedModelStrategy = normalizeModelStrategyInput(parsedBody.data.modelStrategy);
-    const data = await startBookAnalysis(parsedRoute.bookId, {
-      ...parsedBody.data,
-      modelStrategy: normalizedModelStrategy
-    });
+    const data = await startBookAnalysis(parsedRoute.bookId, parsedBody.data);
 
     /**
      * 调度策略说明：
@@ -219,7 +192,7 @@ export async function POST(
       return notFoundJson(requestId, startedAt, error.bookId);
     }
 
-    if (error instanceof AnalysisScopeInvalidError || error instanceof EmptyRelationshipKnowledgeError) {
+    if (error instanceof AnalysisScopeInvalidError) {
       return badRequestJson(
         requestId,
         startedAt,

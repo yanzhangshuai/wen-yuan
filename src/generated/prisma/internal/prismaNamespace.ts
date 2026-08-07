@@ -394,22 +394,17 @@ export const ModelName = {
   Alias: 'Alias',
   Mention: 'Mention',
   Fact: 'Fact',
-  FactEvidence: 'FactEvidence',
   Relationship: 'Relationship',
-  RelationshipType: 'RelationshipType',
   Skill: 'Skill',
   SkillVersion: 'SkillVersion',
-  BookTypeSkill: 'BookTypeSkill',
   AnalysisJob: 'AnalysisJob',
   AgentRun: 'AgentRun',
   AgentWriteAudit: 'AgentWriteAudit',
   ValidationReport: 'ValidationReport',
   MergeSuggestion: 'MergeSuggestion',
-  TextChunk: 'TextChunk',
-  BookType: 'BookType',
-  ModelStrategyConfig: 'ModelStrategyConfig',
   AnalysisPhaseLog: 'AnalysisPhaseLog',
-  KnowledgeAuditLog: 'KnowledgeAuditLog'
+  KnowledgeAuditLog: 'KnowledgeAuditLog',
+  FeatureModelConfig: 'FeatureModelConfig'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -425,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "factEvidence" | "relationship" | "relationshipType" | "skill" | "skillVersion" | "bookTypeSkill" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "textChunk" | "bookType" | "modelStrategyConfig" | "analysisPhaseLog" | "knowledgeAuditLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "skillVersion" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog" | "knowledgeAuditLog" | "featureModelConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1169,80 +1164,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    FactEvidence: {
-      payload: Prisma.$FactEvidencePayload<ExtArgs>
-      fields: Prisma.FactEvidenceFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.FactEvidenceFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.FactEvidenceFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>
-        }
-        findFirst: {
-          args: Prisma.FactEvidenceFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.FactEvidenceFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>
-        }
-        findMany: {
-          args: Prisma.FactEvidenceFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>[]
-        }
-        create: {
-          args: Prisma.FactEvidenceCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>
-        }
-        createMany: {
-          args: Prisma.FactEvidenceCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.FactEvidenceCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>[]
-        }
-        delete: {
-          args: Prisma.FactEvidenceDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>
-        }
-        update: {
-          args: Prisma.FactEvidenceUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>
-        }
-        deleteMany: {
-          args: Prisma.FactEvidenceDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.FactEvidenceUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.FactEvidenceUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>[]
-        }
-        upsert: {
-          args: Prisma.FactEvidenceUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FactEvidencePayload>
-        }
-        aggregate: {
-          args: Prisma.FactEvidenceAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateFactEvidence>
-        }
-        groupBy: {
-          args: Prisma.FactEvidenceGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.FactEvidenceGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.FactEvidenceCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.FactEvidenceCountAggregateOutputType> | number
-        }
-      }
-    }
     Relationship: {
       payload: Prisma.$RelationshipPayload<ExtArgs>
       fields: Prisma.RelationshipFieldRefs
@@ -1314,80 +1235,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.RelationshipCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.RelationshipCountAggregateOutputType> | number
-        }
-      }
-    }
-    RelationshipType: {
-      payload: Prisma.$RelationshipTypePayload<ExtArgs>
-      fields: Prisma.RelationshipTypeFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.RelationshipTypeFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.RelationshipTypeFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
-        }
-        findFirst: {
-          args: Prisma.RelationshipTypeFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.RelationshipTypeFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
-        }
-        findMany: {
-          args: Prisma.RelationshipTypeFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>[]
-        }
-        create: {
-          args: Prisma.RelationshipTypeCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
-        }
-        createMany: {
-          args: Prisma.RelationshipTypeCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.RelationshipTypeCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>[]
-        }
-        delete: {
-          args: Prisma.RelationshipTypeDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
-        }
-        update: {
-          args: Prisma.RelationshipTypeUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
-        }
-        deleteMany: {
-          args: Prisma.RelationshipTypeDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.RelationshipTypeUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.RelationshipTypeUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>[]
-        }
-        upsert: {
-          args: Prisma.RelationshipTypeUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RelationshipTypePayload>
-        }
-        aggregate: {
-          args: Prisma.RelationshipTypeAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateRelationshipType>
-        }
-        groupBy: {
-          args: Prisma.RelationshipTypeGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.RelationshipTypeGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.RelationshipTypeCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.RelationshipTypeCountAggregateOutputType> | number
         }
       }
     }
@@ -1536,80 +1383,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SkillVersionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SkillVersionCountAggregateOutputType> | number
-        }
-      }
-    }
-    BookTypeSkill: {
-      payload: Prisma.$BookTypeSkillPayload<ExtArgs>
-      fields: Prisma.BookTypeSkillFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.BookTypeSkillFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.BookTypeSkillFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>
-        }
-        findFirst: {
-          args: Prisma.BookTypeSkillFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.BookTypeSkillFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>
-        }
-        findMany: {
-          args: Prisma.BookTypeSkillFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>[]
-        }
-        create: {
-          args: Prisma.BookTypeSkillCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>
-        }
-        createMany: {
-          args: Prisma.BookTypeSkillCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.BookTypeSkillCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>[]
-        }
-        delete: {
-          args: Prisma.BookTypeSkillDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>
-        }
-        update: {
-          args: Prisma.BookTypeSkillUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>
-        }
-        deleteMany: {
-          args: Prisma.BookTypeSkillDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.BookTypeSkillUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.BookTypeSkillUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>[]
-        }
-        upsert: {
-          args: Prisma.BookTypeSkillUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypeSkillPayload>
-        }
-        aggregate: {
-          args: Prisma.BookTypeSkillAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateBookTypeSkill>
-        }
-        groupBy: {
-          args: Prisma.BookTypeSkillGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.BookTypeSkillGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.BookTypeSkillCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.BookTypeSkillCountAggregateOutputType> | number
         }
       }
     }
@@ -1983,228 +1756,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    TextChunk: {
-      payload: Prisma.$TextChunkPayload<ExtArgs>
-      fields: Prisma.TextChunkFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.TextChunkFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.TextChunkFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>
-        }
-        findFirst: {
-          args: Prisma.TextChunkFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.TextChunkFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>
-        }
-        findMany: {
-          args: Prisma.TextChunkFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>[]
-        }
-        create: {
-          args: Prisma.TextChunkCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>
-        }
-        createMany: {
-          args: Prisma.TextChunkCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.TextChunkCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>[]
-        }
-        delete: {
-          args: Prisma.TextChunkDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>
-        }
-        update: {
-          args: Prisma.TextChunkUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>
-        }
-        deleteMany: {
-          args: Prisma.TextChunkDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.TextChunkUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.TextChunkUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>[]
-        }
-        upsert: {
-          args: Prisma.TextChunkUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TextChunkPayload>
-        }
-        aggregate: {
-          args: Prisma.TextChunkAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateTextChunk>
-        }
-        groupBy: {
-          args: Prisma.TextChunkGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.TextChunkGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.TextChunkCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.TextChunkCountAggregateOutputType> | number
-        }
-      }
-    }
-    BookType: {
-      payload: Prisma.$BookTypePayload<ExtArgs>
-      fields: Prisma.BookTypeFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.BookTypeFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.BookTypeFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>
-        }
-        findFirst: {
-          args: Prisma.BookTypeFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.BookTypeFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>
-        }
-        findMany: {
-          args: Prisma.BookTypeFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>[]
-        }
-        create: {
-          args: Prisma.BookTypeCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>
-        }
-        createMany: {
-          args: Prisma.BookTypeCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.BookTypeCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>[]
-        }
-        delete: {
-          args: Prisma.BookTypeDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>
-        }
-        update: {
-          args: Prisma.BookTypeUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>
-        }
-        deleteMany: {
-          args: Prisma.BookTypeDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.BookTypeUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.BookTypeUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>[]
-        }
-        upsert: {
-          args: Prisma.BookTypeUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookTypePayload>
-        }
-        aggregate: {
-          args: Prisma.BookTypeAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateBookType>
-        }
-        groupBy: {
-          args: Prisma.BookTypeGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.BookTypeGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.BookTypeCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.BookTypeCountAggregateOutputType> | number
-        }
-      }
-    }
-    ModelStrategyConfig: {
-      payload: Prisma.$ModelStrategyConfigPayload<ExtArgs>
-      fields: Prisma.ModelStrategyConfigFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.ModelStrategyConfigFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.ModelStrategyConfigFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
-        }
-        findFirst: {
-          args: Prisma.ModelStrategyConfigFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.ModelStrategyConfigFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
-        }
-        findMany: {
-          args: Prisma.ModelStrategyConfigFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>[]
-        }
-        create: {
-          args: Prisma.ModelStrategyConfigCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
-        }
-        createMany: {
-          args: Prisma.ModelStrategyConfigCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.ModelStrategyConfigCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>[]
-        }
-        delete: {
-          args: Prisma.ModelStrategyConfigDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
-        }
-        update: {
-          args: Prisma.ModelStrategyConfigUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
-        }
-        deleteMany: {
-          args: Prisma.ModelStrategyConfigDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.ModelStrategyConfigUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.ModelStrategyConfigUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>[]
-        }
-        upsert: {
-          args: Prisma.ModelStrategyConfigUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModelStrategyConfigPayload>
-        }
-        aggregate: {
-          args: Prisma.ModelStrategyConfigAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateModelStrategyConfig>
-        }
-        groupBy: {
-          args: Prisma.ModelStrategyConfigGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ModelStrategyConfigGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.ModelStrategyConfigCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ModelStrategyConfigCountAggregateOutputType> | number
-        }
-      }
-    }
     AnalysisPhaseLog: {
       payload: Prisma.$AnalysisPhaseLogPayload<ExtArgs>
       fields: Prisma.AnalysisPhaseLogFieldRefs
@@ -2353,6 +1904,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    FeatureModelConfig: {
+      payload: Prisma.$FeatureModelConfigPayload<ExtArgs>
+      fields: Prisma.FeatureModelConfigFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FeatureModelConfigFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FeatureModelConfigFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
+        }
+        findFirst: {
+          args: Prisma.FeatureModelConfigFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FeatureModelConfigFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
+        }
+        findMany: {
+          args: Prisma.FeatureModelConfigFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>[]
+        }
+        create: {
+          args: Prisma.FeatureModelConfigCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
+        }
+        createMany: {
+          args: Prisma.FeatureModelConfigCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FeatureModelConfigCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>[]
+        }
+        delete: {
+          args: Prisma.FeatureModelConfigDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
+        }
+        update: {
+          args: Prisma.FeatureModelConfigUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
+        }
+        deleteMany: {
+          args: Prisma.FeatureModelConfigDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FeatureModelConfigUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FeatureModelConfigUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>[]
+        }
+        upsert: {
+          args: Prisma.FeatureModelConfigUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeatureModelConfigPayload>
+        }
+        aggregate: {
+          args: Prisma.FeatureModelConfigAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFeatureModelConfig>
+        }
+        groupBy: {
+          args: Prisma.FeatureModelConfigGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FeatureModelConfigGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FeatureModelConfigCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FeatureModelConfigCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2421,7 +2046,6 @@ export const AiModelScalarFieldEnum = {
   isDefault: 'isDefault',
   supportsThinking: 'supportsThinking',
   supportsWebSearch: 'supportsWebSearch',
-  supportsTools: 'supportsTools',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2444,9 +2068,6 @@ export const BookScalarFieldEnum = {
   deletedAt: 'deletedAt',
   status: 'status',
   errorLog: 'errorLog',
-  parseProgress: 'parseProgress',
-  parseStage: 'parseStage',
-  bookTypeId: 'bookTypeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2464,7 +2085,6 @@ export const ChapterScalarFieldEnum = {
   title: 'title',
   content: 'content',
   parseStatus: 'parseStatus',
-  isAbstract: 'isAbstract',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2494,8 +2114,6 @@ export const EntityScalarFieldEnum = {
   confidence: 'confidence',
   gender: 'gender',
   hometown: 'hometown',
-  birthYear: 'birthYear',
-  deathYear: 'deathYear',
   globalTags: 'globalTags',
   aliases: 'aliases',
   summary: 'summary',
@@ -2517,7 +2135,6 @@ export const EntityProfileScalarFieldEnum = {
   officialTitle: 'officialTitle',
   localTags: 'localTags',
   ironyIndex: 'ironyIndex',
-  moralTier: 'moralTier',
   firstAppearanceChapterId: 'firstAppearanceChapterId',
   visualConfig: 'visualConfig',
   status: 'status',
@@ -2538,7 +2155,6 @@ export const AliasScalarFieldEnum = {
   aliasType: 'aliasType',
   resolvedName: 'resolvedName',
   evidence: 'evidence',
-  contextHash: 'contextHash',
   chapterStart: 'chapterStart',
   chapterEnd: 'chapterEnd',
   confidence: 'confidence',
@@ -2557,7 +2173,6 @@ export const MentionScalarFieldEnum = {
   entityId: 'entityId',
   chapterId: 'chapterId',
   rawText: 'rawText',
-  summary: 'summary',
   paraIndex: 'paraIndex',
   recordSource: 'recordSource',
   status: 'status',
@@ -2584,7 +2199,6 @@ export const FactScalarFieldEnum = {
   evidence: 'evidence',
   chapterId: 'chapterId',
   chapterNo: 'chapterNo',
-  paraIndex: 'paraIndex',
   payload: 'payload',
   confidence: 'confidence',
   recordSource: 'recordSource',
@@ -2599,22 +2213,6 @@ export const FactScalarFieldEnum = {
 } as const
 
 export type FactScalarFieldEnum = (typeof FactScalarFieldEnum)[keyof typeof FactScalarFieldEnum]
-
-
-export const FactEvidenceScalarFieldEnum = {
-  id: 'id',
-  factId: 'factId',
-  chapterId: 'chapterId',
-  chapterNo: 'chapterNo',
-  excerpt: 'excerpt',
-  paraIndex: 'paraIndex',
-  spanStart: 'spanStart',
-  spanEnd: 'spanEnd',
-  isPrimary: 'isPrimary',
-  createdAt: 'createdAt'
-} as const
-
-export type FactEvidenceScalarFieldEnum = (typeof FactEvidenceScalarFieldEnum)[keyof typeof FactEvidenceScalarFieldEnum]
 
 
 export const RelationshipScalarFieldEnum = {
@@ -2641,23 +2239,6 @@ export const RelationshipScalarFieldEnum = {
 export type RelationshipScalarFieldEnum = (typeof RelationshipScalarFieldEnum)[keyof typeof RelationshipScalarFieldEnum]
 
 
-export const RelationshipTypeScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  name: 'name',
-  direction: 'direction',
-  category: 'category',
-  aliases: 'aliases',
-  bookTypeId: 'bookTypeId',
-  sortOrder: 'sortOrder',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type RelationshipTypeScalarFieldEnum = (typeof RelationshipTypeScalarFieldEnum)[keyof typeof RelationshipTypeScalarFieldEnum]
-
-
 export const SkillScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
@@ -2671,6 +2252,7 @@ export const SkillScalarFieldEnum = {
   generatedFromBookId: 'generatedFromBookId',
   sortOrder: 'sortOrder',
   isBuiltin: 'isBuiltin',
+  isEnabled: 'isEnabled',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -2684,7 +2266,6 @@ export const SkillVersionScalarFieldEnum = {
   skillId: 'skillId',
   versionNo: 'versionNo',
   content: 'content',
-  bookTypeId: 'bookTypeId',
   isActive: 'isActive',
   isBaseline: 'isBaseline',
   changeNote: 'changeNote',
@@ -2695,30 +2276,16 @@ export const SkillVersionScalarFieldEnum = {
 export type SkillVersionScalarFieldEnum = (typeof SkillVersionScalarFieldEnum)[keyof typeof SkillVersionScalarFieldEnum]
 
 
-export const BookTypeSkillScalarFieldEnum = {
-  id: 'id',
-  bookTypeId: 'bookTypeId',
-  skillId: 'skillId',
-  priority: 'priority',
-  isEnabled: 'isEnabled',
-  createdAt: 'createdAt'
-} as const
-
-export type BookTypeSkillScalarFieldEnum = (typeof BookTypeSkillScalarFieldEnum)[keyof typeof BookTypeSkillScalarFieldEnum]
-
-
 export const AnalysisJobScalarFieldEnum = {
   id: 'id',
   bookId: 'bookId',
   status: 'status',
-  architecture: 'architecture',
   scope: 'scope',
   chapterStart: 'chapterStart',
   chapterEnd: 'chapterEnd',
   chapterIndices: 'chapterIndices',
   attempt: 'attempt',
   errorLog: 'errorLog',
-  experimentTag: 'experimentTag',
   overrideStrategy: 'overrideStrategy',
   keepHistory: 'keepHistory',
   skillsSnapshot: 'skillsSnapshot',
@@ -2800,47 +2367,6 @@ export const MergeSuggestionScalarFieldEnum = {
 export type MergeSuggestionScalarFieldEnum = (typeof MergeSuggestionScalarFieldEnum)[keyof typeof MergeSuggestionScalarFieldEnum]
 
 
-export const TextChunkScalarFieldEnum = {
-  id: 'id',
-  bookId: 'bookId',
-  chapterId: 'chapterId',
-  chunkIndex: 'chunkIndex',
-  content: 'content',
-  tokenCount: 'tokenCount',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type TextChunkScalarFieldEnum = (typeof TextChunkScalarFieldEnum)[keyof typeof TextChunkScalarFieldEnum]
-
-
-export const BookTypeScalarFieldEnum = {
-  id: 'id',
-  key: 'key',
-  name: 'name',
-  description: 'description',
-  isActive: 'isActive',
-  sortOrder: 'sortOrder',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type BookTypeScalarFieldEnum = (typeof BookTypeScalarFieldEnum)[keyof typeof BookTypeScalarFieldEnum]
-
-
-export const ModelStrategyConfigScalarFieldEnum = {
-  id: 'id',
-  scope: 'scope',
-  bookId: 'bookId',
-  jobId: 'jobId',
-  stages: 'stages',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type ModelStrategyConfigScalarFieldEnum = (typeof ModelStrategyConfigScalarFieldEnum)[keyof typeof ModelStrategyConfigScalarFieldEnum]
-
-
 export const AnalysisPhaseLogScalarFieldEnum = {
   id: 'id',
   jobId: 'jobId',
@@ -2876,6 +2402,15 @@ export const KnowledgeAuditLogScalarFieldEnum = {
 } as const
 
 export type KnowledgeAuditLogScalarFieldEnum = (typeof KnowledgeAuditLogScalarFieldEnum)[keyof typeof KnowledgeAuditLogScalarFieldEnum]
+
+
+export const FeatureModelConfigScalarFieldEnum = {
+  featureKey: 'featureKey',
+  modelId: 'modelId',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FeatureModelConfigScalarFieldEnum = (typeof FeatureModelConfigScalarFieldEnum)[keyof typeof FeatureModelConfigScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3150,20 +2685,6 @@ export type ListEnumEventCategoryFieldRefInput<$PrismaModel> = FieldRefInputType
 
 
 /**
- * Reference to a field of type 'RelationDirection'
- */
-export type EnumRelationDirectionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RelationDirection'>
-    
-
-
-/**
- * Reference to a field of type 'RelationDirection[]'
- */
-export type ListEnumRelationDirectionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RelationDirection[]'>
-    
-
-
-/**
  * Reference to a field of type 'SkillCategory'
  */
 export type EnumSkillCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillCategory'>
@@ -3230,20 +2751,6 @@ export type EnumAgentRunTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'AgentRunType[]'
  */
 export type ListEnumAgentRunTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AgentRunType[]'>
-    
-
-
-/**
- * Reference to a field of type 'ModelStrategyScope'
- */
-export type EnumModelStrategyScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModelStrategyScope'>
-    
-
-
-/**
- * Reference to a field of type 'ModelStrategyScope[]'
- */
-export type ListEnumModelStrategyScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModelStrategyScope[]'>
     
 
 /**
@@ -3351,22 +2858,17 @@ export type GlobalOmitConfig = {
   alias?: Prisma.AliasOmit
   mention?: Prisma.MentionOmit
   fact?: Prisma.FactOmit
-  factEvidence?: Prisma.FactEvidenceOmit
   relationship?: Prisma.RelationshipOmit
-  relationshipType?: Prisma.RelationshipTypeOmit
   skill?: Prisma.SkillOmit
   skillVersion?: Prisma.SkillVersionOmit
-  bookTypeSkill?: Prisma.BookTypeSkillOmit
   analysisJob?: Prisma.AnalysisJobOmit
   agentRun?: Prisma.AgentRunOmit
   agentWriteAudit?: Prisma.AgentWriteAuditOmit
   validationReport?: Prisma.ValidationReportOmit
   mergeSuggestion?: Prisma.MergeSuggestionOmit
-  textChunk?: Prisma.TextChunkOmit
-  bookType?: Prisma.BookTypeOmit
-  modelStrategyConfig?: Prisma.ModelStrategyConfigOmit
   analysisPhaseLog?: Prisma.AnalysisPhaseLogOmit
   knowledgeAuditLog?: Prisma.KnowledgeAuditLogOmit
+  featureModelConfig?: Prisma.FeatureModelConfigOmit
 }
 
 /* Types for Logging */

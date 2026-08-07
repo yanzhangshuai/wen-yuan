@@ -93,24 +93,12 @@ export type Mention = Prisma.MentionModel
  */
 export type Fact = Prisma.FactModel
 /**
- * Model FactEvidence
- * @db.remark: 事实多条证据锚点（主证据在 facts.evidence，此表存精确 span/额外证据）。
- */
-export type FactEvidence = Prisma.FactEvidenceModel
-/**
  * Model Relationship
  * @db.remark: 关系物化聚合表。由 RELATION 事实聚合而来（facts 是数据权威源）。
  * 唯一键 (bookId, sourceEntityId, targetEntityId, relationshipTypeCode)。
  * SYMMETRIC 类型在聚合器内规范化 source<target；status 由底层事实推导。
  */
 export type Relationship = Prisma.RelationshipModel
-/**
- * Model RelationshipType
- * @db.remark: 关系码唯一权威（DB 表驱动，新增码 = 插行，无代码改动）。
- * bookTypeId=null 为全局码；非空为书型专属码（不污染其他书型）。
- * schema 生成按书型 = 全局行 + 本书型行；skill 中的关系类型定义仅作教学参考，非运行时权威。
- */
-export type RelationshipType = Prisma.RelationshipTypeModel
 /**
  * Model Skill
  * @db.remark: 技能包。承载姓氏/泛称/名字模式/关系类型/历史人物/任务指令等一切扩展知识。
@@ -121,11 +109,6 @@ export type Skill = Prisma.SkillModel
  * @db.remark: 技能版本。content 为知识/指令/触发/工具 JSON，isActive 激活机制类比旧 prompt_template_versions。
  */
 export type SkillVersion = Prisma.SkillVersionModel
-/**
- * Model BookTypeSkill
- * @db.remark: 书型 ↔ 技能关联（技能装载依据）。priority 高者先合并，isEnabled 控制按书型开关。
- */
-export type BookTypeSkill = Prisma.BookTypeSkillModel
 /**
  * Model AnalysisJob
  * @db.remark: 解析任务。保留原字段，新增技能快照与 agent 运行关联。
@@ -152,21 +135,6 @@ export type ValidationReport = Prisma.ValidationReportModel
  */
 export type MergeSuggestion = Prisma.MergeSuggestionModel
 /**
- * Model TextChunk
- * @db.remark: 原文分块。RAG 检索单元，按章切分，嵌入向量由服务层写入（Prisma client 不读写 embedding）。
- */
-export type TextChunk = Prisma.TextChunkModel
-/**
- * Model BookType
- * 
- */
-export type BookType = Prisma.BookTypeModel
-/**
- * Model ModelStrategyConfig
- * @db.remark: 混合模型策略配置。支持 GLOBAL/BOOK/JOB 三层覆盖。
- */
-export type ModelStrategyConfig = Prisma.ModelStrategyConfigModel
-/**
  * Model AnalysisPhaseLog
  * @db.remark: AI 阶段调用日志。记录每次调用模型、耗时、token 及 fallback 信息。
  */
@@ -176,3 +144,9 @@ export type AnalysisPhaseLog = Prisma.AnalysisPhaseLogModel
  * @db.remark: 知识库变更审计日志。所有知识库对象的变更日志（含 skill 的 GENERATE/ACTIVATE）。
  */
 export type KnowledgeAuditLog = Prisma.KnowledgeAuditLogModel
+/**
+ * Model FeatureModelConfig
+ * @db.remark: 功能点模型映射。featureKey → modelId 全局映射（SKILL_SELECTOR / PIPELINE_MAIN / REVIEW）。
+ * v5 模型策略：解析前的 skill 选择、主流程提取、Pass4 审核各用一个功能点槽位。
+ */
+export type FeatureModelConfig = Prisma.FeatureModelConfigModel

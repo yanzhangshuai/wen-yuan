@@ -8,54 +8,42 @@
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §4（schema 运行时动态生成）
  */
 import type { PrismaClient } from "@/generated/prisma/client";
-import { prisma } from "@/server/db/prisma";
 
 export const FACT_TYPES = ["BIOGRAPHY", "RELATION", "ITEM_TRANSFER", "ORGANIZATION_EVENT", "GENERIC"] as const;
 export const EVENT_CATEGORIES = ["BIRTH", "EXAM", "CAREER", "TRAVEL", "SOCIAL", "DEATH", "EVENT"] as const;
 
 export interface RelationshipCodeInfo {
-  code: string;
+  code     : string;
   direction: "INVERSE" | "SYMMETRIC";
-  category: string;
+  category : string;
 }
 
 export interface ExtractionSchema {
-  factTypes: string[];
+  factTypes            : string[];
   relationshipTypeCodes: string[];
-  eventCategories: string[];
+  eventCategories      : string[];
   /** 各 factType 的 payload 结构（供 prompt 描述，非运行时校验） */
-  payloadShapes: Record<string, string[]>;
+  payloadShapes        : Record<string, string[]>;
 }
 
 /** 各 factType 的 payload 字段（对应 schema Fact.payload 注释）。 */
 const PAYLOAD_SHAPES: Record<string, string[]> = {
-  BIOGRAPHY: ["summary", "ironyNote", "tags"],
-  RELATION: ["summary"],
-  ITEM_TRANSFER: ["itemName", "quantity", "reason"],
+  BIOGRAPHY         : ["summary", "ironyNote", "tags"],
+  RELATION          : ["summary"],
+  ITEM_TRANSFER     : ["itemName", "quantity", "reason"],
   ORGANIZATION_EVENT: ["summary", "orgRole"],
-  GENERIC: ["summary", "key", "value"],
+  GENERIC           : ["summary", "key", "value"]
 };
 
 /**
- * 读取某书的有效关系码（全局 + 本书型）。
- * bookTypeId 来自书的 bookType。
+ * 读取某书的有效关系码。
+ *
+ * v5 阶段 1（08-07-v5-skill-loading）：relationship_types 表已删，关系码契约入 skill frontmatter。
+ * TODO（阶段 3）：改为从当前 job 的 skills 契约快照（analysis_jobs.relationshipTypesSnapshot）取码，
+ * 此处先返回空数组兜底，避免 schema 动态生成阶段因无码来源而报错。
  */
-export async function getRelationshipCodes(bookId: string, txClient?: PrismaClient): Promise<RelationshipCodeInfo[]> {
-  const client = txClient ?? prisma;
-  const book = await client.book.findUnique({
-    where: { id: bookId },
-    select: { bookTypeId: true },
-  });
-  const bookTypeId = book?.bookTypeId ?? null;
-
-  const rows = await client.relationshipType.findMany({
-    where: {
-      isActive: true,
-      OR: [{ bookTypeId: null }, { bookTypeId }],
-    },
-    select: { code: true, direction: true, category: true },
-  });
-  return rows;
+export function getRelationshipCodes(_bookId: string, _txClient?: PrismaClient): Promise<RelationshipCodeInfo[]> {
+  return Promise.resolve([]);
 }
 
 /**
@@ -64,10 +52,10 @@ export async function getRelationshipCodes(bookId: string, txClient?: PrismaClie
  */
 export function buildExtractionSchema(relationshipCodes: RelationshipCodeInfo[]): ExtractionSchema {
   return {
-    factTypes: [...FACT_TYPES],
+    factTypes            : [...FACT_TYPES],
     relationshipTypeCodes: relationshipCodes.map((r) => r.code),
-    eventCategories: [...EVENT_CATEGORIES],
-    payloadShapes: PAYLOAD_SHAPES,
+    eventCategories      : [...EVENT_CATEGORIES],
+    payloadShapes        : PAYLOAD_SHAPES
   };
 }
 
@@ -75,6 +63,6 @@ export function buildExtractionSchema(relationshipCodes: RelationshipCodeInfo[])
 export function relationshipCodesFromSnapshot(snapshot: unknown): RelationshipCodeInfo[] {
   if (!Array.isArray(snapshot)) return [];
   return (snapshot as RelationshipCodeInfo[]).filter(
-    (r) => r && typeof r.code === "string" && (r.direction === "INVERSE" || r.direction === "SYMMETRIC"),
+    (r) => r && typeof r.code === "string" && (r.direction === "INVERSE" || r.direction === "SYMMETRIC")
   );
 }

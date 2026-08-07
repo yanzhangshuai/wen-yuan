@@ -43,8 +43,6 @@ export type EntityMinAggregateOutputType = {
   confidence: number | null
   gender: string | null
   hometown: string | null
-  birthYear: string | null
-  deathYear: string | null
   summary: string | null
   canonicalEntityId: string | null
   deletedAt: Date | null
@@ -61,8 +59,6 @@ export type EntityMaxAggregateOutputType = {
   confidence: number | null
   gender: string | null
   hometown: string | null
-  birthYear: string | null
-  deathYear: string | null
   summary: string | null
   canonicalEntityId: string | null
   deletedAt: Date | null
@@ -79,8 +75,6 @@ export type EntityCountAggregateOutputType = {
   confidence: number
   gender: number
   hometown: number
-  birthYear: number
-  deathYear: number
   globalTags: number
   aliases: number
   summary: number
@@ -109,8 +103,6 @@ export type EntityMinAggregateInputType = {
   confidence?: true
   gender?: true
   hometown?: true
-  birthYear?: true
-  deathYear?: true
   summary?: true
   canonicalEntityId?: true
   deletedAt?: true
@@ -127,8 +119,6 @@ export type EntityMaxAggregateInputType = {
   confidence?: true
   gender?: true
   hometown?: true
-  birthYear?: true
-  deathYear?: true
   summary?: true
   canonicalEntityId?: true
   deletedAt?: true
@@ -145,8 +135,6 @@ export type EntityCountAggregateInputType = {
   confidence?: true
   gender?: true
   hometown?: true
-  birthYear?: true
-  deathYear?: true
   globalTags?: true
   aliases?: true
   summary?: true
@@ -252,8 +240,6 @@ export type EntityGroupByOutputType = {
   confidence: number
   gender: string | null
   hometown: string | null
-  birthYear: string | null
-  deathYear: string | null
   globalTags: string[]
   aliases: string[]
   summary: string | null
@@ -295,8 +281,6 @@ export type EntityWhereInput = {
   confidence?: Prisma.FloatFilter<"Entity"> | number
   gender?: Prisma.StringNullableFilter<"Entity"> | string | null
   hometown?: Prisma.StringNullableFilter<"Entity"> | string | null
-  birthYear?: Prisma.StringNullableFilter<"Entity"> | string | null
-  deathYear?: Prisma.StringNullableFilter<"Entity"> | string | null
   globalTags?: Prisma.StringNullableListFilter<"Entity">
   aliases?: Prisma.StringNullableListFilter<"Entity">
   summary?: Prisma.StringNullableFilter<"Entity"> | string | null
@@ -324,8 +308,6 @@ export type EntityOrderByWithRelationInput = {
   confidence?: Prisma.SortOrder
   gender?: Prisma.SortOrderInput | Prisma.SortOrder
   hometown?: Prisma.SortOrderInput | Prisma.SortOrder
-  birthYear?: Prisma.SortOrderInput | Prisma.SortOrder
-  deathYear?: Prisma.SortOrderInput | Prisma.SortOrder
   globalTags?: Prisma.SortOrder
   aliases?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -356,8 +338,6 @@ export type EntityWhereUniqueInput = Prisma.AtLeast<{
   confidence?: Prisma.FloatFilter<"Entity"> | number
   gender?: Prisma.StringNullableFilter<"Entity"> | string | null
   hometown?: Prisma.StringNullableFilter<"Entity"> | string | null
-  birthYear?: Prisma.StringNullableFilter<"Entity"> | string | null
-  deathYear?: Prisma.StringNullableFilter<"Entity"> | string | null
   globalTags?: Prisma.StringNullableListFilter<"Entity">
   aliases?: Prisma.StringNullableListFilter<"Entity">
   summary?: Prisma.StringNullableFilter<"Entity"> | string | null
@@ -385,8 +365,6 @@ export type EntityOrderByWithAggregationInput = {
   confidence?: Prisma.SortOrder
   gender?: Prisma.SortOrderInput | Prisma.SortOrder
   hometown?: Prisma.SortOrderInput | Prisma.SortOrder
-  birthYear?: Prisma.SortOrderInput | Prisma.SortOrder
-  deathYear?: Prisma.SortOrderInput | Prisma.SortOrder
   globalTags?: Prisma.SortOrder
   aliases?: Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -413,8 +391,6 @@ export type EntityScalarWhereWithAggregatesInput = {
   confidence?: Prisma.FloatWithAggregatesFilter<"Entity"> | number
   gender?: Prisma.StringNullableWithAggregatesFilter<"Entity"> | string | null
   hometown?: Prisma.StringNullableWithAggregatesFilter<"Entity"> | string | null
-  birthYear?: Prisma.StringNullableWithAggregatesFilter<"Entity"> | string | null
-  deathYear?: Prisma.StringNullableWithAggregatesFilter<"Entity"> | string | null
   globalTags?: Prisma.StringNullableListFilter<"Entity">
   aliases?: Prisma.StringNullableListFilter<"Entity">
   summary?: Prisma.StringNullableWithAggregatesFilter<"Entity"> | string | null
@@ -433,8 +409,6 @@ export type EntityCreateInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -462,8 +436,6 @@ export type EntityUncheckedCreateInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -491,8 +463,6 @@ export type EntityUpdateInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -520,8 +490,6 @@ export type EntityUncheckedUpdateInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -549,8 +517,6 @@ export type EntityCreateManyInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -569,8 +535,6 @@ export type EntityUpdateManyMutationInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -589,8 +553,6 @@ export type EntityUncheckedUpdateManyInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -617,8 +579,6 @@ export type EntityCountOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   gender?: Prisma.SortOrder
   hometown?: Prisma.SortOrder
-  birthYear?: Prisma.SortOrder
-  deathYear?: Prisma.SortOrder
   globalTags?: Prisma.SortOrder
   aliases?: Prisma.SortOrder
   summary?: Prisma.SortOrder
@@ -641,8 +601,6 @@ export type EntityMaxOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   gender?: Prisma.SortOrder
   hometown?: Prisma.SortOrder
-  birthYear?: Prisma.SortOrder
-  deathYear?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   canonicalEntityId?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -659,8 +617,6 @@ export type EntityMinOrderByAggregateInput = {
   confidence?: Prisma.SortOrder
   gender?: Prisma.SortOrder
   hometown?: Prisma.SortOrder
-  birthYear?: Prisma.SortOrder
-  deathYear?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   canonicalEntityId?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -861,8 +817,6 @@ export type EntityCreateWithoutProfilesInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -889,8 +843,6 @@ export type EntityUncheckedCreateWithoutProfilesInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -933,8 +885,6 @@ export type EntityUpdateWithoutProfilesInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -961,8 +911,6 @@ export type EntityUncheckedUpdateWithoutProfilesInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -989,8 +937,6 @@ export type EntityCreateWithoutAliasRecordsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1017,8 +963,6 @@ export type EntityUncheckedCreateWithoutAliasRecordsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1061,8 +1005,6 @@ export type EntityUpdateWithoutAliasRecordsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1089,8 +1031,6 @@ export type EntityUncheckedUpdateWithoutAliasRecordsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1117,8 +1057,6 @@ export type EntityCreateWithoutMentionsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1145,8 +1083,6 @@ export type EntityUncheckedCreateWithoutMentionsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1189,8 +1125,6 @@ export type EntityUpdateWithoutMentionsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1217,8 +1151,6 @@ export type EntityUncheckedUpdateWithoutMentionsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1245,8 +1177,6 @@ export type EntityCreateWithoutSourceFactsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1273,8 +1203,6 @@ export type EntityUncheckedCreateWithoutSourceFactsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1306,8 +1234,6 @@ export type EntityCreateWithoutTargetFactsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1334,8 +1260,6 @@ export type EntityUncheckedCreateWithoutTargetFactsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1378,8 +1302,6 @@ export type EntityUpdateWithoutSourceFactsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1406,8 +1328,6 @@ export type EntityUncheckedUpdateWithoutSourceFactsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1445,8 +1365,6 @@ export type EntityUpdateWithoutTargetFactsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1473,8 +1391,6 @@ export type EntityUncheckedUpdateWithoutTargetFactsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1501,8 +1417,6 @@ export type EntityCreateWithoutSourceRelationshipsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1529,8 +1443,6 @@ export type EntityUncheckedCreateWithoutSourceRelationshipsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1562,8 +1474,6 @@ export type EntityCreateWithoutTargetRelationshipsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1590,8 +1500,6 @@ export type EntityUncheckedCreateWithoutTargetRelationshipsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1634,8 +1542,6 @@ export type EntityUpdateWithoutSourceRelationshipsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1662,8 +1568,6 @@ export type EntityUncheckedUpdateWithoutSourceRelationshipsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1701,8 +1605,6 @@ export type EntityUpdateWithoutTargetRelationshipsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1729,8 +1631,6 @@ export type EntityUncheckedUpdateWithoutTargetRelationshipsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1757,8 +1657,6 @@ export type EntityCreateWithoutSourceMergeSuggestionsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1785,8 +1683,6 @@ export type EntityUncheckedCreateWithoutSourceMergeSuggestionsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1818,8 +1714,6 @@ export type EntityCreateWithoutTargetMergeSuggestionsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1846,8 +1740,6 @@ export type EntityUncheckedCreateWithoutTargetMergeSuggestionsInput = {
   confidence?: number
   gender?: string | null
   hometown?: string | null
-  birthYear?: string | null
-  deathYear?: string | null
   globalTags?: Prisma.EntityCreateglobalTagsInput | string[]
   aliases?: Prisma.EntityCreatealiasesInput | string[]
   summary?: string | null
@@ -1890,8 +1782,6 @@ export type EntityUpdateWithoutSourceMergeSuggestionsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1918,8 +1808,6 @@ export type EntityUncheckedUpdateWithoutSourceMergeSuggestionsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1957,8 +1845,6 @@ export type EntityUpdateWithoutTargetMergeSuggestionsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1985,8 +1871,6 @@ export type EntityUncheckedUpdateWithoutTargetMergeSuggestionsInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hometown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  birthYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deathYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   globalTags?: Prisma.EntityUpdateglobalTagsInput | string[]
   aliases?: Prisma.EntityUpdatealiasesInput | string[]
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2116,8 +2000,6 @@ export type EntitySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   confidence?: boolean
   gender?: boolean
   hometown?: boolean
-  birthYear?: boolean
-  deathYear?: boolean
   globalTags?: boolean
   aliases?: boolean
   summary?: boolean
@@ -2146,8 +2028,6 @@ export type EntitySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   confidence?: boolean
   gender?: boolean
   hometown?: boolean
-  birthYear?: boolean
-  deathYear?: boolean
   globalTags?: boolean
   aliases?: boolean
   summary?: boolean
@@ -2166,8 +2046,6 @@ export type EntitySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   confidence?: boolean
   gender?: boolean
   hometown?: boolean
-  birthYear?: boolean
-  deathYear?: boolean
   globalTags?: boolean
   aliases?: boolean
   summary?: boolean
@@ -2186,8 +2064,6 @@ export type EntitySelectScalar = {
   confidence?: boolean
   gender?: boolean
   hometown?: boolean
-  birthYear?: boolean
-  deathYear?: boolean
   globalTags?: boolean
   aliases?: boolean
   summary?: boolean
@@ -2197,7 +2073,7 @@ export type EntitySelectScalar = {
   updatedAt?: boolean
 }
 
-export type EntityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "entityType" | "nameType" | "recordSource" | "confidence" | "gender" | "hometown" | "birthYear" | "deathYear" | "globalTags" | "aliases" | "summary" | "canonicalEntityId" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["entity"]>
+export type EntityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "entityType" | "nameType" | "recordSource" | "confidence" | "gender" | "hometown" | "globalTags" | "aliases" | "summary" | "canonicalEntityId" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["entity"]>
 export type EntityInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   profiles?: boolean | Prisma.Entity$profilesArgs<ExtArgs>
   mentions?: boolean | Prisma.Entity$mentionsArgs<ExtArgs>
@@ -2235,8 +2111,6 @@ export type $EntityPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     confidence: number
     gender: string | null
     hometown: string | null
-    birthYear: string | null
-    deathYear: string | null
     globalTags: string[]
     aliases: string[]
     summary: string | null
@@ -2687,8 +2561,6 @@ export interface EntityFieldRefs {
   readonly confidence: Prisma.FieldRef<"Entity", 'Float'>
   readonly gender: Prisma.FieldRef<"Entity", 'String'>
   readonly hometown: Prisma.FieldRef<"Entity", 'String'>
-  readonly birthYear: Prisma.FieldRef<"Entity", 'String'>
-  readonly deathYear: Prisma.FieldRef<"Entity", 'String'>
   readonly globalTags: Prisma.FieldRef<"Entity", 'String[]'>
   readonly aliases: Prisma.FieldRef<"Entity", 'String[]'>
   readonly summary: Prisma.FieldRef<"Entity", 'String'>

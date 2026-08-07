@@ -5,7 +5,7 @@
  * 文件路径：`src/server/modules/books/startBookAnalysis.ts`
  *
  * 模块职责：
- * - 将“解析范围 + 模型策略 + 覆盖策略”转换为可执行的分析任务记录；
+ * - 将“解析范围 + 覆盖策略”转换为可执行的分析任务记录；
  * - 负责业务合法性判断（范围参数互斥/边界）与任务初始化。
  *
  * 在链路中的位置：
@@ -15,17 +15,18 @@
  * 为什么这里做范围校验：
  * - 解析范围决定下游清理/重跑范围，校验失败若放到执行期会造成资源浪费与状态污染；
  * - 因此“scope 与章节参数匹配关系”是业务规则，不是技术实现细节。
+ *
+ * v5 精简（08-06-v5-data-model 基线后）：
+ * - 删除 bookTypeId / architecture / modelStrategy 入参：书型间接层与 v4 阶段模型策略已删，
+ *   模型改由 feature_models 功能点映射（阶段 4）；
+ * - 删除 parseProgress/parseStage：进度改从 AnalysisJob 状态 + analysis_phase_logs 推导；
+ * - 删除 EmptyRelationshipKnowledgeError 检查：关系码改为 skill 契约（阶段 3 装载）。
  * =============================================================================
  */
-import { AnalysisJobStatus, RecordSource } from "@/generated/prisma/enums";
+import { AnalysisJobStatus } from "@/generated/prisma/enums";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
-import { AnalysisScopeInvalidError, BookNotFoundError, EmptyRelationshipKnowledgeError } from "@/server/modules/books/errors";
-import {
-  ANALYSIS_ARCHITECTURE_VALUES,
-  type AnalysisArchitecture
-} from "@/types/analysis-pipeline";
+import { AnalysisScopeInvalidError, BookNotFoundError } from "@/server/modules/books/errors";
 
 /** 允许的解析范围枚举值。 */
 export const ANALYSIS_SCOPE_VALUES = ["FULL_BOOK", "CHAPTER_RANGE", "CHAPTER_LIST"] as const;
@@ -40,10 +41,6 @@ export type AnalysisOverrideStrategy = (typeof ANALYSIS_OVERRIDE_STRATEGY_VALUES
  * 启动解析任务输入。
  */
 export interface StartBookAnalysisInput {
-  /** 任务级阶段模型配置（覆盖 Book/GLOBAL 配置）。 */
-  modelStrategy    ?: StrategyStagesDto | null;
-  /** 解析架构：顺序或两遍式；为空时尝试继承最近一次任务。 */
-  architecture     ?: AnalysisArchitecture;
   /** 解析范围：全书或章节区间。 */
   scope            ?: AnalysisScope;
   /** 章节区间起点（仅 CHAPTER_RANGE 时必填）。 */
@@ -68,8 +65,6 @@ export interface StartBookAnalysisResult {
   jobId           : string;
   /** 任务状态（初始为 QUEUED）。 */
   status          : AnalysisJobStatus;
-  /** 实际生效解析架构。 */
-  architecture    : AnalysisArchitecture;
   /** 实际生效解析范围。 */
   scope           : AnalysisScope;
   /** 实际生效区间起点。 */
@@ -84,10 +79,6 @@ export interface StartBookAnalysisResult {
   keepHistory     : boolean;
   /** 书籍状态（已切换为 PROCESSING）。 */
   bookStatus      : string;
-  /** 解析进度（重置为 0）。 */
-  parseProgress   : number;
-  /** 当前阶段（初始化为“文本清洗”）。 */
-  parseStage      : string | null;
 }
 
 /**
@@ -127,23 +118,6 @@ function resolveOverrideStrategy(
  */
 function resolveKeepHistory(keepHistory: boolean | undefined): boolean {
   return Boolean(keepHistory);
-}
-
-/**
- * 解析并校验解析架构。
- */
-function resolveArchitectureInput(
-  inputArchitecture: string | undefined
-): AnalysisArchitecture | undefined {
-  if (!inputArchitecture) {
-    return undefined;
-  }
-
-  if ((ANALYSIS_ARCHITECTURE_VALUES as readonly string[]).includes(inputArchitecture)) {
-    return inputArchitecture as AnalysisArchitecture;
-  }
-
-  throw new AnalysisScopeInvalidError("解析架构不合法");
 }
 
 /**
@@ -211,16 +185,14 @@ export function createStartBookAnalysisService(
 ) {
   /**
    * 功能：创建并入队一本书的解析任务。
-   * 输入：书籍 ID + 任务参数（模型/范围/覆盖策略等）。
+   * 输入：书籍 ID + 任务参数（范围/覆盖策略等）。
    * 输出：任务创建结果 + 书籍状态更新快照。
    * 异常：
    * - `BookNotFoundError`：书籍不存在；
-   * - `AnalysisScopeInvalidError`：范围参数不合法；
-   * - `AnalysisModelNotFoundError`：模型不存在；
-   * - `AnalysisModelDisabledError`：模型未启用。
+   * - `AnalysisScopeInvalidError`：范围参数不合法。
    * 副作用：
    * - 写入 `analysisJob`；
-   * - 更新 `book` 到 `PROCESSING` 并重置进度阶段。
+   * - 更新 `book` 到 `PROCESSING`。
    */
   async function startBookAnalysis(
     bookId: string,
@@ -232,8 +204,7 @@ export function createStartBookAnalysisService(
         deletedAt: null
       },
       select: {
-        id        : true,
-        bookTypeId: true
+        id: true
       }
     });
 
@@ -242,19 +213,10 @@ export function createStartBookAnalysisService(
     }
 
     const scope = resolveScope(input.scope);
-    const requestedArchitecture = resolveArchitectureInput(input.architecture);
     const overrideStrategy = resolveOverrideStrategy(input.overrideStrategy);
     const keepHistory = resolveKeepHistory(input.keepHistory);
     const range = resolveChapterRange(scope, input.chapterStart, input.chapterEnd);
     const chapterIndices = resolveChapterList(scope, input.chapterIndices);
-    const latestJob = requestedArchitecture
-      ? null
-      : await prismaClient.analysisJob.findFirst({
-        where  : { bookId: book.id },
-        orderBy: { createdAt: "desc" },
-        select : { architecture: true }
-      });
-    const architecture = requestedArchitecture ?? (latestJob?.architecture === "twopass" ? "twopass" : "sequential");
 
     const chapterCount = await prismaClient.chapter.count({
       where: scope === "CHAPTER_RANGE"
@@ -276,17 +238,6 @@ export function createStartBookAnalysisService(
       throw new AnalysisScopeInvalidError("请先确认章节后再启动解析");
     }
 
-    // v5：relationship_types 是关系码唯一权威（全局 + 本书型）
-    const relTypeCount = await prismaClient.relationshipType.count({
-      where: {
-        isActive: true,
-        OR: [{ bookTypeId: null }, { bookTypeId: book.bookTypeId ?? null }],
-      },
-    });
-    if (relTypeCount === 0) {
-      throw new EmptyRelationshipKnowledgeError(book.id);
-    }
-
     const [job, updatedBook] = await prismaClient.$transaction(async (tx) => {
       if (scope === "FULL_BOOK") {
         // v5：relationships 为物化聚合表，全量重建时直接按书清空
@@ -297,7 +248,6 @@ export function createStartBookAnalysisService(
         data: {
           bookId      : book.id,
           status      : AnalysisJobStatus.QUEUED,
-          architecture,
           scope,
           chapterStart: range.chapterStart,
           chapterEnd  : range.chapterEnd,
@@ -308,7 +258,6 @@ export function createStartBookAnalysisService(
         select: {
           id              : true,
           status          : true,
-          architecture    : true,
           scope           : true,
           chapterStart    : true,
           chapterEnd      : true,
@@ -318,28 +267,14 @@ export function createStartBookAnalysisService(
         }
       });
 
-      if (input.modelStrategy) {
-        await tx.modelStrategyConfig.create({
-          data: {
-            scope : "JOB",
-            jobId : createdJob.id,
-            stages: input.modelStrategy
-          }
-        });
-      }
-
       const nextBook = await tx.book.update({
         where: { id: book.id },
         data : {
-          status       : "PROCESSING",
-          parseProgress: 0,
-          parseStage   : "文本清洗",
-          errorLog     : null
+          status  : "PROCESSING",
+          errorLog: null
         },
         select: {
-          status       : true,
-          parseProgress: true,
-          parseStage   : true
+          status: true
         }
       });
 
@@ -350,16 +285,13 @@ export function createStartBookAnalysisService(
       bookId          : book.id,
       jobId           : job.id,
       status          : job.status,
-      architecture    : architecture,
       scope           : scope,
       chapterStart    : job.chapterStart,
       chapterEnd      : job.chapterEnd,
       chapterIndices  : job.chapterIndices,
       overrideStrategy: (job.overrideStrategy ?? "DRAFT_ONLY") as AnalysisOverrideStrategy,
       keepHistory     : job.keepHistory,
-      bookStatus      : updatedBook.status,
-      parseProgress   : updatedBook.parseProgress,
-      parseStage      : updatedBook.parseStage
+      bookStatus      : updatedBook.status
     };
   }
 
@@ -367,9 +299,7 @@ export function createStartBookAnalysisService(
 }
 
 export const { startBookAnalysis } = createStartBookAnalysisService();
-export { ANALYSIS_ARCHITECTURE_VALUES };
 export {
   AnalysisScopeInvalidError,
-  BookNotFoundError,
-  EmptyRelationshipKnowledgeError
+  BookNotFoundError
 } from "@/server/modules/books/errors";

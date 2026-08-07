@@ -15,12 +15,11 @@ describe("getBookStatus", () => {
     // 场景：当存在作业级错误时，服务应优先透出最近可读错误，帮助运营快速定位失败原因。
     // Arrange
     const bookFindFirst = vi.fn().mockResolvedValue({
-      status       : "PROCESSING",
-      parseProgress: 70,
-      parseStage   : "实体提取",
-      errorLog     : null,
-      analysisJobs : [
+      status      : "PROCESSING",
+      errorLog    : null,
+      analysisJobs: [
         {
+          status   : "RUNNING",
           updatedAt: new Date("2026-03-24T10:10:00.000Z"),
           errorLog : "第 9 章解析失败"
         }
@@ -47,11 +46,9 @@ describe("getBookStatus", () => {
         deletedAt: null
       },
       select: expect.objectContaining({
-        status       : true,
-        parseProgress: true,
-        parseStage   : true,
-        errorLog     : true,
-        chapters     : expect.objectContaining({ select: expect.objectContaining({ type: true, parseStatus: true }) })
+        status  : true,
+        errorLog: true,
+        chapters: expect.objectContaining({ select: expect.objectContaining({ type: true, parseStatus: true }) })
       })
     });
     expect(analysisJobFindFirst).toHaveBeenCalledWith({
@@ -70,10 +67,11 @@ describe("getBookStatus", () => {
         chapterIndices: true
       })
     });
+    // v5：进度从最新任务状态推导（RUNNING → 50 / “解析中”）。
     expect(result).toEqual({
       status  : "PROCESSING",
-      progress: 70,
-      stage   : "实体提取",
+      progress: 50,
+      stage   : "解析中",
       errorLog: "第 9 章解析失败",
       chapters: [
         { no: 1, title: "第一回", parseStatus: "SUCCEEDED" },
@@ -84,12 +82,10 @@ describe("getBookStatus", () => {
 
   it("maps legacy pending chapter status to review pending by latest succeeded job scope", async () => {
     const bookFindFirst = vi.fn().mockResolvedValue({
-      status       : "COMPLETED",
-      parseProgress: 100,
-      parseStage   : "完成",
-      errorLog     : null,
-      analysisJobs : [],
-      chapters     : [
+      status      : "COMPLETED",
+      errorLog    : null,
+      analysisJobs: [],
+      chapters    : [
         { no: 1, type: "CHAPTER", title: "第一回", parseStatus: "PENDING" },
         { no: 2, type: "CHAPTER", title: "第二回", parseStatus: "PENDING" },
         { no: 3, type: "CHAPTER", title: "第三回", parseStatus: "PENDING" },

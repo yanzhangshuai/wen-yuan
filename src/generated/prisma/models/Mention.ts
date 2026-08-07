@@ -39,7 +39,6 @@ export type MentionMinAggregateOutputType = {
   entityId: string | null
   chapterId: string | null
   rawText: string | null
-  summary: string | null
   paraIndex: number | null
   recordSource: $Enums.RecordSource | null
   status: $Enums.ProcessingStatus | null
@@ -53,7 +52,6 @@ export type MentionMaxAggregateOutputType = {
   entityId: string | null
   chapterId: string | null
   rawText: string | null
-  summary: string | null
   paraIndex: number | null
   recordSource: $Enums.RecordSource | null
   status: $Enums.ProcessingStatus | null
@@ -67,7 +65,6 @@ export type MentionCountAggregateOutputType = {
   entityId: number
   chapterId: number
   rawText: number
-  summary: number
   paraIndex: number
   recordSource: number
   status: number
@@ -91,7 +88,6 @@ export type MentionMinAggregateInputType = {
   entityId?: true
   chapterId?: true
   rawText?: true
-  summary?: true
   paraIndex?: true
   recordSource?: true
   status?: true
@@ -105,7 +101,6 @@ export type MentionMaxAggregateInputType = {
   entityId?: true
   chapterId?: true
   rawText?: true
-  summary?: true
   paraIndex?: true
   recordSource?: true
   status?: true
@@ -119,7 +114,6 @@ export type MentionCountAggregateInputType = {
   entityId?: true
   chapterId?: true
   rawText?: true
-  summary?: true
   paraIndex?: true
   recordSource?: true
   status?: true
@@ -220,7 +214,6 @@ export type MentionGroupByOutputType = {
   entityId: string
   chapterId: string
   rawText: string
-  summary: string | null
   paraIndex: number | null
   recordSource: $Enums.RecordSource
   status: $Enums.ProcessingStatus
@@ -257,7 +250,6 @@ export type MentionWhereInput = {
   entityId?: Prisma.UuidFilter<"Mention"> | string
   chapterId?: Prisma.UuidFilter<"Mention"> | string
   rawText?: Prisma.StringFilter<"Mention"> | string
-  summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"Mention"> | $Enums.ProcessingStatus
@@ -273,7 +265,6 @@ export type MentionOrderByWithRelationInput = {
   entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
-  summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -292,7 +283,6 @@ export type MentionWhereUniqueInput = Prisma.AtLeast<{
   entityId?: Prisma.UuidFilter<"Mention"> | string
   chapterId?: Prisma.UuidFilter<"Mention"> | string
   rawText?: Prisma.StringFilter<"Mention"> | string
-  summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"Mention"> | $Enums.ProcessingStatus
@@ -308,7 +298,6 @@ export type MentionOrderByWithAggregationInput = {
   entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
-  summary?: Prisma.SortOrderInput | Prisma.SortOrder
   paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -330,7 +319,6 @@ export type MentionScalarWhereWithAggregatesInput = {
   entityId?: Prisma.UuidWithAggregatesFilter<"Mention"> | string
   chapterId?: Prisma.UuidWithAggregatesFilter<"Mention"> | string
   rawText?: Prisma.StringWithAggregatesFilter<"Mention"> | string
-  summary?: Prisma.StringNullableWithAggregatesFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableWithAggregatesFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"Mention"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusWithAggregatesFilter<"Mention"> | $Enums.ProcessingStatus
@@ -342,7 +330,6 @@ export type MentionScalarWhereWithAggregatesInput = {
 export type MentionCreateInput = {
   id?: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -358,7 +345,6 @@ export type MentionUncheckedCreateInput = {
   entityId: string
   chapterId: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -370,7 +356,6 @@ export type MentionUncheckedCreateInput = {
 export type MentionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -386,7 +371,6 @@ export type MentionUncheckedUpdateInput = {
   entityId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -400,7 +384,6 @@ export type MentionCreateManyInput = {
   entityId: string
   chapterId: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -412,7 +395,6 @@ export type MentionCreateManyInput = {
 export type MentionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -426,7 +408,6 @@ export type MentionUncheckedUpdateManyInput = {
   entityId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -450,7 +431,6 @@ export type MentionCountOrderByAggregateInput = {
   entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
-  summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -468,7 +448,6 @@ export type MentionMaxOrderByAggregateInput = {
   entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
-  summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -482,7 +461,6 @@ export type MentionMinOrderByAggregateInput = {
   entityId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   rawText?: Prisma.SortOrder
-  summary?: Prisma.SortOrder
   paraIndex?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -582,7 +560,6 @@ export type MentionUncheckedUpdateManyWithoutEntityNestedInput = {
 export type MentionCreateWithoutChapterInput = {
   id?: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -596,7 +573,6 @@ export type MentionUncheckedCreateWithoutChapterInput = {
   id?: string
   entityId: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -639,7 +615,6 @@ export type MentionScalarWhereInput = {
   entityId?: Prisma.UuidFilter<"Mention"> | string
   chapterId?: Prisma.UuidFilter<"Mention"> | string
   rawText?: Prisma.StringFilter<"Mention"> | string
-  summary?: Prisma.StringNullableFilter<"Mention"> | string | null
   paraIndex?: Prisma.IntNullableFilter<"Mention"> | number | null
   recordSource?: Prisma.EnumRecordSourceFilter<"Mention"> | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFilter<"Mention"> | $Enums.ProcessingStatus
@@ -651,7 +626,6 @@ export type MentionScalarWhereInput = {
 export type MentionCreateWithoutEntityInput = {
   id?: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -665,7 +639,6 @@ export type MentionUncheckedCreateWithoutEntityInput = {
   id?: string
   chapterId: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -704,7 +677,6 @@ export type MentionCreateManyChapterInput = {
   id?: string
   entityId: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -716,7 +688,6 @@ export type MentionCreateManyChapterInput = {
 export type MentionUpdateWithoutChapterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -730,7 +701,6 @@ export type MentionUncheckedUpdateWithoutChapterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   entityId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -743,7 +713,6 @@ export type MentionUncheckedUpdateManyWithoutChapterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   entityId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -756,7 +725,6 @@ export type MentionCreateManyEntityInput = {
   id?: string
   chapterId: string
   rawText: string
-  summary?: string | null
   paraIndex?: number | null
   recordSource?: $Enums.RecordSource
   status?: $Enums.ProcessingStatus
@@ -768,7 +736,6 @@ export type MentionCreateManyEntityInput = {
 export type MentionUpdateWithoutEntityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -782,7 +749,6 @@ export type MentionUncheckedUpdateWithoutEntityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -795,7 +761,6 @@ export type MentionUncheckedUpdateManyWithoutEntityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   rawText?: Prisma.StringFieldUpdateOperationsInput | string
-  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
   status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
@@ -811,7 +776,6 @@ export type MentionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
-  summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
   status?: boolean
@@ -827,7 +791,6 @@ export type MentionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
-  summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
   status?: boolean
@@ -843,7 +806,6 @@ export type MentionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
-  summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
   status?: boolean
@@ -859,7 +821,6 @@ export type MentionSelectScalar = {
   entityId?: boolean
   chapterId?: boolean
   rawText?: boolean
-  summary?: boolean
   paraIndex?: boolean
   recordSource?: boolean
   status?: boolean
@@ -868,7 +829,7 @@ export type MentionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "chapterId" | "rawText" | "summary" | "paraIndex" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
+export type MentionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "entityId" | "chapterId" | "rawText" | "paraIndex" | "recordSource" | "status" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["mention"]>
 export type MentionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   entity?: boolean | Prisma.EntityDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -893,7 +854,6 @@ export type $MentionPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     entityId: string
     chapterId: string
     rawText: string
-    summary: string | null
     paraIndex: number | null
     recordSource: $Enums.RecordSource
     status: $Enums.ProcessingStatus
@@ -1329,7 +1289,6 @@ export interface MentionFieldRefs {
   readonly entityId: Prisma.FieldRef<"Mention", 'String'>
   readonly chapterId: Prisma.FieldRef<"Mention", 'String'>
   readonly rawText: Prisma.FieldRef<"Mention", 'String'>
-  readonly summary: Prisma.FieldRef<"Mention", 'String'>
   readonly paraIndex: Prisma.FieldRef<"Mention", 'Int'>
   readonly recordSource: Prisma.FieldRef<"Mention", 'RecordSource'>
   readonly status: Prisma.FieldRef<"Mention", 'ProcessingStatus'>

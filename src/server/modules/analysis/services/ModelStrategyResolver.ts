@@ -18,11 +18,11 @@
  * - API Key 只在解析结果中短暂以明文存在，用于调用链，不应写日志。
  * =============================================================================
  */
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 import type { AiProviderProtocol } from "@/server/providers/ai";
-import { strategyStagesSchema, type StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
+import type { StrategyStagesDto } from "@/server/modules/analysis/dto/modelStrategy";
 import { decryptValue } from "@/server/security/encryption";
 import {
   BUSINESS_PIPELINE_STAGES,
@@ -147,18 +147,6 @@ function readEncryptedApiKey(apiKey: string | null, modelName: string): string {
 }
 
 /**
- * 功能：解析策略 JSON，并在历史脏数据场景下安全回退为空策略。
- * 输入：数据库 `stages` JSON 值。
- * 输出：通过 schema 校验后的阶段配置对象。
- * 异常：无（解析失败时返回空对象）。
- * 副作用：无。
- */
-function parseStagesJson(stages: Prisma.JsonValue): StrategyStagesDto {
-  const parsed = strategyStagesSchema.safeParse(stages);
-  return parsed.success ? parsed.data : {};
-}
-
-/**
  * 功能：按“显式覆盖优先”合并阶段参数。
  * 输入：系统默认参数与单层策略参数。
  * 输出：该层最终生效的阶段参数。
@@ -234,45 +222,22 @@ function contextCacheKey(context: ResolveStageContext): string {
 
 /**
  * 功能：按策略层级读取阶段配置。
+ *
+ * v5 阶段 1（08-07-v5-skill-loading）：`model_strategy_configs` 表已删，模型策略改由
+ * feature_models 功能点模型（阶段 4）接管。此处各层一律返回 null，全部阶段回退系统默认模型，
+ * 保留 resolver 接口兼容 AiCallExecutor 的调用，直至阶段 4 改按 featureKey 解析。
+ *
  * 输入：prisma 客户端、层级（JOB/BOOK/GLOBAL）与解析上下文。
  * 输出：该层策略；不存在时返回 `null`。
- * 异常：数据库查询失败时向上抛出。
- * 副作用：读取数据库。
+ * 异常：无。
+ * 副作用：无。
  */
 async function loadLayerConfig(
-  prismaClient: PrismaClient,
-  layer: StrategyLayer,
-  context: ResolveStageContext
+  _prismaClient: PrismaClient,
+  _layer: StrategyLayer,
+  _context: ResolveStageContext
 ): Promise<StrategyStagesDto | null> {
-  if (layer === "JOB") {
-    if (!context.jobId) return null;
-    const config = await prismaClient.modelStrategyConfig.findFirst({
-      where: {
-        scope: "JOB",
-        jobId: context.jobId
-      },
-      select: { stages: true }
-    });
-    return config ? parseStagesJson(config.stages) : null;
-  }
-
-  if (layer === "BOOK") {
-    if (!context.bookId) return null;
-    const config = await prismaClient.modelStrategyConfig.findFirst({
-      where: {
-        scope : "BOOK",
-        bookId: context.bookId
-      },
-      select: { stages: true }
-    });
-    return config ? parseStagesJson(config.stages) : null;
-  }
-
-  const config = await prismaClient.modelStrategyConfig.findFirst({
-    where : { scope: "GLOBAL" },
-    select: { stages: true }
-  });
-  return config ? parseStagesJson(config.stages) : null;
+  return await Promise.resolve(null);
 }
 
 function collectConfiguredModelIds(layers: LayerSnapshot): string[] {

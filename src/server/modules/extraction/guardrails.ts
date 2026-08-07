@@ -15,26 +15,25 @@ import type { ExtractionSlice } from "./types.ts";
 export type FactType = "BIOGRAPHY" | "RELATION" | "ITEM_TRANSFER" | "ORGANIZATION_EVENT" | "GENERIC";
 
 export interface PersistableFact {
-  factType: FactType;
-  sourceName: string | null;
-  targetName: string | null;
+  factType             : FactType;
+  sourceName           : string | null;
+  targetName           : string | null;
   relationshipTypeCode?: string;
-  eventCategory?: string;
-  evidence: string;
-  chapterNo: number;
-  paraIndex: number | null;
-  payload: Record<string, unknown>;
-  confidence: number;
+  eventCategory?       : string;
+  evidence             : string;
+  chapterNo            : number;
+  payload              : Record<string, unknown>;
+  confidence           : number;
 }
 
 export interface DropRecord {
-  kind: "relation" | "bioFact";
+  kind  : "relation" | "bioFact";
   reason: "name_not_in_text" | "invalid_code" | "deictic_junk" | "no_evidence";
   detail: string;
 }
 
 export interface GuardrailResult {
-  facts: PersistableFact[];
+  facts      : PersistableFact[];
   dropRecords: DropRecord[];
 }
 
@@ -60,7 +59,7 @@ export function isNameInText(name: string, text: string): boolean {
 export function runGuardrails(
   slice: ExtractionSlice,
   sliceText: string,
-  validCodes: Set<string>,
+  validCodes: Set<string>
 ): GuardrailResult {
   const facts: PersistableFact[] = [];
   const dropRecords: DropRecord[] = [];
@@ -99,15 +98,14 @@ export function runGuardrails(
       continue;
     }
     facts.push({
-      factType: "RELATION",
-      sourceName: rel.sourceCanonical,
-      targetName: rel.targetCanonical,
+      factType            : "RELATION",
+      sourceName          : rel.sourceCanonical,
+      targetName          : rel.targetCanonical,
       relationshipTypeCode: rel.typeCode,
-      evidence: rel.evidence,
-      chapterNo: slice.chapterNos[0] ?? 0,
-      paraIndex: null,
-      payload: {},
-      confidence: 0.7,
+      evidence            : rel.evidence,
+      chapterNo           : slice.chapterNos[0] ?? 0,
+      payload             : {},
+      confidence          : 0.7
     });
   }
 
@@ -126,15 +124,14 @@ export function runGuardrails(
       continue;
     }
     facts.push({
-      factType: "BIOGRAPHY",
-      sourceName: bio.subjectCanonical,
-      targetName: null,
+      factType     : "BIOGRAPHY",
+      sourceName   : bio.subjectCanonical,
+      targetName   : null,
       eventCategory: bio.category,
-      evidence: bio.evidence,
-      chapterNo: slice.chapterNos[0] ?? 0,
-      paraIndex: null,
-      payload: { summary: bio.summary, ...(bio.location ? { location: bio.location } : {}) },
-      confidence: 0.7,
+      evidence     : bio.evidence,
+      chapterNo    : slice.chapterNos[0] ?? 0,
+      payload      : { summary: bio.summary, ...(bio.location ? { location: bio.location } : {}) },
+      confidence   : 0.7
     });
   }
 

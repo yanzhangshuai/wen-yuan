@@ -29,13 +29,11 @@ export type AggregateFact = {
 
 export type FactAvgAggregateOutputType = {
   chapterNo: number | null
-  paraIndex: number | null
   confidence: number | null
 }
 
 export type FactSumAggregateOutputType = {
   chapterNo: number | null
-  paraIndex: number | null
   confidence: number | null
 }
 
@@ -53,7 +51,6 @@ export type FactMinAggregateOutputType = {
   evidence: string | null
   chapterId: string | null
   chapterNo: number | null
-  paraIndex: number | null
   confidence: number | null
   recordSource: $Enums.RecordSource | null
   status: $Enums.ProcessingStatus | null
@@ -80,7 +77,6 @@ export type FactMaxAggregateOutputType = {
   evidence: string | null
   chapterId: string | null
   chapterNo: number | null
-  paraIndex: number | null
   confidence: number | null
   recordSource: $Enums.RecordSource | null
   status: $Enums.ProcessingStatus | null
@@ -108,7 +104,6 @@ export type FactCountAggregateOutputType = {
   evidence: number
   chapterId: number
   chapterNo: number
-  paraIndex: number
   payload: number
   confidence: number
   recordSource: number
@@ -126,13 +121,11 @@ export type FactCountAggregateOutputType = {
 
 export type FactAvgAggregateInputType = {
   chapterNo?: true
-  paraIndex?: true
   confidence?: true
 }
 
 export type FactSumAggregateInputType = {
   chapterNo?: true
-  paraIndex?: true
   confidence?: true
 }
 
@@ -150,7 +143,6 @@ export type FactMinAggregateInputType = {
   evidence?: true
   chapterId?: true
   chapterNo?: true
-  paraIndex?: true
   confidence?: true
   recordSource?: true
   status?: true
@@ -177,7 +169,6 @@ export type FactMaxAggregateInputType = {
   evidence?: true
   chapterId?: true
   chapterNo?: true
-  paraIndex?: true
   confidence?: true
   recordSource?: true
   status?: true
@@ -205,7 +196,6 @@ export type FactCountAggregateInputType = {
   evidence?: true
   chapterId?: true
   chapterNo?: true
-  paraIndex?: true
   payload?: true
   confidence?: true
   recordSource?: true
@@ -321,7 +311,6 @@ export type FactGroupByOutputType = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex: number | null
   payload: runtime.JsonValue
   confidence: number
   recordSource: $Enums.RecordSource
@@ -373,7 +362,6 @@ export type FactWhereInput = {
   evidence?: Prisma.StringFilter<"Fact"> | string
   chapterId?: Prisma.UuidFilter<"Fact"> | string
   chapterNo?: Prisma.IntFilter<"Fact"> | number
-  paraIndex?: Prisma.IntNullableFilter<"Fact"> | number | null
   payload?: Prisma.JsonFilter<"Fact">
   confidence?: Prisma.FloatFilter<"Fact"> | number
   recordSource?: Prisma.EnumRecordSourceFilter<"Fact"> | $Enums.RecordSource
@@ -391,7 +379,6 @@ export type FactWhereInput = {
   targetEntity?: Prisma.XOR<Prisma.EntityNullableScalarRelationFilter, Prisma.EntityWhereInput> | null
   job?: Prisma.XOR<Prisma.AnalysisJobNullableScalarRelationFilter, Prisma.AnalysisJobWhereInput> | null
   agentRun?: Prisma.XOR<Prisma.AgentRunNullableScalarRelationFilter, Prisma.AgentRunWhereInput> | null
-  evidences?: Prisma.FactEvidenceListRelationFilter
 }
 
 export type FactOrderByWithRelationInput = {
@@ -409,7 +396,6 @@ export type FactOrderByWithRelationInput = {
   evidence?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
   payload?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
@@ -427,7 +413,6 @@ export type FactOrderByWithRelationInput = {
   targetEntity?: Prisma.EntityOrderByWithRelationInput
   job?: Prisma.AnalysisJobOrderByWithRelationInput
   agentRun?: Prisma.AgentRunOrderByWithRelationInput
-  evidences?: Prisma.FactEvidenceOrderByRelationAggregateInput
 }
 
 export type FactWhereUniqueInput = Prisma.AtLeast<{
@@ -448,7 +433,6 @@ export type FactWhereUniqueInput = Prisma.AtLeast<{
   evidence?: Prisma.StringFilter<"Fact"> | string
   chapterId?: Prisma.UuidFilter<"Fact"> | string
   chapterNo?: Prisma.IntFilter<"Fact"> | number
-  paraIndex?: Prisma.IntNullableFilter<"Fact"> | number | null
   payload?: Prisma.JsonFilter<"Fact">
   confidence?: Prisma.FloatFilter<"Fact"> | number
   recordSource?: Prisma.EnumRecordSourceFilter<"Fact"> | $Enums.RecordSource
@@ -466,7 +450,6 @@ export type FactWhereUniqueInput = Prisma.AtLeast<{
   targetEntity?: Prisma.XOR<Prisma.EntityNullableScalarRelationFilter, Prisma.EntityWhereInput> | null
   job?: Prisma.XOR<Prisma.AnalysisJobNullableScalarRelationFilter, Prisma.AnalysisJobWhereInput> | null
   agentRun?: Prisma.XOR<Prisma.AgentRunNullableScalarRelationFilter, Prisma.AgentRunWhereInput> | null
-  evidences?: Prisma.FactEvidenceListRelationFilter
 }, "id">
 
 export type FactOrderByWithAggregationInput = {
@@ -484,7 +467,6 @@ export type FactOrderByWithAggregationInput = {
   evidence?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrderInput | Prisma.SortOrder
   payload?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
@@ -521,7 +503,6 @@ export type FactScalarWhereWithAggregatesInput = {
   evidence?: Prisma.StringWithAggregatesFilter<"Fact"> | string
   chapterId?: Prisma.UuidWithAggregatesFilter<"Fact"> | string
   chapterNo?: Prisma.IntWithAggregatesFilter<"Fact"> | number
-  paraIndex?: Prisma.IntNullableWithAggregatesFilter<"Fact"> | number | null
   payload?: Prisma.JsonWithAggregatesFilter<"Fact">
   confidence?: Prisma.FloatWithAggregatesFilter<"Fact"> | number
   recordSource?: Prisma.EnumRecordSourceWithAggregatesFilter<"Fact"> | $Enums.RecordSource
@@ -546,7 +527,6 @@ export type FactCreateInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -562,7 +542,6 @@ export type FactCreateInput = {
   targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
   job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
   agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateInput = {
@@ -580,7 +559,6 @@ export type FactUncheckedCreateInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -592,7 +570,6 @@ export type FactUncheckedCreateInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactUpdateInput = {
@@ -606,7 +583,6 @@ export type FactUpdateInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -622,7 +598,6 @@ export type FactUpdateInput = {
   targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
   job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
   agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateInput = {
@@ -640,7 +615,6 @@ export type FactUncheckedUpdateInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -652,7 +626,6 @@ export type FactUncheckedUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactCreateManyInput = {
@@ -670,7 +643,6 @@ export type FactCreateManyInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -695,7 +667,6 @@ export type FactUpdateManyMutationInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -722,7 +693,6 @@ export type FactUncheckedUpdateManyInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -761,7 +731,6 @@ export type FactCountOrderByAggregateInput = {
   evidence?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
@@ -777,7 +746,6 @@ export type FactCountOrderByAggregateInput = {
 
 export type FactAvgOrderByAggregateInput = {
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
 }
 
@@ -795,7 +763,6 @@ export type FactMaxOrderByAggregateInput = {
   evidence?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -822,7 +789,6 @@ export type FactMinOrderByAggregateInput = {
   evidence?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   recordSource?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -837,13 +803,7 @@ export type FactMinOrderByAggregateInput = {
 
 export type FactSumOrderByAggregateInput = {
   chapterNo?: Prisma.SortOrder
-  paraIndex?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
-}
-
-export type FactScalarRelationFilter = {
-  is?: Prisma.FactWhereInput
-  isNot?: Prisma.FactWhereInput
 }
 
 export type FactCreateNestedManyWithoutBookInput = {
@@ -1031,20 +991,6 @@ export type FactUpdateattitudeTagsInput = {
   push?: string | string[]
 }
 
-export type FactCreateNestedOneWithoutEvidencesInput = {
-  create?: Prisma.XOR<Prisma.FactCreateWithoutEvidencesInput, Prisma.FactUncheckedCreateWithoutEvidencesInput>
-  connectOrCreate?: Prisma.FactCreateOrConnectWithoutEvidencesInput
-  connect?: Prisma.FactWhereUniqueInput
-}
-
-export type FactUpdateOneRequiredWithoutEvidencesNestedInput = {
-  create?: Prisma.XOR<Prisma.FactCreateWithoutEvidencesInput, Prisma.FactUncheckedCreateWithoutEvidencesInput>
-  connectOrCreate?: Prisma.FactCreateOrConnectWithoutEvidencesInput
-  upsert?: Prisma.FactUpsertWithoutEvidencesInput
-  connect?: Prisma.FactWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.FactUpdateToOneWithWhereWithoutEvidencesInput, Prisma.FactUpdateWithoutEvidencesInput>, Prisma.FactUncheckedUpdateWithoutEvidencesInput>
-}
-
 export type FactCreateNestedManyWithoutJobInput = {
   create?: Prisma.XOR<Prisma.FactCreateWithoutJobInput, Prisma.FactUncheckedCreateWithoutJobInput> | Prisma.FactCreateWithoutJobInput[] | Prisma.FactUncheckedCreateWithoutJobInput[]
   connectOrCreate?: Prisma.FactCreateOrConnectWithoutJobInput | Prisma.FactCreateOrConnectWithoutJobInput[]
@@ -1140,7 +1086,6 @@ export type FactCreateWithoutBookInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1155,7 +1100,6 @@ export type FactCreateWithoutBookInput = {
   targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
   job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
   agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateWithoutBookInput = {
@@ -1172,7 +1116,6 @@ export type FactUncheckedCreateWithoutBookInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1184,7 +1127,6 @@ export type FactUncheckedCreateWithoutBookInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactCreateOrConnectWithoutBookInput = {
@@ -1231,7 +1173,6 @@ export type FactScalarWhereInput = {
   evidence?: Prisma.StringFilter<"Fact"> | string
   chapterId?: Prisma.UuidFilter<"Fact"> | string
   chapterNo?: Prisma.IntFilter<"Fact"> | number
-  paraIndex?: Prisma.IntNullableFilter<"Fact"> | number | null
   payload?: Prisma.JsonFilter<"Fact">
   confidence?: Prisma.FloatFilter<"Fact"> | number
   recordSource?: Prisma.EnumRecordSourceFilter<"Fact"> | $Enums.RecordSource
@@ -1256,7 +1197,6 @@ export type FactCreateWithoutChapterInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1271,7 +1211,6 @@ export type FactCreateWithoutChapterInput = {
   targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
   job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
   agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateWithoutChapterInput = {
@@ -1288,7 +1227,6 @@ export type FactUncheckedCreateWithoutChapterInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1300,7 +1238,6 @@ export type FactUncheckedCreateWithoutChapterInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactCreateOrConnectWithoutChapterInput = {
@@ -1340,7 +1277,6 @@ export type FactCreateWithoutSourceEntityInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1355,7 +1291,6 @@ export type FactCreateWithoutSourceEntityInput = {
   targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
   job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
   agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateWithoutSourceEntityInput = {
@@ -1372,7 +1307,6 @@ export type FactUncheckedCreateWithoutSourceEntityInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1384,7 +1318,6 @@ export type FactUncheckedCreateWithoutSourceEntityInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactCreateOrConnectWithoutSourceEntityInput = {
@@ -1408,7 +1341,6 @@ export type FactCreateWithoutTargetEntityInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1423,7 +1355,6 @@ export type FactCreateWithoutTargetEntityInput = {
   sourceEntity?: Prisma.EntityCreateNestedOneWithoutSourceFactsInput
   job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
   agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateWithoutTargetEntityInput = {
@@ -1440,7 +1371,6 @@ export type FactUncheckedCreateWithoutTargetEntityInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1452,7 +1382,6 @@ export type FactUncheckedCreateWithoutTargetEntityInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactCreateOrConnectWithoutTargetEntityInput = {
@@ -1497,138 +1426,6 @@ export type FactUpdateManyWithWhereWithoutTargetEntityInput = {
   data: Prisma.XOR<Prisma.FactUpdateManyMutationInput, Prisma.FactUncheckedUpdateManyWithoutTargetEntityInput>
 }
 
-export type FactCreateWithoutEvidencesInput = {
-  id?: string
-  factType?: $Enums.FactType
-  relationshipTypeCode?: string | null
-  eventCategory?: $Enums.EventCategory | null
-  virtualYear?: string | null
-  location?: string | null
-  title?: string | null
-  attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
-  evidence: string
-  chapterNo: number
-  paraIndex?: number | null
-  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  confidence?: number
-  recordSource?: $Enums.RecordSource
-  status?: $Enums.ProcessingStatus
-  reviewedAt?: Date | string | null
-  reviewedBy?: string | null
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  book: Prisma.BookCreateNestedOneWithoutFactsInput
-  chapter: Prisma.ChapterCreateNestedOneWithoutFactsInput
-  sourceEntity?: Prisma.EntityCreateNestedOneWithoutSourceFactsInput
-  targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
-  job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
-  agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-}
-
-export type FactUncheckedCreateWithoutEvidencesInput = {
-  id?: string
-  bookId: string
-  factType?: $Enums.FactType
-  sourceEntityId?: string | null
-  targetEntityId?: string | null
-  relationshipTypeCode?: string | null
-  eventCategory?: $Enums.EventCategory | null
-  virtualYear?: string | null
-  location?: string | null
-  title?: string | null
-  attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
-  evidence: string
-  chapterId: string
-  chapterNo: number
-  paraIndex?: number | null
-  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  confidence?: number
-  recordSource?: $Enums.RecordSource
-  status?: $Enums.ProcessingStatus
-  jobId?: string | null
-  agentRunId?: string | null
-  reviewedAt?: Date | string | null
-  reviewedBy?: string | null
-  deletedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type FactCreateOrConnectWithoutEvidencesInput = {
-  where: Prisma.FactWhereUniqueInput
-  create: Prisma.XOR<Prisma.FactCreateWithoutEvidencesInput, Prisma.FactUncheckedCreateWithoutEvidencesInput>
-}
-
-export type FactUpsertWithoutEvidencesInput = {
-  update: Prisma.XOR<Prisma.FactUpdateWithoutEvidencesInput, Prisma.FactUncheckedUpdateWithoutEvidencesInput>
-  create: Prisma.XOR<Prisma.FactCreateWithoutEvidencesInput, Prisma.FactUncheckedCreateWithoutEvidencesInput>
-  where?: Prisma.FactWhereInput
-}
-
-export type FactUpdateToOneWithWhereWithoutEvidencesInput = {
-  where?: Prisma.FactWhereInput
-  data: Prisma.XOR<Prisma.FactUpdateWithoutEvidencesInput, Prisma.FactUncheckedUpdateWithoutEvidencesInput>
-}
-
-export type FactUpdateWithoutEvidencesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  factType?: Prisma.EnumFactTypeFieldUpdateOperationsInput | $Enums.FactType
-  relationshipTypeCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  eventCategory?: Prisma.NullableEnumEventCategoryFieldUpdateOperationsInput | $Enums.EventCategory | null
-  virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
-  evidence?: Prisma.StringFieldUpdateOperationsInput | string
-  chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
-  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
-  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
-  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  book?: Prisma.BookUpdateOneRequiredWithoutFactsNestedInput
-  chapter?: Prisma.ChapterUpdateOneRequiredWithoutFactsNestedInput
-  sourceEntity?: Prisma.EntityUpdateOneWithoutSourceFactsNestedInput
-  targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
-  job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
-  agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-}
-
-export type FactUncheckedUpdateWithoutEvidencesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  bookId?: Prisma.StringFieldUpdateOperationsInput | string
-  factType?: Prisma.EnumFactTypeFieldUpdateOperationsInput | $Enums.FactType
-  sourceEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  targetEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  relationshipTypeCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  eventCategory?: Prisma.NullableEnumEventCategoryFieldUpdateOperationsInput | $Enums.EventCategory | null
-  virtualYear?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
-  evidence?: Prisma.StringFieldUpdateOperationsInput | string
-  chapterId?: Prisma.StringFieldUpdateOperationsInput | string
-  chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  confidence?: Prisma.FloatFieldUpdateOperationsInput | number
-  recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
-  status?: Prisma.EnumProcessingStatusFieldUpdateOperationsInput | $Enums.ProcessingStatus
-  jobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  agentRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
 export type FactCreateWithoutJobInput = {
   id?: string
   factType?: $Enums.FactType
@@ -1640,7 +1437,6 @@ export type FactCreateWithoutJobInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1655,7 +1451,6 @@ export type FactCreateWithoutJobInput = {
   sourceEntity?: Prisma.EntityCreateNestedOneWithoutSourceFactsInput
   targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
   agentRun?: Prisma.AgentRunCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateWithoutJobInput = {
@@ -1673,7 +1468,6 @@ export type FactUncheckedCreateWithoutJobInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1684,7 +1478,6 @@ export type FactUncheckedCreateWithoutJobInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactCreateOrConnectWithoutJobInput = {
@@ -1724,7 +1517,6 @@ export type FactCreateWithoutAgentRunInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1739,7 +1531,6 @@ export type FactCreateWithoutAgentRunInput = {
   sourceEntity?: Prisma.EntityCreateNestedOneWithoutSourceFactsInput
   targetEntity?: Prisma.EntityCreateNestedOneWithoutTargetFactsInput
   job?: Prisma.AnalysisJobCreateNestedOneWithoutFactsInput
-  evidences?: Prisma.FactEvidenceCreateNestedManyWithoutFactInput
 }
 
 export type FactUncheckedCreateWithoutAgentRunInput = {
@@ -1757,7 +1548,6 @@ export type FactUncheckedCreateWithoutAgentRunInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1768,7 +1558,6 @@ export type FactUncheckedCreateWithoutAgentRunInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  evidences?: Prisma.FactEvidenceUncheckedCreateNestedManyWithoutFactInput
 }
 
 export type FactCreateOrConnectWithoutAgentRunInput = {
@@ -1811,7 +1600,6 @@ export type FactCreateManyBookInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1836,7 +1624,6 @@ export type FactUpdateWithoutBookInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1851,7 +1638,6 @@ export type FactUpdateWithoutBookInput = {
   targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
   job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
   agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateWithoutBookInput = {
@@ -1868,7 +1654,6 @@ export type FactUncheckedUpdateWithoutBookInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1880,7 +1665,6 @@ export type FactUncheckedUpdateWithoutBookInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateManyWithoutBookInput = {
@@ -1897,7 +1681,6 @@ export type FactUncheckedUpdateManyWithoutBookInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1925,7 +1708,6 @@ export type FactCreateManyChapterInput = {
   attitudeTags?: Prisma.FactCreateattitudeTagsInput | string[]
   evidence: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -1950,7 +1732,6 @@ export type FactUpdateWithoutChapterInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1965,7 +1746,6 @@ export type FactUpdateWithoutChapterInput = {
   targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
   job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
   agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateWithoutChapterInput = {
@@ -1982,7 +1762,6 @@ export type FactUncheckedUpdateWithoutChapterInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -1994,7 +1773,6 @@ export type FactUncheckedUpdateWithoutChapterInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateManyWithoutChapterInput = {
@@ -2011,7 +1789,6 @@ export type FactUncheckedUpdateManyWithoutChapterInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2039,7 +1816,6 @@ export type FactCreateManySourceEntityInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -2067,7 +1843,6 @@ export type FactCreateManyTargetEntityInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -2092,7 +1867,6 @@ export type FactUpdateWithoutSourceEntityInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2107,7 +1881,6 @@ export type FactUpdateWithoutSourceEntityInput = {
   targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
   job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
   agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateWithoutSourceEntityInput = {
@@ -2124,7 +1897,6 @@ export type FactUncheckedUpdateWithoutSourceEntityInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2136,7 +1908,6 @@ export type FactUncheckedUpdateWithoutSourceEntityInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateManyWithoutSourceEntityInput = {
@@ -2153,7 +1924,6 @@ export type FactUncheckedUpdateManyWithoutSourceEntityInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2178,7 +1948,6 @@ export type FactUpdateWithoutTargetEntityInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2193,7 +1962,6 @@ export type FactUpdateWithoutTargetEntityInput = {
   sourceEntity?: Prisma.EntityUpdateOneWithoutSourceFactsNestedInput
   job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
   agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateWithoutTargetEntityInput = {
@@ -2210,7 +1978,6 @@ export type FactUncheckedUpdateWithoutTargetEntityInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2222,7 +1989,6 @@ export type FactUncheckedUpdateWithoutTargetEntityInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateManyWithoutTargetEntityInput = {
@@ -2239,7 +2005,6 @@ export type FactUncheckedUpdateManyWithoutTargetEntityInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2268,7 +2033,6 @@ export type FactCreateManyJobInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -2292,7 +2056,6 @@ export type FactUpdateWithoutJobInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2307,7 +2070,6 @@ export type FactUpdateWithoutJobInput = {
   sourceEntity?: Prisma.EntityUpdateOneWithoutSourceFactsNestedInput
   targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
   agentRun?: Prisma.AgentRunUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateWithoutJobInput = {
@@ -2325,7 +2087,6 @@ export type FactUncheckedUpdateWithoutJobInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2336,7 +2097,6 @@ export type FactUncheckedUpdateWithoutJobInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateManyWithoutJobInput = {
@@ -2354,7 +2114,6 @@ export type FactUncheckedUpdateManyWithoutJobInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2382,7 +2141,6 @@ export type FactCreateManyAgentRunInput = {
   evidence: string
   chapterId: string
   chapterNo: number
-  paraIndex?: number | null
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: number
   recordSource?: $Enums.RecordSource
@@ -2406,7 +2164,6 @@ export type FactUpdateWithoutAgentRunInput = {
   attitudeTags?: Prisma.FactUpdateattitudeTagsInput | string[]
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2421,7 +2178,6 @@ export type FactUpdateWithoutAgentRunInput = {
   sourceEntity?: Prisma.EntityUpdateOneWithoutSourceFactsNestedInput
   targetEntity?: Prisma.EntityUpdateOneWithoutTargetFactsNestedInput
   job?: Prisma.AnalysisJobUpdateOneWithoutFactsNestedInput
-  evidences?: Prisma.FactEvidenceUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateWithoutAgentRunInput = {
@@ -2439,7 +2195,6 @@ export type FactUncheckedUpdateWithoutAgentRunInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2450,7 +2205,6 @@ export type FactUncheckedUpdateWithoutAgentRunInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  evidences?: Prisma.FactEvidenceUncheckedUpdateManyWithoutFactNestedInput
 }
 
 export type FactUncheckedUpdateManyWithoutAgentRunInput = {
@@ -2468,7 +2222,6 @@ export type FactUncheckedUpdateManyWithoutAgentRunInput = {
   evidence?: Prisma.StringFieldUpdateOperationsInput | string
   chapterId?: Prisma.StringFieldUpdateOperationsInput | string
   chapterNo?: Prisma.IntFieldUpdateOperationsInput | number
-  paraIndex?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   recordSource?: Prisma.EnumRecordSourceFieldUpdateOperationsInput | $Enums.RecordSource
@@ -2481,35 +2234,6 @@ export type FactUncheckedUpdateManyWithoutAgentRunInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-
-/**
- * Count Type FactCountOutputType
- */
-
-export type FactCountOutputType = {
-  evidences: number
-}
-
-export type FactCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  evidences?: boolean | FactCountOutputTypeCountEvidencesArgs
-}
-
-/**
- * FactCountOutputType without action
- */
-export type FactCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the FactCountOutputType
-   */
-  select?: Prisma.FactCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * FactCountOutputType without action
- */
-export type FactCountOutputTypeCountEvidencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.FactEvidenceWhereInput
-}
 
 
 export type FactSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -2527,7 +2251,6 @@ export type FactSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   evidence?: boolean
   chapterId?: boolean
   chapterNo?: boolean
-  paraIndex?: boolean
   payload?: boolean
   confidence?: boolean
   recordSource?: boolean
@@ -2545,8 +2268,6 @@ export type FactSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   targetEntity?: boolean | Prisma.Fact$targetEntityArgs<ExtArgs>
   job?: boolean | Prisma.Fact$jobArgs<ExtArgs>
   agentRun?: boolean | Prisma.Fact$agentRunArgs<ExtArgs>
-  evidences?: boolean | Prisma.Fact$evidencesArgs<ExtArgs>
-  _count?: boolean | Prisma.FactCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fact"]>
 
 export type FactSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -2564,7 +2285,6 @@ export type FactSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   evidence?: boolean
   chapterId?: boolean
   chapterNo?: boolean
-  paraIndex?: boolean
   payload?: boolean
   confidence?: boolean
   recordSource?: boolean
@@ -2599,7 +2319,6 @@ export type FactSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   evidence?: boolean
   chapterId?: boolean
   chapterNo?: boolean
-  paraIndex?: boolean
   payload?: boolean
   confidence?: boolean
   recordSource?: boolean
@@ -2634,7 +2353,6 @@ export type FactSelectScalar = {
   evidence?: boolean
   chapterId?: boolean
   chapterNo?: boolean
-  paraIndex?: boolean
   payload?: boolean
   confidence?: boolean
   recordSource?: boolean
@@ -2648,7 +2366,7 @@ export type FactSelectScalar = {
   updatedAt?: boolean
 }
 
-export type FactOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "factType" | "sourceEntityId" | "targetEntityId" | "relationshipTypeCode" | "eventCategory" | "virtualYear" | "location" | "title" | "attitudeTags" | "evidence" | "chapterId" | "chapterNo" | "paraIndex" | "payload" | "confidence" | "recordSource" | "status" | "jobId" | "agentRunId" | "reviewedAt" | "reviewedBy" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["fact"]>
+export type FactOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "factType" | "sourceEntityId" | "targetEntityId" | "relationshipTypeCode" | "eventCategory" | "virtualYear" | "location" | "title" | "attitudeTags" | "evidence" | "chapterId" | "chapterNo" | "payload" | "confidence" | "recordSource" | "status" | "jobId" | "agentRunId" | "reviewedAt" | "reviewedBy" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["fact"]>
 export type FactInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
@@ -2656,8 +2374,6 @@ export type FactInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   targetEntity?: boolean | Prisma.Fact$targetEntityArgs<ExtArgs>
   job?: boolean | Prisma.Fact$jobArgs<ExtArgs>
   agentRun?: boolean | Prisma.Fact$agentRunArgs<ExtArgs>
-  evidences?: boolean | Prisma.Fact$evidencesArgs<ExtArgs>
-  _count?: boolean | Prisma.FactCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type FactIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -2685,7 +2401,6 @@ export type $FactPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     targetEntity: Prisma.$EntityPayload<ExtArgs> | null
     job: Prisma.$AnalysisJobPayload<ExtArgs> | null
     agentRun: Prisma.$AgentRunPayload<ExtArgs> | null
-    evidences: Prisma.$FactEvidencePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2702,7 +2417,6 @@ export type $FactPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     evidence: string
     chapterId: string
     chapterNo: number
-    paraIndex: number | null
     /**
      * 类型专属结构化字段（服务层按 factType 用 Zod 校验）：
      * BIOGRAPHY: { summary?, ironyNote?, tags[] }
@@ -3122,7 +2836,6 @@ export interface Prisma__FactClient<T, Null = never, ExtArgs extends runtime.Typ
   targetEntity<T extends Prisma.Fact$targetEntityArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Fact$targetEntityArgs<ExtArgs>>): Prisma.Prisma__EntityClient<runtime.Types.Result.GetResult<Prisma.$EntityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   job<T extends Prisma.Fact$jobArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Fact$jobArgs<ExtArgs>>): Prisma.Prisma__AnalysisJobClient<runtime.Types.Result.GetResult<Prisma.$AnalysisJobPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   agentRun<T extends Prisma.Fact$agentRunArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Fact$agentRunArgs<ExtArgs>>): Prisma.Prisma__AgentRunClient<runtime.Types.Result.GetResult<Prisma.$AgentRunPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  evidences<T extends Prisma.Fact$evidencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Fact$evidencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FactEvidencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3166,7 +2879,6 @@ export interface FactFieldRefs {
   readonly evidence: Prisma.FieldRef<"Fact", 'String'>
   readonly chapterId: Prisma.FieldRef<"Fact", 'String'>
   readonly chapterNo: Prisma.FieldRef<"Fact", 'Int'>
-  readonly paraIndex: Prisma.FieldRef<"Fact", 'Int'>
   readonly payload: Prisma.FieldRef<"Fact", 'Json'>
   readonly confidence: Prisma.FieldRef<"Fact", 'Float'>
   readonly recordSource: Prisma.FieldRef<"Fact", 'RecordSource'>
@@ -3647,30 +3359,6 @@ export type Fact$agentRunArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   include?: Prisma.AgentRunInclude<ExtArgs> | null
   where?: Prisma.AgentRunWhereInput
-}
-
-/**
- * Fact.evidences
- */
-export type Fact$evidencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the FactEvidence
-   */
-  select?: Prisma.FactEvidenceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the FactEvidence
-   */
-  omit?: Prisma.FactEvidenceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.FactEvidenceInclude<ExtArgs> | null
-  where?: Prisma.FactEvidenceWhereInput
-  orderBy?: Prisma.FactEvidenceOrderByWithRelationInput | Prisma.FactEvidenceOrderByWithRelationInput[]
-  cursor?: Prisma.FactEvidenceWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.FactEvidenceScalarFieldEnum | Prisma.FactEvidenceScalarFieldEnum[]
 }
 
 /**

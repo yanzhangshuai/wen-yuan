@@ -13,7 +13,6 @@ import { parseSkillMetadata, serializeSkillFrontmatter } from "@/server/modules/
 const VALID_MD = `---
 kind: HYBRID
 triggers:
-  bookTypeKeys: [keju-novel]
   taskTypes: [CHAPTER_ANALYSIS]
   priority: 100
 ---
@@ -27,8 +26,31 @@ describe("parseSkillMetadata", () => {
     const metadata = parseSkillMetadata(VALID_MD);
     expect(metadata.kind).toBe("HYBRID");
     expect(metadata.triggers.priority).toBe(100);
-    expect(metadata.triggers.bookTypeKeys).toEqual(["keju-novel"]);
     expect(metadata.triggers.taskTypes).toEqual(["CHAPTER_ANALYSIS"]);
+  });
+
+  it("解析关系码契约与虚指名单", () => {
+    const md = `---
+kind: RELATIONSHIP_TYPE
+triggers:
+  priority: 996
+relationshipCodes:
+  - code: 父子
+    direction: INVERSE
+    category: 家庭
+    aliases: [父与子]
+  - code: 兄弟
+    direction: SYMMETRIC
+    category: 家庭
+deicticJunk: [众人, 此人]
+---
+`;
+    const metadata = parseSkillMetadata(md);
+    expect(metadata.relationshipCodes).toEqual([
+      { code: "父子", direction: "INVERSE", category: "家庭", aliases: ["父与子"] },
+      { code: "兄弟", direction: "SYMMETRIC", category: "家庭", aliases: [] }
+    ]);
+    expect(metadata.deicticJunk).toEqual(["众人", "此人"]);
   });
 
   it("frontmatter YAML 语法错误时抛错", () => {

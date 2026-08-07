@@ -3,7 +3,6 @@ import argon2 from "argon2";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { AppRole, PrismaClient } from "../src/generated/prisma/client.ts";
-import { seedBookTypeSkills } from "../scripts/seed-book-type-skills.ts";
 import { seedSkillBaselines } from "../scripts/seed-skill-baselines.ts";
 
 /**
@@ -87,60 +86,11 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * 从 data/knowledge-base/book-types.init.json 读取书籍类型并 upsert。
- * 仅取 bookTypes 数组的基础字段（旧 knowledgePacks 已被 Skill 替代，忽略）。
- */
-async function seedBookTypes(): Promise<number> {
-  const initPath = resolve(process.cwd(), "data/knowledge-base/book-types.init.json");
-  if (!existsSync(initPath)) {
-    console.warn("⚠ 未找到 book-types.init.json，跳过书籍类型种子");
-    return 0;
-  }
-
-  const raw = JSON.parse(readFileSync(initPath, "utf8")) as {
-    bookTypes?: Array<{
-      key       : string;
-      name      : string;
-      description?: string;
-      sortOrder ?: number;
-      isActive  ?: boolean;
-    }>;
-  };
-
-  if (!Array.isArray(raw.bookTypes)) {
-    return 0;
-  }
-
-  let count = 0;
-  for (const item of raw.bookTypes) {
-    if (!item.key || !item.name) continue;
-    await prisma.bookType.upsert({
-      where : { key: item.key },
-      update: {
-        name       : item.name,
-        description: item.description ?? null,
-        sortOrder  : item.sortOrder ?? 0,
-        isActive   : item.isActive ?? true
-      },
-      create: {
-        key        : item.key,
-        name       : item.name,
-        description: item.description ?? null,
-        sortOrder  : item.sortOrder ?? 0,
-        isActive   : item.isActive ?? true
-      }
-    });
-    count += 1;
-  }
-
-  return count;
-}
-
-/**
  * 种子主流程：
  * 1. 管理员账号（幂等 upsert）；
- * 2. 书籍类型；
- * 3. Skill 基线技能包。
+ * 2. Skill 基线技能包。
+ *
+ * v5 阶段 1：book_types / book_type_skills 表已删，不再 seed 书籍类型。
  */
 async function main() {
   console.log("🌱 开始录入种子数据...");
@@ -165,15 +115,11 @@ async function main() {
     select: { username: true }
   });
 
-  const bookTypeCount = await seedBookTypes();
   const skillCount = await seedSkillBaselines(prisma);
-  const bookTypeSkillCount = await seedBookTypeSkills(prisma);
 
   console.log("✅ 种子数据录入成功！");
   console.log(`- 已初始化管理员: ${result.username}`);
-  console.log(`- 已初始化书籍类型: ${bookTypeCount} 个`);
   console.log(`- 已初始化 Skill 基线: ${skillCount} 个`);
-  console.log(`- 已迁移书型知识包为 Skill: ${bookTypeSkillCount} 个`);
   console.log("- 模型配置由管理后台维护，seed 未修改 ai_models");
 }
 

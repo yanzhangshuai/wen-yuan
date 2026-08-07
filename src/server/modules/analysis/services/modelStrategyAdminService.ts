@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { type Prisma, type PrismaClient } from "@/generated/prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 import {
@@ -23,11 +23,6 @@ import { BUSINESS_PIPELINE_STAGES, PipelineStage } from "@/types/pipeline";
  * - 策略作用域优先级和可用模型校验属于业务规则，不是技术限制；
  * - 成本统计按“同一调用键最终结果”归并，避免重试日志重复计数。
  */
-const ALL_STRATEGY_STAGES: PipelineStage[] = [
-  ...BUSINESS_PIPELINE_STAGES,
-  PipelineStage.FALLBACK
-];
-
 type StrategyScope = "GLOBAL" | "BOOK";
 
 interface StrategyRow {
@@ -184,25 +179,6 @@ function toStrategyDto(row: StrategyRow): ModelStrategyDto {
 }
 
 /**
- * 功能：收集策略中引用的全部模型 UUID（含 FALLBACK 槽位）。
- * 输入：阶段策略配置。
- * 输出：去重后的模型 UUID 列表。
- * 异常：无。
- * 副作用：无。
- */
-function collectModelIds(stages: StrategyStagesDto): string[] {
-  const modelIds = new Set<string>();
-  for (const stage of ALL_STRATEGY_STAGES) {
-    const modelId = stages[stage]?.modelId;
-    if (modelId) {
-      modelIds.add(modelId);
-    }
-  }
-
-  return Array.from(modelIds);
-}
-
-/**
  * 功能：构建“同一次执行尝试”的归并键。
  * 输入：阶段日志中的阶段、章节、分块索引。
  * 输出：可用于聚合 Map 的稳定键。
@@ -223,16 +199,6 @@ function buildExecuteCallKey(log: Pick<PhaseLogRow, "stage" | "chapterId" | "chu
 export function createModelStrategyAdminService(
   prismaClient: PrismaClient = prisma
 ) {
-  const strategySelect = {
-    id       : true,
-    scope    : true,
-    bookId   : true,
-    jobId    : true,
-    stages   : true,
-    createdAt: true,
-    updatedAt: true
-  } as const;
-
   /**
    * 功能：校验书籍存在且未软删除。
    * 输入：书籍 ID。
@@ -252,87 +218,16 @@ export function createModelStrategyAdminService(
   }
 
   /**
-   * 策略模型校验：只允许引用已启用模型 UUID。
-   * 这样可以避免运行阶段才发现模型已失效，保证配置保存即“可执行”。
+   * v5 阶段 1（08-07-v5-skill-loading）：model_strategy_configs 表已删，
+   * 模型策略改由 feature_models 功能点模型（阶段 4）接管。策略 CRUD 一律返回空/抛错，
+   * 保留接口兼容管理端路由，直至阶段 4 删除 v4 模型策略管理。
    */
-  async function assertEnabledModelIds(stages: StrategyStagesDto): Promise<void> {
-    const modelIds = collectModelIds(stages);
-    if (modelIds.length === 0) {
-      return;
-    }
-
-    const enabledModels = await prismaClient.aiModel.findMany({
-      where: {
-        id       : { in: modelIds },
-        isEnabled: true
-      },
-      select: {
-        id  : true,
-        name: true
-      }
-    });
-
-    const enabledModelIdSet = new Set(enabledModels.map((model) => model.id));
-    const missingModelId = modelIds.find((modelId) => !enabledModelIdSet.has(modelId));
-    if (!missingModelId) {
-      return;
-    }
-
-    throw new ModelStrategyValidationError(`模型 ID ${missingModelId} 不存在或未启用`);
+  async function findScopedStrategy(_scope: StrategyScope, _bookId?: string): Promise<StrategyRow | null> {
+    return await Promise.resolve(null);
   }
 
-  async function findScopedStrategy(scope: StrategyScope, bookId?: string): Promise<StrategyRow | null> {
-    return await prismaClient.modelStrategyConfig.findFirst({
-      where: {
-        scope,
-        ...(scope === "BOOK" ? { bookId } : {})
-      },
-      select: strategySelect
-    });
-  }
-
-  /**
-   * 按文档要求采用 findFirst + update/create，不使用 GLOBAL upsert。
-   * 并发创建冲突（P2002）时回读后 update，确保多请求下最终收敛为单条记录。
-   */
-  async function saveScopedStrategy(scope: StrategyScope, stages: StrategyStagesDto, bookId?: string): Promise<StrategyRow> {
-    await assertEnabledModelIds(stages);
-
-    const current = await findScopedStrategy(scope, bookId);
-    if (current) {
-      return await prismaClient.modelStrategyConfig.update({
-        where : { id: current.id },
-        data  : { stages },
-        select: strategySelect
-      });
-    }
-
-    try {
-      return await prismaClient.modelStrategyConfig.create({
-        data: {
-          scope,
-          bookId: scope === "BOOK" ? bookId : null,
-          stages
-        },
-        select: strategySelect
-      });
-    } catch (error) {
-      const isUniqueConflict = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-      if (!isUniqueConflict) {
-        throw error;
-      }
-
-      const raced = await findScopedStrategy(scope, bookId);
-      if (!raced) {
-        throw error;
-      }
-
-      return await prismaClient.modelStrategyConfig.update({
-        where : { id: raced.id },
-        data  : { stages },
-        select: strategySelect
-      });
-    }
+  function saveScopedStrategy(_scope: StrategyScope, _stages: StrategyStagesDto, _bookId?: string): Promise<StrategyRow> {
+    return Promise.reject(new ModelStrategyValidationError("model_strategy_configs 表已删除，模型策略改由功能点模型管理"));
   }
 
   async function getGlobalStrategy(): Promise<ModelStrategyDto | null> {

@@ -73,7 +73,13 @@ describe("listBooks", () => {
           take   : 1,
           orderBy: { updatedAt: "desc" },
           select : expect.objectContaining({
-            architecture: true
+            updatedAt : true,
+            finishedAt: true,
+            errorLog  : true,
+            phaseLogs : expect.objectContaining({
+              take   : 1,
+              orderBy: { createdAt: "desc" }
+            })
           })
         },
         _count: {

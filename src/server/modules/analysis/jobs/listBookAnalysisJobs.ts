@@ -2,7 +2,6 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { type AnalysisJobStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
-import type { AnalysisArchitecture } from "@/types/analysis-pipeline";
 
 /**
  * 文件定位（服务端分析任务查询层）：
@@ -18,8 +17,6 @@ export interface AnalysisJobListItem {
   id            : string;
   /** 任务状态。 */
   status        : AnalysisJobStatus;
-  /** 解析架构。 */
-  architecture  : AnalysisArchitecture;
   /** 解析范围（FULL_BOOK / CHAPTER_RANGE / CHAPTER_LIST）。 */
   scope         : string;
   /** 章节起点（范围任务）。 */
@@ -45,7 +42,6 @@ export interface AnalysisJobListItem {
 interface AnalysisJobListQueryRow {
   id            : string;
   status        : AnalysisJobStatus;
-  architecture  : string;
   scope         : string;
   chapterStart  : number | null;
   chapterEnd    : number | null;
@@ -90,7 +86,6 @@ export function createListBookAnalysisJobsService(
       select : {
         id            : true,
         status        : true,
-        architecture  : true,
         scope         : true,
         chapterStart  : true,
         chapterEnd    : true,
@@ -115,7 +110,6 @@ export function createListBookAnalysisJobsService(
     return jobs.map(job => ({
       id            : job.id,
       status        : job.status,
-      architecture  : job.architecture === "twopass" ? "twopass" : "sequential",
       scope         : job.scope,
       chapterStart  : job.chapterStart,
       chapterEnd    : job.chapterEnd,

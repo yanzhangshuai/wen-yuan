@@ -437,22 +437,6 @@ function normalizeOptionalAliasKey(aliasKey: string | null | undefined): string 
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function containsStringValue(value: unknown, targets: Set<string>): boolean {
-  if (typeof value === "string") {
-    return targets.has(value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.some((entry) => containsStringValue(entry, targets));
-  }
-
-  if (typeof value === "object" && value !== null) {
-    return Object.values(value).some((entry) => containsStringValue(entry, targets));
-  }
-
-  return false;
-}
-
 function toExportedModelConfig(model: AiModelRecord): ExportedModelConfig {
   return {
     provider         : model.provider,
@@ -776,23 +760,10 @@ export function createModelsModule(
     return toModelListItem(updatedModel);
   }
 
-  async function findModelStrategyReferences(model: AiModelRecord): Promise<string[]> {
-    const targets = new Set([model.id, model.modelId]);
-    if (model.aliasKey) {
-      targets.add(model.aliasKey);
-    }
-
-    const configs = await prismaClient.modelStrategyConfig.findMany({
-      select: {
-        scope : true,
-        stages: true,
-        book  : { select: { title: true } }
-      }
-    });
-
-    return configs
-      .filter((config) => containsStringValue(config.stages, targets))
-      .map((config) => config.book?.title ?? `${config.scope} 策略`);
+  function findModelStrategyReferences(_model: AiModelRecord): string[] {
+    // v5 阶段 1（08-07-v5-skill-loading）：model_strategy_configs 表已删，
+    // 模型删除保护不再检查 v4 阶段策略引用（功能点模型在阶段 4 引入）。
+    return [];
   }
 
   async function deleteModel(id: string): Promise<{ id: string }> {
@@ -801,7 +772,7 @@ export function createModelsModule(
       throw new ModelConfigurationError("ADMIN_MODEL_IS_DEFAULT", "请先切换默认模型后再删除");
     }
 
-    const references = await findModelStrategyReferences(model);
+    const references = findModelStrategyReferences(model);
     if (references.length > 0) {
       throw new ModelConfigurationError(
         "ADMIN_MODEL_IN_USE",
