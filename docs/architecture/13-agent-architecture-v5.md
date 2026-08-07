@@ -3,7 +3,7 @@
 > 本文档是分析域的**当前权威架构**，取代 v4（`12-agent-architecture-full.md`）与 00-11 中所有 Tool-Use Loop 相关描述。
 > 核心转向：**模型只做它擅长的提取，系统只做模型永远不会的验收。**
 >
-> 版本：2026-08-06 · v5.1（v5 经四轮评审收敛：双 tier 身份解析 + 身份判定原语 + 分布式冲突扫描 + 登记表派生视图 + 预算修正）
+> 版本：2026-08-07 · v5.2（v5 经四轮评审收敛：双 tier 身份解析 + 身份判定原语 + 分布式冲突扫描 + 登记表派生视图 + 预算修正；skill 装载重构：AI 动态选 skill + 关系码契约入 skill + 功能点模型）
 
 ---
 
@@ -27,7 +27,7 @@ v4 架构（Agent 工具循环 + 跨章记忆 + 自修复闭环）的每个组�
 | 层 | 内容 | 为何永不内化 |
 |---|---|---|
 | L3 · 验收标准 | goldset、证据锚定判据、name authority 规范、merge 授权边界 | 模型拿不到"什么算做对了"；责任不可转移给模型 |
-| L2 · 数据契约 | facts 唯一写入口、关系归一化、别名安全级别、Union-Find 护栏、relationship_types 表 | 是系统不变量，靠代码/DB 强制，不靠 prompt 说服 |
+| L2 · 数据契约 | facts 唯一写入口、关系归一化、别名安全级别、Union-Find 护栏、关系码契约闭集（skill frontmatter + 任务快照） | 是系统不变量，靠代码/DB 强制，不靠 prompt 说服 |
 | 独立复核 | 跨模型独立校验、人审例外队列 | 自评结构性偏差不随模型变强消失 |
 
 ### 1.3 一句话架构
@@ -44,7 +44,7 @@ v4 架构（Agent 工具循环 + 跨章记忆 + 自修复闭环）的每个组�
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │ 验收层（工具化判据，代码而非 prompt —— L2/L3）                   │
-│  证据锚定 · relationship_types 表驱动校验 · 泛称安全级别          │
+│  证据锚定 · 关系码契约闭集校验（skill 契约） · 泛称安全级别        │
 │  · name authority · 幻觉过滤 · merge 人审门禁                    │
 │  · 分布式冲突扫描 · goldset 评测门禁 · 定向跨模型复核              │
 ├───────────────────────────────────────────────────────────────┤
@@ -53,7 +53,7 @@ v4 架构（Agent 工具循环 + 跨章记忆 + 自修复闭环）的每个组�
 │  结构化输出走 JSON Schema（动态生成，接口设计，不给示例）          │
 ├───────────────────────────────────────────────────────────────┤
 │ 上下文层（渐进式披露）                                          │
-│  skill 元数据常驻(~100 token) · 相关 skill 正文按书型注入          │
+│  skill 元数据常驻(~100 token) · 相关 skill 正文按 AI 动态选择注入  │
 │  分片提取注入"登记表 + 全书摘要" · Tier2 注入"窗口 + 登记表 + 摘要" │
 ├───────────────────────────────────────────────────────────────┤
 │ 数据层（权威链）                                                │
@@ -80,7 +80,7 @@ Pass1 分片事实提取（15-75%）
        ▼
 Pass2 确定性护栏（零 LLM）
   证据锚定：事实里出现的名字必须在本章正文可证（幻觉过滤）
-  关系码校验：relationship_types 表驱动（schema 动态枚举 + 落库双检）
+  关系码校验：所选 skill 契约 relationshipCodes 闭集驱动（schema 动态枚举 + 落库双检）
   泛称过滤：安全级别（safety level）判据，非穷举名单
   ─ 落库 facts(DRAFT) + mentions + aliases
        │
@@ -195,7 +195,7 @@ reconcile（漏网高频，复用原语）
 
 **写（保留）**：
 - 目标："提取本章实体与事实" / "输出全书实体登记表"
-- 输出契约：JSON Schema（**运行时从 DB 动态生成**：factType 枚举、relationship_types 表驱动、evidence 必填、字段约束）
+- 输出契约：JSON Schema（**运行时动态生成**：factType 枚举、关系码取自所选 skill 契约快照、evidence 必填、字段约束）
 - 成功判据："每条事实必须有原文证据；实体名必须在正文出现"
 - 可用上下文：章正文 + 身份登记表 + 全书摘要 + 相关 skill
 - 约束：只提取本章可见事实，不臆测前文未出现的信息
@@ -221,35 +221,38 @@ reconcile（漏网高频，复用原语）
 | 书型特有知识：科举制（座师/同年/门生）、官场规则 | "如何提取实体/关系"的过程指令 |
 | 历史人物事实（真名溯源：周进→周学道） | 通用中文命名常识（姓氏/名字模式） |
 | 书型级别名模式（明清官场称谓规则） | 泛化的"古典文学常识"复述 |
-| 关系类型领域定义（**教学参考**，非运行时权威） | 字典式穷举规则（下沉为 relationship_types 表） |
+| 关系类型契约（relationshipCodes 闭集，schema/guardrail/图谱取码源） | 字典式穷举规则（代码不维护码表，码进 skill frontmatter） |
 
-**装载方式**：提取时按书型**预注入**（无 load_skill 工具调用——Pass1 是单轮，上下文一次给全）。触发书型的 2-5 个 skill 全文压缩成紧凑知识表（控制在 2-3K token）直接进提取 prompt。skill 元数据（名字 + 描述 ~100 token）用于管理 UI 与展示。
+**装载方式（v5：AI 动态选择，每次任务现选）**：解析前由 `selectSkillsForJob` 按"书 + skill 目录"动态选 skill——书上下文（书名/作者/朝代/简介 + 章节正文：全文 ≤ 阈值全量注入，超长抽样首/中/末各 ~2K 字）+ frontmatter-only 目录 `{slug, name, description, category}`（不读正文）→ 一次 SKILL_SELECTOR 廉价模型调用 → zod 校验 `skillSlugs ⊆ 目录`（目录外/未启用的 slug 丢弃告警）→ 装载集合 = `scope=GLOBAL ∪ 选中` → 结果快照进 `analysis_jobs.skillsSnapshot` / `relationshipTypesSnapshot`。任务内各阶段从任务快照装载，任务间互不干扰；**不做书级持久化**（同书多次解析每次现选）。skill 元数据（名字 + 描述 ~100 token）用于选择器目录与管理 UI 展示。
 
-**SkillGenerator（生成全自动，启用须人确认）**：
+**启停（`Skill.isEnabled`）**：每个 skill 独立开关（非总闸）；`false` = 该 skill 全局不可用（目录不可见 / AI 不可选 / 不装载）。内容源 = `scripts/skills/*.md`（frontmatter 契约 + 正文）+ seed，管理端只读展示契约 + 启停开关，不提供富文本编辑。
 
-- **自动**：从本书高频泛称 / 字典外关系码 / 新称呼模式生成**候选知识表草稿**（skill_versions DRAFT）
-- **人确认**：管理员审核后才启用（L3 信息必须人盖章，避免无约束 AI 知识污染后续书）
-- 降级的是**自主度**（生成后不能自动激活），不是生成本身
+**关系码契约（v5：relationship_types 表已删）**：关系码闭集进 relationship-type skill frontmatter `relationshipCodes: [{code, direction, category, aliases}]`（seed：`classical-relationship-types.md`）；运行时 schema/guardrail/图谱取码 = 所选 skill 契约并集（去重按 code，先到先得）+ 任务快照 `relationshipTypesSnapshot`。虚指代词名单同样外置为 GLOBAL skill 契约（`chinese-deictic-junk.md` 的 `deicticJunk`），guardrails 从装载上下文读契约，代码只留空名单兜底。
+
+**SkillGenerator（规划中，未接线）**：生成全自动候选 + 人工确认启用的模块（`src/server/modules/skills/skillGenerator.ts`）已实现但**未接入任何运行时路径**（无 admin API / 管线调用）；Skill 模型保留 `generatedFromJobId/generatedFromBookId` 溯源字段与 `SKILL_GENERATION` runType 枚举。启用须人确认（L3 信息必须人盖章）。
 
 ---
 
 ## 第六部分 · 数据模型调整
 
-基于现有 28 表 schema（已迁移的新库），**运行域按"无工具循环"简化**：
+基于现有 schema（已迁移的新库；skill 装载重构后：删 `book_types`/`book_type_skills`/`relationship_types`/`model_strategy_configs`/`text_chunks`/`fact_evidences` 6 表，新增 `feature_models` 表），**运行域按"无工具循环"简化**：
 
 | 表 | 处置 | 理由 |
 |---|---|---|
-| `facts` / `fact_evidences` / `entities` / `aliases` / `mentions` / `relationships` | **保留** | 权威链不变 |
-| `skills` / `skill_versions` / `book_type_skills` | **保留** | L3 知识承载 |
-| `relationship_types` | **新增** | 关系码唯一权威（code/name/direction/category/别名）；`bookTypeId?`（可空=全局，书型专属码不污染其他书型）；schema 按书型 = 全局行 + 本书型行；`analysis_jobs` 增 `relationshipTypesSnapshot` 任务级快照（同 skillsSnapshot 模式，防跑批中途改表片间漂移） |
-| `analysis_jobs` | **保留**，简化 scope | 任务生命周期 |
+| `facts` / `entities` / `aliases` / `mentions` / `relationships` | **保留** | 权威链不变（`fact_evidences` 已删，证据锚定只写 `Fact.evidence`） |
+| `skills` / `skill_versions` | **保留** | L3 知识承载；`Skill` 增 `isEnabled` 独立启停开关（v5）；`book_type_skills` 已删（书型间接层） |
+| `relationship_types` | **已删** | 关系码权威表取消，契约入 skill frontmatter（`relationshipCodes` 闭集）；运行时取码 = 所选 skill 契约并集 + `analysis_jobs.relationshipTypesSnapshot` 任务快照 |
+| `analysis_jobs` | **保留**，简化 scope | 任务生命周期；`skillsSnapshot` / `relationshipTypesSnapshot` 由 `selectSkillsForJob` 在任务启动时写入 |
 | `agent_runs` | **保留**，runType 补全 | runType = PRESCAN \| IDENTITY \| EXTRACTION \| RECONCILE \| VALIDATION \| CROSS_VALIDATION \| SKILL_GENERATION（QaAgent 用户问答不落 agent_runs） |
 | `agent_steps` | **删除**（或降级为 segment 成本记录） | 无工具调用，`kind=TOOL_CALL` 等枚举作废 |
 | `agent_write_audits` | **保留但简化** | 只记提取落库写审计（evidence 校验通过记录） |
 | `chapter_memories` | **不建** | 身份登记表就是记忆；无跨章记忆管线 |
 | `validation_reports` / `merge_suggestions` | **保留** | 只检测不修复；merge 人审 |
-| `text_chunks` / pgvector | **保留** | RAG 问答（QaAgent 简化：一次检索 + 单轮回答） |
+| `text_chunks` / pgvector | **已删** | RAG 是 v4；v5 无检索问答路径 |
+| `feature_models` | **新增** | 功能点模型全局映射（featureKey → modelId；SKILL_SELECTOR / PIPELINE_MAIN / REVIEW），AiCallExecutor 按 featureKey 解析，未配置回退系统默认模型 |
 | `facts.status` / `recordSource` | **微调** | 加 `AUTO_VERIFIED` 来源，区分机器自动接受 vs 人工确认 |
+
+**进度推导**：`Book.parseProgress/parseStage` 列已删，解析进度由 `getBookStatus` 从最新 `AnalysisJob` 状态 + `analysis_phase_logs` 推导（前端读 API 字段名不变）；`Chapter.parseStatus` 保留（pipeline 写入、前端面板消费）。
 
 **身份登记表（registry）物理形态 —— 派生视图，无新表**：物理载体 = `entities`（canonical 全局）+ `aliases`（书级，entityId+bookId，`status/confidence/recordSource` 骑身份置信）+ `mentions`（证据 / 活跃章区）+ `entity_profiles`（书级档案）。四路回写（Tier1 / Tier2 / reconcile / 跨模型复核）统一走 `identityService` 单一写路径（写 entities/aliases/mentions + `agent_write_audits` 审计）；登记表只是这本书身份状态的物化查询——与"facts 唯一写入口、relationships 派生"同一哲学。HIGH/MEDIUM/LOW 为**派生分类**（aliases.status + confidence + 提及数 + 活跃章区重叠推导），不落新表写。本书级别名映射（范老爷→范进）存于 aliases，**不属 skill**。
 
@@ -267,7 +270,7 @@ reconcile（漏网高频，复用原语）
 2. **实体在身份登记表 HIGH**：不在登记表或 LOW → 不进自动接受
 3. **提及数 ≥ 2**：单次提及且证据单薄的事实不自动接受（markOrphan 降级）
 4. **分布式冲突扫描干净**：涉及实体无误归属冲突
-5. **确定性校验全过**：关系码在 relationship_types 表、方向正确、不与已有事实冲突
+5. **确定性校验全过**：关系码在所选 skill 契约 relationshipCodes 闭集（任务快照）、方向正确、不与已有事实冲突
 
 **跨片/跨章一致 = 加分项，不用于免审**：多片同模型同 prompt 同登记表，错误高度相关——"≥2 片一致"只能证明不是孤例，不能证明是对的。独立信号来自跨模型，不来自跨片。
 
@@ -333,6 +336,7 @@ AI-Reader-V2 最值得学的是把质量当工程做（498 pytest + golden stand
 - v5.1 是**结构性单轮**，预算就是上界，不存在穿的可能
 - 身份解析吃满上下文是**一次性**开销；分片调用上下文小且相互独立 → 可高并发，wall-clock 更快
 - 分层采样（≤15 窗口/候选）把 Tier2 压到下限，信号损失可控
+- 每次任务启动的 **SKILL_SELECTOR 动态选 skill** 为独立一次廉价调用（书上下文 + 目录，~2-4K token），全量装载技能进提取 prompt，不再按书型预注入
 
 ---
 
@@ -344,7 +348,7 @@ AI-Reader-V2 最值得学的是把质量当工程做（498 pytest + golden stand
 
 ### 扩展性
 
-- 新书型 → 新增 skill（数据）+ 关系码（**插 relationship_types 表行**），无代码改动
+- 新书型 → 新增 skill（数据）+ 关系码契约（**编辑 skill frontmatter 的 `relationshipCodes`**），无代码改动
 - 新事实类型 → JSON Schema 扩展 + 聚合映射
 - 新模型 → 配置 + 上下文预算自动缩放（借鉴 AI-Reader-V2 `compute_budget`，按上下文窗口插值）
 - 新质量约束 → 先在 goldset 验证失败，再写确定性校验器
@@ -373,7 +377,7 @@ AI-Reader-V2 最值得学的是把质量当工程做（498 pytest + golden stand
 | D1 | **删除 Agent 工具循环**（引擎/工具层/治理层 hook 全删）；不因上下文变大而复活 |
 | D2 | **删除 `agent_steps` 表**（或降级为 segment 成本记录） |
 | D3 | **不建 `chapter_memories`**；身份登记表就是跨章记忆 |
-| D4 | **Skill 装载 = 提取时按书型预注入**，无 load_skill 工具 |
+| D4 | **Skill 装载 = 解析前 AI 动态选择**（每次任务启动 `selectSkillsForJob` 现选并快照进任务，装载 = GLOBAL ∪ 选中），无 load_skill 工具 |
 | D5 | **删除自修复闭环**；校验只检测 + 例外人审 |
 | D6 | **goldset 先行**（跨段取样 4-6 章 + 冷门书对照），在写提取代码之前建评测 |
 | D7 | **身份解析双 tier**：Tier1 全书一遍草稿登记表 + Tier2 原语兜底；登记表 = 派生视图（无新表），四路回写统一走 identityService + 审计；A/B 校准表选路径（离线），达标走单遍，否则分卷一等路径 |
@@ -382,7 +386,7 @@ AI-Reader-V2 最值得学的是把质量当工程做（498 pytest + golden stand
 | D10 | **身份判定原语**：局部采样窗口 + 全局登记表 + HIGH 组合规则（LLM 判定 ∧ 提及数 ∧ 扫描干净 ∧ 窗口一致） |
 | D11 | **分布式冲突扫描**：按章分布判误归属（非邻近窗口重叠），与 X/Y 均重合 = 正常共现不标记 |
 | D12 | 数据权威链：`facts(权威) → relationships(可重算投影) → Neo4j(查询缓存)` |
-| D13 | 结构化输出走 JSON Schema / function calling（schema 运行时按书型从 relationship_types 表动态生成 + 任务级快照，无自由 JSON + repairJson） |
+| D13 | 结构化输出走 JSON Schema / function calling（schema 运行时从所选 skill 契约 relationshipCodes 并集 + 任务快照动态生成，无自由 JSON + repairJson） |
 | D14 | 全流程可追溯：`agent_runs`（runType 补全）+ `agent_write_audits`（简化后） |
 | D15 | 评测门禁：eval gate entityF1≥0.74 / relationF1≥0.68；独立复核定向风险集中类（跨模型） |
 | D16 | 地点仅普通实体（本期无空间层级/地图）；空间维度后置 |
