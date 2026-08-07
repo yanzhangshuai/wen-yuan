@@ -9,7 +9,7 @@
  * 复用：identity/llm.ts 调用模式、getRegistry 登记表、guardrails 护栏。
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.2/Pass1
  */
-import { PipelineStage } from "@/types/pipeline";
+import { FeatureKey } from "@/types/pipeline";
 import { callIdentityLlm } from "@/server/modules/identity/llm.ts";
 import type { BookRegistry } from "@/server/modules/identity/registry.ts";
 import { EXTRACTION_SYSTEM_PROMPT } from "./prompts.ts";
@@ -17,33 +17,33 @@ import { runGuardrails, type PersistableFact } from "./guardrails.ts";
 import type { ExtractionSlice, ExtractedEntity } from "./types.ts";
 
 export interface ExtractSliceInput {
-  bookId: string;
-  jobId: string;
+  bookId               : string;
+  jobId                : string;
   /** 片正文（章节拼接） */
-  sliceText: string;
+  sliceText            : string;
   /** 片覆盖章号（含章节标题用于检索） */
-  chapterNos: number[];
-  registry: BookRegistry;
-  bookSummary: string;
-  skills: string[];
+  chapterNos           : number[];
+  registry             : BookRegistry;
+  bookSummary          : string;
+  skills               : string[];
   /** 有效关系码（全局 + 书型，schema 生成） */
   relationshipTypeCodes: string[];
   /** 已有 entityId 查找（canonical → entityId），供落库时复用 */
-  entityIdByName?: Map<string, string>;
+  entityIdByName?      : Map<string, string>;
 }
 
 export interface ExtractSliceResult {
-  slice: ExtractionSlice;
-  facts: PersistableFact[];
+  slice      : ExtractionSlice;
+  facts      : PersistableFact[];
   dropRecords: ReturnType<typeof runGuardrails>["dropRecords"];
 }
 
 /** 组装提取 prompt（user 含正文 + 登记表 + 摘要 + skill + schema 枚举）。 */
 export function buildExtractionUserPrompt(input: {
-  sliceText: string;
-  registry: BookRegistry;
-  bookSummary: string;
-  skills: string[];
+  sliceText            : string;
+  registry             : BookRegistry;
+  bookSummary          : string;
+  skills               : string[];
   relationshipTypeCodes: string[];
 }): string {
   const registryBrief = input.registry.entries
@@ -58,7 +58,7 @@ export function buildExtractionUserPrompt(input: {
     "",
     `相关 skill：\n${input.skills.join("\n---\n")}`,
     "",
-    `可选关系码：${input.relationshipTypeCodes.join("、") || "（无）"}`,
+    `可选关系码：${input.relationshipTypeCodes.join("、") || "（无）"}`
   ].join("\n");
 }
 
@@ -68,23 +68,24 @@ export function buildExtractionUserPrompt(input: {
  */
 export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSliceResult> {
   const { data } = await callIdentityLlm<ExtractionSlice>({
-    stage: PipelineStage.INDEPENDENT_EXTRACTION,
-    system: EXTRACTION_SYSTEM_PROMPT,
-    user: buildExtractionUserPrompt({
-      sliceText: input.sliceText,
-      registry: input.registry,
-      bookSummary: input.bookSummary,
-      skills: input.skills,
-      relationshipTypeCodes: input.relationshipTypeCodes,
+    featureKey: FeatureKey.PIPELINE_MAIN,
+    stageLabel: "INDEPENDENT_EXTRACTION",
+    system    : EXTRACTION_SYSTEM_PROMPT,
+    user      : buildExtractionUserPrompt({
+      sliceText            : input.sliceText,
+      registry             : input.registry,
+      bookSummary          : input.bookSummary,
+      skills               : input.skills,
+      relationshipTypeCodes: input.relationshipTypeCodes
     }),
-    jobId: input.jobId,
-    bookId: input.bookId,
+    jobId : input.jobId,
+    bookId: input.bookId
   });
 
   const slice: ExtractionSlice = {
     ...data,
-    book: input.bookId,
-    chapterNos: input.chapterNos,
+    book      : input.bookId,
+    chapterNos: input.chapterNos
   };
 
   // 新实体候选（登记表中不存在的实体 canonical）

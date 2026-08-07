@@ -1751,7 +1751,8 @@ describe("models module", () => {
     })).rejects.toThrow("已存在相同 provider、modelId 与 baseUrl 的模型配置");
   });
 
-  it("deletes non-default models only when no strategy references exist", async () => {
+  it("deletes non-default models when no feature-model references exist", async () => {
+    // v5：模型删除保护改查 feature_models 功能点引用（model_strategy_configs 表已删）。
     const deleteMock = vi.fn().mockResolvedValue(createAiModelRecord());
     const prismaClient = {
       aiModel: {
@@ -1761,14 +1762,8 @@ describe("models module", () => {
         })),
         delete: deleteMock
       },
-      modelStrategyConfig: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            scope : "BOOK",
-            stages: { CHUNK_EXTRACTION: { modelId: "other-model" } },
-            book  : { title: "Book A" }
-          }
-        ])
+      featureModelConfig: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     } as never;
 
@@ -1778,7 +1773,29 @@ describe("models module", () => {
     expect(deleteMock).toHaveBeenCalledWith({ where: { id: "model-1" } });
   });
 
-  it("blocks deleting default model; v5 策略引用检查已随表删除移除", async () => {
+  it("blocks deleting a model referenced by feature-models", async () => {
+    const deleteMock = vi.fn();
+    const prismaClient = {
+      aiModel: {
+        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
+          aliasKey : "deepseek-v3",
+          isDefault: false
+        })),
+        delete: deleteMock
+      },
+      featureModelConfig: {
+        findMany: vi.fn().mockResolvedValue([
+          { featureKey: "PIPELINE_MAIN" }
+        ])
+      }
+    } as never;
+
+    await expect(createModelsModule(prismaClient).deleteModel("model-1"))
+      .rejects.toThrow("模型正在被功能点引用：PIPELINE_MAIN");
+    expect(deleteMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks deleting default model", async () => {
     const defaultPrisma = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({ isDefault: true })),
@@ -1788,20 +1805,6 @@ describe("models module", () => {
 
     await expect(createModelsModule(defaultPrisma).deleteModel("model-1"))
       .rejects.toThrow("请先切换默认模型后再删除");
-
-    // v5 阶段 1：model_strategy_configs 表已删，模型删除不再因策略引用被拦截。
-    const referencedPrisma = {
-      aiModel: {
-        findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
-          aliasKey : "deepseek-v3",
-          isDefault: false
-        })),
-        delete: vi.fn().mockResolvedValue({ id: "model-1" })
-      }
-    } as never;
-
-    await expect(createModelsModule(referencedPrisma).deleteModel("model-1"))
-      .resolves.toEqual({ id: "model-1" });
   });
 
   it("exports model configs without api keys", async () => {

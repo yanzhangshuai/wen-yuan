@@ -21,7 +21,7 @@
  * =============================================================================
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ChevronDown,
   Download,
@@ -65,12 +65,7 @@ import {
   type ExportedModelConfig,
   type AdminModelItem
 } from "@/lib/services/models";
-import {
-  fetchGlobalStrategy,
-  saveGlobalStrategy,
-  type ModelStrategyInput
-} from "@/lib/services/model-strategy";
-import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
+import { FeatureModelsPanel } from "./feature-models-panel";
 import { ModelForm } from "./model-form";
 import { ModelCard } from "./model-card";
 
@@ -116,30 +111,6 @@ export function ModelManager({
   const [deletingModelId, setDeletingModelId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminModelItem | null>(null);
 
-  /** 全局策略（解析策略 Tab）。 */
-  const [globalStrategy, setGlobalStrategy] = useState<ModelStrategyInput | null>(null);
-  const [globalStrategyLoading, setGlobalStrategyLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadGlobalStrategy() {
-      setGlobalStrategyLoading(true);
-      try {
-        const data = await fetchGlobalStrategy();
-        if (cancelled) return;
-        setGlobalStrategy(data);
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "全局策略加载失败");
-        }
-      } finally {
-        if (!cancelled) setGlobalStrategyLoading(false);
-      }
-    }
-    void loadGlobalStrategy();
-    return () => { cancelled = true; };
-  }, []);
-
   function setLoading(modelId: string, action: LoadingAction) {
     setLoadingActions((prev) => ({ ...prev, [modelId]: action }));
   }
@@ -173,17 +144,6 @@ export function ModelManager({
     return groups;
   }, []);
   const enabledModels = sortedModels.filter((m) => m.isEnabled);
-  const strategyEnabledModels: EnabledModelItem[] = models
-    .filter((model) => model.isEnabled)
-    .map((model) => ({
-      id               : model.id,
-      name             : model.name,
-      provider         : model.provider,
-      providerModelId  : model.providerModelId,
-      aliasKey         : model.aliasKey,
-      supportsThinking : model.supportsThinking,
-      supportsWebSearch: model.supportsWebSearch
-    }));
 
   /* ------------ 卡片轻量动作 ------------ */
   async function handleToggleEnabled(model: AdminModelItem, nextEnabled: boolean) {
@@ -357,22 +317,11 @@ export function ModelManager({
     }
   }
 
-  /* ------------ 解析策略 ------------ */
-  async function handleSaveGlobalStrategy(strategy: ModelStrategyInput) {
-    try {
-      await saveGlobalStrategy(strategy);
-      setGlobalStrategy(strategy);
-      toast.success("全局模型策略保存成功");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "全局模型策略保存失败");
-    }
-  }
-
   return (
     <Tabs defaultValue="model-config" className="space-y-6">
       <TabsList>
         <TabsTrigger value="model-config">模型配置</TabsTrigger>
-        <TabsTrigger value="strategy">解析策略</TabsTrigger>
+        <TabsTrigger value="feature-models">功能点模型</TabsTrigger>
       </TabsList>
 
       <TabsContent value="model-config" className="space-y-8">
@@ -550,25 +499,12 @@ export function ModelManager({
         </PageSection>
       </TabsContent>
 
-      <TabsContent value="strategy">
+      <TabsContent value="feature-models" className="space-y-8">
         <PageSection
-          title="默认解析策略"
-          description="配置各解析阶段默认使用的 AI 模型"
+          title="功能点模型"
+          description="配置各功能点（skill 选择 / 主流程 / 审核）使用的 AI 模型"
         >
-          {globalStrategyLoading ? (
-            <Card>
-              <CardContent className="py-8 text-sm text-muted-foreground text-center">
-                正在加载全局模型策略...
-              </CardContent>
-            </Card>
-          ) : (
-            <ModelStrategyForm
-              initialStrategy={globalStrategy}
-              availableModels={strategyEnabledModels}
-              onSave={handleSaveGlobalStrategy}
-              showResetToRecommended
-            />
-          )}
+          <FeatureModelsPanel enabledModels={enabledModels} />
         </PageSection>
       </TabsContent>
 

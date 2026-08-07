@@ -14,20 +14,19 @@
  *
  * 所属层次：
  * - 前端渲染层（页面 + 交互容器）；
- * - 通过 `src/lib/services/books.ts` 与 `src/lib/services/model-strategy.ts` 调用接口，
- *   间接驱动后端创建书籍、确认章节、保存书籍策略、启动解析。
+ * - 通过 `src/lib/services/books.ts` 调用接口，
+ *   间接驱动后端创建书籍、确认章节、启动解析。
  *
  * 核心业务目标：
  * - 以“4 步向导”降低一次性操作复杂度：上传信息 -> 确认章节 -> 配置解析 -> 查看进度。
  * - 在同一页面串联导入闭环，避免管理员在多个页面来回切换导致上下文丢失。
  *
  * 上下游关系：
- * - 上游输入：管理员本地 txt 文件、书籍元数据、章节范围/勾选、模型策略。
+ * - 上游输入：管理员本地 txt 文件、书籍元数据、章节范围/勾选。
  * - 下游调用：
  *   - `createBook`：创建书籍 + 上传源文件
  *   - `fetchChapterPreview`：AI 章节切分预览
  *   - `confirmBookChapters`：确认章节结构
- *   - `saveBookStrategy`：保存书籍级阶段模型策略
  *   - `startAnalysis`：启动解析任务
  * - 下游展示：第 4 步复用 `BookDetailTabs`，直接承接详情页的实时面板。
  *
@@ -69,7 +68,6 @@ import {
   createBook,
   fetchChapterPreview,
   startAnalysis,
-  type AnalysisArchitecture,
   type AnalyzeScope,
   type ChapterPreviewItem,
   type ChapterType,
@@ -78,12 +76,6 @@ import {
 } from "@/lib/services/books";
 import { fetchKnowledgePacks, mountPackToBook, type KnowledgePackItem } from "@/lib/services/knowledge";
 import { BookDetailTabs } from "@/app/admin/books/[id]/_components/book-detail-tabs";
-import { useAdminModels } from "@/hooks/use-admin-models";
-import { ModelStrategyForm, type EnabledModelItem } from "@/app/admin/_components/model-strategy-form";
-import {
-  saveBookStrategy,
-  type ModelStrategyInput
-} from "@/lib/services/model-strategy";
 import { fetchActiveBookTypes, type BookTypeOption } from "@/lib/services/book-types";
 import { cn } from "@/lib/utils";
 
@@ -113,13 +105,6 @@ function parseScope(value: string): AnalyzeScope {
   if (value === "CHAPTER_RANGE") return "CHAPTER_RANGE";
   if (value === "CHAPTER_LIST") return "CHAPTER_LIST";
   return "FULL_BOOK";
-}
-
-/**
- * 将下拉框字符串转换为前端共享的解析架构枚举。
- */
-function parseArchitecture(value: string): AnalysisArchitecture {
-  return value === "twopass" ? "twopass" : "sequential";
 }
 
 /**
@@ -207,8 +192,6 @@ export default function AdminImportPage() {
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   // Step 3：解析配置状态
-  /** 解析架构，默认顺序式，避免新书首次导入时意外切到 two-pass。 */
-  const [architecture, setArchitecture] = useState<AnalysisArchitecture>("sequential");
   /** 解析范围，默认全书解析，保证最少配置即可启动。 */
   const [scope, setScope] = useState<AnalyzeScope>("FULL_BOOK");
   /** 范围模式下的起止章节（字符串形式以便与输入框受控绑定）。 */
@@ -216,15 +199,6 @@ export default function AdminImportPage() {
   const [chapterEnd, setChapterEnd] = useState("");
   /** 多选模式下勾选的章节序号集合。Set 便于 O(1) 增删查。 */
   const [selectedChapterIndices, setSelectedChapterIndices] = useState<Set<number>>(new Set());
-
-  /** 本次任务覆盖策略（可选）。
-   * - null：不覆盖，走书籍/全局默认策略。
-   * - 有值：按阶段覆盖本次任务模型。
-   */
-  const [jobStrategy, setJobStrategy] = useState<ModelStrategyInput | null>(null);
-
-  // 统一 Store：模块级缓存，不重复拉取
-  const { models, loading: modelsLoading, error: modelsLoadError } = useAdminModels({ onlyEnabled: true });
 
   // Shared UI state
   /**
@@ -427,16 +401,6 @@ export default function AdminImportPage() {
     try {
       let body: StartAnalysisBody;
 
-      // 仅当存在有效配置时才传 modelStrategy，避免向后端发送空对象产生语义歧义。
-      const requestModelStrategy = jobStrategy && Object.keys(jobStrategy).length > 0
-        ? { stages: jobStrategy }
-        : undefined;
-
-      // 导入流程配置的阶段模型应成为书籍级默认策略，避免“任务已生效但书籍面板仍显示继承默认”。
-      if (requestModelStrategy) {
-        await saveBookStrategy(createdBook.id, requestModelStrategy.stages);
-      }
-
       if (scope === "CHAPTER_RANGE") {
         const parsedStart = parsePositiveInteger(chapterStart);
         const parsedEnd = parsePositiveInteger(chapterEnd);
@@ -448,11 +412,9 @@ export default function AdminImportPage() {
         }
 
         body = {
-          architecture : architecture,
-          scope        : "CHAPTER_RANGE",
-          chapterStart : parsedStart,
-          chapterEnd   : parsedEnd,
-          modelStrategy: requestModelStrategy
+          scope       : "CHAPTER_RANGE",
+          chapterStart: parsedStart,
+          chapterEnd  : parsedEnd
         };
       } else if (scope === "CHAPTER_LIST") {
         if (selectedChapterIndices.size === 0) {
@@ -462,27 +424,19 @@ export default function AdminImportPage() {
         }
 
         body = {
-          architecture  : architecture,
           scope         : "CHAPTER_LIST",
           // 排序是为了让请求体稳定，便于后端日志排查与重放。
-          chapterIndices: [...selectedChapterIndices].sort((a, b) => a - b),
-          modelStrategy : requestModelStrategy
+          chapterIndices: [...selectedChapterIndices].sort((a, b) => a - b)
         };
       } else {
         body = {
-          architecture : architecture,
-          scope        : "FULL_BOOK",
-          modelStrategy: requestModelStrategy
+          scope: "FULL_BOOK"
         };
       }
 
       await startAnalysis(createdBook.id, body);
       setStep(4);
-      if (requestModelStrategy) {
-        toast.success("解析任务已启动，书籍模型策略已同步");
-      } else {
-        toast.success("解析任务已启动！");
-      }
+      toast.success("解析任务已启动！");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "启动失败");
     } finally {
@@ -492,20 +446,6 @@ export default function AdminImportPage() {
 
   /** 向导步骤文案（与 ImportStep 一一对应）。 */
   const stepLabels = ["上传信息", "确认章节", "解析配置", "实时进度"];
-
-  /**
-   * `ModelStrategyForm` 所需模型结构。
-   * 这里显式映射是为了隔离后端字段变化，形成页面自己的输入契约。
-   */
-  const enabledModels: EnabledModelItem[] = models.map((model) => ({
-    id               : model.id,
-    name             : model.name,
-    provider         : model.provider,
-    providerModelId  : model.providerModelId,
-    aliasKey         : model.aliasKey,
-    supportsThinking : model.supportsThinking,
-    supportsWebSearch: model.supportsWebSearch
-  }));
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -810,39 +750,9 @@ export default function AdminImportPage() {
           </Card>
         )}
 
-        {/* 第 3 步：模型策略 + 解析范围配置 */}
+        {/* 第 3 步：解析范围配置（v5：模型改由模型页“功能点模型”统一管理，不再向导内配置） */}
         {step === 3 && (
           <div className="space-y-6">
-            {modelsLoading ? (
-              <Card>
-                <CardContent className="pt-6 flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  正在加载模型列表...
-                </CardContent>
-              </Card>
-            ) : (
-              <ModelStrategyForm
-                initialStrategy={jobStrategy}
-                availableModels={enabledModels}
-                architecture={architecture}
-                onSave={(strategy) => {
-                  // 仅保存到本页状态，真正提交发生在“启动解析任务”时。
-                  setJobStrategy(strategy);
-                  toast.success("已保存本次任务的阶段模型策略");
-                  return Promise.resolve();
-                }}
-                showResetToRecommended
-              />
-            )}
-
-            {modelsLoadError && (
-              <Card>
-                <CardContent className="pt-6 text-sm text-muted-foreground">
-                  {modelsLoadError}
-                </CardContent>
-              </Card>
-            )}
-
             <Card>
               <CardHeader>
                 <CardTitle>解析配置</CardTitle>
@@ -850,28 +760,7 @@ export default function AdminImportPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* 范围选择：决定请求体走哪个判别联合分支 */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">解析架构</label>
-                    <Select
-                      value={architecture}
-                      onValueChange={(value) => {
-                        setArchitecture(parseArchitecture(value));
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sequential">顺序式：逐章累积名册后分析</SelectItem>
-                        <SelectItem value="twopass">两遍式：先全书消歧，再逐章详细分析</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      未显式传入架构的重新解析操作会在后端自动继承最近一次任务的架构选择。
-                    </p>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">解析范围</label>
                     <Select

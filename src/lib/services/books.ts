@@ -25,10 +25,6 @@
  * ============================================================================
  */
 import { clientFetch, clientMutate } from "@/lib/client-api";
-import type { ModelStrategyInput } from "@/lib/services/model-strategy";
-import type { AnalysisArchitecture } from "@/types/analysis-pipeline";
-
-export type { AnalysisArchitecture } from "@/types/analysis-pipeline";
 
 /* ------------------------------------------------
    Types
@@ -88,19 +84,15 @@ export interface ConfirmChapterItem {
 export type AnalyzeScope = "FULL_BOOK" | "CHAPTER_RANGE" | "CHAPTER_LIST";
 
 interface StartAnalysisBase {
-  /** 解析架构：顺序或两遍式。 */
-  architecture? : AnalysisArchitecture;
-  /** 任务级模型策略覆盖。 */
-  modelStrategy?: { stages: ModelStrategyInput };
+  // v5：architecture（v4 双架构）与 modelStrategy（v4 阶段模型策略）已删除；
+  // 模型改由 feature_models 功能点映射管理，任务请求不再携带模型配置。
 }
 
 /**
  * 启动解析任务请求体（判别联合类型）。
  *
  * 设计原因：
- * - 通过 `scope` 作为判别字段，保证不同模式下必填参数不同；
- * - `modelStrategy` 可选，允许任务临时覆盖默认模型策略；
- * - 未传 `modelStrategy` 时，后端按书籍绑定 -> 全局 -> 系统默认逐级回退。
+ * - 通过 `scope` 作为判别字段，保证不同模式下必填参数不同。
  */
 export type StartAnalysisBody =
   | ({ scope: "FULL_BOOK" } & StartAnalysisBase)
@@ -276,8 +268,6 @@ export interface AnalysisJobListItem {
   id            : string;
   /** 任务状态。 */
   status        : string;
-  /** 解析架构。 */
-  architecture  : AnalysisArchitecture;
   /** 任务范围类型。 */
   scope         : string;
   /** 章节区间起点（scope=CHAPTER_RANGE 时有效）。 */

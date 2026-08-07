@@ -8,25 +8,25 @@
  *
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.3
  */
-import { PipelineStage } from "@/types/pipeline";
+import { FeatureKey } from "@/types/pipeline";
 import { callIdentityLlm } from "./llm.ts";
 import { TIER1_SYSTEM_PROMPT } from "./prompts.ts";
 import type { RegistryWriteEntry } from "./identityService.ts";
 import { writeRegistry } from "./identityService.ts";
 
 export interface Tier1DraftEntry {
-  canonical: string;
-  type: "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT";
-  aliases: string[];
+  canonical      : string;
+  type           : "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT";
+  aliases        : string[];
   evidenceAnchors: { chapterNo: number; paraIndex: number | null }[];
-  note?: string;
+  note?          : string;
 }
 
 export interface Tier1Input {
-  bookId: string;
-  jobId: string;
-  fullText: string;
-  bookSizeTokens: number;
+  bookId            : string;
+  jobId             : string;
+  fullText          : string;
+  bookSizeTokens    : number;
   prescanCandidates?: Tier1DraftEntry[];
 }
 
@@ -45,11 +45,11 @@ async function pickTier1Path(modelId: string, bookSizeTokens: number): Promise<"
 
 function toWriteEntries(drafts: Tier1DraftEntry[]): RegistryWriteEntry[] {
   return drafts.map((d) => ({
-    canonical: d.canonical,
-    aliases: d.aliases,
-    type: d.type,
-    nameType: d.note?.includes("TITLE_ONLY") ? "TITLE_ONLY" : "NAMED",
-    confidence: d.evidenceAnchors.length >= 2 ? 0.85 : 0.6,
+    canonical : d.canonical,
+    aliases   : d.aliases,
+    type      : d.type,
+    nameType  : d.note?.includes("TITLE_ONLY") ? "TITLE_ONLY" : "NAMED",
+    confidence: d.evidenceAnchors.length >= 2 ? 0.85 : 0.6
   }));
 }
 
@@ -69,15 +69,16 @@ export async function runTier1(input: Tier1Input, modelId: string): Promise<{ cr
         "",
         `全文正文：\n${input.fullText}`,
         input.prescanCandidates?.length ? `\n预扫描候选：${JSON.stringify(input.prescanCandidates)}\n` : "",
-        `输出该类型全部实体的 JSON 数组。`,
+        "输出该类型全部实体的 JSON 数组。"
       ].join("\n");
 
       const { data } = await callIdentityLlm<Tier1DraftEntry[]>({
-        stage: PipelineStage.ROSTER_DISCOVERY,
-        system: TIER1_SYSTEM_PROMPT,
+        featureKey: FeatureKey.PIPELINE_MAIN,
+        stageLabel: "ROSTER_DISCOVERY",
+        system    : TIER1_SYSTEM_PROMPT,
         user,
-        jobId: input.jobId,
-        bookId: input.bookId,
+        jobId     : input.jobId,
+        bookId    : input.bookId
       });
       allDrafts.push(...data);
     }
@@ -90,11 +91,12 @@ export async function runTier1(input: Tier1Input, modelId: string): Promise<{ cr
       const end = Math.min(i + VOLUME_SIZE + OVERLAP, chapters.length);
       const volumeText = chapters.slice(i, end).join("\n");
       const { data } = await callIdentityLlm<Tier1DraftEntry[]>({
-        stage: PipelineStage.ROSTER_DISCOVERY,
-        system: TIER1_SYSTEM_PROMPT,
-        user: `卷 ${i / VOLUME_SIZE + 1}\n\n${volumeText}`,
-        jobId: input.jobId,
-        bookId: input.bookId,
+        featureKey: FeatureKey.PIPELINE_MAIN,
+        stageLabel: "ROSTER_DISCOVERY",
+        system    : TIER1_SYSTEM_PROMPT,
+        user      : `卷 ${i / VOLUME_SIZE + 1}\n\n${volumeText}`,
+        jobId     : input.jobId,
+        bookId    : input.bookId
       });
       allDrafts.push(...data);
     }
@@ -123,9 +125,9 @@ export async function runTier1(input: Tier1Input, modelId: string): Promise<{ cr
   }
 
   return writeRegistry({
-    bookId: input.bookId,
-    source: "tier1",
+    bookId    : input.bookId,
+    source    : "tier1",
     agentRunId: crypto.randomUUID(),
-    entries: toWriteEntries(Array.from(merged.values())),
+    entries   : toWriteEntries(Array.from(merged.values()))
   });
 }

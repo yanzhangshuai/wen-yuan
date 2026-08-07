@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 
 import { AnalysisJobsPanel } from "./analysis-jobs-panel";
 import { BookKnowledgePanel } from "./book-knowledge-panel";
-import { BookStrategyPanel } from "./book-strategy-panel";
 import { ParseProgressPanel } from "./parse-progress-panel";
 import { PersonasPanel } from "./personas-panel";
 
@@ -45,18 +44,18 @@ interface BookDetailTabsProps {
  * Tab 标识。
  * 这是前端 UI 枚举，不直接等同后端字段。
  */
-type Tab = "overview" | "jobs" | "personas" | "knowledge" | "strategy";
+type Tab = "overview" | "jobs" | "personas" | "knowledge";
 
 /**
  * Tab 配置列表。
  * 统一维护可见标签与顺序，避免在 JSX 中写死多个按钮导致维护分散。
+ * v5：模型策略 Tab 已删除（模型改由模型页“功能点模型”统一管理）。
  */
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "解析进度" },
   { id: "jobs",     label: "解析任务" },
   { id: "personas", label: "人物"     },
-  { id: "knowledge", label: "知识库"  },
-  { id: "strategy", label: "模型策略" }
+  { id: "knowledge", label: "知识库"  }
 ];
 
 /**
@@ -116,10 +115,6 @@ export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
 
       {activeTab === "knowledge" && (
         <BookKnowledgePanel bookId={bookId} />
-      )}
-
-      {activeTab === "strategy" && (
-        <BookStrategyPanel bookId={bookId} />
       )}
     </div>
   );

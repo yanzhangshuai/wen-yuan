@@ -6,7 +6,7 @@ import { failJson, okJson } from "@/server/http/route-utils";
 import {
   AnalysisJobNotFoundError,
   getJobCostSummary
-} from "@/server/modules/analysis/services/modelStrategyAdminService";
+} from "@/server/modules/analysis/services/jobCostSummary";
 import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { ERROR_CODES } from "@/types/api";
 
@@ -14,7 +14,7 @@ import {
   badRequestJson,
   costSummaryRouteParamsSchema,
   notFoundJson
-} from "../../../model-strategy/_shared";
+} from "./_shared";
 
 /**
  * 文件定位（Next.js Route Handler）：

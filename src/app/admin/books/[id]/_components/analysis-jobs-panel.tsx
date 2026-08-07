@@ -30,7 +30,7 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { fetchBookJobs, type AnalysisJobListItem } from "@/lib/services/books";
-import { fetchJobCostSummary, type JobCostSummary } from "@/lib/services/model-strategy";
+import { fetchJobCostSummary, type JobCostSummary } from "@/lib/services/job-cost-summary";
 
 /**
  * 面板入参。
@@ -68,13 +68,6 @@ function formatScope(job: AnalysisJobListItem): string {
   }
   // 兜底显示原始 scope，便于排查后端新增值未同步的情况。
   return job.scope;
-}
-
-/**
- * 将解析架构转换为可读文案。
- */
-function formatArchitecture(architecture: AnalysisJobListItem["architecture"]): string {
-  return architecture === "twopass" ? "两遍式" : "顺序式";
 }
 
 /**
@@ -253,7 +246,6 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
           <JobStatusBadge status={job.status} />
         </td>
         <td className="px-4 py-3 text-sm">{formatScope(job)}</td>
-        <td className="px-4 py-3 text-sm text-muted-foreground">{formatArchitecture(job.architecture)}</td>
         <td className="px-4 py-3 text-sm text-muted-foreground">
           {job.aiModelName ?? "—"}
         </td>
@@ -270,8 +262,6 @@ function JobRow({ job }: { job: AnalysisJobListItem }) {
           <td colSpan={7} className="px-4 py-3 text-sm space-y-2">
             {/* 一级摘要：便于快速读时序与重试情况 */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-muted-foreground">
-              <span>解析架构</span>
-              <span>{formatArchitecture(job.architecture)}</span>
               <span>开始时间</span>
               <span>{job.startedAt ? formatDateTime(job.startedAt) : "—"}</span>
               <span>完成时间</span>
@@ -440,7 +430,6 @@ export function AnalysisJobsPanel({ bookId }: AnalysisJobsPanelProps) {
                   <th className="px-4 py-2 text-left w-28">任务 ID</th>
                   <th className="px-4 py-2 text-left w-24">状态</th>
                   <th className="px-4 py-2 text-left">范围</th>
-                  <th className="px-4 py-2 text-left">架构</th>
                   <th className="px-4 py-2 text-left">模型</th>
                   <th className="px-4 py-2 text-left">创建时间</th>
                   <th className="px-4 py-2 text-left">耗时</th>

@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PipelineStage } from "@/types/pipeline";
-
 const clientFetchMock = vi.fn();
 const clientMutateMock = vi.fn();
 
@@ -96,29 +94,14 @@ describe("books service", () => {
     });
   });
 
-  it("startAnalysis sends task-level modelStrategy payload", async () => {
-    // 业务规则：分析任务支持按阶段覆盖模型策略，前端必须原样透传，不可在客户端静默裁剪字段。
+  it("startAnalysis sends scope payload without v4 model strategy fields", async () => {
+    // v5：architecture（v4 双架构）与 modelStrategy（v4 阶段模型策略）已删除，
+    // 任务请求只携带解析范围；模型改由 feature_models 功能点映射管理。
     // Arrange
     clientMutateMock.mockResolvedValue(undefined);
     const { startAnalysis } = await import("@/lib/services/books");
     const payload = {
-      architecture : "twopass" as const,
-      scope        : "FULL_BOOK" as const,
-      modelStrategy: {
-        stages: {
-          [PipelineStage.ROSTER_DISCOVERY]: {
-            modelId        : "1b17f0dc-c5de-4f31-8d56-8d0f8f35f562",
-            temperature    : 0.2,
-            maxOutputTokens: 4096,
-            topP           : 1,
-            maxRetries     : 2,
-            retryBaseMs    : 600
-          },
-          [PipelineStage.FALLBACK]: {
-            modelId: "2820e6bc-54c8-42e5-ae05-a9956687ab09"
-          }
-        }
-      }
+      scope: "FULL_BOOK" as const
     };
 
     // Act
@@ -203,7 +186,6 @@ describe("books service", () => {
     const jobs = [{
       id            : "job-1",
       status        : "SUCCEEDED",
-      architecture  : "sequential",
       scope         : "FULL_BOOK",
       chapterStart  : null,
       chapterEnd    : null,

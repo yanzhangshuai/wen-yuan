@@ -9,7 +9,7 @@
  *   ∧ 分布式冲突扫描干净（caller 外置校验）
  *   ∧ 采样窗口语义一致（prompt 约束 + LLM 内部判定）
  */
-import { PipelineStage } from "@/types/pipeline";
+import { FeatureKey } from "@/types/pipeline";
 import type { BookRegistry } from "./registry.ts";
 import { IDENTITY_RESOLUTION_SYSTEM_PROMPT } from "./prompts.ts";
 import { callIdentityLlm } from "./llm.ts";
@@ -19,28 +19,28 @@ export type PrimitiveVerdict = "resolved" | "new_entity" | "ambiguous";
 export interface MentionWindow {
   chapterNo: number;
   paraIndex: number | null;
-  excerpt: string;
+  excerpt  : string;
 }
 
 export interface PrimitiveInput {
   surfaceForm: string;
-  windows: MentionWindow[];
-  registry: BookRegistry;
+  windows    : MentionWindow[];
+  registry   : BookRegistry;
   bookSummary: string;
-  skills: string[];
-  jobId: string;
-  bookId?: string | null;
+  skills     : string[];
+  jobId      : string;
+  bookId?    : string | null;
 }
 
 export interface PrimitiveOutput {
-  verdict: PrimitiveVerdict;
+  verdict         : PrimitiveVerdict;
   resolvedEntityId: string | null;
-  evidenceAnchors: { chapterNo: number; paraIndex: number | null }[];
-  note: string | null;
+  evidenceAnchors : { chapterNo: number; paraIndex: number | null }[];
+  note            : string | null;
 }
 
 export interface PrimitiveResult {
-  output: PrimitiveOutput;
+  output        : PrimitiveOutput;
   highConfidence: boolean;
 }
 
@@ -74,7 +74,7 @@ export async function runPrimitive(input: PrimitiveInput): Promise<PrimitiveResu
   const sampled = sampleWindows(input.windows, 15);
   const windowsJson = JSON.stringify(sampled.map((w) => ({ chapterNo: w.chapterNo, paraIndex: w.paraIndex, excerpt: w.excerpt })));
   const registryJson = JSON.stringify(
-    input.registry.entries.map((e) => ({ entityId: e.entityId, canonical: e.canonical, type: e.type, aliases: e.aliases })),
+    input.registry.entries.map((e) => ({ entityId: e.entityId, canonical: e.canonical, type: e.type, aliases: e.aliases }))
   );
 
   const user = [
@@ -86,15 +86,16 @@ export async function runPrimitive(input: PrimitiveInput): Promise<PrimitiveResu
     "",
     `全书摘要：${input.bookSummary}`,
     "",
-    `相关 skill：${input.skills.join("\n---\n")}`,
+    `相关 skill：${input.skills.join("\n---\n")}`
   ].join("\n");
 
   const { data } = await callIdentityLlm<PrimitiveOutput>({
-    stage: PipelineStage.TITLE_RESOLUTION,
-    system: IDENTITY_RESOLUTION_SYSTEM_PROMPT,
+    featureKey: FeatureKey.PIPELINE_MAIN,
+    stageLabel: "TITLE_RESOLUTION",
+    system    : IDENTITY_RESOLUTION_SYSTEM_PROMPT,
     user,
-    jobId: input.jobId,
-    bookId: input.bookId ?? null,
+    jobId     : input.jobId,
+    bookId    : input.bookId ?? null
   });
 
   const condition1 = data.verdict === "resolved" && data.evidenceAnchors.length > 0 && !!data.resolvedEntityId;

@@ -760,10 +760,22 @@ export function createModelsModule(
     return toModelListItem(updatedModel);
   }
 
-  function findModelStrategyReferences(_model: AiModelRecord): string[] {
-    // v5 阶段 1（08-07-v5-skill-loading）：model_strategy_configs 表已删，
-    // 模型删除保护不再检查 v4 阶段策略引用（功能点模型在阶段 4 引入）。
-    return [];
+  /**
+   * 功能：检查模型被哪些功能点（feature_models）引用。
+   * 输入：prisma 客户端与模型记录。
+   * 输出：引用该模型的功能点键列表。
+   * 异常：数据库查询失败时向上抛出。
+   * 副作用：读取 `feature_models` 表。
+   */
+  async function findFeatureModelReferences(
+    prismaClient: PrismaClient,
+    model: AiModelRecord
+  ): Promise<string[]> {
+    const configs = await prismaClient.featureModelConfig.findMany({
+      where : { modelId: model.id },
+      select: { featureKey: true }
+    });
+    return configs.map((config) => config.featureKey);
   }
 
   async function deleteModel(id: string): Promise<{ id: string }> {
@@ -772,11 +784,12 @@ export function createModelsModule(
       throw new ModelConfigurationError("ADMIN_MODEL_IS_DEFAULT", "请先切换默认模型后再删除");
     }
 
-    const references = findModelStrategyReferences(model);
+    // 功能点模型（feature_models）以 FK 引用 AiModel；删除前必须检查引用，避免 DB 层 Restrict 报错。
+    const references = await findFeatureModelReferences(prismaClient, model);
     if (references.length > 0) {
       throw new ModelConfigurationError(
         "ADMIN_MODEL_IN_USE",
-        `模型正在被策略引用：${Array.from(new Set(references)).join("、")}`
+        `模型正在被功能点引用：${Array.from(new Set(references)).join("、")}`
       );
     }
 

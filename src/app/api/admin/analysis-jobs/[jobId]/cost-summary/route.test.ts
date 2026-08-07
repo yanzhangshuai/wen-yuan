@@ -32,7 +32,7 @@ vi.mock("next/headers", () => ({
   headers: headersMock
 }));
 
-vi.mock("@/server/modules/analysis/services/modelStrategyAdminService", () => ({
+vi.mock("@/server/modules/analysis/services/jobCostSummary", () => ({
   getJobCostSummary,
   AnalysisJobNotFoundError
 }));
