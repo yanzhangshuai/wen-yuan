@@ -1,0 +1,5 @@
+{"file": ".trellis/tasks/08-07-v5-review-service/prd.md", "reason": "验收标准：R1-R6 全绿、行覆盖 90%"}
+{"file": ".trellis/tasks/08-07-v5-review-service/design.md", "reason": "跨模型 modelId 覆盖 + 五条件自动接受实现正确性"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "可读性、最小修改、禁 any"}
+{"file": ".trellis/spec/backend/ai-model-config.md", "reason": "loadModelById 正确性（存在/isEnabled/Key 解密）"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "审核流五模块单测完备性 + 覆盖率"}

@@ -1,0 +1,9 @@
+{"file": ".trellis/tasks/08-07-v5-role-workbench-backend/prd.md", "reason": "需求与验收标准（R1-R4/AC：94→0 错误）"}
+{"file": ".trellis/tasks/08-07-v5-role-workbench-backend/design.md", "reason": "技术设计：v4→v5 字段映射 + merge 事务 + API 修复"}
+{"file": ".trellis/tasks/08-07-v5-role-workbench-backend/implement.md", "reason": "执行计划：6 阶段清单与审查门"}
+{"file": ".trellis/tasks/08-06-v5-review/research/role-workbench-audit.md", "reason": "调研：94 错误分布 + 改造矩阵 + API 清单"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 事务（mergeEntitiesInTransaction + bulkVerify refresh）"}
+{"file": ".trellis/spec/backend/relationship-structure.md", "reason": "关系模型契约（relationship source/target 联表）"}
+{"file": ".trellis/spec/backend/role-workbench-character-events.md", "reason": "章节事迹契约（需更新为 fact/entity 表述）"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试更新规范（4 服务 + merge 事务单测）"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "KISS/DRY/最小修改/禁 any"}

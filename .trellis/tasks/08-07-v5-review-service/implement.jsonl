@@ -1,0 +1,9 @@
+{"file": ".trellis/tasks/08-07-v5-review-service/prd.md", "reason": "需求与验收标准（R1-R6/AC）"}
+{"file": ".trellis/tasks/08-07-v5-review-service/design.md", "reason": "技术设计：跨模型 modelId 能力 + 审核流五模块"}
+{"file": ".trellis/tasks/08-07-v5-review-service/implement.md", "reason": "执行计划：6 阶段清单与审查门"}
+{"file": ".trellis/spec/backend/ai-output-contract.md", "reason": "AI 输出契约 zod 校验（跨模型复核输出）"}
+{"file": ".trellis/spec/backend/ai-model-config.md", "reason": "模型解析（loadModelById 按 id 解析）"}
+{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试规范（审核流五模块单测 + 覆盖率 90%）"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "KISS/DRY/最小修改/禁 any"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 写入规范（AUTO_VERIFIED 落库事务）"}
+{"file": ".trellis/spec/backend/analysis-pipeline.md", "reason": "分析管线边界（Pass4 与管线编排的职责划分）"}

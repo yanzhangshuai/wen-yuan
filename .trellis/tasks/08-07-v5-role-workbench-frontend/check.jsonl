@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/08-07-v5-role-workbench-frontend/prd.md", "reason": "验收标准：组件 type-check 零错误、三 Tab 出数、死代码删除"}
+{"file": ".trellis/tasks/08-07-v5-role-workbench-frontend/design.md", "reason": "persona→entity 契约迁移完整性 + 路由重挂正确性"}
+{"file": ".trellis/tasks/08-06-v5-review/research/role-workbench-audit.md", "reason": "前端组件清单对照（是否全部适配）"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "前端组件测试规范"}
