@@ -1,0 +1,5 @@
+{"file": ".trellis/tasks/08-07-v5-skill-loading/prd.md", "reason": "验收标准：AC1 无残留引用 / AC3 关系码闭集 / AC4 功能点模型 / AC6 测试+eval"}
+{"file": ".trellis/tasks/08-07-v5-skill-loading/implement.md", "reason": "每阶段审查门与回滚点"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "最小修改、禁 any、可读性审查"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 迁移正确性审查"}
+{"file": ".trellis/spec/backend/ai-output-contract.md", "reason": "skill 选择器输出 zod 校验审查"}

@@ -24,7 +24,8 @@
     "08-06-v5-identity",
     "08-06-v5-extraction",
     "08-06-v5-review",
-    "08-06-v5-pipeline"
+    "08-06-v5-pipeline",
+    "08-07-v5-skill-loading"
   ],
   "parent": null,
   "relatedFiles": [],
