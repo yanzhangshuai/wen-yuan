@@ -1,4 +1,3 @@
-import type { AliasMappingItem } from "@/lib/services/alias-mappings";
 import type { DraftsData } from "@/lib/services/role-workbench";
 
 /**
@@ -152,12 +151,11 @@ function rememberEarlierChapter(
 
 /**
  * 收集每个实体的“首次出场章节号”。
- * 数据源：关系草稿（source/target）、传记事件草稿、别名映射章节区间。
+ * 数据源：关系草稿（source/target）、传记事件草稿。
  * 用于“按出场章节”排序时无显式 firstAppearanceChapterNo 的兜底。
  */
 export function collectRoleFirstAppearanceChapters(
-  drafts: DraftsData,
-  aliasMappings: AliasMappingItem[]
+  drafts: DraftsData
 ): Map<string, number> {
   const chapters = new Map<string, number>();
 
@@ -167,9 +165,6 @@ export function collectRoleFirstAppearanceChapters(
   }
   for (const biography of drafts.biographyRecords) {
     rememberEarlierChapter(chapters, biography.personaId, biography.chapterNo);
-  }
-  for (const mapping of aliasMappings) {
-    rememberEarlierChapter(chapters, mapping.entityId, mapping.chapterStart);
   }
 
   return chapters;

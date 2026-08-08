@@ -4,10 +4,9 @@
  * ============================================================================
  * 文件定位：`src/app/admin/books/[id]/_components/book-detail-tabs.tsx`
  * ----------------------------------------------------------------------------
- * 这是书籍详情页的 Tab 容器组件，负责在客户端切换三个业务面板：
+ * 这是书籍详情页的 Tab 容器组件，负责在客户端切换两个业务面板：
  * - 解析进度
  * - 解析任务
- * - 人物
  *
  * Next.js / React 语义：
  * - `"use client"` 必须保留：Tab 切换依赖 `useState` 与点击事件；
@@ -25,7 +24,6 @@ import { cn } from "@/lib/utils";
 
 import { AnalysisJobsPanel } from "./analysis-jobs-panel";
 import { ParseProgressPanel } from "./parse-progress-panel";
-import { PersonasPanel } from "./personas-panel";
 
 /**
  * 组件入参。
@@ -41,7 +39,7 @@ interface BookDetailTabsProps {
  * Tab 标识。
  * 这是前端 UI 枚举，不直接等同后端字段。
  */
-type Tab = "overview" | "jobs" | "personas";
+type Tab = "overview" | "jobs";
 
 /**
  * Tab 配置列表。
@@ -50,8 +48,7 @@ type Tab = "overview" | "jobs" | "personas";
  */
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "解析进度" },
-  { id: "jobs",     label: "解析任务" },
-  { id: "personas", label: "人物"     }
+  { id: "jobs",     label: "解析任务" }
 ];
 
 /**
@@ -103,10 +100,6 @@ export function BookDetailTabs({ bookId, initialStatus }: BookDetailTabsProps) {
 
       {activeTab === "jobs" && (
         <AnalysisJobsPanel bookId={bookId} />
-      )}
-
-      {activeTab === "personas" && (
-        <PersonasPanel bookId={bookId} />
       )}
     </div>
   );

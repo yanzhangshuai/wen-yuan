@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import type { AliasMappingItem } from "@/lib/services/alias-mappings";
 
 import {
   BIO_CATEGORY_LABELS,
@@ -101,24 +100,16 @@ export function RoleBiographiesSection({ biographies }: RoleBiographiesSectionPr
 }
 
 interface RoleAliasesSectionProps {
-  aliases: AliasMappingItem[];
+  aliases: string[];
 }
 
 export function RoleAliasesSection({ aliases }: RoleAliasesSectionProps) {
   return (
     <section className="role-aliases-section flex flex-col gap-3">
-      {aliases.length === 0 && <EmptyState text="当前角色暂无别名映射" />}
-      {aliases.map(mapping => (
-        <article key={mapping.id} className="rounded-md border border-border bg-card p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-foreground">{mapping.alias}</span>
-            <Badge variant="outline">{mapping.aliasType}</Badge>
-            <Badge variant={mapping.status === "PENDING" ? "secondary" : "outline"}>{mapping.status}</Badge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            指向：{mapping.resolvedName ?? "未确定"} · 置信度 {Math.round(mapping.confidence * 100)}%
-          </p>
-          {mapping.evidence && <p className="mt-1 text-sm text-muted-foreground">{mapping.evidence}</p>}
+      {aliases.length === 0 && <EmptyState text="当前角色暂无别名" />}
+      {aliases.map((alias, index) => (
+        <article key={`${alias}-${index}`} className="rounded-md border border-border bg-card p-3">
+          <span className="font-medium text-foreground">{alias}</span>
         </article>
       ))}
     </section>

@@ -207,38 +207,6 @@ describe("books service", () => {
     expect(result).toEqual(jobs);
   });
 
-  it("fetchBookPersonas requests the persona list", async () => {
-    // Arrange
-    const personas = [{
-      id           : "persona-1",
-      profileId    : "profile-1",
-      bookId       : "book-1",
-      name         : "范进",
-      localName    : "范进",
-      aliases      : ["范举人"],
-      gender       : "MALE",
-      hometown     : "广东",
-      nameType     : "NAMED",
-      globalTags   : [],
-      localTags    : ["举人"],
-      officialTitle: "举人",
-      localSummary : "中举人物",
-      ironyIndex   : 0.2,
-      confidence   : 0.9,
-      recordSource : "AI",
-      status       : "ACTIVE"
-    }];
-    clientFetchMock.mockResolvedValue(personas);
-    const { fetchBookPersonas } = await import("@/lib/services/books");
-
-    // Act
-    const result = await fetchBookPersonas("book/001");
-
-    // Assert
-    expect(clientFetchMock).toHaveBeenCalledWith("/api/books/book%2F001/personas");
-    expect(result).toEqual(personas);
-  });
-
   it("fetchChapterContent maps the reading payload and includes paraIndex when provided", async () => {
     // Arrange
     clientFetchMock.mockResolvedValue({

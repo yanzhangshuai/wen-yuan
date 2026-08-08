@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -12,21 +12,15 @@ import type {
   GraphSnapshot
 } from "@/types/graph";
 import { fetchBookGraph, searchPersonaPath, updateGraphLayout, type GraphLayoutNodeInput } from "@/lib/services/graph";
-import { fetchPersonaDetail, deletePersona } from "@/lib/services/personas";
-import { fetchChapterContent } from "@/lib/services/books";
 import {
   ForceGraph,
   GraphToolbar,
-  PersonaDetailPanel,
   ChapterTimeline,
-  TextReaderPanel,
   GraphContextMenu
 } from "@/components/graph";
 import { GraphPageHeader } from "@/components/graph/graph-page-header";
 import { GraphLegend } from "@/components/graph/graph-legend";
-import { PersonaPairDrawer } from "@/components/relations/persona-pair-drawer";
 import { getEdgeTypeColorsForTheme } from "@/theme";
-import { AsyncErrorBoundary } from "@/components/ui/async-error-boundary";
 import { toast } from "sonner";
 
 /* -----------------------------------------------------------------------
@@ -89,50 +83,22 @@ function normalizeRelationIdx(rawType: string): number {
  *
  * 在 Next.js 应用中的职责：
  * - 承接服务端 page 注入的 `initialSnapshot`，作为图谱首屏数据；
- * - 在客户端维护图谱交互态（筛选、聚焦、路径高亮、右键菜单、详情侧栏、原文侧栏）；
- * - 连接多个 service 请求（图谱刷新、人物详情、路径查询、章节原文）。
+ * - 在客户端维护图谱交互态（筛选、聚焦、路径高亮、右键菜单）；
+ * - 连接多个 service 请求（图谱刷新、路径查询、布局持久化）。
  *
  * 为什么必须在客户端：
  * - 需要浏览器 API（全屏、下载、DOM 事件坐标）；
- * - 需要高频本地状态变更（拖拽、悬停、右键、面板开关）；
- * - 需要 Suspense + `use(promise)` 的交互式按需加载体验。
+ * - 需要高频本地状态变更（拖拽、悬停、右键）。
  *
  * 上下游关系：
  * - 上游：`app/(viewer)/books/[id]/graph/page.tsx`（服务端加载 book + snapshot）。
- * - 下游：`ForceGraph / GraphToolbar / ChapterTimeline / PersonaDetailPanel / TextReaderPanel`。
+ * - 下游：`ForceGraph / GraphToolbar / ChapterTimeline`。
  *
  * 维护注意：
  * - 网络失败时多数场景“保留当前 UI 不清空”，这是体验稳定性策略，不是技术限制；
- * - `selectedPersona.promise` 与 `textReader.promise` 是和 Suspense 配套的设计，不要轻易改成“先 await 再 setState”。
  * - 本组件只负责“图谱交互编排”，具体渲染细节分散在子组件，避免单文件承担全部职责。
  * =============================================================================
  */
-
-interface SelectedPersonaState {
-  /** 当前详情面板对应的人物 ID（用于标识当前正在查看哪位人物）。 */
-  id     : string;
-  /**
-   * 人物详情请求 Promise。
-   * 这里存 Promise 而不是存最终数据，是为了让子组件通过 React `use()` + Suspense 接管加载态。
-   */
-  promise: ReturnType<typeof fetchPersonaDetail>;
-}
-
-interface TextReaderState {
-  /** 当前阅读章节 ID（来自证据点击后的章节定位）。 */
-  chapterId : string;
-  /** 可选高亮段落索引；为空表示只打开章节，不滚动到特定段落。 */
-  paraIndex?: number;
-  /** 原文读取 Promise，交给阅读面板用 `use()` 消费。 */
-  promise   : ReturnType<typeof fetchChapterContent>;
-}
-
-interface PanelFallbackProps {
-  /** 面板降级提示文案（加载中/加载失败等）。 */
-  message: string;
-  /** 关闭面板回调，统一由父组件清理对应状态。 */
-  onClose: () => void;
-}
 
 /**
  * 比较两个字符串集合内容是否完全一致（忽略引用，只比较值）。
@@ -148,48 +114,6 @@ function isSameIdSet(current: Set<string>, next: Set<string>): boolean {
     }
   }
   return true;
-}
-
-/**
- * 人物侧栏的 Suspense/Error 降级视图。
- * 设计意图：侧栏失败不应该波及主图渲染，因此使用独立降级面板隔离故障。
- */
-function PanelFallback({ message, onClose }: PanelFallbackProps) {
-  return (
-    <aside className="absolute right-0 top-0 z-30 flex h-full w-96 flex-col border-l border-border bg-card shadow-xl">
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-        {message}
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="border-t border-border px-4 py-2 text-sm text-foreground hover:bg-muted"
-      >
-        关闭
-      </button>
-    </aside>
-  );
-}
-
-/**
- * 阅读侧栏降级视图。
- * 与 `PanelFallback` 结构一致但宽度更大，因为正文阅读需要更宽版面。
- */
-function ReaderPanelFallback({ message, onClose }: PanelFallbackProps) {
-  return (
-    <aside className="absolute right-0 top-0 z-30 flex h-full w-[480px] flex-col border-l border-border bg-card shadow-xl">
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-        {message}
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="border-t border-border px-4 py-2 text-sm text-foreground hover:bg-muted"
-      >
-        关闭
-      </button>
-    </aside>
-  );
 }
 
 /* ------------------------------------------------
@@ -243,12 +167,10 @@ export function GraphView({
   // 时间轴切换中的局部 loading；只遮罩画布，不阻塞全页面。
   const [loading, setLoading] = useState(false);
 
-  // 交互状态：选中人物、聚焦节点、右键菜单、悬停边信息。
-  const [selectedPersona, setSelectedPersona] = useState<SelectedPersonaState | null>(null);
+  // 交互状态：聚焦节点、右键菜单、悬停边信息。
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ node: GraphNode; position: { x: number; y: number } } | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<GraphEdge | null>(null);
-  const [pairDrawer, setPairDrawer] = useState<{ aId: string; bId: string } | null>(null);
 
   // 工具栏状态：筛选条件、布局模式、路径高亮（节点 + 边）集合。
   const [filter, setFilter] = useState<GraphFilter>({
@@ -261,18 +183,6 @@ export function GraphView({
   const [highlightPathIds, setHighlightPathIds] = useState<Set<string>>(new Set());
   const [highlightPathEdgeIds, setHighlightPathEdgeIds] = useState<Set<string>>(new Set());
   const [pathAutoFitVersion, setPathAutoFitVersion] = useState(0);
-
-  // 原文阅读面板状态（由证据点击触发）。
-  const [textReader, setTextReader] = useState<TextReaderState | null>(null);
-
-  /**
-   * FG-06: 多证据游标状态。
-   * 人物详情中的 evidence 列表存储多条证据，支持前后跳转翻阅。
-   * evidenceList 是当前人物所有证据的 [ chapterId, paraIndex ] 元组列表；
-   * evidenceIndex 是当前正在查看的证据游标。
-   */
-  const [evidenceList, setEvidenceList] = useState<Array<{ chapterId: string; paraIndex?: number }>>([]);
-  const [evidenceIndex, setEvidenceIndex] = useState(0);
 
   /**
    * FG-04: 布局持久化防抖 timer ref。
@@ -340,25 +250,9 @@ export function GraphView({
     void fetchGraph(chapter);
   }
 
-  /**
-   * 打开人物详情面板并创建 Promise。
-   * 说明：不在这里 await，是为了让 Suspense 控制加载过渡，避免手动维护多组 loading 状态。
-   */
-  function openPersonaDetail(personaId: string) {
-    setSelectedPersona({
-      id     : personaId,
-      promise: fetchPersonaDetail(personaId)
-    });
-  }
-
-  /** 单击节点：打开详情并关闭右键菜单，避免层叠交互冲突。 */
-  function handleNodeClick(node: GraphNode) {
-    openPersonaDetail(node.id);
+  /** 单击节点：关闭右键菜单，避免层叠交互冲突。 */
+  function handleNodeClick() {
     setContextMenu(null);
-  }
-
-  function openPersonaPair(aId: string, bId: string) {
-    setPairDrawer({ aId, bId });
   }
 
   /**
@@ -382,7 +276,6 @@ export function GraphView({
    */
   function handleBackgroundClick() {
     // 背景点击是高频操作：仅在状态非空时才提交更新，避免 no-op 触发整树重渲染。
-    setSelectedPersona(prev => prev === null ? prev : null);
     setFocusedNodeId(prev => prev === null ? prev : null);
     setContextMenu(prev => prev === null ? prev : null);
     setHighlightPathIds(prev => prev.size === 0 ? prev : new Set());
@@ -551,77 +444,6 @@ export function GraphView({
   }
 
   /**
-   * 证据点击回调。
-   * 触发链路：人物详情/时间轴证据 -> 打开阅读侧栏 -> 按需加载章节并可定位段落。
-   * FG-06: 同时维护 evidenceList 与游标，支持多证据前后导航。
-   */
-  function handleEvidenceClick(
-    chapterId   : string,
-    paraIndex?  : number,
-    allEvidence?: Array<{ chapterId: string; paraIndex?: number }>,
-    clickedIndex?: number
-  ) {
-    if (allEvidence && allEvidence.length > 1) {
-      // 多证据模式：进入游标导航（FG-06）。
-      openEvidenceReader(allEvidence, clickedIndex ?? 0);
-    } else {
-      // 单证据模式：直接打开。
-      setTextReader({
-        chapterId,
-        paraIndex,
-        promise: fetchChapterContent(bookId, chapterId, paraIndex)
-      });
-    }
-  }
-
-  /**
-   * FG-06: 打开含多证据游标的原文面板。
-   * @param list 完整证据列表，每项为 { chapterId, paraIndex }。
-   * @param startIndex 初始聚焦证据下标（默认 0）。
-   */
-  function openEvidenceReader(
-    list: Array<{ chapterId: string; paraIndex?: number }>,
-    startIndex = 0
-  ) {
-    if (list.length === 0) return;
-    const idx = Math.max(0, Math.min(startIndex, list.length - 1));
-    setEvidenceList(list);
-    setEvidenceIndex(idx);
-    const item = list[idx];
-    setTextReader({
-      chapterId: item.chapterId,
-      paraIndex: item.paraIndex,
-      promise  : fetchChapterContent(bookId, item.chapterId, item.paraIndex)
-    });
-  }
-
-  /** FG-06: 跳到上一条证据。 */
-  function handleEvidencePrev() {
-    if (evidenceList.length === 0 || evidenceIndex <= 0) return;
-    const nextIdx = evidenceIndex - 1;
-    const item = evidenceList[nextIdx];
-    setEvidenceIndex(nextIdx);
-    setTextReader({
-      chapterId: item.chapterId,
-      paraIndex: item.paraIndex,
-      promise  : fetchChapterContent(bookId, item.chapterId, item.paraIndex)
-    });
-  }
-
-  /** FG-06: 跳到下一条证据。 */
-  function handleEvidenceNext() {
-    if (evidenceList.length === 0 || evidenceIndex >= evidenceList.length - 1) return;
-    const nextIdx = evidenceIndex + 1;
-    const item = evidenceList[nextIdx];
-    setEvidenceIndex(nextIdx);
-    setTextReader({
-      chapterId: item.chapterId,
-      paraIndex: item.paraIndex,
-      promise  : fetchChapterContent(bookId, item.chapterId, item.paraIndex)
-    });
-  }
-
-  /**
    * FG-04: 节点拖拽结束后防抖保存布局坐标到后端。
    * 防抖间隔 1s，避免批量拖拽产生请求风暴；失败时 toast 提示用户。
    */
@@ -675,12 +497,10 @@ export function GraphView({
           filter={filter}
           layoutMode={layoutMode}
           focusedNodeId={focusedNodeId}
-          activeNodeId={selectedPersona?.id ?? null}
           onNodeClick={handleNodeClick}
           onNodeDoubleClick={handleNodeDoubleClick}
           onNodeRightClick={handleNodeRightClick}
           onEdgeHover={setHoveredEdge}
-          onEdgeClick={(_pairKey, sourceId, targetId) => openPersonaPair(sourceId, targetId)}
           onBackgroundClick={handleBackgroundClick}
           highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
           highlightPathEdgeIds={highlightPathEdgeIds.size > 0 ? highlightPathEdgeIds : undefined}
@@ -726,31 +546,12 @@ export function GraphView({
         />
       )}
 
-      {/* 人物详情侧栏：使用 Suspense 包裹 Promise，减少主图阻塞。 */}
-      {selectedPersona && (
-        <AsyncErrorBoundary fallback={<PanelFallback message="人物详情加载失败" onClose={() => setSelectedPersona(null)} />}>
-          <Suspense fallback={<PanelFallback message="人物详情加载中..." onClose={() => setSelectedPersona(null)} />}>
-            <PersonaDetailPanel
-              personaPromise={selectedPersona.promise}
-              bookId={bookId}
-              onClose={() => setSelectedPersona(null)}
-              onEvidenceClick={handleEvidenceClick}
-              onPairClick={openPersonaPair}
-              onEditClick={(id) => {
-                void id; // Phase 4: inline editing
-              }}
-            />
-          </Suspense>
-        </AsyncErrorBoundary>
-      )}
-
       {/* 右键上下文菜单：承接人物快捷操作。 */}
       {contextMenu && (
         <GraphContextMenu
           node={contextMenu.node}
           position={contextMenu.position}
           onClose={() => setContextMenu(null)}
-          onViewDetail={() => openPersonaDetail(contextMenu.node.id)}
           onEdit={() => {
             // FG-05: 跳转角色资料工作台，admin 可在工作台内直接编辑人物资料。
             setContextMenu(null);
@@ -761,51 +562,9 @@ export function GraphView({
             setContextMenu(null);
             router.push(`/admin/role-workbench/${bookId}`);
           }}
-          onDelete={() => {
-            // FG-05: 删除人物节点后刷新图谱。
-            const nodeId = contextMenu.node.id;
-            const nodeName = contextMenu.node.name;
-            setContextMenu(null);
-            void (async () => {
-              try {
-                await deletePersona(nodeId);
-                toast.success(`已删除人物：${nodeName}`);
-                await fetchGraph(currentChapter);
-              } catch {
-                toast.error("删除失败，请稍后重试");
-              }
-            })();
-          }}
         />
       )}
 
-      {/* 原文阅读侧栏：支持按段落定位高亮。FG-06: 传入证据前后导航回调。 */}
-      {textReader && (
-        <AsyncErrorBoundary fallback={<ReaderPanelFallback message="原文加载失败" onClose={() => setTextReader(null)} />}>
-          <Suspense fallback={<ReaderPanelFallback message="原文加载中..." onClose={() => setTextReader(null)} />}>
-            <TextReaderPanel
-              bookId={bookId}
-              chapterPromise={textReader.promise}
-              highlightParaIndex={textReader.paraIndex}
-              onClose={() => { setTextReader(null); setEvidenceList([]); setEvidenceIndex(0); }}
-              onPrev={evidenceList.length > 1 && evidenceIndex > 0 ? handleEvidencePrev : undefined}
-              onNext={evidenceList.length > 1 && evidenceIndex < evidenceList.length - 1 ? handleEvidenceNext : undefined}
-            />
-          </Suspense>
-        </AsyncErrorBoundary>
-      )}
-      {pairDrawer && (
-        <PersonaPairDrawer
-          open={true}
-          onOpenChange={(open) => {
-            if (!open) setPairDrawer(null);
-          }}
-          bookId={bookId}
-          aId={pairDrawer.aId}
-          bId={pairDrawer.bId}
-          role="viewer"
-        />
-      )}
       </div>
     </div>
   );

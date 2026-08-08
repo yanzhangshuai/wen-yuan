@@ -17,24 +17,22 @@
  * - 这些行为无法在纯 Server Component 中完成。
  *
  * 业务职责：
- * 1) 承载角色资料工作台主视图（角色资料/章节事迹/合并/别名/自检五个页签）；
+ * 1) 承载角色资料工作台主视图（角色资料/章节事迹/合并三个页签）；
  * 2) 通过 `src/lib/services/role-workbench.ts` 调用管理端 API 完成读写；
  * 3) 在“首屏服务端预取 + 客户端增量刷新”之间做状态衔接。
  *
  * 输入（上游）：
  * - `bookId/bookTitle`：来自动态路由参数与服务端查库结果；
- * - `initialDrafts/initialMergeSuggestions`：服务端首屏预取数据；
- * - `initialAliasMappings/initialValidationReports`：可选预注入，未提供时客户端懒加载。
+ * - `initialDrafts/initialMergeSuggestions`：服务端首屏预取数据。
  *
  * 输出（下游）：
  * - 渲染角色资料 UI；
  * - 触发 `/api/admin/*` 写操作后刷新列表；
- * - 将部分子流程委托给子组件（编辑表单、合并工具、别名确认、自检报告）。
+ * - 将部分子流程委托给子组件（编辑表单、合并工具）。
  *
  * 维护注意：
  * - 这里的状态字段彼此存在联动（例如切换书籍必须重置活跃页签与筛选）；
- * - 角色级补全/校对逻辑应继续收敛在 `RoleReviewWorkbench` 及其子组件中；
- * - 懒加载数据的静默 catch 是现有行为，若要改为显式提示需整体评估 UX。
+ * - 角色级补全/校对逻辑应继续收敛在 `RoleReviewWorkbench` 及其子组件中。
  * =============================================================================
  */
 
@@ -44,8 +42,6 @@ import {
   Filter,
   Users,
   GitMerge,
-  Tags,
-  ShieldCheck,
   BookOpen
 } from "lucide-react";
 
@@ -62,8 +58,6 @@ import {
   isSelectEmptyValue
 } from "@/components/ui/select";
 import { EntityMergeTool } from "@/components/review/entity-merge-tool";
-import { AliasReviewTab } from "@/components/review/alias-review-tab";
-import { ValidationReportTab } from "@/components/review/validation-report-tab";
 import { ChapterEventsWorkbench } from "@/components/review/chapter-events-workbench";
 import { RoleReviewWorkbench } from "@/components/review/role-review-workbench";
 import {
@@ -75,37 +69,25 @@ import {
   type MergeSuggestionItem,
   type DraftsData
 } from "@/lib/services/role-workbench";
-import {
-  fetchAliasMappings as apiFetchAliasMappings,
-  type AliasMappingItem
-} from "@/lib/services/alias-mappings";
-import {
-  fetchValidationReports as apiFetchValidationReports,
-  type ValidationReportItem
-} from "@/lib/services/validation-reports";
 
 /* ------------------------------------------------
    Props
    ------------------------------------------------ */
 export interface RoleWorkbenchPanelProps {
   /** 当前角色资料上下文的书籍 ID（路由主键），所有请求都依赖它限定范围。 */
-  bookId                   : string;
+  bookId                 : string;
   /** 当前书籍标题，仅用于界面展示，不参与请求。 */
-  bookTitle                : string;
+  bookTitle              : string;
   /** 服务端首屏预取的草稿数据，避免客户端首次渲染二次请求。 */
-  initialDrafts            : DraftsData;
+  initialDrafts          : DraftsData;
   /** 服务端首屏预取的合并建议列表。 */
-  initialMergeSuggestions  : MergeSuggestionItem[];
-  /** 可选：服务端预取的别名映射；为空表示交由客户端懒加载。 */
-  initialAliasMappings?    : AliasMappingItem[];
-  /** 可选：服务端预取的自检报告；为空表示交由客户端懒加载。 */
-  initialValidationReports?: ValidationReportItem[];
+  initialMergeSuggestions: MergeSuggestionItem[];
 }
 
 /* ------------------------------------------------
    Tab types
    ------------------------------------------------ */
-type RoleWorkbenchTab = "roleReview" | "chapterEvents" | "merge" | "aliases" | "validation";
+type RoleWorkbenchTab = "roleReview" | "chapterEvents" | "merge";
 
 /**
  * Tab 展示配置。
@@ -117,27 +99,19 @@ type RoleWorkbenchTab = "roleReview" | "chapterEvents" | "merge" | "aliases" | "
 const TAB_CONFIG: { id: RoleWorkbenchTab; label: string; icon: ReactNode }[] = [
   { id: "roleReview", label: "角色资料", icon: <Users size={14} /> },
   { id: "chapterEvents", label: "章节事迹", icon: <BookOpen size={14} /> },
-  { id: "merge", label: "合并建议", icon: <GitMerge size={14} /> },
-  { id: "aliases", label: "别名映射", icon: <Tags size={14} /> },
-  { id: "validation", label: "自检报告", icon: <ShieldCheck size={14} /> }
+  { id: "merge", label: "合并建议", icon: <GitMerge size={14} /> }
 ];
 
 function getTabBadgeCount(args: {
-  tabId            : RoleWorkbenchTab;
-  drafts           : DraftsData | null;
-  mergeCount       : number;
-  pendingAliasCount: number;
-  validationCount  : number;
+  tabId     : RoleWorkbenchTab;
+  drafts    : DraftsData | null;
+  mergeCount: number;
 }): number | null {
   switch (args.tabId) {
     case "roleReview":
       return args.drafts?.summary.total ?? 0;
     case "merge":
       return args.mergeCount;
-    case "aliases":
-      return args.pendingAliasCount;
-    case "validation":
-      return args.validationCount;
     case "chapterEvents":
       return null;
   }
@@ -150,9 +124,7 @@ export function RoleWorkbenchPanel({
   bookId,
   bookTitle,
   initialDrafts,
-  initialMergeSuggestions,
-  initialAliasMappings,
-  initialValidationReports
+  initialMergeSuggestions
 }: RoleWorkbenchPanelProps) {
   // 当前激活页签。默认进入角色为中心的资料工作台。
   const [activeTab, setActiveTab] = useState<RoleWorkbenchTab>("roleReview");
@@ -162,10 +134,6 @@ export function RoleWorkbenchPanel({
   const [drafts, setDrafts] = useState<DraftsData | null>(initialDrafts);
   // 合并建议列表。与草稿分离存储，避免一次刷新影响全部面板。
   const [mergeSuggestions, setMergeSuggestions] = useState<MergeSuggestionItem[]>(initialMergeSuggestions);
-  // 别名映射列表。可由服务端预注入，也可客户端懒加载补齐。
-  const [aliasMappings, setAliasMappings] = useState<AliasMappingItem[]>(initialAliasMappings ?? []);
-  // 自检报告列表。结构较独立，单独刷新不会影响草稿主列表。
-  const [validationReports, setValidationReports] = useState<ValidationReportItem[]>(initialValidationReports ?? []);
   // 草稿刷新中的加载态（影响骨架屏显示）。
   const [loading, setLoading] = useState(false);
   // 通用加载错误提示文案，展示在面板顶部。
@@ -182,31 +150,12 @@ export function RoleWorkbenchPanel({
     // 这里依赖 `bookId + initial*`，是因为从左侧切书时不仅路由变，首屏注入数据也会整体替换。
     setDrafts(initialDrafts);
     setMergeSuggestions(initialMergeSuggestions);
-    setAliasMappings(initialAliasMappings ?? []);
-    setValidationReports(initialValidationReports ?? []);
     setActiveTab("roleReview");
     setSourceFilter(null);
     setLoading(false);
     setLoadError(null);
     setMergePreview(null);
-  }, [bookId, initialDrafts, initialMergeSuggestions, initialAliasMappings, initialValidationReports]);
-
-  /* 未通过 SSR 预载别名/自检数据时，客户端首次挂载懒加载。 */
-  useEffect(() => {
-    // 分支 1：页面未提供 alias 初始值时，客户端兜底请求，保证页签可用。
-    if (!initialAliasMappings) {
-      void apiFetchAliasMappings(bookId).then(setAliasMappings).catch(() => { /* silent */ });
-    }
-    // 分支 2：页面未提供 validation 初始值时，同样做懒加载。
-    if (!initialValidationReports) {
-      void apiFetchValidationReports(bookId).then(setValidationReports).catch(() => { /* silent */ });
-    }
-  // 设计说明：
-  // - 故意只监听 bookId，避免每次 state 更新都重新触发懒加载；
-  // - 该策略牺牲了部分 hooks 依赖“完备性”，换取“只在切书时拉取一次”的业务语义。
-  // 风险提示：silent catch 会降低错误可观测性，后续可考虑接入埋点或轻量 toast。
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId]);
+  }, [bookId, initialDrafts, initialMergeSuggestions]);
 
   /**
    * 刷新草稿主列表（人物/关系/传记）。
@@ -235,28 +184,6 @@ export function RoleWorkbenchPanel({
       setMergeSuggestions(data);
     } catch {
       setLoadError("刷新合并建议失败，请稍后重试。");
-    }
-  }, [bookId]);
-
-  /** 刷新别名映射页签数据。 */
-  const fetchAliases = useCallback(async () => {
-    setLoadError(null);
-    try {
-      const data = await apiFetchAliasMappings(bookId);
-      setAliasMappings(data);
-    } catch {
-      setLoadError("刷新别名映射失败，请稍后重试。");
-    }
-  }, [bookId]);
-
-  /** 刷新自检报告页签数据。 */
-  const fetchValidation = useCallback(async () => {
-    setLoadError(null);
-    try {
-      const data = await apiFetchValidationReports(bookId);
-      setValidationReports(data);
-    } catch {
-      setLoadError("刷新自检报告失败，请稍后重试。");
     }
   }, [bookId]);
 
@@ -327,11 +254,9 @@ export function RoleWorkbenchPanel({
       <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
         {TAB_CONFIG.map(tab => {
           const badgeCount = getTabBadgeCount({
-            tabId            : tab.id,
+            tabId     : tab.id,
             drafts,
-            mergeCount       : mergeSuggestions.length,
-            pendingAliasCount: aliasMappings.filter(m => m.status === "PENDING").length,
-            validationCount  : validationReports.reduce((sum, r) => sum + r.summary.needsReview, 0)
+            mergeCount: mergeSuggestions.length
           });
           return (
             <button
@@ -374,10 +299,7 @@ export function RoleWorkbenchPanel({
 
       {!loading && activeTab === "roleReview" && drafts && (
         <div className="min-h-0 flex-1 overflow-hidden">
-          <RoleReviewWorkbench
-            drafts={drafts}
-            aliasMappings={aliasMappings}
-          />
+          <RoleReviewWorkbench drafts={drafts} />
         </div>
       )}
 
@@ -481,27 +403,6 @@ export function RoleWorkbenchPanel({
         </div>
       )}
 
-      {/* 别名映射页签：交由专门子组件处理，父组件仅提供 bookId、数据与刷新入口。 */}
-      {!loading && activeTab === "aliases" && (
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-          <AliasReviewTab
-            bookId={bookId}
-            aliasMappings={aliasMappings}
-            onRefresh={() => { void fetchAliases(); }}
-          />
-        </div>
-      )}
-
-      {/* 自检报告页签：展示 AI 自检结果，供人工补充复核。 */}
-      {!loading && activeTab === "validation" && (
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-          <ValidationReportTab
-            bookId={bookId}
-            reports={validationReports}
-            onRefresh={() => { void fetchValidation(); }}
-          />
-        </div>
-      )}
     </div>
   );
 }

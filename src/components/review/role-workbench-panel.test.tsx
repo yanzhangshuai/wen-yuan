@@ -15,10 +15,6 @@ vi.mock("@/components/review/role-review-workbench", () => ({
   RoleReviewWorkbench: () => <div>统一角色列表</div>
 }));
 
-vi.mock("@/components/graph", () => ({
-  TextReaderPanel: () => <div>原文面板</div>
-}));
-
 vi.mock("@/lib/services/role-workbench", () => ({
   fetchDrafts          : vi.fn(),
   fetchMergeSuggestions: vi.fn(),
@@ -27,14 +23,6 @@ vi.mock("@/lib/services/role-workbench", () => ({
   deferMergeSuggestion : vi.fn(),
   bulkVerifyDrafts     : vi.fn(),
   bulkRejectDrafts     : vi.fn()
-}));
-
-vi.mock("@/lib/services/alias-mappings", () => ({
-  fetchAliasMappings: vi.fn().mockResolvedValue([])
-}));
-
-vi.mock("@/lib/services/validation-reports", () => ({
-  fetchValidationReports: vi.fn().mockResolvedValue([])
 }));
 
 function buildDrafts(): DraftsData {
@@ -77,8 +65,6 @@ describe("RoleWorkbenchPanel role workspace", () => {
         bookTitle="测试书"
         initialDrafts={buildDrafts()}
         initialMergeSuggestions={[]}
-        initialAliasMappings={[]}
-        initialValidationReports={[]}
       />
     );
 
@@ -99,8 +85,6 @@ describe("RoleWorkbenchPanel role workspace", () => {
         bookTitle="测试书"
         initialDrafts={buildDrafts()}
         initialMergeSuggestions={[]}
-        initialAliasMappings={[]}
-        initialValidationReports={[]}
       />
     );
 

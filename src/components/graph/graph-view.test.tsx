@@ -29,35 +29,17 @@ vi.mock("@/lib/services/graph", () => ({
   updateGraphLayout: vi.fn()
 }));
 
-vi.mock("@/lib/services/personas", () => ({
-  deletePersona     : vi.fn(),
-  fetchPersonaDetail: vi.fn()
-}));
-
-vi.mock("@/lib/services/books", () => ({
-  fetchChapterContent: vi.fn()
-}));
-
 vi.mock("@/components/graph", () => ({
   ForceGraph: (props: ForceGraphProps) => (
-    <button
-      type="button"
-      onClick={() => props.onEdgeClick?.("ally|hero", "hero", "ally")}
-    >
-      open pair from edge
+    <button type="button" onClick={() => props.onBackgroundClick?.()}>
+      background
     </button>
   ),
-  GraphToolbar      : () => <div />,
-  PersonaDetailPanel: () => <div />,
-  ChapterTimeline   : () => <div />,
-  TextReaderPanel   : () => <div />,
-  GraphContextMenu  : () => <div />
-}));
-
-vi.mock("@/components/relations/persona-pair-drawer", () => ({
-  PersonaPairDrawer: ({ open, aId, bId, role }: { open: boolean; aId: string; bId: string; role: string }) => (
-    open ? <div role="dialog">Pair Drawer {aId} {bId} {role}</div> : null
-  )
+  GraphToolbar    : () => <div />,
+  ChapterTimeline : () => <div />,
+  GraphContextMenu: () => <div />,
+  GraphPageHeader : () => <div />,
+  GraphLegend     : () => <div />
 }));
 
 const snapshot: GraphSnapshot = {
@@ -95,8 +77,8 @@ const snapshot: GraphSnapshot = {
   ]
 };
 
-describe("GraphView pair drawer", () => {
-  it("opens the pair drawer from an edge click", () => {
+describe("GraphView", () => {
+  it("renders the force graph canvas with the injected snapshot", () => {
     render(
       <GraphView
         bookId="book-1"
@@ -106,8 +88,19 @@ describe("GraphView pair drawer", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "open pair from edge" }));
+    expect(screen.getByRole("button", { name: "background" })).toBeInTheDocument();
+  });
 
-    expect(screen.getByRole("dialog")).toHaveTextContent("Pair Drawer hero ally viewer");
+  it("clears temporary interaction state on background click without throwing", () => {
+    render(
+      <GraphView
+        bookId="book-1"
+        initialSnapshot={snapshot}
+        totalChapters={1}
+        bookTitle="儒林外史"
+      />
+    );
+
+    expect(() => fireEvent.click(screen.getByRole("button", { name: "background" }))).not.toThrow();
   });
 });

@@ -5,7 +5,6 @@ import { ChevronRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { AliasMappingItem } from "@/lib/services/alias-mappings";
 import type { DraftsData } from "@/lib/services/role-workbench";
 
 import { RoleReviewSidebar } from "./role-review-sidebar";
@@ -38,22 +37,17 @@ import {
  *   等已删除路由做人物列表加载与手工增删改；
  * - v5 roleWorkbench 是“审核草稿/合并建议”视角，不再手工建人物；
  * - 因此本组件收敛为**只读实体档案视图**：实体列表取自 `drafts.personas`
- *   （EntityProfile + Entity），关系/传记/别名取自草稿与别名映射，去掉了
+ *   （EntityProfile + Entity），关系/传记/别名均直接取自草稿数据，去掉了
  *   新增/编辑/删除/表单/弹窗等全部写操作入口。
  * =============================================================================
  */
 
 interface RoleReviewWorkbenchProps {
   /** 服务端/父层预取的草稿数据（实体 + 关系 + 传记）。 */
-  drafts       : DraftsData;
-  /** 别名映射列表（当前仅展示，数据由后端别名域提供）。 */
-  aliasMappings: AliasMappingItem[];
+  drafts: DraftsData;
 }
 
-export function RoleReviewWorkbench({
-  drafts,
-  aliasMappings
-}: RoleReviewWorkbenchProps) {
+export function RoleReviewWorkbench({ drafts }: RoleReviewWorkbenchProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleListFilter>("all");
@@ -90,17 +84,12 @@ export function RoleReviewWorkbench({
       const count = counts.get(biography.personaId);
       if (count) count.biographies += 1;
     }
-    for (const mapping of aliasMappings) {
-      if (mapping.status !== "PENDING" || !mapping.entityId) continue;
-      const count = counts.get(mapping.entityId);
-      if (count) count.aliases += 1;
-    }
     return counts;
-  }, [entities, drafts.relationships, drafts.biographyRecords, aliasMappings]);
+  }, [entities, drafts.relationships, drafts.biographyRecords]);
 
   const firstAppearanceChapters = useMemo(() => {
-    return collectRoleFirstAppearanceChapters(drafts, aliasMappings);
-  }, [drafts, aliasMappings]);
+    return collectRoleFirstAppearanceChapters(drafts);
+  }, [drafts]);
 
   const visibleEntities = useMemo(() => {
     return sortRoles(
@@ -128,9 +117,8 @@ export function RoleReviewWorkbench({
   }, [drafts.biographyRecords, selectedEntity]);
 
   const selectedAliases = useMemo(() => {
-    if (!selectedEntity) return [];
-    return aliasMappings.filter(mapping => mapping.entityId === selectedEntity.id);
-  }, [aliasMappings, selectedEntity]);
+    return selectedEntity?.aliases ?? [];
+  }, [selectedEntity]);
 
   return (
     <div className="role-review-workbench grid h-full min-h-0 grid-rows-[minmax(0,240px)_minmax(0,1fr)] gap-3 overflow-hidden lg:grid-cols-[minmax(260px,320px)_1fr] lg:grid-rows-1">

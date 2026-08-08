@@ -290,99 +290,12 @@ export interface AnalysisJobListItem {
 }
 
 /**
- * 书籍人物列表项（前端展示模型）。
- * 镜像服务端 DTO，但移除了 Prisma 枚举依赖，避免客户端打包 Prisma 类型。
- */
-export interface BookPersonaListItem {
-  /** 人物 ID。 */
-  id                         : string;
-  /** 当前书内档案 ID。 */
-  profileId                  : string;
-  /** 所属书籍 ID。 */
-  bookId                     : string;
-  /** 人物标准名。 */
-  name                       : string;
-  /** 书内称谓。 */
-  localName                  : string;
-  /** 别名列表。 */
-  aliases                    : string[];
-  /** 性别。 */
-  gender                     : string | null;
-  /** 籍贯。 */
-  hometown                   : string | null;
-  /** 姓名类型。 */
-  nameType                   : string;
-  /** 全局标签。 */
-  globalTags                 : string[];
-  /** 书内标签。 */
-  localTags                  : string[];
-  /** 书内官职头衔。 */
-  officialTitle              : string | null;
-  /** 书内摘要。 */
-  localSummary               : string | null;
-  /** 显式维护的首次出场章节 ID。 */
-  firstAppearanceChapterId   : string | null;
-  /** 显式维护的首次出场章节序号。 */
-  firstAppearanceChapterNo   : number | null;
-  /** 显式维护的首次出场章节标题。 */
-  firstAppearanceChapterTitle: string | null;
-  /** 书内讽刺指数。 */
-  ironyIndex                 : number;
-  /** 置信度。 */
-  confidence                 : number;
-  /** 数据来源。 */
-  recordSource               : string;
-  /** 审核状态。 */
-  status                     : string;
-}
-
-export interface CreateBookPersonaBody {
-  name                     : string;
-  aliases?                 : string[];
-  gender?                  : string | null;
-  hometown?                : string | null;
-  nameType?                : string;
-  globalTags?              : string[];
-  localName?               : string;
-  localSummary?            : string | null;
-  officialTitle?           : string | null;
-  localTags?               : string[];
-  ironyIndex?              : number;
-  firstAppearanceChapterId?: string | null;
-  confidence?              : number;
-}
-
-/**
  * 获取书籍解析任务记录列表（通常按时间倒序）。
  * 对应接口：`GET /api/books/:bookId/jobs`。
  */
 export async function fetchBookJobs(bookId: string): Promise<AnalysisJobListItem[]> {
   return clientFetch<AnalysisJobListItem[]>(
     `/api/books/${encodeURIComponent(bookId)}/jobs`
-  );
-}
-
-/**
- * 获取指定书籍的人物列表。
- * 对应接口：`GET /api/books/:bookId/personas`。
- */
-export async function fetchBookPersonas(bookId: string): Promise<BookPersonaListItem[]> {
-  return clientFetch<BookPersonaListItem[]>(
-    `/api/books/${encodeURIComponent(bookId)}/personas`
-  );
-}
-
-export async function createBookPersona(
-  bookId: string,
-  body: CreateBookPersonaBody
-): Promise<BookPersonaListItem> {
-  return clientFetch<BookPersonaListItem>(
-    `/api/books/${encodeURIComponent(bookId)}/personas`,
-    {
-      method : "POST",
-      headers: { "Content-Type": "application/json" },
-      body   : JSON.stringify(body)
-    }
   );
 }
 
