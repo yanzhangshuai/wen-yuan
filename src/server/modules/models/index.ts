@@ -56,7 +56,6 @@ const providerSchema = z.string().trim().min(1, "Provider 不能为空");
 const protocolSchema = z.enum(["openai-compatible", "gemini"]);
 const nameSchema = z.string().trim().min(1, "模型名称不能为空");
 const providerModelIdSchema = z.string().trim().min(1, "模型标识不能为空");
-const aliasKeySchema = z.string().trim().min(1, "Alias Key 不能为空").nullable();
 const baseUrlSchema = z.string().trim().url("BaseURL 格式不合法");
 
 const createModelInputSchema = z.object({
@@ -64,7 +63,6 @@ const createModelInputSchema = z.object({
   protocol         : protocolSchema,
   name             : nameSchema,
   modelId          : providerModelIdSchema,
-  aliasKey         : aliasKeySchema.optional(),
   baseUrl          : baseUrlSchema,
   apiKey           : z.string().trim().min(1, "API Key 不能为空").optional(),
   isEnabled        : z.boolean().optional(),
@@ -79,7 +77,6 @@ const updateModelInputSchema = z.object({
   protocol         : protocolSchema.optional(),
   name             : nameSchema.optional(),
   providerModelId  : providerModelIdSchema.optional(),
-  aliasKey         : aliasKeySchema.optional(),
   baseUrl          : baseUrlSchema.optional(),
   isEnabled        : z.boolean().optional(),
   supportsThinking : z.boolean().optional(),
@@ -113,8 +110,6 @@ interface AiModelRecord {
   name             : string;
   /** 提供商侧模型 ID（真实调用使用）。 */
   modelId          : string;
-  /** 别名键（用于推荐与策略映射，可为空）。 */
-  aliasKey         : string | null;
   /** 提供商 API Base URL。 */
   baseUrl          : string;
   /** 密钥（存储层可为空；存在时通常为加密串）。 */
@@ -166,8 +161,6 @@ export interface ModelListItem {
   name             : string;
   /** 提供商模型标识。 */
   providerModelId  : string;
-  /** 推荐/策略别名。 */
-  aliasKey         : string | null;
   /** 调用基地址。 */
   baseUrl          : string;
   /** 是否启用。 */
@@ -200,8 +193,6 @@ export interface UpdateModelInput {
   protocol?         : AiModelProtocol;
   /** 管理台显示名称。 */
   name?             : string;
-  /** 推荐/策略别名。 */
-  aliasKey?         : string | null;
   /** 目标模型 ID。 */
   providerModelId?  : string;
   /** 被更新的记录 ID。 */
@@ -225,8 +216,6 @@ export interface UpdateAdminModelPayload {
   protocol?         : AiModelProtocol;
   /** 可选覆盖显示名。 */
   name?             : string;
-  /** 可选覆盖别名。 */
-  aliasKey?         : string | null;
   /** 可选覆盖的 providerModelId。 */
   providerModelId?  : string;
   /** 可选覆盖的 baseUrl。 */
@@ -248,7 +237,6 @@ export interface ExportedModelConfig {
   protocol         : AiModelProtocol;
   name             : string;
   modelId          : string;
-  aliasKey         : string | null;
   baseUrl          : string;
   isEnabled        : boolean;
   isDefault        : boolean;
@@ -289,7 +277,6 @@ const modelSelect = {
   protocol         : true,
   name             : true,
   modelId          : true,
-  aliasKey         : true,
   baseUrl          : true,
   apiKey           : true,
   isEnabled        : true,
@@ -326,25 +313,15 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 function buildImportModelsSchema() {
   return z.array(createModelInputSchema.omit({ apiKey: true }).extend({
-    aliasKey : aliasKeySchema.optional(),
     isEnabled: z.boolean().optional(),
     isDefault: z.boolean().optional()
   }));
 }
 
 function assertNoDuplicateImportModels(models: ImportableModelConfig[]): void {
-  const aliasKeys = new Set<string>();
   const endpoints = new Set<string>();
 
   for (const model of models) {
-    const normalizedAliasKey = normalizeOptionalAliasKey(model.aliasKey);
-    if (normalizedAliasKey) {
-      if (aliasKeys.has(normalizedAliasKey)) {
-        throw new ModelConfigurationError("ADMIN_MODEL_ALIAS_DUPLICATE", `Alias Key 已存在：${normalizedAliasKey}`, 400);
-      }
-      aliasKeys.add(normalizedAliasKey);
-    }
-
     const endpointKey = [
       model.provider.trim(),
       model.modelId.trim(),
@@ -415,7 +392,6 @@ function toModelListItem(
     protocol         : protocolSchema.parse(model.protocol),
     name             : model.name,
     providerModelId  : model.modelId,
-    aliasKey         : model.aliasKey,
     baseUrl          : model.baseUrl,
     isEnabled        : model.isEnabled,
     isDefault        : model.isDefault,
@@ -428,22 +404,12 @@ function toModelListItem(
   };
 }
 
-function normalizeOptionalAliasKey(aliasKey: string | null | undefined): string | null {
-  if (typeof aliasKey === "undefined" || aliasKey === null) {
-    return null;
-  }
-
-  const trimmed = aliasKey.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function toExportedModelConfig(model: AiModelRecord): ExportedModelConfig {
   return {
     provider         : model.provider,
     protocol         : protocolSchema.parse(model.protocol),
     name             : model.name,
     modelId          : model.modelId,
-    aliasKey         : model.aliasKey,
     baseUrl          : model.baseUrl,
     isEnabled        : model.isEnabled,
     isDefault        : model.isDefault,
@@ -458,24 +424,9 @@ async function assertModelUnique(
     provider       : string;
     modelId        : string;
     baseUrl        : string;
-    aliasKey       : string | null;
     excludeModelId?: string;
   }
 ): Promise<void> {
-  if (input.aliasKey) {
-    const existingAlias = await prismaClient.aiModel.findFirst({
-      where: {
-        aliasKey: input.aliasKey,
-        ...(input.excludeModelId ? { id: { not: input.excludeModelId } } : {})
-      },
-      select: { id: true }
-    });
-
-    if (existingAlias) {
-      throw new ModelConfigurationError("ADMIN_MODEL_ALIAS_DUPLICATE", "Alias Key 已被其他模型使用");
-    }
-  }
-
   const existingEndpoint = await prismaClient.aiModel.findFirst({
     where: {
       provider: input.provider,
@@ -647,7 +598,6 @@ export function createModelsModule(
     const parsedInput = createModelInputSchema.parse(input);
     const encryptedApiKey = parsedInput.apiKey ? encryptValue(parsedInput.apiKey.trim()) : null;
     const isEnabled = parsedInput.isEnabled ?? false;
-    const normalizedAliasKey = normalizeOptionalAliasKey(parsedInput.aliasKey);
     const normalizedProvider = parsedInput.provider.trim();
     const normalizedModelId = parsedInput.modelId.trim();
     const normalizedBaseUrl = normalizeBaseUrl(parsedInput.baseUrl);
@@ -660,8 +610,7 @@ export function createModelsModule(
       await assertModelUnique(tx, {
         provider: normalizedProvider,
         modelId : normalizedModelId,
-        baseUrl : normalizedBaseUrl,
-        aliasKey: normalizedAliasKey
+        baseUrl : normalizedBaseUrl
       });
 
       if (parsedInput.isDefault) {
@@ -677,7 +626,6 @@ export function createModelsModule(
           protocol         : parsedInput.protocol,
           name             : parsedInput.name.trim(),
           modelId          : normalizedModelId,
-          aliasKey         : normalizedAliasKey,
           baseUrl          : normalizedBaseUrl,
           apiKey           : encryptedApiKey,
           isEnabled,
@@ -699,9 +647,6 @@ export function createModelsModule(
     const nextProvider = parsedInput.provider?.trim() ?? currentModel.provider;
     const nextProviderModelId = parsedInput.providerModelId?.trim() ?? currentModel.modelId;
     const nextBaseUrl = parsedInput.baseUrl ? normalizeBaseUrl(parsedInput.baseUrl) : currentModel.baseUrl;
-    const nextAliasKey = typeof parsedInput.aliasKey === "undefined"
-      ? currentModel.aliasKey
-      : normalizeOptionalAliasKey(parsedInput.aliasKey);
 
     let nextEncryptedApiKey = currentModel.apiKey;
     let isConfigured = Boolean(readStoredApiKey(currentModel.apiKey));
@@ -721,17 +666,15 @@ export function createModelsModule(
       throw new ModelConfigurationError("ADMIN_MODEL_API_KEY_REQUIRED", "启用模型前请先配置 API Key", 400);
     }
 
-    const aliasChanged = nextAliasKey !== currentModel.aliasKey;
     const endpointChanged = nextProvider !== currentModel.provider
       || nextProviderModelId !== currentModel.modelId
       || nextBaseUrl !== currentModel.baseUrl;
 
-    if (aliasChanged || endpointChanged) {
+    if (endpointChanged) {
       await assertModelUnique(prismaClient, {
         provider      : nextProvider,
         modelId       : nextProviderModelId,
         baseUrl       : nextBaseUrl,
-        aliasKey      : nextAliasKey,
         excludeModelId: currentModel.id
       });
     }
@@ -743,7 +686,6 @@ export function createModelsModule(
         protocol : parsedInput.protocol ?? currentModel.protocol,
         name     : parsedInput.name?.trim() ?? currentModel.name,
         modelId  : nextProviderModelId,
-        aliasKey : nextAliasKey,
         baseUrl  : nextBaseUrl,
         isEnabled: nextIsEnabled,
         ...(typeof parsedInput.supportsThinking === "boolean"
@@ -790,22 +732,15 @@ export function createModelsModule(
 
     await prismaClient.$transaction(async (tx) => {
       for (const model of parsedModels) {
-        const normalizedAliasKey = normalizeOptionalAliasKey(model.aliasKey);
         const normalizedBaseUrl = normalizeBaseUrl(model.baseUrl);
-        const existingByAlias = normalizedAliasKey
-          ? await tx.aiModel.findUnique({ where: { aliasKey: normalizedAliasKey }, select: { id: true } })
-          : null;
-        const existingByEndpoint = existingByAlias
-          ? null
-          : await tx.aiModel.findFirst({
-            where: {
-              provider: model.provider.trim(),
-              modelId : model.modelId.trim(),
-              baseUrl : normalizedBaseUrl
-            },
-            select: { id: true }
-          });
-        const existing = existingByAlias ?? existingByEndpoint;
+        const existing = await tx.aiModel.findFirst({
+          where: {
+            provider: model.provider.trim(),
+            modelId : model.modelId.trim(),
+            baseUrl : normalizedBaseUrl
+          },
+          select: { id: true }
+        });
 
         if (model.isDefault) {
           await tx.aiModel.updateMany({
@@ -819,7 +754,6 @@ export function createModelsModule(
           protocol         : model.protocol,
           name             : model.name.trim(),
           modelId          : model.modelId.trim(),
-          aliasKey         : normalizedAliasKey,
           baseUrl          : normalizedBaseUrl,
           isEnabled        : model.isEnabled ?? false,
           isDefault        : model.isDefault ?? false,

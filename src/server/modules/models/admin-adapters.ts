@@ -87,7 +87,6 @@ export async function updateAdminModel(
     provider         : payload.provider,
     protocol         : payload.protocol,
     name             : payload.name,
-    aliasKey         : payload.aliasKey,
     providerModelId  : payload.providerModelId,
     baseUrl          : payload.baseUrl,
     isEnabled        : payload.isEnabled,

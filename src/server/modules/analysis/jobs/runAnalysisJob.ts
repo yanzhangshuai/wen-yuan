@@ -81,13 +81,26 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     const result = await prismaClient.analysisJob.updateMany({
       where: { id: jobId, status: AnalysisJobStatus.QUEUED },
       data : {
-        status    : AnalysisJobStatus.RUNNING,
-        startedAt : new Date(),
-        finishedAt: null,
-        errorLog  : null
+        status      : AnalysisJobStatus.RUNNING,
+        startedAt   : new Date(),
+        finishedAt  : null,
+        errorLog    : null,
+        currentStage: null
       }
     });
     return result.count === 1;
+  }
+
+  /**
+   * 功能：写入任务当前阶段标识（Pass 边界调用，驱动进度面板展示）。
+   * 输入：jobId、阶段 key。
+   * 副作用：更新 analysis_jobs.current_stage。
+   */
+  async function setStage(jobId: string, currentStage: string): Promise<void> {
+    await prismaClient.analysisJob.update({
+      where: { id: jobId },
+      data : { currentStage }
+    });
   }
 
   /**
@@ -583,6 +596,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
   async function runPass0(input: {
     bookId     : string;
     jobId      : string;
+    agentRunId : string;
     fullText   : string;
     bookSummary: string;
     skills     : string[];
@@ -590,19 +604,21 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     const { runTier1 } = await import("@/server/modules/identity/tier1");
     const { runTier2, collectResidualCandidates } = await import("@/server/modules/identity/tier2");
 
-    // Tier1：全书一遍草稿登记表（A/B 校准表缺省 single_pass，modelId 仅用于分档）
+    // Tier1：全书一遍草稿登记表（按 token 规模自动 single_pass / 分卷）
     await runTier1({
       bookId        : input.bookId,
       jobId         : input.jobId,
+      agentRunId    : input.agentRunId,
       fullText      : input.fullText,
       bookSizeTokens: estimateTokens(input.fullText)
-    }, "default");
+    });
 
     // Tier2：残余候选兜底（读 Tier1 写后的登记表）
     const registry = await getRegistry(input.bookId, prismaClient);
     await runTier2({
       bookId     : input.bookId,
       jobId      : input.jobId,
+      agentRunId : input.agentRunId,
       bookSummary: input.bookSummary,
       skills     : input.skills,
       candidates : collectResidualCandidates(registry)
@@ -684,6 +700,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
   async function runReconcilePass(input: {
     bookId     : string;
     jobId      : string;
+    agentRunId : string;
     bookSummary: string;
     skills     : string[];
   }): Promise<void> {
@@ -692,6 +709,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     await runReconcile({
       bookId     : input.bookId,
       jobId      : input.jobId,
+      agentRunId : input.agentRunId,
       bookSummary: input.bookSummary,
       skills     : input.skills,
       minMentions: 2
@@ -1050,10 +1068,12 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
 
     // Pass0：身份解析（Tier1 → Tier2）。
     await checkCanceled();
-    await traceAgentRun(context.bookId, context.jobId, AgentRunType.IDENTITY, async () => {
+    await setStage(context.jobId, "identity");
+    await traceAgentRun(context.bookId, context.jobId, AgentRunType.IDENTITY, async (agentRunId) => {
       await runPass0({
         bookId: context.bookId,
         jobId : context.jobId,
+        agentRunId,
         fullText,
         bookSummary,
         skills: skillDocs
@@ -1066,6 +1086,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
 
     // Pass1：分片提取 + 落库（facts/mentions/aliases/审计；护栏已在 extractSlice 内部）。
     await checkCanceled();
+    await setStage(context.jobId, "extraction");
     await traceAgentRun(context.bookId, context.jobId, AgentRunType.EXTRACTION, async (agentRunId) => {
       await runPass1Slices({
         bookId  : context.bookId,
@@ -1086,10 +1107,12 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
 
     // reconcile：Pass1 后 Pass3 前（扫 mentions 漏网高频，回写登记表）。
     await checkCanceled();
-    await traceAgentRun(context.bookId, context.jobId, AgentRunType.RECONCILE, async () => {
+    await setStage(context.jobId, "reconcile");
+    await traceAgentRun(context.bookId, context.jobId, AgentRunType.RECONCILE, async (agentRunId) => {
       await runReconcilePass({
         bookId: context.bookId,
         jobId : context.jobId,
+        agentRunId,
         bookSummary,
         skills: skillDocs
       });
@@ -1097,16 +1120,19 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
 
     // Pass3：别名合并 + 幂等重建 relationships + Neo4j 惰性同步。
     await checkCanceled();
+    await setStage(context.jobId, "aggregate");
     await traceAgentRun(context.bookId, context.jobId, AgentRunType.VALIDATION, async () => {
       await runPass3(context.bookId);
     });
 
     // Pass4：自动接受栈（五条件；冲突扫描结果接入条件④）。
     await checkCanceled();
+    await setStage(context.jobId, "auto_accept");
     await runPass4(context.bookId, context.jobId);
 
     // Pass5：markOrphan（FULL_BOOK 门控）+ SkillGenerator 候选 DRAFT；终态由入口落库。
     await checkCanceled();
+    await setStage(context.jobId, "skill_generation");
     await traceAgentRun(context.bookId, context.jobId, AgentRunType.SKILL_GENERATION, async () => {
       await runPass5({ bookId: context.bookId, jobId: context.jobId, scope: context.scope });
     });

@@ -42,23 +42,20 @@ export const IDENTITY_RESOLUTION_SYSTEM_PROMPT = [
   "- 禁止臆造：原文未出现的信息不得作为判定依据"
 ].join("\n");
 
-/** Tier1 全书一遍草稿登记表 prompt。保留"什么算一个实体"的验收判据。 */
+/** Tier1 全书一遍草稿登记表 prompt。保留"什么算一个实体"的验收判据。
+ * 输出刻意精简为 canonical/type/aliases 三元组：登记表只关心"有哪些实体 + 别名"，
+ * 证据锚点属 Pass1 提取职责。若带上证据锚点，推理模型会为每个实体枚举数百条段落锚点，
+ * 瞬间耗尽输出预算（实测：单分卷 PERSON 输出 > 44K 字符仍截断）。 */
 export const TIER1_SYSTEM_PROMPT = [
-  "识别全书正文中的所有可辨识实体，输出草稿登记表。",
+  "识别正文中的所有可辨识实体，输出草稿登记表。",
   "",
-  "输出 JSON 数组：",
-  "[{",
-  '  "canonical": "标准名",',
-  '  "type": "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT",',
-  '  "aliases": ["别名1", "别名2"],',
-  '  "evidenceAnchors": [{ "chapterNo": number, "paraIndex": number | null }],',
-  '  "note": "备注（可选）"',
-  "}]",
+  "输出精简 JSON 数组，每条只含三个字段：",
+  '[{ "canonical": "标准名", "type": "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT", "aliases": ["别名1", "别名2"] }]',
   "",
   "成功判据（什么算一个正确实体）：",
   "- 实体必须在正文中有明确指代",
   "- canonical 取最常用名（有名有姓取全名；仅称号取最通用形式）",
   "- 别名必须能在原文出现",
-  "- 仅称号无名字（TITLE_ONLY）也列为实体，note 注明 TITLE_ONLY",
-  "- 禁止臆造：必须基于原文证据"
+  "- 同名同人只输出一条，不要按出现次数重复列举",
+  "- 禁止臆造：必须基于原文"
 ].join("\n");

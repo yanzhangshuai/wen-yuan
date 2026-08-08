@@ -49,7 +49,6 @@ describe("POST /api/admin/models/import", () => {
           protocol : "openai-compatible",
           name     : "DeepSeek V4",
           modelId  : "deepseek-chat-v4",
-          aliasKey : "deepseek-v4",
           baseUrl  : "https://api.deepseek.com",
           isEnabled: true,
           isDefault: false
@@ -96,8 +95,8 @@ describe("POST /api/admin/models/import", () => {
 
   it("maps duplicate import errors", async () => {
     importAdminModelsMock.mockRejectedValue(new MockModelConfigurationError(
-      "ADMIN_MODEL_ALIAS_DUPLICATE",
-      "Alias Key 重复",
+      "ADMIN_MODEL_ENDPOINT_DUPLICATE",
+      "同一 Provider、模型标识与 BaseURL 的模型已存在",
       409
     ));
     const { POST } = await import("./route");
@@ -111,7 +110,7 @@ describe("POST /api/admin/models/import", () => {
     expect(response.status).toBe(409);
     const body = await response.json();
     expect(body.success).toBe(false);
-    expect(body.code).toBe("ADMIN_MODEL_ALIAS_DUPLICATE");
+    expect(body.code).toBe("ADMIN_MODEL_ENDPOINT_DUPLICATE");
   });
 
   it("returns 403 when auth guard fails before import", async () => {

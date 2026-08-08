@@ -14,7 +14,6 @@ function buildModel(overrides: Partial<AdminModelItem> = {}): AdminModelItem {
     protocol       : overrides.protocol ?? "openai-compatible",
     name           : overrides.name ?? "Qwen Plus",
     providerModelId: overrides.providerModelId ?? "qwen-plus",
-    aliasKey       : overrides.aliasKey ?? null,
     baseUrl        : overrides.baseUrl ?? "https://example.com",
     apiKeyMasked   : overrides.apiKeyMasked ?? "sk-***",
     isConfigured   : overrides.isConfigured ?? true,

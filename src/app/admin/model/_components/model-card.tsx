@@ -55,7 +55,6 @@ interface DraftState {
   protocol         : AiModelProtocol;
   name             : string;
   providerModelId  : string;
-  aliasKey         : string;
   baseUrl          : string;
   /** 编辑态下新输入的 API Key；空串表示保持原值。 */
   apiKey           : string;
@@ -73,7 +72,6 @@ function buildDraft(model: AdminModelItem): DraftState {
     protocol         : model.protocol,
     name             : model.name,
     providerModelId  : model.providerModelId,
-    aliasKey         : model.aliasKey ?? "",
     baseUrl          : model.baseUrl,
     apiKey           : "",
     clearApiKey      : false,
@@ -181,7 +179,6 @@ export function ModelCard({
       provider         : draft.provider.trim(),
       protocol         : draft.protocol,
       name             : draft.name.trim(),
-      aliasKey         : draft.aliasKey.trim() ? draft.aliasKey.trim() : null,
       providerModelId  : draft.providerModelId.trim(),
       baseUrl          : draft.baseUrl.trim(),
       supportsThinking : draft.supportsThinking,
@@ -275,26 +272,14 @@ export function ModelCard({
 
         {/* 字段输入区（默认禁用，编辑态可输入） */}
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Provider</Label>
-              <Input
-                value={draft.provider}
-                disabled={inputDisabled}
-                onChange={(event) => update("provider", event.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Alias Key</Label>
-              <Input
-                value={draft.aliasKey}
-                disabled={inputDisabled}
-                onChange={(event) => update("aliasKey", event.target.value)}
-                placeholder="可选"
-                className="h-8 font-mono text-xs"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Provider</Label>
+            <Input
+              value={draft.provider}
+              disabled={inputDisabled}
+              onChange={(event) => update("provider", event.target.value)}
+              className="h-8"
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Base URL</Label>

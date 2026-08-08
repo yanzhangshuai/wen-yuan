@@ -47,7 +47,7 @@ describe("runReconcile", () => {
       { paraIndex: 3, chapter: { no: 7 }, rawText: "范大人" }
     ]);
 
-    const result = await runReconcile({ bookId: "book-1", jobId: "job-1", bookSummary: "", skills: [] }, registry);
+    const result = await runReconcile({ bookId: "book-1", jobId: "job-1", agentRunId: "run-1", bookSummary: "", skills: [] }, registry);
 
     // 只补判"范大人"（"范老爷"已在登记表，跳过）
     expect(mockPrimitive).toHaveBeenCalledTimes(1);
@@ -57,7 +57,7 @@ describe("runReconcile", () => {
 
   it("无漏网 → 不调用原语", async () => {
     mockGroupBy.mockResolvedValue([]);
-    const result = await runReconcile({ bookId: "book-1", jobId: "job-1", bookSummary: "", skills: [] }, registry);
+    const result = await runReconcile({ bookId: "book-1", jobId: "job-1", agentRunId: "run-1", bookSummary: "", skills: [] }, registry);
     expect(result.scanned).toBe(0);
     expect(mockPrimitive).not.toHaveBeenCalled();
   });
@@ -75,7 +75,7 @@ describe("runReconcile", () => {
       .mockResolvedValueOnce({ output: { verdict: "ambiguous", resolvedEntityId: null, evidenceAnchors: [], note: "两可" }, highConfidence: false })
       .mockResolvedValueOnce({ output: { verdict: "resolved", resolvedEntityId: "e1", evidenceAnchors: [{ chapterNo: 2, paraIndex: 1 }], note: null }, highConfidence: true });
 
-    const result = await runReconcile({ bookId: "book-1", jobId: "job-1", bookSummary: "", skills: [] }, registry);
+    const result = await runReconcile({ bookId: "book-1", jobId: "job-1", agentRunId: "run-1", bookSummary: "", skills: [] }, registry);
     expect(result.ambiguous).toBe(1);
     expect(result.resolved).toBe(1);
     expect(result.newEntities).toBe(0);

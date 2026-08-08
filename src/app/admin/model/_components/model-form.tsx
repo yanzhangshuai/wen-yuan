@@ -53,7 +53,6 @@ interface FormState {
   protocol         : AiModelProtocol;
   name             : string;
   providerModelId  : string;
-  aliasKey         : string;
   baseUrl          : string;
   /** 新输入的 API Key（不回填后端明文）。 */
   apiKey           : string;
@@ -80,7 +79,6 @@ function buildInitialForm(initial: AdminModelItem | null): FormState {
       protocol         : "openai-compatible",
       name             : "DeepSeek V4",
       providerModelId  : "deepseek-chat-v4",
-      aliasKey         : "deepseek-v4",
       baseUrl          : "https://api.deepseek.com",
       apiKey           : "",
       clearApiKey      : false,
@@ -95,7 +93,6 @@ function buildInitialForm(initial: AdminModelItem | null): FormState {
     protocol         : initial.protocol,
     name             : initial.name,
     providerModelId  : initial.providerModelId,
-    aliasKey         : initial.aliasKey ?? "",
     baseUrl          : initial.baseUrl,
     apiKey           : "",
     clearApiKey      : false,
@@ -181,7 +178,6 @@ export function ModelForm({ initial, onSuccess, onCancel, redirectTo }: ModelFor
           provider         : form.provider.trim(),
           protocol         : form.protocol,
           name             : form.name.trim(),
-          aliasKey         : form.aliasKey.trim() ? form.aliasKey.trim() : null,
           providerModelId  : form.providerModelId.trim(),
           baseUrl          : form.baseUrl.trim(),
           isEnabled        : form.isEnabled,
@@ -198,7 +194,6 @@ export function ModelForm({ initial, onSuccess, onCancel, redirectTo }: ModelFor
           protocol         : form.protocol,
           name             : form.name.trim(),
           modelId          : form.providerModelId.trim(),
-          aliasKey         : form.aliasKey.trim() ? form.aliasKey.trim() : null,
           baseUrl          : form.baseUrl.trim(),
           isEnabled        : form.isEnabled,
           isDefault        : form.isDefault,
@@ -258,14 +253,6 @@ export function ModelForm({ initial, onSuccess, onCancel, redirectTo }: ModelFor
             value={form.name}
             onChange={(event) => update("name", event.target.value)}
             placeholder="管理端展示名"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Alias Key</Label>
-          <Input
-            value={form.aliasKey}
-            onChange={(event) => update("aliasKey", event.target.value)}
-            placeholder="供策略/推荐引用，可选"
           />
         </div>
         <div className="space-y-2 sm:col-span-2">
@@ -344,8 +331,8 @@ export function ModelForm({ initial, onSuccess, onCancel, redirectTo }: ModelFor
         {!isEditMode && (
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
-              <Label className="cursor-pointer">设为默认</Label>
-              <p className="text-xs text-muted-foreground">新书籍导入时使用此模型</p>
+              <Label className="cursor-pointer">设为默认模型</Label>
+              <p className="text-xs text-muted-foreground">系统默认模型，所有解析任务使用</p>
             </div>
             <Switch
               checked={form.isDefault}

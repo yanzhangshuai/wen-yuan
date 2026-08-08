@@ -65,7 +65,6 @@ describe("GET /api/admin/models", () => {
         name           : "DeepSeek V3",
         provider       : "deepseek",
         providerModelId: "deepseek-chat",
-        aliasKey       : "deepseek-v3-stable",
         isEnabled      : true,
         isDefault      : true
       }

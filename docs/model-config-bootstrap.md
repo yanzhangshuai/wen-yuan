@@ -19,11 +19,10 @@ protocol: openai-compatible
 name: DeepSeek V4
 modelId: deepseek-chat-v4
 baseUrl: https://api.deepseek.com
-aliasKey: deepseek-v4
 ```
 
 ## Import And Export
 
-Use `/admin/model` to export or import model configuration JSON. Exports never include API keys. Imports upsert by `aliasKey` first, then by `(provider, modelId, baseUrl)`, and never overwrite an existing stored API key.
+Use `/admin/model` to export or import model configuration JSON. Exports never include API keys. Imports upsert by `(provider, modelId, baseUrl)`, and never overwrite an existing stored API key.
 
 After importing models into a fresh environment, open each imported row and set the API key before enabling it.

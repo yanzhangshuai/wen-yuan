@@ -22,6 +22,8 @@ export interface Tier2Candidate {
 export interface Tier2Input {
   bookId     : string;
   jobId      : string;
+  /** Pass0 的 agent_run id（审计外键必须真实存在）。 */
+  agentRunId : string;
   bookSummary: string;
   skills     : string[];
   candidates : Tier2Candidate[];
@@ -79,7 +81,7 @@ export async function runTier2(input: Tier2Input, registry: BookRegistry): Promi
     await writeRegistry({
       bookId    : input.bookId,
       source    : "tier2",
-      agentRunId: crypto.randomUUID(),
+      agentRunId: input.agentRunId,
       entries   : toCreate
     });
   }

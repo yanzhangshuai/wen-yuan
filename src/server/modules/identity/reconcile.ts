@@ -19,6 +19,8 @@ import { writeRegistry } from "./identityService.ts";
 export interface ReconcileInput {
   bookId      : string;
   jobId       : string;
+  /** 该 Pass 的 agent_run id（审计外键必须真实存在）。 */
+  agentRunId  : string;
   bookSummary : string;
   skills      : string[];
   /** 提及数阈值（默认 2）。 */
@@ -107,7 +109,7 @@ export async function runReconcile(input: ReconcileInput, registry: BookRegistry
     await writeRegistry({
       bookId    : input.bookId,
       source    : "reconcile",
-      agentRunId: crypto.randomUUID(),
+      agentRunId: input.agentRunId,
       entries   : toCreate
     });
   }

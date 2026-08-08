@@ -604,7 +604,12 @@ describe("runAnalysisJob", () => {
       expect(hoisted.runReconcileMock).not.toHaveBeenCalled();
       expect(hoisted.refreshRelationshipsForBookMock).not.toHaveBeenCalled();
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
-      expect(mockPrisma.analysisJob.update).not.toHaveBeenCalled();
+      // 仅允许 setStage 阶段写入；不允许任何带 status 的终态更新覆盖 CANCELED。
+      expect(mockPrisma.analysisJob.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: expect.anything() })
+        })
+      );
     });
   });
 
@@ -707,9 +712,8 @@ describe("runAnalysisJob", () => {
       // Act
       await runner.runAnalysisJobById(JOB_ID);
 
-      // Assert: 共尝试 3 次；attempt 递增 2 次（1 次初始 + 2 次重试）；不标记章节 FAILED
+      // Assert: 共尝试 3 次（2 次重试触发 attempt 递增）；不标记章节 FAILED
       expect(hoisted.callIdentityLlmMock).toHaveBeenCalledTimes(3);
-      expect(mockPrisma.analysisJob.update).toHaveBeenCalledTimes(3);
       expect(mockPrisma.analysisJob.update).toHaveBeenCalledWith({ where: { id: JOB_ID }, data: { attempt: { increment: 1 } } });
       expect(mockPrisma.chapter.updateMany).not.toHaveBeenCalledWith(expect.objectContaining({
         data: { parseStatus: "FAILED" }

@@ -23,8 +23,6 @@ export const updateModelBodySchema = z.object({
   protocol         : z.enum(["openai-compatible", "gemini"]).optional(),
   /** 展示名称。 */
   name             : z.string().trim().min(1, "模型名称不能为空").optional(),
-  /** 策略别名；null 表示清空。 */
-  aliasKey         : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
   /** 供应商侧模型标识（接口字段），为空字符串视为无效输入。 */
   providerModelId  : z.string().trim().min(1, "模型标识不能为空").optional(),
   /** API Key：可选；允许显式传 `null` 表示“清空已存储密钥”（业务规则）。 */
@@ -48,7 +46,6 @@ export const createModelBodySchema = z.object({
   protocol         : z.enum(["openai-compatible", "gemini"]),
   name             : z.string().trim().min(1, "模型名称不能为空"),
   modelId          : z.string().trim().min(1, "模型标识不能为空"),
-  aliasKey         : z.string().trim().min(1, "Alias Key 不能为空").nullable().optional(),
   baseUrl          : z.string().trim().url("BaseURL 格式不合法"),
   apiKey           : z.string().trim().min(1, "API Key 不能为空").optional(),
   isEnabled        : z.boolean().optional(),

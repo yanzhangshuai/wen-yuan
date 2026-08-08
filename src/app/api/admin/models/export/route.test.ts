@@ -30,7 +30,6 @@ describe("GET /api/admin/models/export", () => {
         protocol : "openai-compatible",
         name     : "DeepSeek V4",
         modelId  : "deepseek-chat-v4",
-        aliasKey : "deepseek-v4",
         baseUrl  : "https://api.deepseek.com",
         isEnabled: true,
         isDefault: false

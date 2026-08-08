@@ -66,7 +66,9 @@ function isRetryableError(error: unknown): boolean {
     message.includes("aborted") ||
     message.includes("fetch failed") ||
     message.includes("socket") ||
-    message.includes("connection reset")
+    message.includes("connection reset") ||
+    // 空响应多属模型侧瞬时故障（如超长 prompt 后深思考未产出正文），值得重试而非一次判死。
+    message.includes("empty response")
   );
 }
 
@@ -364,14 +366,14 @@ export function createAiCallExecutor(prismaClient: PrismaClient = prisma) {
         });
 
         throw new AiCallExhaustedError(
-          `阶段 ${input.stage} 调用失败，模型 ${input.model.displayName} 已耗尽重试`,
+          `阶段 ${input.stage} 调用失败，模型 ${input.model.displayName} 尝试 ${attempt} 次后放弃`,
           input.model.modelId
         );
       }
     }
 
     throw new AiCallExhaustedError(
-      `阶段 ${input.stage} 调用失败，模型 ${input.model.displayName} 已耗尽重试`,
+      `阶段 ${input.stage} 调用失败，模型 ${input.model.displayName} 尝试 ${maxAttempts} 次后放弃`,
       input.model.modelId
     );
   }

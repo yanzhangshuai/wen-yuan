@@ -19,9 +19,10 @@ describe("getBookStatus", () => {
       errorLog    : null,
       analysisJobs: [
         {
-          status   : "RUNNING",
-          updatedAt: new Date("2026-03-24T10:10:00.000Z"),
-          errorLog : "第 9 章解析失败"
+          status      : "RUNNING",
+          currentStage: "extraction",
+          updatedAt   : new Date("2026-03-24T10:10:00.000Z"),
+          errorLog    : "第 9 章解析失败"
         }
       ],
       chapters: [
@@ -67,16 +68,74 @@ describe("getBookStatus", () => {
         chapterIndices: true
       })
     });
-    // 进度从最新任务状态推导（RUNNING → 50 / “解析中”）。
+    // 进度从最新任务状态 + 当前管线阶段推导（RUNNING + extraction → 30 / “分片提取”）。
     expect(result).toEqual({
       status  : "PROCESSING",
-      progress: 50,
-      stage   : "解析中",
+      progress: 30,
+      stage   : "分片提取",
       errorLog: "第 9 章解析失败",
       chapters: [
         { no: 1, title: "第一回", parseStatus: "SUCCEEDED" },
         { no: 2, title: "第二回", parseStatus: "PROCESSING" }
       ]
+    });
+  });
+
+  it("maps RUNNING pipeline stages to weighted progress, falling back to 准备中 when stage is missing", async () => {
+    const buildService = (currentStage: string | null) => {
+      const bookFindFirst = vi.fn().mockResolvedValue({
+        status      : "PROCESSING",
+        errorLog    : null,
+        analysisJobs: [{ status: "RUNNING", currentStage, updatedAt: new Date(), errorLog: null }],
+        chapters    : []
+      });
+      const analysisJobFindFirst = vi.fn().mockResolvedValue(null);
+      return createGetBookStatusService({
+        book       : { findFirst: bookFindFirst },
+        analysisJob: { findFirst: analysisJobFindFirst }
+      } as never);
+    };
+
+    // 每个已知阶段 → 期望进度，锁定 STAGE_PROGRESS 映射防漂移。
+    const cases: Array<[string | null, number, string]> = [
+      ["identity"        , 10,  "身份解析"],
+      ["extraction"      , 30,  "分片提取"],
+      ["reconcile"       , 65,  "登记补判"],
+      ["aggregate"       , 80,  "聚合建图"],
+      ["auto_accept"     , 90,  "自动接受"],
+      ["skill_generation", 95,  "技能生成"],
+      [null              , 5,   "准备中"]
+    ];
+
+    for (const [stage, progress, label] of cases) {
+      const result = await buildService(stage).getBookStatus("book-1");
+      expect(result.progress).toBe(progress);
+      expect(result.stage).toBe(label);
+    }
+  });
+
+  it("advances progress within a RUNNING stage by completed call count", async () => {
+    // Pass0（identity）按已完成 ROSTER_DISCOVERY 成功数推进，避免长时间停在 10%。
+    const bookFindFirst = vi.fn().mockResolvedValue({
+      status      : "PROCESSING",
+      errorLog    : null,
+      analysisJobs: [{ id: "job-1", status: "RUNNING", currentStage: "identity", updatedAt: new Date(), errorLog: null }],
+      chapters    : []
+    });
+    const analysisJobFindFirst = vi.fn().mockResolvedValue(null);
+    const phaseLogCount = vi.fn().mockResolvedValue(30);
+    const service = createGetBookStatusService({
+      book            : { findFirst: bookFindFirst },
+      analysisJob     : { findFirst: analysisJobFindFirst },
+      analysisPhaseLog: { count: phaseLogCount }
+    } as never);
+
+    const result = await service.getBookStatus("book-1");
+
+    // 30 次 roster 成功 → 10 + 30*0.7 = 31，未超 45 上限。
+    expect(result.progress).toBe(31);
+    expect(phaseLogCount).toHaveBeenCalledWith({
+      where: { jobId: "job-1", stage: "ROSTER_DISCOVERY", status: "SUCCESS" }
     });
   });
 

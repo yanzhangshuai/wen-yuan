@@ -48,6 +48,7 @@ describe("runTier2", () => {
       {
         bookId     : "book-1",
         jobId      : "job-1",
+        agentRunId : "run-1",
         bookSummary: "",
         skills     : [],
         candidates : [
@@ -65,7 +66,7 @@ describe("runTier2", () => {
   it("resolved → 不写新实体", async () => {
     mockPrimitive.mockResolvedValue({ output: { verdict: "resolved", resolvedEntityId: "e1", evidenceAnchors: [{ chapterNo: 3, paraIndex: 1 }], note: null }, highConfidence: true });
     const result = await runTier2(
-      { bookId: "book-1", jobId: "job-1", bookSummary: "", skills: [], candidates: [{ surfaceForm: "范举人", windows: [{ chapterNo: 3, paraIndex: 1, excerpt: "x" }] }] },
+      { bookId: "book-1", jobId: "job-1", agentRunId: "run-1", bookSummary: "", skills: [], candidates: [{ surfaceForm: "范举人", windows: [{ chapterNo: 3, paraIndex: 1, excerpt: "x" }] }] },
       registry
     );
     expect(result.resolved).toBe(1);

@@ -44,6 +44,7 @@ export type AnalysisJobMinAggregateOutputType = {
   id: string | null
   bookId: string | null
   status: $Enums.AnalysisJobStatus | null
+  currentStage: string | null
   scope: string | null
   chapterStart: number | null
   chapterEnd: number | null
@@ -61,6 +62,7 @@ export type AnalysisJobMaxAggregateOutputType = {
   id: string | null
   bookId: string | null
   status: $Enums.AnalysisJobStatus | null
+  currentStage: string | null
   scope: string | null
   chapterStart: number | null
   chapterEnd: number | null
@@ -78,6 +80,7 @@ export type AnalysisJobCountAggregateOutputType = {
   id: number
   bookId: number
   status: number
+  currentStage: number
   scope: number
   chapterStart: number
   chapterEnd: number
@@ -114,6 +117,7 @@ export type AnalysisJobMinAggregateInputType = {
   id?: true
   bookId?: true
   status?: true
+  currentStage?: true
   scope?: true
   chapterStart?: true
   chapterEnd?: true
@@ -131,6 +135,7 @@ export type AnalysisJobMaxAggregateInputType = {
   id?: true
   bookId?: true
   status?: true
+  currentStage?: true
   scope?: true
   chapterStart?: true
   chapterEnd?: true
@@ -148,6 +153,7 @@ export type AnalysisJobCountAggregateInputType = {
   id?: true
   bookId?: true
   status?: true
+  currentStage?: true
   scope?: true
   chapterStart?: true
   chapterEnd?: true
@@ -255,6 +261,7 @@ export type AnalysisJobGroupByOutputType = {
   id: string
   bookId: string
   status: $Enums.AnalysisJobStatus
+  currentStage: string | null
   scope: string
   chapterStart: number | null
   chapterEnd: number | null
@@ -298,6 +305,7 @@ export type AnalysisJobWhereInput = {
   id?: Prisma.UuidFilter<"AnalysisJob"> | string
   bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
@@ -323,6 +331,7 @@ export type AnalysisJobOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  currentStage?: Prisma.SortOrderInput | Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -351,6 +360,7 @@ export type AnalysisJobWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.AnalysisJobWhereInput | Prisma.AnalysisJobWhereInput[]
   bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
@@ -376,6 +386,7 @@ export type AnalysisJobOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  currentStage?: Prisma.SortOrderInput | Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterEnd?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -404,6 +415,7 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"AnalysisJob"> | string
   bookId?: Prisma.UuidWithAggregatesFilter<"AnalysisJob"> | string
   status?: Prisma.EnumAnalysisJobStatusWithAggregatesFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.StringNullableWithAggregatesFilter<"AnalysisJob"> | string | null
   scope?: Prisma.StringWithAggregatesFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableWithAggregatesFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableWithAggregatesFilter<"AnalysisJob"> | number | null
@@ -423,6 +435,7 @@ export type AnalysisJobScalarWhereWithAggregatesInput = {
 export type AnalysisJobCreateInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -448,6 +461,7 @@ export type AnalysisJobUncheckedCreateInput = {
   id?: string
   bookId: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -471,6 +485,7 @@ export type AnalysisJobUncheckedCreateInput = {
 export type AnalysisJobUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -496,6 +511,7 @@ export type AnalysisJobUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -520,6 +536,7 @@ export type AnalysisJobCreateManyInput = {
   id?: string
   bookId: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -539,6 +556,7 @@ export type AnalysisJobCreateManyInput = {
 export type AnalysisJobUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -559,6 +577,7 @@ export type AnalysisJobUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -602,6 +621,7 @@ export type AnalysisJobCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  currentStage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
@@ -629,6 +649,7 @@ export type AnalysisJobMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  currentStage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
@@ -646,6 +667,7 @@ export type AnalysisJobMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  currentStage?: Prisma.SortOrder
   scope?: Prisma.SortOrder
   chapterStart?: Prisma.SortOrder
   chapterEnd?: Prisma.SortOrder
@@ -791,6 +813,7 @@ export type AnalysisJobUpdateOneRequiredWithoutPhaseLogsNestedInput = {
 export type AnalysisJobCreateWithoutBookInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -814,6 +837,7 @@ export type AnalysisJobCreateWithoutBookInput = {
 export type AnalysisJobUncheckedCreateWithoutBookInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -867,6 +891,7 @@ export type AnalysisJobScalarWhereInput = {
   id?: Prisma.UuidFilter<"AnalysisJob"> | string
   bookId?: Prisma.UuidFilter<"AnalysisJob"> | string
   status?: Prisma.EnumAnalysisJobStatusFilter<"AnalysisJob"> | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.StringNullableFilter<"AnalysisJob"> | string | null
   scope?: Prisma.StringFilter<"AnalysisJob"> | string
   chapterStart?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
   chapterEnd?: Prisma.IntNullableFilter<"AnalysisJob"> | number | null
@@ -886,6 +911,7 @@ export type AnalysisJobScalarWhereInput = {
 export type AnalysisJobCreateWithoutFactsInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -910,6 +936,7 @@ export type AnalysisJobUncheckedCreateWithoutFactsInput = {
   id?: string
   bookId: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -948,6 +975,7 @@ export type AnalysisJobUpdateToOneWithWhereWithoutFactsInput = {
 export type AnalysisJobUpdateWithoutFactsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -972,6 +1000,7 @@ export type AnalysisJobUncheckedUpdateWithoutFactsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -994,6 +1023,7 @@ export type AnalysisJobUncheckedUpdateWithoutFactsInput = {
 export type AnalysisJobCreateWithoutAgentRunsInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1018,6 +1048,7 @@ export type AnalysisJobUncheckedCreateWithoutAgentRunsInput = {
   id?: string
   bookId: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1056,6 +1087,7 @@ export type AnalysisJobUpdateToOneWithWhereWithoutAgentRunsInput = {
 export type AnalysisJobUpdateWithoutAgentRunsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1080,6 +1112,7 @@ export type AnalysisJobUncheckedUpdateWithoutAgentRunsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1102,6 +1135,7 @@ export type AnalysisJobUncheckedUpdateWithoutAgentRunsInput = {
 export type AnalysisJobCreateWithoutValidationReportsInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1126,6 +1160,7 @@ export type AnalysisJobUncheckedCreateWithoutValidationReportsInput = {
   id?: string
   bookId: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1164,6 +1199,7 @@ export type AnalysisJobUpdateToOneWithWhereWithoutValidationReportsInput = {
 export type AnalysisJobUpdateWithoutValidationReportsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1188,6 +1224,7 @@ export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1210,6 +1247,7 @@ export type AnalysisJobUncheckedUpdateWithoutValidationReportsInput = {
 export type AnalysisJobCreateWithoutPhaseLogsInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1234,6 +1272,7 @@ export type AnalysisJobUncheckedCreateWithoutPhaseLogsInput = {
   id?: string
   bookId: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1272,6 +1311,7 @@ export type AnalysisJobUpdateToOneWithWhereWithoutPhaseLogsInput = {
 export type AnalysisJobUpdateWithoutPhaseLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1296,6 +1336,7 @@ export type AnalysisJobUncheckedUpdateWithoutPhaseLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1318,6 +1359,7 @@ export type AnalysisJobUncheckedUpdateWithoutPhaseLogsInput = {
 export type AnalysisJobCreateManyBookInput = {
   id?: string
   status?: $Enums.AnalysisJobStatus
+  currentStage?: string | null
   scope?: string
   chapterStart?: number | null
   chapterEnd?: number | null
@@ -1337,6 +1379,7 @@ export type AnalysisJobCreateManyBookInput = {
 export type AnalysisJobUpdateWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1360,6 +1403,7 @@ export type AnalysisJobUpdateWithoutBookInput = {
 export type AnalysisJobUncheckedUpdateWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1383,6 +1427,7 @@ export type AnalysisJobUncheckedUpdateWithoutBookInput = {
 export type AnalysisJobUncheckedUpdateManyWithoutBookInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisJobStatusFieldUpdateOperationsInput | $Enums.AnalysisJobStatus
+  currentStage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scope?: Prisma.StringFieldUpdateOperationsInput | string
   chapterStart?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   chapterEnd?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1461,6 +1506,7 @@ export type AnalysisJobSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   id?: boolean
   bookId?: boolean
   status?: boolean
+  currentStage?: boolean
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
@@ -1487,6 +1533,7 @@ export type AnalysisJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   bookId?: boolean
   status?: boolean
+  currentStage?: boolean
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
@@ -1508,6 +1555,7 @@ export type AnalysisJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   bookId?: boolean
   status?: boolean
+  currentStage?: boolean
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
@@ -1529,6 +1577,7 @@ export type AnalysisJobSelectScalar = {
   id?: boolean
   bookId?: boolean
   status?: boolean
+  currentStage?: boolean
   scope?: boolean
   chapterStart?: boolean
   chapterEnd?: boolean
@@ -1545,7 +1594,7 @@ export type AnalysisJobSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "status" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "overrideStrategy" | "keepHistory" | "skillsSnapshot" | "relationshipTypesSnapshot" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
+export type AnalysisJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "status" | "currentStage" | "scope" | "chapterStart" | "chapterEnd" | "chapterIndices" | "attempt" | "errorLog" | "overrideStrategy" | "keepHistory" | "skillsSnapshot" | "relationshipTypesSnapshot" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisJob"]>
 export type AnalysisJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
   phaseLogs?: boolean | Prisma.AnalysisJob$phaseLogsArgs<ExtArgs>
@@ -1574,6 +1623,7 @@ export type $AnalysisJobPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: string
     bookId: string
     status: $Enums.AnalysisJobStatus
+    currentStage: string | null
     scope: string
     chapterStart: number | null
     chapterEnd: number | null
@@ -2025,6 +2075,7 @@ export interface AnalysisJobFieldRefs {
   readonly id: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly bookId: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly status: Prisma.FieldRef<"AnalysisJob", 'AnalysisJobStatus'>
+  readonly currentStage: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly scope: Prisma.FieldRef<"AnalysisJob", 'String'>
   readonly chapterStart: Prisma.FieldRef<"AnalysisJob", 'Int'>
   readonly chapterEnd: Prisma.FieldRef<"AnalysisJob", 'Int'>

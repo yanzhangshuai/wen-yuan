@@ -470,7 +470,7 @@ export function ModelManager({
         {/* 默认模型选择（保留快速切换入口） */}
         <PageSection
           title="默认模型"
-          description="选择新书籍导入时默认使用的模型"
+          description="选择系统默认解析模型，所有解析任务统一使用"
         >
           <Card>
             <CardContent className="pt-6">

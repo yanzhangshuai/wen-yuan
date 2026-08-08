@@ -43,8 +43,6 @@ export interface AdminModelItem {
   name           : string;
   /** 供应商侧模型 ID（实际调用时使用）。 */
   providerModelId: string;
-  /** 业务别名键，可空；空表示未设置别名。 */
-  aliasKey       : string | null;
   /** API 基础地址。 */
   baseUrl        : string;
   /** 脱敏后的 API Key，用于前端展示“已配置”状态。 */
@@ -124,7 +122,6 @@ export interface PatchModelBody {
   provider?         : string;
   protocol?         : "openai-compatible" | "gemini";
   name?             : string;
-  aliasKey?         : string | null;
   /** 供应商模型 ID。 */
   providerModelId?  : string;
   /** API 基础地址。 */
@@ -144,7 +141,6 @@ export interface CreateModelBody {
   protocol          : "openai-compatible" | "gemini";
   name              : string;
   modelId           : string;
-  aliasKey?         : string | null;
   baseUrl           : string;
   apiKey?           : string;
   isEnabled?        : boolean;
@@ -158,7 +154,6 @@ export interface ExportedModelConfig {
   protocol         : "openai-compatible" | "gemini";
   name             : string;
   modelId          : string;
-  aliasKey         : string | null;
   baseUrl          : string;
   isEnabled        : boolean;
   isDefault        : boolean;

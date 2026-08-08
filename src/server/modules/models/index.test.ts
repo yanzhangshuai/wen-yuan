@@ -26,7 +26,6 @@ function createAiModelRecord(overrides: Partial<{
   protocol : string;
   name     : string;
   modelId  : string;
-  aliasKey : string | null;
   baseUrl  : string;
   apiKey   : string | null;
   isEnabled: boolean;
@@ -39,7 +38,6 @@ function createAiModelRecord(overrides: Partial<{
     protocol : "openai-compatible",
     name     : "DeepSeek V3",
     modelId  : "deepseek-chat",
-    aliasKey : "deepseek-v3-stable",
     baseUrl  : "https://api.deepseek.com",
     apiKey   : null,
     isEnabled: false,
@@ -138,7 +136,6 @@ describe("models module", () => {
         id             : "model-1",
         provider       : "deepseek",
         providerModelId: "deepseek-chat",
-        aliasKey       : "deepseek-v3-stable",
         apiKeyMasked   : "abcd********5678",
         isConfigured   : true,
         isDefault      : true,
@@ -1304,7 +1301,6 @@ describe("models module", () => {
         protocol : "openai-compatible",
         name     : "DeepSeek A",
         modelId  : "deepseek-chat",
-        aliasKey : "deepseek-a",
         baseUrl  : "https://api.deepseek.com",
         isEnabled: false,
         isDefault: false
@@ -1314,7 +1310,6 @@ describe("models module", () => {
         protocol : "openai-compatible",
         name     : "DeepSeek B",
         modelId  : "deepseek-chat",
-        aliasKey : "deepseek-b",
         baseUrl  : "https://api.deepseek.com/",
         isEnabled: false,
         isDefault: false
@@ -1654,7 +1649,6 @@ describe("models module", () => {
       protocol : data.protocol as string,
       name     : data.name as string,
       modelId  : data.modelId as string,
-      aliasKey : data.aliasKey as string | null,
       baseUrl  : data.baseUrl as string,
       apiKey   : data.apiKey as string | null,
       isEnabled: data.isEnabled as boolean,
@@ -1694,7 +1688,6 @@ describe("models module", () => {
         provider : "DeepSeek",
         name     : "DeepSeek V4",
         modelId  : "deepseek-chat-v4",
-        aliasKey : null,
         baseUrl  : "https://api.deepseek.com",
         isEnabled: true,
         isDefault: true,
@@ -1705,34 +1698,11 @@ describe("models module", () => {
     expect(result.apiKeyMasked).toBe("secr******-key");
   });
 
-  it("rejects duplicate alias and endpoint when creating models", async () => {
-    const aliasClient = {
-      aiModel: {
-        findFirst: vi.fn().mockResolvedValueOnce({ id: "existing-model" }),
-        create   : vi.fn()
-      }
-    };
-    const aliasPrisma = {
-      $transaction: vi.fn().mockImplementation(async (callback: (tx: typeof aliasClient) => Promise<unknown>) => {
-        return callback(aliasClient);
-      })
-    } as never;
-
-    await expect(createModelsModule(aliasPrisma).createModel({
-      provider: "DeepSeek",
-      protocol: "openai-compatible",
-      name    : "DeepSeek",
-      modelId : "deepseek-chat",
-      aliasKey: "deepseek",
-      baseUrl : "https://api.deepseek.com"
-    })).rejects.toThrow("Alias Key 已被其他模型使用");
-
+  it("rejects duplicate endpoint when creating models", async () => {
     const endpointClient = {
       aiModel: {
-        findFirst: vi.fn()
-          .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce({ id: "existing-model" }),
-        create: vi.fn()
+        findFirst: vi.fn().mockResolvedValue({ id: "existing-model" }),
+        create   : vi.fn()
       }
     };
     const endpointPrisma = {
@@ -1746,7 +1716,6 @@ describe("models module", () => {
       protocol: "openai-compatible",
       name    : "DeepSeek",
       modelId : "deepseek-chat",
-      aliasKey: "deepseek-v3",
       baseUrl : "https://api.deepseek.com"
     })).rejects.toThrow("已存在相同 provider、modelId 与 baseUrl 的模型配置");
   });
@@ -1756,7 +1725,6 @@ describe("models module", () => {
     const prismaClient = {
       aiModel: {
         findUnique: vi.fn().mockResolvedValue(createAiModelRecord({
-          aliasKey : "deepseek-v3",
           isDefault: false
         })),
         delete: deleteMock
@@ -1800,7 +1768,6 @@ describe("models module", () => {
         protocol : "openai-compatible",
         name     : "DeepSeek V3",
         modelId  : "deepseek-chat",
-        aliasKey : "deepseek-v3-stable",
         baseUrl  : "https://api.deepseek.com",
         isEnabled: false,
         isDefault: false
@@ -1808,16 +1775,15 @@ describe("models module", () => {
     ]);
   });
 
-  it("imports models by alias or endpoint without overwriting api keys", async () => {
+  it("imports models by endpoint without overwriting api keys", async () => {
     const updateManyMock = vi.fn().mockResolvedValue({ count: 1 });
-    const updateMock = vi.fn().mockResolvedValue({ id: "existing-alias" });
+    const updateMock = vi.fn().mockResolvedValue({ id: "existing-endpoint" });
     const createMock = vi.fn().mockResolvedValue({ id: "created-model" });
     const transactionClient = {
       aiModel: {
-        findUnique: vi.fn()
-          .mockResolvedValueOnce({ id: "existing-alias" })
+        findFirst: vi.fn()
+          .mockResolvedValueOnce({ id: "existing-endpoint" })
           .mockResolvedValueOnce(null),
-        findFirst : vi.fn().mockResolvedValueOnce(null),
         updateMany: updateManyMock,
         update    : updateMock,
         create    : createMock
@@ -1829,8 +1795,8 @@ describe("models module", () => {
       }),
       aiModel: {
         findMany: vi.fn().mockResolvedValue([
-          createAiModelRecord({ id: "existing-alias" }),
-          createAiModelRecord({ id: "created-model", aliasKey: "qwen-plus" })
+          createAiModelRecord({ id: "existing-endpoint", provider: "DeepSeek", modelId: "deepseek-chat-v4", name: "DeepSeek V3" }),
+          createAiModelRecord({ id: "created-model", provider: "Qwen", modelId: "qwen-plus" })
         ])
       },
       analysisPhaseLog: {
@@ -1844,7 +1810,6 @@ describe("models module", () => {
         protocol : "openai-compatible",
         name     : " DeepSeek V4 ",
         modelId  : " deepseek-chat-v4 ",
-        aliasKey : " deepseek-v3-stable ",
         baseUrl  : " https://api.deepseek.com/// ",
         apiKey   : "must-not-import",
         isEnabled: true,
@@ -1855,7 +1820,6 @@ describe("models module", () => {
         protocol : "openai-compatible",
         name     : "Qwen Plus",
         modelId  : "qwen-plus",
-        aliasKey : "qwen-plus",
         baseUrl  : "https://dashscope.aliyuncs.com/compatible-mode/v1",
         isEnabled: false
       }
@@ -1867,7 +1831,6 @@ describe("models module", () => {
       provider : "DeepSeek",
       name     : "DeepSeek V4",
       modelId  : "deepseek-chat-v4",
-      aliasKey : "deepseek-v3-stable",
       baseUrl  : "https://api.deepseek.com",
       isDefault: true
     });

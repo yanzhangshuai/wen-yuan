@@ -114,7 +114,9 @@ export class DeepSeekClient implements AiProviderClient {
         "Content-Type": "application/json",
         Authorization : `Bearer ${this.apiKey}`
       },
-      body: JSON.stringify({
+      // 请求超时：provider 挂起会让管线永久卡死（实测无超时挂 8 小时）。超时错误属可重试。
+      signal: AbortSignal.timeout(300_000),
+      body  : JSON.stringify({
         model      : this.modelName,
         temperature: options?.temperature ?? 0.2,
         top_p      : options?.topP,

@@ -22,6 +22,8 @@ export interface IdentityLlmCallInput {
   modelId?        : string;
   temperature?    : number;
   maxOutputTokens?: number;
+  /** 是否启用模型"思考"模式。确定性列举任务传 false，避免推理吃掉输出预算。 */
+  enableThinking? : boolean;
 }
 
 export interface IdentityLlmResult<TData> {
@@ -43,6 +45,7 @@ export async function callIdentityLlm<TData>(input: IdentityLlmCallInput): Promi
     callFn : async ({ model, prompt: p }) => callJsonLlm<TData>(model, p, {
       temperature    : input.temperature,
       maxOutputTokens: input.maxOutputTokens,
+      enableThinking : input.enableThinking,
       label          : "identity"
     })
   });

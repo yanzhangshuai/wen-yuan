@@ -242,6 +242,7 @@ describe("AiCallExecutor", () => {
 
     expect(aiCallExecutorTesting.isRetryableError(new Error("socket hang up"))).toBe(true);
     expect(aiCallExecutorTesting.isRetryableError("Temporarily unavailable")).toBe(true);
+    expect(aiCallExecutorTesting.isRetryableError(new Error("DeepSeek returned an empty response"))).toBe(true);
     expect(aiCallExecutorTesting.isRetryableError(new Error("schema mismatch"))).toBe(false);
 
     expect(aiCallExecutorTesting.toErrorMessage(new Error(longMessage))).toBe("x".repeat(1000));

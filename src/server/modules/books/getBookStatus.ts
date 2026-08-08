@@ -21,8 +21,10 @@ const BOOK_STATUS_SELECT = {
     take   : 1,
     orderBy: { updatedAt: "desc" as const },
     select : {
-      status  : true,
-      errorLog: true
+      id          : true,
+      status      : true,
+      currentStage: true,
+      errorLog    : true
     }
   },
   chapters: {
@@ -47,16 +49,36 @@ type SucceededJobScope = Prisma.AnalysisJobGetPayload<{ select: typeof SUCCEEDED
 type BookChapterRow = Prisma.BookGetPayload<{ select: typeof BOOK_STATUS_SELECT }>["chapters"][number];
 
 /**
+ * 管线阶段 → 进度映射（RUNNING 时按当前阶段加权展示，替代固定的 50%）。
+ * 权重参考各 Pass 的相对耗时：Pass1 分片提取最重，跨度最大。
+ */
+const STAGE_PROGRESS: Record<string, { progress: number; label: string }> = {
+  identity        : { progress: 10,  label: "身份解析" },
+  extraction      : { progress: 30,  label: "分片提取" },
+  reconcile       : { progress: 65,  label: "登记补判" },
+  aggregate       : { progress: 80,  label: "聚合建图" },
+  auto_accept     : { progress: 90,  label: "自动接受" },
+  skill_generation: { progress: 95,  label: "技能生成" }
+};
+
+/**
  * 由最新分析任务状态推导解析进度。
  * - QUEUED → 等待任务启动（0）；
- * - RUNNING → 解析中（50）；
+ * - RUNNING → 按当前管线阶段加权（缺省取 5 = 准备中）；
  * - SUCCEEDED → 解析完成（100）；
  * - FAILED / CANCELED / 无任务 → 0。
  */
-function deriveJobProgress(status: AnalysisJobStatus | null): { progress: number; stage: string | undefined } {
+function deriveJobProgress(
+  status: AnalysisJobStatus | null,
+  currentStage: string | null
+): { progress: number; stage: string | undefined } {
   switch (status) {
-    case AnalysisJobStatus.RUNNING:
-      return { progress: 50, stage: "解析中" };
+    case AnalysisJobStatus.RUNNING: {
+      const stage = currentStage ? STAGE_PROGRESS[currentStage] : undefined;
+      return stage
+        ? { progress: stage.progress, stage: stage.label }
+        : { progress: 5, stage: "准备中" };
+    }
     case AnalysisJobStatus.SUCCEEDED:
       return { progress: 100, stage: "解析完成" };
     case AnalysisJobStatus.QUEUED:
@@ -64,6 +86,39 @@ function deriveJobProgress(status: AnalysisJobStatus | null): { progress: number
     default:
       return { progress: 0, stage: undefined };
   }
+}
+
+/**
+ * RUNNING 阶段内按已完成调用数推进进度，避免"身份解析 10%"长时间不动被误判卡死。
+ * - identity（Pass0）：roster 逐次推进 10 → 45；
+ * - extraction（Pass1）：分片逐片推进 45 → 75。
+ * 其余阶段保持阶段基准值。
+ */
+async function advanceRunningProgress(
+  prismaClient: PrismaClient,
+  jobId: string | null,
+  currentStage: string | null,
+  baseProgress: number
+): Promise<number> {
+  if (!jobId) {
+    return baseProgress;
+  }
+
+  if (currentStage === "identity") {
+    const done = await prismaClient.analysisPhaseLog.count({
+      where: { jobId, stage: "ROSTER_DISCOVERY", status: "SUCCESS" }
+    });
+    return Math.min(45, baseProgress + done * 0.7);
+  }
+
+  if (currentStage === "extraction") {
+    const done = await prismaClient.analysisPhaseLog.count({
+      where: { jobId, stage: "INDEPENDENT_EXTRACTION", status: "SUCCESS" }
+    });
+    return Math.min(75, baseProgress + done * 1.5);
+  }
+
+  return baseProgress;
 }
 
 function isChapterCoveredBySucceededJob(chapter: BookChapterRow, job: SucceededJobScope | null): boolean {
@@ -153,15 +208,22 @@ export function createGetBookStatusService(
         : chapter.parseStatus
     }));
 
-    // 进度从最新任务状态推导（前端读字段名不变）。
-    const { progress, stage } = deriveJobProgress(latestJob?.status ?? null);
+    // 进度从最新任务状态 + 当前管线阶段推导（前端读字段名不变）。
+    const derived = deriveJobProgress(
+      latestJob?.status ?? null,
+      latestJob?.currentStage ?? null
+    );
+    // RUNNING 阶段内按已完成调用数推进，避免长时间停在阶段基准值被误判卡死。
+    const progress = derived.stage
+      ? await advanceRunningProgress(prismaClient, latestJob?.id ?? null, latestJob?.currentStage ?? null, derived.progress)
+      : derived.progress;
 
     return {
       status  : book.status,
       errorLog: book.errorLog ?? latestJobErrorLog,
       chapters: normalizedChapters,
       progress,
-      stage
+      stage   : derived.stage
     };
   }
 

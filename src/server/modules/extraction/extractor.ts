@@ -78,7 +78,10 @@ export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSli
       skills               : input.skills,
       relationshipTypeCodes: input.relationshipTypeCodes
     }),
-    jobId: input.jobId
+    jobId          : input.jobId,
+    maxOutputTokens: 32_768,
+    // 关闭思考：同 ROSTER_DISCOVERY，推理模型会吃掉输出预算导致空响应/截断。
+    enableThinking : false
   });
 
   const slice: ExtractionSlice = {
