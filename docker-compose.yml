@@ -31,6 +31,8 @@ services:
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_password_123}
       NEO4J_PLUGINS: '["apoc"]'
+      # APOC 插件启动时会向 neo4j.conf 追加 unrestricted 配置；经 env 显式声明避免重复导致容器无法启动。
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
       NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INIT:-512m}
       NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-1g}
     volumes:

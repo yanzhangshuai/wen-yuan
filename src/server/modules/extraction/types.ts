@@ -34,11 +34,9 @@ export interface ExtractedBioFact {
 
 /** 一片（5-8 章）的提取输出。 */
 export interface ExtractionSlice {
-  book               : string;
-  chapterNos         : number[];
-  entities           : ExtractedEntity[];
-  relations          : ExtractedRelation[];
-  bioFacts           : ExtractedBioFact[];
-  /** 登记表中不存在、但本片出现的高频表面形式（交 reconcile） */
-  newEntityCandidates: string[];
+  book      : string;
+  chapterNos: number[];
+  entities  : ExtractedEntity[];
+  relations : ExtractedRelation[];
+  bioFacts  : ExtractedBioFact[];
 }

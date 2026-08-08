@@ -12,9 +12,8 @@ function makeSlice(overrides: Partial<ExtractionSlice> = {}): ExtractionSlice {
       { canonical: "范进", type: "PERSON", aliases: ["范老爷"] },
       { canonical: "周进", type: "PERSON", aliases: ["周学道"] }
     ],
-    relations          : [],
-    bioFacts           : [],
-    newEntityCandidates: [],
+    relations: [],
+    bioFacts : [],
     ...overrides
   };
 }
@@ -91,6 +90,15 @@ describe("runGuardrails", () => {
     expect(facts).toHaveLength(1);
     expect(facts[0].factType).toBe("BIOGRAPHY");
     expect(facts[0].eventCategory).toBe("EXAM");
+  });
+
+  it("传记事实：枚举外 category 兜底为 EVENT（防 Prisma 枚举落库失败）", () => {
+    const slice = makeSlice({
+      bioFacts: [{ category: "MARRIAGE" as never, subjectCanonical: "范进", summary: "成亲", evidence: "范进成亲" }]
+    });
+    const { facts } = runGuardrails(slice, sliceText, validCodes);
+    expect(facts).toHaveLength(1);
+    expect(facts[0].eventCategory).toBe("EVENT");
   });
 
   it("传入 junkList 时用它判断虚指（名单外不再拦截）", () => {

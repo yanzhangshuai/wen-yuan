@@ -34,6 +34,20 @@ describe("refreshRelationshipsForBook", () => {
     expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
+  it("SYMMETRIC 两向分组折叠为一条边（防唯一约束冲突）", async () => {
+    // a→b 与 b→a 归一化后同键：应合并为一条边（factCount 累加），create 只调用一次
+    mockGroupBy.mockResolvedValue([
+      { sourceEntityId: "b", targetEntityId: "a", relationshipTypeCode: "夫妻", _count: { _all: 2 }, _min: { chapterNo: 3 }, _max: { chapterNo: 5 } },
+      { sourceEntityId: "a", targetEntityId: "b", relationshipTypeCode: "夫妻", _count: { _all: 3 }, _min: { chapterNo: 1 }, _max: { chapterNo: 6 } }
+    ]);
+    mockCount.mockResolvedValue(0);
+
+    const edges = await refreshRelationshipsForBook("book-1");
+    expect(edges).toHaveLength(1);
+    expect(edges[0]).toMatchObject({ sourceEntityId: "a", targetEntityId: "b", relationshipTypeCode: "夫妻", factCount: 5 });
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
   it("任一底层事实 VERIFIED → 边 VERIFIED", async () => {
     mockGroupBy.mockResolvedValue([
       { sourceEntityId: "a", targetEntityId: "b", relationshipTypeCode: "父子", _count: { _all: 1 }, _min: { chapterNo: 1 }, _max: { chapterNo: 1 } }

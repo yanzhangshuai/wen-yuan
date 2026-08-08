@@ -42,20 +42,26 @@ export const IDENTITY_RESOLUTION_SYSTEM_PROMPT = [
   "- 禁止臆造：原文未出现的信息不得作为判定依据"
 ].join("\n");
 
-/** Tier1 全书一遍草稿登记表 prompt。保留"什么算一个实体"的验收判据。
- * 输出刻意精简为 canonical/type/aliases 三元组：登记表只关心"有哪些实体 + 别名"，
- * 证据锚点属 Pass1 提取职责。若带上证据锚点，推理模型会为每个实体枚举数百条段落锚点，
- * 瞬间耗尽输出预算（实测：单分卷 PERSON 输出 > 44K 字符仍截断）。 */
-export const TIER1_SYSTEM_PROMPT = [
-  "识别正文中的所有可辨识实体，输出草稿登记表。",
+/**
+ * 身份 Pass（v6 核心，替代 v5 的 Tier1 原文枚举）的 canonical 折叠 prompt。
+ *
+ * 上下文关键：输入是"全书去重表面形式名单 + 提及频次"（紧凑 ~10-15K token），
+ * 不是 30 万字原文。模型一眼看到变体两端（范进/范老爷/范学道同屏），
+ * 合并从"跨章检索"降为"名单分类"。这正是 v5 失败的结构性解药：
+ * 把全局身份任务放在紧凑名单上做，而不是放在原文上边读边列。
+ *
+ * 减法原则：只写目标 + 输出契约 + 成功判据，无负面指令 / few-shot。
+ */
+export const IDENTITY_CANONICALIZATION_SYSTEM_PROMPT = [
+  "把表面形式名单折叠为规范实体（canonical）。",
   "",
-  "输出精简 JSON 数组，每条只含三个字段：",
-  '[{ "canonical": "标准名", "type": "PERSON" | "LOCATION" | "ORGANIZATION" | "CONCEPT", "aliases": ["别名1", "别名2"] }]',
+  "输出 JSON：",
+  '{ "entities": [{ "canonical": string, "aliases": string[] }], "dropped": string[] }',
   "",
-  "成功判据（什么算一个正确实体）：",
-  "- 实体必须在正文中有明确指代",
-  "- canonical 取最常用名（有名有姓取全名；仅称号取最通用形式）",
-  "- 别名必须能在原文出现",
-  "- 同名同人只输出一条，不要按出现次数重复列举",
-  "- 禁止臆造：必须基于原文"
+  "成功判据：",
+  "- 每个条目 = 一个独立真实对象；同一对象的全部称呼并入 aliases",
+  "- canonical 必须是名单中的某个名字（取最常见、最完整称呼）",
+  "- 名单中的每个名字必须恰好出现一次（作为 canonical、某 aliases、或 dropped）",
+  "- dropped = 无持续身份的一次性称呼/泛称（如轿夫、看门人）",
+  "- 禁止臆造：不得引入名单外的名字"
 ].join("\n");

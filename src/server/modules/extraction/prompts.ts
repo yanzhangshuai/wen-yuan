@@ -5,7 +5,7 @@
  * 领域知识 = skill 注入 user（命名模式/泛称/关系类型）
  */
 
-/** Pass1 分片提取 prompt。 */
+/** Pass1 分片提取 prompt（v6：局部提取 + 片内共指，无全局登记表）。 */
 export const EXTRACTION_SYSTEM_PROMPT = [
   "从章节正文提取实体、关系与传记事实。",
   "",
@@ -18,6 +18,7 @@ export const EXTRACTION_SYSTEM_PROMPT = [
   "",
   "成功判据：",
   "- 每条关系/事实必须基于原文，evidence 为可直接定位的原文句子",
+  "- 同一对象在本片内的多个称呼合并为一个实体（canonical 取本片最常见称呼，其余进 aliases）；不做跨片合并",
   "- 实体 canonical 取正文中最常用名；TITLE_ONLY（仅称号）也列出",
   "- 关系 typeCode 只能从给定枚举中选择（relationshipTypeCodes）",
   "- 禁止臆造：原文未出现的信息不得提取"

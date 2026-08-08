@@ -1,20 +1,23 @@
 /**
- * v5 分析管线编排器（runAnalysisJob）
+ * v6 分析管线编排器（runAnalysisJob）
  * =============================================================================
  * 文件定位：`src/server/modules/analysis/jobs/runAnalysisJob.ts`
  *
- * 职责：确定性编排 v5 管线 Pass0-5，串联已就绪的组件
- *   （identity / extraction / review / skills），不承载业务逻辑。
+ * 职责：确定性编排 v6 管线（extract-then-resolve），串联已就绪的组件
+ *   （extraction / identity / review / skills），不承载业务逻辑。
  *
- * 时序（arch doc §2.2/§2.3，硬约束）：
+ * 时序（arch doc 14-agent-architecture-v6.md §2，硬约束）：
  *   claim → 快照(selectSkillsForJob) → 装载(resolveSkillsForJob)
- *     → Pass0(Tier1→Tier2) → Pass1(extractSlice+落库)
- *     → reconcile(Pass1 后 Pass3 前) → Pass3(refresh+Neo4j)
- *     → Pass4(自动接受) → Pass5(markOrphan+skillGenerator) → 终态
+ *     → Pass1(extractSlice+落库，临时实体，无登记表)
+ *     → Pass1.5 身份 Pass(紧凑名单全局规范化)
+ *     → Pass1.75 确定性归并(临时实体→canonical)
+ *     → Pass3(refresh+Neo4j) → Pass4(自动接受)
+ *     → Pass5(markOrphan+skillGenerator) → 终态
  *
  * 设计原则：
  * - 组件厚 + 管线薄：各 Pass 逻辑已在域模块实现，此处只编排；
  * - facts 唯一写入口：facts/mentions/aliases 由本管线落库；
+ * - 提取先于身份：局部提取（无全局登记表）+ 紧凑名单全局折叠，消除 v5 过度列举；
  * - 乐观并发 claim：updateMany QUEUED→RUNNING，抢到才执行；
  * - 取消贯穿：每 Pass 前查 CANCELED，抛出哨兵由外层跳过终态（不覆盖取消）。
  */
@@ -30,12 +33,7 @@ import { relationshipCodesFromSnapshot } from "@/server/modules/extraction/schem
 import { buildSlices, type ChapterRef, type Slice } from "@/server/modules/extraction/slices";
 import type { EntityTypeStr } from "@/server/modules/extraction/types";
 import { scanMisattribution } from "@/server/modules/identity/conflictScan";
-import {
-  getRegistry,
-  invalidateRegistryCache,
-  normalizeRegistryName,
-  type BookRegistry
-} from "@/server/modules/identity/registry";
+import { getRegistry, normalizeRegistryName } from "@/server/modules/identity/registry";
 import { acceptFactsForJob } from "@/server/modules/review/autoAccept";
 import type { SkillGenerationSignals } from "@/server/modules/skills/skillGenerator";
 
@@ -195,33 +193,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
   // ===========================================================================
   // 管线私有辅助（各 Pass 共享的数据准备 / 落库）
   // ===========================================================================
-
-  /**
-   * 功能：估算文本 token 规模（粗略折算，仅用于 Tier1 A/B 路径分档）。
-   * 输入：正文文本。
-   * 输出：估算 token 数。
-   * 副作用：无。
-   */
-  function estimateTokens(text: string): number {
-    return Math.ceil(text.length / 1.5);
-  }
-
-  /**
-   * 功能：由登记表构造 canonical/alias → entityId 查找表（归一化键）。
-   * 输入：登记表。
-   * 输出：名字 → 实体 ID 映射。
-   * 副作用：无。
-   */
-  function buildEntityIdByName(registry: BookRegistry): Map<string, string> {
-    const map = new Map<string, string>();
-    for (const entry of registry.entries) {
-      map.set(normalizeRegistryName(entry.canonical), entry.entityId);
-      for (const alias of entry.aliases) {
-        map.set(normalizeRegistryName(alias), entry.entityId);
-      }
-    }
-    return map;
-  }
 
   /**
    * 功能：确保名字有实体（幂等）。先在查找表命中，再 DB 精确匹配，最后创建 + 本书档案。
@@ -420,7 +391,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     bookId               : string;
     jobId                : string;
     slice                : Slice;
-    registry             : BookRegistry;
     bookSummary          : string;
     skills               : string[];
     relationshipTypeCodes: string[];
@@ -438,7 +408,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
           jobId                : input.jobId,
           sliceText,
           chapterNos           : input.slice.chapterNos,
-          registry             : input.registry,
           bookSummary          : input.bookSummary,
           skills               : input.skills,
           relationshipTypeCodes: input.relationshipTypeCodes,
@@ -589,40 +558,30 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
   // ===========================================================================
 
   /**
-   * 功能：Pass0 身份解析——Tier1 全书一遍草稿登记表 → Tier2 残余候选兜底。
-   * 输入：bookId/jobId/fullText/摘要/skills。
-   * 副作用：写登记表（entities/aliases/profiles/审计）。
+   * 功能：身份 Pass（v6，替代 v5 的 Pass0 Tier1/Tier2）——
+   *   提取产出去重表面形式 → 紧凑名单全局规范化 → 确定性归并。
+   * 输入：bookId/jobId/agentRunId。
+   * 副作用：写 canonical 实体、合并临时实体（facts/mentions 重指向）、别名注册。
    */
-  async function runPass0(input: {
-    bookId     : string;
-    jobId      : string;
-    agentRunId : string;
-    fullText   : string;
-    bookSummary: string;
-    skills     : string[];
+  async function runIdentityAndProjection(input: {
+    bookId    : string;
+    jobId     : string;
+    agentRunId: string;
   }): Promise<void> {
-    const { runTier1 } = await import("@/server/modules/identity/tier1");
-    const { runTier2, collectResidualCandidates } = await import("@/server/modules/identity/tier2");
+    const { runIdentityPass } = await import("@/server/modules/identity/identityPass");
+    const { runProjection } = await import("@/server/modules/identity/projection");
 
-    // Tier1：全书一遍草稿登记表（按 token 规模自动 single_pass / 分卷）
-    await runTier1({
-      bookId        : input.bookId,
-      jobId         : input.jobId,
-      agentRunId    : input.agentRunId,
-      fullText      : input.fullText,
-      bookSizeTokens: estimateTokens(input.fullText)
+    const { groups } = await runIdentityPass({
+      bookId    : input.bookId,
+      jobId     : input.jobId,
+      agentRunId: input.agentRunId
     });
-
-    // Tier2：残余候选兜底（读 Tier1 写后的登记表）
-    const registry = await getRegistry(input.bookId, prismaClient);
-    await runTier2({
-      bookId     : input.bookId,
-      jobId      : input.jobId,
-      agentRunId : input.agentRunId,
-      bookSummary: input.bookSummary,
-      skills     : input.skills,
-      candidates : collectResidualCandidates(registry)
-    }, registry);
+    await runProjection({
+      bookId    : input.bookId,
+      jobId     : input.jobId,
+      agentRunId: input.agentRunId,
+      groups
+    });
   }
 
   /**
@@ -636,7 +595,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     jobId                : string;
     agentRunId           : string;
     chapters             : ChapterRef[];
-    registry             : BookRegistry;
     bookSummary          : string;
     skills               : string[];
     relationshipTypeCodes: string[];
@@ -661,7 +619,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
             bookId               : input.bookId,
             jobId                : input.jobId,
             slice,
-            registry             : input.registry,
             bookSummary          : input.bookSummary,
             skills               : input.skills,
             relationshipTypeCodes: input.relationshipTypeCodes,
@@ -690,30 +647,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     if (errors.length > 0) {
       throw errors[0];
     }
-  }
-
-  /**
-   * 功能：reconcile——Pass1 后 Pass3 前，扫 mentions 漏网高频补判回写登记表。
-   * 输入：bookId/jobId/摘要/skills。
-   * 副作用：可能写登记表新实体。
-   */
-  async function runReconcilePass(input: {
-    bookId     : string;
-    jobId      : string;
-    agentRunId : string;
-    bookSummary: string;
-    skills     : string[];
-  }): Promise<void> {
-    const { runReconcile } = await import("@/server/modules/identity/reconcile");
-    const registry = await getRegistry(input.bookId, prismaClient);
-    await runReconcile({
-      bookId     : input.bookId,
-      jobId      : input.jobId,
-      agentRunId : input.agentRunId,
-      bookSummary: input.bookSummary,
-      skills     : input.skills,
-      minMentions: 2
-    }, registry);
   }
 
   /**
@@ -861,6 +794,19 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       return;
     }
 
+    // Neo4j 是查询缓存（PG 为权威源）：连接不可达时跳过同步，不使分析任务失败。
+    try {
+      await syncNeo4jGraphWithDriver(driver, bookId);
+    } catch (error) {
+      console.error(`[neo4j] 图同步跳过（连接不可达）: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /** 用已建 Driver 执行全书图同步（连接异常由 syncNeo4jBookGraph 兜底跳过）。 */
+  async function syncNeo4jGraphWithDriver(
+    driver: NonNullable<ReturnType<typeof getNeo4jDriver>>,
+    bookId: string
+  ): Promise<void> {
     const [relationships, entityProfiles] = await Promise.all([
       prismaClient.relationship.findMany({
         where: {
@@ -1062,29 +1008,12 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       data  : { status: "PROCESSING", errorLog: null }
     });
 
-    // 数据准备：全书摘要 + 全文（Tier2/reconcile/extractSlice 消费）。
+    // 数据准备：全书摘要（Pass1 提取消费）。
     const bookSummary = await buildBookSummary(context.bookId);
-    const fullText = context.chapters.map((c) => `${c.title}\n${c.content}`).join("\n\n");
 
-    // Pass0：身份解析（Tier1 → Tier2）。
-    await checkCanceled();
-    await setStage(context.jobId, "identity");
-    await traceAgentRun(context.bookId, context.jobId, AgentRunType.IDENTITY, async (agentRunId) => {
-      await runPass0({
-        bookId: context.bookId,
-        jobId : context.jobId,
-        agentRunId,
-        fullText,
-        bookSummary,
-        skills: skillDocs
-      });
-    });
-
-    // 登记表（Pass0 写后刷新）+ 名字→entityId 查找表（Pass1 落库用）。
-    const registry = await getRegistry(context.bookId, prismaClient);
-    const entityIdByName = buildEntityIdByName(registry);
-
-    // Pass1：分片提取 + 落库（facts/mentions/aliases/审计；护栏已在 extractSlice 内部）。
+    // Pass1：分片提取 + 落库（无身份登记表 → 临时实体 + facts + mentions，片内共指；
+    // 身份判定留给后续全局 Pass。v6 时序：提取先于身份）。
+    const entityIdByName = new Map<string, string>();
     await checkCanceled();
     await setStage(context.jobId, "extraction");
     await traceAgentRun(context.bookId, context.jobId, AgentRunType.EXTRACTION, async (agentRunId) => {
@@ -1093,7 +1022,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
         jobId   : context.jobId,
         agentRunId,
         chapters: context.chapters,
-        registry,
         bookSummary,
         skills  : skillDocs,
         relationshipTypeCodes,
@@ -1102,19 +1030,14 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       });
     });
 
-    // Pass1 后强制刷新登记表（新实体由管线直接落库，未走 writeRegistry 的自动失效）。
-    invalidateRegistryCache(context.bookId);
-
-    // reconcile：Pass1 后 Pass3 前（扫 mentions 漏网高频，回写登记表）。
+    // Pass1.5 身份 Pass + Pass1.75 确定性归并（提取产出去重表面形式 → 全局折叠 → 合并）。
     await checkCanceled();
-    await setStage(context.jobId, "reconcile");
-    await traceAgentRun(context.bookId, context.jobId, AgentRunType.RECONCILE, async (agentRunId) => {
-      await runReconcilePass({
+    await setStage(context.jobId, "identity");
+    await traceAgentRun(context.bookId, context.jobId, AgentRunType.IDENTITY, async (agentRunId) => {
+      await runIdentityAndProjection({
         bookId: context.bookId,
         jobId : context.jobId,
-        agentRunId,
-        bookSummary,
-        skills: skillDocs
+        agentRunId
       });
     });
 

@@ -52,7 +52,15 @@ export async function refreshRelationshipsForBook(
     _max  : { chapterNo: true }
   });
 
-  const edges: RebuiltRelationship[] = [];
+  // 规范化后按键去重合并（SYMMETRIC 两向分组会折叠到同一键，直接 create 撞唯一约束）
+  const edgeMap = new Map<string, {
+    source       : string;
+    target       : string;
+    typeCode     : string;
+    factCount    : number;
+    firstChapter : number;
+    latestChapter: number;
+  }>();
 
   for (const g of groups) {
     if (!g.sourceEntityId || !g.targetEntityId || !g.relationshipTypeCode) continue;
@@ -67,6 +75,28 @@ export async function refreshRelationshipsForBook(
       [source, target] = [target, source];
     }
 
+    // 两向分组（A→B 与 B→A）归一为同一键：factCount 累加、章节取 min/max
+    const key = `${source}|${target}|${typeCode}`;
+    const existing = edgeMap.get(key);
+    if (existing) {
+      existing.factCount += g._count._all;
+      existing.firstChapter = Math.min(existing.firstChapter, g._min.chapterNo ?? 0);
+      existing.latestChapter = Math.max(existing.latestChapter, g._max.chapterNo ?? 0);
+      continue;
+    }
+    edgeMap.set(key, {
+      source,
+      target,
+      typeCode,
+      factCount    : g._count._all,
+      firstChapter : g._min.chapterNo ?? 0,
+      latestChapter: g._max.chapterNo ?? 0
+    });
+  }
+
+  const edges: RebuiltRelationship[] = [];
+
+  for (const { source, target, typeCode, factCount, firstChapter, latestChapter } of edgeMap.values()) {
     // 4. 状态推导：任一底层事实 VERIFIED → 边 VERIFIED（简化：有 VERIFIED 事实即 VERIFIED）
     const verifiedCount = await db.fact.count({
       where: {
@@ -84,10 +114,10 @@ export async function refreshRelationshipsForBook(
       sourceEntityId      : source,
       targetEntityId      : target,
       relationshipTypeCode: typeCode,
-      factCount           : g._count._all,
+      factCount,
       status              : verifiedCount > 0 ? "VERIFIED" : "DRAFT",
-      firstChapterNo      : g._min.chapterNo ?? 0,
-      latestChapterNo     : g._max.chapterNo ?? 0
+      firstChapterNo      : firstChapter,
+      latestChapterNo     : latestChapter
     };
 
     // 5. 落库
@@ -97,11 +127,11 @@ export async function refreshRelationshipsForBook(
         sourceEntityId      : source,
         targetEntityId      : target,
         relationshipTypeCode: typeCode,
-        factCount           : edge.factCount,
-        weight              : edge.factCount,
+        factCount,
+        weight              : factCount,
         status              : edge.status,
-        firstChapterNo      : edge.firstChapterNo,
-        latestChapterNo     : edge.latestChapterNo
+        firstChapterNo      : firstChapter,
+        latestChapterNo     : latestChapter
       }
     });
 

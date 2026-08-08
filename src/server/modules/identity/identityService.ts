@@ -11,7 +11,7 @@ import { type Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { invalidateRegistryCache } from "./registry.ts";
 
-export type WriteSource = "tier1" | "tier2" | "reconcile" | "cross_validation";
+export type WriteSource = "identity" | "tier1" | "tier2" | "reconcile" | "cross_validation";
 
 export interface RegistryWriteEntry {
   canonical  : string;

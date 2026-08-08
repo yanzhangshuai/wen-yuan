@@ -68,10 +68,10 @@ describe("getBookStatus", () => {
         chapterIndices: true
       })
     });
-    // 进度从最新任务状态 + 当前管线阶段推导（RUNNING + extraction → 30 / “分片提取”）。
+    // 进度从最新任务状态 + 当前管线阶段推导（RUNNING + extraction → 10 / “分片提取”）。
     expect(result).toEqual({
       status  : "PROCESSING",
-      progress: 30,
+      progress: 10,
       stage   : "分片提取",
       errorLog: "第 9 章解析失败",
       chapters: [
@@ -96,11 +96,10 @@ describe("getBookStatus", () => {
       } as never);
     };
 
-    // 每个已知阶段 → 期望进度，锁定 STAGE_PROGRESS 映射防漂移。
+    // 每个已知阶段 → 期望进度，锁定 STAGE_PROGRESS 映射防漂移（v6：提取先于身份）。
     const cases: Array<[string | null, number, string]> = [
-      ["identity"        , 10,  "身份解析"],
-      ["extraction"      , 30,  "分片提取"],
-      ["reconcile"       , 65,  "登记补判"],
+      ["extraction"      , 10,  "分片提取"],
+      ["identity"        , 50,  "身份解析"],
       ["aggregate"       , 80,  "聚合建图"],
       ["auto_accept"     , 90,  "自动接受"],
       ["skill_generation", 95,  "技能生成"],
@@ -115,7 +114,7 @@ describe("getBookStatus", () => {
   });
 
   it("advances progress within a RUNNING stage by completed call count", async () => {
-    // Pass0（identity）按已完成 ROSTER_DISCOVERY 成功数推进，避免长时间停在 10%。
+    // 身份 Pass（identity）按已完成 IDENTITY_CANONICALIZATION 成功数推进，避免停在阶段基准值 50%。
     const bookFindFirst = vi.fn().mockResolvedValue({
       status      : "PROCESSING",
       errorLog    : null,
@@ -132,10 +131,10 @@ describe("getBookStatus", () => {
 
     const result = await service.getBookStatus("book-1");
 
-    // 30 次 roster 成功 → 10 + 30*0.7 = 31，未超 45 上限。
-    expect(result.progress).toBe(31);
+    // 30 次身份调用成功 → 50 + 30*5 = 200，封顶 65。
+    expect(result.progress).toBe(65);
     expect(phaseLogCount).toHaveBeenCalledWith({
-      where: { jobId: "job-1", stage: "ROSTER_DISCOVERY", status: "SUCCESS" }
+      where: { jobId: "job-1", stage: "IDENTITY_CANONICALIZATION", status: "SUCCESS" }
     });
   });
 

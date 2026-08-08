@@ -37,6 +37,9 @@ export interface GuardrailResult {
   dropRecords: DropRecord[];
 }
 
+/** 合法传记事件分类（对齐 Prisma EventCategory 枚举，缺一即会落库失败）。 */
+const VALID_EVENT_CATEGORIES = new Set(["BIRTH", "EXAM", "CAREER", "TRAVEL", "SOCIAL", "DEATH", "EVENT"]);
+
 /** 归一化（去空白/全角空格/转小写）用于子串匹配。 */
 export function normalizeForMatch(s: string): string {
   return s.replace(/[\s　]+/g, "").toLowerCase();
@@ -125,11 +128,13 @@ export function runGuardrails(
       dropRecords.push({ kind: "bioFact", reason: "name_not_in_text", detail: bio.subjectCanonical });
       continue;
     }
+    // 事件分类兜底：模型可能输出枚举外分类（如 MARRIAGE），落库会因 Prisma 枚举校验失败。
+    const category = VALID_EVENT_CATEGORIES.has(bio.category) ? bio.category : "EVENT";
     facts.push({
       factType     : "BIOGRAPHY",
       sourceName   : bio.subjectCanonical,
       targetName   : null,
-      eventCategory: bio.category,
+      eventCategory: category,
       evidence     : bio.evidence,
       chapterNo    : slice.chapterNos[0] ?? 0,
       payload      : { summary: bio.summary, ...(bio.location ? { location: bio.location } : {}) },

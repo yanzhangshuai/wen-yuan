@@ -395,3 +395,6 @@ AI-Reader-V2 最值得学的是把质量当工程做（498 pytest + golden stand
 ---
 
 *本文档取代 `12-agent-architecture-full.md` 及 00-11 中 Tool-Use Loop 相关章节。发现矛盾请回到本文档修正，保持架构文档单一权威。*
+
+> **已废弃：v6 起由 `14-agent-architecture-v6.md`（Extract-then-Resolve）取代。**
+> v6 推翻的是"身份先行"的执行形态（Tier1 原文枚举登记表），核心运行组件（提取/护栏/聚合/审核）原样复用。

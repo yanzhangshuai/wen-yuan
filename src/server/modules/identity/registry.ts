@@ -68,7 +68,7 @@ export async function getRegistry(bookId: string, txClient?: PrismaClient): Prom
     include: {
       aliasRecords: {
         where : { bookId, deletedAt: null },
-        select: { status: true }
+        select: { status: true, alias: true }
       },
       mentions: {
         where : { status: { not: "REJECTED" }, deletedAt: null },
@@ -79,6 +79,14 @@ export async function getRegistry(bookId: string, txClient?: PrismaClient): Prom
 
   const entries: RegistryEntry[] = entities.map((entity) => {
     const chapterNos = Array.from(new Set(entity.mentions.map((m) => m.chapter.no))).sort((a, b) => a - b);
+
+    // v6 提取/归并把别名写入书级 alias 表（权威源），entity.aliases 数组可能为空——
+    // 登记表的 aliases 取两者并集，保证名称解析（findRegistryEntryByName）完整。
+    const aliasSet = new Set<string>(entity.aliases);
+    for (const rec of entity.aliasRecords) {
+      if (rec.alias) aliasSet.add(rec.alias);
+    }
+    const aliases = Array.from(aliasSet);
 
     const aliasStatuses = entity.aliasRecords.map((a) => a.status);
     const hasConfirmed = aliasStatuses.includes("CONFIRMED");
@@ -98,7 +106,7 @@ export async function getRegistry(bookId: string, txClient?: PrismaClient): Prom
       entityId              : entity.id,
       canonical             : entity.name,
       type                  : entity.entityType,
-      aliases               : entity.aliases,
+      aliases,
       confidenceTier,
       activeChapters        : chapterNos,
       firstAppearanceChapter: chapterNos.length > 0 ? chapterNos[0] : null,

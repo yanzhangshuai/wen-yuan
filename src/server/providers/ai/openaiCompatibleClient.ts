@@ -85,6 +85,8 @@ export class OpenAiCompatibleClient implements AiProviderClient {
   private readonly baseUrl       : string;
   private readonly modelName     : string;
   private readonly webSearchStyle: "tools" | "qwen" | "none";
+  /** DeepSeek 推理模型：用 `thinking:{type}` 控制思考（`enable_thinking` 布尔会被忽略）。 */
+  private readonly isDeepSeek    : boolean;
 
   constructor(config: OpenAiCompatibleConfig) {
     if (!config.apiKey) {
@@ -97,6 +99,9 @@ export class OpenAiCompatibleClient implements AiProviderClient {
     this.baseUrl = config.baseUrl.replace(/\/+$/, "");
     this.modelName = config.modelName;
     this.webSearchStyle = config.webSearchStyle ?? "tools";
+    this.isDeepSeek =
+      config.baseUrl.toLowerCase().includes("deepseek")
+      || config.providerName.toLowerCase().includes("deepseek");
   }
 
   /**
@@ -126,8 +131,14 @@ export class OpenAiCompatibleClient implements AiProviderClient {
         temperature: options?.temperature ?? 0.2,
         top_p      : options?.topP,
         max_tokens : options?.maxOutputTokens ?? 8192,
+        // 思考模式：DeepSeek V4 Flash 等推理模型必须用 `thinking:{type}` 控制——
+        // `enable_thinking` 布尔会被其忽略，模型仍走推理，吃掉输出预算导致空响应/长时间卡顿
+        //（实测：353 名单折叠任务 `enable_thinking:false` 空响应，`thinking:{type:"disabled"}` 29s 正常）。
+        // 其余兼容网关保持 OpenAI 风格布尔参数。
         ...(typeof options?.enableThinking === "boolean"
-          ? { enable_thinking: options.enableThinking }
+          ? this.isDeepSeek
+            ? { thinking: { type: options.enableThinking ? "enabled" : "disabled" } }
+            : { enable_thinking: options.enableThinking }
           : {}),
         ...(options?.reasoningEffort
           ? { reasoning_effort: options.reasoningEffort }

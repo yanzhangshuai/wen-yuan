@@ -1,17 +1,17 @@
 /**
- * 文件定位（v5 分析管线编排器单测）：
- * - 覆盖 runAnalysisJob 的 claim → 快照 → Pass0-5 → 终态全生命周期编排。
+ * 文件定位（v6 分析管线编排器单测）：
+ * - 覆盖 runAnalysisJob 的 claim → 快照 → 提取→身份→归并→Pass3-5 → 终态全生命周期编排。
  * - 编排是确定性串联（组件厚 + 管线薄），本测试用 mock Pass 组件验证时序、
  *   取消、落库、重试与冲突扫描接线，不跑真实 LLM。
  *
  * 业务职责：
- * - 锁定硬时序：Tier1→Tier2→分片提取→reconcile(Pass1 后 Pass3 前)→聚合→自动接受→Pass5；
+ * - 锁定硬时序：分片提取→身份 Pass→确定性归并→聚合→自动接受→Pass5；
  * - 验证乐观 claim、取消贯穿、章节重试 2 次、facts 唯一写入口、条件④冲突扫描接线。
  *
  * Mock 策略：
  * - extractor 使用真实实现（管线内动态 import），其唯一外部依赖 callIdentityLlm 打桩，
  *   避免 vi.mock + 并发动态 import 的竞态（vitest 对并发 import() 的 mock 解析不稳定）；
- * - 其余 Pass 组件（tier1/tier2/reconcile/aggregator/autoAccept/conflictScan/
+ * - 其余 Pass 组件（identityPass/projection/aggregator/autoAccept/conflictScan/
  *   skillSelector/skillLoader/skillGenerator）走 vi.hoisted + vi.mock；
  * - registry 用部分 mock（保留 normalizeRegistryName 等纯函数，getRegistry 打桩）；
  * - Neo4j 与 prisma 单例整体 mock，测试通过 createAnalysisJobRunner 注入自定义 client。
@@ -30,10 +30,8 @@ import type * as AutoAcceptModule from "@/server/modules/review/autoAccept";
 // ===========================================================================
 const hoisted = vi.hoisted(() => {
   const callIdentityLlmMock = vi.fn();
-  const runTier1Mock = vi.fn();
-  const runTier2Mock = vi.fn();
-  const collectResidualCandidatesMock = vi.fn();
-  const runReconcileMock = vi.fn();
+  const runIdentityPassMock = vi.fn();
+  const runProjectionMock = vi.fn();
   const scanMisattributionMock = vi.fn();
   const acceptFactsForJobMock = vi.fn();
   const refreshRelationshipsForBookMock = vi.fn();
@@ -54,10 +52,8 @@ const hoisted = vi.hoisted(() => {
 
   return {
     callIdentityLlmMock,
-    runTier1Mock,
-    runTier2Mock,
-    collectResidualCandidatesMock,
-    runReconcileMock,
+    runIdentityPassMock,
+    runProjectionMock,
     scanMisattributionMock,
     acceptFactsForJobMock,
     refreshRelationshipsForBookMock,
@@ -78,17 +74,12 @@ vi.mock("@/server/modules/identity/llm", () => ({
   callIdentityLlm: hoisted.callIdentityLlmMock
 }));
 
-vi.mock("@/server/modules/identity/tier1", () => ({
-  runTier1: hoisted.runTier1Mock
+vi.mock("@/server/modules/identity/identityPass", () => ({
+  runIdentityPass: hoisted.runIdentityPassMock
 }));
 
-vi.mock("@/server/modules/identity/tier2", () => ({
-  runTier2                 : hoisted.runTier2Mock,
-  collectResidualCandidates: hoisted.collectResidualCandidatesMock
-}));
-
-vi.mock("@/server/modules/identity/reconcile", () => ({
-  runReconcile: hoisted.runReconcileMock
+vi.mock("@/server/modules/identity/projection", () => ({
+  runProjection: hoisted.runProjectionMock
 }));
 
 vi.mock("@/server/modules/identity/conflictScan", () => ({
@@ -349,10 +340,8 @@ function configurePassMocks(): void {
     loadedAt   : new Date().toISOString()
   });
   hoisted.callIdentityLlmMock.mockResolvedValue({ data: LLM_EXTRACTION });
-  hoisted.runTier1Mock.mockResolvedValue({ created: 0, updated: 0 });
-  hoisted.collectResidualCandidatesMock.mockReturnValue([]);
-  hoisted.runTier2Mock.mockResolvedValue({ resolved: 0, newEntities: 0, ambiguous: 0 });
-  hoisted.runReconcileMock.mockResolvedValue({ scanned: 0, resolved: 0, newEntities: 0, ambiguous: 0 });
+  hoisted.runIdentityPassMock.mockResolvedValue({ groups: [], dropped: [], surfaceForms: [] });
+  hoisted.runProjectionMock.mockResolvedValue({ retained: 0, absorbed: 0, repointed: 0 });
   hoisted.scanMisattributionMock.mockResolvedValue([]);
   hoisted.acceptFactsForJobMock.mockResolvedValue({ accepted: [], rejected: [], rejectReasons: {} });
   hoisted.refreshRelationshipsForBookMock.mockResolvedValue([]);
@@ -471,8 +460,8 @@ describe("runAnalysisJob", () => {
       const extractUser = hoisted.callIdentityLlmMock.mock.calls[0][0].user as string;
       expect(extractUser).toContain("可选关系码：父子");
 
-      // Assert: 全链路 agent_runs 留痕（各 runType）
-      for (const runType of [AgentRunType.IDENTITY, AgentRunType.EXTRACTION, AgentRunType.RECONCILE, AgentRunType.VALIDATION, AgentRunType.SKILL_GENERATION]) {
+      // Assert: 全链路 agent_runs 留痕（各 runType；v6 无 RECONCILE）
+      for (const runType of [AgentRunType.EXTRACTION, AgentRunType.IDENTITY, AgentRunType.VALIDATION, AgentRunType.SKILL_GENERATION]) {
         expect(mockPrisma.agentRun.create).toHaveBeenCalledWith(expect.objectContaining({
           data: expect.objectContaining({ runType })
         }));
@@ -497,7 +486,7 @@ describe("runAnalysisJob", () => {
 
       // Assert: 未加载上下文、未跑任何 Pass、未写终态
       expect(mockPrisma.analysisJob.findUnique).not.toHaveBeenCalled();
-      expect(hoisted.runTier1Mock).not.toHaveBeenCalled();
+      expect(hoisted.runIdentityPassMock).not.toHaveBeenCalled();
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
     });
 
@@ -519,7 +508,7 @@ describe("runAnalysisJob", () => {
       await runner.runAnalysisJobById(JOB_ID);
 
       // Assert: 未跑管线，job FAILED + book ERROR
-      expect(hoisted.runTier1Mock).not.toHaveBeenCalled();
+      expect(hoisted.runIdentityPassMock).not.toHaveBeenCalled();
       expect(mockPrisma.analysisJob.update).toHaveBeenCalledWith(expect.objectContaining({
         where: { id: JOB_ID },
         data : expect.objectContaining({ status: AnalysisJobStatus.FAILED })
@@ -535,7 +524,7 @@ describe("runAnalysisJob", () => {
       await runner.runNextAnalysisJob(JOB_ID);
 
       // Assert: 与 runAnalysisJobById 走同一执行路径
-      expect(hoisted.runTier1Mock).toHaveBeenCalled();
+      expect(hoisted.runIdentityPassMock).toHaveBeenCalled();
       expect(mockPrisma.analysisJob.update).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ status: AnalysisJobStatus.SUCCEEDED })
       }));
@@ -543,14 +532,13 @@ describe("runAnalysisJob", () => {
   });
 
   describe("编排时序", () => {
-    // 用例语义：硬时序 Pass0→1→reconcile→Pass3→Pass4，reconcile 在 Pass1 后 Pass3 前。
-    it("按硬时序调用 Pass0-5，reconcile 在 Pass1 后 Pass3 前", async () => {
+    // 用例语义：v6 硬时序 提取→身份→归并→聚合→自动接受，归并在身份后、聚合前。
+    it("按 v6 时序调用：提取→身份→归并→聚合→冲突扫描→自动接受", async () => {
       // Arrange: 各 Pass 组件按调用顺序记录
       const order: string[] = [];
-      hoisted.runTier1Mock.mockImplementation(async () => { order.push("tier1"); return { created: 0, updated: 0 }; });
-      hoisted.runTier2Mock.mockImplementation(async () => { order.push("tier2"); return { resolved: 0, newEntities: 0, ambiguous: 0 }; });
       hoisted.callIdentityLlmMock.mockImplementation(async () => { order.push("extract"); return { data: LLM_EXTRACTION }; });
-      hoisted.runReconcileMock.mockImplementation(async () => { order.push("reconcile"); return { scanned: 0, resolved: 0, newEntities: 0, ambiguous: 0 }; });
+      hoisted.runIdentityPassMock.mockImplementation(async () => { order.push("identity"); return { groups: [], dropped: [], surfaceForms: [] }; });
+      hoisted.runProjectionMock.mockImplementation(async () => { order.push("project"); return { retained: 0, absorbed: 0, repointed: 0 }; });
       hoisted.refreshRelationshipsForBookMock.mockImplementation(async () => { order.push("refresh"); return []; });
       hoisted.scanMisattributionMock.mockImplementation(async () => { order.push("scan"); return []; });
       hoisted.acceptFactsForJobMock.mockImplementation(async () => { order.push("accept"); return { accepted: [], rejected: [], rejectReasons: {} }; });
@@ -558,11 +546,10 @@ describe("runAnalysisJob", () => {
       // Act
       await runner.runAnalysisJobById(JOB_ID);
 
-      // Assert: Tier1→Tier2→提取→reconcile→聚合→冲突扫描→自动接受 严格先后
-      expect(order.indexOf("tier1")).toBeLessThan(order.indexOf("tier2"));
-      expect(order.indexOf("tier2")).toBeLessThan(order.indexOf("extract"));
-      expect(order.indexOf("extract")).toBeLessThan(order.indexOf("reconcile"));
-      expect(order.indexOf("reconcile")).toBeLessThan(order.indexOf("refresh"));
+      // Assert: 提取→身份→归并→聚合→冲突扫描→自动接受 严格先后
+      expect(order.indexOf("extract")).toBeLessThan(order.indexOf("identity"));
+      expect(order.indexOf("identity")).toBeLessThan(order.indexOf("project"));
+      expect(order.indexOf("project")).toBeLessThan(order.indexOf("refresh"));
       expect(order.indexOf("refresh")).toBeLessThan(order.indexOf("scan"));
       expect(order.indexOf("scan")).toBeLessThan(order.indexOf("accept"));
       // Pass5 markOrphan 在自动接受之后（mention.groupBy 由 markOrphan 触发）
@@ -579,7 +566,7 @@ describe("runAnalysisJob", () => {
 
       // Assert: 未进入快照与 Pass0，job FAILED
       expect(hoisted.skillSelectorMock.selectSkillsForJob).not.toHaveBeenCalled();
-      expect(hoisted.runTier1Mock).not.toHaveBeenCalled();
+      expect(hoisted.runIdentityPassMock).not.toHaveBeenCalled();
       expect(mockPrisma.analysisJob.update).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ status: AnalysisJobStatus.FAILED })
       }));
@@ -589,7 +576,7 @@ describe("runAnalysisJob", () => {
   describe("取消", () => {
     // 用例语义：Pass 之间检测到取消，跳过终态写入保留 CANCELED。
     it("Pass 之间检测到取消时跳过终态写入，保留 CANCELED 状态", async () => {
-      // Arrange: 提取完成后置取消标志，下一个检查点（reconcile 前）中断
+      // Arrange: 提取完成后置取消标志，下一个检查点（身份 Pass 前）中断
       let canceled = false;
       hoisted.callIdentityLlmMock.mockImplementation(async () => {
         canceled = true;
@@ -600,8 +587,8 @@ describe("runAnalysisJob", () => {
       // Act
       await runner.runAnalysisJobById(JOB_ID);
 
-      // Assert: reconcile 及后续 Pass 未执行，终态未写入（不覆盖 CANCELED）
-      expect(hoisted.runReconcileMock).not.toHaveBeenCalled();
+      // Assert: 身份 Pass 及后续 Pass 未执行，终态未写入（不覆盖 CANCELED）
+      expect(hoisted.runIdentityPassMock).not.toHaveBeenCalled();
       expect(hoisted.refreshRelationshipsForBookMock).not.toHaveBeenCalled();
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
       // 仅允许 setStage 阶段写入；不允许任何带 status 的终态更新覆盖 CANCELED。
@@ -619,29 +606,29 @@ describe("runAnalysisJob", () => {
       // Act
       await runner.runAnalysisJobById(JOB_ID);
 
-      // Assert: RELATION fact 以登记表解析出的 entityId 写入（范进→ent-1，周进→ent-2）
+      // Assert: v6 提取无登记表 → RELATION fact 以临时实体 entityId 写入（ensureEntityByName 兜底创建）
       expect(mockPrisma.fact.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           factType            : "RELATION",
-          sourceEntityId      : "ent-1",
-          targetEntityId      : "ent-2",
+          sourceEntityId      : "new-范进",
+          targetEntityId      : "new-周进",
           relationshipTypeCode: "父子",
           status              : "DRAFT",
           recordSource        : "DRAFT_AI",
           jobId               : JOB_ID
         })
       }));
-      // 新实体（登记表外）由 ensureEntityByName 兜底创建
+      // 全部实体由 ensureEntityByName 兜底创建（无登记表命中）
       expect(mockPrisma.entity.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ name: "新人物" })
       }));
-      // 片内别名注册
+      // 片内别名注册到临时实体
       expect(mockPrisma.alias.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ entityId: "ent-1", alias: "范老爷" })
+        data: expect.objectContaining({ entityId: "new-范进", alias: "范老爷" })
       }));
       // 提及 + 写审计留痕
       expect(mockPrisma.mention.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ entityId: "ent-1", rawText: "范进", recordSource: "DRAFT_AI" })
+        data: expect.objectContaining({ entityId: "new-范进", rawText: "范进", recordSource: "DRAFT_AI" })
       }));
       expect(mockPrisma.agentWriteAudit.create).toHaveBeenCalled();
     });
@@ -752,7 +739,7 @@ describe("runAnalysisJob", () => {
       // 注意：仅按"章节正文"段判别（全书摘要结尾含第7回内容，不能用整段 user）
       configureHappyPath(mockPrisma, { chapters: makeChapters(7) });
       hoisted.callIdentityLlmMock.mockImplementation(async (input: { user: string }) => {
-        const sliceText = input.user.split("章节正文：")[1].split("\n\n身份登记表")[0];
+        const sliceText = input.user.split("章节正文：")[1].split("\n\n全书摘要：")[0];
         if (sliceText.includes("第7回")) {
           throw new Error("slice 2 failed");
         }

@@ -60,9 +60,9 @@ PostgreSQL 默认端口：5434（容器内 5432 映射）。Neo4j Bolt：7687，
 
 每个模块是独立的业务域，包含各自的服务函数、错误类型和测试：
 
-- **analysis/** — v5 确定性管线编排（`jobs/runAnalysisJob.ts` 串联 Pass0-5）+ AI 调用执行器（`services/AiCallExecutor.ts`，统一默认模型 + 可选 modelId 覆盖）+ 成本汇总（`services/jobCostSummary.ts`）
-- **identity/** — Pass0 身份解析：双 tier（Tier1 全书一遍草稿 + Tier2 原语兜底）+ reconcile + 登记表派生视图（`registry.ts`）+ 分布式冲突扫描
-- **extraction/** — Pass1-3：分片单轮提取（`extractor.ts`）+ 确定性护栏（`guardrails.ts`）+ 关系物化聚合（`aggregator.ts`，`refreshRelationshipsForBook`）+ Union-Find 别名合并（`aliasResolver.ts`）
+- **analysis/** — v6 确定性管线编排（`jobs/runAnalysisJob.ts`：提取→身份→归并→Pass3-5）+ AI 调用执行器（`services/AiCallExecutor.ts`，统一默认模型 + 可选 modelId 覆盖）+ 成本汇总（`services/jobCostSummary.ts`）
+- **identity/** — v6 身份 Pass：提取后按"去重表面形式紧凑名单"全局规范化（`identityPass.ts`，替代 v5 的 Tier1 原文枚举）+ 确定性归并（`projection.ts`，临时实体→canonical，facts/mentions 重指向）+ 登记表派生视图（`registry.ts`）+ 分布式冲突扫描
+- **extraction/** — Pass1 分片单轮提取（`extractor.ts`，无登记表、片内共指）+ 确定性护栏（`guardrails.ts`）+ 关系物化聚合（`aggregator.ts`，`refreshRelationshipsForBook`）+ Union-Find 别名合并（`aliasResolver.ts`）
 - **review/** — Pass4 例外优先审核：自动接受栈（`autoAccept.ts` 五条件）+ 人审队列 + 棘轮校准 + 关系级幻觉定向抽样 + 跨模型复核 + 实体合并事务（`mergeEntities.ts`）+ 错误族（`errors.ts`）
 - **skills/** — Skill 域：CRUD/版本（`skillService.ts`）+ AI 动态选择器（`skillSelector.ts`，`selectSkillsForJob`）+ 装载器（`loader.ts`，`resolveSkillsForJob`）+ 关系码契约取码 + 生成器（`skillGenerator.ts`）
 - **books/** — 书籍 CRUD、章节拆分、分析任务创建（`startBookAnalysis.ts`）
@@ -110,26 +110,30 @@ PostgreSQL 默认端口：5434（容器内 5432 映射）。Neo4j Bolt：7687，
 
 Edge 中间件（`middleware.ts`）保护 `/admin/*` 和 `/api/admin/*` 路由。从 Cookie 验证 JWT，注入 `x-auth-role` / `x-auth-current-path` 请求头供下游使用。未登录时重定向到 `/login?redirect=...`。
 
-### 分析管线（v5 确定性编排）
+### 分析管线（v6 extract-then-resolve 确定性编排）
 
-书籍处理流程：上传 → 章节拆分 → 创建分析任务（`startBookAnalysis`）→ `runAnalysisJobById`（`analysis/jobs/runAnalysisJob.ts`）编排 Pass0-5 → 图谱同步。
+书籍处理流程：上传 → 章节拆分 → 创建分析任务（`startBookAnalysis`）→ `runAnalysisJobById`（`analysis/jobs/runAnalysisJob.ts`）编排管线 → 图谱同步。
 
-管线时序（硬约束，`runAnalysisJob.ts` 26 单测锁定）：
+管线时序（硬约束，`runAnalysisJob.ts` 26 单测锁定；架构见 `docs/architecture/14-agent-architecture-v6.md`）：
 
 ```
 claim(QUEUED→RUNNING) → 快照(selectSkillsForJob) → 装载(resolveSkillsForJob)
-  → Pass0 身份(Tier1→Tier2) → Pass1 分片提取(extractSlice+落库)
-  → reconcile(Pass1 后 Pass3 前) → Pass3 聚合(refreshRelationships+Neo4j)
+  → Pass1 分片提取(extractSlice+落库，临时实体，无登记表)
+  → Pass1.5 身份 Pass(identityPass：去重表面形式紧凑名单全局规范化)
+  → Pass1.75 确定性归并(projection：临时实体→canonical，facts/mentions 重指向)
+  → Pass3 聚合(refreshRelationships+Neo4j)
   → Pass4 自动接受(acceptFactsForJob) → Pass5(markOrphan+skillGenerator) → 终态
 ```
 
 关键点：
 
+- **提取先于身份**：身份判定在"去重表面形式名单"上做（~10-15K token），不在原文上做——消除 v5 过度列举的结构性来源（3 章分卷看不到变体两端）
 - **facts 唯一写入口**：facts/mentions/aliases 由管线落库（extractSlice 只返回不落库）
 - **模型统一默认**：AiCallExecutor 恒走 `loadSystemDefaultModel`；跨模型复核显式传 `modelId`
 - **skills 由 AI 动态选择**：任务启动 `selectSkillsForJob` 现选 + 快照进任务，任务间互不干扰
 - 取消贯穿（每 Pass 前查 CANCELED）；分片并发 ≤3；章节失败重试 2 次
 - 留痕：`agent_runs`（各 runType）+ `agent_write_audits`
+- 已删除 v5 的 Tier1 原文枚举登记表 / Tier2 / reconcile（身份 Pass 看到全名单 + 频次，其召回兜底被覆盖）
 
 ### Prompt 模板
 

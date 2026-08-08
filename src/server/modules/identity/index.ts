@@ -1,13 +1,13 @@
 /**
- * 身份解析域（Pass0 + 登记表）模块入口。
+ * 身份解析域（v6）模块入口。
  *
- * v5 架构：双 tier 身份解析 + 登记表派生视图 + 身份判定原语 + 分布式冲突扫描 + reconcile。
- * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.3
+ * v6 架构：提取后身份 Pass（紧凑名单全局规范化）+ 确定性归并 + 登记表派生视图
+ * + 身份判定原语（跨模型复核保留）+ 分布式冲突扫描。
+ * 架构依据：docs/architecture/14-agent-architecture-v6.md
  */
 export * from "./registry.ts";
 export * from "./conflictScan.ts";
 export * from "./primitive.ts";
 export * from "./identityService.ts";
-export * from "./tier1.ts";
-export * from "./tier2.ts";
-export * from "./reconcile.ts";
+export * from "./identityPass.ts";
+export * from "./projection.ts";

@@ -50,12 +50,11 @@ type BookChapterRow = Prisma.BookGetPayload<{ select: typeof BOOK_STATUS_SELECT 
 
 /**
  * 管线阶段 → 进度映射（RUNNING 时按当前阶段加权展示，替代固定的 50%）。
- * 权重参考各 Pass 的相对耗时：Pass1 分片提取最重，跨度最大。
+ * v6 时序：Pass1 分片提取先于身份 Pass（extract-then-resolve），权重据此排布。
  */
 const STAGE_PROGRESS: Record<string, { progress: number; label: string }> = {
-  identity        : { progress: 10,  label: "身份解析" },
-  extraction      : { progress: 30,  label: "分片提取" },
-  reconcile       : { progress: 65,  label: "登记补判" },
+  extraction      : { progress: 10,  label: "分片提取" },
+  identity        : { progress: 50,  label: "身份解析" },
   aggregate       : { progress: 80,  label: "聚合建图" },
   auto_accept     : { progress: 90,  label: "自动接受" },
   skill_generation: { progress: 95,  label: "技能生成" }
@@ -89,9 +88,9 @@ function deriveJobProgress(
 }
 
 /**
- * RUNNING 阶段内按已完成调用数推进进度，避免"身份解析 10%"长时间不动被误判卡死。
- * - identity（Pass0）：roster 逐次推进 10 → 45；
- * - extraction（Pass1）：分片逐片推进 45 → 75。
+ * RUNNING 阶段内按已完成调用数推进进度，避免"阶段基准值"长时间不动被误判卡死。
+ * - extraction（Pass1）：分片逐片推进 10 → 45；
+ * - identity（Pass1.5）：类型调用逐次推进 50 → 65。
  * 其余阶段保持阶段基准值。
  */
 async function advanceRunningProgress(
@@ -104,18 +103,18 @@ async function advanceRunningProgress(
     return baseProgress;
   }
 
-  if (currentStage === "identity") {
-    const done = await prismaClient.analysisPhaseLog.count({
-      where: { jobId, stage: "ROSTER_DISCOVERY", status: "SUCCESS" }
-    });
-    return Math.min(45, baseProgress + done * 0.7);
-  }
-
   if (currentStage === "extraction") {
     const done = await prismaClient.analysisPhaseLog.count({
       where: { jobId, stage: "INDEPENDENT_EXTRACTION", status: "SUCCESS" }
     });
-    return Math.min(75, baseProgress + done * 1.5);
+    return Math.min(45, baseProgress + done * 1.5);
+  }
+
+  if (currentStage === "identity") {
+    const done = await prismaClient.analysisPhaseLog.count({
+      where: { jobId, stage: "IDENTITY_CANONICALIZATION", status: "SUCCESS" }
+    });
+    return Math.min(65, baseProgress + done * 5);
   }
 
   return baseProgress;

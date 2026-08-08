@@ -10,10 +10,9 @@
  * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.2/Pass1
  */
 import { callIdentityLlm } from "@/server/modules/identity/llm.ts";
-import type { BookRegistry } from "@/server/modules/identity/registry.ts";
 import { EXTRACTION_SYSTEM_PROMPT } from "./prompts.ts";
 import { runGuardrails, type PersistableFact } from "./guardrails.ts";
-import type { ExtractionSlice, ExtractedEntity } from "./types.ts";
+import type { ExtractionSlice } from "./types.ts";
 
 export interface ExtractSliceInput {
   bookId               : string;
@@ -22,7 +21,6 @@ export interface ExtractSliceInput {
   sliceText            : string;
   /** 片覆盖章号（含章节标题用于检索） */
   chapterNos           : number[];
-  registry             : BookRegistry;
   bookSummary          : string;
   skills               : string[];
   /** 有效关系码（装载 skill 契约，schema 生成） */
@@ -39,21 +37,15 @@ export interface ExtractSliceResult {
   dropRecords: ReturnType<typeof runGuardrails>["dropRecords"];
 }
 
-/** 组装提取 prompt（user 含正文 + 登记表 + 摘要 + skill + schema 枚举）。 */
+/** 组装提取 prompt（user 含正文 + 摘要 + skill + schema 枚举；v6 提取无身份登记表注入）。 */
 export function buildExtractionUserPrompt(input: {
   sliceText            : string;
-  registry             : BookRegistry;
   bookSummary          : string;
   skills               : string[];
   relationshipTypeCodes: string[];
 }): string {
-  const registryBrief = input.registry.entries
-    .map((e) => `${e.canonical}(${e.type}${e.aliases.length ? "，" + e.aliases.join("/") : ""})`)
-    .join("、");
   return [
     `章节正文：\n${input.sliceText}`,
-    "",
-    `身份登记表：${registryBrief || "（空）"}`,
     "",
     `全书摘要：${input.bookSummary}`,
     "",
@@ -73,14 +65,13 @@ export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSli
     system: EXTRACTION_SYSTEM_PROMPT,
     user  : buildExtractionUserPrompt({
       sliceText            : input.sliceText,
-      registry             : input.registry,
       bookSummary          : input.bookSummary,
       skills               : input.skills,
       relationshipTypeCodes: input.relationshipTypeCodes
     }),
     jobId          : input.jobId,
     maxOutputTokens: 32_768,
-    // 关闭思考：同 ROSTER_DISCOVERY，推理模型会吃掉输出预算导致空响应/截断。
+    // 关闭思考：同身份列举，推理模型会吃掉输出预算导致空响应/截断。
     enableThinking : false
   });
 
@@ -89,12 +80,6 @@ export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSli
     book      : input.bookId,
     chapterNos: input.chapterNos
   };
-
-  // 新实体候选（登记表中不存在的实体 canonical）
-  const known = new Set(input.registry.entries.map((e) => e.canonical));
-  slice.newEntityCandidates = slice.entities
-    .map((e: ExtractedEntity) => e.canonical)
-    .filter((name) => !known.has(name));
 
   const { facts, dropRecords } = runGuardrails(
     slice,
