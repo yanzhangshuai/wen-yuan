@@ -60,9 +60,9 @@ interface BookListRow {
   /** 计数字段：章节数与有效人物数。 */
   _count: {
     /** 章节总数。 */
-    chapters: number;
-    /** 人物档案总数（已过滤软删除）。 */
-    profiles: number;
+    chapters      : number;
+    /** 实体档案总数（已过滤软删除）。 */
+    entityProfiles: number;
   };
   /** 最近一次解析任务快照（按 updatedAt 倒序，取 1 条）。 */
   analysisJobs: Array<{
@@ -97,7 +97,7 @@ interface BookListRow {
  *
  * 业务含义：
  * - 只取列表展示所需字段，避免过度查询；
- * - `profiles` 只统计未软删人物，保证后台统计口径一致；
+ * - `entityProfiles` 只统计未软删实体档案，保证后台统计口径一致；
  * - 解析任务仅取最近一条，满足列表“当前状态快照”需求。
  */
 const BOOK_LIST_SELECT = {
@@ -112,8 +112,8 @@ const BOOK_LIST_SELECT = {
   errorLog : true,
   _count   : {
     select: {
-      chapters: true,
-      profiles: {
+      chapters      : true,
+      entityProfiles: {
         where: { deletedAt: null }
       }
     }
@@ -195,7 +195,7 @@ function mapBook(book: BookListRow): BookLibraryListItem {
     coverUrl      : book.coverUrl,
     status,
     chapterCount  : book._count.chapters,
-    personaCount  : book._count.profiles,
+    personaCount  : book._count.entityProfiles,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastErrorSummary,

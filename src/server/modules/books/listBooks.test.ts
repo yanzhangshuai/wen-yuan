@@ -29,8 +29,8 @@ function createBookRow(overrides: Partial<Record<string, unknown>> = {}) {
     sourceFileMime: "text/plain; charset=utf-8",
     sourceFileSize: 1234,
     _count        : {
-      chapters: 2,
-      profiles: 3
+      chapters      : 2,
+      entityProfiles: 3
     },
     analysisJobs: [
       {
@@ -84,8 +84,8 @@ describe("listBooks", () => {
         },
         _count: {
           select: {
-            chapters: true,
-            profiles: {
+            chapters      : true,
+            entityProfiles: {
               where: { deletedAt: null }
             }
           }
