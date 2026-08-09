@@ -218,6 +218,18 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       select: { id: true, profiles: { where: { bookId, deletedAt: null }, take: 1 } }
     });
     if (dbEntity) {
+      // 复用全局同名实体时必须为本书建档：登记表/身份 Pass 均按 entity_profiles 关联本书，
+      // 缺档案的实体对本书不可见（重导入场景下会丢失复用实体）。
+      if (dbEntity.profiles.length === 0) {
+        await prismaClient.entityProfile.create({
+          data: {
+            entityId    : dbEntity.id,
+            bookId,
+            localName   : name,
+            recordSource: "DRAFT_AI"
+          }
+        });
+      }
       entityIdByName.set(key, dbEntity.id);
       return dbEntity.id;
     }

@@ -68,7 +68,10 @@ function isRetryableError(error: unknown): boolean {
     message.includes("socket") ||
     message.includes("connection reset") ||
     // 空响应多属模型侧瞬时故障（如超长 prompt 后深思考未产出正文），值得重试而非一次判死。
-    message.includes("empty response")
+    message.includes("empty response") ||
+    // 输出截断/非 JSON：稠密分片输出超 max_tokens 被截断，重试常能产出更紧凑的合法 JSON。
+    // 片级重试（extractSliceWithRetry）仍会兜底，此处让 AiCallExecutor 内部也重试，提高恢复概率。
+    message.includes("输出非 json")
   );
 }
 

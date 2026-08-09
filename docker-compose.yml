@@ -24,6 +24,9 @@ services:
   neo4j:
     image: neo4j:5.15-community
     container_name: wen_yuan_neo4j
+    # 固定 hostname：Neo4j 启动时 InetAddress.getLocalHost() 需解析容器主机名，
+    # 随机容器 ID 在部分 Docker DNS 环境无法解析导致 UnknownHostException。
+    hostname: neo4j
     restart: unless-stopped
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"

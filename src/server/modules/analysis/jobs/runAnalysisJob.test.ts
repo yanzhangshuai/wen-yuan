@@ -680,6 +680,28 @@ describe("runAnalysisJob", () => {
       }));
       expect(mockPrisma.alias.create).not.toHaveBeenCalled();
     });
+
+    // 用例语义：重导入场景——全局同名实体被复用但无本书档案，必须补建 profile，否则本书登记表看不到该实体。
+    it("复用全局实体无本书档案时补建 profile（登记表可见性）", async () => {
+      // Arrange: DB 命中全局实体但本书无 profile（profiles 为空）
+      hoisted.callIdentityLlmMock.mockResolvedValue({
+        data: {
+          entities : [],
+          relations: [{ typeCode: "父子", sourceCanonical: "范进", targetCanonical: "周进", evidence: "范进与周进同场" }],
+          bioFacts : []
+        }
+      });
+      mockPrisma.entity.findFirst.mockResolvedValue({ id: "ent-global", profiles: [] });
+
+      // Act
+      await runner.runAnalysisJobById(JOB_ID);
+
+      // Assert: 复用全局实体（不新建 entity），且为本书补建 entityProfile
+      expect(mockPrisma.entity.create).not.toHaveBeenCalled();
+      expect(mockPrisma.entityProfile.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ entityId: "ent-global", bookId: BOOK_ID })
+      }));
+    });
   });
 
   describe("重试", () => {
