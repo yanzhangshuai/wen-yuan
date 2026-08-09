@@ -563,6 +563,18 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
         "guardrail"
       );
     }
+
+    // 4) 分片落库成功 → 覆盖章节标记 SUCCEEDED（管线此前只复位 PENDING/标记 FAILED，
+    //    成功章节永远停在「等待中」，UI 章节状态失真）。
+    const chapterIds = slice.chapterNos
+      .map((no) => input.chapterIdByNo.get(no))
+      .filter((id): id is string => !!id);
+    if (chapterIds.length > 0) {
+      await prismaClient.chapter.updateMany({
+        where: { id: { in: chapterIds } },
+        data : { parseStatus: "SUCCEEDED" }
+      });
+    }
   }
 
   // ===========================================================================
