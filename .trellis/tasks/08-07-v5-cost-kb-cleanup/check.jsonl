@@ -1,6 +1,0 @@
-{"file": ".trellis/tasks/08-07-v5-cost-kb-cleanup/prd.md", "reason": "验收标准：AC1-AC5（STAGE_ORDER 零引用、knowledge 全套零引用、lookup 迁 skills）"}
-{"file": ".trellis/tasks/08-07-v5-cost-kb-cleanup/design.md", "reason": "删除边界：auditLog 删但 lookup 保留；按 job 聚合不变"}
-{"file": ".trellis/spec/shared/code-quality.md", "reason": "最小修改、禁 any、可读性审查（删除面完整性）"}
-{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 迁移正确性（KnowledgeAuditLog drop）"}
-{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试删除完备性（knowledge-base 测试、auditLog mock、排序断言）"}
-{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "API 路由删除正确性（change-logs 路由族）"}

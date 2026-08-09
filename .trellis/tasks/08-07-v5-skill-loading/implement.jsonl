@@ -1,9 +1,0 @@
-{"file": ".trellis/tasks/08-07-v5-skill-loading/prd.md", "reason": "需求与验收标准（R1-R8/AC1-AC6）"}
-{"file": ".trellis/tasks/08-07-v5-skill-loading/design.md", "reason": "技术设计：schema 变更、skill 契约、AI 选择器、功能点模型、管理端"}
-{"file": ".trellis/tasks/08-07-v5-skill-loading/implement.md", "reason": "执行计划：6 阶段清单与审查门"}
-{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 事务与生成代码规则（schema 迁移）"}
-{"file": ".trellis/spec/backend/migration-guidelines.md", "reason": "expand-contract 与回滚策略（删表迁移）"}
-{"file": ".trellis/spec/backend/ai-output-contract.md", "reason": "Zod 校验、AI 输出契约（skill 选择器 + 契约解析）"}
-{"file": ".trellis/spec/backend/ai-model-config.md", "reason": "模型 CRUD 与协议分发（feature_models 功能点映射）"}
-{"file": ".trellis/spec/shared/zod-typescript.md", "reason": "外部数据 schema 定义（frontmatter 契约）"}
-{"file": ".trellis/spec/shared/code-quality.md", "reason": "KISS/DRY/最小修改/禁 any 等代码风格"}

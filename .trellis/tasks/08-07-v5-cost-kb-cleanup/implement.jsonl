@@ -1,9 +1,0 @@
-{"file": ".trellis/tasks/08-07-v5-cost-kb-cleanup/prd.md", "reason": "需求与验收标准（R1-R3/AC1-AC5）"}
-{"file": ".trellis/tasks/08-07-v5-cost-kb-cleanup/design.md", "reason": "技术设计：STAGE_ORDER 删除、知识库概念删除、lookup 迁移 skills"}
-{"file": ".trellis/tasks/08-07-v5-cost-kb-cleanup/implement.md", "reason": "执行计划：5 阶段清单与审查门"}
-{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma 迁移与生成代码规则（KnowledgeAuditLog 删表）"}
-{"file": ".trellis/spec/backend/migration-guidelines.md", "reason": "expand-contract 与回滚策略（删表迁移）"}
-{"file": ".trellis/spec/backend/comment-template.md", "reason": "注释模板（删除后的注释清理基准）"}
-{"file": ".trellis/spec/shared/code-quality.md", "reason": "KISS/DRY/最小修改/禁 any 等代码风格"}
-{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试更新规范（jobCostSummary 排序断言、skillService auditLog mock 删除）"}
-{"file": ".trellis/spec/backend/route-handler-guidelines.md", "reason": "API 路由删除（change-logs 路由族）正确性"}

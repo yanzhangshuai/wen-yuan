@@ -1,6 +1,0 @@
-{"file": ".trellis/tasks/08-07-v5-role-workbench-backend/prd.md", "reason": "验收标准：type-check 94→0、merge 事务、bulkVerify refresh"}
-{"file": ".trellis/tasks/08-07-v5-role-workbench-backend/design.md", "reason": "字段映射完整性（94 错误 5 类根因全覆盖）"}
-{"file": ".trellis/tasks/08-06-v5-review/research/role-workbench-audit.md", "reason": "调研矩阵对照（改造是否覆盖全部错误）"}
-{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "merge 事务原子性、refresh tx 支持"}
-{"file": ".trellis/spec/backend/role-workbench-character-events.md", "reason": "章节事迹迁移到 fact/entity 的正确性"}
-{"file": ".trellis/spec/backend/test-guidelines.md", "reason": "测试完备性（4 服务 + merge + bulkVerify）"}
