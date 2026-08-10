@@ -2,7 +2,7 @@
 
 文渊：中国古典文学知识图谱系统（Next.js 16 App Router + React 19 + TS strict + Prisma 7 + Neo4j + D3）。深度中文项目，中文注释与交流。
 
-`CLAUDE.md` 是权威的架构/流程文档（管线 v6、模块职责、鉴权、基础设施），本文件只写会踩坑的实操要点。
+`CLAUDE.md` 是权威的架构/流程文档（管线 v7、模块职责、鉴权、基础设施），本文件只写会踩坑的实操要点。
 
 ## 验证命令（提交/完成前按此顺序跑）
 
@@ -58,4 +58,4 @@ node scripts/eval/run-eval.ts                                   # 注意用 node
 ## 其他
 
 - `scripts/skills/` 下是领域 skill MD（中文人名/称谓/关系码等），改提取 Prompt 前先看契约。
-- 架构细节（v6 管线时序、facts 唯一写入口、AI 动态 skill 选择、审核棘轮）以 `CLAUDE.md` 与 `docs/architecture/14-agent-architecture-v6.md` 为准。
+- 架构细节（v7 管线时序、facts 唯一写入口、AI 动态 skill 选择、审核棘轮）以 `CLAUDE.md` 与 `docs/architecture/15-agent-architecture-v7.md` 为准。

@@ -11,16 +11,18 @@ describe("buildSlices", () => {
     expect(buildSlices([], "b")).toHaveLength(0);
   });
 
-  it("12 章按 6 章/片 → 2 片", () => {
+  it("v7 逐章：12 章 → 12 片（每片单章）", () => {
     const slices = buildSlices(Array.from({ length: 12 }, (_, i) => ch(i + 1)), "b");
-    expect(slices).toHaveLength(2);
-    expect(slices[0].chapterNos).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(slices[1].chapterNos).toEqual([7, 8, 9, 10, 11, 12]);
+    expect(slices).toHaveLength(12);
+    expect(slices[0].chapterNos).toEqual([1]);
+    expect(slices[5].chapterNos).toEqual([6]);
+    expect(slices[11].chapterNos).toEqual([12]);
   });
 
-  it("不足一片 → 单片", () => {
-    const slices = buildSlices([ch(1), ch(2)], "b");
+  it("单章 → 单片", () => {
+    const slices = buildSlices([ch(1)], "b");
     expect(slices).toHaveLength(1);
+    expect(slices[0].chapters).toHaveLength(1);
   });
 });
 

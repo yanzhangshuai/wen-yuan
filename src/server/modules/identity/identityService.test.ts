@@ -48,6 +48,7 @@ describe("writeRegistry", () => {
 
   it("canonical 已存在 → 合并别名 + UPDATE 审计", async () => {
     txMock.entity.findFirst.mockResolvedValue({ id: "e1", aliases: ["范老爷"], confidence: 0.7 });
+    txMock.entity.update.mockResolvedValue({ id: "e1", aliases: ["范老爷", "范举人"], confidence: 0.7 });
     txMock.entityProfile.findFirst.mockResolvedValue({ id: "p1" });
     txMock.alias.findFirst.mockResolvedValue(null);
 

@@ -1,23 +1,24 @@
 /**
- * v6 分析管线编排器（runAnalysisJob）
+ * v7 分析管线编排器（runAnalysisJob）
  * =============================================================================
  * 文件定位：`src/server/modules/analysis/jobs/runAnalysisJob.ts`
  *
- * 职责：确定性编排 v6 管线（extract-then-resolve），串联已就绪的组件
+ * 职责：确定性编排 v7 管线（extract-then-resolve），串联已就绪的组件
  *   （extraction / identity / review / skills），不承载业务逻辑。
  *
- * 时序（arch doc 14-agent-architecture-v6.md §2，硬约束）：
+ * 时序（arch doc 15-agent-architecture-v7.md §3，硬约束）：
  *   claim → 快照(selectSkillsForJob) → 装载(resolveSkillsForJob)
- *     → Pass1(extractSlice+落库，临时实体，无登记表)
+ *     → Pass1(逐章 extractSlice + 实体验收闸 + 落库，临时实体，无登记表，chapterNo=本章)
  *     → Pass1.5 身份 Pass(紧凑名单全局规范化)
- *     → Pass1.75 确定性归并(临时实体→canonical)
+ *     → Pass1.75 确定性归并(临时实体→canonical) + dropped 清理
  *     → Pass3(refresh+Neo4j) → Pass4(自动接受)
  *     → Pass5(markOrphan+skillGenerator) → 终态
  *
  * 设计原则：
  * - 组件厚 + 管线薄：各 Pass 逻辑已在域模块实现，此处只编排；
  * - facts 唯一写入口：facts/mentions/aliases 由本管线落库；
- * - 提取先于身份：局部提取（无全局登记表）+ 紧凑名单全局折叠，消除 v5 过度列举；
+ * - 提取先于身份：逐章局部提取（无全局登记表）+ 紧凑名单全局折叠，消除 v5 过度列举；
+ * - 实体验收闸：实体从保留事实两端反推，0 提及垃圾源头被挡；
  * - 乐观并发 claim：updateMany QUEUED→RUNNING，抢到才执行；
  * - 取消贯穿：每 Pass 前查 CANCELED，抛出哨兵由外层跳过终态（不覆盖取消）。
  */
@@ -44,7 +45,7 @@ export interface JobRunContext {
   scope : AnalysisScope;
 }
 
-/** 分片提取并发上限（简单限流，无现成 util）。 */
+/** 提取并发上限（简单限流，无现成 util）。 */
 const EXTRACTION_CONCURRENCY = 3;
 /** 单片提取最大尝试次数（1 次初始 + 2 次重试）。 */
 const MAX_SLICE_EXTRACTION_ATTEMPTS = 3;
@@ -457,14 +458,18 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     chapterIdByNo : Map<number, string>;
     entityIdByName: Map<string, string>;
   }): Promise<void> {
-    const { slice, facts, dropRecords } = input.sliceResult;
+    const { slice, facts, dropRecords, entities } = input.sliceResult;
     let stepIndex = 0;
 
-    // 1) 实体注册：本片新实体（含类型）先落库，供后续事实/提及解析
-    for (const entity of slice.entities) {
-      const entityId = await ensureEntityByName(entity.canonical, entity.type, input.bookId, input.entityIdByName);
+    // 1) 实体注册：只注册通过实体验收闸的实体（v7：实体从事实两端反推，
+    //    不再独立遍历 slice.entities——0 提及垃圾实体在源头被挡）。
+    //    事实参与者必在 entities 名单内（guardrails.acceptEntity 保证）。
+    const typeByName = new Map<string, string>();
+    for (const entity of entities) {
+      typeByName.set(entity.name, entity.type);
+      const entityId = await ensureEntityByName(entity.name, entity.type, input.bookId, input.entityIdByName);
       for (const alias of entity.aliases ?? []) {
-        if (alias === entity.canonical) {
+        if (alias === entity.name) {
           continue;
         }
         await ensureAlias(input.bookId, entityId, alias);
@@ -489,10 +494,10 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       }
 
       const sourceEntityId = fact.sourceName
-        ? await ensureEntityByName(fact.sourceName, "PERSON", input.bookId, input.entityIdByName)
+        ? await ensureEntityByName(fact.sourceName, typeByName.get(fact.sourceName) as EntityTypeStr ?? "PERSON", input.bookId, input.entityIdByName)
         : null;
       const targetEntityId = fact.targetName
-        ? await ensureEntityByName(fact.targetName, "PERSON", input.bookId, input.entityIdByName)
+        ? await ensureEntityByName(fact.targetName, typeByName.get(fact.targetName) as EntityTypeStr ?? "PERSON", input.bookId, input.entityIdByName)
         : null;
 
       const created = await prismaClient.fact.create({
@@ -564,7 +569,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       );
     }
 
-    // 4) 分片落库成功 → 覆盖章节标记 SUCCEEDED（管线此前只复位 PENDING/标记 FAILED，
+    // 4) 单章落库成功 → 覆盖章节标记 SUCCEEDED（管线此前只复位 PENDING/标记 FAILED，
     //    成功章节永远停在「等待中」，UI 章节状态失真）。
     const chapterIds = slice.chapterNos
       .map((no) => input.chapterIdByNo.get(no))
@@ -582,10 +587,10 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
   // ===========================================================================
 
   /**
-   * 功能：身份 Pass（v6，替代 v5 的 Pass0 Tier1/Tier2）——
-   *   提取产出去重表面形式 → 紧凑名单全局规范化 → 确定性归并。
+   * 功能：身份 Pass（v7，替代 v5 的 Pass0 Tier1/Tier2）——
+   *   提取产出去重表面形式 → 紧凑名单全局规范化 → 确定性归并 + dropped 清理。
    * 输入：bookId/jobId/agentRunId。
-   * 副作用：写 canonical 实体、合并临时实体（facts/mentions 重指向）、别名注册。
+   * 副作用：写 canonical 实体、合并临时实体（facts/mentions 重指向）、别名注册、软删 dropped。
    */
   async function runIdentityAndProjection(input: {
     bookId    : string;
@@ -595,7 +600,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     const { runIdentityPass } = await import("@/server/modules/identity/identityPass");
     const { runProjection } = await import("@/server/modules/identity/projection");
 
-    const { groups } = await runIdentityPass({
+    const { groups, dropped } = await runIdentityPass({
       bookId    : input.bookId,
       jobId     : input.jobId,
       agentRunId: input.agentRunId
@@ -604,12 +609,13 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
       bookId    : input.bookId,
       jobId     : input.jobId,
       agentRunId: input.agentRunId,
-      groups
+      groups,
+      dropped
     });
   }
 
   /**
-   * 功能：Pass1 分片提取 + 落库（并发 ≤3，单片失败重试 2 次，顺序落库避免实体竞态）。
+   * 功能：Pass1 逐章提取 + 落库（并发 ≤3，单章失败重试 2 次，顺序落库避免实体竞态）。
    * 输入：目标章节 + 上下文。
    * 异常：任一单片重试耗尽时上抛首个错误（任务走 FAILED）。
    * 副作用：写 facts/mentions/aliases/审计；任务 attempt 递增。
@@ -1035,8 +1041,8 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     // 数据准备：全书摘要（Pass1 提取消费）。
     const bookSummary = await buildBookSummary(context.bookId);
 
-    // Pass1：分片提取 + 落库（无身份登记表 → 临时实体 + facts + mentions，片内共指；
-    // 身份判定留给后续全局 Pass。v6 时序：提取先于身份）。
+    // Pass1：逐章提取 + 落库（无身份登记表 → 临时实体 + facts + mentions，章内共指；
+    // 身份判定留给后续全局 Pass。v7 时序：提取先于身份）。
     const entityIdByName = new Map<string, string>();
     await checkCanceled();
     await setStage(context.jobId, "extraction");

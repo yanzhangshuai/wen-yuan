@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { BookNotFoundError } from "@/server/modules/books/errors";
+import { countEffectivePersonas } from "@/server/modules/books/listBooks";
 import { normalizeBookStatus, type BookLibraryListItem } from "@/types/book";
 
 /**
@@ -100,7 +101,7 @@ function resolveLastAnalyzedAt(
  * 把内部查询行映射为对外 DTO（`BookLibraryListItem`）。
  * 设计目的：把状态归一、时间格式化、来源字段组装集中在一个函数里，降低上游误改风险。
  */
-function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
+function mapBookDetail(book: BookDetailRow, personaCount: number): BookLibraryListItem {
   const status = normalizeBookStatus(book.status);
   const currentModel = book.analysisJobs?.[0]?.phaseLogs?.[0]?.model?.name ?? null;
   const lastErrorSummary = book.errorLog ?? book.analysisJobs[0]?.errorLog ?? null;
@@ -113,7 +114,7 @@ function mapBookDetail(book: BookDetailRow): BookLibraryListItem {
     coverUrl      : book.coverUrl,
     status,
     chapterCount  : book.chapters.length,
-    personaCount  : book.entityProfiles.length,
+    personaCount,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastErrorSummary,
@@ -202,8 +203,11 @@ export function createGetBookByIdService(
       throw new BookNotFoundError(bookId);
     }
 
+    // 有效人物口径（与书库列表一致）：PERSON ∧ 未软删 ∧ 本书内 ≥1 提及。
+    const personaCount = (await countEffectivePersonas([bookId], prismaClient)).get(bookId) ?? 0;
+
     // 查询结果映射成统一 DTO，供上游直接返回给前端。
-    return mapBookDetail(book);
+    return mapBookDetail(book, personaCount);
   }
 
   return { getBookById };

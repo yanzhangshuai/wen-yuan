@@ -61,7 +61,10 @@ interface BookListRow {
   _count: {
     /** 章节总数。 */
     chapters      : number;
-    /** 实体档案总数（已过滤软删除）。 */
+    /**
+     * 有效人物数（口径：PERSON 类型 ∧ 实体未软删 ∧ profile 未软删 ∧ 本书内 ≥1 提及）。
+     * v7：不再把 LOCATION/ORG/CONCEPT / 0 提及垃圾混入"人物"列。
+     */
     entityProfiles: number;
   };
   /** 最近一次解析任务快照（按 updatedAt 倒序，取 1 条）。 */
@@ -113,9 +116,7 @@ const BOOK_LIST_SELECT = {
   _count   : {
     select: {
       chapters      : true,
-      entityProfiles: {
-        where: { deletedAt: null }
-      }
+      entityProfiles: true
     }
   },
   analysisJobs: {
@@ -175,7 +176,7 @@ function resolveLastAnalyzedAt(
  * @param book 原始查询行
  * @returns `BookLibraryListItem`（前端稳定契约）
  */
-function mapBook(book: BookListRow): BookLibraryListItem {
+function mapBook(book: BookListRow, personaCount: number): BookLibraryListItem {
   // 归一化状态，防止历史脏数据或扩展状态直接污染前端分支。
   const status = normalizeBookStatus(book.status);
 
@@ -195,7 +196,7 @@ function mapBook(book: BookListRow): BookLibraryListItem {
     coverUrl      : book.coverUrl,
     status,
     chapterCount  : book._count.chapters,
-    personaCount  : book._count.entityProfiles,
+    personaCount,
     lastAnalyzedAt: resolveLastAnalyzedAt(status, book.updatedAt, book.analysisJobs),
     currentModel,
     lastErrorSummary,
@@ -209,6 +210,54 @@ function mapBook(book: BookListRow): BookLibraryListItem {
       size: book.sourceFileSize
     }
   };
+}
+
+/**
+ * 统计每本书的有效人物数。
+ *
+ * 口径（v7）：PERSON 类型 ∧ 实体未软删 ∧ profile 未软删 ∧ 本书内 mention ≥1。
+ * 语义：一个人物必须是"有证据锚定（≥1 提及）+ 有身份（PERSON）+ 未被归并吸收"的实体；
+ * 0 提及/从属指称/被吸收残留不再计入"人物"列。
+ *
+ * @param bookIds 目标书集
+ * @param prismaClient Prisma 客户端（默认全局实例）
+ * @returns bookId → 有效人物数
+ */
+export async function countEffectivePersonas(
+  bookIds: string[],
+  prismaClient: PrismaClient = prisma
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (bookIds.length === 0) {
+    return result;
+  }
+
+  // 有效提及（本书内、未删、未拒）：persona 的存在证据。
+  const mentions = await prismaClient.mention.findMany({
+    where   : { chapter: { bookId: { in: bookIds } }, deletedAt: null, status: { not: "REJECTED" } },
+    select  : { entityId: true, chapter: { select: { bookId: true } } },
+    distinct: ["entityId", "chapterId"]
+  });
+
+  const entityIds = Array.from(new Set(mentions.map((m) => m.entityId)));
+  if (entityIds.length === 0) {
+    return result;
+  }
+
+  const profiles = await prismaClient.entityProfile.findMany({
+    where: {
+      bookId   : { in: bookIds },
+      deletedAt: null,
+      entityId : { in: entityIds },
+      entity   : { deletedAt: null, entityType: "PERSON" }
+    },
+    select: { entityId: true, bookId: true }
+  });
+
+  for (const p of profiles) {
+    result.set(p.bookId, (result.get(p.bookId) ?? 0) + 1);
+  }
+  return result;
 }
 
 /**
@@ -236,7 +285,11 @@ export function createListBooksService(
       select : BOOK_LIST_SELECT
     });
 
-    return books.map((book) => mapBook(book));
+    // 有效人物统计：每本书 PERSON ∧ 实体未软删 ∧ profile 未软删 ∧ 本书内 mention ≥1。
+    // 不依赖 _count 嵌套（无法表达"本书内 mention"），独立聚合。
+    const personaCountByBook = await countEffectivePersonas(books.map((b) => b.id), prismaClient);
+
+    return books.map((book) => mapBook(book, personaCountByBook.get(book.id) ?? 0));
   }
 
   return { listBooks };

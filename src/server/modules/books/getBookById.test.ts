@@ -46,7 +46,12 @@ describe("getBookById", () => {
         }
       ]
     });
-    const service = createGetBookByIdService({ book: { findFirst } } as never);
+    const service = createGetBookByIdService({
+      book         : { findFirst },
+      // 有效人物口径：1 个有 mention 的 PERSON profile
+      mention      : { findMany: vi.fn().mockResolvedValue([{ entityId: "entity-1", chapter: { bookId: "book-1" } }]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([{ entityId: "entity-1", bookId: "book-1" }]) }
+    } as never);
 
     // Act
     const result = await service.getBookById("book-1");
@@ -86,7 +91,11 @@ describe("getBookById", () => {
     // 防御分支：不存在的书籍 ID 应抛出领域错误，而不是返回空对象，避免前端误判为“合法空态”。
     // Arrange
     const findFirst = vi.fn().mockResolvedValue(null);
-    const service = createGetBookByIdService({ book: { findFirst } } as never);
+    const service = createGetBookByIdService({
+      book         : { findFirst },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
 
     // Act + Assert
     await expect(service.getBookById("missing-book")).rejects.toBeInstanceOf(BookNotFoundError);

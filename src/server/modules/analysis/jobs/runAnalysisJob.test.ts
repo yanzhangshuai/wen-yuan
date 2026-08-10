@@ -618,8 +618,11 @@ describe("runAnalysisJob", () => {
           jobId               : JOB_ID
         })
       }));
-      // 全部实体由 ensureEntityByName 兜底创建（无登记表命中）
+      // 实体从事实两端反推（v7）：仅 facts 参与者创建实体；"新人物"未参与任何事实 → 不再落库
       expect(mockPrisma.entity.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ name: "范进" })
+      }));
+      expect(mockPrisma.entity.create).not.toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ name: "新人物" })
       }));
       // 片内别名注册到临时实体
@@ -705,10 +708,10 @@ describe("runAnalysisJob", () => {
   });
 
   describe("重试", () => {
-    // 用例语义：单片提取失败 2 次后成功，attempt 递增且不标记章节 FAILED。
-    it("单片提取失败 2 次后成功 → attempt 递增且不标记章节 FAILED", async () => {
-      // Arrange: 单片（3 章），前 2 次抛错第 3 次成功
-      configureHappyPath(mockPrisma, { chapters: makeChapters(3) });
+    // 用例语义：单章提取失败 2 次后成功，attempt 递增且不标记章节 FAILED。
+    it("单章提取失败 2 次后成功 → attempt 递增且不标记章节 FAILED", async () => {
+      // Arrange: 单片（1 章，v7 逐章），前 2 次抛错第 3 次成功
+      configureHappyPath(mockPrisma, { chapters: makeChapters(1) });
       let call = 0;
       hoisted.callIdentityLlmMock.mockImplementation(async () => {
         call += 1;
@@ -733,10 +736,10 @@ describe("runAnalysisJob", () => {
       }));
     });
 
-    // 用例语义：单片提取耗尽 3 次，标记失败章节 + 任务 FAILED。
-    it("单片提取耗尽 3 次 → 标记章节 FAILED + 任务 FAILED", async () => {
+    // 用例语义：单章提取耗尽 3 次，标记失败章节 + 任务 FAILED。
+    it("单章提取耗尽 3 次 → 标记章节 FAILED + 任务 FAILED", async () => {
       // Arrange: 单片，所有尝试均抛错
-      configureHappyPath(mockPrisma, { chapters: makeChapters(3) });
+      configureHappyPath(mockPrisma, { chapters: makeChapters(1) });
       hoisted.callIdentityLlmMock.mockRejectedValue(new Error("llm down"));
 
       // Act
@@ -755,9 +758,9 @@ describe("runAnalysisJob", () => {
       }));
     });
 
-    // 用例语义：部分分片失败时，已成功分片仍落库，任务终态 FAILED。
-    it("部分分片失败时已成功分片仍落库，任务终态 FAILED", async () => {
-      // Arrange: 两片（7 章），第二片（第7回正文）LLM 稳定失败，第一片成功。
+    // 用例语义：部分单章失败时，已成功章节仍落库，任务终态 FAILED。
+    it("部分单章失败时已成功章节仍落库，任务终态 FAILED", async () => {
+      // Arrange: 7 章（7 片），第7回（第7片）LLM 稳定失败，其余成功。
       // 注意：仅按"章节正文"段判别（全书摘要结尾含第7回内容，不能用整段 user）
       configureHappyPath(mockPrisma, { chapters: makeChapters(7) });
       hoisted.callIdentityLlmMock.mockImplementation(async (input: { user: string }) => {
@@ -771,7 +774,7 @@ describe("runAnalysisJob", () => {
       // Act
       await runner.runAnalysisJobById(JOB_ID);
 
-      // Assert: 第一片成功落库（fact.create 被调用），第二片重试耗尽 → 任务 FAILED
+      // Assert: 第1片成功落库（fact.create 被调用），第7片重试耗尽 → 任务 FAILED
       expect(mockPrisma.fact.create).toHaveBeenCalled();
       expect(mockPrisma.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({
         data: { parseStatus: "FAILED" }
@@ -781,9 +784,9 @@ describe("runAnalysisJob", () => {
       }));
     });
 
-    // 用例语义：分片提取并发上限 3（Promise.all 分批，每批 ≤3）。
-    it("分片提取并发数不超过 3", async () => {
-      // Arrange: 20 章 → 4 片（6/6/6/2），两批
+    // 用例语义：提取并发上限 3（Promise.all 分批，每批 ≤3）。
+    it("提取并发数不超过 3（逐章 20 片分批）", async () => {
+      // Arrange: 20 章 → 20 片（v7 逐章），按批 3 并发
       configureHappyPath(mockPrisma, { chapters: makeChapters(20) });
       let active = 0;
       let maxActive = 0;
@@ -798,8 +801,8 @@ describe("runAnalysisJob", () => {
       // Act
       await runner.runAnalysisJobById(JOB_ID);
 
-      // Assert: 4 片全部提取，峰值并发 ≤3 且发生过并发（>1）
-      expect(hoisted.callIdentityLlmMock).toHaveBeenCalledTimes(4);
+      // Assert: 20 片全部提取，峰值并发 ≤3 且发生过并发（>1）
+      expect(hoisted.callIdentityLlmMock).toHaveBeenCalledTimes(20);
       expect(maxActive).toBeLessThanOrEqual(3);
       expect(maxActive).toBeGreaterThan(1);
     });

@@ -32,7 +32,7 @@ export interface ExtractedBioFact {
   evidence?       : string;
 }
 
-/** 一片（5-8 章）的提取输出。 */
+/** 单章提取输出（v7：逐章提取，chapterNo 由片章号决定）。 */
 export interface ExtractionSlice {
   book      : string;
   chapterNos: number[];

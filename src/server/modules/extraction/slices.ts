@@ -1,7 +1,7 @@
 /**
  * 分片策略（slices.ts）
  *
- * - 每片 5-8 章（按章节数分片）
+ * - 每片 1 章（v7 逐章提取：章节归属天然正确，无需 chapterNo 定位）
  * - 超长单章（>maxChapterChars）拆段，段输出合并
  * - 片边界取章节边界
  */
@@ -15,18 +15,18 @@ export interface ChapterRef {
 export interface Slice {
   bookId    : string;
   chapters  : ChapterRef[];
-  /** 本片起始/结束章号（用于进度 + 检索） */
+  /** 本片章号（v7 逐章后为单章） */
   chapterNos: number[];
 }
 
-export const DEFAULT_SLICE_SIZE = 6; // 每片章数
+export const DEFAULT_SLICE_SIZE = 1; // 每片章数（v7：逐章提取）
 export const DEFAULT_MAX_CHAPTER_CHARS = 12_000; // 超长章阈值
 
 /**
- * 将章节列表切成 5-8 章/片。
+ * 将章节列表切成单章片（v7 逐章提取）。
  * @param chapters 已按 no 排序的章节
  * @param bookId 所属书籍 ID
- * @param sliceSize 每片章数（默认 6）
+ * @param sliceSize 每片章数（默认 1）
  */
 export function buildSlices(chapters: ChapterRef[], bookId: string, sliceSize = DEFAULT_SLICE_SIZE): Slice[] {
   if (chapters.length === 0) return [];

@@ -34,7 +34,7 @@ describe("runProjection", () => {
   it("空 groups 时直接返回（不写登记表）", async () => {
     const result = await runProjection({ bookId: "book-1", jobId: "job-1", agentRunId: "run-1", groups: [] });
 
-    expect(result).toEqual({ retained: 0, absorbed: 0, repointed: 0 });
+    expect(result).toEqual({ retained: 0, absorbed: 0, repointed: 0, dropped: 0 });
     expect(mockWriteRegistry).not.toHaveBeenCalled();
   });
 
@@ -67,6 +67,27 @@ describe("runProjection", () => {
     expect(mockPrisma.alias.updateMany).toHaveBeenCalledWith({ where: { entityId: "prov-1", bookId: "book-1" }, data: { entityId: "ret-1" } });
     expect(mockPrisma.entity.update).toHaveBeenCalledWith({ where: { id: "prov-1" }, data: { deletedAt: expect.any(Date) } });
     // 关系物化表交由紧随的 Pass3 重建，本 Pass 不重复刷新
-    expect(result).toEqual({ retained: 1, absorbed: 1, repointed: 6 });
+    expect(result).toEqual({ retained: 1, absorbed: 1, repointed: 6, dropped: 0 });
+  });
+
+  it("dropped 一次性称呼实体：软删实体 + mentions/facts（不再仅降级置信）", async () => {
+    // 仅 dropped（无 groups）
+    mockPrisma.entity.findFirst.mockResolvedValue({ id: "drop-1" });
+    mockPrisma.mention.updateMany.mockResolvedValue({ count: 2 });
+    mockPrisma.fact.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await runProjection({
+      bookId    : "book-1",
+      jobId     : "job-1",
+      agentRunId: "run-1",
+      groups    : [],
+      dropped   : ["轿夫", "季苇萧的新娘"]
+    });
+
+    expect(mockWriteRegistry).not.toHaveBeenCalled();
+    expect(mockPrisma.mention.updateMany).toHaveBeenCalledWith({ where: { entityId: "drop-1" }, data: { deletedAt: expect.any(Date) } });
+    expect(mockPrisma.fact.updateMany).toHaveBeenCalledWith({ where: { sourceEntityId: "drop-1" }, data: { deletedAt: expect.any(Date) } });
+    expect(mockPrisma.entity.update).toHaveBeenCalledWith({ where: { id: "drop-1" }, data: { deletedAt: expect.any(Date) } });
+    expect(result).toEqual({ retained: 0, absorbed: 0, repointed: 6, dropped: 2 });
   });
 });

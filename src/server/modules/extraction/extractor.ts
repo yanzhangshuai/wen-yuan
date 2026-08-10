@@ -1,13 +1,13 @@
 /**
- * Pass1 分片单轮提取（extractor.ts）
+ * Pass1 逐章单轮提取（extractor.ts）
  *
- * 每片一次 LLM 调用（无工具循环，上下文一次给全）：
- *   输入 = 片正文 + 身份登记表 + 全书摘要 + 相关 skill
+ * 每章一次 LLM 调用（无工具循环，上下文一次给全）：
+ *   输入 = 本章正文 + 全书摘要 + 相关 skill
  *   输出 = ExtractionSlice（JSON，schema 动态生成约束）
- *   落库 = guardrails → facts(DRAFT) + mentions + aliases + 审计
+ *   落库 = 实体验收闸 → facts(DRAFT) + mentions + aliases + 审计
  *
  * 复用：identity/llm.ts 调用模式、getRegistry 登记表、guardrails 护栏。
- * 架构依据：docs/architecture/13-agent-architecture-v5.md §2.2/Pass1
+ * 架构依据：docs/architecture/15-agent-architecture-v7.md §3/Pass1
  */
 import { callIdentityLlm } from "@/server/modules/identity/llm.ts";
 import { EXTRACTION_SYSTEM_PROMPT } from "./prompts.ts";
@@ -19,7 +19,7 @@ export interface ExtractSliceInput {
   jobId                : string;
   /** 片正文（章节拼接） */
   sliceText            : string;
-  /** 片覆盖章号（含章节标题用于检索） */
+  /** 片覆盖章号（v7 逐章后为单章号） */
   chapterNos           : number[];
   bookSummary          : string;
   skills               : string[];
@@ -35,6 +35,8 @@ export interface ExtractSliceResult {
   slice      : ExtractionSlice;
   facts      : PersistableFact[];
   dropRecords: ReturnType<typeof runGuardrails>["dropRecords"];
+  /** 通过实体验收闸的实体（= 保留 facts 的参与者），供落库反推。 */
+  entities   : ReturnType<typeof runGuardrails>["entities"];
 }
 
 /** 组装提取 prompt（user 含正文 + 摘要 + skill + schema 枚举；v6 提取无身份登记表注入）。 */
@@ -81,12 +83,12 @@ export async function extractSlice(input: ExtractSliceInput): Promise<ExtractSli
     chapterNos: input.chapterNos
   };
 
-  const { facts, dropRecords } = runGuardrails(
+  const { facts, dropRecords, entities } = runGuardrails(
     slice,
     input.sliceText,
     new Set(input.relationshipTypeCodes),
     input.deicticJunk ? new Set(input.deicticJunk) : undefined
   );
 
-  return { slice, facts, dropRecords };
+  return { slice, facts, dropRecords, entities };
 }

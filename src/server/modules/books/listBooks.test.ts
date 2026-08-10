@@ -55,7 +55,11 @@ describe("listBooks", () => {
   // 用例语义：覆盖一个明确的业务分支，验证输入校验、状态码与上下游调用契约。
   it("returns books in library view shape with source file snapshot", async () => {
     const findMany = vi.fn().mockResolvedValue([createBookRow()]);
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
 
     const result = await service.listBooks();
 
@@ -85,9 +89,7 @@ describe("listBooks", () => {
         _count: {
           select: {
             chapters      : true,
-            entityProfiles: {
-              where: { deletedAt: null }
-            }
+            entityProfiles: true
           }
         }
       })
@@ -101,7 +103,7 @@ describe("listBooks", () => {
         coverUrl        : "/api/assets/books/book-1/cover/cover.png",
         status          : "COMPLETED",
         chapterCount    : 2,
-        personaCount    : 3,
+        personaCount    : 0,
         lastAnalyzedAt  : "2026-03-24T10:08:00.000Z",
         currentModel    : "DeepSeek V3",
         lastErrorSummary: null,
@@ -139,7 +141,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.currentModel).toBe("Gemini Flash");
@@ -167,7 +173,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.lastErrorSummary).toBe("book error");
@@ -195,7 +205,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.lastErrorSummary).toBe("analysis error");
@@ -222,7 +236,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.lastAnalyzedAt).toBe("2026-03-24T10:06:00.000Z");
@@ -237,7 +255,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.lastAnalyzedAt).toBeNull();
@@ -253,7 +275,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.lastAnalyzedAt).toBe("2026-03-24T11:00:00.000Z");
@@ -268,7 +294,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.status).toBe("PENDING");
@@ -287,7 +317,11 @@ describe("listBooks", () => {
       })
     ]);
 
-    const service = createListBooksService({ book: { findMany } } as never);
+    const service = createListBooksService({
+      book         : { findMany },
+      mention      : { findMany: vi.fn().mockResolvedValue([]) },
+      entityProfile: { findMany: vi.fn().mockResolvedValue([]) }
+    } as never);
     const [item] = await service.listBooks();
 
     expect(item.sourceFile).toEqual({
