@@ -62,7 +62,6 @@ export interface SkillCatalogItem {
   slug       : string;
   name       : string;
   description: string | null;
-  category   : string;
 }
 
 /** 书上下文（元数据 + 章节抽样文本），注入选择器 prompt。 */
@@ -107,21 +106,17 @@ export interface SkillsSnapshot {
   selectedSlugs : string[];
   /** 实际装载的全部 slug（scope=GLOBAL ∪ 选中）。 */
   allLoadedSlugs: string[];
-  /** 各装载 skill → 激活版本号（versionMap）。 */
-  versionMap    : Record<string, number>;
   inferredType  : string | null;
   reasons       : string;
   selectedAt    : string;
 }
 
-/** 内部装载候选（含 scope 与激活版全文，供装载集合与契约并集）。 */
+/** 内部装载候选（含 scope 与当前全文，供装载集合与契约并集）。 */
 interface CatalogSkill {
   slug       : string;
   name       : string;
   description: string | null;
-  category   : string;
   scope      : string;
-  versionNo  : number;
   content    : string;
   metadata   : SkillMetadata;
 }
@@ -224,7 +219,7 @@ export function buildSkillSelectionUserPrompt(context: BookContext, catalog: Ski
   }
   lines.push("", "【正文样本】", context.sample, "", "【技能目录】");
   for (const item of catalog) {
-    lines.push(`- ${item.slug}｜${item.name}｜${item.description ?? ""}｜${item.category}`);
+    lines.push(`- ${item.slug}｜${item.name}｜${item.description ?? ""}`);
   }
   return lines.join("\n");
 }
@@ -274,21 +269,9 @@ export function parseSkillsSnapshot(snapshot: unknown): SkillsSnapshot | null {
   return {
     selectedSlugs : stringArray(record.selectedSlugs),
     allLoadedSlugs: stringArray(record.allLoadedSlugs),
-    versionMap    : (() => {
-      if (!record.versionMap || typeof record.versionMap !== "object" || Array.isArray(record.versionMap)) {
-        return {};
-      }
-      const map: Record<string, number> = {};
-      for (const [slug, versionNo] of Object.entries(record.versionMap)) {
-        if (typeof versionNo === "number") {
-          map[slug] = versionNo;
-        }
-      }
-      return map;
-    })(),
-    inferredType: typeof record.inferredType === "string" ? record.inferredType : null,
-    reasons     : typeof record.reasons === "string" ? record.reasons : "",
-    selectedAt  : typeof record.selectedAt === "string" ? record.selectedAt : ""
+    inferredType  : typeof record.inferredType === "string" ? record.inferredType : null,
+    reasons       : typeof record.reasons === "string" ? record.reasons : "",
+    selectedAt    : typeof record.selectedAt === "string" ? record.selectedAt : ""
   };
 }
 
@@ -303,30 +286,18 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
   const prismaClient = deps.prismaClient ?? prisma;
   const callLlm = deps.callLlm ?? callSkillSelectorLlm;
 
-  /** 装载 active+enabled 技能的激活版全文（含 scope 与元数据），供目录与装载集合共用。 */
+  /** 装载 enabled 技能的当前全文（含 scope 与元数据），供目录与装载集合共用。 */
   async function loadCatalog(): Promise<CatalogSkill[]> {
     const skills = await prismaClient.skill.findMany({
-      where  : { status: SkillStatus.ACTIVE, isEnabled: true, deletedAt: null },
-      include: {
-        versions: {
-          where  : { isActive: true },
-          select : { versionNo: true, content: true },
-          orderBy: { versionNo: "desc" }
-        }
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
+      where  : { status: SkillStatus.ENABLED, deletedAt: null },
+      orderBy: [{ createdAt: "asc" }]
     });
 
     const catalog: CatalogSkill[] = [];
     for (const skill of skills) {
-      const version = skill.versions[0];
-      if (!version) {
-        continue;
-      }
-
       let metadata: SkillMetadata;
       try {
-        metadata = parseSkillMetadata(version.content);
+        metadata = parseSkillMetadata(skill.content);
       } catch (error) {
         console.warn(`[SkillSelector] frontmatter 解析失败，目录跳过 ${skill.slug}:`, error instanceof Error ? error.message : String(error));
         continue;
@@ -336,10 +307,8 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
         slug       : skill.slug,
         name       : metadata.name ?? skill.name,
         description: metadata.description ?? skill.description,
-        category   : skill.category,
         scope      : skill.scope,
-        versionNo  : version.versionNo,
-        content    : version.content,
+        content    : skill.content,
         metadata
       });
     }
@@ -385,8 +354,7 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
     const user = buildSkillSelectionUserPrompt(context, catalog.map((skill) => ({
       slug       : skill.slug,
       name       : skill.name,
-      description: skill.description,
-      category   : skill.category
+      description: skill.description
     })));
 
     const raw = await callLlm({
@@ -414,7 +382,6 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
       slug       : skill.slug,
       name       : skill.name,
       description: skill.description,
-      versionNo  : skill.versionNo,
       metadata   : skill.metadata,
       markdown   : skill.content
     }));
@@ -441,7 +408,6 @@ export function createSkillSelector(deps: SkillSelectorDeps = {}) {
     const snapshot: SkillsSnapshot = {
       selectedSlugs : result.selectedSlugs,
       allLoadedSlugs: result.allLoadedSlugs,
-      versionMap    : Object.fromEntries(result.selectedSkills.map((skill) => [skill.slug, skill.versionNo])),
       inferredType  : result.inferredType,
       reasons       : result.reasons,
       selectedAt    : new Date().toISOString()

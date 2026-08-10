@@ -4,65 +4,44 @@
  * ============================================================================
  * 文件定位：`src/app/admin/skills/page.tsx`
  * ----------------------------------------------------------------------------
- * 技能包管理列表页（路由 `/admin/skills`）。
+ * 技能管理页（路由 `/admin/skills`）：主从布局。
+ * 左侧为技能名称菜单栏（可搜索过滤），右侧为当前技能详情面板
+ * （可编辑 MD 文档 / 基本信息 / AI 生成）。
  *
- * skill 独立启停由管理端维护。列表展示
- * slug/name/description/category/scope + isEnabled 开关，点击行进入详情页
- * 只读查看关系码/虚指契约。
+ * 选中态通过 URL 查询参数 `?id=` 同步，支持深链与刷新恢复。
  * ============================================================================
  */
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, RefreshCw, Sparkles } from "lucide-react";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { Eye, Loader2 } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
-import {
   PageContainer,
-  PageHeader,
-  PageSection
+  PageHeader
 } from "@/components/layout/page-header";
-import { useToast } from "@/hooks/use-toast";
-import {
-  fetchSkills,
-  updateSkillEnabled,
-  type AdminSkillListItem
-} from "@/lib/services/skills";
+import { fetchSkills, type AdminSkillListItem } from "@/lib/services/skills";
 
-/** 分类徽章文案映射（覆盖常见枚举；未知值原样展示）。 */
-const CATEGORY_LABELS: Record<string, string> = {
-  CHARACTER   : "人物",
-  RELATIONSHIP: "关系",
-  PLOT        : "情节",
-  GENRE       : "题材",
-  HYBRID      : "综合",
-  OTHER       : "其他"
-};
+import { AiGenerateDialog } from "./_components/ai-generate-dialog";
+import { SkillDetailPanel } from "./_components/skill-detail-panel";
+import { SkillsSidebar } from "./_components/skills-sidebar";
 
-function categoryLabel(category: string): string {
-  return CATEGORY_LABELS[category] ?? category;
+/** 从当前 URL 读取初始选中的技能 id。 */
+function readInitialSkillId(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return new URLSearchParams(window.location.search).get("id");
 }
 
-/**
- * 技能包管理列表页组件。
- */
 export default function AdminSkillsPage() {
-  const { toast } = useToast();
-  const [skills, setSkills] = useState<AdminSkillListItem[] | null>(null);
+  const router    = useRouter();
+  const [skills,  setSkills]  = useState<AdminSkillListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  /** 当前正在切换启停的 skill id（防重复提交）。 */
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search,  setSearch]  = useState("");
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,117 +49,123 @@ export default function AdminSkillsPage() {
       const data = await fetchSkills();
       setSkills(data);
       setError(null);
+      return data;
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "技能列表加载失败");
+      return null;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  /** 选中技能并同步 URL。 */
+  const selectSkill = useCallback((id: string, updateUrl = true) => {
+    setSelectedId(id);
+    if (updateUrl) {
+      router.replace(`/admin/skills?id=${id}`, { scroll: false });
+    }
+  }, [router]);
 
-  async function handleToggle(item: AdminSkillListItem, nextEnabled: boolean) {
-    setTogglingId(item.id);
-    // 乐观更新：先翻转 UI，请求失败再回滚（切换期间 Switch 由 togglingId 禁用，回滚目标唯一）。
-    setSkills((current) => current
-      ? current.map((skill) => skill.id === item.id ? { ...skill, isEnabled: nextEnabled } : skill)
-      : current);
-    try {
-      await updateSkillEnabled(item.id, nextEnabled);
-      toast({ title: nextEnabled ? "技能已启用" : "技能已停用", description: `「${item.name}」${nextEnabled ? "可被 AI 选择与装载" : "全局不可用（目录/选择/装载均跳过）"}` });
-    } catch (toggleError) {
-      setSkills((current) => current
-        ? current.map((skill) => skill.id === item.id ? { ...skill, isEnabled: !nextEnabled } : skill)
-        : current);
-      toast({ title: "切换失败", description: toggleError instanceof Error ? toggleError.message : "请稍后重试", variant: "destructive" });
-    } finally {
-      setTogglingId(null);
+  // 首次挂载：加载列表并解析初始选中（URL id 优先，否则第一项）。
+  useEffect(() => {
+    const initialId = readInitialSkillId();
+    void load().then((data) => {
+      if (data && data.length > 0) {
+        const valid = initialId && data.some((skill) => skill.id === initialId);
+        selectSkill(valid ? initialId : data[0].id, valid ? true : false);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filteredSkills = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) {
+      return skills;
+    }
+    return skills.filter((skill) =>
+      skill.name.toLowerCase().includes(keyword)
+      || (skill.description ?? "").toLowerCase().includes(keyword)
+      || skill.slug.toLowerCase().includes(keyword)
+    );
+  }, [skills, search]);
+
+  async function handleCreated(skillId: string) {
+    const data = await load();
+    if (data) {
+      selectSkill(skillId);
     }
   }
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth className="flex h-[calc(100dvh-3.5rem)] flex-col">
       <PageHeader
         title="技能管理"
-        description="维护 skill 目录：独立启停开关；关系码与虚指契约在详情页只读查看。"
+        description="维护 skill 集合：左侧选择技能，右侧编辑 MD 文档 / 基本信息；支持 AI 生成新技能。"
         breadcrumbs={[
           { label: "管理后台", href: "/admin" },
           { label: "技能" }
         ]}
-      />
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => { void load(); }}
+          disabled={loading}
+        >
+          <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+          刷新
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setGenerateOpen(true)}
+        >
+          <Sparkles className="h-4 w-4" />
+          AI 生成
+        </Button>
+      </PageHeader>
 
-      <PageSection>
-        {loading ? (
-          <div className="flex items-center gap-2 py-12 text-center justify-center text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            加载技能列表...
+      {error ? (
+        <div className="rounded-md border border-destructive/40 p-6 text-center text-sm text-destructive">
+          {error}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
+          <SkillsSidebar
+            skills={filteredSkills}
+            selectedId={selectedId}
+            loading={loading}
+            search={search}
+            onSearchChange={setSearch}
+            onSelect={selectSkill}
+          />
+          <div className="min-w-0 flex-1">
+            {selectedId ? (
+              // key 保证切换技能时详情面板重挂载（编辑态/变更说明/Tab 不残留到下一个技能）。
+              <SkillDetailPanel key={selectedId} skillId={selectedId} onChanged={() => void load()} />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                {loading ? (
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    加载技能列表...
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground text-sm">暂无技能，点击右上角「AI 生成」创建</span>
+                )}
+              </div>
+            )}
           </div>
-        ) : error ? (
-          <div className="py-12 text-center text-destructive">{error}</div>
-        ) : skills && skills.length > 0 ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-44">名称</TableHead>
-                  <TableHead className="w-32">slug</TableHead>
-                  <TableHead>描述</TableHead>
-                  <TableHead className="w-24">分类</TableHead>
-                  <TableHead className="w-20">范围</TableHead>
-                  <TableHead className="w-20">版本</TableHead>
-                  <TableHead className="w-24">状态</TableHead>
-                  <TableHead className="w-24">启用</TableHead>
-                  <TableHead className="w-16"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {skills.map((skill) => (
-                  <TableRow key={skill.id}>
-                    <TableCell className="font-medium">{skill.name}</TableCell>
-                    <TableCell className="font-mono text-xs">{skill.slug}</TableCell>
-                    <TableCell className="max-w-80 truncate text-muted-foreground">
-                      {skill.description ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{categoryLabel(skill.category)}</Badge>
-                    </TableCell>
-                    <TableCell>{skill.scope}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {skill.versionNo ? `v${skill.versionNo}` : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={skill.status === "ACTIVE" ? "default" : "outline"}>
-                        {skill.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Switch
-                        aria-label={`${skill.isEnabled ? "停用" : "启用"} ${skill.name}`}
-                        checked={skill.isEnabled}
-                        disabled={togglingId === skill.id}
-                        onCheckedChange={(checked) => { void handleToggle(skill, checked); }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button asChild variant="ghost" size="sm" aria-label={`查看 ${skill.name} 详情`}>
-                        <Link href={`/admin/skills/${skill.id}`}>
-                          <Eye className="h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed p-12 text-center text-sm text-muted-foreground">
-            暂无技能包，请先通过 seed（scripts/seed-skill-baselines.ts）导入基线。
-          </div>
-        )}
-      </PageSection>
+        </div>
+      )}
+
+      <AiGenerateDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        onCreated={(skillId) => { void handleCreated(skillId); }}
+      />
     </PageContainer>
   );
 }

@@ -555,35 +555,11 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
 }
 
-export type EnumSkillCategoryFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillCategory | Prisma.EnumSkillCategoryFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillCategoryFilter<$PrismaModel> | $Enums.SkillCategory
-}
-
 export type EnumSkillStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.SkillStatus | Prisma.EnumSkillStatusFieldRefInput<$PrismaModel>
   in?: $Enums.SkillStatus[] | Prisma.ListEnumSkillStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.SkillStatus[] | Prisma.ListEnumSkillStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumSkillStatusFilter<$PrismaModel> | $Enums.SkillStatus
-}
-
-export type EnumSkillSourceFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillSource | Prisma.EnumSkillSourceFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillSourceFilter<$PrismaModel> | $Enums.SkillSource
-}
-
-export type EnumSkillCategoryWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillCategory | Prisma.EnumSkillCategoryFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillCategoryWithAggregatesFilter<$PrismaModel> | $Enums.SkillCategory
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumSkillCategoryFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumSkillCategoryFilter<$PrismaModel>
 }
 
 export type EnumSkillStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -594,16 +570,6 @@ export type EnumSkillStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumSkillStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumSkillStatusFilter<$PrismaModel>
-}
-
-export type EnumSkillSourceWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillSource | Prisma.EnumSkillSourceFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillSourceWithAggregatesFilter<$PrismaModel> | $Enums.SkillSource
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumSkillSourceFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumSkillSourceFilter<$PrismaModel>
 }
 
 export type EnumAnalysisJobStatusFilter<$PrismaModel = never> = {
@@ -1125,35 +1091,11 @@ export type NestedJsonFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
-export type NestedEnumSkillCategoryFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillCategory | Prisma.EnumSkillCategoryFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillCategoryFilter<$PrismaModel> | $Enums.SkillCategory
-}
-
 export type NestedEnumSkillStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.SkillStatus | Prisma.EnumSkillStatusFieldRefInput<$PrismaModel>
   in?: $Enums.SkillStatus[] | Prisma.ListEnumSkillStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.SkillStatus[] | Prisma.ListEnumSkillStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumSkillStatusFilter<$PrismaModel> | $Enums.SkillStatus
-}
-
-export type NestedEnumSkillSourceFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillSource | Prisma.EnumSkillSourceFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillSourceFilter<$PrismaModel> | $Enums.SkillSource
-}
-
-export type NestedEnumSkillCategoryWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillCategory | Prisma.EnumSkillCategoryFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillCategory[] | Prisma.ListEnumSkillCategoryFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillCategoryWithAggregatesFilter<$PrismaModel> | $Enums.SkillCategory
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumSkillCategoryFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumSkillCategoryFilter<$PrismaModel>
 }
 
 export type NestedEnumSkillStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -1164,16 +1106,6 @@ export type NestedEnumSkillStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumSkillStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumSkillStatusFilter<$PrismaModel>
-}
-
-export type NestedEnumSkillSourceWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.SkillSource | Prisma.EnumSkillSourceFieldRefInput<$PrismaModel>
-  in?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  notIn?: $Enums.SkillSource[] | Prisma.ListEnumSkillSourceFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumSkillSourceWithAggregatesFilter<$PrismaModel> | $Enums.SkillSource
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumSkillSourceFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumSkillSourceFilter<$PrismaModel>
 }
 
 export type NestedEnumAnalysisJobStatusFilter<$PrismaModel = never> = {

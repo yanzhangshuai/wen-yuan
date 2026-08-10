@@ -407,7 +407,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     bookSummary          : string;
     skills               : string[];
     relationshipTypeCodes: string[];
-    deicticJunk          : string[];
     entityIdByName       : Map<string, string>;
   }): Promise<ExtractSliceResult> {
     const { extractSlice } = await import("@/server/modules/extraction/extractor");
@@ -424,7 +423,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
           bookSummary          : input.bookSummary,
           skills               : input.skills,
           relationshipTypeCodes: input.relationshipTypeCodes,
-          deicticJunk          : input.deicticJunk,
           entityIdByName       : input.entityIdByName
         });
       } catch (error) {
@@ -628,7 +626,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     bookSummary          : string;
     skills               : string[];
     relationshipTypeCodes: string[];
-    deicticJunk          : string[];
     entityIdByName       : Map<string, string>;
   }): Promise<void> {
     const slices = buildSlices(input.chapters, input.bookId);
@@ -652,8 +649,7 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
             bookSummary          : input.bookSummary,
             skills               : input.skills,
             relationshipTypeCodes: input.relationshipTypeCodes,
-            deicticJunk          : input.deicticJunk,
-            entityIdByName       : input.entityIdByName
+              entityIdByName       : input.entityIdByName
           });
           extracted.push(result);
         } catch (error) {
@@ -1018,7 +1014,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
     await skillSelector.selectSkillsForJob({ bookId: context.bookId, jobId: context.jobId });
     const resolved = await skillLoader.resolveSkillsForJob(context.jobId);
     const skillDocs = resolved.skills.map((skill) => skill.markdown);
-    const deicticJunk = resolved.deicticJunk;
 
     // 关系码契约：任务快照（防中途改配置导致片间漂移）。
     const job = await prismaClient.analysisJob.findUnique({
@@ -1055,7 +1050,6 @@ export function createAnalysisJobRunner(prismaClient: PrismaClient = prisma) {
         bookSummary,
         skills  : skillDocs,
         relationshipTypeCodes,
-        deicticJunk,
         entityIdByName
       });
     });

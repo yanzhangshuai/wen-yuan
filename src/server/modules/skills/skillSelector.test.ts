@@ -13,7 +13,7 @@ import type { SkillSelectorCallLlmInput } from "@/server/modules/skills/skillSel
 
 /**
  * AI 动态 skill 选择器单测：
- * - 目录读取：仅 ACTIVE+isEnabled；name/description 取 frontmatter 覆盖；
+ * - 目录读取：仅 ENABLED；name/description 取 frontmatter 覆盖；
  * - 书上下文：章节全文/抽样；
  * - zod 校验：非法 slug 丢弃并告警；装载集合 = GLOBAL ∪ 选中；
  * - relationshipCodes 并集（去重按 code，先到先得）；
@@ -21,12 +21,7 @@ import type { SkillSelectorCallLlmInput } from "@/server/modules/skills/skillSel
  * - selectSkillsForJob 快照写库。
  */
 
-/** 构造激活版行（skill.findMany 的 versions 选择为 versionNo/content）。 */
-function makeVersion(versionNo = 1, content = "") {
-  return { versionNo, content };
-}
-
-/** 构造 skill 行（含 scope/category/versions）。 */
+/** 构造 skill 行（含 scope/content）。 */
 function makeSkillRow(overrides: Partial<Record<string, unknown>>) {
   const slug = typeof overrides.slug === "string" ? overrides.slug : "skill-x";
   return {
@@ -34,13 +29,10 @@ function makeSkillRow(overrides: Partial<Record<string, unknown>>) {
     slug,
     name       : overrides.name ?? "技能",
     description: overrides.description ?? null,
-    category   : overrides.category ?? "HYBRID",
     scope      : overrides.scope ?? "GLOBAL",
-    status     : overrides.status ?? "ACTIVE",
-    isEnabled  : overrides.isEnabled ?? true,
-    sortOrder  : overrides.sortOrder ?? 0,
+    status     : overrides.status ?? "ENABLED",
     createdAt  : new Date("2026-08-06T00:00:00Z"),
-    versions   : overrides.versions ?? []
+    content    : overrides.content ?? ""
   };
 }
 
@@ -112,11 +104,11 @@ describe("buildSkillSelectionUserPrompt", () => {
   it("包含书籍信息与目录清单", () => {
     const prompt = buildSkillSelectionUserPrompt(
       { title: "儒林外史", author: "吴敬梓", dynasty: "清", description: "讽刺小说", sample: "正文样本" },
-      [{ slug: "keju", name: "科举", description: "科举知识", category: "TASK_INSTRUCTION" }]
+      [{ slug: "keju", name: "科举", description: "科举知识" }]
     );
     expect(prompt).toContain("书名：儒林外史");
     expect(prompt).toContain("正文样本");
-    expect(prompt).toContain("keju｜科举｜科举知识｜TASK_INSTRUCTION");
+    expect(prompt).toContain("keju｜科举｜科举知识");
   });
 });
 
@@ -125,14 +117,12 @@ describe("parseSkillsSnapshot", () => {
     const parsed = parseSkillsSnapshot({
       selectedSlugs : ["keju"],
       allLoadedSlugs: ["global", "keju"],
-      versionMap    : { global: 1, keju: 2 },
       inferredType  : "classical-novel",
       reasons       : "reason",
       selectedAt    : "2026-08-07T00:00:00Z"
     });
     expect(parsed).not.toBeNull();
     expect(parsed?.allLoadedSlugs).toEqual(["global", "keju"]);
-    expect(parsed?.versionMap.keju).toBe(2);
     expect(parsed?.inferredType).toBe("classical-novel");
   });
 
@@ -144,11 +134,9 @@ describe("parseSkillsSnapshot", () => {
   it("防御性过滤脏数据", () => {
     const parsed = parseSkillsSnapshot({
       allLoadedSlugs: ["keju", 123],
-      versionMap    : { keju: "bad", other: 3 },
       selectedSlugs : "not-array"
     });
     expect(parsed?.allLoadedSlugs).toEqual(["keju"]);
-    expect(parsed?.versionMap).toEqual({ other: 3 });
     expect(parsed?.selectedSlugs).toEqual([]);
   });
 });
@@ -186,14 +174,14 @@ describe("createSkillSelector", () => {
     });
   }
 
-  it("目录仅含 active+enabled 技能，name/description 取 frontmatter 覆盖", async () => {
+  it("目录仅含 enabled 技能，name/description 取 frontmatter 覆盖", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
       makeSkillRow({
         slug       : "keju",
         name       : "DB名",
         description: "DB描述",
         scope      : "BOOK_TYPE",
-        versions   : [makeVersion(2, mdWithOverrides("科举", "科举功名知识"))]
+        content    : mdWithOverrides("科举", "科举功名知识")
       })
     ]);
 
@@ -202,18 +190,18 @@ describe("createSkillSelector", () => {
 
     expect(prismaMock.skill.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ status: "ACTIVE", isEnabled: true, deletedAt: null })
+        where: expect.objectContaining({ status: "ENABLED", deletedAt: null })
       })
     );
     // 目录清单携带 frontmatter name/description 覆盖值
     const user = callLlmMock.mock.calls[0][0].user as string;
-    expect(user).toContain("keju｜科举｜科举功名知识｜HYBRID");
+    expect(user).toContain("keju｜科举｜科举功名知识");
     expect(user).not.toContain("DB名");
   });
 
   it("书超长时正文抽样首/中/末", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "keju", versions: [makeVersion(1, mdWithOverrides("科举", "科举"))] })
+      makeSkillRow({ slug: "keju", content: mdWithOverrides("科举", "科举") })
     ]);
     prismaMock.chapter.findMany.mockResolvedValue([{ title: "第一回", content: "a".repeat(8000) }]);
 
@@ -228,9 +216,9 @@ describe("createSkillSelector", () => {
 
   it("非法 slug 被 zod 目录过滤丢弃并告警，装载集合 = GLOBAL ∪ 选中", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "global-skill", scope: "GLOBAL", versions: [makeVersion(1, mdWithOverrides("常驻", "常驻"))] }),
-      makeSkillRow({ slug: "keju", scope: "BOOK_TYPE", versions: [makeVersion(2, mdWithOverrides("科举", "科举"))] }),
-      makeSkillRow({ slug: "unused", scope: "BOOK_TYPE", versions: [makeVersion(1, mdWithOverrides("未选", "未选"))] })
+      makeSkillRow({ slug: "global-skill", scope: "GLOBAL", content: mdWithOverrides("常驻", "常驻") }),
+      makeSkillRow({ slug: "keju", scope: "BOOK_TYPE", content: mdWithOverrides("科举", "科举") }),
+      makeSkillRow({ slug: "unused", scope: "BOOK_TYPE", content: mdWithOverrides("未选", "未选") })
     ]);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     callLlmMock.mockResolvedValue({
@@ -251,8 +239,8 @@ describe("createSkillSelector", () => {
 
   it("relationshipCodes 契约取装载技能 frontmatter 并集", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "rel", scope: "GLOBAL", versions: [makeVersion(1, mdWithRelationshipCodes([{ code: "父子", direction: "INVERSE", category: "家庭" }]))] }),
-      makeSkillRow({ slug: "keju", scope: "BOOK_TYPE", versions: [makeVersion(2, mdWithRelationshipCodes([{ code: "父子", direction: "INVERSE", category: "家庭" }, { code: "兄弟", direction: "SYMMETRIC", category: "家庭" }]))] })
+      makeSkillRow({ slug: "rel", scope: "GLOBAL", content: mdWithRelationshipCodes([{ code: "父子", direction: "INVERSE", category: "家庭" }]) }),
+      makeSkillRow({ slug: "keju", scope: "BOOK_TYPE", content: mdWithRelationshipCodes([{ code: "父子", direction: "INVERSE", category: "家庭" }, { code: "兄弟", direction: "SYMMETRIC", category: "家庭" }]) })
     ]);
 
     const selector = makeSelector();
@@ -265,21 +253,9 @@ describe("createSkillSelector", () => {
     ]);
   });
 
-  it("无激活版的 skill 从目录跳过", async () => {
-    prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "no-version", versions: [] })
-    ]);
-
-    const selector = makeSelector();
-    const result = await selector.selectSkills({ bookId: "book-1", jobId: "job-1" });
-
-    expect(result.allLoadedSlugs).toEqual([]);
-    expect(result.selectedSlugs).toEqual([]);
-  });
-
   it("frontmatter 解析失败的 skill 跳过并告警", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "bad", versions: [makeVersion(1, "---\nkind: [unclosed\n---\n")] })
+      makeSkillRow({ slug: "bad", content: "---\nkind: [unclosed\n---\n" })
     ]);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -301,7 +277,7 @@ describe("createSkillSelector", () => {
 
   it("LLM 输出不合法（非数组 skillSlugs）时抛错", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "keju", versions: [makeVersion(1, mdWithOverrides("科举", "科举"))] })
+      makeSkillRow({ slug: "keju", content: mdWithOverrides("科举", "科举") })
     ]);
     callLlmMock.mockResolvedValue({ skillSlugs: "not-array", inferredType: null, reasons: "x" });
 
@@ -311,8 +287,8 @@ describe("createSkillSelector", () => {
 
   it("selectSkillsForJob 把选择结果快照进 AnalysisJob", async () => {
     prismaMock.skill.findMany.mockResolvedValue([
-      makeSkillRow({ slug: "global-skill", scope: "GLOBAL", versions: [makeVersion(1, mdWithRelationshipCodes([{ code: "父子", direction: "INVERSE", category: "家庭" }]))] }),
-      makeSkillRow({ slug: "keju", scope: "BOOK_TYPE", versions: [makeVersion(3, mdWithOverrides("科举", "科举"))] })
+      makeSkillRow({ slug: "global-skill", scope: "GLOBAL", content: mdWithRelationshipCodes([{ code: "父子", direction: "INVERSE", category: "家庭" }]) }),
+      makeSkillRow({ slug: "keju", scope: "BOOK_TYPE", content: mdWithOverrides("科举", "科举") })
     ]);
     prismaMock.analysisJob.update.mockResolvedValue({ id: "job-1" });
 
@@ -321,9 +297,9 @@ describe("createSkillSelector", () => {
 
     expect(snapshot.selectedSlugs).toEqual(["keju"]);
     expect(snapshot.allLoadedSlugs).toEqual(["global-skill", "keju"]);
-    expect(snapshot.versionMap).toEqual({ "global-skill": 1, keju: 3 });
     expect(snapshot.inferredType).toBe("classical-novel");
     expect(snapshot.selectedAt).toEqual(expect.any(String));
+    expect(snapshot).not.toHaveProperty("versionMap");
 
     expect(prismaMock.analysisJob.update).toHaveBeenCalledWith({
       where: { id: "job-1" },

@@ -1,12 +1,8 @@
 ---
 slug: classical-relationship-types
 name: 古典关系类型
-category: RELATIONSHIP_TYPE
 description: 古典文学核心关系类型（家庭 / 教育 / 官场 / 社交），关系码必须取自本表
 scope: GLOBAL
-kind: RELATIONSHIP_TYPE
-triggers:
-  priority: 996
 relationshipCodes:
   - code: 父子
     direction: INVERSE

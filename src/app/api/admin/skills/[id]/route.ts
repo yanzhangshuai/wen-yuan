@@ -8,11 +8,11 @@ import { getAuthContext, requireAdmin } from "@/server/modules/auth";
 import { skillService } from "@/server/modules/skills";
 import { ERROR_CODES } from "@/types/api";
 
-import { badRequestJson, notFoundJson, setSkillEnabledSchema } from "../_shared";
+import { badRequestJson, notFoundJson, updateSkillSchema } from "../_shared";
 
 /**
  * GET `/api/admin/skills/:id`
- * 管理端：技能包详情 + 激活版 frontmatter 契约（关系码 / 虚指名单，只读展示）。
+ * 管理端：技能包详情（含完整 MD 内容与 frontmatter 契约）。
  */
 export async function GET(
   _request: Request,
@@ -56,7 +56,7 @@ export async function GET(
 
 /**
  * PATCH `/api/admin/skills/:id`
- * 管理端：切换技能包独立启停开关（isEnabled=false = 全局不可用）。
+ * 管理端：更新技能基本信息（name/description/scope/status，status 含启停）。
  */
 export async function PATCH(
   request: Request,
@@ -76,7 +76,7 @@ export async function PATCH(
       return notFoundJson(path, requestId, startedAt, "技能包不存在");
     }
 
-    const parsedBody = setSkillEnabledSchema.safeParse(await readJsonBody(request));
+    const parsedBody = updateSkillSchema.safeParse(await readJsonBody(request));
     if (!parsedBody.success) {
       return badRequestJson(
         path,
@@ -86,15 +86,22 @@ export async function PATCH(
       );
     }
 
-    await skillService.setSkillEnabled(id, parsedBody.data.isEnabled);
+    const body = parsedBody.data;
+    await skillService.updateSkillInfo({
+      skillId: id,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.scope !== undefined ? { scope: body.scope } : {}),
+      ...(body.status !== undefined ? { status: body.status } : {})
+    });
 
     return okJson({
       path,
       requestId,
       startedAt,
-      code   : "ADMIN_SKILL_ENABLED_UPDATED",
-      message: parsedBody.data.isEnabled ? "技能包已启用" : "技能包已停用",
-      data   : { id, isEnabled: parsedBody.data.isEnabled }
+      code   : "ADMIN_SKILL_UPDATED",
+      message: "技能信息已更新",
+      data   : { id }
     });
   } catch (error) {
     return failJson({
@@ -103,7 +110,7 @@ export async function PATCH(
       startedAt,
       error,
       fallbackCode   : ERROR_CODES.COMMON_INTERNAL_ERROR,
-      fallbackMessage: "技能包启停切换失败"
+      fallbackMessage: "技能信息更新失败"
     });
   }
 }

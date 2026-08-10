@@ -18,28 +18,17 @@ export async function lookupRelationshipTypeNames(
   }
 
   const skills = await client.skill.findMany({
-    where : { status: SkillStatus.ACTIVE, isEnabled: true, deletedAt: null },
-    select: {
-      versions: {
-        where  : { isActive: true },
-        select : { content: true },
-        orderBy: { versionNo: "desc" }
-      }
-    }
+    where : { status: SkillStatus.ENABLED, deletedAt: null },
+    select: { content: true }
   });
 
   const nameByCode = new Map<string, string>();
   const seen = new Set<string>();
 
   for (const skill of skills) {
-    const version = skill.versions[0];
-    if (!version) {
-      continue;
-    }
-
     let relationshipCodes: RelationshipCode[] | null;
     try {
-      relationshipCodes = parseSkillMetadata(version.content).relationshipCodes;
+      relationshipCodes = parseSkillMetadata(skill.content).relationshipCodes;
     } catch (error) {
       console.warn("[lookupTypeNames] skill frontmatter 解析失败，跳过:", error instanceof Error ? error.message : String(error));
       continue;

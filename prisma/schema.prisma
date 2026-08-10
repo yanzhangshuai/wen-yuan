@@ -135,32 +135,9 @@ enum ChapterType {
   @@map("chapter_type")
 }
 
-/// Skill 主分类（管理 UI 分组；content.knowledge 可混合多类）
-enum SkillCategory {
-  SURNAME // 姓氏
-  GENERIC_TITLE // 泛称
-  NAME_PATTERN // 名字模式
-  RELATIONSHIP_TYPE // 关系类型
-  HISTORICAL_FIGURE // 历史人物
-  TASK_INSTRUCTION // 任务指令
-  HYBRID // 混合
-
-  @@map("skill_category")
-}
-
-enum SkillSource {
-  MANUAL // 管理员手工维护
-  GENERATED // 由 SkillGenerator 生成
-  AI // AI 辅助创建
-
-  @@map("skill_source")
-}
-
 enum SkillStatus {
-  DRAFT // 草稿（生成器产出，待审核）
-  ACTIVE // 启用
-  DISABLED // 停用
-  ARCHIVED // 归档
+  ENABLED // 启用（默认，AI 可装载）
+  DISABLED // 停用（全局不可用）
 
   @@map("skill_status")
 }
@@ -537,54 +514,26 @@ model Relationship {
 }
 
 // =============================================================================
-// Skill 域：技能包 + 版本
+// Skill 域：技能包
 // =============================================================================
 
-/// @db.remark: 技能包。承载姓氏/泛称/名字模式/关系类型/历史人物/任务指令等一切扩展知识。
+/// @db.remark: 技能包。skill = MD 文档（YAML frontmatter 装载元数据 + 正文知识/指令），content 直存当前生效内容。
 model Skill {
-  id                  String        @id @default(uuid()) @db.Uuid
-  slug                String        @unique @db.VarChar(120)
-  name                String        @db.VarChar(80)
-  description         String?       @db.Text
-  category            SkillCategory @default(HYBRID)
-  /// GLOBAL: 全书型生效（无 book_type_skills 链接） | BOOK_TYPE: 需至少一条 book_type_skills 链接
-  scope               String        @default("GLOBAL")
-  status              SkillStatus   @default(DRAFT)
-  source              SkillSource   @default(MANUAL)
-  generatedFromJobId  String?       @map("generated_from_job_id") @db.Uuid
-  generatedFromBookId String?       @map("generated_from_book_id") @db.Uuid
-  sortOrder           Int           @default(0) @map("sort_order")
-  isBuiltin           Boolean       @default(false) @map("is_builtin")
-  isEnabled           Boolean       @default(true) @map("is_enabled") // 独立启停开关：false=全局不可用（目录不可见/AI 不可选/不装载）
-  deletedAt           DateTime?     @map("deleted_at") @db.Timestamptz(6)
-  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String      @id @default(uuid()) @db.Uuid
+  slug        String      @unique @db.VarChar(120)
+  name        String      @db.VarChar(80)
+  description String?     @db.Text
+  /// GLOBAL: 常驻装载 | BOOK_TYPE: 需被 AI 动态选择才装载
+  scope       String      @default("GLOBAL")
+  status      SkillStatus @default(ENABLED)
+  /// MD 文档（YAML frontmatter + 正文），AI 装载直接读取，保存即覆盖
+  content     String      @db.Text
+  deletedAt   DateTime?   @map("deleted_at") @db.Timestamptz(6)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  versions SkillVersion[]
-
-  @@index([category, status], map: "skills_category_status_idx")
-  @@index([status, sortOrder], map: "skills_status_sort_idx")
+  @@index([status], map: "skills_status_idx")
   @@map("skills")
-}
-
-/// @db.remark: 技能版本。content 为知识/指令/触发/工具 JSON，isActive 激活机制类比旧 prompt_template_versions。
-model SkillVersion {
-  id         String   @id @default(uuid()) @db.Uuid
-  skillId    String   @map("skill_id") @db.Uuid
-  versionNo  Int      @map("version_no")
-  /// MD 文档（YAML frontmatter 承载结构化 knowledge/triggers，正文承载 instructions/说明）
-  content    String   @db.Text
-  isActive   Boolean  @default(false) @map("is_active")
-  isBaseline Boolean  @default(false) @map("is_baseline")
-  changeNote String?  @map("change_note") @db.Text
-  createdBy  String?  @map("created_by")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  @@unique([skillId, versionNo], map: "skill_versions_skill_version_key")
-  @@index([skillId, isActive], map: "skill_versions_active_idx")
-  @@map("skill_versions")
 }
 
 // =============================================================================

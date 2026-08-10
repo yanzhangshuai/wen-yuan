@@ -1,6 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { serializeSkillFrontmatter } from "@/server/modules/skills/content-schema";
 import { createSkillService } from "@/server/modules/skills/skillService";
 
 /**
@@ -11,7 +10,7 @@ import { createSkillService } from "@/server/modules/skills/skillService";
  *
  * 模块职责：
  * - 从书籍分析信号（高频称谓、字典外关系码、新名字模式）生成候选 Skill；
- * - 落库为 DRAFT 技能包，交管理员审核激活。
+ * - 落库为 ENABLED 技能包。
  *
  * 本期边界：
  * - 结构化信号 → MD 文档（正文承载知识表，AI 阅读）；
@@ -86,11 +85,11 @@ export function createSkillGenerator(prismaClient: PrismaClient = prisma) {
       );
     }
 
-    return `${serializeSkillFrontmatter({ kind: "HYBRID", triggers: { priority: 0 } })}\n\n${sections.join("\n")}`;
+    return sections.join("\n");
   }
 
   /**
-   * 功能：从书籍信号生成 DRAFT 技能包。
+   * 功能：从书籍信号生成 ENABLED 技能包。
    * 输入：分析信号（高频称谓/字典外关系码/新名字模式）。
    * 输出：创建的技能标识与状态（DRAFT）。
    * 异常：信号为空或书籍不存在时抛错。
@@ -124,17 +123,15 @@ export function createSkillGenerator(prismaClient: PrismaClient = prisma) {
     const created = await service.createSkill({
       slug       : slug,
       name       : `${book.title} 生成技能`,
-      description: `由 SkillGenerator 从《${book.title}》分析信号生成，待审核。`,
-      category   : "HYBRID",
+      description: `由 SkillGenerator 从《${book.title}》分析信号生成。`,
       scope      : "BOOK_TYPE",
-      content    : buildMarkdownFromSignals(signals),
-      isBuiltin  : false
+      content    : buildMarkdownFromSignals(signals)
     });
 
     return {
       skillId: created.id,
       slug   : created.slug,
-      status : "DRAFT"
+      status : "ENABLED"
     };
   }
 

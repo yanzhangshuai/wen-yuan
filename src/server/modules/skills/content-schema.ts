@@ -1,4 +1,4 @@
-import { dump as yamlDump, load as yamlLoad } from "js-yaml";
+import { load as yamlLoad } from "js-yaml";
 import { z } from "zod";
 
 /**
@@ -9,13 +9,14 @@ import { z } from "zod";
  *
  * 模块职责：
  * - skill = MD 文档（frontmatter 仅元数据 + 正文为知识/指令全文，AI 直接阅读）；
- * - `parseSkillMetadata(md)` 仅解析 frontmatter 的装载元数据（kind/triggers/name/description），
- *   用于装载过滤与候选列表展示；
+ * - `parseSkillMetadata(md)` 仅解析 frontmatter 的装载元数据（name/description/relationshipCodes），
+ *   用于装载过滤与契约读取；
  * - 正文（含可能的结构化段落）作为完整文档交由 AI 阅读，不做知识抽取/字典合并。
  *
  * 设计背景（2026-08 简化）：
  * - 社区标准 + "减法"趋势：技能即上下文，AI 自主阅读与应用；
- * - 不再预建确定性字典/工具层；确定性检查只在 persist 落库时按需保留（防已实测失败）。
+ * - 已移除 kind/triggers/deicticJunk 等无运行时消费的元数据，frontmatter 只保留
+ *   name/description（展示覆盖）与 relationshipCodes（提取护栏码表闭集数据源）。
  * =============================================================================
  */
 
@@ -30,50 +31,70 @@ export const relationshipCodeSchema = z.object({
   aliases  : z.array(z.string()).default([])
 });
 
-/** 触发条件：taskTypes 空 = 全部阶段；priority 决定装载排序。 */
-export const skillTriggersSchema = z.object({
-  taskTypes: z.array(z.string().min(1)).optional(),
-  priority : z.number().int().min(0).default(0)
-});
-
 /** frontmatter 元数据（装载/展示用，非知识内容）。 */
 export const skillFrontmatterSchema = z.object({
-  kind             : z.string().min(1).default("HYBRID"),
-  triggers         : skillTriggersSchema.default({ priority: 0 }),
   name             : z.string().optional(),
   description      : z.string().optional(),
-  /** 关系码契约（relationship-type skill 携带；schema/guardrail/图谱从契约取码）。 */
-  relationshipCodes: z.array(relationshipCodeSchema).optional(),
-  /** 虚指代词名单（GLOBAL skill 契约；guardrail 读契约，代码留空兜底）。 */
-  deicticJunk      : z.array(z.string().min(1)).optional()
+  /** 关系码契约（relationship-type skill 携带；guardrail 从契约取码闭集）。 */
+  relationshipCodes: z.array(relationshipCodeSchema).optional()
 });
 
 /** 解析后的 skill 元数据。 */
 export interface SkillMetadata {
-  kind             : string;
-  triggers         : SkillTriggers;
   name             : string | null;
   description      : string | null;
   /** 关系码契约列表（可选，契约未携带时为 null）。 */
   relationshipCodes: RelationshipCode[] | null;
-  /** 虚指代词名单（可选，契约未携带时为 null）。 */
-  deicticJunk      : string[] | null;
 }
 
 export type RelationshipCode = z.infer<typeof relationshipCodeSchema>;
+
+/** 可同步到 Skill DB 列的 frontmatter 字段（编辑保存时宽容读取）。 */
+const editableSkillMetadataSchema = z.object({
+  name       : z.string().min(1).optional(),
+  description: z.string().optional(),
+  scope      : z.enum(["GLOBAL", "BOOK_TYPE"]).optional()
+});
+
+/**
+ * 功能：从 skill MD frontmatter 宽容提取可同步到 DB 列的字段（name/description/scope）。
+ * 输入：skill MD 字符串。
+ * 输出：出现过的可编辑字段；frontmatter 缺失或字段非法时返回空对象（不抛错）。
+ * 设计说明：正文 MD 是内容源，DB 列仅作展示/过滤冗余；同步时"出现了才覆盖"，避免误清空。
+ */
+export function parseEditableSkillMetadata(md: string): {
+  name?       : string;
+  description?: string;
+  scope?      : "GLOBAL" | "BOOK_TYPE";
+} {
+  const { frontmatter } = extractFrontmatter(md);
+  if (frontmatter === null || frontmatter.trim().length === 0) {
+    return {};
+  }
+
+  let frontmatterData: unknown;
+  try {
+    frontmatterData = yamlLoad(frontmatter);
+  } catch {
+    return {};
+  }
+
+  const parsed = editableSkillMetadataSchema.safeParse(frontmatterData);
+  if (!parsed.success) {
+    return {};
+  }
+  return parsed.data;
+}
 
 /** 装载候选（含全文 MD，供 AI 阅读）。 */
 export interface SkillDocument {
   slug       : string;
   name       : string;
   description: string | null;
-  versionNo  : number;
   metadata   : SkillMetadata;
   /** 完整 MD 文档（frontmatter + 正文），AI 阅读与装载。 */
   markdown   : string;
 }
-
-export type SkillTriggers = z.infer<typeof skillTriggersSchema>;
 
 const FRONTMATTER_DELIMITER = "---";
 
@@ -108,7 +129,7 @@ function extractFrontmatter(md: string): { frontmatter: string | null; body: str
 /**
  * 功能：解析 skill MD 的装载元数据（frontmatter）。
  * 输入：skill 的 MD 内容字符串。
- * 输出：SkillMetadata（kind/triggers/name/description/relationshipCodes/deicticJunk）。
+ * 输出：SkillMetadata（name/description/relationshipCodes）。
  * 异常：frontmatter YAML 语法错误或字段非法时抛错。
  */
 export function parseSkillMetadata(md: string): SkillMetadata {
@@ -130,28 +151,8 @@ export function parseSkillMetadata(md: string): SkillMetadata {
   }
 
   return {
-    kind             : parsed.data.kind,
-    triggers         : parsed.data.triggers,
     name             : parsed.data.name ?? null,
     description      : parsed.data.description ?? null,
-    relationshipCodes: parsed.data.relationshipCodes ?? null,
-    deicticJunk      : parsed.data.deicticJunk ?? null
+    relationshipCodes: parsed.data.relationshipCodes ?? null
   };
-}
-
-/**
- * 功能：序列化装载元数据为 frontmatter（供创建/生成 skill 时初始化）。
- * 输入：kind/triggers。
- * 输出：MD frontmatter 块（不含正文）。
- */
-export function serializeSkillFrontmatter(input: { kind?: string; triggers?: SkillTriggers }): string {
-  const frontmatter: Record<string, unknown> = {
-    ...(input.kind ? { kind: input.kind } : {}),
-    ...(input.triggers ? { triggers: input.triggers } : {})
-  };
-
-  const parts: string[] = [FRONTMATTER_DELIMITER];
-  parts.push(yamlDump(frontmatter, { lineWidth: -1 }).trimEnd());
-  parts.push(FRONTMATTER_DELIMITER);
-  return parts.join("\n");
 }

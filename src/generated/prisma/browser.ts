@@ -77,14 +77,9 @@ export type Fact = Prisma.FactModel
 export type Relationship = Prisma.RelationshipModel
 /**
  * Model Skill
- * @db.remark: 技能包。承载姓氏/泛称/名字模式/关系类型/历史人物/任务指令等一切扩展知识。
+ * @db.remark: 技能包。skill = MD 文档（YAML frontmatter 装载元数据 + 正文知识/指令），content 直存当前生效内容。
  */
 export type Skill = Prisma.SkillModel
-/**
- * Model SkillVersion
- * @db.remark: 技能版本。content 为知识/指令/触发/工具 JSON，isActive 激活机制类比旧 prompt_template_versions。
- */
-export type SkillVersion = Prisma.SkillVersionModel
 /**
  * Model AnalysisJob
  * @db.remark: 解析任务。保留原字段，新增技能快照与 agent 运行关联。

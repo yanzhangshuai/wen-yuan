@@ -1,16 +1,41 @@
 import { z } from "zod";
 
+import { SkillStatus as SkillStatusEnum } from "@/generated/prisma/enums";
 import { createApiMeta, errorResponse, toNextJson } from "@/server/http/api-response";
 import { ERROR_CODES } from "@/types/api";
 
 /**
- * 技能管理接口族（GET 列表/详情 + PATCH 启停切换）的请求体校验与错误响应辅助。
- * skill 独立启停由管理端开关维护，关系码/虚指契约只读展示。
+ * 技能管理接口族（列表/详情 + 编辑/启停/内容保存/AI 生成）的请求体校验与错误响应辅助。
+ * skill 启停由 status（ENABLED/DISABLED）承载，MD 文档内容通过独立保存接口维护。
  */
 
-/** 启停切换请求体：isEnabled=false 表示该 skill 全局不可用。 */
-export const setSkillEnabledSchema = z.object({
-  isEnabled: z.boolean()
+/** 基本信息更新请求体（PATCH /:id）：至少提供一个字段。 */
+export const updateSkillSchema = z.object({
+  name       : z.string().min(1, "名称不能为空").optional(),
+  description: z.string().nullable().optional(),
+  scope      : z.enum(["GLOBAL", "BOOK_TYPE"]).optional(),
+  status     : z.nativeEnum(SkillStatusEnum).optional()
+}).refine((data) => Object.values(data).some((value) => value !== undefined), {
+  message: "至少提供一个可更新字段"
+});
+
+/** 内容保存请求体（PUT /:id/content）：MD 全文，保存即覆盖。 */
+export const updateSkillContentSchema = z.object({
+  content: z.string().min(1, "内容不能为空")
+});
+
+/** AI 生成请求体（POST /generate）：用途描述必填。 */
+export const generateSkillSchema = z.object({
+  purpose: z.string().trim().min(1, "请描述技能用途"),
+  name   : z.string().trim().min(1).optional(),
+  scope  : z.enum(["GLOBAL", "BOOK_TYPE"]).optional()
+});
+
+/** AI 重新生成请求体（POST /:id/regenerate）：字段可选，缺省沿用现有 skill 信息。 */
+export const regenerateSkillSchema = z.object({
+  purpose: z.string().trim().min(1).optional(),
+  name   : z.string().trim().min(1).optional(),
+  scope  : z.enum(["GLOBAL", "BOOK_TYPE"]).optional()
 });
 
 /**

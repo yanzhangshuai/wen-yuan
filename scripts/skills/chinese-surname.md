@@ -1,12 +1,8 @@
 ---
 slug: chinese-surname
 name: 中国姓氏
-category: SURNAME
 description: 常用单姓与复姓参考表（百家姓）
 scope: GLOBAL
-kind: SURNAME
-triggers:
-  priority: 999
 ---
 
 # 中国姓氏

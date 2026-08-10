@@ -25,7 +25,7 @@ export interface ExtractSliceInput {
   skills               : string[];
   /** 有效关系码（装载 skill 契约，schema 生成） */
   relationshipTypeCodes: string[];
-  /** 虚指代词契约名单（装载上下文 GLOBAL skill deicticJunk）；缺省用代码内默认名单 */
+  /** 虚指代词名单（可选；缺省用代码内 DEFAULT_DEICTIC_JUNK） */
   deicticJunk?         : string[];
   /** 已有 entityId 查找（canonical → entityId），供落库时复用 */
   entityIdByName?      : Map<string, string>;

@@ -119,33 +119,9 @@ export const ChapterType = {
 export type ChapterType = (typeof ChapterType)[keyof typeof ChapterType]
 
 
-export const SkillCategory = {
-  SURNAME: 'SURNAME',
-  GENERIC_TITLE: 'GENERIC_TITLE',
-  NAME_PATTERN: 'NAME_PATTERN',
-  RELATIONSHIP_TYPE: 'RELATIONSHIP_TYPE',
-  HISTORICAL_FIGURE: 'HISTORICAL_FIGURE',
-  TASK_INSTRUCTION: 'TASK_INSTRUCTION',
-  HYBRID: 'HYBRID'
-} as const
-
-export type SkillCategory = (typeof SkillCategory)[keyof typeof SkillCategory]
-
-
-export const SkillSource = {
-  MANUAL: 'MANUAL',
-  GENERATED: 'GENERATED',
-  AI: 'AI'
-} as const
-
-export type SkillSource = (typeof SkillSource)[keyof typeof SkillSource]
-
-
 export const SkillStatus = {
-  DRAFT: 'DRAFT',
-  ACTIVE: 'ACTIVE',
-  DISABLED: 'DISABLED',
-  ARCHIVED: 'ARCHIVED'
+  ENABLED: 'ENABLED',
+  DISABLED: 'DISABLED'
 } as const
 
 export type SkillStatus = (typeof SkillStatus)[keyof typeof SkillStatus]

@@ -1,13 +1,8 @@
 ---
 slug: chinese-deictic-junk
 name: 中文虚指代词
-category: HYBRID
 description: 虚指/泛指代词名单（guardrail 过滤用）
 scope: GLOBAL
-kind: GENERIC_TITLE
-triggers:
-  priority: 995
-deicticJunk: [众人, 那人, 此人, 老者, 百姓, 人们]
 ---
 
 # 中文虚指代词

@@ -2,7 +2,7 @@
  * =============================================================================
  * 文件定位（Skill 域模块出口）
  * -----------------------------------------------------------------------------
- * - 对外暴露 Skill 服务（CRUD/版本）、装载器（resolveSkillsForJob）、AI 动态选择器
+ * - 对外暴露 Skill 服务（CRUD）、装载器（resolveSkillsForJob）、AI 动态选择器
  *   （skillSelector / selectSkillsForJob）与 content 契约。
  * - 供管理后台 API、Agent system prompt 组装、runAnalysisJob 编排复用。
  * =============================================================================
@@ -45,12 +45,11 @@ export {
 
 export {
   parseSkillMetadata,
-  serializeSkillFrontmatter,
   skillFrontmatterSchema,
-  skillTriggersSchema,
+  relationshipCodeSchema,
   type SkillMetadata,
   type SkillDocument,
-  type SkillTriggers
+  type RelationshipCode
 } from "./content-schema";
 
 export {
@@ -59,6 +58,16 @@ export {
   type SkillGenerationSignals,
   type GenerateSkillResult
 } from "./skillGenerator";
+
+export {
+  aiSkillGenerator,
+  createAiSkillGenerator,
+  assembleSkillMarkdown,
+  buildSkillGenerationUserPrompt,
+  type AiSkillGenerator,
+  type AiSkillGenerationInput,
+  type AiSkillGenerationResult
+} from "./aiSkillGenerator";
 
 export {
   lookupRelationshipTypeNames

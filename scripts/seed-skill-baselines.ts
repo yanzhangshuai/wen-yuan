@@ -4,11 +4,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
-import { PrismaClient, SkillCategory, SkillStatus } from "../src/generated/prisma/client.ts";
+import { PrismaClient, SkillStatus } from "../src/generated/prisma/client.ts";
 
 /**
- * Skill 基线种子：读取 scripts/skills/*.md（skill = MD 文档，见 docs/architecture/13 §3.1），
- * 解析 frontmatter 元数据 + 正文，幂等 upsert（存在则新增激活版本，旧版留历史）。
+ * Skill 基线种子：读取 scripts/skills/*.md（skill = MD 文档，content 直存），
+ * 解析 frontmatter 元数据 + 正文，幂等 upsert（存在则覆盖 content）。
  *
  * MD 文件即最终内容：人类可编辑、可 diff、无 JS→MD 转换层。
  */
@@ -24,27 +24,20 @@ const relationshipCodeSchema = z.object({
   aliases  : z.array(z.string()).default([])
 });
 
-/** .md frontmatter 元数据（seed 文件专用，比装载元数据更全）。 */
+/** .md frontmatter 元数据（seed 文件专用）。 */
 const skillMdFrontmatterSchema = z.object({
   slug             : z.string(),
   name             : z.string(),
-  category         : z.nativeEnum(SkillCategory),
   description      : z.string(),
   scope            : z.enum(["GLOBAL", "BOOK_TYPE"]).default("GLOBAL"),
-  kind             : z.string(),
-  triggers         : z.object({ priority: z.number().default(0), taskTypes: z.array(z.string()).optional() }).default({ priority: 0 }),
-  relationshipCodes: z.array(relationshipCodeSchema).optional(),
-  deicticJunk      : z.array(z.string()).optional()
+  relationshipCodes: z.array(relationshipCodeSchema).optional()
 });
 
 interface ParsedSkillMd {
   slug       : string;
   name       : string;
-  category   : SkillCategory;
   description: string;
   scope      : string;
-  kind       : string;
-  triggers   : { priority: number; taskTypes?: string[] };
   content    : string; // 完整 MD（frontmatter + 正文）
 }
 
@@ -73,7 +66,7 @@ function readSkillMdFiles(): ParsedSkillMd[] {
   return parsed;
 }
 
-/** 供 seed.ts 复用：幂等写入基线技能（存在则新增激活版本）。 */
+/** 供 seed.ts 复用：幂等写入基线技能（存在则覆盖 content）。 */
 export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> {
   const skills = readSkillMdFiles();
   let touchedCount = 0;
@@ -81,7 +74,7 @@ export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> 
   for (const skill of skills) {
     const existing = await prisma.skill.findUnique({
       where : { slug: skill.slug },
-      select: { id: true, versions: { where: { isActive: true }, select: { id: true, content: true, versionNo: true }, take: 1 } }
+      select: { id: true, content: true }
     });
 
     if (!existing) {
@@ -90,19 +83,9 @@ export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> 
           slug       : skill.slug,
           name       : skill.name,
           description: skill.description,
-          category   : skill.category,
           scope      : skill.scope,
-          status     : SkillStatus.ACTIVE,
-          source     : "MANUAL",
-          isBuiltin  : true,
-          versions   : {
-            create: {
-              versionNo : 1,
-              content   : skill.content,
-              isActive  : true,
-              isBaseline: true
-            }
-          }
+          status     : SkillStatus.ENABLED,
+          content    : skill.content
         },
         select: { id: true, slug: true }
       });
@@ -111,27 +94,21 @@ export async function seedSkillBaselines(prisma: PrismaClient): Promise<number> 
       continue;
     }
 
-    const active = existing.versions[0];
-    if (active && active.content === skill.content) {
+    if (existing.content === skill.content) {
       console.log(`⏭ 技能无变化，跳过: ${skill.slug}`);
       continue;
     }
 
-    const nextVersion = (active?.versionNo ?? 0) + 1;
-    await prisma.$transaction(async (tx) => {
-      await tx.skillVersion.updateMany({ where: { skillId: existing.id, isActive: true }, data: { isActive: false } });
-      await tx.skillVersion.create({
-        data: {
-          skillId   : existing.id,
-          versionNo : nextVersion,
-          content   : skill.content,
-          isActive  : true,
-          isBaseline: true,
-          changeNote: "skills 改为 MD 文件直接维护"
-        }
-      });
+    await prisma.skill.update({
+      where: { id: existing.id },
+      data : {
+        name       : skill.name,
+        description: skill.description,
+        scope      : skill.scope,
+        content    : skill.content
+      }
     });
-    console.log(`🔄 技能已更新: ${skill.slug} → v${nextVersion}`);
+    console.log(`🔄 技能已更新: ${skill.slug}`);
     touchedCount += 1;
   }
 

@@ -1,12 +1,8 @@
 ---
 slug: classical-generic-titles
 name: 古典文学泛称
-category: GENERIC_TITLE
 description: 泛称/称谓的语义与处理（尊称 / 官职 / 亲属）
 scope: GLOBAL
-kind: GENERIC_TITLE
-triggers:
-  priority: 997
 ---
 
 # 古典文学泛称

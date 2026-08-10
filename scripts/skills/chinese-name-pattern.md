@@ -1,12 +1,8 @@
 ---
 slug: chinese-name-pattern
 name: 中文名字模式
-category: NAME_PATTERN
 description: 中文人名结构语义：全名 / 称谓式 / 关系复合词 / 描述性短语
 scope: GLOBAL
-kind: NAME_PATTERN
-triggers:
-  priority: 998
 ---
 
 # 中文名字模式

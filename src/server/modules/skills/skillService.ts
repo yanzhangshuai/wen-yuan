@@ -1,25 +1,26 @@
-import type { PrismaClient } from "@/generated/prisma/client";
-import { type SkillCategory, SkillStatus } from "@/generated/prisma/enums";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { SkillStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db/prisma";
 import {
+  parseEditableSkillMetadata,
   parseSkillMetadata,
   type RelationshipCode
 } from "@/server/modules/skills/content-schema";
 
 /**
  * =============================================================================
- * 文件定位（Skill 域：技能包 CRUD 与版本管理）
+ * 文件定位（Skill 域：技能包 CRUD）
  * -----------------------------------------------------------------------------
  * 文件路径：`src/server/modules/skills/skillService.ts`
  *
  * 模块职责：
- * - Skill / SkillVersion 的领域服务；
- * - 版本激活（全局激活）；
- * - 技能启停。
+ * - Skill 的领域服务：创建/列表/详情/启停/内容保存；
+ * - skill = MD 文档（frontmatter 装载元数据 + 正文知识），content 直存当前生效内容，
+ *   保存即覆盖，无版本历史。
  *
  * 业务边界：
  * - 只负责技能包的"数据管理"，不负责装载合并（见 loader.ts）。
- * - content 写入必须通过 skillContentSchema 校验，防止漂移。
+ * - content 写入必须通过 parseSkillMetadata 校验，防止漂移。
  * =============================================================================
  */
 
@@ -27,18 +28,10 @@ export interface CreateSkillInput {
   slug        : string;
   name        : string;
   description?: string;
-  category    : SkillCategory;
   scope       : "GLOBAL" | "BOOK_TYPE";
   /** skill 的 MD 文档内容（YAML frontmatter + 正文）。 */
   content     : string;
-  isBuiltin  ?: boolean;
-  sortOrder  ?: number;
-}
-
-/** 技能独立启停开关（is_enabled，false=全局不可用）。 */
-export interface SetSkillEnabledInput {
-  skillId  : string;
-  isEnabled: boolean;
+  status?     : SkillStatus;
 }
 
 export interface SkillListItem {
@@ -46,41 +39,23 @@ export interface SkillListItem {
   slug       : string;
   name       : string;
   description: string | null;
-  category   : SkillCategory;
   scope      : string;
   status     : SkillStatus;
-  source     : string;
-  sortOrder  : number;
-  isBuiltin  : boolean;
-  /** 独立启停开关（false=全局不可用，管理端列表展示/切换）。 */
-  isEnabled  : boolean;
-  versionNo  : number | null;
   createdAt  : string;
   updatedAt  : string;
 }
 
 export interface SkillDetail {
-  id                 : string;
-  slug               : string;
-  name               : string;
-  description        : string | null;
-  category           : SkillCategory;
-  scope              : string;
-  status             : SkillStatus;
-  source             : string;
-  sortOrder          : number;
-  isBuiltin          : boolean;
-  isEnabled          : boolean;
-  generatedFromBookId: string | null;
-  versions   : Array<{
-    id        : string;
-    versionNo : number;
-    content   : string;
-    isActive  : boolean;
-    isBaseline: boolean;
-    changeNote: string | null;
-    createdAt : string;
-  }>;
+  id         : string;
+  slug       : string;
+  name       : string;
+  description: string | null;
+  scope      : string;
+  status     : SkillStatus;
+  /** 完整 MD 文档（frontmatter + 正文）。 */
+  content    : string;
+  createdAt  : string;
+  updatedAt  : string;
 }
 
 export function createSkillService(prismaClient: PrismaClient = prisma) {
@@ -94,70 +69,45 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
   }
 
   /**
-   * 功能：创建技能包（含首个版本）。
-   * 输入：技能基础信息 + 初始 content。
+   * 功能：创建技能包。
+   * 输入：技能基础信息 + content。
    * 输出：创建后的 Skill 记录。
    * 异常：slug 冲突、content 非法时抛错。
-   * 副作用：写入 skills + skill_versions + 审计日志。
+   * 副作用：写入 skills 表。
    */
   async function createSkill(input: CreateSkillInput): Promise<{ id: string; slug: string }> {
     // 先解析校验 MD，确保 frontmatter 合法后才落库
     validateContent(input.content);
 
-    const skill = await prismaClient.$transaction(async (tx) => {
-      const created = await tx.skill.create({
-        data: {
-          slug       : input.slug,
-          name       : input.name,
-          description: input.description,
-          category   : input.category,
-          scope      : input.scope,
-          status     : SkillStatus.DRAFT,
-          source     : "MANUAL",
-          isBuiltin  : input.isBuiltin ?? false,
-          sortOrder  : input.sortOrder ?? 0,
-          versions   : {
-            create: {
-              versionNo : 1,
-              content   : input.content,
-              isActive  : false,
-              isBaseline: input.isBuiltin ?? false
-            }
-          }
-        },
-        select: { id: true, slug: true, name: true }
-      });
-
-      return created;
+    const created = await prismaClient.skill.create({
+      data: {
+        slug       : input.slug,
+        name       : input.name,
+        description: input.description,
+        scope      : input.scope,
+        status     : input.status ?? SkillStatus.ENABLED,
+        content    : input.content
+      },
+      select: { id: true, slug: true, name: true }
     });
 
-    return { id: skill.id, slug: skill.slug };
+    return { id: created.id, slug: created.slug };
   }
 
   /**
    * 功能：技能包列表。
-   * 输入：可选过滤条件（分类/状态/书型关联）。
-   * 输出：技能包列表（含当前激活版本号）。
+   * 输入：可选状态过滤。
+   * 输出：技能包列表。
    */
   async function listSkills(filter?: {
-    category?: SkillCategory;
-    status?  : SkillStatus;
+    status?: SkillStatus;
   }): Promise<SkillListItem[]> {
     const rows = await prismaClient.skill.findMany({
       where: {
-        ...(filter?.category ? { category: filter.category } : {}),
         ...(filter?.status ? { status: filter.status } : {}),
         deletedAt: null
       },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      include: {
-        versions: {
-          where  : { isActive: true },
-          select : { versionNo: true },
-          orderBy: { versionNo: "desc" },
-          take   : 1
-        }
-      }
+      orderBy: [{ createdAt: "asc" }]
     });
 
     return rows.map((row) => ({
@@ -165,185 +115,72 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
       slug       : row.slug,
       name       : row.name,
       description: row.description,
-      category   : row.category,
       scope      : row.scope,
       status     : row.status,
-      source     : row.source,
-      sortOrder  : row.sortOrder,
-      isBuiltin  : row.isBuiltin,
-      isEnabled  : row.isEnabled,
-      versionNo  : row.versions[0]?.versionNo ?? null,
       createdAt  : row.createdAt.toISOString(),
       updatedAt  : row.updatedAt.toISOString()
     }));
   }
 
   /**
-   * 功能：技能包详情（含全部版本与书型关联）。
+   * 功能：技能包详情（含完整 MD 内容）。
    * 输入：skillId。
    * 输出：详情或 null。
    */
   async function getSkill(skillId: string): Promise<SkillDetail | null> {
     const row = await prismaClient.skill.findUnique({
-      where  : { id: skillId },
-      include: {
-        versions: { orderBy: { versionNo: "desc" } }
-      }
+      where: { id: skillId }
     });
     if (!row) {
       return null;
     }
 
     return {
-      id                 : row.id,
-      slug               : row.slug,
-      name               : row.name,
-      description        : row.description,
-      category           : row.category,
-      scope              : row.scope,
-      status             : row.status,
-      source             : row.source,
-      sortOrder          : row.sortOrder,
-      isBuiltin          : row.isBuiltin,
-      isEnabled          : row.isEnabled,
-      generatedFromBookId: row.generatedFromBookId,
-      versions           : row.versions.map((version) => ({
-        id        : version.id,
-        versionNo : version.versionNo,
-        content   : version.content,
-        isActive  : version.isActive,
-        isBaseline: version.isBaseline,
-        changeNote: version.changeNote,
-        createdAt : version.createdAt.toISOString()
-      }))
+      id         : row.id,
+      slug       : row.slug,
+      name       : row.name,
+      description: row.description,
+      scope      : row.scope,
+      status     : row.status,
+      content    : row.content,
+      createdAt  : row.createdAt.toISOString(),
+      updatedAt  : row.updatedAt.toISOString()
     };
   }
 
   /**
-   * 功能：读取 skill 当前激活版本的 frontmatter 契约（关系码 / 虚指名单）。
+   * 功能：读取 skill 当前内容的 frontmatter 契约（关系码闭集）。
    * 输入：skillId。
-   * 输出：`{ versionNo, relationshipCodes, deicticJunk }`；skill 不存在返回 null，
-   *       无激活版或 frontmatter 解析失败时契约为空数组（管理端只读展示，不阻断）。
+   * 输出：`{ relationshipCodes }`；skill 不存在返回 null，
+   *       frontmatter 解析失败时契约为空数组（管理端只读展示，不阻断）。
    * 异常：无。
    */
   async function getSkillContract(skillId: string): Promise<{
-    versionNo        : number | null;
     relationshipCodes: RelationshipCode[];
-    deicticJunk      : string[];
   } | null> {
     const skill = await prismaClient.skill.findUnique({
-      where  : { id: skillId },
-      include: {
-        versions: {
-          where  : { isActive: true },
-          orderBy: { versionNo: "desc" },
-          take   : 1
-        }
-      }
+      where : { id: skillId },
+      select: { content: true }
     });
     if (!skill) {
       return null;
     }
 
-    const active = skill.versions[0];
-    if (!active) {
-      return { versionNo: null, relationshipCodes: [], deicticJunk: [] };
-    }
-
     try {
-      const metadata = parseSkillMetadata(active.content);
+      const metadata = parseSkillMetadata(skill.content);
       return {
-        versionNo        : active.versionNo,
-        relationshipCodes: metadata.relationshipCodes ?? [],
-        deicticJunk      : metadata.deicticJunk ?? []
+        relationshipCodes: metadata.relationshipCodes ?? []
       };
     } catch (error) {
-      console.warn("[skillService] 激活版 frontmatter 解析失败，契约按空展示:", error instanceof Error ? error.message : String(error));
-      return { versionNo: active.versionNo, relationshipCodes: [], deicticJunk: [] };
+      console.warn("[skillService] frontmatter 解析失败，契约按空展示:", error instanceof Error ? error.message : String(error));
+      return { relationshipCodes: [] };
     }
   }
 
   /**
-   * 功能：新增内容版本（版本号自增）。
-   * 输入：skillId、新 content、变更说明。
-   * 输出：新建的版本记录。
-   * 异常：skill 不存在或 content 非法时抛错。
-   */
-  async function createNewVersion(input: {
-    skillId    : string;
-    content    : string;
-    changeNote?: string;
-    createdBy ?: string;
-  }): Promise<{ id: string; versionNo: number }> {
-    validateContent(input.content);
-
-    const skill = await prismaClient.skill.findUnique({
-      where : { id: input.skillId },
-      select: { id: true, name: true }
-    });
-    if (!skill) {
-      throw new Error(`技能包不存在: ${input.skillId}`);
-    }
-
-    const latest = await prismaClient.skillVersion.findFirst({
-      where  : { skillId: input.skillId },
-      orderBy: { versionNo: "desc" },
-      select : { versionNo: true }
-    });
-
-    const version = await prismaClient.skillVersion.create({
-      data: {
-        skillId   : input.skillId,
-        versionNo : (latest?.versionNo ?? 0) + 1,
-        content   : input.content,
-        isActive  : false,
-        changeNote: input.changeNote,
-        createdBy : input.createdBy
-      },
-      select: { id: true, versionNo: true }
-    });
-
-    return version;
-  }
-
-  /**
-   * 功能：激活指定版本（激活即全局激活，无书型专属激活版）。
-   * 输入：skillId、versionId。
-   * 副作用：写审计日志。
-   */
-  async function activateVersion(input: {
-    skillId  : string;
-    versionId: string;
-  }): Promise<void> {
-    const version = await prismaClient.skillVersion.findFirst({
-      where : { id: input.versionId, skillId: input.skillId },
-      select: { id: true, skillId: true }
-    });
-    if (!version) {
-      throw new Error(`版本不存在: ${input.versionId}`);
-    }
-
-    await prismaClient.$transaction(async (tx) => {
-      // 停用同 skill 其他激活版
-      await tx.skillVersion.updateMany({
-        where: {
-          skillId : input.skillId,
-          isActive: true
-        },
-        data: { isActive: false }
-      });
-      // 激活目标版
-      await tx.skillVersion.update({
-        where: { id: input.versionId },
-        data : { isActive: true }
-      });
-    });
-  }
-
-  /**
-   * 功能：设置技能包状态（DRAFT/ACTIVE/DISABLED/ARCHIVED）。
+   * 功能：设置技能包状态（ENABLED/DISABLED）。
    * 输入：skillId、status。
-   * 副作用：无。
+   * 副作用：写 skills 表。
    */
   async function setStatus(skillId: string, status: SkillStatus): Promise<void> {
     await prismaClient.skill.update({
@@ -353,15 +190,68 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
   }
 
   /**
-   * 功能：切换技能独立启停开关（is_enabled，false=该 skill 全局不可用）。
-   * 输入：skillId、isEnabled。
-   * 副作用：无。
+   * 功能：更新技能基本信息（name/description/scope/status）。
+   * 输入：skillId 与待更新字段（仅更新出现的字段）。
+   * 副作用：写 skills 表。
    */
-  async function setSkillEnabled(skillId: string, isEnabled: boolean): Promise<void> {
+  async function updateSkillInfo(input: {
+    skillId     : string;
+    name?       : string;
+    description?: string | null;
+    scope?      : "GLOBAL" | "BOOK_TYPE";
+    status?     : SkillStatus;
+  }): Promise<void> {
     await prismaClient.skill.update({
-      where: { id: skillId },
-      data : { isEnabled }
+      where: { id: input.skillId },
+      data : {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.scope !== undefined ? { scope: input.scope } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {})
+      }
     });
+  }
+
+  /**
+   * 功能：保存 skill 内容（MD 文档 = frontmatter + 正文），直接覆盖当前内容。
+   * 输入：skillId、新 content。
+   * 异常：frontmatter 非法或 skill 不存在时抛错。
+   * 副作用：写 skills 表；frontmatter 出现的 name/description/scope 同步 DB 列。
+   */
+  async function updateSkillContent(input: {
+    skillId: string;
+    content: string;
+  }): Promise<{ updatedAt: string }> {
+    validateContent(input.content);
+
+    const existing = await prismaClient.skill.findUnique({
+      where : { id: input.skillId },
+      select: { id: true }
+    });
+    if (!existing) {
+      throw new Error(`技能包不存在: ${input.skillId}`);
+    }
+
+    // frontmatter 是内容源，同步 DB 展示列（name/description/scope 出现才覆盖）。
+    const meta = parseEditableSkillMetadata(input.content);
+    const patch: Prisma.SkillUpdateInput = { content: input.content };
+    if (meta.name !== undefined) {
+      patch.name = meta.name;
+    }
+    if (meta.description !== undefined) {
+      patch.description = meta.description;
+    }
+    if (meta.scope !== undefined) {
+      patch.scope = meta.scope;
+    }
+
+    const updated = await prismaClient.skill.update({
+      where : { id: input.skillId },
+      data  : patch,
+      select: { updatedAt: true }
+    });
+
+    return { updatedAt: updated.updatedAt.toISOString() };
   }
 
   /**
@@ -382,10 +272,9 @@ export function createSkillService(prismaClient: PrismaClient = prisma) {
     listSkills,
     getSkill,
     getSkillContract,
-    createNewVersion,
-    activateVersion,
     setStatus,
-    setSkillEnabled,
+    updateSkillInfo,
+    updateSkillContent,
     deleteSkill
   };
 }

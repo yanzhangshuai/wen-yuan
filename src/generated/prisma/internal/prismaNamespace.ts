@@ -396,7 +396,6 @@ export const ModelName = {
   Fact: 'Fact',
   Relationship: 'Relationship',
   Skill: 'Skill',
-  SkillVersion: 'SkillVersion',
   AnalysisJob: 'AnalysisJob',
   AgentRun: 'AgentRun',
   AgentWriteAudit: 'AgentWriteAudit',
@@ -418,7 +417,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "skillVersion" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog"
+    modelProps: "user" | "aiModel" | "book" | "chapter" | "chapterBiographyVerification" | "entity" | "entityProfile" | "alias" | "mention" | "fact" | "relationship" | "skill" | "analysisJob" | "agentRun" | "agentWriteAudit" | "validationReport" | "mergeSuggestion" | "analysisPhaseLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1310,80 +1309,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    SkillVersion: {
-      payload: Prisma.$SkillVersionPayload<ExtArgs>
-      fields: Prisma.SkillVersionFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.SkillVersionFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.SkillVersionFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>
-        }
-        findFirst: {
-          args: Prisma.SkillVersionFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.SkillVersionFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>
-        }
-        findMany: {
-          args: Prisma.SkillVersionFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>[]
-        }
-        create: {
-          args: Prisma.SkillVersionCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>
-        }
-        createMany: {
-          args: Prisma.SkillVersionCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.SkillVersionCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>[]
-        }
-        delete: {
-          args: Prisma.SkillVersionDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>
-        }
-        update: {
-          args: Prisma.SkillVersionUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>
-        }
-        deleteMany: {
-          args: Prisma.SkillVersionDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.SkillVersionUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.SkillVersionUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>[]
-        }
-        upsert: {
-          args: Prisma.SkillVersionUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillVersionPayload>
-        }
-        aggregate: {
-          args: Prisma.SkillVersionAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateSkillVersion>
-        }
-        groupBy: {
-          args: Prisma.SkillVersionGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SkillVersionGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.SkillVersionCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SkillVersionCountAggregateOutputType> | number
-        }
-      }
-    }
     AnalysisJob: {
       payload: Prisma.$AnalysisJobPayload<ExtArgs>
       fields: Prisma.AnalysisJobFieldRefs
@@ -2093,36 +2018,15 @@ export const SkillScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   description: 'description',
-  category: 'category',
   scope: 'scope',
   status: 'status',
-  source: 'source',
-  generatedFromJobId: 'generatedFromJobId',
-  generatedFromBookId: 'generatedFromBookId',
-  sortOrder: 'sortOrder',
-  isBuiltin: 'isBuiltin',
-  isEnabled: 'isEnabled',
+  content: 'content',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type SkillScalarFieldEnum = (typeof SkillScalarFieldEnum)[keyof typeof SkillScalarFieldEnum]
-
-
-export const SkillVersionScalarFieldEnum = {
-  id: 'id',
-  skillId: 'skillId',
-  versionNo: 'versionNo',
-  content: 'content',
-  isActive: 'isActive',
-  isBaseline: 'isBaseline',
-  changeNote: 'changeNote',
-  createdBy: 'createdBy',
-  createdAt: 'createdAt'
-} as const
-
-export type SkillVersionScalarFieldEnum = (typeof SkillVersionScalarFieldEnum)[keyof typeof SkillVersionScalarFieldEnum]
 
 
 export const AnalysisJobScalarFieldEnum = {
@@ -2509,20 +2413,6 @@ export type ListEnumEventCategoryFieldRefInput<$PrismaModel> = FieldRefInputType
 
 
 /**
- * Reference to a field of type 'SkillCategory'
- */
-export type EnumSkillCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillCategory'>
-    
-
-
-/**
- * Reference to a field of type 'SkillCategory[]'
- */
-export type ListEnumSkillCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillCategory[]'>
-    
-
-
-/**
  * Reference to a field of type 'SkillStatus'
  */
 export type EnumSkillStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillStatus'>
@@ -2533,20 +2423,6 @@ export type EnumSkillStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'SkillStatus[]'
  */
 export type ListEnumSkillStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'SkillSource'
- */
-export type EnumSkillSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillSource'>
-    
-
-
-/**
- * Reference to a field of type 'SkillSource[]'
- */
-export type ListEnumSkillSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SkillSource[]'>
     
 
 
@@ -2684,7 +2560,6 @@ export type GlobalOmitConfig = {
   fact?: Prisma.FactOmit
   relationship?: Prisma.RelationshipOmit
   skill?: Prisma.SkillOmit
-  skillVersion?: Prisma.SkillVersionOmit
   analysisJob?: Prisma.AnalysisJobOmit
   agentRun?: Prisma.AgentRunOmit
   agentWriteAudit?: Prisma.AgentWriteAuditOmit

@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchSkill,
   fetchSkills,
-  updateSkillEnabled,
+  updateSkillContent,
+  updateSkillInfo,
   type AdminSkillListItem
 } from "@/lib/services/skills";
 
@@ -22,14 +23,8 @@ const listItem: AdminSkillListItem = {
   slug       : "keju",
   name       : "科举",
   description: null,
-  category   : "HYBRID",
   scope      : "GLOBAL",
-  status     : "ACTIVE",
-  source     : "MANUAL",
-  sortOrder  : 0,
-  isBuiltin  : true,
-  isEnabled  : true,
-  versionNo  : 3,
+  status     : "ENABLED",
   createdAt  : "2026-08-06T00:00:00.000Z",
   updatedAt  : "2026-08-06T00:00:00.000Z"
 };
@@ -47,15 +42,14 @@ describe("skills client service", () => {
 
     expect(hoisted.clientFetchMock).toHaveBeenCalledWith("/api/admin/skills", { cache: "no-store" });
     expect(result).toHaveLength(1);
-    expect(result[0]?.isEnabled).toBe(true);
+    expect(result[0]?.status).toBe("ENABLED");
   });
 
-  it("fetchSkill 请求详情端点", async () => {
+  it("fetchSkill 请求详情端点（含 content 与契约）", async () => {
     hoisted.clientFetchMock.mockResolvedValue({
       ...listItem,
-      versions: [],
+      content : "---\nkind: HYBRID\n---\n\n正文",
       contract: {
-        versionNo        : 3,
         relationshipCodes: [{ code: "父子", direction: "INVERSE", category: "血缘", aliases: [] }],
         deicticJunk      : []
       }
@@ -64,16 +58,30 @@ describe("skills client service", () => {
     const result = await fetchSkill("skill-1");
 
     expect(hoisted.clientFetchMock).toHaveBeenCalledWith("/api/admin/skills/skill-1", { cache: "no-store" });
+    expect(result.content).toContain("正文");
     expect(result.contract.relationshipCodes[0]?.code).toBe("父子");
   });
 
-  it("updateSkillEnabled 切换启停开关", async () => {
-    await updateSkillEnabled("skill-1", false);
+  it("updateSkillInfo 更新基本信息", async () => {
+    await updateSkillInfo("skill-1", { name: "科举考试", status: "DISABLED" });
 
     expect(hoisted.clientMutateMock).toHaveBeenCalledWith("/api/admin/skills/skill-1", {
       method : "PATCH",
       headers: { "Content-Type": "application/json" },
-      body   : JSON.stringify({ isEnabled: false })
+      body   : JSON.stringify({ name: "科举考试", status: "DISABLED" })
     });
+  });
+
+  it("updateSkillContent 保存内容", async () => {
+    hoisted.clientFetchMock.mockResolvedValue({ updatedAt: "2026-08-06T00:00:00.000Z" });
+
+    const result = await updateSkillContent("skill-1", { content: "---\nkind: HYBRID\n---\n\n正文" });
+
+    expect(hoisted.clientFetchMock).toHaveBeenCalledWith("/api/admin/skills/skill-1/content", {
+      method : "PUT",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({ content: "---\nkind: HYBRID\n---\n\n正文" })
+    });
+    expect(result.updatedAt).toBe("2026-08-06T00:00:00.000Z");
   });
 });

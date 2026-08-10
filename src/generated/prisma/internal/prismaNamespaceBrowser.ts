@@ -63,7 +63,6 @@ export const ModelName = {
   Fact: 'Fact',
   Relationship: 'Relationship',
   Skill: 'Skill',
-  SkillVersion: 'SkillVersion',
   AnalysisJob: 'AnalysisJob',
   AgentRun: 'AgentRun',
   AgentWriteAudit: 'AgentWriteAudit',
@@ -314,36 +313,15 @@ export const SkillScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   description: 'description',
-  category: 'category',
   scope: 'scope',
   status: 'status',
-  source: 'source',
-  generatedFromJobId: 'generatedFromJobId',
-  generatedFromBookId: 'generatedFromBookId',
-  sortOrder: 'sortOrder',
-  isBuiltin: 'isBuiltin',
-  isEnabled: 'isEnabled',
+  content: 'content',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type SkillScalarFieldEnum = (typeof SkillScalarFieldEnum)[keyof typeof SkillScalarFieldEnum]
-
-
-export const SkillVersionScalarFieldEnum = {
-  id: 'id',
-  skillId: 'skillId',
-  versionNo: 'versionNo',
-  content: 'content',
-  isActive: 'isActive',
-  isBaseline: 'isBaseline',
-  changeNote: 'changeNote',
-  createdBy: 'createdBy',
-  createdAt: 'createdAt'
-} as const
-
-export type SkillVersionScalarFieldEnum = (typeof SkillVersionScalarFieldEnum)[keyof typeof SkillVersionScalarFieldEnum]
 
 
 export const AnalysisJobScalarFieldEnum = {

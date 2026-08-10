@@ -40,7 +40,6 @@ describe("createSkillGenerator", () => {
     });
     expect(markdown).toContain("老爷");
     expect(markdown).toContain("先生");
-    expect(markdown).toContain("---");
   });
 
   it("buildMarkdownFromSignals 生成含字典外关系码的 MD 文档", () => {
@@ -69,15 +68,10 @@ describe("createSkillGenerator", () => {
     })).rejects.toThrow("书籍不存在");
   });
 
-  it("成功创建 DRAFT 技能", async () => {
+  it("成功创建技能（默认启用）", async () => {
     (prismaMock.book.findUnique).mockResolvedValue({ id: "book-1", title: "儒林外史" });
     (prismaMock.skill.findMany).mockResolvedValue([]);
-    const txMock = {
-      skill: {
-        create: vi.fn().mockResolvedValue({ id: "skill-gen", slug: "gen-book1-1", name: "儒林外史 生成技能" })
-      }
-    };
-    (prismaMock.$transaction).mockImplementation((fn: (tx: unknown) => unknown) => fn(txMock));
+    (prismaMock.skill.create).mockResolvedValue({ id: "skill-gen", slug: "gen-book1-1", name: "儒林外史 生成技能" });
 
     const generator = createSkillGenerator(prismaMock as unknown as PrismaClient);
     const result = await generator.generateSkillFromSignals({
@@ -86,8 +80,10 @@ describe("createSkillGenerator", () => {
       unknownRelationshipCodes: ["师叔"]
     });
 
-    expect(result.status).toBe("DRAFT");
+    expect(result.status).toBe("ENABLED");
     expect(result.slug).toBe("gen-book1-1");
-    expect(txMock.skill.create).toHaveBeenCalled();
+    expect(prismaMock.skill.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ scope: "BOOK_TYPE" })
+    }));
   });
 });
