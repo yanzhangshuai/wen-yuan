@@ -6,6 +6,13 @@ import { GraphView } from "./graph-view";
 import type { ForceGraphProps } from "./force-graph";
 import type { GraphSnapshot } from "@/types/graph";
 
+const hoisted = vi.hoisted(() => ({
+  fetchBookGraph    : vi.fn(),
+  fetchPersonaDetail: vi.fn(),
+  searchPersonaPath : vi.fn(),
+  updateGraphLayout : vi.fn()
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() })
 }));
@@ -24,22 +31,42 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/lib/services/graph", () => ({
-  fetchBookGraph   : vi.fn(),
-  searchPersonaPath: vi.fn(),
-  updateGraphLayout: vi.fn()
+  fetchBookGraph    : hoisted.fetchBookGraph,
+  fetchPersonaDetail: hoisted.fetchPersonaDetail,
+  searchPersonaPath : hoisted.searchPersonaPath,
+  updateGraphLayout : hoisted.updateGraphLayout
 }));
 
 vi.mock("@/components/graph", () => ({
   ForceGraph: (props: ForceGraphProps) => (
-    <button type="button" onClick={() => props.onBackgroundClick?.()}>
-      background
-    </button>
+    <div>
+      <button type="button" onClick={() => props.onBackgroundClick?.()}>
+        background
+      </button>
+      <button
+        type="button"
+        onClick={() => props.onNodeClick?.({
+          id          : "hero",
+          name        : "范进",
+          nameType    : "NAMED",
+          entityType  : "PERSON",
+          status      : "VERIFIED",
+          factionIndex: 0,
+          influence   : 1
+        } as never)}
+      >
+        graph-node-hero
+      </button>
+    </div>
   ),
-  GraphToolbar    : () => <div />,
-  ChapterTimeline : () => <div />,
-  GraphContextMenu: () => <div />,
-  GraphPageHeader : () => <div />,
-  GraphLegend     : () => <div />
+  GraphToolbar      : () => <div />,
+  ChapterTimeline   : () => <div />,
+  GraphContextMenu  : () => <div />,
+  GraphPageHeader   : () => <div />,
+  GraphLegend       : () => <div />,
+  PersonaDetailPanel: ({ detail }: { detail: { name: string } }) => (
+    <div>persona-panel:{detail.name}</div>
+  )
 }));
 
 const snapshot: GraphSnapshot = {
@@ -102,5 +129,74 @@ describe("GraphView", () => {
     );
 
     expect(() => fireEvent.click(screen.getByRole("button", { name: "background" }))).not.toThrow();
+  });
+
+  it("opens persona detail panel when a node is clicked", async () => {
+    hoisted.fetchPersonaDetail.mockResolvedValue({
+      id                      : "hero",
+      name                    : "范进",
+      nameType                : "NAMED",
+      entityType              : "PERSON",
+      status                  : "VERIFIED",
+      confidence              : 0.9,
+      gender                  : null,
+      hometown                : null,
+      aliases                 : [],
+      globalTags              : [],
+      summary                 : null,
+      profile                 : null,
+      relationships           : [],
+      timeline                : [],
+      appearanceCount         : 0,
+      firstAppearanceChapterNo: null
+    });
+    render(
+      <GraphView
+        bookId="book-1"
+        initialSnapshot={snapshot}
+        totalChapters={1}
+        bookTitle="儒林外史"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "graph-node-hero" }));
+
+    expect(hoisted.fetchPersonaDetail).toHaveBeenCalledWith("book-1", "hero");
+    expect(await screen.findByText("persona-panel:范进")).toBeInTheDocument();
+  });
+
+  it("closes persona detail panel on background click", async () => {
+    hoisted.fetchPersonaDetail.mockResolvedValue({
+      id                      : "hero",
+      name                    : "范进",
+      nameType                : "NAMED",
+      entityType              : "PERSON",
+      status                  : "VERIFIED",
+      confidence              : 0.9,
+      gender                  : null,
+      hometown                : null,
+      aliases                 : [],
+      globalTags              : [],
+      summary                 : null,
+      profile                 : null,
+      relationships           : [],
+      timeline                : [],
+      appearanceCount         : 0,
+      firstAppearanceChapterNo: null
+    });
+    render(
+      <GraphView
+        bookId="book-1"
+        initialSnapshot={snapshot}
+        totalChapters={1}
+        bookTitle="儒林外史"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "graph-node-hero" }));
+    expect(await screen.findByText("persona-panel:范进")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "background" }));
+    expect(screen.queryByText("persona-panel:范进")).not.toBeInTheDocument();
   });
 });

@@ -162,6 +162,119 @@ export interface PathResult {
   edges          : { id: string; source: string; target: string; type: string; weight: number; chapterId: string; chapterNo: number }[];
 }
 
+/** 人物详情：书级档案（EntityProfile 展示投影）。 */
+export interface PersonaDetailProfile {
+  /** 书中称呼，如"范老爷"。 */
+  localName               : string;
+  /** AI 汇总的本书小传。 */
+  localSummary            : string | null;
+  /** 书中最终官职。 */
+  officialTitle           : string | null;
+  /** 性格/社会角色标签。 */
+  localTags               : string[];
+  /** 讽刺指数（0-10）。 */
+  ironyIndex              : number;
+  /** 首次出场章节号（手动维护，缺省为 null）。 */
+  firstAppearanceChapterNo: number | null;
+  /** 档案审核状态。 */
+  status                  : ProcessingStatus;
+}
+
+/** 人物详情：直接关系条目。 */
+export interface PersonaDetailRelationship {
+  /** 关系 ID。 */
+  id             : string;
+  /** 关系对象人物 ID。 */
+  counterpartId  : string;
+  /** 关系对象人物展示名。 */
+  counterpartName: string;
+  /** 关系类型展示名（如"师徒"）。 */
+  type           : string;
+  /** 关系强度（底层事实数）。 */
+  factCount      : number;
+  /** 关系审核状态。 */
+  status         : ProcessingStatus;
+  /** 关系首次出现章节号。 */
+  firstChapterNo : number | null;
+  /** 关系最近出现章节号。 */
+  latestChapterNo: number | null;
+}
+
+/** 人物详情：生平时间轴事件（BIOGRAPHY 事实投影）。 */
+export interface PersonaDetailTimelineEvent {
+  /** 事件 ID。 */
+  id          : string;
+  /** 事件所属章节 ID（用于证据跳转）。 */
+  chapterId   : string;
+  /** 章节号。 */
+  chapterNo   : number;
+  /** 事件类别（BIRTH/EXAM/CAREER/...）。 */
+  category    : string;
+  /** 事件标题（可空）。 */
+  title       : string | null;
+  /** 事件地点（可空）。 */
+  location    : string | null;
+  /** 事件正文。 */
+  event       : string;
+  /** 虚拟年份（可空）。 */
+  virtualYear : string | null;
+  /** 事件标签。 */
+  tags        : string[];
+  /** 记录来源。 */
+  recordSource: string;
+  /** 审核状态。 */
+  status      : ProcessingStatus;
+}
+
+/**
+ * 人物详情聚合结果（图谱详情面板数据源）。
+ * 与后端 `getPersonaDetail` 服务 DTO 对齐，属于前后端协作契约。
+ */
+export interface PersonaDetail {
+  /** 人物 ID。 */
+  id                      : string;
+  /** 全局标准名（如"范进"）。 */
+  name                    : string;
+  /** 人名类型（NAMED/TITLE_ONLY）。 */
+  nameType                : string;
+  /** 实体类型（PERSON/LOCATION/...）。 */
+  entityType              : string;
+  /** 节点审核状态。 */
+  status                  : ProcessingStatus;
+  /** AI 置信度。 */
+  confidence              : number;
+  /** 性别（可空）。 */
+  gender                  : string | null;
+  /** 籍贯（可空）。 */
+  hometown                : string | null;
+  /** 别名列表。 */
+  aliases                 : string[];
+  /** 全局标签。 */
+  globalTags              : string[];
+  /** 全局小传（可空）。 */
+  summary                 : string | null;
+  /** 书级档案（当前书语境；缺失时为 null）。 */
+  profile                 : PersonaDetailProfile | null;
+  /** 当前书内的直接关系列表。 */
+  relationships           : PersonaDetailRelationship[];
+  /** 当前书内的生平时间轴。 */
+  timeline                : PersonaDetailTimelineEvent[];
+  /** 当前书内的原文提及次数（出场统计）。 */
+  appearanceCount         : number;
+  /** 首次出场章节号。 */
+  firstAppearanceChapterNo: number | null;
+}
+
+/** 边悬停聚合信息：同一对人可能聚合多条关系记录。 */
+export interface GraphEdgeHoverInfo {
+  /** 该对人物之间聚合的关系记录条数（>1 表示多条关系共用一条视觉边）。 */
+  typeCount  : number;
+  /** 聚合事件总数（用于展示强度）。 */
+  totalEvents: number;
+  /** 聚合的关系类型展示名列表（按原顺序）。 */
+  types      : string[];
+}
+
 /** 图谱布局模式。 */
 export type GraphLayoutMode = "force" | "radial" | "tree";
 

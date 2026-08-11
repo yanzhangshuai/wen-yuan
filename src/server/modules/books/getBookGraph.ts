@@ -94,19 +94,21 @@ export interface BookGraphNode {
  */
 export interface BookGraphEdge {
   /** 关系 ID。 */
-  id       : string;
+  id        : string;
   /** 起点人物 ID。 */
-  source   : string;
+  source    : string;
   /** 终点人物 ID。 */
-  target   : string;
+  target    : string;
   /** 关系类型。 */
-  type     : string;
-  /** 权重。 */
-  weight   : number;
+  type      : string;
+  /** 权重（关系强度，= 底层 RELATION 事实数）。 */
+  weight    : number;
+  /** 该结构关系下聚合出的事件（事实）数量。 */
+  eventCount: number;
   /** 情感极性（正/负/中性）。 */
-  sentiment: RelationSentiment;
+  sentiment : RelationSentiment;
   /** 关系资料确认状态。 */
-  status   : ProcessingStatus;
+  status    : ProcessingStatus;
 }
 
 /**
@@ -208,6 +210,8 @@ export function createGetBookGraphService(
         sourceEntityId      : true,
         targetEntityId      : true,
         relationshipTypeCode: true,
+        factCount           : true,
+        weight              : true,
         status              : true
       }
     });
@@ -332,15 +336,21 @@ export function createGetBookGraphService(
     // Step 7) 批量加载 KB 类型名称，构建边结构并附带情感极性。
     const typeCodes = [...new Set(relationships.map((r) => r.relationshipTypeCode))];
     const nameByCode = await lookupRelationshipTypeNames(typeCodes, prismaClient);
-    const edges: BookGraphEdge[] = relationships.map((relation) => ({
-      id       : relation.id,
-      source   : relation.sourceEntityId,
-      target   : relation.targetEntityId,
-      type     : nameByCode.get(relation.relationshipTypeCode) ?? relation.relationshipTypeCode,
-      weight   : 1,
-      sentiment: resolveSentiment(relation.relationshipTypeCode),
-      status   : relation.status
-    }));
+    const edges: BookGraphEdge[] = relationships.map((relation) => {
+      // 关系强度取物化表的 weight/factCount（= 底层 RELATION 事实数），
+      // 不再硬编码 1，让边粗细与力布局能反映关系紧密程度。
+      const eventCount = relation.factCount;
+      return {
+        id       : relation.id,
+        source   : relation.sourceEntityId,
+        target   : relation.targetEntityId,
+        type     : nameByCode.get(relation.relationshipTypeCode) ?? relation.relationshipTypeCode,
+        weight   : Math.max(relation.weight ?? eventCount, 1),
+        eventCount,
+        sentiment: resolveSentiment(relation.relationshipTypeCode),
+        status   : relation.status
+      };
+    });
 
     // Step 8) 返回图谱快照。
     return {

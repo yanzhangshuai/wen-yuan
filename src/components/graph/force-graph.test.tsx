@@ -272,10 +272,6 @@ function edgeLines(container: HTMLElement): SVGLineElement[] {
   return Array.from(container.querySelectorAll<SVGLineElement>("g.edges line"));
 }
 
-function edgeBadges(container: HTMLElement): SVGTextElement[] {
-  return Array.from(container.querySelectorAll<SVGTextElement>("g.edge-badges text"));
-}
-
 async function waitForGraphReady() {
   await waitFor(() => {
     expect(screen.getByText("主角")).toBeInTheDocument();
@@ -522,7 +518,7 @@ describe("ForceGraph", () => {
     expect(mentorEdge).toHaveAttribute("stroke", "var(--muted-foreground)");
   });
 
-  it("renders multiple relationship types for the same pair as one visual edge with a numeric badge", async () => {
+  it("renders multiple relationship types for the same pair as one visual edge", async () => {
     const snapshot: GraphSnapshot = {
       nodes: [
         buildNode({ id: "hero", name: "主角" }),
@@ -549,7 +545,7 @@ describe("ForceGraph", () => {
     });
 
     expect(edgeLines(container)).toHaveLength(1);
-    expect(edgeBadges(container).map(badge => badge.textContent)).toEqual(["2"]);
+    expect(container.querySelector("g.edge-badges")).toBeNull();
     expect(screen.getByText("师生 等 2 类")).toBeInTheDocument();
     expect(container.querySelector("g.edges title")?.textContent).toContain("师生（3 事件）");
     expect(container.querySelector("g.edges title")?.textContent).toContain("竞争（2 事件）");
@@ -577,7 +573,7 @@ describe("ForceGraph", () => {
       expect(edgeLines(container)).toHaveLength(1);
     });
 
-    expect(edgeBadges(container)).toHaveLength(0);
+    expect(container.querySelector("g.edge-badges")).toBeNull();
     expect(screen.getByText("师生")).toBeInTheDocument();
   });
 
@@ -718,6 +714,10 @@ describe("ForceGraph", () => {
       id    : "edge-ally",
       source: "hero",
       target: "ally"
+    }), expect.objectContaining({
+      typeCount  : 1,
+      totalEvents: 2,
+      types      : ["ALLY"]
     }));
     expect(onEdgeHover).toHaveBeenNthCalledWith(2, null);
     expect(allyEdge).toHaveAttribute("marker-end", "none");

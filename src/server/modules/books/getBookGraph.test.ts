@@ -26,6 +26,8 @@ describe("getBookGraph service", () => {
             sourceEntityId      : "persona-1",
             targetEntityId      : "persona-2",
             relationshipTypeCode: "师生",
+            factCount           : 3,
+            weight              : 3,
             status              : ProcessingStatus.DRAFT
           }
         ])
@@ -76,10 +78,12 @@ describe("getBookGraph service", () => {
 
     expect(result.edges).toEqual([
       expect.objectContaining({
-        id       : "rel-1",
-        source   : "persona-1",
-        target   : "persona-2",
-        sentiment: "positive"
+        id        : "rel-1",
+        source    : "persona-1",
+        target    : "persona-2",
+        weight    : 3,
+        eventCount: 3,
+        sentiment : "positive"
       })
     ]);
     expect(result.nodes).toEqual(expect.arrayContaining([
@@ -125,6 +129,8 @@ describe("getBookGraph service", () => {
             sourceEntityId      : "persona-1",
             targetEntityId      : "persona-2",
             relationshipTypeCode: "敌对",
+            factCount           : 2,
+            weight              : 2,
             status              : ProcessingStatus.VERIFIED
           },
           {
@@ -132,6 +138,8 @@ describe("getBookGraph service", () => {
             sourceEntityId      : "persona-2",
             targetEntityId      : "persona-1",
             relationshipTypeCode: "陌生",
+            factCount           : 1,
+            weight              : 1,
             status              : ProcessingStatus.DRAFT
           }
         ])
@@ -181,12 +189,16 @@ describe("getBookGraph service", () => {
     expect(entityFindMany).not.toHaveBeenCalled();
     expect(result.edges).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        id       : "rel-neg",
-        sentiment: "negative"
+        id        : "rel-neg",
+        weight    : 2,
+        eventCount: 2,
+        sentiment : "negative"
       }),
       expect.objectContaining({
-        id       : "rel-neutral",
-        sentiment: "neutral"
+        id        : "rel-neutral",
+        weight    : 1,
+        eventCount: 1,
+        sentiment : "neutral"
       })
     ]));
 

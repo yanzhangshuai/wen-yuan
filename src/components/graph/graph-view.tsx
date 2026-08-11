@@ -3,20 +3,24 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { X } from "lucide-react";
 
 import type {
   GraphEdge,
+  GraphEdgeHoverInfo,
   GraphFilter,
   GraphLayoutMode,
   GraphNode,
-  GraphSnapshot
+  GraphSnapshot,
+  PersonaDetail
 } from "@/types/graph";
-import { fetchBookGraph, searchPersonaPath, updateGraphLayout, type GraphLayoutNodeInput } from "@/lib/services/graph";
+import { fetchBookGraph, fetchPersonaDetail, searchPersonaPath, updateGraphLayout, type GraphLayoutNodeInput } from "@/lib/services/graph";
 import {
   ForceGraph,
   GraphToolbar,
   ChapterTimeline,
-  GraphContextMenu
+  GraphContextMenu,
+  PersonaDetailPanel
 } from "@/components/graph";
 import { GraphPageHeader } from "@/components/graph/graph-page-header";
 import { GraphLegend } from "@/components/graph/graph-legend";
@@ -167,10 +171,14 @@ export function GraphView({
   // 时间轴切换中的局部 loading；只遮罩画布，不阻塞全页面。
   const [loading, setLoading] = useState(false);
 
-  // 交互状态：聚焦节点、右键菜单、悬停边信息。
+  // 交互状态：选中人物详情、聚焦节点、右键菜单、悬停边信息。
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
+  const [personaDetail, setPersonaDetail] = useState<PersonaDetail | null>(null);
+  const [personaDetailLoading, setPersonaDetailLoading] = useState(false);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ node: GraphNode; position: { x: number; y: number } } | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<GraphEdge | null>(null);
+  const [hoveredEdgeAggregate, setHoveredEdgeAggregate] = useState<GraphEdgeHoverInfo | null>(null);
 
   // 工具栏状态：筛选条件、布局模式、路径高亮（节点 + 边）集合。
   const [filter, setFilter] = useState<GraphFilter>({
@@ -189,6 +197,12 @@ export function GraphView({
    * 拖拽结束后等待 1s 才真正发请求，避免频繁拖拽时请求风暴。
    */
   const layoutSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * 人物详情请求自增游标。
+   * 用于丢弃过期响应：快速连续点击不同人物时，只有最后一次请求能写入面板。
+   */
+  const personaRequestRef = useRef(0);
 
   // 从当前快照派生可筛选关系类型，避免每次渲染重复扫描。
   // 这里用 useMemo 是为了稳定 Toolbar 的 options，减少不必要重渲染。
@@ -250,8 +264,33 @@ export function GraphView({
     void fetchGraph(chapter);
   }
 
-  /** 单击节点：关闭右键菜单，避免层叠交互冲突。 */
-  function handleNodeClick() {
+  /**
+   * 打开人物详情面板并异步拉取详情数据。
+   * - 立即记录选中人物并展示加载态；
+   * - 用自增游标丢弃过期响应，避免快速切换人物时旧数据覆盖新选择；
+   * - 加载失败保留面板（显示占位）并 toast 提示，不清空选中态。
+   */
+  function openPersonaDetail(personaId: string) {
+    const requestId = ++personaRequestRef.current;
+    setSelectedPersonaId(personaId);
+    setPersonaDetail(null);
+    setPersonaDetailLoading(true);
+    void fetchPersonaDetail(bookId, personaId)
+      .then(detail => {
+        if (personaRequestRef.current !== requestId) return;
+        setPersonaDetail(detail);
+        setPersonaDetailLoading(false);
+      })
+      .catch(() => {
+        if (personaRequestRef.current !== requestId) return;
+        setPersonaDetailLoading(false);
+        toast.error("人物详情加载失败，请稍后重试");
+      });
+  }
+
+  /** 单击节点：打开详情面板并关闭右键菜单，避免层叠交互冲突。 */
+  function handleNodeClick(node: GraphNode) {
+    openPersonaDetail(node.id);
     setContextMenu(null);
   }
 
@@ -280,6 +319,19 @@ export function GraphView({
     setContextMenu(prev => prev === null ? prev : null);
     setHighlightPathIds(prev => prev.size === 0 ? prev : new Set());
     setHighlightPathEdgeIds(prev => prev.size === 0 ? prev : new Set());
+    // 背景点击同时收起人物详情面板（详情面板是“临时焦点上下文”的一部分）。
+    if (selectedPersonaId !== null) {
+      personaRequestRef.current += 1;
+      setSelectedPersonaId(null);
+      setPersonaDetail(null);
+      setPersonaDetailLoading(false);
+    }
+  }
+
+  /** 边悬停：记录基础边信息与聚合信息，用于解释聚合徽标与多关系明细。 */
+  function handleEdgeHover(edge: GraphEdge | null, aggregate?: GraphEdgeHoverInfo) {
+    setHoveredEdge(edge);
+    setHoveredEdgeAggregate(edge ? aggregate ?? null : null);
   }
 
   /** 清空路径高亮（仅在当前存在高亮时更新状态）。 */
@@ -497,10 +549,11 @@ export function GraphView({
           filter={filter}
           layoutMode={layoutMode}
           focusedNodeId={focusedNodeId}
+          activeNodeId={selectedPersonaId}
           onNodeClick={handleNodeClick}
           onNodeDoubleClick={handleNodeDoubleClick}
           onNodeRightClick={handleNodeRightClick}
-          onEdgeHover={setHoveredEdge}
+          onEdgeHover={handleEdgeHover}
           onBackgroundClick={handleBackgroundClick}
           highlightPathIds={highlightPathIds.size > 0 ? highlightPathIds : undefined}
           highlightPathEdgeIds={highlightPathEdgeIds.size > 0 ? highlightPathEdgeIds : undefined}
@@ -529,10 +582,22 @@ export function GraphView({
           <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-md bg-card px-3 py-1.5 text-xs shadow-md"
             style={{ borderColor: "var(--color-border)", borderWidth: 1 }}
           >
-            <span className="text-foreground">{hoveredEdge.type}</span>
-            <span className="ml-2 text-muted-foreground">
-              权重 {hoveredEdge.weight}
-            </span>
+            {hoveredEdgeAggregate && hoveredEdgeAggregate.typeCount > 1 ? (
+              <>
+                {/* 多关系聚合：徽标数字 = 该对人物之间的关系条数，这里给出明细。 */}
+                <span className="text-foreground">{hoveredEdgeAggregate.types.join("、")}</span>
+                <span className="ml-2 text-muted-foreground">
+                  共 {hoveredEdgeAggregate.typeCount} 类关系
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-foreground">{hoveredEdge.type}</span>
+                <span className="ml-2 text-muted-foreground">
+                  权重 {hoveredEdge.weight}
+                </span>
+              </>
+            )}
           </div>
         )}
 
@@ -563,6 +628,68 @@ export function GraphView({
             router.push(`/admin/role-workbench/${bookId}`);
           }}
         />
+      )}
+
+      {/* 人物详情面板：承接节点单击后的详情呈现。 */}
+      {selectedPersonaId && (
+        <>
+          {personaDetail ? (
+            <PersonaDetailPanel
+              detail={personaDetail}
+              onClose={handleBackgroundClick}
+              onEdit={() => router.push(`/admin/role-workbench/${bookId}`)}
+            />
+          ) : personaDetailLoading ? (
+            /* 加载占位：与面板同尺寸的骨架，避免布局跳动。 */
+            <aside className="persona-detail-panel absolute right-0 top-0 z-20 flex h-full w-96 flex-col border-l border-border/60 bg-card/80 backdrop-blur-md">
+              <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+                <span className="text-sm font-medium text-muted-foreground">人物详情</span>
+                <button
+                  type="button"
+                  onClick={handleBackgroundClick}
+                  className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="关闭面板"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+                {[80, 60, 100, 70, 90].map((width, index) => (
+                  <div
+                    key={index}
+                    className="h-3 animate-pulse rounded bg-muted"
+                    style={{ width: `${width}%` }}
+                  />
+                ))}
+              </div>
+            </aside>
+          ) : (
+            /* 加载失败占位：保留面板壳并提供重试入口，避免用户误以为没点中。 */
+            <aside className="persona-detail-panel absolute right-0 top-0 z-20 flex h-full w-96 flex-col border-l border-border/60 bg-card/80 backdrop-blur-md">
+              <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+                <span className="text-sm font-medium text-muted-foreground">人物详情</span>
+                <button
+                  type="button"
+                  onClick={handleBackgroundClick}
+                  className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="关闭面板"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-sm text-muted-foreground">
+                <span>人物详情加载失败</span>
+                <button
+                  type="button"
+                  onClick={() => selectedPersonaId && openPersonaDetail(selectedPersonaId)}
+                  className="rounded-md border border-border px-3 py-1 text-xs transition-colors hover:bg-muted"
+                >
+                  重试
+                </button>
+              </div>
+            </aside>
+          )}
+        </>
       )}
 
       </div>

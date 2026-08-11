@@ -20,6 +20,7 @@ import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } from "d3-zoom
 
 import type {
   GraphEdge,
+  GraphEdgeHoverInfo,
   GraphFilter,
   GraphLayoutMode,
   GraphNode,
@@ -140,8 +141,11 @@ export interface ForceGraphProps {
   onNodeDoubleClick?   : (node: GraphNode) => void;
   /** 节点右键回调：用于弹出上下文菜单，附带屏幕坐标。 */
   onNodeRightClick?    : (node: GraphNode, position: { x: number; y: number }) => void;
-  /** 边 hover 回调：用于在外层显示关系信息浮层。 */
-  onEdgeHover?         : (edge: GraphEdge | null) => void;
+  /**
+   * 边 hover 回调：用于在外层显示关系信息浮层。
+   * 第二个参数携带“同一对人聚合关系”的信息，用于解释聚合徽标与多关系明细。
+   */
+  onEdgeHover?         : (edge: GraphEdge | null, aggregate?: GraphEdgeHoverInfo) => void;
   /** 边单击回调：用于打开同一人物 Pair 的关系抽屉。 */
   onEdgeClick?         : (pairKey: string, sourceId: string, targetId: string) => void;
   /** 背景点击回调：用于关闭面板、重置临时状态。 */
@@ -772,8 +776,15 @@ export function ForceGraph({
         onEdgeClickRef.current?.(d.pairKey, d.sourceId, d.targetId);
       })
       .on("mouseenter", function (_event, d) {
-        // 把 SimulationEdge 还原为 GraphEdge 形态回传给上层。
-        onEdgeHoverRef.current?.(d.underlying[0] ? { ...d.underlying[0] } : null);
+        // 把聚合信息一并回传：typeCount>1 时，外层浮层可展示“多关系明细”并解释徽标数字。
+        onEdgeHoverRef.current?.(
+          d.underlying[0] ? { ...d.underlying[0] } : null,
+          {
+            typeCount  : d.typeCount,
+            totalEvents: d.totalEvents,
+            types      : d.underlying.map(edge => edge.type)
+          }
+        );
         // hover 加粗边，提升当前关系辨识度。
         select(this)
           .attr("stroke-width", d.weight * 2 + 2)
@@ -806,25 +817,6 @@ export function ForceGraph({
       .attr("fill", "var(--muted-foreground)")
       .attr("opacity", 0)
       .text(d => d.primaryLabel);
-
-    const edgeBadgeGroup = g.append("g").attr("class", "edge-badges");
-    const edgeBadgeSelection = edgeBadgeGroup.selectAll<SVGGElement, SimulationVisualEdge>("g")
-      .data(simEdges.filter(edge => edge.typeCount > 1), d => d.id)
-      .enter()
-      .append("g")
-      .attr("pointer-events", "none");
-    edgeBadgeSelection.append("circle")
-      .attr("r", 8)
-      .attr("fill", "var(--background)")
-      .attr("stroke", "var(--foreground)")
-      .attr("stroke-width", 1);
-    edgeBadgeSelection.append("text")
-      .attr("text-anchor", "middle")
-      .attr("dy", "0.35em")
-      .attr("font-size", "10px")
-      .attr("font-weight", 700)
-      .attr("fill", "var(--foreground)")
-      .text(d => String(d.typeCount));
 
     // 绘制节点容器组（一个节点 = path + text）。
     const nodeGroup = g.append("g").attr("class", "nodes");
@@ -1062,9 +1054,6 @@ export function ForceGraph({
         edgeLabelSelection
           .attr("x", d => (d.source.x + d.target.x) / 2)
           .attr("y", d => (d.source.y + d.target.y) / 2);
-
-        edgeBadgeSelection
-          .attr("transform", d => `translate(${(d.source.x + d.target.x) / 2},${(d.source.y + d.target.y) / 2})`);
 
         nodeSelection.attr("transform", d => `translate(${d.x},${d.y})`);
 

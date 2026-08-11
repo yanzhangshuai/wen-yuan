@@ -21,3 +21,4 @@ export { ChapterTimeline } from "./chapter-timeline";
 export { GraphContextMenu } from "./graph-context-menu";
 export { GraphPageHeader } from "./graph-page-header";
 export { GraphLegend } from "./graph-legend";
+export { PersonaDetailPanel } from "./persona-detail-panel";

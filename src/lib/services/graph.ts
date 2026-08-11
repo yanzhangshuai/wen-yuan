@@ -19,7 +19,7 @@
  * =============================================================================
  */
 import { clientFetch } from "@/lib/client-api";
-import type { GraphSnapshot, PathResult } from "@/types/graph";
+import type { GraphSnapshot, PathResult, PersonaDetail } from "@/types/graph";
 
 /* ------------------------------------------------
    Types
@@ -73,6 +73,21 @@ export async function searchPersonaPath(body: SearchPersonaPathBody): Promise<Pa
     headers: { "Content-Type": "application/json" },
     body   : JSON.stringify(body)
   });
+}
+
+/**
+ * 获取单本书域内某个人物的详情聚合数据。
+ *
+ * 业务语义：
+ * - 服务于图谱页面“点击角色 → 右侧详情面板”；
+ * - 返回主档/书级档案/直接关系/生平时间轴/出场统计，均为当前书语境。
+ *
+ * @param bookId 书籍 ID。
+ * @param personaId 人物 ID。
+ * @returns 人物详情聚合结果。
+ */
+export async function fetchPersonaDetail(bookId: string, personaId: string): Promise<PersonaDetail> {
+  return clientFetch<PersonaDetail>(`/api/books/${bookId}/personas/${personaId}`);
 }
 
 /**
